@@ -145,6 +145,23 @@ The fixtures in `tests/integration/conftest.py` prepare the database in steps. E
 
 There is no minimum threshold for now. Coverage helps find untested code, but it does not prove the tests are good.
 
+### 3.1 Test report on CI
+
+Each CI run (GitHub → **Actions** → the run → **Summary**) shows, for the **Backend** and **Frontend** jobs:
+
+| Section | Content |
+| --- | --- |
+| Header | Verdict (✅ Passed / ❌ Failed) and totals: tests, passed, failed, skipped, total duration. |
+| ❌ Failures | Only if a test failed: its name, the error message and, in a collapsible block, the assertion details and traceback. |
+| ⏭️ Skipped | Only if tests were skipped: each test with the reason. |
+| All tests | One line per test: status, name (`file::test` or `file › describe > test`) and duration. |
+| 🐢 Slowest tests | The 5 slowest tests, to spot tests that are getting slow. Shown when there are more than 5 tests. |
+| Coverage | Coverage table (backend per file, frontend per metric). |
+
+The report is also produced **when tests fail**, so the cause can be read without opening the logs. It is generated from the JUnit XML reports of pytest (`--junitxml`) and Vitest (`junit` reporter) by `.github/scripts/junit_summary.py`, which only uses the Python standard library.
+
+The raw reports (JUnit XML and coverage) are attached to the run as **artifacts** (`backend-test-reports`, `frontend-test-reports`) for 14 days.
+
 ---
 
 ## 4. Writing a new test

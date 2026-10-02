@@ -141,7 +141,7 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 | **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest avec couverture, build de production |
 
-- Les résumés de couverture apparaissent dans le résumé de l'exécution (sans seuil bloquant).
+- Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/testing.fr.md](docs/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les deux jobs sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.

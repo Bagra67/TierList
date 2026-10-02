@@ -141,7 +141,7 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 | **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest with coverage, production build |
 
-- Coverage summaries appear in the run summary (no blocking threshold).
+- The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/testing.md](docs/testing.md#31-test-report-on-ci).
 - Both jobs are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
