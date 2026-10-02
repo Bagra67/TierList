@@ -6,7 +6,10 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
+
+configure_logging(get_logging_settings().log_level)
 
 logger = logging.getLogger(__name__)
 
