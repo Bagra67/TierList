@@ -25,3 +25,6 @@ dist-ssr
 
 # Rapports de couverture (vitest --coverage)
 coverage/
+
+# Rapports JUnit des tests (CI)
+reports/

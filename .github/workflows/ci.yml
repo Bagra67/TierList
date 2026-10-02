@@ -66,13 +66,29 @@ jobs:
         run: uv run pyright
 
       - name: Tests (unit + PostgreSQL integration) with coverage
-        run: uv run pytest --cov=app --cov-report=term --cov-report=xml
+        run: >-
+          uv run pytest --cov=app --cov-report=term --cov-report=xml
+          --junitxml=reports/junit.xml
 
-      - name: Coverage summary
+      # Runs even when tests fail, so the summary shows which ones and why.
+      - name: Test report
         if: ${{ !cancelled() }}
         run: |
+          uv run python ../.github/scripts/junit_summary.py Backend reports/junit.xml >> "$GITHUB_STEP_SUMMARY"
           echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
-          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY" \
+            || echo "No coverage data." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-reports
+          path: |
+            backend/reports/junit.xml
+            backend/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 14
 
   frontend:
     name: Frontend
@@ -107,11 +123,19 @@ jobs:
         run: pnpm typecheck
 
       - name: Tests with coverage (Vitest)
-        run: pnpm test:coverage
+        run: >-
+          pnpm test:coverage --reporter=default --reporter=junit
+          --outputFile.junit=reports/junit.xml
 
-      - name: Coverage summary
+      # Runs even when tests fail, so the summary shows which ones and why.
+      - name: Test report
         if: ${{ !cancelled() }}
         run: |
+          python3 ../.github/scripts/junit_summary.py Frontend reports/junit.xml >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "No coverage data." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           node -e '
             const total = require("./coverage/coverage-summary.json").total;
             const rows = ["statements", "branches", "functions", "lines"].map(
@@ -119,6 +143,17 @@ jobs:
             );
             console.log(["### Frontend coverage", "", "| Metric | Coverage |", "| --- | --- |", ...rows].join("\n"));
           ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-reports
+          path: |
+            frontend/reports/junit.xml
+            frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Build
         run: pnpm build

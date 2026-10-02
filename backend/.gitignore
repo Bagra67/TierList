@@ -20,3 +20,6 @@ htmlcov/
 # IDE
 .vscode/
 .idea/
+
+# Rapports JUnit des tests (CI)
+reports/
