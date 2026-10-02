@@ -29,7 +29,7 @@ TierList/
 | Outil | Installation | Vérification |
 | --- | --- | --- |
 | **uv** | Windows : `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS/Linux : `curl -LsSf https://astral.sh/uv/install.sh \| sh` | `uv --version` |
-| **Node.js LTS** (20.19+) | Windows : `winget install OpenJS.NodeJS.LTS` — ou https://nodejs.org | `node --version` |
+| **Node.js 24 LTS** (version dans `.nvmrc`) | Windows : `winget install OpenJS.NodeJS.LTS` — ou https://nodejs.org | `node --version` |
 | **pnpm** | `npm install -g pnpm` | `pnpm --version` |
 | **Git** | https://git-scm.com | `git --version` |
 | **Docker Desktop** | Windows : `winget install -e --id Docker.DockerDesktop` (WSL2 requis, redémarrage possible), puis lancez Docker Desktop une fois — ou https://www.docker.com/products/docker-desktop | `docker info` |

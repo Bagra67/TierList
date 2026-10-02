@@ -13,8 +13,8 @@ English | [Français](README.fr.md)
 
 ## 1. Prerequisites
 
-- **Node.js 20.19+** (LTS recommended): `node --version`
-- **pnpm**: `npm install -g pnpm`, then `pnpm --version`
+- **Node.js 24 LTS** (version pinned in `.nvmrc` at the repository root): `node --version`
+- **pnpm**: `npm install -g pnpm`, then `pnpm --version`. The exact version is pinned in the `packageManager` field of `package.json` and locked in `pnpm-lock.yaml`.
 
 ---
 

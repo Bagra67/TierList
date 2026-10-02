@@ -13,8 +13,8 @@ Frontend **React 19 + TypeScript**, construit avec **Vite**, qui affiche le mess
 
 ## 1. Prérequis
 
-- **Node.js 20.19+** (LTS recommandée) : `node --version`
-- **pnpm** : `npm install -g pnpm`, puis `pnpm --version`
+- **Node.js 24 LTS** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
+- **pnpm** : `npm install -g pnpm`, puis `pnpm --version`. La version exacte est épinglée dans le champ `packageManager` de `package.json` et verrouillée dans `pnpm-lock.yaml`.
 
 ---
 
