@@ -1190,6 +1190,12 @@ actually performed.
 Pull requests MUST be merged with a **squash merge**: each PR becomes a
 single commit on the target branch.
 
+**Exception — release PRs (`develop` → `main`)** MUST use a regular
+**merge commit** (no squash, no rebase). Squashing them would give `main`
+commits that `develop` does not have, making the two branches diverge.
+The merge commit message follows the same format, e.g.
+`chore(release): intègre develop dans main (#2)`.
+
 The squash commit message MUST:
 
 -   Follow Conventional Commits.
@@ -1209,8 +1215,15 @@ chore: initialise le starter (Hello World, PostgreSQL, outillage) (#1)
 With the GitHub CLI:
 
 ``` bash
+# Feature PR -> develop
 gh pr merge <N> --squash --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
+
+# Release PR develop -> main
+gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<short bullets>"
 ```
+
+These merge methods are also enforced by the GitHub rulesets: `develop`
+only allows squash merges, `main` only allows merge commits.
 
 ------------------------------------------------------------------------
 
