@@ -48,4 +48,4 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "f
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
-include = ["app", "tests", "migrations"]
+include = ["app", "tests", "migrations", "scripts"]
