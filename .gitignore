@@ -1,0 +1,17 @@
+# Les règles propres à chaque projet sont dans backend/.gitignore et frontend/.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE (on partage seulement la config VS Code du projet)
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example

@@ -1,0 +1,8 @@
+# Fins de ligne LF partout (cohérent avec Prettier et Ruff, évite les diffs CRLF sous Windows)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
