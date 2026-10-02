@@ -1155,6 +1155,12 @@ Review the final diff.
 
 When asked to create a commit, use a clear, focused commit message.
 
+Commit messages and branch names follow **Conventional Commits**:
+
+-   Commits: `type(scope): summary` (e.g. `feat(backend): ...`,
+    `docs: ...`).
+-   Branches: `type/short-topic` (e.g. `chore/starter-setup`).
+
 ------------------------------------------------------------------------
 
 # 40. Pull Requests
@@ -1178,6 +1184,33 @@ The PR description should explain:
 
 Do not create a PR claiming successful validation if validation was not
 actually performed.
+
+## Merging
+
+Pull requests MUST be merged with a **squash merge**: each PR becomes a
+single commit on the target branch.
+
+The squash commit message MUST:
+
+-   Follow Conventional Commits.
+-   Summarize the PR very briefly: a subject line plus, at most, a few
+    short bullet points.
+-   End the subject line with the PR number, e.g. `(#12)`.
+
+Example:
+
+``` text
+chore: initialise le starter (Hello World, PostgreSQL, outillage) (#1)
+
+- frontend réduit au Hello World du backend, scripts dev.*
+- backend relié à PostgreSQL (Docker, SQLAlchemy, Alembic, /health/db)
+```
+
+With the GitHub CLI:
+
+``` bash
+gh pr merge <N> --squash --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
+```
 
 ------------------------------------------------------------------------
 
