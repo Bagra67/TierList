@@ -127,6 +127,8 @@ The frontend displays the "Hello World" returned by the backend. It calls it thr
 
 If an error cannot be fixed automatically, the commit is blocked: fix it, then commit again.
 
+**Commit messages** are checked by the `frontend/.husky/commit-msg` hook (commitlint, `frontend/commitlint.config.js`): they must follow Conventional Commits, `type(scope): summary` (e.g. `feat(backend): add the tier list API`), with a lowercase summary and body lines of 100 characters at most. Allowed types: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`.
+
 Manual commands:
 
 | | Backend (`cd backend`) | Frontend (`cd frontend`) |

@@ -1193,7 +1193,9 @@ When asked to create a commit, use a clear, focused commit message.
 Commit messages and branch names follow **Conventional Commits**:
 
 -   Commits: `type(scope): summary` (e.g. `feat(backend): ...`,
-    `docs: ...`).
+    `docs: ...`). Checked locally by commitlint
+    (`frontend/.husky/commit-msg`): lowercase summary, body lines of
+    100 characters at most.
 -   Branches: `type/short-topic` (e.g. `chore/starter-setup`).
 
 Everything git-related MUST be written in **English**: commit messages

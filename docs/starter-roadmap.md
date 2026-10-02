@@ -13,7 +13,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Errors**: single JSON error format (`ErrorResponse`) for HTTP, validation and unexpected errors; read by the frontend's `ApiError`.
 - **API contract**: `backend/openapi.json` exported and checked; frontend API types generated from it (`pnpm gen:api`).
 - **Data fetching**: TanStack Query on top of a shared openapi-fetch client typed by the API contract.
-- **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), EditorConfig, VS Code debug configurations (FastAPI, Vitest), husky pre-commit hook (with gitleaks secret scanning, also on CI), `dev.*` scripts (start the database, then both servers); Node and pnpm versions pinned.
+- **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), EditorConfig, VS Code debug configurations (FastAPI, Vitest), husky pre-commit hook (with gitleaks secret scanning, also on CI) and commit-msg hook (commitlint), `dev.*` scripts (start the database, then both servers); Node and pnpm versions pinned.
 - **Tests**: pytest (unit + integration against a real PostgreSQL), Vitest + Testing Library, coverage reports.
 - **CI**: GitHub Actions (`Backend` and `Frontend` jobs, required on `develop` and `main`), Dependabot, pull request template; merged work branches are deleted automatically.
 
@@ -37,8 +37,6 @@ All P2 items are done.
 
 18. **Documentation**:
     - a short `docs/architecture.md`: layers, front → API → service → repository → DB flow, conventions.
-
-19. **Enforce commit messages**: Conventional Commits are now the rule (AGENTS.md §39); commitlint in husky would check them automatically. Useful for an automatic changelog. Optional.
 
 ## Deliberately not proposed (for now)
 
