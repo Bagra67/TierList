@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# A new push on the same branch / PR cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18-alpine
+        # CI-only throwaway credentials, not secrets.
+        env:
+          POSTGRES_USER: tierlist
+          POSTGRES_PASSWORD: tierlist-ci
+          POSTGRES_DB: tierlist
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tierlist -d tierlist"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      POSTGRES_USER: tierlist
+      POSTGRES_PASSWORD: tierlist-ci
+      POSTGRES_DB: tierlist
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10
+        with:
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint (Ruff)
+        run: uv run ruff check .
+
+      - name: Check formatting (Ruff)
+        run: uv run ruff format --check .
+
+      - name: Type check (Pyright)
+        run: uv run pyright
+
+      - name: Tests (unit + PostgreSQL integration) with coverage
+        run: uv run pytest --cov=app --cov-report=term --cov-report=xml
+
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        run: |
+          echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the exact pnpm version pinned in the packageManager field.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (ESLint)
+        run: pnpm lint
+
+      - name: Check formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Type check (tsc)
+        run: pnpm typecheck
+
+      - name: Tests with coverage (Vitest)
+        run: pnpm test:coverage
+
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        run: |
+          node -e '
+            const total = require("./coverage/coverage-summary.json").total;
+            const rows = ["statements", "branches", "functions", "lines"].map(
+              (metric) => "| " + metric + " | " + total[metric].pct + "% (" + total[metric].covered + "/" + total[metric].total + ") |",
+            );
+            console.log(["### Frontend coverage", "", "| Metric | Coverage |", "| --- | --- |", ...rows].join("\n"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        run: pnpm build
