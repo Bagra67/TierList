@@ -179,6 +179,8 @@ backend/
 │       ├── base.py        # Classe Base des modèles SQLAlchemy
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
 ├── migrations/            # Migrations Alembic (env.py, versions/)
+├── scripts/
+│   └── export_openapi.py  # Écrit le contrat d'API dans openapi.json
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
@@ -186,6 +188,7 @@ backend/
 ├── alembic.ini            # Configuration Alembic
 ├── .python-version        # Version de Python utilisée par uv
 ├── pyproject.toml         # Métadonnées + dépendances du projet
+├── openapi.json           # Contrat d'API (généré, commité)
 ├── uv.lock                # Versions exactes verrouillées (à commiter)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
@@ -245,3 +248,18 @@ Les logs de l'application (loggers sous `app`, par ex. `logging.getLogger(__name
 - écrits sur stderr au **même format qu'uvicorn**, avec en plus le nom du logger : `ERROR:    app.main - Échec de la connexion à la base de données` ;
 - niveau réglé par `LOG_LEVEL` (dans `.env` ou l'environnement, `INFO` par défaut) ; une valeur invalide arrête l'application au démarrage avec une erreur claire ;
 - les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler.
+
+---
+
+## 11. Contrat d'API (OpenAPI)
+
+`openapi.json` est un instantané du contrat d'API : le schéma OpenAPI que FastAPI construit à partir des routes et des modèles Pydantic (celui qui alimente `/docs`). Il est commité : chaque PR montre si elle modifie l'API, et le frontend en **génère ses types TypeScript** (`pnpm gen:api`) au lieu de les recopier à la main.
+
+Quand vous ajoutez ou modifiez une route ou un schéma Pydantic :
+
+1. `uv run python scripts/export_openapi.py` (dans `backend/`) met à jour `openapi.json` ;
+2. `pnpm gen:api` (dans `frontend/`) régénère les types TypeScript ;
+3. corrigez les éventuelles erreurs de `pnpm typecheck` : elles montrent le code frontend touché par le changement ;
+4. commitez ensemble `backend/openapi.json` et `frontend/src/api/schema.d.ts`.
+
+Si vous oubliez l'étape 1, le test backend `test_openapi_schema_is_up_to_date` échoue ; si vous oubliez l'étape 2, l'étape CI « Check API types are up to date » échoue.

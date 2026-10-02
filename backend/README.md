@@ -179,6 +179,8 @@ backend/
 │       ├── base.py        # Base class for SQLAlchemy models
 │       └── session.py     # Engine, session (FastAPI dependency), database ping
 ├── migrations/            # Alembic migrations (env.py, versions/)
+├── scripts/
+│   └── export_openapi.py  # Writes the API contract to openapi.json
 ├── tests/
 │   ├── test_main.py       # Unit tests with TestClient (no real database)
 │   └── integration/       # Tests against a real PostgreSQL (database <POSTGRES_DB>_test)
@@ -186,6 +188,7 @@ backend/
 ├── alembic.ini            # Alembic configuration
 ├── .python-version        # Python version used by uv
 ├── pyproject.toml         # Project metadata + dependencies
+├── openapi.json           # API contract (generated, committed)
 ├── uv.lock                # Exact locked versions (to commit)
 └── README.md / README.fr.md   # This file (English / French)
 ```
@@ -245,3 +248,18 @@ Application logs (loggers under `app`, e.g. `logging.getLogger(__name__)` in `ap
 - written to stderr with the **same format as uvicorn**, plus the logger name: `ERROR:    app.main - Échec de la connexion à la base de données`;
 - level set by `LOG_LEVEL` (in `.env` or the environment, default `INFO`); an invalid value stops the application at startup with a clear error;
 - uvicorn's own logs keep their configuration: use `--log-level` on `fastapi dev` / `fastapi run` to change them.
+
+---
+
+## 11. API contract (OpenAPI)
+
+`openapi.json` is a snapshot of the API contract: the OpenAPI schema FastAPI builds from the routes and Pydantic models (the same one behind `/docs`). It is committed, so every PR shows whether it changes the API, and the frontend **generates its TypeScript types** from it (`pnpm gen:api`) instead of copying them by hand.
+
+When you add or change a route or a Pydantic schema:
+
+1. `uv run python scripts/export_openapi.py` (in `backend/`) updates `openapi.json`;
+2. `pnpm gen:api` (in `frontend/`) regenerates the TypeScript types;
+3. fix any `pnpm typecheck` error: it shows the frontend code affected by the change;
+4. commit `backend/openapi.json` and `frontend/src/api/schema.d.ts` together.
+
+If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails; if you forget step 2, the CI step "Check API types are up to date" fails.

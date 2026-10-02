@@ -3,3 +3,5 @@ node_modules
 pnpm-lock.yaml
 coverage
 reports
+# Généré par `pnpm gen:api`
+src/api/schema.d.ts

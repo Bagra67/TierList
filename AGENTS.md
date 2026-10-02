@@ -747,6 +747,11 @@ The backend API is the authoritative contract.
 -   Keep HTTP status codes meaningful.
 -   Handle API errors consistently.
 -   Update frontend API types when backend contracts change.
+-   Never write frontend API types by hand: they are generated from the
+    backend OpenAPI schema. After a contract change, run
+    `uv run python scripts/export_openapi.py` (backend) then
+    `pnpm gen:api` (frontend), and commit `backend/openapi.json` and
+    `frontend/src/api/schema.d.ts` together.
 -   Add or update tests when contracts change.
 
 For breaking changes:

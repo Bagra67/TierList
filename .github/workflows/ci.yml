@@ -113,6 +113,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The backend test checks openapi.json; this checks the types generated from it.
+      - name: Check API types are up to date
+        run: |
+          pnpm gen:api
+          if ! git diff --exit-code -- src/api/schema.d.ts; then
+            echo "::error file=frontend/src/api/schema.d.ts::API types are out of date: run 'pnpm gen:api' in frontend/ and commit src/api/schema.d.ts."
+            exit 1
+          fi
+
       - name: Lint (ESLint)
         run: pnpm lint
 
