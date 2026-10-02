@@ -9,14 +9,11 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Backend** FastAPI : `GET /hello`, plus `GET /health/db`, relié à PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
 - **Base** PostgreSQL 18 dans Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
-- **Outillage** : uv, pnpm, Ruff, ESLint, Prettier, hook husky pre-commit, scripts `dev.*`.
+- **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier, hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
+- **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
+- **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request.
 
-Manques constatés :
-- pas de dépôt distant ;
-- pas de CI ;
-- pas de vérification de types Python ;
-- pas de tests frontend ;
-- `strict` n'est pas écrit explicitement dans `tsconfig.app.json`.
+Les points réalisés ont été retirés de cette liste ; les autres gardent leur numéro d'origine.
 
 Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il faut faire. Il fera l'objet d'un commit séparé, avec la mise à jour du README concerné.
 
@@ -24,37 +21,9 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 
 ## P1 : indispensable avant la première fonctionnalité
 
-1. **Commiter l'état actuel et ajouter un dépôt distant.**
-   - Faire des commits cohérents : retour au Hello World, scripts `dev.*`, PostgreSQL et SQLAlchemy.
-   - Ajouter un dépôt distant (GitHub ?). Sans lui, rien n'est sauvegardé ni partageable.
-
-2. **CI (GitHub Actions)** : un workflow sur chaque push et chaque PR, avec deux jobs.
-   - backend : `uv sync --locked`, `ruff check`, `ruff format --check`, `pytest` ;
-   - frontend : `pnpm install --frozen-lockfile`, `lint`, `format:check`, `typecheck`, `build`.
-
-   Le hook pre-commit se contourne facilement. La CI, elle, est la vraie garantie.
-
-3. **Vérification de types Python** : ajouter **Pyright** (ou mypy) au groupe dev, en mode `standard`, puis à la CI et au README. AGENTS.md exige les annotations de type, mais rien ne les vérifie aujourd'hui.
-
-4. **Tests frontend** : **Vitest + Testing Library + jsdom**, configurés dans `vite.config.ts`, plus un script `pnpm test`.
-   - Un premier test couvre les 3 états d'`App` : chargement, message et erreur, en simulant `fetch`.
-   - Aujourd'hui, le frontend n'a aucun test.
-
-5. **Tests d'intégration backend sur un vrai PostgreSQL.** `/health/db` n'est testé qu'avec SQLite ou un faux objet.
-   - Ajouter une base de test séparée, par exemple `tierlist_test` sur le même conteneur.
-   - Ajouter une fixture pytest qui applique les migrations Alembic, puis isole chaque test dans une transaction annulée à la fin.
-   - Ajouter un marqueur `integration`, avec un service PostgreSQL dans la CI.
-
-   C'est le socle dont toutes les futures fonctionnalités liées à la base auront besoin.
-
 6. **Configurer les logs du backend** : niveau réglable par variable d'environnement (`LOG_LEVEL`) et format homogène avec celui d'uvicorn. Pour l'instant, `logger.exception` ne s'affiche que grâce au gestionnaire de secours de Python.
 
 ## P2 : fortement recommandé
-
-7. **Épingler les versions des outils**, pour que tous les postes et la CI utilisent les mêmes :
-   - champ `packageManager` (pnpm) et `engines.node` dans `package.json` ;
-   - fichier `.nvmrc` ;
-   - `strict: true` écrit explicitement dans `tsconfig.app.json`.
 
 8. **Contrat d'API typé de bout en bout** : générer les types TypeScript à partir de l'OpenAPI de FastAPI, avec `openapi-typescript` et un script `pnpm gen:api`.
    - La CI vérifie que les types générés sont à jour.
@@ -70,8 +39,6 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 
 12. **Démarrer la base avec les scripts dev** : `dev.sh` et `dev.ps1` lanceraient `docker compose up -d --wait` avant les serveurs. Le message serait clair si Docker n'est pas lancé, et une option permettrait de sauter cette étape.
 
-13. **Mises à jour automatiques des dépendances** avec Dependabot ou Renovate, pour uv, pnpm, GitHub Actions et l'image Docker. Les mises à jour arrivent en PR, et la CI les valide.
-
 ## P3 : confort et hygiène
 
 14. **`.editorconfig`** : LF, UTF-8 et indentation, pour les éditeurs autres que VS Code.
@@ -82,13 +49,12 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 
 16. **Recherche de secrets** avant chaque commit, avec gitleaks dans le hook pre-commit, en complément du `.gitignore`.
 
-17. **Couverture de tests** : `pytest-cov` et `vitest --coverage`, avec un rapport dans la CI mais sans seuil bloquant au début.
+<!-- 17 done: list restarts at 18 to keep the original numbers -->
 
 18. **Documentation** :
-    - un court `docs/architecture.md` : couches, flux front → API → service → repository → DB, conventions ;
-    - un modèle de PR (`.github/pull_request_template.md`) reprenant la checklist d'AGENTS.md.
+    - un court `docs/architecture.md` : couches, flux front → API → service → repository → DB, conventions.
 
-19. **Messages de commit normés** (Conventional Commits, vérifiés par commitlint dans husky). C'est utile pour un changelog automatique. Optionnel.
+19. **Vérifier les messages de commit** : Conventional Commits est désormais la règle (AGENTS.md §39) ; commitlint dans husky la vérifierait automatiquement. C'est utile pour un changelog automatique. Optionnel.
 
 ## Volontairement non proposé (pour l'instant)
 
@@ -101,7 +67,7 @@ Ces points sont repoussés à plus tard (YAGNI) :
 
 ## Vérification de chaque point
 
-- Backend : `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, ainsi que Pyright une fois ajouté.
-- Frontend : `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm build`, ainsi que `pnpm test` une fois ajouté.
+- Backend : `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run pyright`.
+- Frontend : `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
 - Bout en bout : `docker compose up -d --wait`, puis `GET /health/db` doit renvoyer `{"status":"ok"}`.
 - CI : pousser une branche et vérifier que les jobs passent (`gh run watch`).
