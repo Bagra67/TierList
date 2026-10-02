@@ -30,4 +30,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    # Les champs obligatoires sont lus depuis l'environnement / .env par pydantic-settings,
+    # ce que Pyright ne peut pas savoir statiquement.
+    return Settings()  # pyright: ignore[reportCallIssue]

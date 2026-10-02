@@ -15,6 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "httpx2>=2.13.1",
+    "pyright>=1.1.414",
     "pytest>=9.1.1",
     "ruff>=0.16.10",
 ]
@@ -38,3 +39,9 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "FAST"]
 [tool.ruff.lint.flake8-bugbear]
 # Autorise Depends(), Query(), etc. comme valeurs par défaut (usage FastAPI)
 extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+include = ["app", "tests", "migrations"]
