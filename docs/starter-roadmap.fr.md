@@ -16,7 +16,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier (aussi sur `docs/`), EditorConfig, configurations de débogage VS Code (FastAPI, Vitest), hook husky pre-commit (avec scan de secrets gitleaks, aussi en CI) et hook commit-msg (commitlint), scripts `dev.*` (démarrent la base, puis les deux serveurs) ; versions de Node et pnpm épinglées.
 - **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
 - **Documentation** : architecture (`docs/architecture.fr.md`), guide des tests, feuille de route ; en anglais et en français.
-- **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request ; les branches de travail mergées sont supprimées automatiquement.
+- **CI** : GitHub Actions (jobs `Backend`, `Frontend` et `Secrets`, requis sur `develop` et `main`), Dependabot, modèle de pull request ; les branches de travail mergées sont supprimées automatiquement.
 
 Les points réalisés ont été retirés de cette liste ; les autres gardent leur numéro d'origine.
 
