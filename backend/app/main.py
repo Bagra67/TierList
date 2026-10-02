@@ -37,6 +37,13 @@ def hello() -> HelloResponse:
     return HelloResponse(message="Hello World")
 
 
+# Sonde de vie : ne dépend de rien, pour qu'une panne de la base ne fasse pas
+# redémarrer en boucle une application qui fonctionne (Docker, hébergeur).
+@app.get("/health")
+def health() -> HealthResponse:
+    return HealthResponse(status="ok")
+
+
 @app.get(
     "/health/db",
     responses={503: {"model": ErrorResponse, "description": "Base de données indisponible"}},

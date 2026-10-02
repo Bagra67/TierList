@@ -171,7 +171,7 @@ Configuré dans `pyproject.toml` (`[tool.pyright]`, mode `standard`, sur `app/`,
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health/db)
+│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health, GET /health/db)
 │   ├── core/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, handlers 422 et 500)
@@ -226,7 +226,9 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
-### Vérifier la connexion
+### Sondes de santé
+
+`GET /health` indique seulement que l'application tourne (`200 {"status": "ok"}`), sans toucher à la base : c'est la sonde de vie à donner à Docker ou à un hébergeur, pour qu'une panne de la base ne leur fasse pas redémarrer une application qui fonctionne.
 
 `GET /health/db` exécute `SELECT 1` : `200 {"status": "ok"}` si la base répond, sinon `503 {"detail": "Base de données indisponible"}` (l'erreur détaillée est dans les logs du backend).
 

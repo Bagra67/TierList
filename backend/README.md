@@ -171,7 +171,7 @@ Configured in `pyproject.toml` (`[tool.pyright]`, `standard` mode, on `app/`, `t
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # FastAPI entry point (GET /hello, GET /health/db)
+│   ├── main.py            # FastAPI entry point (GET /hello, GET /health, GET /health/db)
 │   ├── core/
 │   │   ├── config.py      # Configuration read from .env (pydantic-settings)
 │   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
@@ -226,7 +226,9 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 
-### Checking the connection
+### Health probes
+
+`GET /health` only says the application is running (`200 {"status": "ok"}`), without touching the database: use it as the liveness probe for Docker or a hosting platform, so that a database outage does not make them restart a working application.
 
 `GET /health/db` runs `SELECT 1`: `200 {"status": "ok"}` if the database answers, otherwise `503 {"detail": "Base de données indisponible"}` (the detailed error is in the backend logs).
 
