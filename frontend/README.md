@@ -13,8 +13,8 @@ English | [Français](README.fr.md)
 
 ## 1. Prerequisites
 
-- **Node.js 20.19+** (LTS recommended): `node --version`
-- **pnpm**: `npm install -g pnpm`, then `pnpm --version`
+- **Node.js 24 LTS** (version pinned in `.nvmrc` at the repository root): `node --version`
+- **pnpm**: `npm install -g pnpm`, then `pnpm --version`. The exact version is pinned in the `packageManager` field of `package.json` and locked in `pnpm-lock.yaml`.
 
 ---
 
@@ -36,9 +36,14 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 | Production build (in `dist/`) | `pnpm build`                       |
 | Preview the build             | `pnpm preview`                     |
 | Check TypeScript types        | `pnpm typecheck`                   |
+| Run the tests (Vitest)        | `pnpm test`                        |
+| Tests in watch mode           | `pnpm test:watch`                  |
+| Tests with coverage           | `pnpm test:coverage`               |
 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
 Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
+
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and the API module is mocked so tests never call the backend. CI runs `pnpm test:coverage`.
 
 ---
 
@@ -86,9 +91,12 @@ frontend/
 ├── src/
 │   ├── api/
 │   │   └── hello.ts        # GET /api/hello call to the FastAPI backend
+│   ├── test/
+│   │   └── setup.ts        # Test setup (jest-dom matchers, cleanup)
 │   ├── App.tsx             # Displays the backend message
+│   ├── App.test.tsx        # App tests: loading, message, error
 │   └── main.tsx            # React entry point
 ├── eslint.config.js
-├── vite.config.ts          # Vite config + /api proxy to the backend
+├── vite.config.ts          # Vite config + /api proxy + Vitest config
 └── package.json
 ```

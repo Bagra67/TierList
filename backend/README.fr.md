@@ -117,7 +117,21 @@ uv run <commande>
 uv run pytest
 ```
 
-Mode verbeux : `uv run pytest -v`
+Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
+
+### Tests d'intégration (vrai PostgreSQL)
+
+Les tests de `tests/integration/` (marqueur `integration`) tournent sur un vrai PostgreSQL :
+
+- Lancez d'abord la base : `docker compose up -d --wait` (depuis la racine du dépôt).
+- Ils utilisent une base dédiée `<POSTGRES_DB>_test` (ex. `tierlist_test`), créée automatiquement, avec les migrations Alembic appliquées : **les données de développement ne sont jamais touchées**.
+- Chaque test s'exécute dans une transaction annulée à la fin.
+- Si PostgreSQL est injoignable, ils sont **ignorés** en local, mais ils **échouent** en CI.
+
+| Action | Commande |
+|---|---|
+| Tests unitaires seulement | `uv run pytest -m "not integration"` |
+| Tests d'intégration seulement | `uv run pytest -m integration` |
 
 ---
 
@@ -139,6 +153,14 @@ uv run ruff check . --fix && uv run ruff format .
 
 > Dans VS Code, installez l'extension **Ruff** (`charliermarsh.ruff`) pour avoir le lint et le formatage à l'enregistrement.
 
+### Vérification des types (Pyright)
+
+```bash
+uv run pyright
+```
+
+Configuré dans `pyproject.toml` (`[tool.pyright]`, mode `standard`, sur `app/`, `tests/` et `migrations/`). Lancé aussi par la CI.
+
 ---
 
 ## 7. Structure du projet
@@ -155,7 +177,8 @@ backend/
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
 ├── migrations/            # Migrations Alembic (env.py, versions/)
 ├── tests/
-│   └── test_main.py       # Tests avec TestClient (sans base réelle)
+│   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
+│   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
 ├── .env.example           # Modèle de .env (identifiants PostgreSQL)
 ├── alembic.ini            # Configuration Alembic
 ├── .python-version        # Version de Python utilisée par uv

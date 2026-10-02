@@ -13,8 +13,8 @@ Frontend **React 19 + TypeScript**, construit avec **Vite**, qui affiche le mess
 
 ## 1. Prérequis
 
-- **Node.js 20.19+** (LTS recommandée) : `node --version`
-- **pnpm** : `npm install -g pnpm`, puis `pnpm --version`
+- **Node.js 24 LTS** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
+- **pnpm** : `npm install -g pnpm`, puis `pnpm --version`. La version exacte est épinglée dans le champ `packageManager` de `package.json` et verrouillée dans `pnpm-lock.yaml`.
 
 ---
 
@@ -36,9 +36,14 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 | Build de production (dans `dist/`)    | `pnpm build`                       |
 | Prévisualiser le build                | `pnpm preview`                     |
 | Vérifier les types TypeScript         | `pnpm typecheck`                   |
+| Lancer les tests (Vitest)             | `pnpm test`                        |
+| Tests en mode surveillance            | `pnpm test:watch`                  |
+| Tests avec couverture                 | `pnpm test:coverage`               |
 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
 Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
+
+Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et le module d'API est simulé : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`.
 
 ---
 
@@ -86,9 +91,12 @@ frontend/
 ├── src/
 │   ├── api/
 │   │   └── hello.ts        # Appel GET /api/hello vers le backend FastAPI
+│   ├── test/
+│   │   └── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
 │   ├── App.tsx             # Affiche le message du backend
+│   ├── App.test.tsx        # Tests d'App : chargement, message, erreur
 │   └── main.tsx            # Point d'entrée React
 ├── eslint.config.js
-├── vite.config.ts          # Config Vite + proxy /api vers le backend
+├── vite.config.ts          # Config Vite + proxy /api + config Vitest
 └── package.json
 ```

@@ -15,7 +15,9 @@ TierList/
 ├── frontend/           # App React    → voir frontend/README.fr.md
 │   └── .husky/         # Hook git pre-commit (pour tout le dépôt)
 ├── compose.yaml        # Base PostgreSQL de développement (Docker)
+├── .github/            # Workflow CI, Dependabot, modèle de pull request
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement…)
+├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
 ├── docs/               # Documentation (feuille de route…)
@@ -29,7 +31,7 @@ TierList/
 | Outil | Installation | Vérification |
 | --- | --- | --- |
 | **uv** | Windows : `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS/Linux : `curl -LsSf https://astral.sh/uv/install.sh \| sh` | `uv --version` |
-| **Node.js LTS** (20.19+) | Windows : `winget install OpenJS.NodeJS.LTS` — ou https://nodejs.org | `node --version` |
+| **Node.js 24 LTS** (version dans `.nvmrc`) | Windows : `winget install OpenJS.NodeJS.LTS` — ou https://nodejs.org | `node --version` |
 | **pnpm** | `npm install -g pnpm` | `pnpm --version` |
 | **Git** | https://git-scm.com | `git --version` |
 | **Docker Desktop** | Windows : `winget install -e --id Docker.DockerDesktop` (WSL2 requis, redémarrage possible), puis lancez Docker Desktop une fois — ou https://www.docker.com/products/docker-desktop | `docker info` |
@@ -124,7 +126,25 @@ Commandes manuelles :
 | Lint | `uv run ruff check .` | `pnpm lint` |
 | Corriger | `uv run ruff check . --fix` | `pnpm lint:fix` |
 | Formater | `uv run ruff format .` | `pnpm format` |
-| Tests / types | `uv run pytest` | `pnpm typecheck` |
+| Types | `uv run pyright` | `pnpm typecheck` |
+| Tests | `uv run pytest` | `pnpm test` |
+| Tests + couverture | `uv run pytest --cov=app` | `pnpm test:coverage` |
+
+Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local).
+
+### Intégration continue (GitHub Actions)
+
+`.github/workflows/ci.yml` tourne sur chaque pull request et chaque push sur `develop` et `main` :
+
+| Job | Étapes |
+| --- | --- |
+| **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest avec couverture, build de production |
+
+- Les résumés de couverture apparaissent dans le résumé de l'exécution (sans seuil bloquant).
+- Les deux jobs sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
+- **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
+- Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
 
 ---
 
