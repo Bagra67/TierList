@@ -1302,6 +1302,14 @@ git fetch --prune
 
 `main` and `develop` are long-lived and MUST never be deleted.
 
+GitHub's "Automatically delete head branches" setting is deliberately
+**disabled**: on a release PR the head branch is `develop`, and admins
+bypass the ruleset that forbids its deletion (it deleted `develop` when
+v0.1.0 was released). Work branches are therefore deleted only by
+`--delete-branch` (or manually as above). Never pass `--delete-branch`
+when merging a release PR, and check that `origin/develop` still exists
+after each release.
+
 ------------------------------------------------------------------------
 
 # 41. Backlog / TODO Tasks
