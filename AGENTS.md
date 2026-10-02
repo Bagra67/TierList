@@ -960,6 +960,27 @@ Do not leave misleading comments.
 
 Update comments when behavior changes.
 
+## Documentation language
+
+All human-facing documentation (READMEs, files under `docs/`, guides)
+MUST exist in **English and French**:
+
+-   `name.md` is the English version and the reference.
+-   `name.fr.md` is the French version, in the same directory.
+-   Each file starts with a language switcher:
+    `English | [Français](name.fr.md)` in the English file and
+    `[English](name.md) | Français` in the French one.
+-   Relative links point to files in the same language
+    (e.g. `README.fr.md` links to `backend/README.fr.md`).
+-   Both versions MUST be updated in the same PR and stay equivalent in
+    content.
+
+Exceptions:
+
+-   `AGENTS.md` stays English-only (instructions for agents).
+-   `LICENSE` is already bilingual in a single file.
+-   Code comments are not concerned.
+
 ------------------------------------------------------------------------
 
 # 32. Logging and Observability
@@ -1155,6 +1176,17 @@ Review the final diff.
 
 When asked to create a commit, use a clear, focused commit message.
 
+Commit messages and branch names follow **Conventional Commits**:
+
+-   Commits: `type(scope): summary` (e.g. `feat(backend): ...`,
+    `docs: ...`).
+-   Branches: `type/short-topic` (e.g. `chore/starter-setup`).
+
+Everything git-related MUST be written in **English**: commit messages
+(subject and body), branch names, pull request titles and descriptions,
+including squash and merge commit messages. Existing French history is
+left as is.
+
 ------------------------------------------------------------------------
 
 # 40. Pull Requests
@@ -1178,6 +1210,46 @@ The PR description should explain:
 
 Do not create a PR claiming successful validation if validation was not
 actually performed.
+
+## Merging
+
+Pull requests MUST be merged with a **squash merge**: each PR becomes a
+single commit on the target branch.
+
+**Exception — release PRs (`develop` → `main`)** MUST use a regular
+**merge commit** (no squash, no rebase). Squashing them would give `main`
+commits that `develop` does not have, making the two branches diverge.
+The merge commit message follows the same format, e.g.
+`chore(release): merge develop into main (#2)`.
+
+The squash commit message MUST:
+
+-   Follow Conventional Commits.
+-   Summarize the PR very briefly: a subject line plus, at most, a few
+    short bullet points.
+-   End the subject line with the PR number, e.g. `(#12)`.
+
+Example:
+
+``` text
+chore: bootstrap the starter (Hello World, PostgreSQL, tooling) (#1)
+
+- frontend reduced to the backend Hello World, dev.* scripts
+- backend wired to PostgreSQL (Docker, SQLAlchemy, Alembic, /health/db)
+```
+
+With the GitHub CLI:
+
+``` bash
+# Feature PR -> develop
+gh pr merge <N> --squash --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
+
+# Release PR develop -> main
+gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<short bullets>"
+```
+
+These merge methods are also enforced by the GitHub rulesets: `develop`
+only allows squash merges, `main` only allows merge commits.
 
 ------------------------------------------------------------------------
 
