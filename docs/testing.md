@@ -91,6 +91,14 @@ The fixtures in `tests/integration/conftest.py` prepare the database in steps. E
 - **Locally**, integration tests are **skipped**, with the message `PostgreSQL is not reachable: start it with docker compose up -d --wait`. The other tests still run.
 - **On CI** (`CI=true`), they **fail** instead: a missing database there is a real problem that must not be hidden.
 
+### 1.6 Contract test: `tests/test_openapi.py` (API contract)
+
+| Test | What it does | Purpose | Expected result |
+| --- | --- | --- | --- |
+| `test_openapi_schema_is_up_to_date` | Builds the OpenAPI schema from the application (`render_openapi()` in `scripts/export_openapi.py`) and compares it with the committed `backend/openapi.json`. | The frontend generates its TypeScript types from this file: it must always match the real API. | Identical. Otherwise the test fails and tells you to run `uv run python scripts/export_openapi.py`, then `pnpm gen:api`. |
+
+On the frontend side, the CI step **Check API types are up to date** regenerates `src/api/schema.d.ts` and fails if it differs from the committed file. A contract change that breaks the frontend makes `pnpm typecheck` fail, including in the test mocks.
+
 ---
 
 ## 2. Frontend (Vitest)

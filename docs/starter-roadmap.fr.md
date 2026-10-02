@@ -10,6 +10,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Base** PostgreSQL 18 dans Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
 - **Logs** : logs de l'application configurés via `LOG_LEVEL`, au format d'uvicorn.
+- **Contrat d'API** : `backend/openapi.json` exporté et vérifié ; types d'API du frontend générés à partir de lui (`pnpm gen:api`).
 - **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier, hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
 - **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
 - **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request.
@@ -25,10 +26,6 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 Tous les points P1 sont réalisés.
 
 ## P2 : fortement recommandé
-
-8. **Contrat d'API typé de bout en bout** : générer les types TypeScript à partir de l'OpenAPI de FastAPI, avec `openapi-typescript` et un script `pnpm gen:api`.
-   - La CI vérifie que les types générés sont à jour.
-   - Aujourd'hui, `HelloResponse` est recopié à la main côté frontend, alors qu'AGENTS.md §23 demande que ce contrat reste synchronisé.
 
 9. **Choisir la couche de récupération de données côté front** : **TanStack Query** au-dessus d'un petit client `fetch` commun (URL de base et gestion d'erreur uniformes).
    - Sinon, chaque fonctionnalité réinventera son `useEffect`, ce qu'AGENTS.md §17 déconseille.

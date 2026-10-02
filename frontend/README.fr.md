@@ -90,7 +90,8 @@ frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
 │   ├── api/
-│   │   └── hello.ts        # Appel GET /api/hello vers le backend FastAPI
+│   │   ├── hello.ts        # Appel GET /api/hello vers le backend FastAPI
+│   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── test/
 │   │   └── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
 │   ├── App.tsx             # Affiche le message du backend
@@ -100,3 +101,26 @@ frontend/
 ├── vite.config.ts          # Config Vite + proxy /api + config Vitest
 └── package.json
 ```
+
+---
+
+## 7. Types d'API (générés)
+
+Les types d'API ne sont **jamais écrits à la main** : `src/api/schema.d.ts` est généré par `pnpm gen:api` à partir de `backend/openapi.json`, le contrat exporté par le backend. Utilisez-les via `components['schemas'][...]`, comme dans `src/api/hello.ts` :
+
+```ts
+import type { components } from './schema';
+
+export type HelloResponse = components['schemas']['HelloResponse'];
+```
+
+Un changement du backend qui casse le frontend devient alors une erreur de `pnpm typecheck`.
+
+Quand vous ajoutez ou modifiez une route ou un schéma Pydantic :
+
+1. `uv run python scripts/export_openapi.py` (dans `backend/`) met à jour `openapi.json` ;
+2. `pnpm gen:api` (dans `frontend/`) régénère les types TypeScript ;
+3. corrigez les éventuelles erreurs de `pnpm typecheck` : elles montrent le code frontend touché par le changement ;
+4. commitez ensemble `backend/openapi.json` et `frontend/src/api/schema.d.ts`.
+
+Si vous oubliez l'étape 1, le test backend `test_openapi_schema_is_up_to_date` échoue ; si vous oubliez l'étape 2, l'étape CI « Check API types are up to date » échoue.
