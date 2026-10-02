@@ -16,7 +16,7 @@ TierList/
 │   └── .husky/         # Hook git pre-commit (pour tout le dépôt)
 ├── compose.yaml        # Base PostgreSQL de développement (Docker)
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
-├── .vscode/            # Config VS Code partagée (format à l'enregistrement…)
+├── .vscode/            # Config VS Code partagée (format à l'enregistrement, configurations de débogage…)
 ├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
@@ -111,9 +111,13 @@ Le frontend affiche le « Hello World » renvoyé par le backend. Il l'appelle v
 
 ## 4. Qualité du code (automatique)
 
-**Dans VS Code** : à l'ouverture du dossier `TierList`, acceptez l'installation des extensions recommandées (ESLint, Prettier, Ruff, Python). Le code est alors corrigé et formaté **à chaque enregistrement** :
+**Dans VS Code** : à l'ouverture du dossier `TierList`, acceptez l'installation des extensions recommandées (ESLint, Prettier, Ruff, Python, Python Debugger, Docker). Le code est alors corrigé et formaté **à chaque enregistrement** :
 - `.ts` / `.tsx` / `.json` / `.css` → Prettier + ESLint
 - `.py` → Ruff
+
+**Déboguer dans VS Code** (`.vscode/launch.json`, vue **Exécuter et déboguer**, puis F5) :
+- **Backend: FastAPI** lance uvicorn sur le port 8000 sous le débogueur : les points d'arrêt dans `backend/app/` arrêtent la requête. Pas de rechargement automatique dans ce mode ; arrêtez `dev.sh` avant, le port est le même.
+- **Frontend: Vitest (current file)** lance les tests du fichier de test ouvert, avec points d'arrêt dans les tests et dans `frontend/src/`.
 
 **Avant chaque commit**, le hook git `frontend/.husky/pre-commit` lance :
 1. `lint-staged` sur les fichiers du frontend modifiés (ESLint `--fix` + Prettier) ;

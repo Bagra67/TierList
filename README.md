@@ -16,7 +16,7 @@ TierList/
 │   └── .husky/         # Git pre-commit hook (for the whole repository)
 ├── compose.yaml        # Development PostgreSQL database (Docker)
 ├── .github/            # CI workflow, Dependabot, pull request template
-├── .vscode/            # Shared VS Code settings (format on save…)
+├── .vscode/            # Shared VS Code settings (format on save, debug configurations…)
 ├── .editorconfig       # Encoding, line endings, indentation for every editor
 ├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
@@ -111,9 +111,13 @@ The frontend displays the "Hello World" returned by the backend. It calls it thr
 
 ## 4. Code quality (automatic)
 
-**In VS Code**: when opening the `TierList` folder, accept installing the recommended extensions (ESLint, Prettier, Ruff, Python). Code is then fixed and formatted **on every save**:
+**In VS Code**: when opening the `TierList` folder, accept installing the recommended extensions (ESLint, Prettier, Ruff, Python, Python Debugger, Docker). Code is then fixed and formatted **on every save**:
 - `.ts` / `.tsx` / `.json` / `.css` → Prettier + ESLint
 - `.py` → Ruff
+
+**Debugging in VS Code** (`.vscode/launch.json`, **Run and Debug** view, then F5):
+- **Backend: FastAPI** starts uvicorn on port 8000 under the debugger: breakpoints in `backend/app/` stop the request. No auto-reload in this mode; stop `dev.sh` first, as the port is the same.
+- **Frontend: Vitest (current file)** runs the tests of the open test file with breakpoints in the tests and in `frontend/src/`.
 
 **Before each commit**, the `frontend/.husky/pre-commit` git hook runs:
 1. `lint-staged` on the modified frontend files (ESLint `--fix` + Prettier);
