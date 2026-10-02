@@ -13,7 +13,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Erreurs** : format d'erreur JSON unique (`ErrorResponse`) pour les erreurs HTTP, de validation et imprévues ; lu par `ApiError` côté frontend.
 - **Contrat d'API** : `backend/openapi.json` exporté et vérifié ; types d'API du frontend générés à partir de lui (`pnpm gen:api`).
 - **Récupération des données** : TanStack Query au-dessus d'un client openapi-fetch commun, typé par le contrat d'API.
-- **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier (aussi sur `docs/`), hook husky pre-commit, scripts `dev.*` (démarrent la base, puis les deux serveurs) ; versions de Node et pnpm épinglées.
+- **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier (aussi sur `docs/`), EditorConfig, hook husky pre-commit, scripts `dev.*` (démarrent la base, puis les deux serveurs) ; versions de Node et pnpm épinglées.
 - **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
 - **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request ; les branches de travail mergées sont supprimées automatiquement.
 
@@ -32,8 +32,6 @@ Tous les points P1 sont réalisés.
 Tous les points P2 sont réalisés.
 
 ## P3 : confort et hygiène
-
-14. **`.editorconfig`** : LF, UTF-8 et indentation, pour les éditeurs autres que VS Code.
 
 15. **VS Code** :
     - `launch.json` pour déboguer FastAPI et Vitest (il faut l'autoriser dans `.gitignore`) ;

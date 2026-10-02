@@ -17,6 +17,7 @@ TierList/
 ├── compose.yaml        # Base PostgreSQL de développement (Docker)
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement…)
+├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
