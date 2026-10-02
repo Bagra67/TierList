@@ -18,8 +18,8 @@
     "gen:api": "openapi-typescript ../backend/openapi.json -o src/api/schema.d.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --config .prettierrc --write . ../docs",
+    "format:check": "prettier --config .prettierrc --check . ../docs",
     "prepare": "cd .. && husky frontend/.husky"
   },
   "lint-staged": {
@@ -30,6 +30,8 @@
     "*.{json,css,md,html}": "prettier --write"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.104.0",
+    "openapi-fetch": "^0.17.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

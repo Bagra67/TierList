@@ -43,7 +43,7 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
 Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
 
-Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and the API module is mocked so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/testing.md).
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/testing.md).
 
 ---
 
@@ -81,6 +81,8 @@ It happens automatically in two places:
 
 Configuration: `eslint.config.js`, `.prettierrc`, `.prettierignore`, `lint-staged` section of `package.json`.
 
+`pnpm format` and `pnpm format:check` also cover the repository's `docs/` folder, with the same `.prettierrc` (CI checks it too). The pre-commit hook does not format `docs/`: run `pnpm format` before committing a doc change.
+
 ---
 
 ## 6. Project structure
@@ -90,10 +92,14 @@ frontend/
 ├── public/                 # Static files served as is (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── hello.ts        # GET /api/hello call to the FastAPI backend
+│   │   ├── client.ts       # Shared HTTP client (openapi-fetch) + ApiError
+│   │   ├── queryClient.ts  # TanStack Query setup (retry, error logging)
+│   │   ├── hello.ts        # GET /hello: getHello() + useHello() hook
+│   │   ├── hello.test.ts   # getHello tests: URL, JSON, ApiError
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── test/
-│   │   └── setup.ts        # Test setup (jest-dom matchers, cleanup)
+│   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup)
+│   │   └── renderWithQueryClient.tsx # render() inside a fresh QueryClient
 │   ├── App.tsx             # Displays the backend message
 │   ├── App.test.tsx        # App tests: loading, message, error
 │   └── main.tsx            # React entry point
@@ -124,3 +130,37 @@ When you add or change a route or a Pydantic schema:
 4. commit `backend/openapi.json` and `frontend/src/api/schema.d.ts` together.
 
 If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails; if you forget step 2, the CI step "Check API types are up to date" fails.
+
+---
+
+## 8. Data fetching
+
+Server data goes through **TanStack Query** on top of a shared **openapi-fetch** client. Components never call `fetch` or `useEffect` to load data:
+
+```
+Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
+```
+
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`status`, `body`) is thrown for any non-2xx response.
+- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
+- TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
+
+To add an endpoint, create `src/api/<resource>.ts` following `hello.ts`:
+
+```ts
+export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
+  const { data, error, response } = await apiClient.GET('/hello', { signal });
+  if (data === undefined) {
+    throw new ApiError(response.status, error);
+  }
+  return data;
+}
+
+export function useHello() {
+  return useQuery({ queryKey: ['hello'], queryFn: ({ signal }) => getHello(signal) });
+}
+```
+
+The component then only reads the state: `const { data, isPending, isError } = useHello();`.
+
+In tests, render components with `renderWithQueryClient` (`src/test/`) and stub `fetch`, as in `App.test.tsx`.

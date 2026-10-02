@@ -11,9 +11,10 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
 - **Logs** : logs de l'application configurés via `LOG_LEVEL`, au format d'uvicorn.
 - **Contrat d'API** : `backend/openapi.json` exporté et vérifié ; types d'API du frontend générés à partir de lui (`pnpm gen:api`).
-- **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier, hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
+- **Récupération des données** : TanStack Query au-dessus d'un client openapi-fetch commun, typé par le contrat d'API.
+- **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier (aussi sur `docs/`), hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
 - **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
-- **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request.
+- **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request ; les branches de travail mergées sont supprimées automatiquement.
 
 Les points réalisés ont été retirés de cette liste ; les autres gardent leur numéro d'origine.
 
@@ -27,11 +28,7 @@ Tous les points P1 sont réalisés.
 
 ## P2 : fortement recommandé
 
-9. **Choisir la couche de récupération de données côté front** : **TanStack Query** au-dessus d'un petit client `fetch` commun (URL de base et gestion d'erreur uniformes).
-   - Sinon, chaque fonctionnalité réinventera son `useEffect`, ce qu'AGENTS.md §17 déconseille.
-   - *C'est une décision à valider.*
-
-10. **Format d'erreur unique côté backend** : gestionnaires globaux pour les exceptions non prévues (réponse 500 générique et journalisée) et pour les erreurs de validation, tous au même format JSON. Le frontend pourra alors toutes les traiter de la même façon.
+10. **Format d'erreur unique côté backend** : gestionnaires globaux pour les exceptions non prévues (réponse 500 générique et journalisée) et pour les erreurs de validation, tous au même format JSON. Le frontend pourra alors toutes les traiter de la même façon, via `ApiError` (`frontend/src/api/client.ts`).
 
 11. **Séparer les sondes de santé** : `/health` vérifie seulement que l'application répond, `/health/db` que la base est joignable. Docker ou un hébergeur utilise la première, le diagnostic la seconde.
 
@@ -57,6 +54,7 @@ Tous les points P1 sont réalisés.
 ## Volontairement non proposé (pour l'instant)
 
 Ces points sont repoussés à plus tard (YAGNI) :
+
 - **Dockerfiles de production et déploiement** : à faire quand une cible d'hébergement sera choisie.
 - **Authentification, routage front (react-router), bibliothèque d'interface** : ce sont des choix liés aux fonctionnalités.
 - **Réorganiser `main.py` en `api/routes/` et en services** : à faire avec la première vraie ressource, pas avant.

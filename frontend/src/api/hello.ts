@@ -1,13 +1,22 @@
+import { useQuery } from '@tanstack/react-query';
+
+import { ApiError, apiClient } from './client';
 import type { components } from './schema';
 
 // Généré depuis le schéma Pydantic HelloResponse du backend (pnpm gen:api) : jamais recopié à la main
 export type HelloResponse = components['schemas']['HelloResponse'];
 
-// '/api' est redirigé vers le backend FastAPI par le proxy Vite (vite.config.ts)
 export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
-  const response = await fetch('/api/hello', { signal });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  const { data, error, response } = await apiClient.GET('/hello', { signal });
+  if (data === undefined) {
+    throw new ApiError(response.status, error);
   }
-  return response.json() as Promise<HelloResponse>;
+  return data;
+}
+
+export function useHello() {
+  return useQuery({
+    queryKey: ['hello'],
+    queryFn: ({ signal }) => getHello(signal),
+  });
 }

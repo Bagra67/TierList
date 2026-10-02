@@ -43,7 +43,7 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
 Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
 
-Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et le module d'API est simulé : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/testing.fr.md).
+Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/testing.fr.md).
 
 ---
 
@@ -81,6 +81,8 @@ C'est automatique à deux endroits :
 
 Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
 
+`pnpm format` et `pnpm format:check` couvrent aussi le dossier `docs/` du dépôt, avec le même `.prettierrc` (la CI le vérifie aussi). Le hook pre-commit ne formate pas `docs/` : lancez `pnpm format` avant de commiter une modification de doc.
+
 ---
 
 ## 6. Structure du projet
@@ -90,10 +92,14 @@ frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── hello.ts        # Appel GET /api/hello vers le backend FastAPI
+│   │   ├── client.ts       # Client HTTP commun (openapi-fetch) + ApiError
+│   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
+│   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
+│   │   ├── hello.test.ts   # Tests de getHello : URL, JSON, ApiError
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── test/
-│   │   └── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
+│   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
+│   │   └── renderWithQueryClient.tsx # render() dans un QueryClient neuf
 │   ├── App.tsx             # Affiche le message du backend
 │   ├── App.test.tsx        # Tests d'App : chargement, message, erreur
 │   └── main.tsx            # Point d'entrée React
@@ -124,3 +130,37 @@ Quand vous ajoutez ou modifiez une route ou un schéma Pydantic :
 4. commitez ensemble `backend/openapi.json` et `frontend/src/api/schema.d.ts`.
 
 Si vous oubliez l'étape 1, le test backend `test_openapi_schema_is_up_to_date` échoue ; si vous oubliez l'étape 2, l'étape CI « Check API types are up to date » échoue.
+
+---
+
+## 8. Récupération des données
+
+Les données du serveur passent par **TanStack Query**, au-dessus d'un client **openapi-fetch** commun. Les composants n'appellent jamais `fetch` ni `useEffect` pour charger des données :
+
+```
+Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
+```
+
+- `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`status`, `body`) est levée pour toute réponse hors 2xx.
+- `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec dans la console, à un seul endroit.
+- TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
+
+Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `hello.ts` :
+
+```ts
+export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
+  const { data, error, response } = await apiClient.GET('/hello', { signal });
+  if (data === undefined) {
+    throw new ApiError(response.status, error);
+  }
+  return data;
+}
+
+export function useHello() {
+  return useQuery({ queryKey: ['hello'], queryFn: ({ signal }) => getHello(signal) });
+}
+```
+
+Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useHello();`.
+
+Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch`, comme dans `App.test.tsx`.

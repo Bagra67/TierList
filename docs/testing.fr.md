@@ -4,13 +4,13 @@
 
 Ce guide explique le fonctionnement des tests de TierList : les outils utilisés, ce que fait chaque test, son but et le résultat attendu.
 
-| | Backend | Frontend |
-| --- | --- | --- |
-| Outil de test | [pytest](https://docs.pytest.org/) | [Vitest](https://vitest.dev/) |
-| Compléments | `TestClient` de FastAPI, fixtures pytest, pytest-cov | Testing Library, jsdom, jest-dom, couverture v8 |
-| Emplacement | `backend/tests/` | à côté du code : `frontend/src/**/*.test.tsx` |
-| Lancer | `uv run pytest` (dans `backend/`) | `pnpm test` (dans `frontend/`) |
-| Couverture | `uv run pytest --cov=app` | `pnpm test:coverage` |
+|               | Backend                                              | Frontend                                        |
+| ------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| Outil de test | [pytest](https://docs.pytest.org/)                   | [Vitest](https://vitest.dev/)                   |
+| Compléments   | `TestClient` de FastAPI, fixtures pytest, pytest-cov | Testing Library, jsdom, jest-dom, couverture v8 |
+| Emplacement   | `backend/tests/`                                     | à côté du code : `frontend/src/**/*.test.tsx`   |
+| Lancer        | `uv run pytest` (dans `backend/`)                    | `pnpm test` (dans `frontend/`)                  |
+| Couverture    | `uv run pytest --cov=app`                            | `pnpm test:coverage`                            |
 
 Les deux suites de tests tournent aussi sur **chaque pull request** dans la CI (`.github/workflows/ci.yml`). Une PR ne peut pas être fusionnée dans `develop` ou `main` tant qu'un test échoue.
 
@@ -22,7 +22,7 @@ Les deux suites de tests tournent aussi sur **chaque pull request** dans la CI (
 
 - **Découverte** : pytest cherche dans `tests/` (configuré dans `pyproject.toml`) les fichiers nommés `test_*.py`, et exécute chaque fonction nommée `test_*` qu'ils contiennent.
 - **Assertions** : un test est une simple fonction qui utilise `assert`. Si un `assert` échoue ou si une exception est levée, le test **échoue**, et pytest affiche les valeurs comparées.
-- **Fixtures** : une préparation réutilisable, passée au test via ses paramètres. Par exemple, `def test_x(client)` reçoit la fixture `client`. Une fixture peut exécuter du nettoyage après le test (la partie après `yield`). Sa *portée* (*scope*) indique à quelle fréquence elle est créée : à chaque test (par défaut) ou une seule fois par exécution (`scope="session"`).
+- **Fixtures** : une préparation réutilisable, passée au test via ses paramètres. Par exemple, `def test_x(client)` reçoit la fixture `client`. Une fixture peut exécuter du nettoyage après le test (la partie après `yield`). Sa _portée_ (_scope_) indique à quelle fréquence elle est créée : à chaque test (par défaut) ou une seule fois par exécution (`scope="session"`).
 - **Fixtures intégrées utilisées ici** :
   - `monkeypatch` modifie des variables d'environnement ou le dossier courant, pour un seul test ;
   - `tmp_path` fournit un dossier temporaire vide ;
@@ -33,14 +33,14 @@ Les deux suites de tests tournent aussi sur **chaque pull request** dans la CI (
 
 ### 1.2 Lancer les tests
 
-| Commande (dans `backend/`) | Effet |
-| --- | --- |
-| `uv run pytest` | Tous les tests |
-| `uv run pytest -v` | Une ligne par test, avec son nom et son résultat |
-| `uv run pytest -m "not integration"` | Tests unitaires seulement (pas besoin de base) |
-| `uv run pytest -m integration` | Tests d'intégration seulement (base nécessaire) |
-| `uv run pytest --cov=app` | Tous les tests, plus un tableau de couverture de `app/` |
-| `uv run pytest tests/test_logging.py::test_log_level_defaults_to_info` | Un seul test |
+| Commande (dans `backend/`)                                             | Effet                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| `uv run pytest`                                                        | Tous les tests                                          |
+| `uv run pytest -v`                                                     | Une ligne par test, avec son nom et son résultat        |
+| `uv run pytest -m "not integration"`                                   | Tests unitaires seulement (pas besoin de base)          |
+| `uv run pytest -m integration`                                         | Tests d'intégration seulement (base nécessaire)         |
+| `uv run pytest --cov=app`                                              | Tous les tests, plus un tableau de couverture de `app/` |
+| `uv run pytest tests/test_logging.py::test_log_level_defaults_to_info` | Un seul test                                            |
 
 Les tests d'intégration ont besoin que PostgreSQL tourne : `docker compose up -d --wait` depuis la racine du dépôt.
 
@@ -48,25 +48,26 @@ Les tests d'intégration ont besoin que PostgreSQL tourne : `docker compose up -
 
 Ces tests appellent l'API avec `TestClient`. Ils n'ont jamais besoin d'une vraie base de données.
 
-| Test | Ce qu'il fait | But | Résultat attendu |
-| --- | --- | --- | --- |
-| `test_hello` | Appelle `GET /hello`. | Vérifier la route affichée par le frontend. | `200` et `{"message": "Hello World"}`. |
-| `test_health_db_ok` | Remplace la session de base par une session sur une base **SQLite en mémoire**, puis appelle `GET /health/db`. | Vérifier le cas nominal du contrôle de la base, sans PostgreSQL. | `200` et `{"status": "ok"}`. |
+| Test                         | Ce qu'il fait                                                                                                                                 | But                                                                                 | Résultat attendu                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `test_hello`                 | Appelle `GET /hello`.                                                                                                                         | Vérifier la route affichée par le frontend.                                         | `200` et `{"message": "Hello World"}`.                 |
+| `test_health_db_ok`          | Remplace la session de base par une session sur une base **SQLite en mémoire**, puis appelle `GET /health/db`.                                | Vérifier le cas nominal du contrôle de la base, sans PostgreSQL.                    | `200` et `{"status": "ok"}`.                           |
 | `test_health_db_unavailable` | Remplace la session par un faux objet dont `execute` lève une `OperationalError`, l'erreur que SQLAlchemy lève quand la base est injoignable. | Vérifier qu'une panne de base devient une erreur d'API propre, sans détail interne. | `503` et `{"detail": "Base de données indisponible"}`. |
 
 La fixture `clear_dependency_overrides` s'exécute automatiquement après chaque test (`autouse=True`) et retire les remplacements : les tests ne s'influencent jamais entre eux.
 
 ### 1.4 Tests unitaires : `tests/test_logging.py` (logs)
 
-| Test | Ce qu'il fait | But | Résultat attendu |
-| --- | --- | --- | --- |
-| `test_log_level_defaults_to_info` | Supprime `LOG_LEVEL`, puis lit la configuration des logs. | Vérifier le niveau par défaut. | `log_level == "INFO"`. |
-| `test_log_level_is_case_insensitive` | Définit `LOG_LEVEL=debug`. | On doit pouvoir écrire le niveau en minuscules. | `log_level == "DEBUG"`. |
-| `test_invalid_log_level_is_rejected` | Définit `LOG_LEVEL=LOUD`. | Une faute de frappe doit être détectée au lieu d'être ignorée silencieusement. | Une `ValidationError` est levée. |
-| `test_app_logs_use_uvicorn_format_and_respect_level` | Règle le niveau sur `WARNING`, écrit un log `info` et un log `warning`, et capture stderr avec `capsys`. | Vérifier le filtrage par niveau et le format de sortie. | Le message `info` est absent ; la sortie contient `WARNING:` et `app.example - visible message`. |
-| `test_database_failure_is_logged_with_traceback` | Simule une base injoignable, appelle `GET /health/db` et capture stderr. | Une panne de base doit être visible dans les logs du serveur, avec le détail de l'erreur, pour le diagnostic. | `503` ; stderr contient `ERROR:`, `app.main - Échec de la connexion à la base de données` et `OperationalError`. |
+| Test                                                 | Ce qu'il fait                                                                                            | But                                                                                                           | Résultat attendu                                                                                                 |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `test_log_level_defaults_to_info`                    | Supprime `LOG_LEVEL`, puis lit la configuration des logs.                                                | Vérifier le niveau par défaut.                                                                                | `log_level == "INFO"`.                                                                                           |
+| `test_log_level_is_case_insensitive`                 | Définit `LOG_LEVEL=debug`.                                                                               | On doit pouvoir écrire le niveau en minuscules.                                                               | `log_level == "DEBUG"`.                                                                                          |
+| `test_invalid_log_level_is_rejected`                 | Définit `LOG_LEVEL=LOUD`.                                                                                | Une faute de frappe doit être détectée au lieu d'être ignorée silencieusement.                                | Une `ValidationError` est levée.                                                                                 |
+| `test_app_logs_use_uvicorn_format_and_respect_level` | Règle le niveau sur `WARNING`, écrit un log `info` et un log `warning`, et capture stderr avec `capsys`. | Vérifier le filtrage par niveau et le format de sortie.                                                       | Le message `info` est absent ; la sortie contient `WARNING:` et `app.example - visible message`.                 |
+| `test_database_failure_is_logged_with_traceback`     | Simule une base injoignable, appelle `GET /health/db` et capture stderr.                                 | Une panne de base doit être visible dans les logs du serveur, avec le détail de l'erreur, pour le diagnostic. | `503` ; stderr contient `ERROR:`, `app.main - Échec de la connexion à la base de données` et `OperationalError`. |
 
 Deux fixtures rendent ces tests indépendants :
+
 - `no_env_file` place le test dans un dossier temporaire vide (`tmp_path`). Votre `.env` local n'est donc jamais lu, et seules les variables définies par le test comptent.
 - `restore_default_logging` s'exécute après chaque test : elle remet la configuration des logs sur `INFO` et retire les remplacements de dépendances.
 
@@ -76,25 +77,26 @@ Ces tests vérifient ce que les faux objets ne peuvent pas vérifier : la vraie 
 
 Les fixtures de `tests/integration/conftest.py` préparent la base par étapes. Chaque étape s'appuie sur la précédente :
 
-| Fixture | Portée | Ce qu'elle fait |
-| --- | --- | --- |
-| `test_database_url` | une fois par exécution | Lit la configuration PostgreSQL, se connecte au serveur et crée la base **`<POSTGRES_DB>_test`** (ex. `tierlist_test`) si elle n'existe pas. Les données de développement ne sont **jamais touchées**. |
-| `migrated_engine` | une fois par exécution | Applique les migrations Alembic (`upgrade head`) sur la base de test, puis fournit un moteur de connexion. |
-| `db_session` | à chaque test | Ouvre une transaction et donne au test une session à l'intérieur. À la fin du test, la transaction est **annulée** (*rollback*) : rien de ce que le test a écrit ne subsiste, et chaque test part d'une base propre. |
-| `client` | à chaque test | Un `TestClient` dont la dépendance de base de données utilise `db_session`. |
+| Fixture             | Portée                 | Ce qu'elle fait                                                                                                                                                                                                      |
+| ------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_database_url` | une fois par exécution | Lit la configuration PostgreSQL, se connecte au serveur et crée la base **`<POSTGRES_DB>_test`** (ex. `tierlist_test`) si elle n'existe pas. Les données de développement ne sont **jamais touchées**.               |
+| `migrated_engine`   | une fois par exécution | Applique les migrations Alembic (`upgrade head`) sur la base de test, puis fournit un moteur de connexion.                                                                                                           |
+| `db_session`        | à chaque test          | Ouvre une transaction et donne au test une session à l'intérieur. À la fin du test, la transaction est **annulée** (_rollback_) : rien de ce que le test a écrit ne subsiste, et chaque test part d'une base propre. |
+| `client`            | à chaque test          | Un `TestClient` dont la dépendance de base de données utilise `db_session`.                                                                                                                                          |
 
-| Test | Ce qu'il fait | But | Résultat attendu |
-| --- | --- | --- | --- |
+| Test                                   | Ce qu'il fait                                           | But                                                                               | Résultat attendu             |
+| -------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------- |
 | `test_health_db_against_real_postgres` | Appelle `GET /health/db` avec la vraie session de base. | Vérifier toute la chaîne : configuration, SQLAlchemy, driver psycopg, PostgreSQL. | `200` et `{"status": "ok"}`. |
 
 **Quand PostgreSQL n'est pas disponible :**
-- **En local**, les tests d'intégration sont **ignorés** (*skipped*), avec le message `PostgreSQL is not reachable: start it with docker compose up -d --wait`. Les autres tests tournent quand même.
+
+- **En local**, les tests d'intégration sont **ignorés** (_skipped_), avec le message `PostgreSQL is not reachable: start it with docker compose up -d --wait`. Les autres tests tournent quand même.
 - **En CI** (`CI=true`), ils **échouent** : une base absente y est un vrai problème, qui ne doit pas être masqué.
 
 ### 1.6 Test de contrat : `tests/test_openapi.py` (contrat d'API)
 
-| Test | Ce qu'il fait | But | Résultat attendu |
-| --- | --- | --- | --- |
+| Test                                | Ce qu'il fait                                                                                                                                                        | But                                                                                                            | Résultat attendu                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `test_openapi_schema_is_up_to_date` | Construit le schéma OpenAPI à partir de l'application (`render_openapi()` dans `scripts/export_openapi.py`) et le compare au fichier commité `backend/openapi.json`. | Le frontend génère ses types TypeScript à partir de ce fichier : il doit toujours correspondre à la vraie API. | Identiques. Sinon le test échoue et indique de lancer `uv run python scripts/export_openapi.py`, puis `pnpm gen:api`. |
 
 Côté frontend, l'étape CI **Check API types are up to date** régénère `src/api/schema.d.ts` et échoue s'il diffère du fichier commité. Un changement de contrat qui casse le frontend fait échouer `pnpm typecheck`, y compris dans les simulations des tests.
@@ -116,38 +118,49 @@ Côté frontend, l'étape CI **Check API types are up to date** régénère `src
   - `screen` cherche dans la page **comme un utilisateur la voit** : par texte visible (`getByText`) ou par rôle d'accessibilité (`getByRole('heading')`, `findByRole('alert')`) ;
   - `getBy…` cherche immédiatement, tandis que `findBy…` **attend** que l'élément apparaisse, ce qui est utile après un appel asynchrone.
 - **jest-dom** : ajoute des assertions lisibles comme `toBeInTheDocument()` et `toHaveTextContent()`. Il est chargé par `src/test/setup.ts`, qui démonte aussi les composants après chaque test.
-- **Simulations** (`vi.mock`, `vi.mocked`, `vi.spyOn`) : remplacent un module ou une fonction par une version factice dont le test décide le comportement. Ici, le module d'API (`src/api/hello.ts`) est simulé : les tests **n'appellent jamais le vrai backend**. Ils sont donc rapides et ne dépendent d'aucun serveur lancé.
+- **Simulations** (`vi.fn`, `vi.stubGlobal`, `vi.spyOn`) : remplacent une fonction par une version factice dont le test décide le comportement. Ici, le `fetch` global est remplacé par `vi.stubGlobal('fetch', …)` et restauré par `vi.unstubAllGlobals()` après chaque test : les tests **n'appellent jamais le vrai backend**. Ils sont donc rapides et ne dépendent d'aucun serveur lancé. Tout ce qui est au-dessus de `fetch` (client API, hooks TanStack Query, composants) tourne pour de vrai.
+- **`renderWithQueryClient`** (`src/test/renderWithQueryClient.tsx`) : affiche un composant dans un client TanStack Query **neuf** pour chaque test, pour qu'aucune donnée en cache ne passe d'un test à l'autre. Les nouveaux essais sont désactivés (`retry: false`) pour que les cas d'erreur échouent tout de suite. À utiliser à la place de `render` pour tout composant qui charge des données.
 
 ### 2.2 Lancer les tests
 
-| Commande (dans `frontend/`) | Effet |
-| --- | --- |
-| `pnpm test` | Lance tous les tests une fois |
-| `pnpm test:watch` | Relance les tests concernés à chaque modification de fichier |
-| `pnpm test:coverage` | Tous les tests, plus un tableau de couverture de `src/` |
+| Commande (dans `frontend/`) | Effet                                                        |
+| --------------------------- | ------------------------------------------------------------ |
+| `pnpm test`                 | Lance tous les tests une fois                                |
+| `pnpm test:watch`           | Relance les tests concernés à chaque modification de fichier |
+| `pnpm test:coverage`        | Tous les tests, plus un tableau de couverture de `src/`      |
 
 ### 2.3 Tests : `src/App.test.tsx`
 
-`getHello` (l'appel `GET /api/hello`) est simulé. Avant chaque test, `mockReset()` efface le comportement précédent.
+`fetch` est simulé par l'aide `stubFetch` et `App` est affiché avec `renderWithQueryClient` : toute la chaîne `useHello` → `getHello` → `apiClient` s'exécute.
 
-| Test | Ce qu'il fait | But | Résultat attendu |
-| --- | --- | --- | --- |
-| `shows a loading message while the backend answers` | `getHello` renvoie une promesse qui ne se termine jamais, ce qui simule un backend lent. | Vérifier l'état de chargement. | Le texte `Chargement…` est affiché. |
-| `shows the message returned by the backend` | `getHello` renvoie `{ message: 'Hello World' }`. | Vérifier l'état de succès : le message du backend est affiché. | Un titre (`<h1>`) avec le texte `Hello World` apparaît. |
-| `shows an alert when the backend cannot be reached` | `getHello` échoue avec une erreur. `console.error` est rendu silencieux avec `vi.spyOn` et vérifié. | Vérifier l'état d'erreur : l'utilisateur est prévenu, et l'erreur est journalisée pour les développeurs. | Un élément de rôle `alert` contient `Impossible de joindre le backend`, et `console.error` a été appelé. |
+| Test                                                | Ce qu'il fait                                                                          | But                                                                                                                                                              | Résultat attendu                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `shows a loading message while the backend answers` | `fetch` renvoie une promesse qui ne se termine jamais, ce qui simule un backend lent.  | Vérifier l'état de chargement.                                                                                                                                   | Le texte `Chargement…` est affiché.                                                                      |
+| `shows the message returned by the backend`         | `fetch` répond `200` avec `{ message: 'Hello World' }`.                                | Vérifier l'état de succès : le message du backend est affiché.                                                                                                   | Un titre (`<h1>`) avec le texte `Hello World` apparaît.                                                  |
+| `shows an alert when the backend cannot be reached` | `fetch` répond `500`. `console.error` est rendu silencieux avec `vi.spyOn` et vérifié. | Vérifier l'état d'erreur : l'utilisateur est prévenu, et l'erreur est journalisée pour les développeurs (par le client de requêtes de `src/api/queryClient.ts`). | Un élément de rôle `alert` contient `Impossible de joindre le backend`, et `console.error` a été appelé. |
+
+### 2.4 Tests : `src/api/hello.test.ts`
+
+Tests de `getHello`, l'appel d'API lui-même, avec un `fetch` simulé.
+
+| Test                                                            | Ce qu'il fait                                                                                 | But                                                                                                                    | Résultat attendu                                                                     |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `calls GET /api/hello and returns the JSON body`                | `fetch` répond `200` avec `{ message: 'Hello World' }` ; le test inspecte la requête envoyée. | Vérifier que le client commun vise la bonne URL (préfixe `/api`, redirigé par le proxy Vite) et renvoie le corps typé. | `{ message: 'Hello World' }` est renvoyé ; la requête est un `GET` sur `/api/hello`. |
+| `throws an ApiError carrying the status when the backend fails` | `fetch` répond `500` avec `{ detail: 'boom' }`.                                               | Vérifier le contrat d'erreur : toute réponse hors 2xx devient une `ApiError` que l'appelant peut inspecter.            | Une `ApiError` avec `status: 500` et `body: { detail: 'boom' }` est levée.           |
 
 ---
 
 ## 3. Lire les résultats
 
-| Résultat | Signification |
-| --- | --- |
-| `passed` / ✓ | Le test s'est exécuté et toutes ses assertions sont vérifiées. |
-| `failed` / ✗ | Une assertion n'est pas vérifiée, ou une erreur inattendue a été levée. La sortie montre la valeur attendue et la valeur obtenue. |
+| Résultat            | Signification                                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `passed` / ✓        | Le test s'est exécuté et toutes ses assertions sont vérifiées.                                                                                                                                           |
+| `failed` / ✗        | Une assertion n'est pas vérifiée, ou une erreur inattendue a été levée. La sortie montre la valeur attendue et la valeur obtenue.                                                                        |
 | `skipped` (backend) | Le test n'a pas été exécuté, avec la raison dans la sortie (`uv run pytest -rs` liste les raisons). Aujourd'hui, cela n'arrive que pour les tests d'intégration quand PostgreSQL ne tourne pas en local. |
-| `error` (backend) | Une fixture a échoué avant que le test puisse s'exécuter, par exemple pas de base en CI. |
+| `error` (backend)   | Une fixture a échoué avant que le test puisse s'exécuter, par exemple pas de base en CI.                                                                                                                 |
 
 **La couverture** indique, pour chaque fichier, la part du code exécutée par les tests :
+
 - backend (pytest-cov) : `Stmts` (instructions), `Miss` (instructions qu'aucun test n'a exécutées) et `Cover` (pourcentage) ;
 - frontend (Vitest) : `% Stmts` (instructions), `% Branch` (chemins `if`/`else`), `% Funcs` (fonctions), `% Lines` (lignes) et `Uncovered Line #s` (lignes qu'aucun test n'a exécutées).
 
@@ -157,14 +170,14 @@ Il n'y a pas de seuil minimal pour l'instant. La couverture aide à repérer le 
 
 Chaque exécution de la CI (GitHub → **Actions** → l'exécution → **Summary**) affiche, pour les jobs **Backend** et **Frontend** :
 
-| Section | Contenu |
-| --- | --- |
-| En-tête | Verdict (✅ Passed / ❌ Failed) et totaux : tests, réussis, échoués, ignorés, durée totale. |
-| ❌ Failures | Seulement si un test échoue : son nom, le message d'erreur et, dans un bloc dépliable, le détail de l'assertion et la trace. |
-| ⏭️ Skipped | Seulement si des tests sont ignorés : chaque test avec sa raison. |
-| All tests | Une ligne par test : statut, nom (`fichier::test` ou `fichier › describe > test`) et durée. |
-| 🐢 Slowest tests | Les 5 tests les plus lents, pour repérer ceux qui ralentissent. Affiché quand il y a plus de 5 tests. |
-| Couverture | Tableau de couverture (par fichier pour le backend, par métrique pour le frontend). |
+| Section          | Contenu                                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| En-tête          | Verdict (✅ Passed / ❌ Failed) et totaux : tests, réussis, échoués, ignorés, durée totale.                                  |
+| ❌ Failures      | Seulement si un test échoue : son nom, le message d'erreur et, dans un bloc dépliable, le détail de l'assertion et la trace. |
+| ⏭️ Skipped       | Seulement si des tests sont ignorés : chaque test avec sa raison.                                                            |
+| All tests        | Une ligne par test : statut, nom (`fichier::test` ou `fichier › describe > test`) et durée.                                  |
+| 🐢 Slowest tests | Les 5 tests les plus lents, pour repérer ceux qui ralentissent. Affiché quand il y a plus de 5 tests.                        |
+| Couverture       | Tableau de couverture (par fichier pour le backend, par métrique pour le frontend).                                          |
 
 Le rapport est aussi produit **quand des tests échouent** : on lit la cause sans ouvrir les logs. Il est généré à partir des rapports JUnit XML de pytest (`--junitxml`) et de Vitest (reporter `junit`) par `.github/scripts/junit_summary.py`, qui n'utilise que la bibliothèque standard de Python.
 
@@ -179,7 +192,7 @@ Les rapports bruts (JUnit XML et couverture) sont joints à l'exécution comme *
    - frontend : vérifier ce que voit l'utilisateur, avec les textes et les rôles.
 2. **Un test, un comportement**, avec un nom qui dit ce qui est attendu, par exemple `test_invalid_log_level_is_rejected`.
 3. **Couvrir les cas d'erreur et les cas limites**, pas seulement le cas nominal.
-4. **Garder les tests indépendants** : utiliser des fixtures et `dependency_overrides`, et nettoyer après le test (fixtures `autouse`, `mockReset`).
+4. **Garder les tests indépendants** : utiliser des fixtures et `dependency_overrides`, et nettoyer après le test (fixtures `autouse`, `vi.unstubAllGlobals`, `mockRestore`).
 5. **Choisir le bon niveau** :
    - un test unitaire avec de faux objets pour la logique et le contrat d'API ;
    - un test d'intégration (`tests/integration/`, marqueur `integration`) dès que du vrai SQL ou des migrations entrent en jeu.
