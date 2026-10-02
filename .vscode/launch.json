@@ -1,0 +1,30 @@
+{
+  // Débogage (F5) : choisir la configuration dans la vue « Exécuter et déboguer »
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Sans --reload : le rechargement relance un sous-processus et fait perdre les points d'arrêt.
+      // Interpréteur : celui sélectionné dans VS Code (backend/.venv, cf. settings.json).
+      "name": "Backend: FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "justMyCode": true
+    },
+    {
+      // Lance les tests du fichier ouvert (ex. : App.test.tsx), filtrés par son nom
+      "name": "Frontend: Vitest (current file)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${fileBasenameNoExtension}"],
+      "cwd": "${workspaceFolder}/frontend",
+      "autoAttachChildProcesses": true,
+      "smartStep": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "console": "integratedTerminal"
+    }
+  ]
+}

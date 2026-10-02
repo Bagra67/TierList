@@ -3,6 +3,8 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "charliermarsh.ruff",
-    "ms-python.python"
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-azuretools.vscode-docker"
   ]
 }

@@ -10,6 +10,7 @@ desktop.ini
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/launch.json
 
 # Claude Code : settings.json est partagé, settings.local.json reste personnel
 .claude/settings.local.json
