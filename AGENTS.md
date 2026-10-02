@@ -1255,15 +1255,31 @@ chore: bootstrap the starter (Hello World, PostgreSQL, tooling) (#1)
 With the GitHub CLI:
 
 ``` bash
-# Feature PR -> develop
-gh pr merge <N> --squash --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
+# Feature PR -> develop (also deletes the work branch, locally and on origin)
+gh pr merge <N> --squash --delete-branch --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
 
-# Release PR develop -> main
+# Release PR develop -> main (never delete develop)
 gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<short bullets>"
 ```
 
 These merge methods are also enforced by the GitHub rulesets: `develop`
 only allows squash merges, `main` only allows merge commits.
+
+## Branch cleanup
+
+Once a work branch has been merged into `develop`, it MUST be deleted,
+both locally and on `origin`. `--delete-branch` above does both; if the
+PR was merged another way, delete it manually:
+
+``` bash
+git switch develop
+git pull
+git branch -D <branch>            # -D: a squash merge is not seen as merged by git
+git push origin --delete <branch>
+git fetch --prune
+```
+
+`main` and `develop` are long-lived and MUST never be deleted.
 
 ------------------------------------------------------------------------
 
