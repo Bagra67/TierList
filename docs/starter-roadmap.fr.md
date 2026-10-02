@@ -9,6 +9,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Backend** FastAPI : `GET /hello`, plus `GET /health/db`, relié à PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
 - **Base** PostgreSQL 18 dans Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
+- **Logs** : logs de l'application configurés via `LOG_LEVEL`, au format d'uvicorn.
 - **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier, hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
 - **Tests** : pytest (unitaires + intégration sur un vrai PostgreSQL), Vitest + Testing Library, rapports de couverture.
 - **CI** : GitHub Actions (jobs `Backend` et `Frontend`, requis sur `develop` et `main`), Dependabot, modèle de pull request.
@@ -21,7 +22,7 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 
 ## P1 : indispensable avant la première fonctionnalité
 
-6. **Configurer les logs du backend** : niveau réglable par variable d'environnement (`LOG_LEVEL`) et format homogène avec celui d'uvicorn. Pour l'instant, `logger.exception` ne s'affiche que grâce au gestionnaire de secours de Python.
+Tous les points P1 sont réalisés.
 
 ## P2 : fortement recommandé
 

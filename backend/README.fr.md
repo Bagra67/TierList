@@ -171,7 +171,8 @@ backend/
 │   ├── __init__.py
 │   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health/db)
 │   ├── core/
-│   │   └── config.py      # Configuration lue depuis .env (pydantic-settings)
+│   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
+│   │   └── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   └── db/
 │       ├── base.py        # Classe Base des modèles SQLAlchemy
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
@@ -214,6 +215,7 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `POSTGRES_DB` | Nom de la base | — (obligatoire) |
 | `POSTGRES_HOST` | Hôte vu depuis le backend | `127.0.0.1` |
 | `POSTGRES_PORT` | Port | `5432` |
+| `LOG_LEVEL` | Niveau des logs de l'application : `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL` (insensible à la casse) | `INFO` |
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
@@ -231,3 +233,13 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 | Voir la version actuelle de la base | `uv run alembic current` |
 
 Les modèles doivent hériter de `app.db.base.Base` et être importés par `migrations/env.py` pour être détectés par `--autogenerate`. **Relisez toujours** une migration générée avant de l'appliquer.
+
+---
+
+## 10. Logs
+
+Les logs de l'application (loggers sous `app`, par ex. `logging.getLogger(__name__)` dans `app/...`) sont configurés par `app/core/logging.py` :
+
+- écrits sur stderr au **même format qu'uvicorn**, avec en plus le nom du logger : `ERROR:    app.main - Échec de la connexion à la base de données` ;
+- niveau réglé par `LOG_LEVEL` (dans `.env` ou l'environnement, `INFO` par défaut) ; une valeur invalide arrête l'application au démarrage avec une erreur claire ;
+- les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler.

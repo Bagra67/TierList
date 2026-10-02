@@ -171,7 +171,8 @@ backend/
 │   ├── __init__.py
 │   ├── main.py            # FastAPI entry point (GET /hello, GET /health/db)
 │   ├── core/
-│   │   └── config.py      # Configuration read from .env (pydantic-settings)
+│   │   ├── config.py      # Configuration read from .env (pydantic-settings)
+│   │   └── logging.py     # Application logging (LOG_LEVEL, uvicorn format)
 │   └── db/
 │       ├── base.py        # Base class for SQLAlchemy models
 │       └── session.py     # Engine, session (FastAPI dependency), database ping
@@ -214,6 +215,7 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `POSTGRES_DB` | Database name | — (required) |
 | `POSTGRES_HOST` | Host as seen from the backend | `127.0.0.1` |
 | `POSTGRES_PORT` | Port | `5432` |
+| `LOG_LEVEL` | Application log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL` (case-insensitive) | `INFO` |
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 
@@ -231,3 +233,13 @@ The same file is read by the PostgreSQL container: changing the password **after
 | Show the database's current version | `uv run alembic current` |
 
 Models must inherit from `app.db.base.Base` and be imported by `migrations/env.py` to be detected by `--autogenerate`. **Always review** a generated migration before applying it.
+
+---
+
+## 10. Logging
+
+Application logs (loggers under `app`, e.g. `logging.getLogger(__name__)` in `app/...`) are configured by `app/core/logging.py`:
+
+- written to stderr with the **same format as uvicorn**, plus the logger name: `ERROR:    app.main - Échec de la connexion à la base de données`;
+- level set by `LOG_LEVEL` (in `.env` or the environment, default `INFO`); an invalid value stops the application at startup with a clear error;
+- uvicorn's own logs keep their configuration: use `--log-level` on `fastapi dev` / `fastapi run` to change them.
