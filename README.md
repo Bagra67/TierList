@@ -23,7 +23,7 @@ TierList/
 ├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
-├── docs/               # Documentation (architecture, testing guide, roadmap…)
+├── docs/               # Documentation (architecture, testing guide)
 └── README.md / README.fr.md   # This file (English / French)
 ```
 

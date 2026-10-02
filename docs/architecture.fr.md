@@ -71,3 +71,10 @@ Chaque nouveau modèle s'accompagne d'une migration Alembic (`uv run alembic rev
 - **Logs** : `logging.getLogger(__name__)` dans `app/...`, niveau donné par `LOG_LEVEL`.
 - **Tests** : backend dans `backend/tests/` (unitaires, plus `integration/` sur un vrai PostgreSQL), frontend à côté du code (`*.test.tsx`). Chaque test est décrit dans le [guide des tests](testing.fr.md).
 - **Git** : Conventional Commits (vérifiés par commitlint), une branche et une PR fusionnée en squash par changement vers `develop` ; voir AGENTS.md §39–40.
+
+## Décisions en attente
+
+Volontairement repoussées (YAGNI), à trancher quand une fonctionnalité en aura besoin :
+
+- **Images Docker de production et déploiement** : une fois la cible d'hébergement choisie.
+- **Authentification, routage front (react-router), bibliothèque d'interface** : ces choix dépendent des fonctionnalités.
