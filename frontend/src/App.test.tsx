@@ -1,39 +1,40 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getHello } from './api/hello';
 import App from './App';
+import { renderWithQueryClient } from './test/renderWithQueryClient';
 
-vi.mock('./api/hello');
-
-const mockedGetHello = vi.mocked(getHello);
+// Seul fetch est remplacé : client API, hook useHello et TanStack Query tournent pour de vrai, sans appeler le backend
+function stubFetch(response: Promise<Response>) {
+  vi.stubGlobal('fetch', vi.fn().mockReturnValue(response));
+}
 
 describe('App', () => {
-  beforeEach(() => {
-    mockedGetHello.mockReset();
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('shows a loading message while the backend answers', () => {
-    mockedGetHello.mockReturnValue(new Promise(() => {}));
+    stubFetch(new Promise(() => {}));
 
-    render(<App />);
+    renderWithQueryClient(<App />);
 
     expect(screen.getByText('Chargement…')).toBeInTheDocument();
   });
 
   it('shows the message returned by the backend', async () => {
-    mockedGetHello.mockResolvedValue({ message: 'Hello World' });
+    stubFetch(Promise.resolve(Response.json({ message: 'Hello World' })));
 
-    render(<App />);
+    renderWithQueryClient(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
   });
 
   it('shows an alert when the backend cannot be reached', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockedGetHello.mockRejectedValue(new Error('HTTP 500'));
+    stubFetch(Promise.resolve(new Response(null, { status: 500 })));
 
-    render(<App />);
+    renderWithQueryClient(<App />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
     expect(consoleError).toHaveBeenCalled();

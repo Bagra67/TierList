@@ -116,7 +116,8 @@ On the frontend side, the CI step **Check API types are up to date** regenerates
   - `screen` searches the page **the way a user sees it**: by visible text (`getByText`) or by accessibility role (`getByRole('heading')`, `findByRole('alert')`);
   - `getBy…` searches immediately, while `findBy…` **waits** for the element to appear, which is useful after an asynchronous call.
 - **jest-dom**: adds readable assertions such as `toBeInTheDocument()` and `toHaveTextContent()`. It is loaded by `src/test/setup.ts`, which also unmounts components after each test.
-- **Mocks** (`vi.mock`, `vi.mocked`, `vi.spyOn`): replace a module or a function with a fake whose behavior the test decides. Here, the API module (`src/api/hello.ts`) is mocked, so tests **never call the real backend**: they are fast and do not depend on a running server.
+- **Mocks** (`vi.fn`, `vi.stubGlobal`, `vi.spyOn`): replace a function with a fake whose behavior the test decides. Here, the global `fetch` is replaced by `vi.stubGlobal('fetch', …)` and restored by `vi.unstubAllGlobals()` after each test, so tests **never call the real backend**: they are fast and do not depend on a running server. Everything above `fetch` (API client, TanStack Query hooks, components) runs for real.
+- **`renderWithQueryClient`** (`src/test/renderWithQueryClient.tsx`): renders a component inside a **new** TanStack Query client for each test, so no cached data leaks from one test to the next. Retries are disabled (`retry: false`) so error cases fail immediately. Use it instead of `render` for any component that loads data.
 
 ### 2.2 Running the tests
 
@@ -128,13 +129,22 @@ On the frontend side, the CI step **Check API types are up to date** regenerates
 
 ### 2.3 Tests: `src/App.test.tsx`
 
-`getHello` (the `GET /api/hello` call) is mocked. Before each test, `mockReset()` clears the previous behavior.
+`fetch` is stubbed by the `stubFetch` helper and `App` is rendered with `renderWithQueryClient`, so the whole chain `useHello` → `getHello` → `apiClient` runs.
 
 | Test | What it does | Purpose | Expected result |
 | --- | --- | --- | --- |
-| `shows a loading message while the backend answers` | `getHello` returns a promise that never resolves, simulating a slow backend. | Checks the loading state. | The text `Chargement…` is displayed. |
-| `shows the message returned by the backend` | `getHello` resolves with `{ message: 'Hello World' }`. | Checks the success state: the backend message is shown. | A heading (`<h1>`) with the text `Hello World` appears. |
-| `shows an alert when the backend cannot be reached` | `getHello` rejects with an error. `console.error` is silenced with `vi.spyOn` and checked. | Checks the error state: the user is told, and the error is logged for developers. | An element with the `alert` role contains `Impossible de joindre le backend`, and `console.error` was called. |
+| `shows a loading message while the backend answers` | `fetch` returns a promise that never resolves, simulating a slow backend. | Checks the loading state. | The text `Chargement…` is displayed. |
+| `shows the message returned by the backend` | `fetch` answers `200` with `{ message: 'Hello World' }`. | Checks the success state: the backend message is shown. | A heading (`<h1>`) with the text `Hello World` appears. |
+| `shows an alert when the backend cannot be reached` | `fetch` answers `500`. `console.error` is silenced with `vi.spyOn` and checked. | Checks the error state: the user is told, and the error is logged for developers (by the query client in `src/api/queryClient.ts`). | An element with the `alert` role contains `Impossible de joindre le backend`, and `console.error` was called. |
+
+### 2.4 Tests: `src/api/hello.test.ts`
+
+Tests of `getHello`, the API call itself, with a stubbed `fetch`.
+
+| Test | What it does | Purpose | Expected result |
+| --- | --- | --- | --- |
+| `calls GET /api/hello and returns the JSON body` | `fetch` answers `200` with `{ message: 'Hello World' }`; the test inspects the request sent. | Checks that the shared client targets the right URL (`/api` prefix, forwarded by the Vite proxy) and returns the typed body. | `{ message: 'Hello World' }` is returned; the request is a `GET` on `/api/hello`. |
+| `throws an ApiError carrying the status when the backend fails` | `fetch` answers `500` with `{ detail: 'boom' }`. | Checks the error contract: every non-2xx response becomes an `ApiError` that callers can inspect. | An `ApiError` with `status: 500` and `body: { detail: 'boom' }` is thrown. |
 
 ---
 
@@ -179,7 +189,7 @@ The raw reports (JUnit XML and coverage) are attached to the run as **artifacts*
    - frontend: check what the user sees, using text and roles.
 2. **One test, one behavior**, with a name that says what is expected, e.g. `test_invalid_log_level_is_rejected`.
 3. **Cover the error cases and the edge cases**, not only the success path.
-4. **Keep tests independent**: use fixtures and `dependency_overrides`, and clean up after the test (`autouse` fixtures, `mockReset`).
+4. **Keep tests independent**: use fixtures and `dependency_overrides`, and clean up after the test (`autouse` fixtures, `vi.unstubAllGlobals`, `mockRestore`).
 5. **Choose the right level**:
    - a unit test with fakes for the logic and the API contract;
    - an integration test (`tests/integration/`, `integration` marker) as soon as real SQL or migrations are involved.

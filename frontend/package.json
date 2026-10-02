@@ -30,6 +30,8 @@
     "*.{json,css,md,html}": "prettier --write"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.104.0",
+    "openapi-fetch": "^0.17.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
