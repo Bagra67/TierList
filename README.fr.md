@@ -134,7 +134,7 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 
 ### Intégration continue (GitHub Actions)
 
-`.github/workflows/ci.yml` tourne sur chaque pull request et chaque push sur `develop` et `main` :
+`.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
 
 | Job | Étapes |
 | --- | --- |

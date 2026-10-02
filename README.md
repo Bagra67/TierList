@@ -134,7 +134,7 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 
 ### Continuous integration (GitHub Actions)
 
-`.github/workflows/ci.yml` runs on every pull request and every push to `develop` and `main`:
+`.github/workflows/ci.yml` runs on every pull request (including stacked PRs based on another work branch) and every push to `develop` and `main`:
 
 | Job | Steps |
 | --- | --- |
