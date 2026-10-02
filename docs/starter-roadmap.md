@@ -13,7 +13,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Errors**: single JSON error format (`ErrorResponse`) for HTTP, validation and unexpected errors; read by the frontend's `ApiError`.
 - **API contract**: `backend/openapi.json` exported and checked; frontend API types generated from it (`pnpm gen:api`).
 - **Data fetching**: TanStack Query on top of a shared openapi-fetch client typed by the API contract.
-- **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), husky pre-commit hook, `dev.*` scripts; Node and pnpm versions pinned.
+- **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), husky pre-commit hook, `dev.*` scripts (start the database, then both servers); Node and pnpm versions pinned.
 - **Tests**: pytest (unit + integration against a real PostgreSQL), Vitest + Testing Library, coverage reports.
 - **CI**: GitHub Actions (`Backend` and `Frontend` jobs, required on `develop` and `main`), Dependabot, pull request template; merged work branches are deleted automatically.
 
@@ -29,7 +29,7 @@ All P1 items are done.
 
 ## P2: strongly recommended
 
-12. **Start the database from the dev scripts**: `dev.sh` and `dev.ps1` would run `docker compose up -d --wait` before the servers. The message would be clear if Docker is not running, and an option would allow skipping this step.
+All P2 items are done.
 
 ## P3: comfort and hygiene
 

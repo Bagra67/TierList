@@ -2,12 +2,28 @@
 # Lance le backend FastAPI et le frontend Vite en mode dev dans le même terminal.
 # Ctrl+C arrête les deux serveurs.
 #
-# Usage (Git Bash, macOS, Linux) : ./dev.sh
+# Usage (Git Bash, macOS, Linux) : ./dev.sh [--no-db]
+#   --no-db : ne démarre pas la base PostgreSQL (Docker)
 # Sous PowerShell / cmd, utilisez plutôt dev.cmd.
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
+
+start_db=true
+for arg in "$@"; do
+  case "$arg" in
+    --no-db) start_db=false ;;
+    -h | --help)
+      echo "Usage : ./dev.sh [--no-db]"
+      exit 0
+      ;;
+    *)
+      echo "Option inconnue : $arg (usage : ./dev.sh [--no-db])" >&2
+      exit 1
+      ;;
+  esac
+done
 
 BACKEND_PORT=8000
 FRONTEND_PORT=5173
@@ -63,6 +79,20 @@ fi
 if [[ ! -d frontend/node_modules ]]; then
   echo "[frontend] Installation des dépendances (pnpm install)..."
   (cd frontend && pnpm install)
+fi
+
+# La base doit être prête avant le backend : sinon il démarre, mais /health/db échoue
+if $start_db; then
+  if ! command -v docker > /dev/null 2>&1; then
+    echo "'docker' est introuvable dans le PATH. Voir README.md > Prérequis, ou relancez avec --no-db." >&2
+    exit 1
+  fi
+  if ! docker info > /dev/null 2>&1; then
+    echo "Docker ne répond pas : lancez Docker Desktop puis relancez (ou ./dev.sh --no-db pour démarrer sans base)." >&2
+    exit 1
+  fi
+  echo "[db] Démarrage de PostgreSQL (docker compose up -d --wait)..."
+  docker compose up -d --wait
 fi
 
 # Préfixe chaque ligne de log par le nom du serveur, en couleur

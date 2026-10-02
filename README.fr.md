@@ -82,6 +82,7 @@ Depuis la racine `TierList/`, selon votre terminal :
 Lance le backend (http://127.0.0.1:8000) et le frontend (http://localhost:5173) dans le même terminal, avec rechargement automatique. **Ctrl+C arrête les deux.**
 
 - Au premier lancement, le script installe automatiquement les dépendances si besoin (`uv sync`, `pnpm install`).
+- Il démarre d'abord la base PostgreSQL (`docker compose up -d --wait`) et attend qu'elle soit prête. Si Docker Desktop n'est pas lancé, il s'arrête avec un message clair. Pour démarrer sans la base : `./dev.sh --no-db` ou `.\dev.cmd -NoDb`.
 - Si l'un des deux serveurs s'arrête (erreur, crash…), l'autre est arrêté aussi.
 - Si le port 8000 ou 5173 est déjà occupé, `dev.sh` refuse de démarrer et vous l'indique.
 - Dans `dev.sh`, les logs sont préfixés `[backend]` / `[frontend]`.

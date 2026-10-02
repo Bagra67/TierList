@@ -1,7 +1,12 @@
 ﻿# Lance le backend FastAPI et le frontend Vite en mode dev dans le même terminal.
 # Ctrl+C arrête les deux serveurs.
 #
-# Usage : .\dev.ps1   (ou dev.cmd si l'exécution de scripts PowerShell est bloquée)
+# Usage : .\dev.ps1 [-NoDb]   (ou dev.cmd [-NoDb] si l'exécution de scripts PowerShell est bloquée)
+#   -NoDb : ne démarre pas la base PostgreSQL (Docker)
+
+param(
+    [switch]$NoDb
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -27,6 +32,26 @@ if (-not (Test-Path (Join-Path $backendDir '.venv'))) {
 if (-not (Test-Path (Join-Path $frontendDir 'node_modules'))) {
     Write-Host '[frontend] Installation des dépendances (pnpm install)...' -ForegroundColor Cyan
     pnpm --dir $frontendDir install
+}
+
+# La base doit être prête avant le backend : sinon il démarre, mais /health/db échoue
+if (-not $NoDb) {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Host "'docker' est introuvable dans le PATH. Voir README.md > Prérequis, ou relancez avec -NoDb." -ForegroundColor Red
+        exit 1
+    }
+    # Via cmd : sous PowerShell 5.1, rediriger le stderr d'un exécutable lève une erreur avec 'Stop'
+    cmd /c 'docker info >nul 2>&1'
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'Docker ne répond pas : lancez Docker Desktop puis relancez (ou .\dev.ps1 -NoDb pour démarrer sans base).' -ForegroundColor Red
+        exit 1
+    }
+    Write-Host '[db] Démarrage de PostgreSQL (docker compose up -d --wait)...' -ForegroundColor Cyan
+    docker compose -f (Join-Path $root 'compose.yaml') up -d --wait
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'Échec du démarrage de la base : voir docker compose logs db.' -ForegroundColor Red
+        exit 1
+    }
 }
 
 Write-Host ''
