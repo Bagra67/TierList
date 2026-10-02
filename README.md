@@ -15,7 +15,9 @@ TierList/
 ├── frontend/           # React app    → see frontend/README.md
 │   └── .husky/         # Git pre-commit hook (for the whole repository)
 ├── compose.yaml        # Development PostgreSQL database (Docker)
+├── .github/            # CI workflow, Dependabot, pull request template
 ├── .vscode/            # Shared VS Code settings (format on save…)
+├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
 ├── docs/               # Documentation (roadmap…)
@@ -124,7 +126,25 @@ Manual commands:
 | Lint | `uv run ruff check .` | `pnpm lint` |
 | Fix | `uv run ruff check . --fix` | `pnpm lint:fix` |
 | Format | `uv run ruff format .` | `pnpm format` |
-| Tests / types | `uv run pytest` | `pnpm typecheck` |
+| Types | `uv run pyright` | `pnpm typecheck` |
+| Tests | `uv run pytest` | `pnpm test` |
+| Tests + coverage | `uv run pytest --cov=app` | `pnpm test:coverage` |
+
+Backend integration tests need the database: `docker compose up -d --wait` (otherwise they are skipped locally).
+
+### Continuous integration (GitHub Actions)
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `develop` and `main`:
+
+| Job | Steps |
+| --- | --- |
+| **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest with coverage, production build |
+
+- Coverage summaries appear in the run summary (no blocking threshold).
+- Both jobs are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
+- **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
+- New PRs are pre-filled by `.github/pull_request_template.md`.
 
 ---
 
