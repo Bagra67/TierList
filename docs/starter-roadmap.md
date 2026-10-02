@@ -11,6 +11,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Frontend** React + TypeScript (Vite): displays the "Hello World" returned by the backend.
 - **Logging**: application logs configured with `LOG_LEVEL`, in uvicorn's format.
 - **API contract**: `backend/openapi.json` exported and checked; frontend API types generated from it (`pnpm gen:api`).
+- **Data fetching**: TanStack Query on top of a shared openapi-fetch client typed by the API contract.
 - **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier, husky pre-commit hook, `dev.*` scripts; Node and pnpm versions pinned.
 - **Tests**: pytest (unit + integration against a real PostgreSQL), Vitest + Testing Library, coverage reports.
 - **CI**: GitHub Actions (`Backend` and `Frontend` jobs, required on `develop` and `main`), Dependabot, pull request template.
@@ -26,10 +27,6 @@ Each item below states what is missing, why it is useful and what to do. Each on
 All P1 items are done.
 
 ## P2: strongly recommended
-
-9. **Choose the frontend data-fetching layer**: **TanStack Query** on top of a small shared `fetch` client (consistent base URL and error handling).
-   - Otherwise, every feature will reinvent its own `useEffect`, which AGENTS.md §17 discourages.
-   - *This decision needs to be validated.*
 
 10. **Single error format on the backend**: global handlers for unexpected exceptions (generic, logged 500 response) and for validation errors, all in the same JSON format. The frontend can then handle them all the same way.
 
