@@ -1267,6 +1267,25 @@ gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<sh
 These merge methods are also enforced by the GitHub rulesets: `develop`
 only allows squash merges, `main` only allows merge commits.
 
+## Releases and versioning
+
+Every merge of `develop` into `main` is a release `vX.Y.Z` (Semantic
+Versioning). Full process: `docs/releasing.md`.
+
+-   The version is computed from the squash commits since the last tag:
+    `!` or a `BREAKING CHANGE:` footer bumps X (Y while in 0.x),
+    `feat` bumps Y, `fix`/`perf` bump Z; other types do not bump.
+-   A breaking change MUST carry `!` in the squash subject (e.g.
+    `feat(api)!: ...`) and a `BREAKING CHANGE:` footer explaining the
+    migration.
+-   Prepare a release with `scripts/prepare-release.sh` on a
+    `chore/release-vX.Y.Z` branch from `develop`, squash-merge
+    `chore(release): prepare vX.Y.Z`, then merge the release PR
+    `chore(release): vX.Y.Z` into `main` with a merge commit.
+-   Never edit version fields by hand outside that script, never create
+    `vX.Y.Z` tags by hand: the `Release` workflow tags `main`.
+-   Moving to 1.0.0 is a user decision (`--version 1.0.0`).
+
 ## Branch cleanup
 
 Once a work branch has been merged into `develop`, it MUST be deleted,

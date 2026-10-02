@@ -112,6 +112,12 @@ Ces tests utilisent une petite application FastAPI dédiée, avec `register_erro
 | `test_validation_error_lists_invalid_fields`      | Appelle `/items/abc` (`item_id` non entier, `limit` manquant).                         | Vérifier le format 422 sur lequel s'appuie le frontend.                                                             | `422`, `detail` vaut `Requête invalide`, `errors` liste `path.item_id` et `query.limit`, chacun avec un message.                                                  |
 | `test_http_exception_keeps_its_status_and_detail` | Appelle une route qui lève `HTTPException(404, "Introuvable")`.                        | Les erreurs prévues gardent leur statut et leur message.                                                            | `404` avec `{"detail": "Introuvable"}`.                                                                                                                           |
 
+### 1.8 Test unitaire : `tests/test_versions.py` (version)
+
+| Test                        | Ce qu'il fait                                                                                            | But                                                                                                    | Résultat attendu               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `test_versions_are_in_sync` | Lit la version de `backend/pyproject.toml` et de `frontend/package.json` et les compare à `app.version`. | Le dépôt a une seule version ([guide des releases](releasing.fr.md)) ; le workflow `Release` la tague. | Les trois valeurs sont égales. |
+
 ---
 
 ## 2. Frontend (Vitest)

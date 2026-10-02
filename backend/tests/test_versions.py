@@ -1,0 +1,18 @@
+import json
+import tomllib
+from pathlib import Path
+
+from app.main import app
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_versions_are_in_sync():
+    # Une seule version pour tout le dépôt (docs/releasing.md) : scripts/prepare-release.sh met
+    # à jour ces trois valeurs, et le workflow Release crée le tag vX.Y.Z à partir d'elles.
+    pyproject_path = REPO_ROOT / "backend" / "pyproject.toml"
+    package_json_path = REPO_ROOT / "frontend" / "package.json"
+    pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+    package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
+
+    assert app.version == pyproject["project"]["version"] == package_json["version"]
