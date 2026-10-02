@@ -1,0 +1,58 @@
+name: Release
+
+# After a release PR (develop -> main) is merged and the CI passed on main: tag vX.Y.Z on the
+# merge commit and publish the GitHub Release with the CHANGELOG section. See docs/releasing.md.
+# workflow_run always uses this file from the default branch (main).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Tag and publish
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # Full history and tags: needed to check that the tag does not exist yet.
+          fetch-depth: 0
+
+      - name: Check the version and extract its release notes
+        id: version
+        run: |
+          backend=$(sed -n 's/^version = "\(.*\)"$/\1/p' backend/pyproject.toml | head -n 1)
+          frontend=$(jq -r .version frontend/package.json)
+          if [ -z "$backend" ] || [ "$backend" != "$frontend" ]; then
+            echo "::error::Versions differ (backend/pyproject.toml: '$backend', frontend/package.json: '$frontend'): run scripts/prepare-release.sh on develop."
+            exit 1
+          fi
+          tag="v$backend"
+          if git rev-parse -q --verify "refs/tags/$tag" > /dev/null; then
+            echo "::error::Tag $tag already exists: prepare a new release on develop first (scripts/prepare-release.sh)."
+            exit 1
+          fi
+          # Lines between "## [X.Y.Z]" and the next "## [" heading
+          awk -v heading="## [$backend]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && index($0, "## [") == 1 { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::CHANGELOG.md has no section for $backend: run scripts/prepare-release.sh on develop."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create the tag and the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          TARGET: ${{ github.event.workflow_run.head_sha }}
+        run: gh release create "$TAG" --target "$TARGET" --title "$TAG" --notes-file release-notes.md

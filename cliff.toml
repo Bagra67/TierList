@@ -1,0 +1,43 @@
+# Configuration de git-cliff (https://git-cliff.org) : génère CHANGELOG.md à partir des
+# commits Conventional Commits de develop. Utilisé par scripts/prepare-release.sh.
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project are documented in this file.
+Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
+
+"""
+# Les groupes portent un préfixe <!-- N --> pour fixer leur ordre ; striptags le retire à l'affichage
+body = """
+## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {% if commit.breaking %}**BREAKING** {% endif %}{% if commit.scope %}{{ commit.scope }}: {% endif %}{{ commit.message | split(pat="\n") | first | trim }}\
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+# Les premiers commits ne suivaient pas toujours la convention : on les garde, dans « Other »
+filter_unconventional = false
+filter_commits = false
+tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+"
+sort_commits = "oldest"
+commit_parsers = [
+  # Les commits de préparation de release ne sont pas des changements
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix", group = "<!-- 1 -->Bug fixes" },
+  { message = "^perf", group = "<!-- 2 -->Performance" },
+  { message = "^refactor", group = "<!-- 3 -->Refactoring" },
+  { message = "^(build|ci)", group = "<!-- 4 -->Build & CI" },
+  { message = "^docs", group = "<!-- 5 -->Documentation" },
+  { message = "^test", group = "<!-- 6 -->Tests" },
+  { message = "^(chore|style)", group = "<!-- 7 -->Chores" },
+  { message = ".*", group = "<!-- 8 -->Other" },
+]
