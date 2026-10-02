@@ -80,7 +80,7 @@ Une fois lancé :
 - Documentation interactive (Swagger) : http://127.0.0.1:8000/docs
 - Documentation ReDoc : http://127.0.0.1:8000/redoc
 
-Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/health` est redirigée vers `http://127.0.0.1:8000/health`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/hello` est redirigée vers `http://127.0.0.1:8000/hello`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
 
 ---
 
@@ -145,37 +145,22 @@ uv run ruff check . --fix && uv run ruff format .
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (routes / et /health)
-│   └── routers/
-│       ├── __init__.py
-│       └── items.py       # Exemple de routes CRUD /items
+│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health/db)
+│   ├── core/
+│   │   └── config.py      # Configuration lue depuis .env (pydantic-settings)
+│   └── db/
+│       ├── base.py        # Classe Base des modèles SQLAlchemy
+│       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
+├── migrations/            # Migrations Alembic (env.py, versions/)
 ├── tests/
-│   └── test_main.py       # Tests avec TestClient
+│   └── test_main.py       # Tests avec TestClient (sans base réelle)
+├── .env.example           # Modèle de .env (identifiants PostgreSQL)
+├── alembic.ini            # Configuration Alembic
 ├── .python-version        # Version de Python utilisée par uv
 ├── pyproject.toml         # Métadonnées + dépendances du projet
 ├── uv.lock                # Versions exactes verrouillées (à commiter)
 └── README.md
 ```
-
-### Ajouter un nouveau router
-
-1. Créez `app/routers/mon_router.py` :
-   ```python
-   from fastapi import APIRouter
-
-   router = APIRouter(prefix="/mon-router", tags=["mon-router"])
-
-
-   @router.get("/")
-   def lister():
-       return []
-   ```
-2. Enregistrez-le dans `app/main.py` :
-   ```python
-   from app.routers import items, mon_router
-
-   app.include_router(mon_router.router)
-   ```
 
 ---
 
@@ -185,3 +170,39 @@ backend/
 - **Ne commitez pas** `.venv/` (déjà dans `.gitignore`).
 - Après un `git pull`, lancez `uv sync` pour vous remettre à jour.
 - Changer de version de Python : `uv python pin 3.12` puis `uv sync`.
+- **Ne commitez pas** `.env` : seul `.env.example` est versionné.
+
+---
+
+## 9. Base de données (PostgreSQL + SQLAlchemy + Alembic)
+
+La base tourne dans Docker (`compose.yaml` à la racine du dépôt, voir le [README racine](../README.md)). Le backend s'y connecte avec **SQLAlchemy 2** et le driver **psycopg 3**.
+
+### Configuration
+
+Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
+
+| Variable | Rôle | Défaut |
+|---|---|---|
+| `POSTGRES_USER` | Utilisateur | — (obligatoire) |
+| `POSTGRES_PASSWORD` | Mot de passe | — (obligatoire) |
+| `POSTGRES_DB` | Nom de la base | — (obligatoire) |
+| `POSTGRES_HOST` | Hôte vu depuis le backend | `127.0.0.1` |
+| `POSTGRES_PORT` | Port | `5432` |
+
+Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
+
+### Vérifier la connexion
+
+`GET /health/db` exécute `SELECT 1` : `200 {"status": "ok"}` si la base répond, sinon `503 {"detail": "Base de données indisponible"}` (l'erreur détaillée est dans les logs du backend).
+
+### Migrations (Alembic)
+
+| Action | Commande |
+|---|---|
+| Créer une migration à partir des modèles | `uv run alembic revision --autogenerate -m "description"` |
+| Appliquer les migrations | `uv run alembic upgrade head` |
+| Annuler la dernière migration | `uv run alembic downgrade -1` |
+| Voir la version actuelle de la base | `uv run alembic current` |
+
+Les modèles doivent hériter de `app.db.base.Base` et être importés par `migrations/env.py` pour être détectés par `--autogenerate`. **Relisez toujours** une migration générée avant de l'appliquer.
