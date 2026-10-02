@@ -1,6 +1,6 @@
 <!--
 Title: Conventional Commits, in English, e.g. `feat(backend): add tier endpoints`.
-PRs to develop are squash-merged; the squash subject ends with the PR number, e.g. `(#12)`.
+PRs to develop are squash-merged; the squash subject ends with the PR number, e.g. `(#12)`. The work branch is deleted once merged.
 -->
 
 ## Why
