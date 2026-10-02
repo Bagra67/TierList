@@ -54,6 +54,7 @@ All P1 items are done.
 ## Deliberately not proposed (for now)
 
 These items are postponed (YAGNI):
+
 - **Production Dockerfiles and deployment**: to do once a hosting target is chosen.
 - **Authentication, frontend routing (react-router), UI library**: these choices depend on the features.
 - **Reorganizing `main.py` into `api/routes/` and services**: to do with the first real resource, not before.

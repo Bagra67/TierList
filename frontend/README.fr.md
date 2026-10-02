@@ -81,6 +81,8 @@ C'est automatique à deux endroits :
 
 Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
 
+`pnpm format` et `pnpm format:check` couvrent aussi le dossier `docs/` du dépôt, avec le même `.prettierrc` (la CI le vérifie aussi). Le hook pre-commit ne formate pas `docs/` : lancez `pnpm format` avant de commiter une modification de doc.
+
 ---
 
 ## 6. Structure du projet

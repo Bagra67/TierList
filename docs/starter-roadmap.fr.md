@@ -54,6 +54,7 @@ Tous les points P1 sont réalisés.
 ## Volontairement non proposé (pour l'instant)
 
 Ces points sont repoussés à plus tard (YAGNI) :
+
 - **Dockerfiles de production et déploiement** : à faire quand une cible d'hébergement sera choisie.
 - **Authentification, routage front (react-router), bibliothèque d'interface** : ce sont des choix liés aux fonctionnalités.
 - **Réorganiser `main.py` en `api/routes/` et en services** : à faire avec la première vraie ressource, pas avant.
