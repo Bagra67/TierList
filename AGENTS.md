@@ -875,6 +875,15 @@ For new functionality:
 -   Test important error cases.
 -   Test important boundary conditions.
 
+## Testing guide
+
+`docs/testing.md` (English) and `docs/testing.fr.md` (French) describe
+every test: what it does, its purpose and the expected result.
+
+Whenever a test, a test fixture or a test tool is added, changed,
+renamed or removed, BOTH files MUST be updated in the same PR, so that
+the guide always matches the actual tests.
+
 ## MUST NOT
 
 -   Delete failing tests merely to make CI pass.

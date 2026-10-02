@@ -160,3 +160,4 @@ There is no minimum threshold for now. Coverage helps find untested code, but it
    - an integration test (`tests/integration/`, `integration` marker) as soon as real SQL or migrations are involved.
 6. Put new frontend tests next to the component (`Component.test.tsx`) and new backend tests in `backend/tests/`.
 7. Run the tests locally before pushing; CI runs them again on the PR.
+8. **Update this guide in the same PR**, in both languages (`testing.md` and `testing.fr.md`), whenever a test, a fixture or a test tool is added, changed or removed (AGENTS.md §28).

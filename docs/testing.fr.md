@@ -160,3 +160,4 @@ Il n'y a pas de seuil minimal pour l'instant. La couverture aide à repérer le 
    - un test d'intégration (`tests/integration/`, marqueur `integration`) dès que du vrai SQL ou des migrations entrent en jeu.
 6. Placer les nouveaux tests frontend à côté du composant (`Composant.test.tsx`), et les nouveaux tests backend dans `backend/tests/`.
 7. Lancer les tests en local avant de pousser ; la CI les relance sur la PR.
+8. **Mettre à jour ce guide dans la même PR**, dans les deux langues (`testing.md` et `testing.fr.md`), dès qu'un test, une fixture ou un outil de test est ajouté, modifié ou supprimé (AGENTS.md §28).

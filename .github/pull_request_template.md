@@ -22,6 +22,7 @@ PRs to develop are squash-merged; the squash subject ends with the PR number, e.
 ## Checklist
 
 - [ ] Tests added or updated, and passing
+- [ ] Testing guide updated if tests changed (`docs/testing.md` + `docs/testing.fr.md`)
 - [ ] Lint, formatting and type checks pass (CI green)
 - [ ] Documentation updated in **both** English (`name.md`) and French (`name.fr.md`)
 - [ ] No secrets, credentials or `.env` files committed
