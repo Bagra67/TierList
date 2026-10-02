@@ -28,6 +28,15 @@ describe('getHello', () => {
     const error = await getHello().catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 500, body: { detail: 'boom' } });
+    expect(error).toMatchObject({ status: 500, body: { detail: 'boom' }, message: 'boom' });
+  });
+
+  it('falls back to the HTTP status when the body is not an ErrorResponse', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status: 502 })));
+
+    const error = await getHello().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 502, message: 'HTTP 502' });
   });
 });

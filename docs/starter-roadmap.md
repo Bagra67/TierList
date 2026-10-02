@@ -10,6 +10,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Database** PostgreSQL 18 in Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite): displays the "Hello World" returned by the backend.
 - **Logging**: application logs configured with `LOG_LEVEL`, in uvicorn's format.
+- **Errors**: single JSON error format (`ErrorResponse`) for HTTP, validation and unexpected errors; read by the frontend's `ApiError`.
 - **API contract**: `backend/openapi.json` exported and checked; frontend API types generated from it (`pnpm gen:api`).
 - **Data fetching**: TanStack Query on top of a shared openapi-fetch client typed by the API contract.
 - **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), husky pre-commit hook, `dev.*` scripts; Node and pnpm versions pinned.
@@ -27,8 +28,6 @@ Each item below states what is missing, why it is useful and what to do. Each on
 All P1 items are done.
 
 ## P2: strongly recommended
-
-10. **Single error format on the backend**: global handlers for unexpected exceptions (generic, logged 500 response) and for validation errors, all in the same JSON format. The frontend can then handle them all the same way, through `ApiError` (`frontend/src/api/client.ts`).
 
 11. **Split the health probes**: `/health` only checks that the application responds, `/health/db` that the database is reachable. Docker or a hosting platform uses the first one, troubleshooting the second one.
 

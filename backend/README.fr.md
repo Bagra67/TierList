@@ -174,6 +174,7 @@ backend/
 │   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health/db)
 │   ├── core/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
+│   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, handlers 422 et 500)
 │   │   └── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   └── db/
 │       ├── base.py        # Classe Base des modèles SQLAlchemy
@@ -183,6 +184,7 @@ backend/
 │   └── export_openapi.py  # Écrit le contrat d'API dans openapi.json
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
+│   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException)
 │   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
 ├── .env.example           # Modèle de .env (identifiants PostgreSQL)
 ├── alembic.ini            # Configuration Alembic
@@ -263,3 +265,21 @@ Quand vous ajoutez ou modifiez une route ou un schéma Pydantic :
 4. commitez ensemble `backend/openapi.json` et `frontend/src/api/schema.d.ts`.
 
 Si vous oubliez l'étape 1, le test backend `test_openapi_schema_is_up_to_date` échoue ; si vous oubliez l'étape 2, l'étape CI « Check API types are up to date » échoue.
+
+---
+
+## 12. Format d'erreur
+
+Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/core/errors.py`), exposée dans le contrat OpenAPI :
+
+```json
+{ "detail": "Requête invalide", "errors": [{ "field": "query.limit", "message": "Field required" }] }
+```
+
+| Cas | Statut | Corps |
+| --- | --- | --- |
+| `HTTPException` levée par une route | celui donné | `{"detail": "..."}` (format par défaut de FastAPI, déjà conforme) |
+| Requête invalide (chemin, query, corps) | `422` | `detail` + `errors` : une entrée par champ invalide (`field` = emplacement, `message`) |
+| Exception non prévue | `500` | `{"detail": "Erreur interne du serveur"}` : aucun détail interne n'est envoyé au client ; l'erreur est journalisée avec sa trace, la méthode et le chemin |
+
+Levez une `HTTPException` avec un `detail` clair pour les erreurs prévues (introuvable, conflit…), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

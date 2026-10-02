@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
 
@@ -17,7 +18,10 @@ app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
     version="0.1.0",
+    # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
+    responses={500: {"model": ErrorResponse, "description": "Erreur interne du serveur"}},
 )
+register_error_handlers(app)
 
 
 class HelloResponse(BaseModel):
@@ -33,7 +37,10 @@ def hello() -> HelloResponse:
     return HelloResponse(message="Hello World")
 
 
-@app.get("/health/db", responses={503: {"description": "Base de données indisponible"}})
+@app.get(
+    "/health/db",
+    responses={503: {"model": ErrorResponse, "description": "Base de données indisponible"}},
+)
 def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthResponse:
     try:
         ping_database(session)
