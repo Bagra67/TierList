@@ -6,7 +6,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 
 ## État actuel
 
-- **Backend** FastAPI : `GET /hello`, plus `GET /health/db`, relié à PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
+- **Backend** FastAPI : `GET /hello`, sondes de santé `GET /health` (vie) et `GET /health/db` (base), relié à PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
 - **Base** PostgreSQL 18 dans Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
 - **Logs** : logs de l'application configurés via `LOG_LEVEL`, au format d'uvicorn.
@@ -28,8 +28,6 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 Tous les points P1 sont réalisés.
 
 ## P2 : fortement recommandé
-
-11. **Séparer les sondes de santé** : `/health` vérifie seulement que l'application répond, `/health/db` que la base est joignable. Docker ou un hébergeur utilise la première, le diagnostic la seconde.
 
 12. **Démarrer la base avec les scripts dev** : `dev.sh` et `dev.ps1` lanceraient `docker compose up -d --wait` avant les serveurs. Le message serait clair si Docker n'est pas lancé, et une option permettrait de sauter cette étape.
 
@@ -64,5 +62,5 @@ Ces points sont repoussés à plus tard (YAGNI) :
 
 - Backend : `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run pyright`.
 - Frontend : `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-- Bout en bout : `docker compose up -d --wait`, puis `GET /health/db` doit renvoyer `{"status":"ok"}`.
+- Bout en bout : `docker compose up -d --wait`, puis `GET /health` et `GET /health/db` doivent renvoyer `{"status":"ok"}`.
 - CI : pousser une branche et vérifier que les jobs passent (`gh run watch`).

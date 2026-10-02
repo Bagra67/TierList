@@ -24,6 +24,13 @@ def test_hello():
     assert response.json() == {"message": "Hello World"}
 
 
+def test_health():
+    # Aucune dépendance remplacée : la sonde de vie ne doit pas toucher la base
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_health_db_ok():
     # SQLite en mémoire : vérifie le chemin nominal sans dépendre d'un PostgreSQL lancé
     engine = create_engine("sqlite://")

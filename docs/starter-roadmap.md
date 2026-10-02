@@ -6,7 +6,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 
 ## Current state
 
-- **Backend** FastAPI: `GET /hello`, plus `GET /health/db`, wired to PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
+- **Backend** FastAPI: `GET /hello`, health probes `GET /health` (liveness) and `GET /health/db` (database), wired to PostgreSQL (SQLAlchemy 2, psycopg 3, Alembic).
 - **Database** PostgreSQL 18 in Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite): displays the "Hello World" returned by the backend.
 - **Logging**: application logs configured with `LOG_LEVEL`, in uvicorn's format.
@@ -28,8 +28,6 @@ Each item below states what is missing, why it is useful and what to do. Each on
 All P1 items are done.
 
 ## P2: strongly recommended
-
-11. **Split the health probes**: `/health` only checks that the application responds, `/health/db` that the database is reachable. Docker or a hosting platform uses the first one, troubleshooting the second one.
 
 12. **Start the database from the dev scripts**: `dev.sh` and `dev.ps1` would run `docker compose up -d --wait` before the servers. The message would be clear if Docker is not running, and an option would allow skipping this step.
 
@@ -64,5 +62,5 @@ These items are postponed (YAGNI):
 
 - Backend: `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run pyright`.
 - Frontend: `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-- End to end: `docker compose up -d --wait`, then `GET /health/db` must return `{"status":"ok"}`.
+- End to end: `docker compose up -d --wait`, then `GET /health` and `GET /health/db` must return `{"status":"ok"}`.
 - CI: push a branch and check that the jobs pass (`gh run watch`).
