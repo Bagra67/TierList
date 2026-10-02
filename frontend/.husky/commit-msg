@@ -1,0 +1,4 @@
+# Exécuté depuis la racine du dépôt git (TierList/) ; $1 = fichier du message (.git/COMMIT_EDITMSG)
+# Chemin rendu absolu : commitlint tourne dans frontend/, où se trouvent sa config et ses dépendances
+message_file="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+cd frontend && pnpm exec commitlint --edit "$message_file"
