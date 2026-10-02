@@ -9,6 +9,8 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md) | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite | pnpm, ESLint, Prettier |
 
+Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md).
+
 ```
 TierList/
 ├── backend/            # API FastAPI  → voir backend/README.fr.md
@@ -21,7 +23,7 @@ TierList/
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
-├── docs/               # Documentation (guide des tests, feuille de route…)
+├── docs/               # Documentation (architecture, guide des tests, feuille de route…)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
 

@@ -15,6 +15,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Data fetching**: TanStack Query on top of a shared openapi-fetch client typed by the API contract.
 - **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), EditorConfig, VS Code debug configurations (FastAPI, Vitest), husky pre-commit hook (with gitleaks secret scanning, also on CI) and commit-msg hook (commitlint), `dev.*` scripts (start the database, then both servers); Node and pnpm versions pinned.
 - **Tests**: pytest (unit + integration against a real PostgreSQL), Vitest + Testing Library, coverage reports.
+- **Documentation**: architecture (`docs/architecture.md`), testing guide, roadmap; English and French.
 - **CI**: GitHub Actions (`Backend` and `Frontend` jobs, required on `develop` and `main`), Dependabot, pull request template; merged work branches are deleted automatically.
 
 Completed items have been removed from this list; the remaining ones keep their original number.
@@ -33,10 +34,7 @@ All P2 items are done.
 
 ## P3: comfort and hygiene
 
-<!-- 17 done: list restarts at 18 to keep the original numbers -->
-
-18. **Documentation**:
-    - a short `docs/architecture.md`: layers, front → API → service → repository → DB flow, conventions.
+All P3 items are done.
 
 ## Deliberately not proposed (for now)
 
