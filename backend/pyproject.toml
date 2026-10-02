@@ -17,6 +17,7 @@ dev = [
     "httpx2>=2.13.1",
     "pyright>=1.1.414",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.16.10",
 ]
 
@@ -26,6 +27,9 @@ package = false
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "integration: needs a running PostgreSQL (docker compose up -d --wait)",
+]
 
 [tool.ruff]
 line-length = 100
