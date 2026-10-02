@@ -36,6 +36,7 @@ TierList/
 | **pnpm** | `npm install -g pnpm` | `pnpm --version` |
 | **Git** | https://git-scm.com | `git --version` |
 | **Docker Desktop** | Windows : `winget install -e --id Docker.DockerDesktop` (WSL2 requis, redémarrage possible), puis lancez Docker Desktop une fois — ou https://www.docker.com/products/docker-desktop | `docker info` |
+| **gitleaks** (exigé par le hook pre-commit) | Windows : `winget install -e --id Gitleaks.Gitleaks` (puis redémarrer VS Code et les terminaux)<br>macOS : `brew install gitleaks` — ou https://github.com/gitleaks/gitleaks | `gitleaks version` |
 
 ---
 
@@ -120,8 +121,9 @@ Le frontend affiche le « Hello World » renvoyé par le backend. Il l'appelle v
 - **Frontend: Vitest (current file)** lance les tests du fichier de test ouvert, avec points d'arrêt dans les tests et dans `frontend/src/`.
 
 **Avant chaque commit**, le hook git `frontend/.husky/pre-commit` lance :
-1. `lint-staged` sur les fichiers du frontend modifiés (ESLint `--fix` + Prettier) ;
-2. `ruff check` et `ruff format --check` sur le backend.
+1. `gitleaks` sur les modifications indexées : le commit est refusé si elles contiennent un secret (clé, mot de passe, token). La sortie indique le fichier, la ligne et la règle, avec le secret masqué. Un faux positif s'ignore avec un commentaire `gitleaks:allow` sur la ligne ;
+2. `lint-staged` sur les fichiers du frontend modifiés (ESLint `--fix` + Prettier) ;
+3. `ruff check` et `ruff format --check` sur le backend.
 
 Si une erreur ne peut pas être corrigée automatiquement, le commit est bloqué : corrigez-la puis recommitez.
 
@@ -146,6 +148,7 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 | --- | --- |
 | **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest avec couverture, build de production |
+| **Secrets** | gitleaks sur chaque commit de la PR (ou du push) |
 
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/testing.fr.md](docs/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les deux jobs sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.

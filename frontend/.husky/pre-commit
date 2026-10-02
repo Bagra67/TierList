@@ -1,3 +1,11 @@
 # Exécuté depuis la racine du dépôt git (TierList/)
+
+# Secrets : refuse le commit si une clé, un mot de passe ou un token est dans les fichiers indexés
+if ! command -v gitleaks > /dev/null 2>&1; then
+  echo "gitleaks est introuvable : installez-le (Windows : winget install -e --id Gitleaks.Gitleaks ; macOS : brew install gitleaks), puis relancez le commit (redémarrez VS Code s'il était ouvert)." >&2
+  exit 1
+fi
+gitleaks git --pre-commit --staged --redact --verbose --no-banner .
+
 cd frontend && pnpm exec lint-staged
 cd ../backend && uv run ruff check . && uv run ruff format --check .

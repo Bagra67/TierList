@@ -166,3 +166,19 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: gitleaks scans every commit of the PR (or of the push).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PR comments would need the pull-requests: write permission; the failed check is enough.
+          GITLEAKS_ENABLE_COMMENTS: false
