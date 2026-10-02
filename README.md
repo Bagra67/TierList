@@ -148,3 +148,9 @@ Plus de détails dans [backend/README.md](backend/README.md) et [frontend/README
   git remote add origin https://github.com/<utilisateur>/TierList.git
   git push -u origin main
   ```
+
+---
+
+## 7. Licence
+
+Code propriétaire, **tous droits réservés** : aucune réutilisation, copie, modification ni redistribution sans autorisation écrite de l'auteur. Voir [LICENSE](LICENSE).

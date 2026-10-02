@@ -84,8 +84,7 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 
 18. **Documentation** :
     - un court `docs/architecture.md` : couches, flux front → API → service → repository → DB, conventions ;
-    - un modèle de PR (`.github/pull_request_template.md`) reprenant la checklist d'AGENTS.md ;
-    - une `LICENSE` si le dépôt devient public.
+    - un modèle de PR (`.github/pull_request_template.md`) reprenant la checklist d'AGENTS.md.
 
 19. **Messages de commit normés** (Conventional Commits, vérifiés par commitlint dans husky). C'est utile pour un changelog automatique. Optionnel.
 
