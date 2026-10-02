@@ -16,7 +16,7 @@ This document lists what is missing to **bootstrap** the project properly, befor
 - **Tooling**: uv, pnpm, Ruff, Pyright, ESLint, Prettier (also on `docs/`), EditorConfig, VS Code debug configurations (FastAPI, Vitest), husky pre-commit hook (with gitleaks secret scanning, also on CI) and commit-msg hook (commitlint), `dev.*` scripts (start the database, then both servers); Node and pnpm versions pinned.
 - **Tests**: pytest (unit + integration against a real PostgreSQL), Vitest + Testing Library, coverage reports.
 - **Documentation**: architecture (`docs/architecture.md`), testing guide, roadmap; English and French.
-- **CI**: GitHub Actions (`Backend` and `Frontend` jobs, required on `develop` and `main`), Dependabot, pull request template; merged work branches are deleted automatically.
+- **CI**: GitHub Actions (`Backend`, `Frontend` and `Secrets` jobs, required on `develop` and `main`), Dependabot, pull request template; merged work branches are deleted automatically.
 
 Completed items have been removed from this list; the remaining ones keep their original number.
 
