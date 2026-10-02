@@ -1,0 +1,6 @@
+# pnpm settings (pnpm 10+ no longer reads the "pnpm" field of package.json).
+peerDependencyRules:
+  allowedVersions:
+    # openapi-typescript 7.13 declares typescript ^5.x but works with TypeScript 6
+    # (it only uses it to print the generated file). Remove once it declares ^6.
+    openapi-typescript>typescript: '6'
