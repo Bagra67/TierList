@@ -1,0 +1,27 @@
+# Réglages communs à tous les éditeurs (https://editorconfig.org), alignés sur
+# .gitattributes (fins de ligne), Prettier (2 espaces) et Ruff (4 espaces).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+# Scripts Windows : cmd.exe et PowerShell 5.1 attendent du CRLF
+[*.{cmd,ps1}]
+end_of_line = crlf
+indent_size = 4
+
+# PowerShell 5.1 lit un .ps1 sans BOM en ANSI : les accents seraient corrompus
+[*.ps1]
+charset = utf-8-bom
+
+# En Markdown, deux espaces en fin de ligne forcent un saut de ligne
+[*.md]
+trim_trailing_whitespace = false
