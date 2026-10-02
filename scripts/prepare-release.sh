@@ -94,11 +94,15 @@ echo "[contrat] openapi.json et schema.d.ts"
 (cd frontend && pnpm gen:api > /dev/null)
 
 echo "[changelog] CHANGELOG.md"
-cliff() { (cd frontend && pnpm exec git-cliff --config ../cliff.toml --repository .. "$@"); }
+# Lancé depuis la racine : avec --repository, git-cliff ne trouve pas cliff.toml (fichier introuvable)
+cliff() { frontend/node_modules/.bin/git-cliff --config cliff.toml "$@"; }
+# git-cliff veut une plage A..B : sans release précédente, il prend tout l'historique
+cliff_range=()
+[[ -n "$last_tag" ]] && cliff_range=("$last_tag..HEAD")
 if [[ -f CHANGELOG.md ]]; then
   # Seule la nouvelle section est ajoutée, sous l'en-tête : les sections publiées (et relues)
   # ne sont pas régénérées. (--prepend de git-cliff la placerait au-dessus de l'en-tête.)
-  section=$(cliff "$range" --tag "v$version" --strip header | tr -d '\r')
+  section=$(cliff "${cliff_range[@]}" --tag "v$version" --strip header | tr -d '\r')
   first_section=$(grep -n -m 1 '^## \[' CHANGELOG.md | cut -d: -f1)
   {
     head -n "$((first_section - 1))" CHANGELOG.md
@@ -107,7 +111,7 @@ if [[ -f CHANGELOG.md ]]; then
   } > CHANGELOG.md.new
   mv CHANGELOG.md.new CHANGELOG.md
 else
-  cliff "$range" --tag "v$version" --output ../CHANGELOG.md
+  cliff "${cliff_range[@]}" --tag "v$version" --output CHANGELOG.md
 fi
 
 echo
