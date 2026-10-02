@@ -11,6 +11,9 @@ desktop.ini
 !.vscode/settings.json
 !.vscode/extensions.json
 
+# Claude Code : settings.json est partagé, settings.local.json reste personnel
+.claude/settings.local.json
+
 # Variables d'environnement
 .env
 .env.*

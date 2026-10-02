@@ -1,9 +1,7 @@
 # TierList — Frontend
 
-Frontend **React 19 + TypeScript**, construit avec **Vite**, avec :
+Frontend **React 19 + TypeScript**, construit avec **Vite**, qui affiche le message renvoyé par `GET /hello` du backend. Outillage :
 
-- **Redux Toolkit** pour le store (slices + **RTK Query** pour les appels à l'API) ;
-- **Material UI** (version gratuite, `@mui/material`) pour les composants ;
 - **ESLint + Prettier** pour le lint et le formatage automatiques ;
 - **pnpm** comme gestionnaire de paquets.
 
@@ -37,7 +35,7 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 | Prévisualiser le build                | `pnpm preview`                     |
 | Vérifier les types TypeScript         | `pnpm typecheck`                   |
 
-Pour que les données s'affichent, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
+Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
 Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
 
 ---
@@ -84,67 +82,11 @@ Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `l
 frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
-│   ├── app/
-│   │   ├── store.ts        # configureStore + types RootState / AppDispatch
-│   │   └── hooks.ts        # useAppDispatch / useAppSelector typés
-│   ├── features/
-│   │   ├── api/
-│   │   │   └── apiSlice.ts # RTK Query : appels au backend FastAPI
-│   │   └── counter/
-│   │       └── counterSlice.ts # Exemple de slice Redux classique
-│   ├── App.tsx             # Page d'exemple (composants MUI)
-│   ├── main.tsx            # Point d'entrée : Provider Redux + ThemeProvider MUI
-│   └── theme.ts            # Thème Material UI
+│   ├── api/
+│   │   └── hello.ts        # Appel GET /api/hello vers le backend FastAPI
+│   ├── App.tsx             # Affiche le message du backend
+│   └── main.tsx            # Point d'entrée React
 ├── eslint.config.js
 ├── vite.config.ts          # Config Vite + proxy /api vers le backend
 └── package.json
 ```
-
----
-
-## 7. Recettes
-
-### Ajouter un slice Redux
-
-1. Créez `src/features/<nom>/<nom>Slice.ts` avec `createSlice` (voir `counterSlice.ts`).
-2. Ajoutez son reducer dans `src/app/store.ts` :
-   ```ts
-   reducer: {
-     counter: counterReducer,
-     monSlice: monSliceReducer,
-     [apiSlice.reducerPath]: apiSlice.reducer,
-   },
-   ```
-3. Dans un composant : `useAppSelector((state) => state.monSlice...)` et `useAppDispatch()`.
-
-### Ajouter un appel à l'API (RTK Query)
-
-Dans `src/features/api/apiSlice.ts`, ajoutez un endpoint puis exportez son hook :
-
-```ts
-getItem: builder.query<Item, number>({
-  query: (id) => `/items/${id}`,
-}),
-```
-
-```ts
-export const { useGetItemQuery } = apiSlice;
-// Dans un composant :
-const { data, isLoading, isError } = useGetItemQuery(1);
-```
-
-Utilisez `builder.mutation` pour les POST/PUT/DELETE, et `providesTags` / `invalidatesTags` pour rafraîchir automatiquement les données (voir `getItems` / `addItem`).
-
-### Utiliser un composant Material UI
-
-```tsx
-import { Button } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-
-<Button variant="contained" startIcon={<SaveIcon />}>
-  Enregistrer
-</Button>;
-```
-
-Catalogue des composants : https://mui.com/material-ui/all-components/ — icônes : https://mui.com/material-ui/material-icons/
-Le style se fait avec la prop `sx` ou via le thème dans `src/theme.ts`.

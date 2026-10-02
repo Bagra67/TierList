@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // /api/health -> http://127.0.0.1:8000/health (backend FastAPI)
+      // /api/hello -> http://127.0.0.1:8000/hello (backend FastAPI)
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

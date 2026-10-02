@@ -1,0 +1,22 @@
+# Base PostgreSQL de développement.
+# Lancer : docker compose up -d --wait   |   Arrêter : docker compose down
+services:
+  db:
+    image: postgres:18-alpine
+    # Mêmes identifiants que le backend : POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+    env_file: backend/.env
+    ports:
+      # Accessible uniquement depuis cette machine
+      - '127.0.0.1:5432:5432'
+    volumes:
+      # Depuis PostgreSQL 18, l'image stocke ses données sous /var/lib/postgresql/<version>
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

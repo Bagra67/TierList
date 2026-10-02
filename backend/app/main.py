@@ -1,6 +1,14 @@
-from fastapi import FastAPI
+import logging
+from typing import Annotated
 
-from app.routers import items
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db_session, ping_database
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="TierList API",
@@ -8,14 +16,25 @@ app = FastAPI(
     version="0.1.0",
 )
 
-app.include_router(items.router)
+
+class HelloResponse(BaseModel):
+    message: str
 
 
-@app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "Bienvenue sur l'API TierList"}
+class HealthResponse(BaseModel):
+    status: str
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+@app.get("/hello")
+def hello() -> HelloResponse:
+    return HelloResponse(message="Hello World")
+
+
+@app.get("/health/db", responses={503: {"description": "Base de données indisponible"}})
+def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthResponse:
+    try:
+        ping_database(session)
+    except SQLAlchemyError as exc:
+        logger.exception("Échec de la connexion à la base de données")
+        raise HTTPException(status_code=503, detail="Base de données indisponible") from exc
+    return HealthResponse(status="ok")
