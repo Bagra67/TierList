@@ -10,6 +10,7 @@ Ce document liste ce qui manque pour **initialiser** proprement le projet, avant
 - **Base** PostgreSQL 18 dans Docker (`compose.yaml`).
 - **Frontend** React + TypeScript (Vite) : affiche le « Hello World » renvoyé par le backend.
 - **Logs** : logs de l'application configurés via `LOG_LEVEL`, au format d'uvicorn.
+- **Erreurs** : format d'erreur JSON unique (`ErrorResponse`) pour les erreurs HTTP, de validation et imprévues ; lu par `ApiError` côté frontend.
 - **Contrat d'API** : `backend/openapi.json` exporté et vérifié ; types d'API du frontend générés à partir de lui (`pnpm gen:api`).
 - **Récupération des données** : TanStack Query au-dessus d'un client openapi-fetch commun, typé par le contrat d'API.
 - **Outillage** : uv, pnpm, Ruff, Pyright, ESLint, Prettier (aussi sur `docs/`), hook husky pre-commit, scripts `dev.*` ; versions de Node et pnpm épinglées.
@@ -27,8 +28,6 @@ Chaque point ci-dessous indique ce qui manque, pourquoi c'est utile et ce qu'il 
 Tous les points P1 sont réalisés.
 
 ## P2 : fortement recommandé
-
-10. **Format d'erreur unique côté backend** : gestionnaires globaux pour les exceptions non prévues (réponse 500 générique et journalisée) et pour les erreurs de validation, tous au même format JSON. Le frontend pourra alors toutes les traiter de la même façon, via `ApiError` (`frontend/src/api/client.ts`).
 
 11. **Séparer les sondes de santé** : `/health` vérifie seulement que l'application répond, `/health/db` que la base est joignable. Docker ou un hébergeur utilise la première, le diagnostic la seconde.
 

@@ -101,6 +101,16 @@ Les fixtures de `tests/integration/conftest.py` préparent la base par étapes. 
 
 Côté frontend, l'étape CI **Check API types are up to date** régénère `src/api/schema.d.ts` et échoue s'il diffère du fichier commité. Un changement de contrat qui casse le frontend fait échouer `pnpm typecheck`, y compris dans les simulations des tests.
 
+### 1.7 Tests unitaires : `tests/test_errors.py` (format d'erreur)
+
+Ces tests utilisent une petite application FastAPI dédiée, avec `register_error_handlers` et trois routes de test : les ajouter à `app.main` modifierait le contrat d'API. Son `TestClient` est créé avec `raise_server_exceptions=False` pour qu'une exception devienne une réponse, comme sur un vrai serveur.
+
+| Test                                              | Ce qu'il fait                                                                          | But                                                                                                                 | Résultat attendu                                                                                                                                                  |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_unexpected_error_returns_generic_500`       | Appelle une route qui lève `RuntimeError("secret internal detail")` et capture stderr. | Une erreur imprévue ne doit pas exposer de détail interne au client, mais doit être journalisée pour le diagnostic. | `500` avec `{"detail": "Erreur interne du serveur"}`, sans le message de l'exception ; stderr contient `ERROR:`, `Erreur non gérée sur GET /boom` et l'exception. |
+| `test_validation_error_lists_invalid_fields`      | Appelle `/items/abc` (`item_id` non entier, `limit` manquant).                         | Vérifier le format 422 sur lequel s'appuie le frontend.                                                             | `422`, `detail` vaut `Requête invalide`, `errors` liste `path.item_id` et `query.limit`, chacun avec un message.                                                  |
+| `test_http_exception_keeps_its_status_and_detail` | Appelle une route qui lève `HTTPException(404, "Introuvable")`.                        | Les erreurs prévues gardent leur statut et leur message.                                                            | `404` avec `{"detail": "Introuvable"}`.                                                                                                                           |
+
 ---
 
 ## 2. Frontend (Vitest)
@@ -143,10 +153,11 @@ Côté frontend, l'étape CI **Check API types are up to date** régénère `src
 
 Tests de `getHello`, l'appel d'API lui-même, avec un `fetch` simulé.
 
-| Test                                                            | Ce qu'il fait                                                                                 | But                                                                                                                    | Résultat attendu                                                                     |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `calls GET /api/hello and returns the JSON body`                | `fetch` répond `200` avec `{ message: 'Hello World' }` ; le test inspecte la requête envoyée. | Vérifier que le client commun vise la bonne URL (préfixe `/api`, redirigé par le proxy Vite) et renvoie le corps typé. | `{ message: 'Hello World' }` est renvoyé ; la requête est un `GET` sur `/api/hello`. |
-| `throws an ApiError carrying the status when the backend fails` | `fetch` répond `500` avec `{ detail: 'boom' }`.                                               | Vérifier le contrat d'erreur : toute réponse hors 2xx devient une `ApiError` que l'appelant peut inspecter.            | Une `ApiError` avec `status: 500` et `body: { detail: 'boom' }` est levée.           |
+| Test                                                                  | Ce qu'il fait                                                                                 | But                                                                                                                    | Résultat attendu                                                                              |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `calls GET /api/hello and returns the JSON body`                      | `fetch` répond `200` avec `{ message: 'Hello World' }` ; le test inspecte la requête envoyée. | Vérifier que le client commun vise la bonne URL (préfixe `/api`, redirigé par le proxy Vite) et renvoie le corps typé. | `{ message: 'Hello World' }` est renvoyé ; la requête est un `GET` sur `/api/hello`.          |
+| `throws an ApiError carrying the status when the backend fails`       | `fetch` répond `500` avec `{ detail: 'boom' }` (format `ErrorResponse` du backend).           | Vérifier le contrat d'erreur : toute réponse hors 2xx devient une `ApiError` que l'appelant peut inspecter.            | Une `ApiError` avec `status: 500`, `body: { detail: 'boom' }` et `message: 'boom'` est levée. |
+| `falls back to the HTTP status when the body is not an ErrorResponse` | `fetch` répond `502` avec un corps texte, comme le proxy Vite quand le backend est arrêté.    | L'erreur reste exploitable même quand le corps ne vient pas du backend.                                                | Une `ApiError` avec `status: 502` et `message: 'HTTP 502'` est levée.                         |
 
 ---
 

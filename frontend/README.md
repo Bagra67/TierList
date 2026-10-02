@@ -141,7 +141,7 @@ Server data goes through **TanStack Query** on top of a shared **openapi-fetch**
 Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`status`, `body`) is thrown for any non-2xx response.
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`status`, `body`, and the backend `detail` as `message`) is thrown for any non-2xx response.
 - `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
 - TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
 

@@ -42,6 +42,20 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ErrorResponse */
+        ErrorResponse: {
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors?: components["schemas"]["FieldError"][] | null;
+        };
+        /** FieldError */
+        FieldError: {
+            /** Field */
+            field: string;
+            /** Message */
+            message: string;
+        };
         /** HealthResponse */
         HealthResponse: {
             /** Status */
@@ -79,6 +93,15 @@ export interface operations {
                     "application/json": components["schemas"]["HelloResponse"];
                 };
             };
+            /** @description Erreur interne du serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     health_db_health_db_get: {
@@ -99,12 +122,23 @@ export interface operations {
                     "application/json": components["schemas"]["HealthResponse"];
                 };
             };
+            /** @description Erreur interne du serveur */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Base de données indisponible */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

@@ -174,6 +174,7 @@ backend/
 │   ├── main.py            # FastAPI entry point (GET /hello, GET /health/db)
 │   ├── core/
 │   │   ├── config.py      # Configuration read from .env (pydantic-settings)
+│   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
 │   │   └── logging.py     # Application logging (LOG_LEVEL, uvicorn format)
 │   └── db/
 │       ├── base.py        # Base class for SQLAlchemy models
@@ -183,6 +184,7 @@ backend/
 │   └── export_openapi.py  # Writes the API contract to openapi.json
 ├── tests/
 │   ├── test_main.py       # Unit tests with TestClient (no real database)
+│   ├── test_errors.py     # Error format tests (500, 422, HTTPException)
 │   └── integration/       # Tests against a real PostgreSQL (database <POSTGRES_DB>_test)
 ├── .env.example           # .env template (PostgreSQL credentials)
 ├── alembic.ini            # Alembic configuration
@@ -263,3 +265,21 @@ When you add or change a route or a Pydantic schema:
 4. commit `backend/openapi.json` and `frontend/src/api/schema.d.ts` together.
 
 If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails; if you forget step 2, the CI step "Check API types are up to date" fails.
+
+---
+
+## 12. Error format
+
+Every error response of the API has the same JSON shape, `ErrorResponse` (`app/core/errors.py`), exposed in the OpenAPI contract:
+
+```json
+{ "detail": "Requête invalide", "errors": [{ "field": "query.limit", "message": "Field required" }] }
+```
+
+| Case | Status | Body |
+| --- | --- | --- |
+| `HTTPException` raised by a route | the one given | `{"detail": "..."}` (FastAPI's default format, already compliant) |
+| Invalid request (path, query, body) | `422` | `detail` + `errors`: one entry per invalid field (`field` = location, `message`) |
+| Unexpected exception | `500` | `{"detail": "Erreur interne du serveur"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path |
+
+Raise an `HTTPException` with a clear `detail` for expected errors (not found, conflict…), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
