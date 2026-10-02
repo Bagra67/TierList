@@ -145,6 +145,23 @@ Les fixtures de `tests/integration/conftest.py` préparent la base par étapes. 
 
 Il n'y a pas de seuil minimal pour l'instant. La couverture aide à repérer le code non testé, mais elle ne prouve pas que les tests sont bons.
 
+### 3.1 Rapport de tests en CI
+
+Chaque exécution de la CI (GitHub → **Actions** → l'exécution → **Summary**) affiche, pour les jobs **Backend** et **Frontend** :
+
+| Section | Contenu |
+| --- | --- |
+| En-tête | Verdict (✅ Passed / ❌ Failed) et totaux : tests, réussis, échoués, ignorés, durée totale. |
+| ❌ Failures | Seulement si un test échoue : son nom, le message d'erreur et, dans un bloc dépliable, le détail de l'assertion et la trace. |
+| ⏭️ Skipped | Seulement si des tests sont ignorés : chaque test avec sa raison. |
+| All tests | Une ligne par test : statut, nom (`fichier::test` ou `fichier › describe > test`) et durée. |
+| 🐢 Slowest tests | Les 5 tests les plus lents, pour repérer ceux qui ralentissent. Affiché quand il y a plus de 5 tests. |
+| Couverture | Tableau de couverture (par fichier pour le backend, par métrique pour le frontend). |
+
+Le rapport est aussi produit **quand des tests échouent** : on lit la cause sans ouvrir les logs. Il est généré à partir des rapports JUnit XML de pytest (`--junitxml`) et de Vitest (reporter `junit`) par `.github/scripts/junit_summary.py`, qui n'utilise que la bibliothèque standard de Python.
+
+Les rapports bruts (JUnit XML et couverture) sont joints à l'exécution comme **artefacts** (`backend-test-reports`, `frontend-test-reports`) pendant 14 jours.
+
 ---
 
 ## 4. Écrire un nouveau test
