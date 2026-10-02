@@ -1,0 +1,184 @@
+name: CI
+
+on:
+  # Every PR, including stacked PRs whose base is another work branch
+  pull_request:
+  push:
+    branches: [develop, main]
+
+# A new push on the same branch / PR cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:18-alpine
+        # CI-only throwaway credentials, not secrets.
+        env:
+          POSTGRES_USER: tierlist
+          POSTGRES_PASSWORD: tierlist-ci
+          POSTGRES_DB: tierlist
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tierlist -d tierlist"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      POSTGRES_USER: tierlist
+      POSTGRES_PASSWORD: tierlist-ci
+      POSTGRES_DB: tierlist
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          working-directory: backend
+          enable-cache: true
+          # Relative to working-directory (backend/).
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Lint (Ruff)
+        run: uv run ruff check .
+
+      - name: Check formatting (Ruff)
+        run: uv run ruff format --check .
+
+      - name: Type check (Pyright)
+        run: uv run pyright
+
+      - name: Tests (unit + PostgreSQL integration) with coverage
+        run: >-
+          uv run pytest --cov=app --cov-report=term --cov-report=xml
+          --junitxml=reports/junit.xml
+
+      # Runs even when tests fail, so the summary shows which ones and why.
+      - name: Test report
+        if: ${{ !cancelled() }}
+        run: |
+          uv run python ../.github/scripts/junit_summary.py Backend reports/junit.xml >> "$GITHUB_STEP_SUMMARY"
+          echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY" \
+            || echo "No coverage data." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-reports
+          path: |
+            backend/reports/junit.xml
+            backend/coverage.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Installs the exact pnpm version pinned in the packageManager field.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The backend test checks openapi.json; this checks the types generated from it.
+      - name: Check API types are up to date
+        run: |
+          pnpm gen:api
+          if ! git diff --exit-code -- src/api/schema.d.ts; then
+            echo "::error file=frontend/src/api/schema.d.ts::API types are out of date: run 'pnpm gen:api' in frontend/ and commit src/api/schema.d.ts."
+            exit 1
+          fi
+
+      - name: Lint (ESLint)
+        run: pnpm lint
+
+      - name: Check formatting (Prettier)
+        run: pnpm format:check
+
+      - name: Type check (tsc)
+        run: pnpm typecheck
+
+      - name: Tests with coverage (Vitest)
+        run: >-
+          pnpm test:coverage --reporter=default --reporter=junit
+          --outputFile.junit=reports/junit.xml
+
+      # Runs even when tests fail, so the summary shows which ones and why.
+      - name: Test report
+        if: ${{ !cancelled() }}
+        run: |
+          python3 ../.github/scripts/junit_summary.py Frontend reports/junit.xml >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "No coverage data." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node -e '
+            const total = require("./coverage/coverage-summary.json").total;
+            const rows = ["statements", "branches", "functions", "lines"].map(
+              (metric) => "| " + metric + " | " + total[metric].pct + "% (" + total[metric].covered + "/" + total[metric].total + ") |",
+            );
+            console.log(["### Frontend coverage", "", "| Metric | Coverage |", "| --- | --- |", ...rows].join("\n"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-test-reports
+          path: |
+            frontend/reports/junit.xml
+            frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build
+        run: pnpm build
+
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: gitleaks scans every commit of the PR (or of the push).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PR comments would need the pull-requests: write permission; the failed check is enough.
+          GITLEAKS_ENABLE_COMMENTS: false

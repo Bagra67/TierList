@@ -1,150 +1,166 @@
 # TierList — Frontend
 
-Frontend **React 19 + TypeScript**, construit avec **Vite**, avec :
+English | [Français](README.fr.md)
 
-- **Redux Toolkit** pour le store (slices + **RTK Query** pour les appels à l'API) ;
-- **Material UI** (version gratuite, `@mui/material`) pour les composants ;
-- **ESLint + Prettier** pour le lint et le formatage automatiques ;
-- **pnpm** comme gestionnaire de paquets.
+**React 19 + TypeScript** frontend, built with **Vite**, which displays the message returned by the backend's `GET /hello`. Tooling:
 
-> Ce dossier fait partie du dépôt [TierList](../README.md). **Toutes les commandes ci-dessous se lancent depuis le dossier `frontend/`** (`cd frontend`).
+- **ESLint + Prettier** for automatic linting and formatting;
+- **pnpm** as the package manager.
 
----
-
-## 1. Prérequis
-
-- **Node.js 20.19+** (LTS recommandée) : `node --version`
-- **pnpm** : `npm install -g pnpm`, puis `pnpm --version`
+> This folder is part of the [TierList](../README.md) repository. **All commands below are run from the `frontend/` folder** (`cd frontend`).
 
 ---
 
-## 2. Installer le projet
+## 1. Prerequisites
+
+- **Node.js 24 LTS** (version pinned in `.nvmrc` at the repository root): `node --version`
+- **pnpm**: `npm install -g pnpm`, then `pnpm --version`. The exact version is pinned in the `packageManager` field of `package.json` and locked in `pnpm-lock.yaml`.
+
+---
+
+## 2. Installing the project
 
 ```bash
 pnpm install
 ```
 
-Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le hook git (husky) via le script `prepare`.
+Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables the git hook (husky) through the `prepare` script.
 
 ---
 
-## 3. Lancer le projet
+## 3. Running the project
 
-| Action                                | Commande                           |
-| ------------------------------------- | ---------------------------------- |
-| Serveur de dev (rechargement à chaud) | `pnpm dev` → http://localhost:5173 |
-| Build de production (dans `dist/`)    | `pnpm build`                       |
-| Prévisualiser le build                | `pnpm preview`                     |
-| Vérifier les types TypeScript         | `pnpm typecheck`                   |
+| Action                        | Command                            |
+| ----------------------------- | ---------------------------------- |
+| Dev server (hot reload)       | `pnpm dev` → http://localhost:5173 |
+| Production build (in `dist/`) | `pnpm build`                       |
+| Preview the build             | `pnpm preview`                     |
+| Check TypeScript types        | `pnpm typecheck`                   |
+| Run the tests (Vitest)        | `pnpm test`                        |
+| Tests in watch mode           | `pnpm test:watch`                  |
+| Tests with coverage           | `pnpm test:coverage`               |
 
-Pour que les données s'affichent, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
-Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
+For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
+Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
 
----
-
-## 4. Gérer les packages
-
-> ⚠️ Utilisez toujours `pnpm` (pas `npm install` ni `yarn`) pour garder `pnpm-lock.yaml` cohérent.
-
-| Action                                         | Commande                                                    |
-| ---------------------------------------------- | ----------------------------------------------------------- |
-| Ajouter un package                             | `pnpm add <package>` (ex : `pnpm add react-router`)         |
-| Ajouter une version précise                    | `pnpm add <package>@<version>` (ex : `pnpm add dayjs@1.11`) |
-| Ajouter un package de dev                      | `pnpm add -D <package>` (ex : `pnpm add -D vitest`)         |
-| Supprimer un package                           | `pnpm remove <package>`                                     |
-| Mettre à jour un package                       | `pnpm update <package>`                                     |
-| Mettre à jour vers la dernière version majeure | `pnpm update <package> --latest`                            |
-| Voir les packages obsolètes                    | `pnpm outdated`                                             |
-| Lister les packages installés                  | `pnpm list`                                                 |
-| Lancer un binaire installé                     | `pnpm exec <commande>`                                      |
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/testing.md).
 
 ---
 
-## 5. Lint et formatage
+## 4. Managing packages
 
-| Action                              | Commande            |
-| ----------------------------------- | ------------------- |
-| Analyser le code (ESLint)           | `pnpm lint`         |
-| Corriger automatiquement            | `pnpm lint:fix`     |
-| Formater tout le code (Prettier)    | `pnpm format`       |
-| Vérifier le formatage sans modifier | `pnpm format:check` |
+> ⚠️ Always use `pnpm` (not `npm install` or `yarn`) to keep `pnpm-lock.yaml` consistent.
 
-C'est automatique à deux endroits :
-
-- **À l'enregistrement dans VS Code** : formatage Prettier + corrections ESLint. Installez les extensions recommandées (VS Code les propose à l'ouverture du dossier `TierList`) : ESLint et Prettier.
-- **Avant chaque commit** : le hook husky lance `lint-staged`, qui corrige et formate les fichiers modifiés. Si une erreur ESLint ne peut pas être corrigée automatiquement, le commit est bloqué.
-
-Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
+| Action                             | Command                                                     |
+| ---------------------------------- | ----------------------------------------------------------- |
+| Add a package                      | `pnpm add <package>` (e.g. `pnpm add react-router`)         |
+| Add a specific version             | `pnpm add <package>@<version>` (e.g. `pnpm add dayjs@1.11`) |
+| Add a dev package                  | `pnpm add -D <package>` (e.g. `pnpm add -D vitest`)         |
+| Remove a package                   | `pnpm remove <package>`                                     |
+| Update a package                   | `pnpm update <package>`                                     |
+| Update to the latest major version | `pnpm update <package> --latest`                            |
+| Show outdated packages             | `pnpm outdated`                                             |
+| List installed packages            | `pnpm list`                                                 |
+| Run an installed binary            | `pnpm exec <command>`                                       |
 
 ---
 
-## 6. Structure du projet
+## 5. Lint and formatting
+
+| Action                               | Command             |
+| ------------------------------------ | ------------------- |
+| Analyze the code (ESLint)            | `pnpm lint`         |
+| Fix automatically                    | `pnpm lint:fix`     |
+| Format all the code (Prettier)       | `pnpm format`       |
+| Check formatting without changing it | `pnpm format:check` |
+
+It happens automatically in two places:
+
+- **On save in VS Code**: Prettier formatting + ESLint fixes. Install the recommended extensions (VS Code suggests them when opening the `TierList` folder): ESLint and Prettier.
+- **Before each commit**: the husky hook runs `lint-staged`, which fixes and formats the modified files. If an ESLint error cannot be fixed automatically, the commit is blocked.
+
+Configuration: `eslint.config.js`, `.prettierrc`, `.prettierignore`, `lint-staged` section of `package.json`.
+
+`pnpm format` and `pnpm format:check` also cover the repository's `docs/` folder, with the same `.prettierrc` (CI checks it too). The pre-commit hook does not format `docs/`: run `pnpm format` before committing a doc change.
+
+---
+
+## 6. Project structure
 
 ```
 frontend/
-├── public/                 # Fichiers statiques servis tels quels (favicon…)
+├── public/                 # Static files served as is (favicon…)
 ├── src/
-│   ├── app/
-│   │   ├── store.ts        # configureStore + types RootState / AppDispatch
-│   │   └── hooks.ts        # useAppDispatch / useAppSelector typés
-│   ├── features/
-│   │   ├── api/
-│   │   │   └── apiSlice.ts # RTK Query : appels au backend FastAPI
-│   │   └── counter/
-│   │       └── counterSlice.ts # Exemple de slice Redux classique
-│   ├── App.tsx             # Page d'exemple (composants MUI)
-│   ├── main.tsx            # Point d'entrée : Provider Redux + ThemeProvider MUI
-│   └── theme.ts            # Thème Material UI
+│   ├── api/
+│   │   ├── client.ts       # Shared HTTP client (openapi-fetch) + ApiError
+│   │   ├── queryClient.ts  # TanStack Query setup (retry, error logging)
+│   │   ├── hello.ts        # GET /hello: getHello() + useHello() hook
+│   │   ├── hello.test.ts   # getHello tests: URL, JSON, ApiError
+│   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
+│   ├── test/
+│   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup)
+│   │   └── renderWithQueryClient.tsx # render() inside a fresh QueryClient
+│   ├── App.tsx             # Displays the backend message
+│   ├── App.test.tsx        # App tests: loading, message, error
+│   └── main.tsx            # React entry point
 ├── eslint.config.js
-├── vite.config.ts          # Config Vite + proxy /api vers le backend
+├── vite.config.ts          # Vite config + /api proxy + Vitest config
 └── package.json
 ```
 
 ---
 
-## 7. Recettes
+## 7. API types (generated)
 
-### Ajouter un slice Redux
-
-1. Créez `src/features/<nom>/<nom>Slice.ts` avec `createSlice` (voir `counterSlice.ts`).
-2. Ajoutez son reducer dans `src/app/store.ts` :
-   ```ts
-   reducer: {
-     counter: counterReducer,
-     monSlice: monSliceReducer,
-     [apiSlice.reducerPath]: apiSlice.reducer,
-   },
-   ```
-3. Dans un composant : `useAppSelector((state) => state.monSlice...)` et `useAppDispatch()`.
-
-### Ajouter un appel à l'API (RTK Query)
-
-Dans `src/features/api/apiSlice.ts`, ajoutez un endpoint puis exportez son hook :
+API types are **never written by hand**: `src/api/schema.d.ts` is generated by `pnpm gen:api` from `backend/openapi.json`, the contract exported by the backend. Use them through `components['schemas'][...]`, as in `src/api/hello.ts`:
 
 ```ts
-getItem: builder.query<Item, number>({
-  query: (id) => `/items/${id}`,
-}),
+import type { components } from './schema';
+
+export type HelloResponse = components['schemas']['HelloResponse'];
 ```
+
+A backend change that breaks the frontend then becomes a `pnpm typecheck` error.
+
+When you add or change a route or a Pydantic schema:
+
+1. `uv run python scripts/export_openapi.py` (in `backend/`) updates `openapi.json`;
+2. `pnpm gen:api` (in `frontend/`) regenerates the TypeScript types;
+3. fix any `pnpm typecheck` error: it shows the frontend code affected by the change;
+4. commit `backend/openapi.json` and `frontend/src/api/schema.d.ts` together.
+
+If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails; if you forget step 2, the CI step "Check API types are up to date" fails.
+
+---
+
+## 8. Data fetching
+
+Server data goes through **TanStack Query** on top of a shared **openapi-fetch** client. Components never call `fetch` or `useEffect` to load data:
+
+```
+Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
+```
+
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`status`, `body`, and the backend `detail` as `message`) is thrown for any non-2xx response.
+- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
+- TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
+
+To add an endpoint, create `src/api/<resource>.ts` following `hello.ts`:
 
 ```ts
-export const { useGetItemQuery } = apiSlice;
-// Dans un composant :
-const { data, isLoading, isError } = useGetItemQuery(1);
+export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
+  const { data, error, response } = await apiClient.GET('/hello', { signal });
+  if (data === undefined) {
+    throw new ApiError(response.status, error);
+  }
+  return data;
+}
+
+export function useHello() {
+  return useQuery({ queryKey: ['hello'], queryFn: ({ signal }) => getHello(signal) });
+}
 ```
 
-Utilisez `builder.mutation` pour les POST/PUT/DELETE, et `providesTags` / `invalidatesTags` pour rafraîchir automatiquement les données (voir `getItems` / `addItem`).
+The component then only reads the state: `const { data, isPending, isError } = useHello();`.
 
-### Utiliser un composant Material UI
-
-```tsx
-import { Button } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-
-<Button variant="contained" startIcon={<SaveIcon />}>
-  Enregistrer
-</Button>;
-```
-
-Catalogue des composants : https://mui.com/material-ui/all-components/ — icônes : https://mui.com/material-ui/material-icons/
-Le style se fait avec la prop `sx` ou via le thème dans `src/theme.ts`.
+In tests, render components with `renderWithQueryClient` (`src/test/`) and stub `fetch`, as in `App.test.tsx`.

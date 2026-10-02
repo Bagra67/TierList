@@ -747,6 +747,11 @@ The backend API is the authoritative contract.
 -   Keep HTTP status codes meaningful.
 -   Handle API errors consistently.
 -   Update frontend API types when backend contracts change.
+-   Never write frontend API types by hand: they are generated from the
+    backend OpenAPI schema. After a contract change, run
+    `uv run python scripts/export_openapi.py` (backend) then
+    `pnpm gen:api` (frontend), and commit `backend/openapi.json` and
+    `frontend/src/api/schema.d.ts` together.
 -   Add or update tests when contracts change.
 
 For breaking changes:
@@ -875,6 +880,15 @@ For new functionality:
 -   Test important error cases.
 -   Test important boundary conditions.
 
+## Testing guide
+
+`docs/testing.md` (English) and `docs/testing.fr.md` (French) describe
+every test: what it does, its purpose and the expected result.
+
+Whenever a test, a test fixture or a test tool is added, changed,
+renamed or removed, BOTH files MUST be updated in the same PR, so that
+the guide always matches the actual tests.
+
 ## MUST NOT
 
 -   Delete failing tests merely to make CI pass.
@@ -959,6 +973,27 @@ await asyncio.sleep(0.5)
 Do not leave misleading comments.
 
 Update comments when behavior changes.
+
+## Documentation language
+
+All human-facing documentation (READMEs, files under `docs/`, guides)
+MUST exist in **English and French**:
+
+-   `name.md` is the English version and the reference.
+-   `name.fr.md` is the French version, in the same directory.
+-   Each file starts with a language switcher:
+    `English | [Français](name.fr.md)` in the English file and
+    `[English](name.md) | Français` in the French one.
+-   Relative links point to files in the same language
+    (e.g. `README.fr.md` links to `backend/README.fr.md`).
+-   Both versions MUST be updated in the same PR and stay equivalent in
+    content.
+
+Exceptions:
+
+-   `AGENTS.md` stays English-only (instructions for agents).
+-   `LICENSE` is already bilingual in a single file.
+-   Code comments are not concerned.
 
 ------------------------------------------------------------------------
 
@@ -1155,6 +1190,19 @@ Review the final diff.
 
 When asked to create a commit, use a clear, focused commit message.
 
+Commit messages and branch names follow **Conventional Commits**:
+
+-   Commits: `type(scope): summary` (e.g. `feat(backend): ...`,
+    `docs: ...`). Checked locally by commitlint
+    (`frontend/.husky/commit-msg`): lowercase summary, body lines of
+    100 characters at most.
+-   Branches: `type/short-topic` (e.g. `chore/starter-setup`).
+
+Everything git-related MUST be written in **English**: commit messages
+(subject and body), branch names, pull request titles and descriptions,
+including squash and merge commit messages. Existing French history is
+left as is.
+
 ------------------------------------------------------------------------
 
 # 40. Pull Requests
@@ -1178,6 +1226,81 @@ The PR description should explain:
 
 Do not create a PR claiming successful validation if validation was not
 actually performed.
+
+## Merging
+
+Pull requests MUST be merged with a **squash merge**: each PR becomes a
+single commit on the target branch.
+
+**Exception — release PRs (`develop` → `main`)** MUST use a regular
+**merge commit** (no squash, no rebase). Squashing them would give `main`
+commits that `develop` does not have, making the two branches diverge.
+The merge commit message follows the same format, e.g.
+`chore(release): merge develop into main (#2)`.
+
+The squash commit message MUST:
+
+-   Follow Conventional Commits.
+-   Summarize the PR very briefly: a subject line plus, at most, a few
+    short bullet points.
+-   End the subject line with the PR number, e.g. `(#12)`.
+
+Example:
+
+``` text
+chore: bootstrap the starter (Hello World, PostgreSQL, tooling) (#1)
+
+- frontend reduced to the backend Hello World, dev.* scripts
+- backend wired to PostgreSQL (Docker, SQLAlchemy, Alembic, /health/db)
+```
+
+With the GitHub CLI:
+
+``` bash
+# Feature PR -> develop (also deletes the work branch, locally and on origin)
+gh pr merge <N> --squash --delete-branch --subject "<type>(<scope>): <summary> (#<N>)" --body "<short bullets>"
+
+# Release PR develop -> main (never delete develop)
+gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<short bullets>"
+```
+
+These merge methods are also enforced by the GitHub rulesets: `develop`
+only allows squash merges, `main` only allows merge commits.
+
+## Releases and versioning
+
+Every merge of `develop` into `main` is a release `vX.Y.Z` (Semantic
+Versioning). Full process: `docs/releasing.md`.
+
+-   The version is computed from the squash commits since the last tag:
+    `!` or a `BREAKING CHANGE:` footer bumps X (Y while in 0.x),
+    `feat` bumps Y, `fix`/`perf` bump Z; other types do not bump.
+-   A breaking change MUST carry `!` in the squash subject (e.g.
+    `feat(api)!: ...`) and a `BREAKING CHANGE:` footer explaining the
+    migration.
+-   Prepare a release with `scripts/prepare-release.sh` on a
+    `chore/release-vX.Y.Z` branch from `develop`, squash-merge
+    `chore(release): prepare vX.Y.Z`, then merge the release PR
+    `chore(release): vX.Y.Z` into `main` with a merge commit.
+-   Never edit version fields by hand outside that script, never create
+    `vX.Y.Z` tags by hand: the `Release` workflow tags `main`.
+-   Moving to 1.0.0 is a user decision (`--version 1.0.0`).
+
+## Branch cleanup
+
+Once a work branch has been merged into `develop`, it MUST be deleted,
+both locally and on `origin`. `--delete-branch` above does both; if the
+PR was merged another way, delete it manually:
+
+``` bash
+git switch develop
+git pull
+git branch -D <branch>            # -D: a squash merge is not seen as merged by git
+git push origin --delete <branch>
+git fetch --prune
+```
+
+`main` and `develop` are long-lived and MUST never be deleted.
 
 ------------------------------------------------------------------------
 

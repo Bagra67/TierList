@@ -1,110 +1,112 @@
-# TierList — Backend FastAPI
+# TierList — FastAPI backend
 
-Backend Python basé sur [FastAPI](https://fastapi.tiangolo.com/), géré avec le gestionnaire de paquets et de projets [uv](https://docs.astral.sh/uv/).
+English | [Français](README.fr.md)
 
-> Ce dossier fait partie du dépôt [TierList](../README.md). **Toutes les commandes ci-dessous se lancent depuis le dossier `backend/`** (`cd backend`).
+Python backend built with [FastAPI](https://fastapi.tiangolo.com/), managed with the [uv](https://docs.astral.sh/uv/) package and project manager.
+
+> This folder is part of the [TierList](../README.md) repository. **All commands below are run from the `backend/` folder** (`cd backend`).
 
 ---
 
-## 1. Prérequis
+## 1. Prerequisites
 
-- **uv** (il installe et gère lui-même Python si besoin)
-- Python **3.11+** (version fixée dans `.python-version`)
+- **uv** (it installs and manages Python itself if needed)
+- Python **3.11+** (version pinned in `.python-version`)
 
-### Installer uv
+### Installing uv
 
-**Windows (PowerShell)** :
+**Windows (PowerShell)**:
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-**macOS / Linux** :
+**macOS / Linux**:
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Redémarrez ensuite votre terminal, puis vérifiez :
+Then restart your terminal and check:
 ```bash
 uv --version
 ```
 
 ---
 
-## 2. Installer le projet
+## 2. Installing the project
 
-Depuis le dossier `backend/` :
+From the `backend/` folder:
 ```bash
 uv sync
 ```
 
-Cette commande :
-- crée l'environnement virtuel `.venv/` s'il n'existe pas ;
-- installe toutes les dépendances (y compris celles de dev) exactement aux versions du fichier `uv.lock`.
+This command:
+- creates the `.venv/` virtual environment if it does not exist;
+- installs all dependencies (dev ones included) at the exact versions of `uv.lock`.
 
-### Activer l'environnement virtuel (optionnel)
+### Activating the virtual environment (optional)
 
-Avec `uv run`, l'activation n'est **pas nécessaire** : uv utilise automatiquement `.venv`.
-Si vous voulez quand même l'activer (par ex. pour utiliser `python` ou `fastapi` directement) :
+With `uv run`, activation is **not needed**: uv uses `.venv` automatically.
+If you still want to activate it (e.g. to call `python` or `fastapi` directly):
 
-| Système | Commande |
+| System | Command |
 |---|---|
 | Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
 | Windows (cmd) | `.venv\Scripts\activate.bat` |
 | macOS / Linux | `source .venv/bin/activate` |
 
-Pour le désactiver : `deactivate`.
+To deactivate it: `deactivate`.
 
-> VS Code est déjà configuré (`.vscode/settings.json` à la racine) pour utiliser `backend/.venv`. Sinon : `Ctrl+Shift+P` → *Python: Select Interpreter*.
+> VS Code is already configured (`.vscode/settings.json` at the root) to use `backend/.venv`. Otherwise: `Ctrl+Shift+P` → *Python: Select Interpreter*.
 
 ---
 
-## 3. Lancer le serveur
+## 3. Running the server
 
-**Mode développement** (rechargement automatique à chaque modification) :
+**Development mode** (auto-reload on every change):
 ```bash
 uv run fastapi dev app/main.py
 ```
 
-**Mode production** :
+**Production mode**:
 ```bash
 uv run fastapi run app/main.py
 ```
 
-Changer le port / l'hôte :
+Change the port / host:
 ```bash
 uv run fastapi dev app/main.py --port 8080 --host 0.0.0.0
 ```
 
-Une fois lancé :
-- API : http://127.0.0.1:8000
-- Documentation interactive (Swagger) : http://127.0.0.1:8000/docs
-- Documentation ReDoc : http://127.0.0.1:8000/redoc
+Once running:
+- API: http://127.0.0.1:8000
+- Interactive documentation (Swagger): http://127.0.0.1:8000/docs
+- ReDoc documentation: http://127.0.0.1:8000/redoc
 
-Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/health` est redirigée vers `http://127.0.0.1:8000/health`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/hello` is forwarded to `http://127.0.0.1:8000/hello`. The backend must therefore run on port **8000** during frontend development.
 
 ---
 
-## 4. Gérer les packages
+## 4. Managing packages
 
-> ⚠️ N'utilisez pas `pip install` directement : passez toujours par `uv` pour que `pyproject.toml` et `uv.lock` restent à jour.
+> ⚠️ Do not use `pip install` directly: always go through `uv` so that `pyproject.toml` and `uv.lock` stay up to date.
 
-| Action | Commande |
+| Action | Command |
 |---|---|
-| Ajouter un package | `uv add <package>` (ex : `uv add sqlalchemy`) |
-| Ajouter une version précise | `uv add "sqlalchemy>=2.0"` |
-| Ajouter un package de dev (tests, lint…) | `uv add --dev <package>` (ex : `uv add --dev ruff`) |
-| Supprimer un package | `uv remove <package>` |
-| Mettre à jour un package | `uv lock --upgrade-package <package>` puis `uv sync` |
-| Mettre à jour tous les packages | `uv lock --upgrade` puis `uv sync` |
-| Voir l'arbre des dépendances | `uv tree` |
-| Lister les packages installés | `uv pip list` |
-| Réinstaller depuis le lockfile | `uv sync` |
-| Installer sans les dépendances de dev (prod) | `uv sync --no-dev` |
+| Add a package | `uv add <package>` (e.g. `uv add sqlalchemy`) |
+| Add a specific version | `uv add "sqlalchemy>=2.0"` |
+| Add a dev package (tests, lint…) | `uv add --dev <package>` (e.g. `uv add --dev ruff`) |
+| Remove a package | `uv remove <package>` |
+| Upgrade a package | `uv lock --upgrade-package <package>` then `uv sync` |
+| Upgrade all packages | `uv lock --upgrade` then `uv sync` |
+| Show the dependency tree | `uv tree` |
+| List installed packages | `uv pip list` |
+| Reinstall from the lockfile | `uv sync` |
+| Install without dev dependencies (prod) | `uv sync --no-dev` |
 
-Exécuter n'importe quelle commande dans l'environnement du projet :
+Run any command inside the project environment:
 ```bash
 uv run python script.py
-uv run <commande>
+uv run <command>
 ```
 
 ---
@@ -115,73 +117,171 @@ uv run <commande>
 uv run pytest
 ```
 
-Mode verbeux : `uv run pytest -v`
+Verbose mode: `uv run pytest -v` — with coverage: `uv run pytest --cov=app`
+
+What each test does, its purpose and expected result: [testing guide](../docs/testing.md).
+
+### Integration tests (real PostgreSQL)
+
+Tests under `tests/integration/` (marker `integration`) run against a real PostgreSQL:
+
+- Start the database first: `docker compose up -d --wait` (from the repository root).
+- They use a dedicated `<POSTGRES_DB>_test` database (e.g. `tierlist_test`), created automatically, with the Alembic migrations applied: **development data is never touched**.
+- Each test runs in a transaction that is rolled back at the end.
+- If PostgreSQL is not reachable, they are **skipped** locally, but they **fail** on CI.
+
+| Action | Command |
+|---|---|
+| Unit tests only | `uv run pytest -m "not integration"` |
+| Integration tests only | `uv run pytest -m integration` |
 
 ---
 
-## 6. Lint et formatage (Ruff)
+## 6. Lint and formatting (Ruff)
 
-[Ruff](https://docs.astral.sh/ruff/) sert à la fois de linter et de formateur. Il est configuré dans `pyproject.toml` (section `[tool.ruff]`).
+[Ruff](https://docs.astral.sh/ruff/) is both the linter and the formatter. It is configured in `pyproject.toml` (`[tool.ruff]` section).
 
-| Action | Commande |
+| Action | Command |
 |---|---|
-| Analyser le code | `uv run ruff check .` |
-| Corriger automatiquement | `uv run ruff check . --fix` |
-| Formater le code | `uv run ruff format .` |
-| Vérifier le formatage sans modifier (CI) | `uv run ruff format . --check` |
+| Analyze the code | `uv run ruff check .` |
+| Fix automatically | `uv run ruff check . --fix` |
+| Format the code | `uv run ruff format .` |
+| Check formatting without changing files (CI) | `uv run ruff format . --check` |
 
-Le hook git `pre-commit` (voir le [README racine](../README.md)) lance automatiquement `ruff check` et `ruff format --check` avant chaque commit. Pour corriger avant de commiter :
+The `pre-commit` git hook (see the [root README](../README.md)) automatically runs `ruff check` and `ruff format --check` before each commit. To fix things before committing:
 ```bash
 uv run ruff check . --fix && uv run ruff format .
 ```
 
-> Dans VS Code, installez l'extension **Ruff** (`charliermarsh.ruff`) pour avoir le lint et le formatage à l'enregistrement.
+> In VS Code, install the **Ruff** extension (`charliermarsh.ruff`) to get linting and formatting on save.
+
+### Type checking (Pyright)
+
+```bash
+uv run pyright
+```
+
+Configured in `pyproject.toml` (`[tool.pyright]`, `standard` mode, on `app/`, `tests/` and `migrations/`). Also run by CI.
 
 ---
 
-## 7. Structure du projet
+## 7. Project structure
 
 ```
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (routes / et /health)
-│   └── routers/
-│       ├── __init__.py
-│       └── items.py       # Exemple de routes CRUD /items
+│   ├── main.py            # FastAPI entry point (GET /hello, GET /health, GET /health/db)
+│   ├── core/
+│   │   ├── config.py      # Configuration read from .env (pydantic-settings)
+│   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
+│   │   └── logging.py     # Application logging (LOG_LEVEL, uvicorn format)
+│   └── db/
+│       ├── base.py        # Base class for SQLAlchemy models
+│       └── session.py     # Engine, session (FastAPI dependency), database ping
+├── migrations/            # Alembic migrations (env.py, versions/)
+├── scripts/
+│   └── export_openapi.py  # Writes the API contract to openapi.json
 ├── tests/
-│   └── test_main.py       # Tests avec TestClient
-├── .python-version        # Version de Python utilisée par uv
-├── pyproject.toml         # Métadonnées + dépendances du projet
-├── uv.lock                # Versions exactes verrouillées (à commiter)
-└── README.md
+│   ├── test_main.py       # Unit tests with TestClient (no real database)
+│   ├── test_errors.py     # Error format tests (500, 422, HTTPException)
+│   └── integration/       # Tests against a real PostgreSQL (database <POSTGRES_DB>_test)
+├── .env.example           # .env template (PostgreSQL credentials)
+├── alembic.ini            # Alembic configuration
+├── .python-version        # Python version used by uv
+├── pyproject.toml         # Project metadata + dependencies
+├── openapi.json           # API contract (generated, committed)
+├── uv.lock                # Exact locked versions (to commit)
+└── README.md / README.fr.md   # This file (English / French)
 ```
-
-### Ajouter un nouveau router
-
-1. Créez `app/routers/mon_router.py` :
-   ```python
-   from fastapi import APIRouter
-
-   router = APIRouter(prefix="/mon-router", tags=["mon-router"])
-
-
-   @router.get("/")
-   def lister():
-       return []
-   ```
-2. Enregistrez-le dans `app/main.py` :
-   ```python
-   from app.routers import items, mon_router
-
-   app.include_router(mon_router.router)
-   ```
 
 ---
 
-## 8. Bonnes pratiques
+## 8. Good practices
 
-- **Commitez** `pyproject.toml`, `uv.lock` et `.python-version`.
-- **Ne commitez pas** `.venv/` (déjà dans `.gitignore`).
-- Après un `git pull`, lancez `uv sync` pour vous remettre à jour.
-- Changer de version de Python : `uv python pin 3.12` puis `uv sync`.
+- **Commit** `pyproject.toml`, `uv.lock` and `.python-version`.
+- **Do not commit** `.venv/` (already in `.gitignore`).
+- After a `git pull`, run `uv sync` to get up to date.
+- Change the Python version: `uv python pin 3.12` then `uv sync`.
+- **Do not commit** `.env`: only `.env.example` is versioned.
+
+---
+
+## 9. Database (PostgreSQL + SQLAlchemy + Alembic)
+
+The database runs in Docker (`compose.yaml` at the repository root, see the [root README](../README.md)). The backend connects to it with **SQLAlchemy 2** and the **psycopg 3** driver.
+
+### Configuration
+
+Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `POSTGRES_USER` | User | — (required) |
+| `POSTGRES_PASSWORD` | Password | — (required) |
+| `POSTGRES_DB` | Database name | — (required) |
+| `POSTGRES_HOST` | Host as seen from the backend | `127.0.0.1` |
+| `POSTGRES_PORT` | Port | `5432` |
+| `LOG_LEVEL` | Application log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL` (case-insensitive) | `INFO` |
+
+The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
+
+### Health probes
+
+`GET /health` only says the application is running (`200 {"status": "ok"}`), without touching the database: use it as the liveness probe for Docker or a hosting platform, so that a database outage does not make them restart a working application.
+
+`GET /health/db` runs `SELECT 1`: `200 {"status": "ok"}` if the database answers, otherwise `503 {"detail": "Base de données indisponible"}` (the detailed error is in the backend logs).
+
+### Migrations (Alembic)
+
+| Action | Command |
+|---|---|
+| Create a migration from the models | `uv run alembic revision --autogenerate -m "description"` |
+| Apply migrations | `uv run alembic upgrade head` |
+| Revert the last migration | `uv run alembic downgrade -1` |
+| Show the database's current version | `uv run alembic current` |
+
+Models must inherit from `app.db.base.Base` and be imported by `migrations/env.py` to be detected by `--autogenerate`. **Always review** a generated migration before applying it.
+
+---
+
+## 10. Logging
+
+Application logs (loggers under `app`, e.g. `logging.getLogger(__name__)` in `app/...`) are configured by `app/core/logging.py`:
+
+- written to stderr with the **same format as uvicorn**, plus the logger name: `ERROR:    app.main - Échec de la connexion à la base de données`;
+- level set by `LOG_LEVEL` (in `.env` or the environment, default `INFO`); an invalid value stops the application at startup with a clear error;
+- uvicorn's own logs keep their configuration: use `--log-level` on `fastapi dev` / `fastapi run` to change them.
+
+---
+
+## 11. API contract (OpenAPI)
+
+`openapi.json` is a snapshot of the API contract: the OpenAPI schema FastAPI builds from the routes and Pydantic models (the same one behind `/docs`). It is committed, so every PR shows whether it changes the API, and the frontend **generates its TypeScript types** from it (`pnpm gen:api`) instead of copying them by hand.
+
+When you add or change a route or a Pydantic schema:
+
+1. `uv run python scripts/export_openapi.py` (in `backend/`) updates `openapi.json`;
+2. `pnpm gen:api` (in `frontend/`) regenerates the TypeScript types;
+3. fix any `pnpm typecheck` error: it shows the frontend code affected by the change;
+4. commit `backend/openapi.json` and `frontend/src/api/schema.d.ts` together.
+
+If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails; if you forget step 2, the CI step "Check API types are up to date" fails.
+
+---
+
+## 12. Error format
+
+Every error response of the API has the same JSON shape, `ErrorResponse` (`app/core/errors.py`), exposed in the OpenAPI contract:
+
+```json
+{ "detail": "Requête invalide", "errors": [{ "field": "query.limit", "message": "Field required" }] }
+```
+
+| Case | Status | Body |
+| --- | --- | --- |
+| `HTTPException` raised by a route | the one given | `{"detail": "..."}` (FastAPI's default format, already compliant) |
+| Invalid request (path, query, body) | `422` | `detail` + `errors`: one entry per invalid field (`field` = location, `message`) |
+| Unexpected exception | `500` | `{"detail": "Erreur interne du serveur"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path |
+
+Raise an `HTTPException` with a clear `detail` for expected errors (not found, conflict…), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.

@@ -1,6 +1,10 @@
 # Fins de ligne LF partout (cohérent avec Prettier et Ruff, évite les diffs CRLF sous Windows)
 * text=auto eol=lf
 
+# Scripts Windows : cmd.exe et PowerShell 5.1 attendent du CRLF
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
 *.png binary
 *.jpg binary
 *.ico binary

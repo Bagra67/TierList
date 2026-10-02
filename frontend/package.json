@@ -3,15 +3,23 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "gen:api": "openapi-typescript ../backend/openapi.json -o src/api/schema.d.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --config .prettierrc --write . ../docs",
+    "format:check": "prettier --config .prettierrc --check . ../docs",
     "prepare": "cd .. && husky frontend/.husky"
   },
   "lint-staged": {
@@ -22,32 +30,36 @@
     "*.{json,css,md,html}": "prettier --write"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@fontsource/roboto": "^5.3.0",
-    "@mui/icons-material": "^9.4.0",
-    "@mui/material": "^9.4.0",
-    "@reduxjs/toolkit": "^2.13.0",
+    "@tanstack/react-query": "^5.104.0",
+    "openapi-fetch": "^0.17.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-redux": "^9.3.0"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "git-cliff": "^2.14.2",
     "globals": "^17.13.0",
     "husky": "^9.1.7",
+    "jsdom": "^30.1.1",
     "lint-staged": "^17.6.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.71.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.3"
   }
 }

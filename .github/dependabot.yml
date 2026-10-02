@@ -1,0 +1,49 @@
+# Weekly dependency updates, opened as PRs against develop (same flow as any change).
+# Commit messages follow Conventional Commits: chore(deps): ... / chore(deps-dev): ...
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm # also handles pnpm (pnpm-lock.yaml)
+    directory: /frontend
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope

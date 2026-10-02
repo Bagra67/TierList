@@ -11,6 +11,7 @@ dist/
 # Tests / outils
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Variables d'environnement
@@ -19,3 +20,6 @@ htmlcov/
 # IDE
 .vscode/
 .idea/
+
+# Rapports JUnit des tests (CI)
+reports/
