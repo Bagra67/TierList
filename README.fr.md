@@ -20,7 +20,7 @@ TierList/
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
-├── docs/               # Documentation (feuille de route…)
+├── docs/               # Documentation (guide des tests, feuille de route…)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
 
@@ -130,7 +130,7 @@ Commandes manuelles :
 | Tests | `uv run pytest` | `pnpm test` |
 | Tests + couverture | `uv run pytest --cov=app` | `pnpm test:coverage` |
 
-Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local).
+Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/testing.fr.md](docs/testing.fr.md).
 
 ### Intégration continue (GitHub Actions)
 
