@@ -106,7 +106,7 @@ frontend/
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
 │   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
-│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage) + tests
+│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
 │   │   ├── renderWithQueryClient.tsx # render() inside a fresh QueryClient

@@ -17,6 +17,6 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 2. Decisions to take
 
-- [ ] Features not available yet ([authentication guide](docs/authentication.md#not-available-yet)): "forgot password", limiting repeated sign-in attempts, other identity providers.
+- [ ] Features not available yet ([authentication guide](docs/authentication.md#not-available-yet)): other identity providers (Discord, GitHub…), to add with the first one actually wanted. Rate limiting is planned at the host level (see "Before the first deployment").
 - [ ] Design system (accent color, typography, logo), **once the tier list editor and one or two features around it exist**, to design on real screens. Until then: theme tokens only (`bg-primary`, `text-muted-foreground`…), no hard-coded color, so the design system is mostly a change of the variables in `frontend/src/index.css` ([frontend README](frontend/README.md#10-ui-components)). The tier colors (S, A, B…) are decided with the editor, as light and dark tokens.
 - [ ] Moving to version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), when the API is considered stable.
