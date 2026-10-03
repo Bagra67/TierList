@@ -24,7 +24,7 @@ TierList/
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
 ├── docs/               # Documentation (architecture, testing guide, i18n, releasing)
-├── TODO.md / TODO.fr.md       # Manual steps left to do (configuration, checks, release)
+├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```
 
