@@ -1,4 +1,4 @@
-# Base PostgreSQL de développement.
+# Services de développement : base PostgreSQL et Mailpit (boîte de réception locale).
 # Lancer : docker compose up -d --wait   |   Arrêter : docker compose down
 services:
   db:
@@ -16,6 +16,16 @@ services:
       interval: 2s
       timeout: 5s
       retries: 15
+    restart: unless-stopped
+
+  # Reçoit les emails envoyés par le backend sans jamais les distribuer (docs/emails.md).
+  # Interface web : http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1
+    ports:
+      # SMTP (SMTP_HOST=127.0.0.1, SMTP_PORT=1025) et interface web, depuis cette machine seulement
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
     restart: unless-stopped
 
 volumes:
