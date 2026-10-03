@@ -86,7 +86,7 @@ git fetch -q origin develop
 
 echo "[version] backend/pyproject.toml, frontend/package.json, app.version -> $version"
 (cd backend && uv version --quiet "$version")
-(cd frontend && pnpm version "$version" --no-git-tag-version --allow-same-version > /dev/null)
+(cd frontend && pnpm version "$version" --no-git-tag-version --no-git-checks --allow-same-version > /dev/null)
 sed -i "s/^    version=\"[^\"]*\",$/    version=\"$version\",/" backend/app/main.py
 
 echo "[contrat] openapi.json et schema.d.ts"
