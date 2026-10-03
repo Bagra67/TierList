@@ -9,7 +9,7 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md) | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite | pnpm, ESLint, Prettier |
 
-Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md). Comptes et connexion : [docs/authentication.fr.md](docs/authentication.fr.md). Traductions (français / anglais) : [docs/i18n.fr.md](docs/i18n.fr.md). Versions et releases (`develop` → `main`) : [docs/releasing.fr.md](docs/releasing.fr.md), changements dans [CHANGELOG.md](CHANGELOG.md).
+Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md). Comptes et connexion : [docs/authentication.fr.md](docs/authentication.fr.md). Traductions (français / anglais) : [docs/i18n.fr.md](docs/i18n.fr.md). Versions et releases (`develop` → `main`) : [docs/releasing.fr.md](docs/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
 
 ```
 TierList/
