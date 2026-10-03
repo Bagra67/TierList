@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
-import { getCurrentUser, getMe, login, logout } from './auth';
+import { deleteAccount, getCurrentUser, getMe, login, logout } from './auth';
 import { ApiError, setAccessToken } from './client';
 
 describe('auth API', () => {
@@ -48,6 +48,20 @@ describe('auth API', () => {
     await login({ email: 'alice@example.com', password: 'correct horse battery staple' });
 
     await expect(getMe()).resolves.toEqual(alice);
+  });
+
+  it('forgets the access token once the account is deleted', async () => {
+    const fetchMock = stubBackend({
+      'DELETE /auth/me': () => new Response(null, { status: 204 }),
+      'POST /auth/refresh': unauthorized,
+      'GET /auth/me': unauthorized,
+    });
+    setAccessToken('some-token');
+
+    await deleteAccount({ password: 'correct horse battery staple' });
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+    expect(calledRoutes(fetchMock)).toEqual(['DELETE /auth/me', 'POST /auth/refresh']);
   });
 
   it('forgets the access token on logout, even if the backend fails', async () => {

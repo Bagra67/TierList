@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { ApiError, apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
 import type { components } from './schema';
@@ -6,6 +6,7 @@ import type { components } from './schema';
 export type RegisterRequest = components['schemas']['RegisterRequest'];
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
+export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
 
 const currentUserKey = ['auth', 'me'] as const;
 
@@ -32,6 +33,14 @@ export async function logout(): Promise<void> {
   if (!response.ok) {
     throw new ApiError(response.status, error);
   }
+}
+
+export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
+  const { response, error } = await apiClient.DELETE('/auth/me', { body });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+  setAccessToken(null);
 }
 
 export async function getMe(signal?: AbortSignal): Promise<User> {
@@ -83,14 +92,25 @@ export function useLogin() {
   });
 }
 
+// Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache
+function forgetSession(queryClient: QueryClient): void {
+  queryClient.clear();
+  queryClient.setQueryData(currentUserKey, null);
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
     // Même en cas d'échec réseau, l'interface repasse en mode déconnecté
-    onSettled: () => {
-      queryClient.clear();
-      queryClient.setQueryData(currentUserKey, null);
-    },
+    onSettled: () => forgetSession(queryClient),
+  });
+}
+
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteAccount,
+    onSuccess: () => forgetSession(queryClient),
   });
 }
