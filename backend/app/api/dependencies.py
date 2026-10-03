@@ -12,6 +12,7 @@ from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
+from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -23,6 +24,11 @@ def get_auth_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthService:
     return AuthService(session, settings)
+
+
+def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
+    # Remplacé par un faux dans les tests : aucun email n'est réellement envoyé
+    return EmailSender(settings)
 
 
 def get_google_oauth_client(

@@ -9,21 +9,21 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite                         | pnpm, ESLint, Prettier                |
 
-Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md). Comptes et connexion : [docs/authentication.fr.md](docs/authentication.fr.md). Traductions (français / anglais) : [docs/i18n.fr.md](docs/i18n.fr.md). Versions et releases (`develop` → `main`) : [docs/releasing.fr.md](docs/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
+Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md). Comptes et connexion : [docs/authentication.fr.md](docs/authentication.fr.md). Traductions (français / anglais) : [docs/i18n.fr.md](docs/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/emails.fr.md](docs/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/releasing.fr.md](docs/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
 
 ```
 TierList/
 ├── backend/            # API FastAPI  → voir backend/README.fr.md
 ├── frontend/           # App React    → voir frontend/README.fr.md
 │   └── .husky/         # Hook git pre-commit (pour tout le dépôt)
-├── compose.yaml        # Base PostgreSQL de développement (Docker)
+├── compose.yaml        # Base PostgreSQL et boîte Mailpit de développement (Docker)
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement, configurations de débogage…)
 ├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
-├── docs/               # Documentation (architecture, guide des tests, i18n, releases)
+├── docs/               # Documentation (architecture, guide des tests, i18n, emails, releases)
 ├── TODO.md / TODO.fr.md       # Étapes manuelles restantes (déploiement, décisions)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
@@ -66,12 +66,13 @@ cp backend/.env.example backend/.env   # puis changez le mot de passe dans backe
 
 Docker Desktop doit être lancé. Depuis la racine `TierList/` :
 
-| Action                                         | Commande                                       |
-| ---------------------------------------------- | ---------------------------------------------- |
-| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                  |
-| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db` |
-| Arrêter (les données sont conservées)          | `docker compose down`                          |
-| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                       |
+| Action                                         | Commande                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                            |
+| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                           |
+| Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/emails.fr.md](docs/emails.fr.md)) |
+| Arrêter (les données sont conservées)          | `docker compose down`                                                    |
+| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                 |
 
 La base reste lancée en arrière-plan entre deux sessions de dev : pas besoin de la redémarrer à chaque fois. Vérifier que le backend y accède : http://127.0.0.1:8000/health/db → `{"status":"ok"}`.
 

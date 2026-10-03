@@ -9,21 +9,21 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Emails (SMTP, Mailpit): [docs/emails.md](docs/emails.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
 ├── backend/            # FastAPI API  → see backend/README.md
 ├── frontend/           # React app    → see frontend/README.md
 │   └── .husky/         # Git pre-commit hook (for the whole repository)
-├── compose.yaml        # Development PostgreSQL database (Docker)
+├── compose.yaml        # Development PostgreSQL database and Mailpit inbox (Docker)
 ├── .github/            # CI workflow, Dependabot, pull request template
 ├── .vscode/            # Shared VS Code settings (format on save, debug configurations…)
 ├── .editorconfig       # Encoding, line endings, indentation for every editor
 ├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
-├── docs/               # Documentation (architecture, testing guide, i18n, releasing)
+├── docs/               # Documentation (architecture, testing guide, i18n, emails, releasing)
 ├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```
@@ -66,12 +66,13 @@ cp backend/.env.example backend/.env   # then change the password in backend/.en
 
 Docker Desktop must be running. From the `TierList/` root:
 
-| Action                                       | Command                                        |
-| -------------------------------------------- | ---------------------------------------------- |
-| Start the database (waits until it is ready) | `docker compose up -d --wait`                  |
-| Show its status / logs                       | `docker compose ps` / `docker compose logs db` |
-| Stop it (data is kept)                       | `docker compose down`                          |
-| Reset everything (⚠️ **deletes the data**)   | `docker compose down -v`                       |
+| Action                                       | Command                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------- |
+| Start the database (waits until it is ready) | `docker compose up -d --wait`                                     |
+| Show its status / logs                       | `docker compose ps` / `docker compose logs db`                    |
+| Read the emails sent by the backend          | Mailpit: http://localhost:8025 ([docs/emails.md](docs/emails.md)) |
+| Stop it (data is kept)                       | `docker compose down`                                             |
+| Reset everything (⚠️ **deletes the data**)   | `docker compose down -v`                                          |
 
 The database keeps running in the background between dev sessions: no need to restart it every time. Check that the backend can reach it: http://127.0.0.1:8000/health/db → `{"status":"ok"}`.
 

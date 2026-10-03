@@ -205,6 +205,18 @@ Aucun appel réseau : une paire de clés RSA générée pour les tests joue le r
 | `test_invalid_id_tokens_are_rejected` (7 cas)                      | `id_token` avec une autre audience, un autre émetteur, un autre nonce, expiré depuis 10 min, émis 10 min dans le futur, signé par une autre clé, ou sans email. | Seul un token émis par Google, pour cette application et cette tentative, est accepté.          | `GoogleAuthError` à chaque fois.                                                                                                                                                                 |
 | `test_token_endpoint_failures_are_reported` (3 cas)                | Le point d'échange répond `400`, un corps sans `id_token`, ou du non-JSON.                                                                                      | Les échecs de Google deviennent une erreur propre.                                              | `GoogleAuthError` à chaque fois.                                                                                                                                                                 |
 
+### 1.11 Tests unitaires : `tests/test_email.py` (envoi des emails)
+
+Aucun serveur SMTP : `FakeSMTP` remplace `smtplib.SMTP` et garde les appels. Les réglages sont construits avec `Settings.model_construct`, sans les variables de la base.
+
+| Test                                                   | Ce qu'il fait                                  | But                                                                            | Résultat attendu                                                                                         |
+| ------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `test_sends_a_text_and_html_email_through_starttls`    | Envoie un email avec le port par défaut.       | Vérifier la connexion et le message construit.                                 | Port `587`, délai `10`, STARTTLS, pas d'identification ; `From`, `To`, `Subject`, parties texte et HTML. |
+| `test_signs_in_when_credentials_are_configured`        | `SMTP_USERNAME` et `SMTP_PASSWORD` renseignés. | Les fournisseurs exigent une identification.                                   | `login` appelé avec ces identifiants.                                                                    |
+| `test_local_mailpit_needs_neither_tls_nor_credentials` | Port `1025`, `SMTP_STARTTLS=false`.            | Configuration de Mailpit en développement.                                     | Pas de STARTTLS ; l'email est envoyé.                                                                    |
+| `test_nothing_is_sent_without_smtp_host`               | Pas de `SMTP_HOST`.                            | L'application fonctionne sans configuration d'email.                           | Aucune connexion SMTP ; un avertissement mentionne `SMTP_HOST`.                                          |
+| `test_a_smtp_failure_is_logged_without_the_address`    | Le serveur refuse le destinataire.             | Un échec ne doit ni casser la requête ni faire fuiter l'adresse dans les logs. | Pas d'exception ; le log contient `SMTPRecipientsRefused` mais pas l'adresse.                            |
+
 ---
 
 ## 2. Frontend (Vitest)
