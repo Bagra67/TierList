@@ -92,16 +92,21 @@ frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── client.ts       # Client HTTP commun (openapi-fetch) + ApiError
+│   │   ├── client.ts       # Client HTTP commun (openapi-fetch), ApiError, access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
+│   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
 │   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
-│   │   ├── hello.test.ts   # Tests de getHello : URL, JSON, ApiError
+│   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
+│   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
+│   ├── components/         # Composants réutilisables (TextField)
+│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
-│   │   └── renderWithQueryClient.tsx # render() dans un QueryClient neuf
-│   ├── App.tsx             # Affiche le message du backend
-│   ├── App.test.tsx        # Tests d'App : chargement, message, erreur
+│   │   ├── renderWithQueryClient.tsx # render() dans un QueryClient neuf
+│   │   └── stubBackend.ts  # Faux backend qui remplace fetch, route par route
+│   ├── App.tsx             # Routes (react-router)
+│   ├── App.test.tsx        # Tests du routage : redirection, restauration de session, déconnexion
 │   └── main.tsx            # Point d'entrée React
 ├── eslint.config.js
 ├── vite.config.ts          # Config Vite + proxy /api + config Vitest
@@ -163,4 +168,8 @@ export function useHello() {
 
 Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useHello();`.
 
-Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch`, comme dans `App.test.tsx`.
+Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch` avec `stubBackend`, comme dans `App.test.tsx`.
+
+### Requêtes authentifiées
+
+`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/authentication.fr.md).

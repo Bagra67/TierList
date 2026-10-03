@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     postgres_db: str
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
+
+    # Authentification (docs/authentication.md)
+    jwt_secret_key: SecretStr = Field(min_length=32)
+    access_token_ttl_minutes: int = Field(default=15, gt=0)
+    refresh_token_ttl_days: int = Field(default=30, gt=0)
+    # True en production (HTTPS) ; false en développement local, servi en HTTP
+    auth_cookie_secure: bool = True
+    # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)
+    auth_cookie_path: str = "/api/auth"
 
     @property
     def database_url(self) -> URL:
