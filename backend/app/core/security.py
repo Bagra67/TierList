@@ -12,17 +12,18 @@ from datetime import UTC, datetime, timedelta
 import jwt
 from pwdlib import PasswordHash
 
-JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_TYPE = "access"
+from app.constants.auth import (
+    ACCESS_TOKEN_TYPE,
+    DUMMY_PASSWORD_BYTES,
+    JWT_ALGORITHM,
+    REFRESH_TOKEN_BYTES,
+)
+from app.exceptions.auth import InvalidAccessTokenError
 
 # Argon2id avec les paramètres recommandés par pwdlib
 _password_hash = PasswordHash.recommended()
 # Haché une seule fois : sert à égaliser le temps de réponse quand l'email est inconnu
-_DUMMY_PASSWORD_HASH = _password_hash.hash(secrets.token_urlsafe(16))
-
-
-class InvalidAccessTokenError(Exception):
-    """Access token absent, mal formé, falsifié, expiré ou d'un autre type."""
+_DUMMY_PASSWORD_HASH = _password_hash.hash(secrets.token_urlsafe(DUMMY_PASSWORD_BYTES))
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,7 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
 
 
 def generate_refresh_token() -> str:
-    return secrets.token_urlsafe(32)
+    return secrets.token_urlsafe(REFRESH_TOKEN_BYTES)
 
 
 def hash_refresh_token(refresh_token: str) -> str:

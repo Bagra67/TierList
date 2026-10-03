@@ -8,18 +8,14 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 
-from app.services.google_oauth import (
-    GOOGLE_AUTHORIZATION_URL,
-    GOOGLE_TOKEN_URL,
-    GoogleAuthError,
-    GoogleIdentity,
-    GoogleLoginAttempt,
-    GoogleOAuthClient,
-)
+from app.constants.google import GOOGLE_AUTHORIZATION_URL, GOOGLE_TOKEN_URL
+from app.exceptions.google import GoogleAuthError
+from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt, GoogleOAuthClient
 
 CLIENT_ID = "test-client-id.apps.googleusercontent.com"
 REDIRECT_URI = "http://localhost:5173/api/auth/google/callback"
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
+ATTEMPT_TTL = timedelta(minutes=10)
 
 # Clés RSA générées pour les tests : elles jouent le rôle des clés de signature de Google
 GOOGLE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -59,6 +55,7 @@ def google_client(token_endpoint: httpx.MockTransport) -> GoogleOAuthClient:
         CLIENT_ID,
         "test-client-secret",
         REDIRECT_URI,
+        http_timeout_seconds=10,
         transport=token_endpoint,
         jwk_client=StaticJWKClient(),
     )
@@ -71,7 +68,9 @@ def token_endpoint_returning(id_token: str) -> httpx.MockTransport:
 def test_login_attempt_round_trips_through_its_signed_cookie():
     attempt = GoogleLoginAttempt.start("delete-account")
 
-    restored = GoogleLoginAttempt.from_cookie(attempt.to_cookie(SECRET_KEY), SECRET_KEY)
+    restored = GoogleLoginAttempt.from_cookie(
+        attempt.to_cookie(SECRET_KEY, ATTEMPT_TTL), SECRET_KEY
+    )
 
     assert restored == attempt
     assert restored.matches_state(attempt.state)
@@ -79,7 +78,17 @@ def test_login_attempt_round_trips_through_its_signed_cookie():
 
 
 def test_login_attempt_cookie_signed_with_another_key_is_rejected():
-    cookie = GoogleLoginAttempt.start(None).to_cookie("another-secret-key-of-at-least-32-chars")
+    cookie = GoogleLoginAttempt.start(None).to_cookie(
+        "another-secret-key-of-at-least-32-chars", ATTEMPT_TTL
+    )
+
+    with pytest.raises(GoogleAuthError):
+        GoogleLoginAttempt.from_cookie(cookie, SECRET_KEY)
+
+
+def test_login_attempt_cookie_expires_after_its_ttl():
+    # Durée négative : le cookie est déjà expiré au moment où on le relit
+    cookie = GoogleLoginAttempt.start(None).to_cookie(SECRET_KEY, timedelta(seconds=-1))
 
     with pytest.raises(GoogleAuthError):
         GoogleLoginAttempt.from_cookie(cookie, SECRET_KEY)

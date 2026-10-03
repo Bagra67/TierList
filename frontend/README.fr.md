@@ -92,7 +92,7 @@ frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── client.ts       # Client HTTP commun (openapi-fetch), ApiError, access token + middleware de rafraîchissement
+│   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
 │   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
 │   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
@@ -100,6 +100,8 @@ frontend/
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
 │   ├── components/         # Composants réutilisables (TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, messages.ts
+│   ├── errors/apiError.ts  # ApiError et getFieldErrors (+ tests)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
@@ -146,7 +148,7 @@ Les données du serveur passent par **TanStack Query**, au-dessus d'un client **
 Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`status`, `body`, et le `detail` du backend comme `message`) est levée pour toute réponse hors 2xx.
+- `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`src/errors/apiError.ts` : `status`, `body`, et le `detail` du backend comme `message`) est levée pour toute réponse hors 2xx. Les valeurs fixes (routes, statuts HTTP, limites) viennent de `src/constants/`.
 - `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec dans la console, à un seul endroit.
 - TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
 

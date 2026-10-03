@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -8,11 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_google_oauth_client
+from app.constants import messages
 from app.core.config import get_settings
 from app.core.security import create_access_token
+from app.exceptions.google import GoogleAuthError
 from app.main import app
 from app.models.user import OAuthAccount, User
-from app.services.google_oauth import GoogleAuthError, GoogleIdentity, GoogleLoginAttempt
+from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
 
 pytestmark = pytest.mark.integration
@@ -30,7 +32,12 @@ class FakeGoogleOAuthClient(RealGoogleOAuthClient):
     """Client Google sans réseau : renvoie l'identité choisie par le test, ou une erreur."""
 
     def __init__(self) -> None:
-        super().__init__("test-client-id", "test-client-secret", "http://testserver/callback")
+        super().__init__(
+            "test-client-id",
+            "test-client-secret",
+            "http://testserver/callback",
+            http_timeout_seconds=10,
+        )
         self.identity: GoogleIdentity | None = ALICE_GOOGLE
         self.received_codes: list[str] = []
 
@@ -88,6 +95,16 @@ def test_login_redirects_to_google_with_a_signed_attempt_cookie(google_client: T
     expected = ("google_login=", "HttpOnly", "SameSite=lax", "Path=/auth/google", "Max-Age=600")
     for attribute in expected:
         assert attribute in set_cookie
+
+
+def test_attempt_cookie_lifetime_follows_the_settings(
+    google_client: TestClient, override_settings: Callable[..., None]
+):
+    override_settings(google_login_attempt_ttl_minutes=2)
+
+    response = google_client.get("/auth/google/login", follow_redirects=False)
+
+    assert "Max-Age=120" in response.headers["set-cookie"]
 
 
 def test_first_google_sign_in_creates_an_account_without_password(
@@ -276,7 +293,19 @@ def test_google_only_account_deletion_requires_a_recent_sign_in(
     )
 
     assert response.status_code == 403
-    assert response.json() == {
-        "detail": "Reconnectez-vous avec Google pour confirmer la suppression"
-    }
+    assert response.json() == {"detail": messages.REAUTHENTICATION_REQUIRED}
     assert db_session.scalars(select(User)).one().email == "alice@gmail.com"
+
+
+def test_recent_sign_in_delay_follows_the_settings(
+    google_client: TestClient, db_session: Session, override_settings: Callable[..., None]
+):
+    sign_in_with_google(google_client)
+    override_settings(recent_authentication_max_age_minutes=15)
+    access_token = google_only_access_token(db_session, signed_in_ago=timedelta(minutes=10))
+
+    response = google_client.request(
+        "DELETE", "/auth/me", json={}, headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+    assert response.status_code == 204

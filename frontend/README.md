@@ -92,7 +92,7 @@ frontend/
 ├── public/                 # Static files served as is (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── client.ts       # Shared HTTP client (openapi-fetch), ApiError, access token + refresh middleware
+│   │   ├── client.ts       # Shared HTTP client (openapi-fetch), access token + refresh middleware
 │   │   ├── queryClient.ts  # TanStack Query setup (retry, error logging)
 │   │   ├── auth.ts         # /auth calls + useCurrentUser, useLogin, useRegister, useLogout hooks
 │   │   ├── hello.ts        # GET /hello: getHello() + useHello() hook
@@ -100,6 +100,8 @@ frontend/
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
 │   ├── components/         # Reusable components (TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, messages.ts
+│   ├── errors/apiError.ts  # ApiError and getFieldErrors (+ tests)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup)
@@ -146,7 +148,7 @@ Server data goes through **TanStack Query** on top of a shared **openapi-fetch**
 Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`status`, `body`, and the backend `detail` as `message`) is thrown for any non-2xx response.
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, and the backend `detail` as `message`) is thrown for any non-2xx response. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
 - `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
 - TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
 

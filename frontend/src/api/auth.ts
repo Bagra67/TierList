@@ -1,6 +1,13 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ApiError, apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
+import {
+  CURRENT_USER_QUERY_KEY,
+  GOOGLE_SIGN_IN_PATH,
+  type GoogleNextStep,
+} from '../constants/auth';
+import { HTTP_STATUS } from '../constants/http';
+import { ApiError } from '../errors/apiError';
+import { apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
 import type { components } from './schema';
 
 export type RegisterRequest = components['schemas']['RegisterRequest'];
@@ -8,16 +15,11 @@ export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
 
-const currentUserKey = ['auth', 'me'] as const;
-
-// Étape reprise après une reconnexion Google (seule valeur acceptée par le backend)
-export type GoogleNextStep = 'delete-account';
-
 // Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
 // Google puis, au retour, vers le frontend avec le cookie de session posé.
 export function googleSignInUrl(next?: GoogleNextStep): string {
-  const query = next === undefined ? '' : `?next=${next}`;
-  return `/api/auth/google/login${query}`;
+  const query = next === undefined ? '' : `?${new URLSearchParams({ next }).toString()}`;
+  return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 
 export async function register(body: RegisterRequest): Promise<void> {
@@ -70,7 +72,7 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
   try {
     return await getMe(signal);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) {
+    if (error instanceof ApiError && error.status === HTTP_STATUS.UNAUTHORIZED) {
       return null;
     }
     throw error;
@@ -79,7 +81,7 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
 
 export function useCurrentUser() {
   return useQuery({
-    queryKey: currentUserKey,
+    queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: ({ signal }) => getCurrentUser(signal),
     // L'utilisateur ne change qu'à la connexion / déconnexion, qui mettent ce cache à jour
     staleTime: Infinity,
@@ -90,7 +92,7 @@ export function useRegister() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: register,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: currentUserKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
   });
 }
 
@@ -98,14 +100,14 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: login,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: currentUserKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
   });
 }
 
 // Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache
 function forgetSession(queryClient: QueryClient): void {
   queryClient.clear();
-  queryClient.setQueryData(currentUserKey, null);
+  queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
 }
 
 export function useLogout() {

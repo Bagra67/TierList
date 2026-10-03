@@ -748,7 +748,6 @@
           "password": {
             "type": "string",
             "maxLength": 128,
-            "minLength": 8,
             "title": "Password"
           },
           "display_name": {

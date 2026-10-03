@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { ApiError, apiClient } from './client';
+import { ApiError } from '../errors/apiError';
+import { apiClient } from './client';
 import type { components } from './schema';
 
 // Généré depuis le schéma Pydantic HelloResponse du backend (pnpm gen:api) : jamais recopié à la main

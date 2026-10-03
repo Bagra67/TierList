@@ -21,7 +21,7 @@ function renderRegisterPage() {
 function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText('Nom affiché'), { target: { value: 'Alice' } });
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
-  fireEvent.change(screen.getByLabelText('Mot de passe (8 caractères minimum)'), {
+  fireEvent.change(screen.getByLabelText('Mot de passe'), {
     target: { value: 'correct horse battery staple' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }));
@@ -62,14 +62,17 @@ describe('RegisterPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Cet email est déjà utilisé');
   });
 
-  it('shows validation errors next to the field', async () => {
+  it('shows the minimum password length required by the backend', async () => {
     stubBackend({
       'POST /auth/register': () =>
         Response.json(
           {
             detail: 'Requête invalide',
             errors: [
-              { field: 'body.password', message: 'String should have at least 8 characters' },
+              {
+                field: 'body.password',
+                message: 'Le mot de passe doit contenir au moins 12 caractères',
+              },
             ],
           },
           { status: 422 },
@@ -79,7 +82,9 @@ describe('RegisterPage', () => {
 
     fillAndSubmit();
 
-    expect(await screen.findByText('String should have at least 8 characters')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Le mot de passe doit contenir au moins 12 caractères'),
+    ).toBeInTheDocument();
   });
 
   it('links to the Google sign-in', () => {

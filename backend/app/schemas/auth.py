@@ -2,18 +2,36 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
+from pydantic_core import PydanticCustomError
 
-# Borne haute : limite le coût du hachage Argon2 sur des entrées démesurées
-PASSWORD_MAX_LENGTH = 128
+from app.constants import messages
+from app.constants.auth import DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH
+from app.core.config import get_settings
 
-DisplayName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
+DisplayName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=DISPLAY_NAME_MAX_LENGTH),
+]
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8, max_length=PASSWORD_MAX_LENGTH)
+    # Longueur minimale configurable (PASSWORD_MIN_LENGTH) : vérifiée par le validateur ci-dessous
+    password: str = Field(max_length=PASSWORD_MAX_LENGTH)
     display_name: DisplayName
+
+    @field_validator("password")
+    @classmethod
+    def check_password_length(cls, password: str) -> str:
+        # Lue à chaque requête : changer PASSWORD_MIN_LENGTH ne demande qu'un redémarrage.
+        # Le message (repris dans la 422) indique le minimum exact à l'utilisateur.
+        min_length = get_settings().password_min_length
+        if len(password) < min_length:
+            raise PydanticCustomError(
+                "password_too_short", messages.PASSWORD_TOO_SHORT, {"min_length": min_length}
+            )
+        return password
 
 
 class LoginRequest(BaseModel):

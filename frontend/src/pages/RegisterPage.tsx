@@ -2,7 +2,9 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { useRegister } from '../api/auth';
-import { getFieldErrors } from '../api/client';
+import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../constants/auth';
+import { ROUTES } from '../constants/routes';
+import { getFieldErrors } from '../errors/apiError';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TextField } from '../components/TextField';
 
@@ -23,7 +25,7 @@ export function RegisterPage() {
     } catch {
       return; // l'erreur est affichée depuis registerMutation.error
     }
-    await navigate('/', { replace: true });
+    await navigate(ROUTES.HOME, { replace: true });
   }
 
   return (
@@ -35,7 +37,7 @@ export function RegisterPage() {
           name="display_name"
           autoComplete="nickname"
           required
-          maxLength={50}
+          maxLength={DISPLAY_NAME_MAX_LENGTH}
           error={fieldErrors.display_name}
         />
         <TextField
@@ -47,13 +49,12 @@ export function RegisterPage() {
           error={fieldErrors.email}
         />
         <TextField
-          label="Mot de passe (8 caractères minimum)"
+          label="Mot de passe"
           name="password"
           type="password"
           autoComplete="new-password"
           required
-          minLength={8}
-          maxLength={128}
+          maxLength={PASSWORD_MAX_LENGTH}
           error={fieldErrors.password}
         />
         {registerMutation.isError && <p role="alert">{registerMutation.error.message}</p>}
@@ -65,7 +66,7 @@ export function RegisterPage() {
         <GoogleSignInLink />
       </p>
       <p>
-        Déjà un compte ? <Link to="/login">Se connecter</Link>
+        Déjà un compte ? <Link to={ROUTES.LOGIN}>Se connecter</Link>
       </p>
     </main>
   );
