@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TierList</title>
+    <style>
+      /* Fond sombre dès le premier affichage : en dev, Vite injecte index.css par JavaScript, après
+         ce premier affichage. Valeur à garder égale à --background du bloc .dark de index.css. */
+      html.dark {
+        color-scheme: dark;
+        background-color: oklch(0.145 0 0);
+      }
+    </style>
     <script>
       // Applique le thème avant le chargement de l'application, pour éviter un flash clair en mode
       // sombre. Même logique que src/theme/index.ts ; la clé doit rester égale à THEME_STORAGE_KEY.
