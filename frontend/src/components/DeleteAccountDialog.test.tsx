@@ -5,7 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import type { User } from '../api/auth';
-import { alice, calledRoutes, stubBackend, type StubbedRoute } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  stubBackend,
+  type StubbedRoute,
+} from '../test/stubBackend';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 
 const googleOnlyAlice: User = { ...alice, has_password: false };
@@ -27,8 +33,7 @@ function openAndConfirm(password: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Supprimer définitivement' }));
 }
 
-const wrongPassword: StubbedRoute = () =>
-  Response.json({ detail: 'Mot de passe incorrect' }, { status: 403 });
+const wrongPassword: StubbedRoute = () => errorResponse(403, 'incorrect_password');
 
 describe('DeleteAccountDialog', () => {
   afterEach(() => {
@@ -108,11 +113,7 @@ describe('DeleteAccountDialog', () => {
 
   it('offers to sign in again with Google when the last sign-in is too old', async () => {
     stubBackend({
-      'DELETE /auth/me': () =>
-        Response.json(
-          { detail: 'Reconnectez-vous avec Google pour confirmer la suppression' },
-          { status: 403 },
-        ),
+      'DELETE /auth/me': () => errorResponse(403, 'reauthentication_required'),
     });
     renderDialog(googleOnlyAlice);
 

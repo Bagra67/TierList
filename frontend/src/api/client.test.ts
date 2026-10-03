@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  stubBackend,
+  tokenResponse,
+  unauthorized,
+} from '../test/stubBackend';
 import { getMe, login } from './auth';
 import { ApiError } from '../errors/apiError';
 import { setAccessToken } from './client';
@@ -61,13 +68,12 @@ describe('apiClient authentication middleware', () => {
 
   it('never refreshes on a 401 from a session route such as login', async () => {
     const fetchMock = stubBackend({
-      'POST /auth/login': () =>
-        Response.json({ detail: 'Email ou mot de passe incorrect' }, { status: 401 }),
+      'POST /auth/login': () => errorResponse(401, 'invalid_credentials'),
     });
     setAccessToken('some-token');
 
     await expect(login({ email: 'alice@example.com', password: 'wrong' })).rejects.toThrow(
-      'Email ou mot de passe incorrect',
+      expect.objectContaining({ status: 401, code: 'invalid_credentials' }),
     );
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/login']);
   });

@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { googleSignInUrl, useDeleteAccount, type User } from '../api/auth';
 import { DELETE_ACCOUNT_STEP, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
 import { ROUTES } from '../constants/routes';
-import { ApiError, getFieldErrors } from '../errors/apiError';
+import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { TextField } from './TextField';
 
 interface DeleteAccountDialogProps {
@@ -21,6 +22,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
   const titleId = useId();
   const deleteMutation = useDeleteAccount();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const fieldErrors = getFieldErrors(deleteMutation.error);
   // Un compte Google n'a pas de mot de passe : le backend exige alors une connexion récente,
   // et refuse (403) si elle date de trop longtemps.
@@ -57,36 +59,38 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
   return (
     <>
       <button type="button" onClick={() => dialogRef.current?.showModal()}>
-        Supprimer mon compte
+        {t('account.delete.open')}
       </button>
       <dialog ref={dialogRef} aria-labelledby={titleId} onClose={handleClose}>
-        <h2 id={titleId}>Supprimer mon compte</h2>
-        <p>Cette action est définitive : votre compte et toutes ses données seront effacés.</p>
+        <h2 id={titleId}>{t('account.delete.title')}</h2>
+        <p>{t('account.delete.warning')}</p>
         <form ref={formRef} onSubmit={handleSubmit}>
           {user.has_password ? (
             <TextField
-              label="Mot de passe"
+              label={t('auth.password')}
               name="password"
               type="password"
               autoComplete="current-password"
               required
               maxLength={PASSWORD_MAX_LENGTH}
-              error={fieldErrors.password}
+              error={translateFieldError(t, fieldErrors.password)}
             />
           ) : (
-            <p>Votre compte est relié à Google : aucune saisie n'est nécessaire.</p>
+            <p>{t('account.delete.googleLinked')}</p>
           )}
-          {deleteMutation.isError && <p role="alert">{deleteMutation.error.message}</p>}
+          {deleteMutation.isError && <p role="alert">{translateError(t, deleteMutation.error)}</p>}
           {needsGoogleSignIn && (
             <p>
-              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)}>Se reconnecter avec Google</a>
+              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)}>
+                {t('account.delete.signInAgainWithGoogle')}
+              </a>
             </p>
           )}
           <button type="button" onClick={() => dialogRef.current?.close()}>
-            Annuler
+            {t('account.delete.cancel')}
           </button>{' '}
           <button type="submit" disabled={deleteMutation.isPending}>
-            {deleteMutation.isPending ? 'Suppression…' : 'Supprimer définitivement'}
+            {deleteMutation.isPending ? t('account.delete.submitting') : t('account.delete.submit')}
           </button>
         </form>
       </dialog>

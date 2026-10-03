@@ -1,6 +1,6 @@
 // Doivent rester égales aux limites du backend (backend/app/constants/auth.py), liées au schéma
 // de la base. La longueur minimale du mot de passe, elle, est un réglage du backend
-// (PASSWORD_MIN_LENGTH) : le frontend ne la connaît pas et affiche le message de la 422.
+// (PASSWORD_MIN_LENGTH) : le frontend ne la connaît pas et la lit dans les params de la 422.
 export const PASSWORD_MAX_LENGTH = 128;
 export const DISPLAY_NAME_MAX_LENGTH = 50;
 

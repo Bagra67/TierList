@@ -1,5 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 import { googleSignInUrl } from '../api/auth';
 
 export function GoogleSignInLink() {
-  return <a href={googleSignInUrl()}>Continuer avec Google</a>;
+  const { t } = useTranslation();
+  return <a href={googleSignInUrl()}>{t('auth.continueWithGoogle')}</a>;
 }

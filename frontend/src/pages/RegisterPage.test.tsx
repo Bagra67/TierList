@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
+import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { RegisterPage } from './RegisterPage';
 
 function renderRegisterPage() {
@@ -52,8 +52,7 @@ describe('RegisterPage', () => {
 
   it('shows the backend message when the email is already used', async () => {
     stubBackend({
-      'POST /auth/register': () =>
-        Response.json({ detail: 'Cet email est déjà utilisé' }, { status: 409 }),
+      'POST /auth/register': () => errorResponse(409, 'email_already_registered'),
     });
     renderRegisterPage();
 
@@ -65,18 +64,16 @@ describe('RegisterPage', () => {
   it('shows the minimum password length required by the backend', async () => {
     stubBackend({
       'POST /auth/register': () =>
-        Response.json(
-          {
-            detail: 'Requête invalide',
-            errors: [
-              {
-                field: 'body.password',
-                message: 'Le mot de passe doit contenir au moins 12 caractères',
-              },
-            ],
-          },
-          { status: 422 },
-        ),
+        errorResponse(422, 'validation_error', {
+          errors: [
+            {
+              field: 'body.password',
+              message: 'The password must be at least 12 characters long',
+              code: 'password_too_short',
+              params: { min_length: 12 },
+            },
+          ],
+        }),
     });
     renderRegisterPage();
 
