@@ -16,4 +16,5 @@
 ## 2. Décisions à prendre
 
 - [ ] Fonctionnalités pas encore disponibles ([guide de l'authentification](docs/authentication.fr.md#pas-encore-disponible)) : vérification de l'adresse email et « mot de passe oublié » (il faut choisir un service d'envoi d'emails), limitation des tentatives de connexion répétées, autres fournisseurs d'identité.
+- [ ] Charte graphique (couleur d'accent, typographie, logo), **une fois l'éditeur de tier list et une ou deux fonctionnalités autour en place**, pour la concevoir sur de vrais écrans. D'ici là : uniquement les jetons du thème (`bg-primary`, `text-muted-foreground`…), aucune couleur en dur, pour que la charte se résume surtout à changer les variables de `frontend/src/index.css` ([README du frontend](frontend/README.fr.md#10-composants-dinterface)). Les couleurs des tiers (S, A, B…) se décident avec l'éditeur, en jetons clair et sombre.
 - [ ] Passage en version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), quand l'API sera jugée stable.
