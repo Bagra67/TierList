@@ -4,10 +4,10 @@ English | [Français](README.fr.md)
 
 TierList application made of two projects in a single git repository:
 
-| Folder | Content | Tools |
-| --- | --- | --- |
-| [`backend/`](backend/README.md) | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
-| [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite | pnpm, ESLint, Prettier |
+| Folder                            | Content                                                  | Tools                                 |
+| --------------------------------- | -------------------------------------------------------- | ------------------------------------- |
+| [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
+| [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
 How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
@@ -32,14 +32,14 @@ TierList/
 
 ## 1. Prerequisites
 
-| Tool | Installation | Check |
-| --- | --- | --- |
-| **uv** | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh` | `uv --version` |
-| **Node.js 24 LTS** (version in `.nvmrc`) | Windows: `winget install OpenJS.NodeJS.LTS` — or https://nodejs.org | `node --version` |
-| **pnpm** | `npm install -g pnpm` | `pnpm --version` |
-| **Git** | https://git-scm.com | `git --version` |
-| **Docker Desktop** | Windows: `winget install -e --id Docker.DockerDesktop` (requires WSL2, may need a reboot), then start Docker Desktop once — or https://www.docker.com/products/docker-desktop | `docker info` |
-| **gitleaks** (required by the pre-commit hook) | Windows: `winget install -e --id Gitleaks.Gitleaks` (then restart VS Code and the terminals)<br>macOS: `brew install gitleaks` — or https://github.com/gitleaks/gitleaks | `gitleaks version` |
+| Tool                                           | Installation                                                                                                                                                                  | Check              |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **uv**                                         | Windows: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"`<br>macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh \| sh`             | `uv --version`     |
+| **Node.js 24 LTS** (version in `.nvmrc`)       | Windows: `winget install OpenJS.NodeJS.LTS` — or https://nodejs.org                                                                                                           | `node --version`   |
+| **pnpm**                                       | `npm install -g pnpm`                                                                                                                                                         | `pnpm --version`   |
+| **Git**                                        | https://git-scm.com                                                                                                                                                           | `git --version`    |
+| **Docker Desktop**                             | Windows: `winget install -e --id Docker.DockerDesktop` (requires WSL2, may need a reboot), then start Docker Desktop once — or https://www.docker.com/products/docker-desktop | `docker info`      |
+| **gitleaks** (required by the pre-commit hook) | Windows: `winget install -e --id Gitleaks.Gitleaks` (then restart VS Code and the terminals)<br>macOS: `brew install gitleaks` — or https://github.com/gitleaks/gitleaks      | `gitleaks version` |
 
 ---
 
@@ -66,12 +66,12 @@ cp backend/.env.example backend/.env   # then change the password in backend/.en
 
 Docker Desktop must be running. From the `TierList/` root:
 
-| Action | Command |
-| --- | --- |
-| Start the database (waits until it is ready) | `docker compose up -d --wait` |
-| Show its status / logs | `docker compose ps` / `docker compose logs db` |
-| Stop it (data is kept) | `docker compose down` |
-| Reset everything (⚠️ **deletes the data**) | `docker compose down -v` |
+| Action                                       | Command                                        |
+| -------------------------------------------- | ---------------------------------------------- |
+| Start the database (waits until it is ready) | `docker compose up -d --wait`                  |
+| Show its status / logs                       | `docker compose ps` / `docker compose logs db` |
+| Stop it (data is kept)                       | `docker compose down`                          |
+| Reset everything (⚠️ **deletes the data**)   | `docker compose down -v`                       |
 
 The database keeps running in the background between dev sessions: no need to restart it every time. Check that the backend can reach it: http://127.0.0.1:8000/health/db → `{"status":"ok"}`.
 
@@ -79,10 +79,10 @@ The database keeps running in the background between dev sessions: no need to re
 
 From the `TierList/` root, depending on your terminal:
 
-| Terminal | Command |
-| --- | --- |
-| **Git Bash**, macOS, Linux | `./dev.sh` |
-| PowerShell, cmd | `.\dev.cmd` |
+| Terminal                   | Command     |
+| -------------------------- | ----------- |
+| **Git Bash**, macOS, Linux | `./dev.sh`  |
+| PowerShell, cmd            | `.\dev.cmd` |
 
 Starts the backend (http://127.0.0.1:8000) and the frontend (http://localhost:5173) in the same terminal, with auto-reload. **Ctrl+C stops both.**
 
@@ -98,12 +98,14 @@ Starts the backend (http://127.0.0.1:8000) and the frontend (http://localhost:51
 ### Separately, in two terminals
 
 **Terminal 1 — backend** (http://127.0.0.1:8000, docs at `/docs`)
+
 ```bash
 cd backend
 uv run fastapi dev app/main.py
 ```
 
 **Terminal 2 — frontend** (http://localhost:5173)
+
 ```bash
 cd frontend
 pnpm dev
@@ -116,14 +118,17 @@ The frontend displays the "Hello World" returned by the backend. It calls it thr
 ## 4. Code quality (automatic)
 
 **In VS Code**: when opening the `TierList` folder, accept installing the recommended extensions (ESLint, Prettier, Ruff, Python, Python Debugger, Docker). Code is then fixed and formatted **on every save**:
+
 - `.ts` / `.tsx` / `.json` / `.css` → Prettier + ESLint
 - `.py` → Ruff
 
 **Debugging in VS Code** (`.vscode/launch.json`, **Run and Debug** view, then F5):
+
 - **Backend: FastAPI** starts uvicorn on port 8000 under the debugger: breakpoints in `backend/app/` stop the request. No auto-reload in this mode; stop `dev.sh` first, as the port is the same.
 - **Frontend: Vitest (current file)** runs the tests of the open test file with breakpoints in the tests and in `frontend/src/`.
 
 **Before each commit**, the `frontend/.husky/pre-commit` git hook runs:
+
 1. `gitleaks` on the staged changes: the commit is refused if they contain a secret (key, password, token). The output shows the file, line and rule, with the secret masked. A false positive can be ignored with a `gitleaks:allow` comment on the line;
 2. `lint-staged` on the modified frontend files (ESLint `--fix` + Prettier);
 3. `ruff check` and `ruff format --check` on the backend.
@@ -134,14 +139,14 @@ If an error cannot be fixed automatically, the commit is blocked: fix it, then c
 
 Manual commands:
 
-| | Backend (`cd backend`) | Frontend (`cd frontend`) |
-| --- | --- | --- |
-| Lint | `uv run ruff check .` | `pnpm lint` |
-| Fix | `uv run ruff check . --fix` | `pnpm lint:fix` |
-| Format | `uv run ruff format .` | `pnpm format` |
-| Types | `uv run pyright` | `pnpm typecheck` |
-| Tests | `uv run pytest` | `pnpm test` |
-| Tests + coverage | `uv run pytest --cov=app` | `pnpm test:coverage` |
+|                  | Backend (`cd backend`)      | Frontend (`cd frontend`) |
+| ---------------- | --------------------------- | ------------------------ |
+| Lint             | `uv run ruff check .`       | `pnpm lint`              |
+| Fix              | `uv run ruff check . --fix` | `pnpm lint:fix`          |
+| Format           | `uv run ruff format .`      | `pnpm format`            |
+| Types            | `uv run pyright`            | `pnpm typecheck`         |
+| Tests            | `uv run pytest`             | `pnpm test`              |
+| Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
 Backend integration tests need the database: `docker compose up -d --wait` (otherwise they are skipped locally). How each test works and what it checks: [docs/testing.md](docs/testing.md).
 
@@ -149,11 +154,11 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 
 `.github/workflows/ci.yml` runs on every pull request (including stacked PRs based on another work branch) and every push to `develop` and `main`:
 
-| Job | Steps |
-| --- | --- |
-| **Backend** | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest with coverage, production build |
-| **Secrets** | gitleaks on every commit of the PR (or of the push) |
+| Job          | Steps                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest with coverage, production build       |
+| **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                     |
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/testing.md](docs/testing.md#31-test-report-on-ci).
 - The three jobs (`Backend`, `Frontend`, `Secrets`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
@@ -164,11 +169,11 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 
 ## 5. Adding a package
 
-| | Backend (`cd backend`) | Frontend (`cd frontend`) |
-| --- | --- | --- |
-| Dependency | `uv add <package>` | `pnpm add <package>` |
-| Dev dependency | `uv add --dev <package>` | `pnpm add -D <package>` |
-| Remove | `uv remove <package>` | `pnpm remove <package>` |
+|                | Backend (`cd backend`)   | Frontend (`cd frontend`) |
+| -------------- | ------------------------ | ------------------------ |
+| Dependency     | `uv add <package>`       | `pnpm add <package>`     |
+| Dev dependency | `uv add --dev <package>` | `pnpm add -D <package>`  |
+| Remove         | `uv remove <package>`    | `pnpm remove <package>`  |
 
 More details in [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
 
