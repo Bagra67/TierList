@@ -180,10 +180,10 @@ backend/
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
-│   ├── models/user.py     # User et RefreshToken (SQLAlchemy)
-│   ├── repositories/      # Requêtes en base (users, refresh_tokens)
+│   ├── models/user.py     # User, RefreshToken et OAuthAccount (SQLAlchemy)
+│   ├── repositories/      # Requêtes en base (users, refresh_tokens, oauth_accounts)
 │   ├── schemas/auth.py    # Modèles Pydantic de requête / réponse de /auth
-│   ├── services/auth.py   # Règles métier de l'authentification (AuthService)
+│   ├── services/          # Règles métier (auth.py : AuthService) et client Google (google_oauth.py)
 │   └── db/
 │       ├── base.py        # Classe Base des modèles SQLAlchemy
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
@@ -194,6 +194,7 @@ backend/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException)
 │   ├── test_security.py   # Primitives mots de passe, JWT et refresh tokens
+│   ├── test_google_oauth.py # Client Google (PKCE, vérification de l'id_token), sans réseau
 │   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
 ├── .env.example           # Modèle de .env (identifiants PostgreSQL)
 ├── alembic.ini            # Configuration Alembic
@@ -237,6 +238,9 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `REFRESH_TOKEN_TTL_DAYS` | Durée de vie du refresh token, en jours | `30` |
 | `AUTH_COOKIE_SECURE` | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP) | `true` |
 | `AUTH_COOKIE_PATH` | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`) | `/api/auth` |
+| `GOOGLE_CLIENT_ID` | ID client OAuth de la Google Cloud Console (Application Web) ; sans lui, la connexion Google est désactivée | — (facultatif) |
+| `GOOGLE_CLIENT_SECRET` | Secret de ce client | — (facultatif) |
+| `GOOGLE_REDIRECT_URI` | URL de retour, identique à un URI de redirection autorisé du client | `http://localhost:5173/api/auth/google/callback` |
 
 L'authentification est décrite dans le [guide de l'authentification](../docs/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
