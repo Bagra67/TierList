@@ -15,6 +15,5 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 2. Decisions to take
 
-- [ ] UI library (open decision, see [architecture](docs/architecture.md#open-decisions)).
 - [ ] Features not available yet ([authentication guide](docs/authentication.md#not-available-yet)): email verification and "forgot password" (need an email service to choose), limiting repeated sign-in attempts, other identity providers.
 - [ ] Moving to version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), when the API is considered stable.

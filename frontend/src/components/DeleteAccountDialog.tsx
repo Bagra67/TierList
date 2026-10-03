@@ -8,6 +8,7 @@ import { HTTP_STATUS } from '../constants/http';
 import { ROUTES } from '../constants/routes';
 import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { TextField } from './TextField';
+import { Button } from './ui/button';
 
 interface DeleteAccountDialogProps {
   user: User;
@@ -58,13 +59,20 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
 
   return (
     <>
-      <button type="button" onClick={() => dialogRef.current?.showModal()}>
+      <Button type="button" variant="destructive" onClick={() => dialogRef.current?.showModal()}>
         {t('account.delete.open')}
-      </button>
-      <dialog ref={dialogRef} aria-labelledby={titleId} onClose={handleClose}>
-        <h2 id={titleId}>{t('account.delete.title')}</h2>
-        <p>{t('account.delete.warning')}</p>
-        <form ref={formRef} onSubmit={handleSubmit}>
+      </Button>
+      <dialog
+        ref={dialogRef}
+        aria-labelledby={titleId}
+        onClose={handleClose}
+        className="m-auto w-full max-w-md rounded-xl bg-card p-6 text-sm text-card-foreground shadow-lg ring-1 ring-foreground/10 backdrop:bg-black/50"
+      >
+        <h2 id={titleId} className="text-lg font-semibold">
+          {t('account.delete.title')}
+        </h2>
+        <p className="mt-2 text-muted-foreground">{t('account.delete.warning')}</p>
+        <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           {user.has_password ? (
             <TextField
               label={t('auth.password')}
@@ -78,20 +86,31 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
           ) : (
             <p>{t('account.delete.googleLinked')}</p>
           )}
-          {deleteMutation.isError && <p role="alert">{translateError(t, deleteMutation.error)}</p>}
+          {deleteMutation.isError && (
+            <p role="alert" className="text-destructive">
+              {translateError(t, deleteMutation.error)}
+            </p>
+          )}
           {needsGoogleSignIn && (
             <p>
-              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)}>
+              <a
+                href={googleSignInUrl(DELETE_ACCOUNT_STEP)}
+                className="font-medium underline underline-offset-4"
+              >
                 {t('account.delete.signInAgainWithGoogle')}
               </a>
             </p>
           )}
-          <button type="button" onClick={() => dialogRef.current?.close()}>
-            {t('account.delete.cancel')}
-          </button>{' '}
-          <button type="submit" disabled={deleteMutation.isPending}>
-            {deleteMutation.isPending ? t('account.delete.submitting') : t('account.delete.submit')}
-          </button>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => dialogRef.current?.close()}>
+              {t('account.delete.cancel')}
+            </Button>
+            <Button type="submit" variant="destructive" disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending
+                ? t('account.delete.submitting')
+                : t('account.delete.submit')}
+            </Button>
+          </div>
         </form>
       </dialog>
     </>

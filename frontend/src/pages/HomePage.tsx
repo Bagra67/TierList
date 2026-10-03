@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useCurrentUser, useLogout } from '../api/auth';
 import { useHello } from '../api/hello';
 import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
+import { Button } from '../components/ui/button';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
 import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
 
@@ -32,18 +33,27 @@ export function HomePage() {
   }
 
   return (
-    <main>
+    <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
       {user && (
-        <p>
-          {t('auth.signedInAs', { name: user.display_name })}{' '}
-          <button type="button" onClick={handleLogout} disabled={logoutMutation.isPending}>
+        <div className="flex w-full items-center justify-between gap-4 text-sm">
+          <p>{t('auth.signedInAs', { name: user.display_name })}</p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+          >
             {t('auth.logout')}
-          </button>
+          </Button>
+        </div>
+      )}
+      {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
+      {isError && (
+        <p role="alert" className="text-destructive">
+          {t('common.backendUnreachable')}
         </p>
       )}
-      {isPending && <p>{t('common.loading')}</p>}
-      {isError && <p role="alert">{t('common.backendUnreachable')}</p>}
-      {hello && <h1>{hello.message}</h1>}
+      {hello && <h1 className="text-2xl font-semibold">{hello.message}</h1>}
       {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>
   );

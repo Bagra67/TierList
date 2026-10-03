@@ -22,6 +22,12 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // Composants shadcn/ui : ils exportent aussi leurs variantes (ex. buttonVariants) ; les garder
+  // proches de la version générée facilite leur mise à jour
+  {
+    files: ['src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
   // Doit rester en dernier : désactive les règles ESLint qui entrent en conflit avec Prettier
   prettier,
 ]);

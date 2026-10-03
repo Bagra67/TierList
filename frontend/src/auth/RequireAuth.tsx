@@ -11,8 +11,13 @@ export function RequireAuth() {
   const location = useLocation();
   const { t } = useTranslation();
 
-  if (isPending) return <p>{t('common.loading')}</p>;
-  if (isError) return <p role="alert">{t('common.backendUnreachable')}</p>;
+  if (isPending) return <p className="p-4 text-muted-foreground">{t('common.loading')}</p>;
+  if (isError)
+    return (
+      <p role="alert" className="p-4 text-destructive">
+        {t('common.backendUnreachable')}
+      </p>
+    );
   if (user === null)
     return <Navigate to={ROUTES.LOGIN} replace state={{ from: location.pathname }} />;
   return <Outlet />;
