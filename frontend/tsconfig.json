@@ -1,4 +1,6 @@
 {
   "files": [],
+  // Lu par la CLI shadcn pour résoudre l'alias @/ (repris dans tsconfig.app.json pour le build)
+  "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }
