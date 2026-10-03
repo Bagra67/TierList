@@ -6,6 +6,7 @@ import { ROUTES } from './constants/routes';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+        <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
         <Route element={<RequireAuth />}>
           <Route path={ROUTES.HOME} element={<HomePage />} />
         </Route>

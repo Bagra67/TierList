@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     password_min_length: int = Field(default=8, gt=0, le=PASSWORD_MAX_LENGTH)
     # Compte sans mot de passe (Google) : âge maximal de la connexion pour supprimer le compte
     recent_authentication_max_age_minutes: int = Field(default=5, gt=0)
+    # Durée de validité du lien de vérification de l'adresse email
+    email_verification_ttl_hours: int = Field(default=24, gt=0)
+    # Délai minimal entre deux emails du même type pour un compte : empêche d'inonder une boîte
+    email_cooldown_seconds: int = Field(default=60, ge=0)
     # True en production (HTTPS) ; false en développement local, servi en HTTP
     auth_cookie_secure: bool = True
     # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)

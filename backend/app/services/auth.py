@@ -1,4 +1,5 @@
-"""Règles métier de l'authentification : inscription, connexion, rotation des refresh tokens.
+"""Règles métier de l'authentification : inscription, connexion, rotation des refresh tokens,
+vérification de l'adresse email.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 """
@@ -7,26 +8,38 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlencode
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.constants.auth import DISPLAY_NAME_MAX_LENGTH, GOOGLE_PROVIDER
+from app.constants.auth import (
+    DISPLAY_NAME_MAX_LENGTH,
+    FRONTEND_VERIFY_EMAIL,
+    GOOGLE_PROVIDER,
+    TOKEN_PARAM,
+)
+from app.constants.i18n import Language
 from app.core.config import Settings
 from app.core.security import (
     create_access_token,
+    create_email_verification_token,
     decode_access_token,
+    decode_email_verification_token,
+    email_fingerprint,
     generate_refresh_token,
     hash_password,
     hash_refresh_token,
     verify_dummy_password,
     verify_password,
 )
+from app.emails.templates import verification_email
 from app.exceptions.auth import (
     EmailAlreadyRegisteredError,
     GoogleEmailNotVerifiedError,
     IncorrectPasswordError,
     InvalidCredentialsError,
+    InvalidEmailTokenError,
     InvalidRefreshTokenError,
     ReauthenticationRequiredError,
 )
@@ -34,6 +47,7 @@ from app.models.user import OAuthAccount, RefreshToken, User
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import refresh_tokens as refresh_token_repository
 from app.repositories import users as user_repository
+from app.services.email import Email
 from app.services.google_oauth import GoogleIdentity
 
 logger = logging.getLogger(__name__)
@@ -53,6 +67,13 @@ class IssuedTokens:
     refresh_token: str
 
 
+@dataclass(frozen=True)
+class Registration:
+    tokens: IssuedTokens
+    # Envoyé par la route en tâche de fond, après la réponse
+    verification_email: Email
+
+
 def normalize_email(email: str) -> str:
     return email.strip().lower()
 
@@ -68,7 +89,9 @@ class AuthService:
         self._session = session
         self._settings = settings
 
-    def register(self, email: str, password: str, display_name: str) -> IssuedTokens:
+    def register(
+        self, email: str, password: str, display_name: str, language: Language
+    ) -> Registration:
         normalized_email = normalize_email(email)
         if user_repository.get_user_by_email(self._session, normalized_email) is not None:
             raise EmailAlreadyRegisteredError
@@ -85,10 +108,12 @@ class AuthService:
             self._session.rollback()
             raise EmailAlreadyRegisteredError from exc
 
-        tokens = self._start_session(user, authenticated_at=datetime.now(UTC))
+        now = datetime.now(UTC)
+        tokens = self._start_session(user, authenticated_at=now)
+        email_to_send = self._verification_email(user, language, now)
         self._session.commit()
         logger.info("Compte créé : user_id=%s", user.id)
-        return tokens
+        return Registration(tokens=tokens, verification_email=email_to_send)
 
     def login(self, email: str, password: str) -> IssuedTokens:
         user = user_repository.get_user_by_email(self._session, normalize_email(email))
@@ -117,22 +142,42 @@ class AuthService:
         user = oauth_account_repository.get_user_by_oauth_account(
             self._session, GOOGLE_PROVIDER, identity.subject
         )
+        now = datetime.now(UTC)
         if user is None:
             if not identity.email_verified:
                 raise GoogleEmailNotVerifiedError
-            user = self._link_google_identity(identity)
+            user = self._link_google_identity(identity, now)
 
-        tokens = self._start_session(user, authenticated_at=datetime.now(UTC))
+        tokens = self._start_session(user, authenticated_at=now)
         self._session.commit()
         return tokens
 
-    def _link_google_identity(self, identity: GoogleIdentity) -> User:
+    def _link_google_identity(self, identity: GoogleIdentity, now: datetime) -> User:
         email = normalize_email(identity.email)
         user = user_repository.get_user_by_email(self._session, email)
         if user is None:
-            user = User(email=email, password_hash=None, display_name=_display_name(identity))
+            user = User(
+                email=email,
+                password_hash=None,
+                display_name=_display_name(identity),
+                email_verified_at=now,
+            )
             user_repository.add_user(self._session, user)
             logger.info("Compte créé avec Google : user_id=%s", user.id)
+        elif user.email_verified_at is None:
+            # Adresse jamais confirmée : le mot de passe a pu être posé par quelqu'un qui ne la
+            # possède pas, pour attendre que la vraie propriétaire se connecte avec Google
+            # (prise de contrôle préalable). Google prouve la possession de l'adresse : le
+            # mot de passe et les sessions ouvertes avec lui sont supprimés.
+            user.password_hash = None
+            user.email_verified_at = now
+            refresh_token_repository.revoke_user_refresh_tokens(
+                self._session, user.id, revoked_at=now
+            )
+            logger.info(
+                "Identité Google liée à un compte non vérifié, mot de passe retiré : user_id=%s",
+                user.id,
+            )
         else:
             logger.info("Identité Google liée à un compte existant : user_id=%s", user.id)
         oauth_account_repository.add_oauth_account(
@@ -192,6 +237,34 @@ class AuthService:
         )
         self._session.commit()
 
+    def request_email_verification(self, user: User, language: Language) -> Email | None:
+        """Email de vérification à renvoyer, ou None si l'adresse est déjà confirmée ou si le
+        précédent email date de moins de EMAIL_COOLDOWN_SECONDS."""
+        if user.email_verified_at is not None:
+            return None
+        now = datetime.now(UTC)
+        cooldown = timedelta(seconds=self._settings.email_cooldown_seconds)
+        sent_at = user.verification_email_sent_at
+        if sent_at is not None and now - sent_at < cooldown:
+            logger.info("Email de vérification non renvoyé, trop rapproché : user_id=%s", user.id)
+            return None
+        email_to_send = self._verification_email(user, language, now)
+        self._session.commit()
+        return email_to_send
+
+    def verify_email(self, token: str) -> None:
+        """Confirme l'adresse du lien ; lève InvalidEmailTokenError si le lien ne vaut rien."""
+        claims = decode_email_verification_token(
+            token, secret_key=self._settings.jwt_secret_key.get_secret_value()
+        )
+        user = user_repository.get_user_by_id(self._session, claims.user_id)
+        if user is None or email_fingerprint(user.email) != claims.email_fingerprint:
+            raise InvalidEmailTokenError("Le lien ne correspond plus au compte")
+        if user.email_verified_at is None:
+            user.email_verified_at = datetime.now(UTC)
+            self._session.commit()
+            logger.info("Adresse email confirmée : user_id=%s", user.id)
+
     def delete_account(self, session: AuthenticatedSession, password: str | None) -> None:
         """Supprime définitivement le compte et ses sessions, une fois l'utilisateur confirmé.
 
@@ -223,6 +296,23 @@ class AuthService:
         if user is None:
             return None
         return AuthenticatedSession(user=user, auth_time=claims.auth_time)
+
+    def _verification_email(self, user: User, language: Language, now: datetime) -> Email:
+        ttl_hours = self._settings.email_verification_ttl_hours
+        token = create_email_verification_token(
+            user_id=user.id,
+            email=user.email,
+            secret_key=self._settings.jwt_secret_key.get_secret_value(),
+            ttl=timedelta(hours=ttl_hours),
+            now=now,
+        )
+        user.verification_email_sent_at = now
+        link = f"{self._settings.frontend_base_url}{FRONTEND_VERIFY_EMAIL}?" + urlencode(
+            {TOKEN_PARAM: token}
+        )
+        return verification_email(
+            language, to=user.email, display_name=user.display_name, link=link, ttl_hours=ttl_hours
+        )
 
     def _start_session(self, user: User, authenticated_at: datetime) -> IssuedTokens:
         return self._issue_tokens(user, family_id=uuid.uuid4(), authenticated_at=authenticated_at)

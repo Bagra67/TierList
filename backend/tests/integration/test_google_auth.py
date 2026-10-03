@@ -15,8 +15,10 @@ from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
 from app.main import app
 from app.models.user import OAuthAccount, User
+from app.services.email import Email
 from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
+from tests.integration.helpers import link_token
 
 pytestmark = pytest.mark.integration
 
@@ -140,11 +142,13 @@ def test_next_google_sign_in_reuses_the_same_account(
     assert current_user(google_client)["email"] == "alice@gmail.com"
 
 
-def test_google_identity_is_linked_to_an_existing_account_with_a_verified_email(
-    google_client: TestClient, db_session: Session
+def test_google_identity_is_linked_to_an_existing_verified_account(
+    google_client: TestClient, db_session: Session, sent_emails: list[Email]
 ):
     registration = {"email": "alice@gmail.com", "password": PASSWORD, "display_name": "Alice"}
     assert google_client.post("/auth/register", json=registration).status_code == 201
+    token = link_token(sent_emails[0])
+    assert google_client.post("/auth/email/verify", json={"token": token}).status_code == 204
     google_client.cookies.clear()
 
     response = sign_in_with_google(google_client)
@@ -156,6 +160,35 @@ def test_google_identity_is_linked_to_an_existing_account_with_a_verified_email(
     assert (
         db_session.scalars(select(OAuthAccount)).one().user_id
         == db_session.scalars(select(User)).one().id
+    )
+
+
+def test_google_takes_over_an_unverified_account_and_drops_its_password(
+    google_client: TestClient, db_session: Session
+):
+    # Quelqu'un s'inscrit avec l'adresse Gmail d'Alice sans pouvoir la confirmer
+    registration = {"email": "alice@gmail.com", "password": PASSWORD, "display_name": "Mallory"}
+    assert google_client.post("/auth/register", json=registration).status_code == 201
+    squatter_refresh_token = google_client.cookies["refresh_token"]
+    google_client.cookies.clear()
+
+    response = sign_in_with_google(google_client)
+
+    assert response.headers["location"] == "/"
+    user = current_user(google_client)
+    assert user["has_password"] is False
+    assert user["email_verified"] is True
+    # Le mot de passe posé par l'inconnu ne permet plus de se connecter
+    login = google_client.post(
+        "/auth/login", json={"email": "alice@gmail.com", "password": PASSWORD}
+    )
+    assert login.status_code == 401
+    # Et sa session ouverte est fermée
+    google_client.cookies.clear()
+    google_client.cookies.set("refresh_token", squatter_refresh_token)
+    assert google_client.post("/auth/refresh").status_code == 401
+    assert db_session.scalars(select(OAuthAccount)).one().user_id == (
+        db_session.scalars(select(User)).one().id
     )
 
 

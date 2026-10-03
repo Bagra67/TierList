@@ -24,5 +24,7 @@ class ErrorCode(StrEnum):
     SESSION_EXPIRED = "session_expired"
     INCORRECT_PASSWORD = "incorrect_password"
     REAUTHENTICATION_REQUIRED = "reauthentication_required"
+    # Lien envoyé par email invalide, expiré ou déjà utilisé
+    INVALID_TOKEN = "invalid_token"
     # Code d'erreur de champ (FieldError) de la 422, avec le param min_length
     PASSWORD_TOO_SHORT = "password_too_short"

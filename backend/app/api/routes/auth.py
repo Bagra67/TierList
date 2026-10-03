@@ -2,13 +2,14 @@ import logging
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Cookie, Depends, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, Query, Response
 from fastapi.responses import RedirectResponse
 
 from app.api.dependencies import (
     get_auth_service,
     get_current_session,
     get_current_user,
+    get_email_sender,
     get_google_oauth_client,
 )
 from app.constants import messages
@@ -36,6 +37,7 @@ from app.exceptions.auth import (
     GoogleEmailNotVerifiedError,
     IncorrectPasswordError,
     InvalidCredentialsError,
+    InvalidEmailTokenError,
     InvalidRefreshTokenError,
     ReauthenticationRequiredError,
 )
@@ -44,12 +46,15 @@ from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.schemas.auth import (
     DeleteAccountRequest,
+    EmailVerificationRequest,
     LoginRequest,
     RegisterRequest,
     TokenResponse,
     UserResponse,
+    VerifyEmailRequest,
 )
 from app.services.auth import AuthenticatedSession, AuthService, IssuedTokens
+from app.services.email import EmailSender
 from app.services.google_oauth import GoogleLoginAttempt, GoogleOAuthClient
 
 logger = logging.getLogger(__name__)
@@ -64,6 +69,8 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 RefreshTokenCookie = Annotated[str | None, Cookie(alias=REFRESH_TOKEN_COOKIE)]
 GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]
+EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str, settings: Settings) -> None:
@@ -118,17 +125,26 @@ def _token_response(response: Response, tokens: IssuedTokens, settings: Settings
     },
 )
 def register(
-    payload: RegisterRequest, response: Response, service: AuthServiceDep, settings: SettingsDep
+    payload: RegisterRequest,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    service: AuthServiceDep,
+    email_sender: EmailSenderDep,
+    settings: SettingsDep,
 ) -> TokenResponse:
     try:
-        tokens = service.register(payload.email, payload.password, payload.display_name)
+        registration = service.register(
+            payload.email, payload.password, payload.display_name, payload.language
+        )
     except EmailAlreadyRegisteredError as exc:
         raise AppHTTPException(
             status_code=409,
             code=ErrorCode.EMAIL_ALREADY_REGISTERED,
             detail=messages.EMAIL_ALREADY_REGISTERED,
         ) from exc
-    return _token_response(response, tokens, settings)
+    # Après la réponse : l'inscription n'attend pas le serveur SMTP
+    background_tasks.add_task(email_sender.send, registration.verification_email)
+    return _token_response(response, registration.tokens, settings)
 
 
 @router.post("/login", responses=UNAUTHORIZED_RESPONSE)
@@ -175,8 +191,39 @@ def logout(
 
 
 @router.get("/me", responses=UNAUTHORIZED_RESPONSE)
-def me(user: Annotated[User, Depends(get_current_user)]) -> UserResponse:
+def me(user: CurrentUserDep) -> UserResponse:
     return UserResponse.model_validate(user)
+
+
+@router.post("/email/verification", status_code=204, responses=UNAUTHORIZED_RESPONSE)
+def request_email_verification(
+    payload: EmailVerificationRequest,
+    background_tasks: BackgroundTasks,
+    user: CurrentUserDep,
+    service: AuthServiceDep,
+    email_sender: EmailSenderDep,
+) -> None:
+    """Renvoie l'email de vérification ; sans effet si l'adresse est déjà confirmée, ou si le
+    précédent email est trop récent (EMAIL_COOLDOWN_SECONDS)."""
+    email_to_send = service.request_email_verification(user, payload.language)
+    if email_to_send is not None:
+        background_tasks.add_task(email_sender.send, email_to_send)
+
+
+@router.post(
+    "/email/verify",
+    status_code=204,
+    responses={400: {"model": ErrorResponse, "description": messages.INVALID_TOKEN_DESCRIPTION}},
+)
+def verify_email(payload: VerifyEmailRequest, service: AuthServiceDep) -> None:
+    """Confirme l'adresse email avec le token du lien reçu ; sans session : le lien peut être
+    ouvert dans un autre navigateur."""
+    try:
+        service.verify_email(payload.token)
+    except InvalidEmailTokenError as exc:
+        raise AppHTTPException(
+            status_code=400, code=ErrorCode.INVALID_TOKEN, detail=messages.INVALID_TOKEN
+        ) from exc
 
 
 @router.delete(

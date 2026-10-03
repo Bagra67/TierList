@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useCurrentUser, useLogout } from '../api/auth';
 import { useHello } from '../api/hello';
 import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
+import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { Button } from '../components/ui/button';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
 import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
@@ -47,6 +48,7 @@ export function HomePage() {
           </Button>
         </div>
       )}
+      {user && <EmailVerificationBanner user={user} />}
       {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
       {isError && (
         <p role="alert" className="text-destructive">

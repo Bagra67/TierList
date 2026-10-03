@@ -19,6 +19,7 @@ INVALID_CREDENTIALS = "Incorrect email or password"
 SESSION_EXPIRED = "Session expired, please sign in again"
 INCORRECT_PASSWORD = "Incorrect password"
 REAUTHENTICATION_REQUIRED = "Sign in again with Google to confirm the deletion"
+INVALID_TOKEN = "Invalid or expired link"
 # {min_length} est remplacé par la valeur de PASSWORD_MIN_LENGTH
 PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long"
 
@@ -26,3 +27,4 @@ PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
 EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
 DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION = "Incorrect password, or Google sign-in too old"
+INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"

@@ -33,8 +33,23 @@ export const en: Translation = {
       hasAccount: 'Already have an account?',
       loginLink: 'Sign in',
     },
+    verifyEmail: {
+      title: 'Confirm your email address',
+      intro: 'Confirm the address of your TierList account.',
+      submit: 'Confirm my address',
+      submitting: 'Confirming…',
+      success: 'Your email address is confirmed.',
+      missingToken: 'This link is incomplete: open the link received by email.',
+      continue: 'Continue',
+    },
   },
   account: {
+    verification: {
+      pending: 'Confirm your address: a link was sent to {{email}}.',
+      resend: 'Send the email again',
+      resending: 'Sending…',
+      resent: 'Email sent. Check your spam folder (at most one email per minute).',
+    },
     delete: {
       open: 'Delete my account',
       title: 'Delete my account',
@@ -59,6 +74,7 @@ export const en: Translation = {
       session_expired: 'Session expired, please sign in again.',
       incorrect_password: 'Incorrect password',
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
+      invalid_token: 'This link is invalid or has expired.',
     },
     field: {
       invalid: 'Invalid value.',
