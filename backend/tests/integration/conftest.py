@@ -11,9 +11,11 @@ from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_email_sender
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
+from app.services.email import Email, EmailSender
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
@@ -89,13 +91,32 @@ def db_session(migrated_engine: Engine) -> Iterator[Session]:
             transaction.rollback()
 
 
+class FakeEmailSender(EmailSender):
+    """Garde les emails au lieu de les envoyer : aucun test ne contacte un serveur SMTP."""
+
+    def __init__(self, sent: list[Email]) -> None:
+        self.sent = sent
+
+    def send(self, email: Email) -> None:
+        self.sent.append(email)
+
+
 @pytest.fixture
-def client(db_session: Session) -> Iterator[TestClient]:
+def sent_emails() -> list[Email]:
+    """Emails « envoyés » pendant le test (les tâches de fond s'exécutent avant la réponse)."""
+    return []
+
+
+@pytest.fixture
+def client(db_session: Session, sent_emails: list[Email]) -> Iterator[TestClient]:
+    email_sender = FakeEmailSender(sent_emails)
     app.dependency_overrides[get_db_session] = lambda: db_session
+    app.dependency_overrides[get_email_sender] = lambda: email_sender
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
+        app.dependency_overrides.pop(get_email_sender, None)
 
 
 def http_test_settings() -> Settings:

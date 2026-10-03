@@ -7,13 +7,16 @@ import {
 } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
 import { ApiError } from '../errors/apiError';
+import { currentLanguage } from '../i18n';
 import { apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
 import type { components } from './schema';
 
-export type RegisterRequest = components['schemas']['RegisterRequest'];
+// La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
+export type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
+export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 // Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
 // Google puis, au retour, vers le frontend avec le cookie de session posé.
@@ -23,7 +26,9 @@ export function googleSignInUrl(next?: GoogleNextStep): string {
 }
 
 export async function register(body: RegisterRequest): Promise<void> {
-  const { data, error, response } = await apiClient.POST('/auth/register', { body });
+  const { data, error, response } = await apiClient.POST('/auth/register', {
+    body: { ...body, language: currentLanguage() },
+  });
   if (data === undefined) {
     throw new ApiError(response.status, error);
   }
@@ -53,6 +58,43 @@ export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
     throw new ApiError(response.status, error);
   }
   setAccessToken(null);
+}
+
+// Confirme l'adresse avec le token du lien reçu par email (sans session : le lien peut être
+// ouvert dans un autre navigateur)
+export async function verifyEmail(token: string): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/email/verify', { body: { token } });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Renvoie l'email de vérification ; le backend l'ignore si le précédent est trop récent
+export async function requestEmailVerification(): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/email/verification', {
+    body: { language: currentLanguage() },
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Demande un lien de réinitialisation ; le backend répond pareil que le compte existe ou non
+export async function forgotPassword(email: string): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/password/forgot', {
+    body: { email, language: currentLanguage() },
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Choisit un nouveau mot de passe avec le token du lien reçu ; le backend ferme toutes les sessions
+export async function resetPassword(body: ResetPasswordRequest): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/password/reset', { body });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
 }
 
 export async function getMe(signal?: AbortSignal): Promise<User> {
@@ -104,6 +146,19 @@ export function useLogin() {
   });
 }
 
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: verifyEmail,
+    // Utilisateur connecté dans ce navigateur : son adresse apparaît désormais comme confirmée
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
+  });
+}
+
+export function useRequestEmailVerification() {
+  return useMutation({ mutationFn: requestEmailVerification });
+}
+
 // Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache
 function forgetSession(queryClient: QueryClient): void {
   queryClient.clear();
@@ -116,6 +171,22 @@ export function useLogout() {
     mutationFn: logout,
     // Même en cas d'échec réseau, l'interface repasse en mode déconnecté
     onSettled: () => forgetSession(queryClient),
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({ mutationFn: forgotPassword });
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetPassword,
+    // Le backend a fermé toutes les sessions, y compris celle de ce navigateur
+    onSuccess: () => {
+      setAccessToken(null);
+      forgetSession(queryClient);
+    },
   });
 }
 

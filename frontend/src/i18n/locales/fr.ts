@@ -5,6 +5,12 @@ export const fr = {
     loading: 'Chargement…',
     backendUnreachable: 'Impossible de joindre le backend : est-il lancé ?',
     language: 'Langue',
+    theme: 'Thème',
+  },
+  theme: {
+    system: 'Système',
+    light: 'Clair',
+    dark: 'Sombre',
   },
   auth: {
     email: 'Email',
@@ -19,6 +25,7 @@ export const fr = {
       submitting: 'Connexion…',
       noAccount: 'Pas encore de compte ?',
       registerLink: 'Créer un compte',
+      forgotPassword: 'Mot de passe oublié ?',
     },
     register: {
       title: 'Créer un compte',
@@ -27,8 +34,41 @@ export const fr = {
       hasAccount: 'Déjà un compte ?',
       loginLink: 'Se connecter',
     },
+    verifyEmail: {
+      title: 'Confirmer votre adresse email',
+      intro: "Confirmez l'adresse de votre compte TierList.",
+      submit: 'Confirmer mon adresse',
+      submitting: 'Confirmation…',
+      success: 'Votre adresse email est confirmée.',
+      missingToken: 'Ce lien est incomplet : ouvrez le lien reçu par email.',
+      continue: 'Continuer',
+    },
+    forgotPassword: {
+      title: 'Mot de passe oublié',
+      intro:
+        "Indiquez l'adresse de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.",
+      submit: 'Envoyer le lien',
+      submitting: 'Envoi…',
+      sent: "Si un compte existe pour cette adresse, un email vient d'être envoyé. Pensez à regarder vos spams.",
+      backToLogin: 'Retour à la connexion',
+    },
+    resetPassword: {
+      title: 'Choisir un nouveau mot de passe',
+      newPassword: 'Nouveau mot de passe',
+      submit: 'Changer le mot de passe',
+      submitting: 'Enregistrement…',
+      success: 'Votre mot de passe a été changé. Connectez-vous avec le nouveau.',
+      signIn: 'Se connecter',
+      missingToken: 'Ce lien est incomplet : ouvrez le lien reçu par email.',
+    },
   },
   account: {
+    verification: {
+      pending: 'Confirmez votre adresse : un lien a été envoyé à {{email}}.',
+      resend: "Renvoyer l'email",
+      resending: 'Envoi…',
+      resent: 'Email envoyé. Pensez à regarder vos spams (un envoi par minute au plus).',
+    },
     delete: {
       open: 'Supprimer mon compte',
       title: 'Supprimer mon compte',
@@ -54,6 +94,7 @@ export const fr = {
       session_expired: 'Session expirée, veuillez vous reconnecter.',
       incorrect_password: 'Mot de passe incorrect',
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
+      invalid_token: 'Ce lien est invalide ou a expiré.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

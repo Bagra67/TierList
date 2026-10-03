@@ -113,6 +113,16 @@ describe('LoginPage', () => {
     );
   });
 
+  it('links to the forgotten password page', () => {
+    stubBackend({});
+    renderLoginPage();
+
+    expect(screen.getByRole('link', { name: 'Mot de passe oublié ?' })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    );
+  });
+
   it.each([
     ['google_cancelled', 'Connexion avec Google annulée.'],
     ['google_email_not_verified', "Votre adresse Google n'est pas vérifiée"],

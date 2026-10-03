@@ -47,6 +47,8 @@ describe('RegisterPage', () => {
       email: 'alice@example.com',
       password: 'correct horse battery staple',
       display_name: 'Alice',
+      // Langue de l'email de vérification : celle de l'interface
+      language: 'fr',
     });
   });
 

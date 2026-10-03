@@ -44,6 +44,12 @@ export function detectLanguage(): Language {
   return DEFAULT_LANGUAGE;
 }
 
+// Langue de l'interface, transmise au backend pour rédiger les emails dans la même langue
+export function currentLanguage(): Language {
+  const language = i18next.resolvedLanguage;
+  return isSupportedLanguage(language) ? language : DEFAULT_LANGUAGE;
+}
+
 // Choix de l'utilisateur (sélecteur de langue) : appliqué puis mémorisé
 export async function changeLanguage(language: Language): Promise<void> {
   await i18next.changeLanguage(language);

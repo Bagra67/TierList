@@ -1,7 +1,29 @@
 # Changelog
 
+English | [Français](CHANGELOG.fr.md)
+
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
+
+## [0.3.0] - 2026-10-03
+
+### Features
+
+- frontend: adopt tailwind css and shadcn/ui as the ui library (#41)
+- frontend: add a dark mode (light / dark / system) (#42)
+- backend: send transactional emails over smtp (#45)
+- verify the email address with a link sent by email (#46)
+- reset a forgotten password with a link sent by email (#48)
+
+### Bug fixes
+
+- backend: tolerate clock skew when verifying google id tokens (#39)
+
+### Documentation
+
+- add a french changelog kept up to date by the release script (#38)
+- todo: remove the completed setup, checks and release sections (#40)
+- todo: plan the design system once the tier list editor exists (#44)
 
 ## [0.2.0] - 2026-10-03
 

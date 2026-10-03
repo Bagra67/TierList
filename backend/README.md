@@ -16,16 +16,19 @@ Python backend built with [FastAPI](https://fastapi.tiangolo.com/), managed with
 ### Installing uv
 
 **Windows (PowerShell)**:
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 **macOS / Linux**:
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Then restart your terminal and check:
+
 ```bash
 uv --version
 ```
@@ -35,11 +38,13 @@ uv --version
 ## 2. Installing the project
 
 From the `backend/` folder:
+
 ```bash
 uv sync
 ```
 
 This command:
+
 - creates the `.venv/` virtual environment if it does not exist;
 - installs all dependencies (dev ones included) at the exact versions of `uv.lock`.
 
@@ -48,36 +53,40 @@ This command:
 With `uv run`, activation is **not needed**: uv uses `.venv` automatically.
 If you still want to activate it (e.g. to call `python` or `fastapi` directly):
 
-| System | Command |
-|---|---|
+| System               | Command                      |
+| -------------------- | ---------------------------- |
 | Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
-| Windows (cmd) | `.venv\Scripts\activate.bat` |
-| macOS / Linux | `source .venv/bin/activate` |
+| Windows (cmd)        | `.venv\Scripts\activate.bat` |
+| macOS / Linux        | `source .venv/bin/activate`  |
 
 To deactivate it: `deactivate`.
 
-> VS Code is already configured (`.vscode/settings.json` at the root) to use `backend/.venv`. Otherwise: `Ctrl+Shift+P` → *Python: Select Interpreter*.
+> VS Code is already configured (`.vscode/settings.json` at the root) to use `backend/.venv`. Otherwise: `Ctrl+Shift+P` → _Python: Select Interpreter_.
 
 ---
 
 ## 3. Running the server
 
 **Development mode** (auto-reload on every change):
+
 ```bash
 uv run fastapi dev app/main.py
 ```
 
 **Production mode**:
+
 ```bash
 uv run fastapi run app/main.py
 ```
 
 Change the port / host:
+
 ```bash
 uv run fastapi dev app/main.py --port 8080 --host 0.0.0.0
 ```
 
 Once running:
+
 - API: http://127.0.0.1:8000
 - Interactive documentation (Swagger): http://127.0.0.1:8000/docs
 - ReDoc documentation: http://127.0.0.1:8000/redoc
@@ -90,20 +99,21 @@ The frontend calls the backend through the Vite proxy: a request to `http://loca
 
 > ⚠️ Do not use `pip install` directly: always go through `uv` so that `pyproject.toml` and `uv.lock` stay up to date.
 
-| Action | Command |
-|---|---|
-| Add a package | `uv add <package>` (e.g. `uv add sqlalchemy`) |
-| Add a specific version | `uv add "sqlalchemy>=2.0"` |
-| Add a dev package (tests, lint…) | `uv add --dev <package>` (e.g. `uv add --dev ruff`) |
-| Remove a package | `uv remove <package>` |
-| Upgrade a package | `uv lock --upgrade-package <package>` then `uv sync` |
-| Upgrade all packages | `uv lock --upgrade` then `uv sync` |
-| Show the dependency tree | `uv tree` |
-| List installed packages | `uv pip list` |
-| Reinstall from the lockfile | `uv sync` |
-| Install without dev dependencies (prod) | `uv sync --no-dev` |
+| Action                                  | Command                                              |
+| --------------------------------------- | ---------------------------------------------------- |
+| Add a package                           | `uv add <package>` (e.g. `uv add sqlalchemy`)        |
+| Add a specific version                  | `uv add "sqlalchemy>=2.0"`                           |
+| Add a dev package (tests, lint…)        | `uv add --dev <package>` (e.g. `uv add --dev ruff`)  |
+| Remove a package                        | `uv remove <package>`                                |
+| Upgrade a package                       | `uv lock --upgrade-package <package>` then `uv sync` |
+| Upgrade all packages                    | `uv lock --upgrade` then `uv sync`                   |
+| Show the dependency tree                | `uv tree`                                            |
+| List installed packages                 | `uv pip list`                                        |
+| Reinstall from the lockfile             | `uv sync`                                            |
+| Install without dev dependencies (prod) | `uv sync --no-dev`                                   |
 
 Run any command inside the project environment:
+
 ```bash
 uv run python script.py
 uv run <command>
@@ -130,10 +140,10 @@ Tests under `tests/integration/` (marker `integration`) run against a real Postg
 - Each test runs in a transaction that is rolled back at the end.
 - If PostgreSQL is not reachable, they are **skipped** locally, but they **fail** on CI.
 
-| Action | Command |
-|---|---|
-| Unit tests only | `uv run pytest -m "not integration"` |
-| Integration tests only | `uv run pytest -m integration` |
+| Action                 | Command                              |
+| ---------------------- | ------------------------------------ |
+| Unit tests only        | `uv run pytest -m "not integration"` |
+| Integration tests only | `uv run pytest -m integration`       |
 
 ---
 
@@ -141,14 +151,15 @@ Tests under `tests/integration/` (marker `integration`) run against a real Postg
 
 [Ruff](https://docs.astral.sh/ruff/) is both the linter and the formatter. It is configured in `pyproject.toml` (`[tool.ruff]` section).
 
-| Action | Command |
-|---|---|
-| Analyze the code | `uv run ruff check .` |
-| Fix automatically | `uv run ruff check . --fix` |
-| Format the code | `uv run ruff format .` |
+| Action                                       | Command                        |
+| -------------------------------------------- | ------------------------------ |
+| Analyze the code                             | `uv run ruff check .`          |
+| Fix automatically                            | `uv run ruff check . --fix`    |
+| Format the code                              | `uv run ruff format .`         |
 | Check formatting without changing files (CI) | `uv run ruff format . --check` |
 
 The `pre-commit` git hook (see the [root README](../README.md)) automatically runs `ruff check` and `ruff format --check` before each commit. To fix things before committing:
+
 ```bash
 uv run ruff check . --fix && uv run ruff format .
 ```
@@ -227,29 +238,32 @@ The database runs in Docker (`compose.yaml` at the repository root, see the [roo
 
 Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 
-| Variable | Purpose | Default |
-|---|---|---|
-| `POSTGRES_USER` | User | — (required) |
-| `POSTGRES_PASSWORD` | Password | — (required) |
-| `POSTGRES_DB` | Database name | — (required) |
-| `POSTGRES_HOST` | Host as seen from the backend | `127.0.0.1` |
-| `POSTGRES_PORT` | Port | `5432` |
-| `DATABASE_CONNECT_TIMEOUT_SECONDS` | Maximum time to connect to the database, in seconds | `3` |
-| `LOG_LEVEL` | Application log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL` (case-insensitive) | `INFO` |
-| `JWT_SECRET_KEY` | Key signing the access tokens, 32 characters minimum, different in each environment. Generate one with `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (required) |
-| `ACCESS_TOKEN_TTL_MINUTES` | Access token lifetime, in minutes | `15` |
-| `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifetime, in days | `30` |
-| `PASSWORD_MIN_LENGTH` | Minimum password length at registration (at most 128); the 422 states it | `8` |
-| `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Account created with Google: maximum age of the sign-in to delete the account | `5` |
-| `AUTH_COOKIE_SECURE` | Refresh cookie sent over HTTPS only; set `false` locally (HTTP) | `true` |
-| `AUTH_COOKIE_PATH` | Refresh cookie path, as seen by the browser (through the `/api` proxy) | `/api/auth` |
-| `GOOGLE_CLIENT_ID` | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled | — (optional) |
-| `GOOGLE_CLIENT_SECRET` | Secret of that client | — (optional) |
-| `GOOGLE_REDIRECT_URI` | Callback URL, identical to an authorized redirect URI of the client | `http://localhost:5173/api/auth/google/callback` |
-| `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` | Time allowed on Google's page before the sign-in attempt expires | `10` |
-| `GOOGLE_HTTP_TIMEOUT_SECONDS` | Timeout of the calls to Google (code exchange, public keys) | `10` |
+| Variable                                | Purpose                                                                                                                                                                      | Default                                          |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `POSTGRES_USER`                         | User                                                                                                                                                                         | — (required)                                     |
+| `POSTGRES_PASSWORD`                     | Password                                                                                                                                                                     | — (required)                                     |
+| `POSTGRES_DB`                           | Database name                                                                                                                                                                | — (required)                                     |
+| `POSTGRES_HOST`                         | Host as seen from the backend                                                                                                                                                | `127.0.0.1`                                      |
+| `POSTGRES_PORT`                         | Port                                                                                                                                                                         | `5432`                                           |
+| `DATABASE_CONNECT_TIMEOUT_SECONDS`      | Maximum time to connect to the database, in seconds                                                                                                                          | `3`                                              |
+| `LOG_LEVEL`                             | Application log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL` (case-insensitive)                                                                                  | `INFO`                                           |
+| `JWT_SECRET_KEY`                        | Key signing the access tokens, 32 characters minimum, different in each environment. Generate one with `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (required)                                     |
+| `ACCESS_TOKEN_TTL_MINUTES`              | Access token lifetime, in minutes                                                                                                                                            | `15`                                             |
+| `REFRESH_TOKEN_TTL_DAYS`                | Refresh token lifetime, in days                                                                                                                                              | `30`                                             |
+| `PASSWORD_MIN_LENGTH`                   | Minimum password length at registration (at most 128); the 422 states it                                                                                                     | `8`                                              |
+| `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Account created with Google: maximum age of the sign-in to delete the account                                                                                                | `5`                                              |
+| `EMAIL_VERIFICATION_TTL_HOURS`          | Validity of the email confirmation link, in hours                                                                                                                            | `24`                                             |
+| `PASSWORD_RESET_TTL_MINUTES`            | Validity of the password reset link, in minutes                                                                                                                              | `30`                                             |
+| `EMAIL_COOLDOWN_SECONDS`                | Minimum time between two emails of the same type for one account (prevents flooding a mailbox)                                                                               | `60`                                             |
+| `AUTH_COOKIE_SECURE`                    | Refresh cookie sent over HTTPS only; set `false` locally (HTTP)                                                                                                              | `true`                                           |
+| `AUTH_COOKIE_PATH`                      | Refresh cookie path, as seen by the browser (through the `/api` proxy)                                                                                                       | `/api/auth`                                      |
+| `GOOGLE_CLIENT_ID`                      | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled                                                                        | — (optional)                                     |
+| `GOOGLE_CLIENT_SECRET`                  | Secret of that client                                                                                                                                                        | — (optional)                                     |
+| `GOOGLE_REDIRECT_URI`                   | Callback URL, identical to an authorized redirect URI of the client                                                                                                          | `http://localhost:5173/api/auth/google/callback` |
+| `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Time allowed on Google's page before the sign-in attempt expires                                                                                                             | `10`                                             |
+| `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Timeout of the calls to Google (code exchange, public keys)                                                                                                                  | `10`                                             |
 
-Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
+Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/emails.md). Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 
@@ -261,12 +275,12 @@ The same file is read by the PostgreSQL container: changing the password **after
 
 ### Migrations (Alembic)
 
-| Action | Command |
-|---|---|
-| Create a migration from the models | `uv run alembic revision --autogenerate -m "description"` |
-| Apply migrations | `uv run alembic upgrade head` |
-| Revert the last migration | `uv run alembic downgrade -1` |
-| Show the database's current version | `uv run alembic current` |
+| Action                              | Command                                                   |
+| ----------------------------------- | --------------------------------------------------------- |
+| Create a migration from the models  | `uv run alembic revision --autogenerate -m "description"` |
+| Apply migrations                    | `uv run alembic upgrade head`                             |
+| Revert the last migration           | `uv run alembic downgrade -1`                             |
+| Show the database's current version | `uv run alembic current`                                  |
 
 Models must inherit from `app.db.base.Base` and be imported by `migrations/env.py` to be detected by `--autogenerate`. **Always review** a generated migration before applying it.
 
@@ -306,7 +320,12 @@ Every error response of the API has the same JSON shape, `ErrorResponse` (`app/c
   "detail": "Invalid request",
   "code": "validation_error",
   "errors": [
-    { "field": "body.password", "message": "…", "code": "password_too_short", "params": { "min_length": 8 } }
+    {
+      "field": "body.password",
+      "message": "…",
+      "code": "password_too_short",
+      "params": { "min_length": 8 }
+    }
   ]
 }
 ```
@@ -315,27 +334,28 @@ Every error response of the API has the same JSON shape, `ErrorResponse` (`app/c
 - `params` (optional): values used by the translation (e.g. `min_length`).
 - `detail`: English text for developers and logs only.
 
-| Case | Status | Body |
-| --- | --- | --- |
-| `AppHTTPException` raised by a route (`app/exceptions/http.py`) | the one given | `detail` + its `code` (an `ErrorCode`) + optional `params`; headers kept (`WWW-Authenticate`, `set-cookie`) |
-| Other `HTTPException` (e.g. FastAPI's 404/405) | the one given | `detail` + `code: "http_error"` |
-| Invalid request (path, query, body) | `422` | `code: "validation_error"` + `errors`: one entry per invalid field (`field` = location, `message`, `code` = Pydantic error type such as `missing` or `string_too_short`, `params` = its scalar context such as `min_length`) |
-| Unexpected exception | `500` | `{"detail": "Internal server error", "code": "internal_error"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path |
+| Case                                                            | Status        | Body                                                                                                                                                                                                                         |
+| --------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppHTTPException` raised by a route (`app/exceptions/http.py`) | the one given | `detail` + its `code` (an `ErrorCode`) + optional `params`; headers kept (`WWW-Authenticate`, `set-cookie`)                                                                                                                  |
+| Other `HTTPException` (e.g. FastAPI's 404/405)                  | the one given | `detail` + `code: "http_error"`                                                                                                                                                                                              |
+| Invalid request (path, query, body)                             | `422`         | `code: "validation_error"` + `errors`: one entry per invalid field (`field` = location, `message`, `code` = Pydantic error type such as `missing` or `string_too_short`, `params` = its scalar context such as `min_length`) |
+| Unexpected exception                                            | `500`         | `{"detail": "Internal server error", "code": "internal_error"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path                                                           |
 
 Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 
-| Code | Status | Meaning |
-| --- | --- | --- |
-| `internal_error` | 500 | Unexpected error |
-| `validation_error` | 422 | Invalid request (see `errors`) |
-| `http_error` | any | `HTTPException` without a dedicated code |
-| `database_unavailable` | 503 | `GET /health/db`: the database does not answer |
-| `not_authenticated` | 401 | Missing or invalid access token |
-| `email_already_registered` | 409 | Registration with an email already used |
-| `invalid_credentials` | 401 | Wrong email or password |
-| `session_expired` | 401 | Missing, expired or revoked refresh token |
-| `incorrect_password` | 403 | Wrong password when deleting the account |
-| `reauthentication_required` | 403 | Google account whose last sign-in is too old to confirm the deletion |
-| `password_too_short` | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length` |
+| Code                        | Status      | Meaning                                                                    |
+| --------------------------- | ----------- | -------------------------------------------------------------------------- |
+| `internal_error`            | 500         | Unexpected error                                                           |
+| `validation_error`          | 422         | Invalid request (see `errors`)                                             |
+| `http_error`                | any         | `HTTPException` without a dedicated code                                   |
+| `database_unavailable`      | 503         | `GET /health/db`: the database does not answer                             |
+| `not_authenticated`         | 401         | Missing or invalid access token                                            |
+| `email_already_registered`  | 409         | Registration with an email already used                                    |
+| `invalid_credentials`       | 401         | Wrong email or password                                                    |
+| `session_expired`           | 401         | Missing, expired or revoked refresh token                                  |
+| `incorrect_password`        | 403         | Wrong password when deleting the account                                   |
+| `reauthentication_required` | 403         | Google account whose last sign-in is too old to confirm the deletion       |
+| `invalid_token`             | 400         | Link received by email invalid, expired, or no longer matching the account |
+| `password_too_short`        | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
 
 For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.

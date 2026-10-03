@@ -20,6 +20,7 @@ Le changement le plus fort depuis la dernière release l'emporte : un `feat` et 
 - **Les breaking changes doivent se voir** : le titre squash de la PR porte `!` (`feat(api)!: …`) et son corps explique la migration dans un pied `BREAKING CHANGE: …`. Les relecteurs le vérifient avant la fusion.
 - **Les tags `vX.Y.Z` n'existent que sur `main`**, créés par le workflow `Release`, jamais à la main et jamais sur `develop`.
 - **Le CHANGELOG est généré** (`CHANGELOG.md`, par [git-cliff](https://git-cliff.org) avec `cliff.toml`) et relu dans la PR de préparation. Une ligne peut être corrigée à la main ; les sections publiées ne sont jamais régénérées.
+- **Le CHANGELOG français** (`CHANGELOG.fr.md`) reçoit la même section, avec des titres en français (`cliff.fr.tera`). Ses lignes reprennent les sujets de commit en anglais : traduisez-les à la relecture de la PR de préparation. Les notes de la GitHub Release ne viennent que de `CHANGELOG.md`.
 - **Aucun commit direct ni hotfix sur `main`** : un correctif passe par `develop`, puis une release **Z**.
 
 ## Faire une release
@@ -33,9 +34,9 @@ Le changement le plus fort depuis la dernière release l'emporte : un `feat` et 
    ./scripts/prepare-release.sh                    # ou --version X.Y.Z pour l'imposer
    ```
 
-   Le script met à jour les trois champs de version, régénère `openapi.json` et `schema.d.ts`, et ajoute la nouvelle section en tête de `CHANGELOG.md`. Il refuse de tourner s'il n'y a rien à publier (aucun `feat`, `fix`, `perf` ni breaking change depuis le dernier tag) ou si la branche ne part pas d'`origin/develop`.
+   Le script met à jour les trois champs de version, régénère `openapi.json` et `schema.d.ts`, et ajoute la nouvelle section en tête de `CHANGELOG.md` et de `CHANGELOG.fr.md`. Il refuse de tourner s'il n'y a rien à publier (aucun `feat`, `fix`, `perf` ni breaking change depuis le dernier tag), si la branche ne part pas d'`origin/develop`, ou si `CHANGELOG.fr.md` est absent.
 
-   Relisez `CHANGELOG.md`, puis commitez `chore(release): prepare vX.Y.Z`, ouvrez une PR vers `develop` et fusionnez-la en squash.
+   Relisez `CHANGELOG.md`, traduisez les nouvelles lignes de `CHANGELOG.fr.md`, puis commitez `chore(release): prepare vX.Y.Z`, ouvrez une PR vers `develop` et fusionnez-la en squash.
 
 2. **Publier** : ouvrez une PR de `develop` vers `main` intitulée `chore(release): vX.Y.Z` et fusionnez-la avec un **merge commit** (AGENTS.md §40).
 

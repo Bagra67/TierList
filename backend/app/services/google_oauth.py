@@ -22,6 +22,7 @@ from app.constants.auth import (
 from app.constants.google import (
     GOOGLE_AUTHORIZATION_URL,
     GOOGLE_ID_TOKEN_ALGORITHM,
+    GOOGLE_ID_TOKEN_CLOCK_SKEW_SECONDS,
     GOOGLE_ISSUERS,
     GOOGLE_JWKS_URL,
     GOOGLE_PROMPT,
@@ -186,6 +187,7 @@ class GoogleOAuthClient:
                 algorithms=[GOOGLE_ID_TOKEN_ALGORITHM],
                 audience=self._client_id,
                 issuer=GOOGLE_ISSUERS,
+                leeway=GOOGLE_ID_TOKEN_CLOCK_SKEW_SECONDS,
                 options={"require": ["iss", "aud", "exp", "iat", "sub", "nonce"]},
             )
         except jwt.PyJWTError as exc:

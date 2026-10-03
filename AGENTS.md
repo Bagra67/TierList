@@ -1587,6 +1587,8 @@ French is the reference language. How it works and step-by-step recipes:
 -   On the backend, never return text meant for the user: return an
     `ErrorCode` (`app/constants/error_codes.py`) and its `params` through
     `AppHTTPException`. `detail` stays English, for developers.
+-   Exception: emails are written by the backend, in every supported
+    language, in the language sent by the frontend (`docs/emails.md`).
 -   When adding an `ErrorCode`, a validation error type or a code passed
     to the frontend (e.g. `?error=` after Google sign-in), add its
     translation under `errors.*` in every locale, in the same PR.

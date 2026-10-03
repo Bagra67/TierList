@@ -5,6 +5,12 @@ export const en: Translation = {
     loading: 'Loading…',
     backendUnreachable: 'Cannot reach the backend: is it running?',
     language: 'Language',
+    theme: 'Theme',
+  },
+  theme: {
+    system: 'System',
+    light: 'Light',
+    dark: 'Dark',
   },
   auth: {
     email: 'Email',
@@ -19,6 +25,7 @@ export const en: Translation = {
       submitting: 'Signing in…',
       noAccount: 'No account yet?',
       registerLink: 'Create an account',
+      forgotPassword: 'Forgot your password?',
     },
     register: {
       title: 'Create an account',
@@ -27,8 +34,40 @@ export const en: Translation = {
       hasAccount: 'Already have an account?',
       loginLink: 'Sign in',
     },
+    verifyEmail: {
+      title: 'Confirm your email address',
+      intro: 'Confirm the address of your TierList account.',
+      submit: 'Confirm my address',
+      submitting: 'Confirming…',
+      success: 'Your email address is confirmed.',
+      missingToken: 'This link is incomplete: open the link received by email.',
+      continue: 'Continue',
+    },
+    forgotPassword: {
+      title: 'Forgot your password',
+      intro: 'Enter the address of your account: you will receive a link to choose a new password.',
+      submit: 'Send the link',
+      submitting: 'Sending…',
+      sent: 'If an account exists for this address, an email has just been sent. Check your spam folder.',
+      backToLogin: 'Back to sign in',
+    },
+    resetPassword: {
+      title: 'Choose a new password',
+      newPassword: 'New password',
+      submit: 'Change the password',
+      submitting: 'Saving…',
+      success: 'Your password has been changed. Sign in with the new one.',
+      signIn: 'Sign in',
+      missingToken: 'This link is incomplete: open the link received by email.',
+    },
   },
   account: {
+    verification: {
+      pending: 'Confirm your address: a link was sent to {{email}}.',
+      resend: 'Send the email again',
+      resending: 'Sending…',
+      resent: 'Email sent. Check your spam folder (at most one email per minute).',
+    },
     delete: {
       open: 'Delete my account',
       title: 'Delete my account',
@@ -53,6 +92,7 @@ export const en: Translation = {
       session_expired: 'Session expired, please sign in again.',
       incorrect_password: 'Incorrect password',
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
+      invalid_token: 'This link is invalid or has expired.',
     },
     field: {
       invalid: 'Invalid value.',

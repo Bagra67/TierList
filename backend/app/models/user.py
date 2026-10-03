@@ -24,11 +24,21 @@ class User(Base):
     # None pour un compte créé avec Google, qui n'a pas de mot de passe
     password_hash: Mapped[str | None] = mapped_column(String(PASSWORD_HASH_MAX_LENGTH))
     display_name: Mapped[str] = mapped_column(String(DISPLAY_NAME_MAX_LENGTH))
+    # Heure de la confirmation de l'adresse (lien reçu par email, ou compte Google) ; None sinon
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Dernier email de vérification envoyé : limite la fréquence des renvois
+    verification_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Dernier email de réinitialisation du mot de passe envoyé : limite la fréquence des envois
+    password_reset_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     @property
     def has_password(self) -> bool:
         return self.password_hash is not None
+
+    @property
+    def email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
 
 class RefreshToken(Base):

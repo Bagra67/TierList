@@ -43,5 +43,6 @@ export const alice = {
   email: 'alice@example.com',
   display_name: 'Alice',
   has_password: true,
+  email_verified: true,
   created_at: '2026-10-03T10:00:00Z',
 };

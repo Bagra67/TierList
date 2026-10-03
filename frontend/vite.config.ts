@@ -1,9 +1,16 @@
+import { fileURLToPath } from 'node:url';
+
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 // https://vite.dev/config/ — https://vitest.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    // @/… -> src/… (alias attendu par les composants shadcn/ui)
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   server: {
     proxy: {
       // /api/hello -> http://127.0.0.1:8000/hello (backend FastAPI)
