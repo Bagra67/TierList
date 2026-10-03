@@ -171,11 +171,19 @@ Configuré dans `pyproject.toml` (`[tool.pyright]`, mode `standard`, sur `app/`,
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health, GET /health/db)
+│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health, GET /health/db, routers)
+│   ├── api/
+│   │   ├── dependencies.py # Dépendances communes (get_auth_service, get_current_user)
+│   │   └── routes/auth.py # Routes /auth : register, login, refresh, logout, me
 │   ├── core/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, handlers 422 et 500)
-│   │   └── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
+│   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
+│   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
+│   ├── models/user.py     # User et RefreshToken (SQLAlchemy)
+│   ├── repositories/      # Requêtes en base (users, refresh_tokens)
+│   ├── schemas/auth.py    # Modèles Pydantic de requête / réponse de /auth
+│   ├── services/auth.py   # Règles métier de l'authentification (AuthService)
 │   └── db/
 │       ├── base.py        # Classe Base des modèles SQLAlchemy
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
@@ -185,6 +193,7 @@ backend/
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException)
+│   ├── test_security.py   # Primitives mots de passe, JWT et refresh tokens
 │   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
 ├── .env.example           # Modèle de .env (identifiants PostgreSQL)
 ├── alembic.ini            # Configuration Alembic
@@ -223,6 +232,13 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `POSTGRES_HOST` | Hôte vu depuis le backend | `127.0.0.1` |
 | `POSTGRES_PORT` | Port | `5432` |
 | `LOG_LEVEL` | Niveau des logs de l'application : `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL` (insensible à la casse) | `INFO` |
+| `JWT_SECRET_KEY` | Clé de signature des access tokens, 32 caractères minimum, différente dans chaque environnement. En générer une avec `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (obligatoire) |
+| `ACCESS_TOKEN_TTL_MINUTES` | Durée de vie de l'access token, en minutes | `15` |
+| `REFRESH_TOKEN_TTL_DAYS` | Durée de vie du refresh token, en jours | `30` |
+| `AUTH_COOKIE_SECURE` | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP) | `true` |
+| `AUTH_COOKIE_PATH` | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`) | `/api/auth` |
+
+L'authentification est décrite dans le [guide de l'authentification](../docs/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 

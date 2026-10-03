@@ -1,43 +1,77 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { setAccessToken } from './api/client';
 import App from './App';
 import { renderWithQueryClient } from './test/renderWithQueryClient';
+import { alice, stubBackend, tokenResponse, unauthorized } from './test/stubBackend';
 
-// Seul fetch est remplacé : client API, hook useHello et TanStack Query tournent pour de vrai, sans appeler le backend
-function stubFetch(response: Promise<Response>) {
-  vi.stubGlobal('fetch', vi.fn().mockReturnValue(response));
+// Seul fetch est remplacé : routeur, hooks, client API et TanStack Query tournent pour de vrai
+function renderAppAt(path: string) {
+  return renderWithQueryClient(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+    </MemoryRouter>,
+  );
 }
+
+const loggedInBackend = {
+  'POST /auth/refresh': tokenResponse('restored-token'),
+  'GET /auth/me': () => Response.json(alice),
+  'GET /hello': () => Response.json({ message: 'Hello World' }),
+};
 
 describe('App', () => {
   afterEach(() => {
+    setAccessToken(null);
     vi.unstubAllGlobals();
   });
 
-  it('shows a loading message while the backend answers', () => {
-    stubFetch(new Promise(() => {}));
+  it('redirects to the login page without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
 
-    renderWithQueryClient(<App />);
+    renderAppAt('/');
 
-    expect(screen.getByText('Chargement…')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
-  it('shows the message returned by the backend', async () => {
-    stubFetch(Promise.resolve(Response.json({ message: 'Hello World' })));
+  it('restores the session and shows the home page', async () => {
+    stubBackend(loggedInBackend);
 
-    renderWithQueryClient(<App />);
+    renderAppAt('/');
 
     expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(screen.getByText(/Connecté en tant que Alice/)).toBeInTheDocument();
   });
 
   it('shows an alert when the backend cannot be reached', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    stubFetch(Promise.resolve(new Response(null, { status: 500 })));
+    stubBackend({ 'POST /auth/refresh': () => new Response(null, { status: 502 }) });
 
-    renderWithQueryClient(<App />);
+    renderAppAt('/');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
-    expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('logs out and goes back to the login page', async () => {
+    stubBackend({
+      ...loggedInBackend,
+      'POST /auth/logout': () => new Response(null, { status: 204 }),
+    });
+    renderAppAt('/');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }));
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+  });
+
+  it('redirects unknown pages to the home page', async () => {
+    stubBackend(loggedInBackend);
+
+    renderAppAt('/does-not-exist');
+
+    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
   });
 });

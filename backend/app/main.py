@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.api.routes import auth
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
@@ -22,6 +23,7 @@ app = FastAPI(
     responses={500: {"model": ErrorResponse, "description": "Erreur interne du serveur"}},
 )
 register_error_handlers(app)
+app.include_router(auth.router)
 
 
 class HelloResponse(BaseModel):

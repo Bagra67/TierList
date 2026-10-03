@@ -1,9 +1,19 @@
-import { useHello } from './api/hello';
+import { Navigate, Route, Routes } from 'react-router';
+
+import { RequireAuth } from './auth/RequireAuth';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 export default function App() {
-  const { data: hello, isPending, isError } = useHello();
-
-  if (isPending) return <p>Chargement…</p>;
-  if (isError) return <p role="alert">Impossible de joindre le backend : est-il lancé ?</p>;
-  return <h1>{hello.message}</h1>;
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route element={<RequireAuth />}>
+        <Route path="/" element={<HomePage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
