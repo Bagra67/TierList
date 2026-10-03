@@ -175,11 +175,11 @@ backend/
 │   ├── api/
 │   │   ├── dependencies.py # Dépendances communes (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # Routes /auth : register, login, refresh, logout, me
-│   ├── constants/         # Valeurs fixes : auth.py, google.py, messages.py (textes de l'API), logging.py
-│   ├── exceptions/        # Exceptions du domaine : auth.py, google.py
+│   ├── constants/         # Valeurs fixes : auth.py, google.py, error_codes.py (ErrorCode), messages.py (textes de l'API), logging.py
+│   ├── exceptions/        # Exceptions du domaine : auth.py, google.py ; http.py (AppHTTPException)
 │   ├── core/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
-│   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, handlers 422 et 500)
+│   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, HTTPException, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
 │   ├── models/user.py     # User, RefreshToken et OAuthAccount (SQLAlchemy)
@@ -194,7 +194,7 @@ backend/
 │   └── export_openapi.py  # Écrit le contrat d'API dans openapi.json
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
-│   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException)
+│   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException, codes d'erreur)
 │   ├── test_security.py   # Primitives mots de passe, JWT et refresh tokens
 │   ├── test_google_oauth.py # Client Google (PKCE, vérification de l'id_token), sans réseau
 │   └── integration/       # Tests sur un vrai PostgreSQL (base <POSTGRES_DB>_test)
@@ -257,7 +257,7 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 
 `GET /health` indique seulement que l'application tourne (`200 {"status": "ok"}`), sans toucher à la base : c'est la sonde de vie à donner à Docker ou à un hébergeur, pour qu'une panne de la base ne leur fasse pas redémarrer une application qui fonctionne.
 
-`GET /health/db` exécute `SELECT 1` : `200 {"status": "ok"}` si la base répond, sinon `503 {"detail": "Base de données indisponible"}` (l'erreur détaillée est dans les logs du backend).
+`GET /health/db` exécute `SELECT 1` : `200 {"status": "ok"}` si la base répond, sinon `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (l'erreur détaillée est dans les logs du backend).
 
 ### Migrations (Alembic)
 
@@ -302,13 +302,40 @@ Si vous oubliez l'étape 1, le test backend `test_openapi_schema_is_up_to_date` 
 Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/core/errors.py`), exposée dans le contrat OpenAPI :
 
 ```json
-{ "detail": "Requête invalide", "errors": [{ "field": "query.limit", "message": "Field required" }] }
+{
+  "detail": "Invalid request",
+  "code": "validation_error",
+  "errors": [
+    { "field": "body.password", "message": "…", "code": "password_too_short", "params": { "min_length": 8 } }
+  ]
+}
 ```
+
+- `code` : code d'erreur stable, lisible par une machine. **Le frontend traduit l'erreur à partir de `code` et `params`** : il n'affiche pas `detail`.
+- `params` (facultatif) : valeurs utilisées par la traduction (ex. `min_length`).
+- `detail` : texte anglais, réservé aux développeurs et aux logs.
 
 | Cas | Statut | Corps |
 | --- | --- | --- |
-| `HTTPException` levée par une route | celui donné | `{"detail": "..."}` (format par défaut de FastAPI, déjà conforme) |
-| Requête invalide (chemin, query, corps) | `422` | `detail` + `errors` : une entrée par champ invalide (`field` = emplacement, `message`) |
-| Exception non prévue | `500` | `{"detail": "Erreur interne du serveur"}` : aucun détail interne n'est envoyé au client ; l'erreur est journalisée avec sa trace, la méthode et le chemin |
+| `AppHTTPException` levée par une route (`app/exceptions/http.py`) | celui donné | `detail` + son `code` (un `ErrorCode`) + `params` facultatifs ; en-têtes conservés (`WWW-Authenticate`, `set-cookie`) |
+| Autre `HTTPException` (ex. 404/405 de FastAPI) | celui donné | `detail` + `code: "http_error"` |
+| Requête invalide (chemin, query, corps) | `422` | `code: "validation_error"` + `errors` : une entrée par champ invalide (`field` = emplacement, `message`, `code` = type d'erreur Pydantic comme `missing` ou `string_too_short`, `params` = son contexte scalaire comme `min_length`) |
+| Exception non prévue | `500` | `{"detail": "Internal server error", "code": "internal_error"}` : aucun détail interne n'est envoyé au client ; l'erreur est journalisée avec sa trace, la méthode et le chemin |
 
-Levez une `HTTPException` avec un `detail` clair pour les erreurs prévues (introuvable, conflit…), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.
+Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
+
+| Code | Statut | Signification |
+| --- | --- | --- |
+| `internal_error` | 500 | Erreur imprévue |
+| `validation_error` | 422 | Requête invalide (voir `errors`) |
+| `http_error` | tous | `HTTPException` sans code dédié |
+| `database_unavailable` | 503 | `GET /health/db` : la base ne répond pas |
+| `not_authenticated` | 401 | Access token absent ou invalide |
+| `email_already_registered` | 409 | Inscription avec un email déjà utilisé |
+| `invalid_credentials` | 401 | Email ou mot de passe incorrect |
+| `session_expired` | 401 | Refresh token absent, expiré ou révoqué |
+| `incorrect_password` | 403 | Mot de passe faux à la suppression du compte |
+| `reauthentication_required` | 403 | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
+| `password_too_short` | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length` |
+
+Pour les erreurs prévues (introuvable, conflit…), levez une `AppHTTPException` avec un `ErrorCode` et un `detail` en anglais (`app/constants/messages.py`), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. **Tout nouveau code d'erreur doit être traduit dans chaque langue du frontend.** Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

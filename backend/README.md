@@ -175,11 +175,11 @@ backend/
 │   ├── api/
 │   │   ├── dependencies.py # Shared dependencies (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # /auth routes: register, login, refresh, logout, me
-│   ├── constants/         # Fixed values: auth.py, google.py, messages.py (API texts), logging.py
-│   ├── exceptions/        # Domain exceptions: auth.py, google.py
+│   ├── constants/         # Fixed values: auth.py, google.py, error_codes.py (ErrorCode), messages.py (API texts), logging.py
+│   ├── exceptions/        # Domain exceptions: auth.py, google.py; http.py (AppHTTPException)
 │   ├── core/
 │   │   ├── config.py      # Configuration read from .env (pydantic-settings)
-│   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
+│   │   ├── errors.py      # Single error format (ErrorResponse, HTTPException, 422 and 500 handlers)
 │   │   ├── logging.py     # Application logging (LOG_LEVEL, uvicorn format)
 │   │   └── security.py    # Password hashing (Argon2id), JWT access tokens, refresh tokens
 │   ├── models/user.py     # User, RefreshToken and OAuthAccount (SQLAlchemy)
@@ -194,7 +194,7 @@ backend/
 │   └── export_openapi.py  # Writes the API contract to openapi.json
 ├── tests/
 │   ├── test_main.py       # Unit tests with TestClient (no real database)
-│   ├── test_errors.py     # Error format tests (500, 422, HTTPException)
+│   ├── test_errors.py     # Error format tests (500, 422, HTTPException, error codes)
 │   ├── test_security.py   # Password, JWT and refresh token primitives
 │   ├── test_google_oauth.py # Google client (PKCE, id_token check), without network
 │   └── integration/       # Tests against a real PostgreSQL (database <POSTGRES_DB>_test)
@@ -257,7 +257,7 @@ The same file is read by the PostgreSQL container: changing the password **after
 
 `GET /health` only says the application is running (`200 {"status": "ok"}`), without touching the database: use it as the liveness probe for Docker or a hosting platform, so that a database outage does not make them restart a working application.
 
-`GET /health/db` runs `SELECT 1`: `200 {"status": "ok"}` if the database answers, otherwise `503 {"detail": "Base de données indisponible"}` (the detailed error is in the backend logs).
+`GET /health/db` runs `SELECT 1`: `200 {"status": "ok"}` if the database answers, otherwise `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (the detailed error is in the backend logs).
 
 ### Migrations (Alembic)
 
@@ -302,13 +302,40 @@ If you forget step 1, the backend test `test_openapi_schema_is_up_to_date` fails
 Every error response of the API has the same JSON shape, `ErrorResponse` (`app/core/errors.py`), exposed in the OpenAPI contract:
 
 ```json
-{ "detail": "Requête invalide", "errors": [{ "field": "query.limit", "message": "Field required" }] }
+{
+  "detail": "Invalid request",
+  "code": "validation_error",
+  "errors": [
+    { "field": "body.password", "message": "…", "code": "password_too_short", "params": { "min_length": 8 } }
+  ]
+}
 ```
+
+- `code`: stable, machine-readable error code. **The frontend translates the error from `code` and `params`**: it does not display `detail`.
+- `params` (optional): values used by the translation (e.g. `min_length`).
+- `detail`: English text for developers and logs only.
 
 | Case | Status | Body |
 | --- | --- | --- |
-| `HTTPException` raised by a route | the one given | `{"detail": "..."}` (FastAPI's default format, already compliant) |
-| Invalid request (path, query, body) | `422` | `detail` + `errors`: one entry per invalid field (`field` = location, `message`) |
-| Unexpected exception | `500` | `{"detail": "Erreur interne du serveur"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path |
+| `AppHTTPException` raised by a route (`app/exceptions/http.py`) | the one given | `detail` + its `code` (an `ErrorCode`) + optional `params`; headers kept (`WWW-Authenticate`, `set-cookie`) |
+| Other `HTTPException` (e.g. FastAPI's 404/405) | the one given | `detail` + `code: "http_error"` |
+| Invalid request (path, query, body) | `422` | `code: "validation_error"` + `errors`: one entry per invalid field (`field` = location, `message`, `code` = Pydantic error type such as `missing` or `string_too_short`, `params` = its scalar context such as `min_length`) |
+| Unexpected exception | `500` | `{"detail": "Internal server error", "code": "internal_error"}`: no internal detail is sent to the client; the error is logged with its traceback, method and path |
 
-Raise an `HTTPException` with a clear `detail` for expected errors (not found, conflict…), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
+Error codes (`ErrorCode`, `app/constants/error_codes.py`):
+
+| Code | Status | Meaning |
+| --- | --- | --- |
+| `internal_error` | 500 | Unexpected error |
+| `validation_error` | 422 | Invalid request (see `errors`) |
+| `http_error` | any | `HTTPException` without a dedicated code |
+| `database_unavailable` | 503 | `GET /health/db`: the database does not answer |
+| `not_authenticated` | 401 | Missing or invalid access token |
+| `email_already_registered` | 409 | Registration with an email already used |
+| `invalid_credentials` | 401 | Wrong email or password |
+| `session_expired` | 401 | Missing, expired or revoked refresh token |
+| `incorrect_password` | 403 | Wrong password when deleting the account |
+| `reauthentication_required` | 403 | Google account whose last sign-in is too old to confirm the deletion |
+| `password_too_short` | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length` |
+
+For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
