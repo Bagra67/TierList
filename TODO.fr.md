@@ -15,6 +15,5 @@
 
 ## 2. Décisions à prendre
 
-- [ ] Bibliothèque d'interface (décision ouverte, voir l'[architecture](docs/architecture.fr.md#décisions-en-attente)).
 - [ ] Fonctionnalités pas encore disponibles ([guide de l'authentification](docs/authentication.fr.md#pas-encore-disponible)) : vérification de l'adresse email et « mot de passe oublié » (il faut choisir un service d'envoi d'emails), limitation des tentatives de connexion répétées, autres fournisseurs d'identité.
 - [ ] Passage en version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), quand l'API sera jugée stable.

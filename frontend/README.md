@@ -100,9 +100,11 @@ frontend/
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
 │   ├── components/         # Reusable components (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
+│   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
@@ -110,9 +112,11 @@ frontend/
 │   │   └── stubBackend.ts  # Fake backend replacing fetch, route by route
 │   ├── App.tsx             # Routes (react-router), inside the shared Layout
 │   ├── App.test.tsx        # Routing tests: redirection, session restore, logout
+│   ├── index.css           # Tailwind CSS + shadcn/ui theme (colors, radius, font)
 │   └── main.tsx            # React entry point
+├── components.json         # shadcn/ui CLI config (style, aliases)
 ├── eslint.config.js
-├── vite.config.ts          # Vite config + /api proxy + Vitest config
+├── vite.config.ts          # Vite config (React, Tailwind CSS, @/ alias) + /api proxy + Vitest config
 └── package.json
 ```
 
@@ -192,3 +196,20 @@ return <h1>{t('auth.login.title')}</h1>;
 - API errors are translated from their code: `translateError(t, error)` and `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
 How it works and how to add a text, an error code or a language: [i18n guide](../docs/i18n.md).
+
+---
+
+## 10. UI components
+
+Styling uses **Tailwind CSS v4** (utility classes in `className`) and the components come from **shadcn/ui**: the CLI copies their code into `src/components/ui/`, built on Radix primitives (keyboard, focus, ARIA). The code belongs to the project and can be edited.
+
+| Action                      | Command / file                                                      |
+| --------------------------- | ------------------------------------------------------------------- |
+| Add a component             | `pnpm dlx shadcn@latest add <name>` (e.g. `dialog`), then review it |
+| Change the theme            | CSS variables in `src/index.css` (`:root`, `.dark`)                 |
+| Merge classes conditionally | `cn()` (`import { cn } from 'cn'`)                                  |
+
+- Only add the components actually used. They go into `src/components/ui/`; business components (which call `t()` and the API hooks) stay in `src/components/`.
+- shadcn components import each other through the `@/` alias (`@/` → `src/`), configured in `tsconfig.json`, `tsconfig.app.json` and `vite.config.ts`. The rest of the code keeps relative imports.
+- Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
+- The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.

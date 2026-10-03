@@ -100,9 +100,11 @@ frontend/
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
 │   ├── components/         # Composants réutilisables (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
+│   ├── lib/utils.ts        # cn() : fusionne les classes Tailwind (utilisé par shadcn/ui)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
@@ -110,9 +112,11 @@ frontend/
 │   │   └── stubBackend.ts  # Faux backend qui remplace fetch, route par route
 │   ├── App.tsx             # Routes (react-router), dans le Layout commun
 │   ├── App.test.tsx        # Tests du routage : redirection, restauration de session, déconnexion
+│   ├── index.css           # Tailwind CSS + thème shadcn/ui (couleurs, arrondis, police)
 │   └── main.tsx            # Point d'entrée React
+├── components.json         # Config de la CLI shadcn/ui (style, alias)
 ├── eslint.config.js
-├── vite.config.ts          # Config Vite + proxy /api + config Vitest
+├── vite.config.ts          # Config Vite (React, Tailwind CSS, alias @/) + proxy /api + config Vitest
 └── package.json
 ```
 
@@ -192,3 +196,20 @@ return <h1>{t('auth.login.title')}</h1>;
 - Les erreurs de l'API sont traduites à partir de leur code : `translateError(t, error)` et `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
 Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/i18n.fr.md).
+
+---
+
+## 10. Composants d'interface
+
+Le style utilise **Tailwind CSS v4** (classes utilitaires dans `className`) et les composants viennent de **shadcn/ui** : la CLI copie leur code dans `src/components/ui/`, bâti sur les primitives Radix (clavier, focus, ARIA). Ce code appartient au projet et se modifie.
+
+| Action                              | Commande / fichier                                                |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| Ajouter un composant                | `pnpm dlx shadcn@latest add <nom>` (ex. `dialog`), puis le relire |
+| Modifier le thème                   | Variables CSS de `src/index.css` (`:root`, `.dark`)               |
+| Fusionner des classes selon un état | `cn()` (`import { cn } from 'cn'`)                                |
+
+- N'ajouter que les composants réellement utilisés. Ils vont dans `src/components/ui/` ; les composants métier (qui appellent `t()` et les hooks d'API) restent dans `src/components/`.
+- Les composants shadcn s'importent entre eux par l'alias `@/` (`@/` → `src/`), configuré dans `tsconfig.json`, `tsconfig.app.json` et `vite.config.ts`. Le reste du code garde des imports relatifs.
+- Aucun texte n'est écrit dans un composant de `ui/` : il les reçoit en props ou en enfants, traduits avec `t()`.
+- Le dialogue de suppression du compte garde le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind.
