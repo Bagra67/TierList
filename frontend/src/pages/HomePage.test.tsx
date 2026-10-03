@@ -7,9 +7,9 @@ import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
 import { HomePage } from './HomePage';
 
-function renderHomePage() {
+function renderHomePage(path = '/') {
   return renderWithQueryClient(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <HomePage />
     </MemoryRouter>,
   );
@@ -52,5 +52,13 @@ describe('HomePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
     expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  it('reopens the account deletion after a Google sign-in', async () => {
+    stubBackend({ ...session, 'GET /hello': () => Response.json({ message: 'Hello World' }) });
+
+    renderHomePage('/?confirm=delete-account');
+
+    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 });

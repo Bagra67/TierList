@@ -7,9 +7,9 @@ import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
 import { LoginPage } from './LoginPage';
 
-function renderLoginPage() {
+function renderLoginPage(path = '/login') {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={['/login']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<h1>Accueil</h1>} />
@@ -86,5 +86,28 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('value is not a valid email address')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('links to the Google sign-in', () => {
+    stubBackend({});
+    renderLoginPage();
+
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toHaveAttribute(
+      'href',
+      '/api/auth/google/login',
+    );
+  });
+
+  it.each([
+    ['google_cancelled', 'Connexion avec Google annulée.'],
+    ['google_email_not_verified', "Votre adresse Google n'est pas vérifiée"],
+    ['google_unavailable', "La connexion avec Google n'est pas disponible"],
+    ['google_failed', 'La connexion avec Google a échoué'],
+    ['unknown_code', 'La connexion avec Google a échoué'],
+  ])('explains the Google error %s', (code, message) => {
+    stubBackend({});
+    renderLoginPage(`/login?error=${code}`);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(message);
   });
 });

@@ -81,4 +81,14 @@ describe('RegisterPage', () => {
 
     expect(await screen.findByText('String should have at least 8 characters')).toBeInTheDocument();
   });
+
+  it('links to the Google sign-in', () => {
+    stubBackend({});
+    renderRegisterPage();
+
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toHaveAttribute(
+      'href',
+      '/api/auth/google/login',
+    );
+  });
 });

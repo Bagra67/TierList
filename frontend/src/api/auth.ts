@@ -10,6 +10,16 @@ export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest']
 
 const currentUserKey = ['auth', 'me'] as const;
 
+// Étape reprise après une reconnexion Google (seule valeur acceptée par le backend)
+export type GoogleNextStep = 'delete-account';
+
+// Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
+// Google puis, au retour, vers le frontend avec le cookie de session posé.
+export function googleSignInUrl(next?: GoogleNextStep): string {
+  const query = next === undefined ? '' : `?next=${next}`;
+  return `/api/auth/google/login${query}`;
+}
+
 export async function register(body: RegisterRequest): Promise<void> {
   const { data, error, response } = await apiClient.POST('/auth/register', { body });
   if (data === undefined) {
