@@ -28,6 +28,8 @@ class User(Base):
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Dernier email de vérification envoyé : limite la fréquence des renvois
     verification_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Dernier email de réinitialisation du mot de passe envoyé : limite la fréquence des envois
+    password_reset_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     @property

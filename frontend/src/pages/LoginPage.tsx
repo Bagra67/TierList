@@ -75,6 +75,12 @@ export function LoginPage() {
               {loginMutation.isPending ? t('auth.login.submitting') : t('auth.login.submit')}
             </Button>
           </form>
+          <Link
+            to={ROUTES.FORGOT_PASSWORD}
+            className="self-center text-sm underline underline-offset-4"
+          >
+            {t('auth.login.forgotPassword')}
+          </Link>
           <GoogleSignInLink />
         </CardContent>
         <CardFooter className="justify-center">

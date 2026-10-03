@@ -49,4 +49,4 @@ Port 465 (implicit TLS, without STARTTLS) is not supported: every provider above
 
 ## 5. Writing an email
 
-The contents live in `backend/app/emails/templates.py`, one set of texts per language (`fr`, `en`), with a text version and an HTML version. The language is the one sent by the frontend (`language` field, French by default). Values chosen by the user (display name) are escaped in the HTML. Today: the email address confirmation (`verification_email`).
+The contents live in `backend/app/emails/templates.py`, one set of texts per language (`fr`, `en`), with a text version and an HTML version. The language is the one sent by the frontend (`language` field, French by default). Values chosen by the user (display name) are escaped in the HTML. Today: the email address confirmation (`verification_email`) and the password reset (`password_reset_email`).

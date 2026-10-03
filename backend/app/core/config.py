@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     recent_authentication_max_age_minutes: int = Field(default=5, gt=0)
     # Durée de validité du lien de vérification de l'adresse email
     email_verification_ttl_hours: int = Field(default=24, gt=0)
+    # Durée de validité du lien de réinitialisation du mot de passe
+    password_reset_ttl_minutes: int = Field(default=30, gt=0)
     # Délai minimal entre deux emails du même type pour un compte : empêche d'inonder une boîte
     email_cooldown_seconds: int = Field(default=60, ge=0)
     # True en production (HTTPS) ; false en développement local, servi en HTTP

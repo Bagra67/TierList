@@ -25,6 +25,7 @@ export const en: Translation = {
       submitting: 'Signing in…',
       noAccount: 'No account yet?',
       registerLink: 'Create an account',
+      forgotPassword: 'Forgot your password?',
     },
     register: {
       title: 'Create an account',
@@ -41,6 +42,23 @@ export const en: Translation = {
       success: 'Your email address is confirmed.',
       missingToken: 'This link is incomplete: open the link received by email.',
       continue: 'Continue',
+    },
+    forgotPassword: {
+      title: 'Forgot your password',
+      intro: 'Enter the address of your account: you will receive a link to choose a new password.',
+      submit: 'Send the link',
+      submitting: 'Sending…',
+      sent: 'If an account exists for this address, an email has just been sent. Check your spam folder.',
+      backToLogin: 'Back to sign in',
+    },
+    resetPassword: {
+      title: 'Choose a new password',
+      newPassword: 'New password',
+      submit: 'Change the password',
+      submitting: 'Saving…',
+      success: 'Your password has been changed. Sign in with the new one.',
+      signIn: 'Sign in',
+      missingToken: 'This link is incomplete: open the link received by email.',
     },
   },
   account: {

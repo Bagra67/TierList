@@ -4,6 +4,7 @@ Fonctions pures : la configuration (clé, durées) est passée en paramètre par
 """
 
 import hashlib
+import hmac
 import secrets
 import uuid
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from app.constants.auth import (
     EMAIL_FINGERPRINT_LENGTH,
     EMAIL_VERIFICATION_TOKEN_TYPE,
     JWT_ALGORITHM,
+    PASSWORD_FINGERPRINT_LENGTH,
+    PASSWORD_RESET_TOKEN_TYPE,
     REFRESH_TOKEN_BYTES,
 )
 from app.exceptions.auth import InvalidAccessTokenError, InvalidEmailTokenError
@@ -138,6 +141,59 @@ def decode_email_verification_token(token: str, *, secret_key: str) -> EmailVeri
         )
     except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
         raise InvalidEmailTokenError("Lien de vérification invalide") from exc
+
+
+@dataclass(frozen=True)
+class PasswordResetClaims:
+    user_id: uuid.UUID
+    # Empreinte du mot de passe au moment de la demande : le lien ne sert plus une fois changé
+    password_fingerprint: str
+
+
+def password_fingerprint(password_hash: str | None, *, secret_key: str) -> str:
+    """Empreinte du hash du mot de passe actuel (vide pour un compte sans mot de passe).
+
+    Mise dans le lien de réinitialisation, elle change dès que le mot de passe change : le lien
+    ne sert qu'une fois, sans rien stocker. HMAC avec la clé : rien n'est déductible du hash.
+    """
+    digest = hmac.new(secret_key.encode(), (password_hash or "").encode(), hashlib.sha256)
+    return digest.hexdigest()[:PASSWORD_FINGERPRINT_LENGTH]
+
+
+def create_password_reset_token(
+    *,
+    user_id: uuid.UUID,
+    password_fingerprint: str,
+    secret_key: str,
+    ttl: timedelta,
+    now: datetime | None = None,
+) -> str:
+    issued_at = now or datetime.now(UTC)
+    claims = {
+        "sub": str(user_id),
+        "type": PASSWORD_RESET_TOKEN_TYPE,
+        "pwd": password_fingerprint,
+        "iat": issued_at,
+        "exp": issued_at + ttl,
+    }
+    return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
+
+
+def decode_password_reset_token(token: str, *, secret_key: str) -> PasswordResetClaims:
+    try:
+        claims = jwt.decode(
+            token,
+            secret_key,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["sub", "type", "pwd", "iat", "exp"]},
+        )
+        if claims["type"] != PASSWORD_RESET_TOKEN_TYPE:
+            raise InvalidEmailTokenError("Type de token inattendu")
+        return PasswordResetClaims(
+            user_id=uuid.UUID(claims["sub"]), password_fingerprint=str(claims["pwd"])
+        )
+    except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
+        raise InvalidEmailTokenError("Lien de réinitialisation invalide") from exc
 
 
 def generate_refresh_token() -> str:

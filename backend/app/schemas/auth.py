@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 from pydantic_core import PydanticCustomError
 
 from app.constants import messages
@@ -20,28 +20,33 @@ DisplayName = Annotated[
 ]
 
 
+def _check_password_length(password: str) -> str:
+    # Lue à chaque requête : changer PASSWORD_MIN_LENGTH ne demande qu'un redémarrage.
+    # Le param min_length (repris dans la 422) permet au frontend d'afficher le minimum exact.
+    min_length = get_settings().password_min_length
+    if len(password) < min_length:
+        raise PydanticCustomError(
+            # Pydantic exige un littéral : c'est la valeur de ErrorCode.PASSWORD_TOO_SHORT
+            "password_too_short",
+            messages.PASSWORD_TOO_SHORT,
+            {"min_length": min_length},
+        )
+    return password
+
+
+# Nouveau mot de passe (inscription, réinitialisation) : longueur minimale configurable
+# (PASSWORD_MIN_LENGTH), longueur maximale fixe
+NewPassword = Annotated[
+    str, Field(max_length=PASSWORD_MAX_LENGTH), AfterValidator(_check_password_length)
+]
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
-    # Longueur minimale configurable (PASSWORD_MIN_LENGTH) : vérifiée par le validateur ci-dessous
-    password: str = Field(max_length=PASSWORD_MAX_LENGTH)
+    password: NewPassword
     display_name: DisplayName
     # Langue de l'email de vérification : celle de l'interface
     language: Language = DEFAULT_LANGUAGE
-
-    @field_validator("password")
-    @classmethod
-    def check_password_length(cls, password: str) -> str:
-        # Lue à chaque requête : changer PASSWORD_MIN_LENGTH ne demande qu'un redémarrage.
-        # Le param min_length (repris dans la 422) permet au frontend d'afficher le minimum exact.
-        min_length = get_settings().password_min_length
-        if len(password) < min_length:
-            raise PydanticCustomError(
-                # Pydantic exige un littéral : c'est la valeur de ErrorCode.PASSWORD_TOO_SHORT
-                "password_too_short",
-                messages.PASSWORD_TOO_SHORT,
-                {"min_length": min_length},
-            )
-        return password
 
 
 class LoginRequest(BaseModel):
@@ -82,3 +87,15 @@ class EmailVerificationRequest(BaseModel):
 class VerifyEmailRequest(BaseModel):
     # Token du lien reçu par email ; sa validité est vérifiée par le service
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    # Langue de l'email de réinitialisation : celle de l'interface
+    language: Language = DEFAULT_LANGUAGE
+
+
+class ResetPasswordRequest(BaseModel):
+    # Token du lien reçu par email ; sa validité est vérifiée par le service
+    token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
+    password: NewPassword
