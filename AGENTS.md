@@ -1269,6 +1269,25 @@ gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<sh
 These merge methods are also enforced by the GitHub rulesets: `develop`
 only allows squash merges, `main` only allows merge commits.
 
+**Exception — stacked PRs (`gh stack`)** MAY be merged in one go with
+`gh stack merge`, which merges the whole stack atomically but cannot set
+the squash message. GitHub's default message is then accepted:
+
+-   Subject: the PR title followed by `(#N)`. The PR title MUST therefore
+    follow Conventional Commits (lowercase summary, `!` for a breaking
+    change), since the release version is computed from these subjects.
+-   Body: the messages of the PR's commits, instead of a few bullets.
+
+Each PR still becomes a single squash commit on `develop`.
+
+``` bash
+# Stacked PRs -> develop, from any branch of the stack
+gh stack merge --squash --yes
+```
+
+Then delete the merged work branches (see Branch cleanup) and check that
+the stack is gone (`gh stack view`).
+
 ## Releases and versioning
 
 Every merge of `develop` into `main` is a release `vX.Y.Z` (Semantic
