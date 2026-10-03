@@ -1,0 +1,93 @@
+"""Primitives cryptographiques de l'authentification : mots de passe, access tokens, refresh tokens.
+
+Fonctions pures : la configuration (clé, durées) est passée en paramètre par le service.
+"""
+
+import hashlib
+import secrets
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+
+import jwt
+from pwdlib import PasswordHash
+
+from app.constants.auth import (
+    ACCESS_TOKEN_TYPE,
+    DUMMY_PASSWORD_BYTES,
+    JWT_ALGORITHM,
+    REFRESH_TOKEN_BYTES,
+)
+from app.exceptions.auth import InvalidAccessTokenError
+
+# Argon2id avec les paramètres recommandés par pwdlib
+_password_hash = PasswordHash.recommended()
+# Haché une seule fois : sert à égaliser le temps de réponse quand l'email est inconnu
+_DUMMY_PASSWORD_HASH = _password_hash.hash(secrets.token_urlsafe(DUMMY_PASSWORD_BYTES))
+
+
+@dataclass(frozen=True)
+class AccessTokenClaims:
+    user_id: uuid.UUID
+    # Heure de la dernière vraie connexion (mot de passe), conservée à travers les rafraîchissements
+    auth_time: datetime
+
+
+def hash_password(password: str) -> str:
+    return _password_hash.hash(password)
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    return _password_hash.verify(password, password_hash)
+
+
+def verify_dummy_password(password: str) -> None:
+    """Prend le temps d'une vraie vérification : ne révèle pas qu'un email n'existe pas."""
+    _password_hash.verify(password, _DUMMY_PASSWORD_HASH)
+
+
+def create_access_token(
+    *,
+    user_id: uuid.UUID,
+    auth_time: datetime,
+    secret_key: str,
+    ttl: timedelta,
+    now: datetime | None = None,
+) -> str:
+    issued_at = now or datetime.now(UTC)
+    claims = {
+        "sub": str(user_id),
+        "type": ACCESS_TOKEN_TYPE,
+        "iat": issued_at,
+        "exp": issued_at + ttl,
+        "auth_time": int(auth_time.timestamp()),
+    }
+    return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
+
+
+def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
+    try:
+        claims = jwt.decode(
+            token,
+            secret_key,
+            # Liste explicite : empêche les attaques par changement d'algorithme (ex. « none »)
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["sub", "type", "iat", "exp", "auth_time"]},
+        )
+        if claims["type"] != ACCESS_TOKEN_TYPE:
+            raise InvalidAccessTokenError("Type de token inattendu")
+        return AccessTokenClaims(
+            user_id=uuid.UUID(claims["sub"]),
+            auth_time=datetime.fromtimestamp(claims["auth_time"], UTC),
+        )
+    except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
+        raise InvalidAccessTokenError("Access token invalide") from exc
+
+
+def generate_refresh_token() -> str:
+    return secrets.token_urlsafe(REFRESH_TOKEN_BYTES)
+
+
+def hash_refresh_token(refresh_token: str) -> str:
+    # SHA-256 suffit : le token est aléatoire (256 bits), un hachage lent n'apporterait rien.
+    return hashlib.sha256(refresh_token.encode()).hexdigest()

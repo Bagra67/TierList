@@ -42,6 +42,8 @@ jobs:
       POSTGRES_DB: tierlist
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: 5432
+      # CI-only throwaway signing key, not a secret: it only signs tokens of the test database.
+      JWT_SECRET_KEY: ci-only-jwt-signing-key-not-a-secret
     steps:
       - uses: actions/checkout@v7
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError } from './client';
+import { ApiError } from '../errors/apiError';
 import { getHello } from './hello';
 
 describe('getHello', () => {
@@ -22,13 +22,22 @@ describe('getHello', () => {
   it('throws an ApiError carrying the status when the backend fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(Response.json({ detail: 'boom' }, { status: 500 })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ detail: 'boom', code: 'internal_error' }, { status: 500 }),
+        ),
     );
 
     const error = await getHello().catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 500, body: { detail: 'boom' }, message: 'boom' });
+    expect(error).toMatchObject({
+      status: 500,
+      code: 'internal_error',
+      body: { detail: 'boom', code: 'internal_error' },
+      message: 'boom',
+    });
   });
 
   it('falls back to the HTTP status when the body is not an ErrorResponse', async () => {

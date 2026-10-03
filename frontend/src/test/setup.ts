@@ -1,9 +1,29 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
+
+import { LANGUAGE_STORAGE_KEY } from '../constants/i18n';
+import i18n from '../i18n';
+
+// Les tests vérifient les textes français : chaque test démarre en français, quelle que soit
+// la langue de jsdom, et sans choix de langue mémorisé par un test précédent.
+beforeEach(async () => {
+  await i18n.changeLanguage('fr');
+});
 
 // Sans `globals: true`, Testing Library ne démonte pas les composants automatiquement entre deux tests
 afterEach(() => {
   cleanup();
+  localStorage.removeItem(LANGUAGE_STORAGE_KEY);
 });
+
+// jsdom gère l'attribut open de <dialog> mais pas showModal() ni close() : comportement minimal.
+// Le piège du focus et la touche Échap, assurés par le navigateur, ne sont donc pas testables ici.
+HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+  this.open = true;
+};
+HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+  this.open = false;
+  this.dispatchEvent(new Event('close'));
+};

@@ -22,31 +22,36 @@ Le backend et le frontend ne communiquent que par HTTP. Le contrat entre eux est
 
 ## Frontend (`frontend/src/`)
 
-| Couche             | Où                                           | Responsabilité                                                                                                                                    |
-| ------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Composants         | `App.tsx`, plus tard `components/`, `pages/` | Affichage et interaction uniquement. Lisent les données serveur via un hook ; n'appellent jamais `fetch` ni `useEffect` pour charger des données. |
-| Hooks              | `api/<ressource>.ts` (`useHello`)            | Un hook TanStack Query par lecture (`useQuery`) ou écriture (`useMutation`) ; `queryKey` nomme la donnée en cache.                                |
-| Fonctions d'API    | `api/<ressource>.ts` (`getHello`)            | Une fonction par endpoint, via `apiClient` ; lèvent `ApiError` en cas d'échec.                                                                    |
-| Client HTTP        | `api/client.ts`                              | `apiClient` (openapi-fetch, URL de base `/api`, typé par `schema.d.ts`) et `ApiError` (`status`, `body`, `detail` du backend comme `message`).    |
-| Client de requêtes | `api/queryClient.ts`                         | Politique de nouvel essai et journalisation des requêtes en échec, à un seul endroit.                                                             |
-| Types d'API        | `api/schema.d.ts`                            | Générés par `pnpm gen:api` ; jamais modifiés à la main.                                                                                           |
+| Couche             | Où                                                                            | Responsabilité                                                                                                                                                                                                                          |
+| ------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Composants         | `App.tsx` (routes, react-router), `pages/`, `components/`, `auth/`            | Affichage et interaction uniquement. Lisent les données serveur via un hook ; n'appellent jamais `fetch` ni `useEffect` pour charger des données.                                                                                       |
+| Hooks              | `api/<ressource>.ts` (`useHello`)                                             | Un hook TanStack Query par lecture (`useQuery`) ou écriture (`useMutation`) ; `queryKey` nomme la donnée en cache.                                                                                                                      |
+| Fonctions d'API    | `api/<ressource>.ts` (`getHello`)                                             | Une fonction par endpoint, via `apiClient` ; lèvent `ApiError` en cas d'échec.                                                                                                                                                          |
+| Client HTTP        | `api/client.ts`                                                               | `apiClient` (openapi-fetch, URL de base `/api`, typé par `schema.d.ts`), access token en mémoire et middleware de rafraîchissement.                                                                                                     |
+| Erreurs            | `errors/apiError.ts`, `errors/googleError.ts`                                 | `ApiError` (`status`, `body`, `code`, `params`, `detail` du backend comme `message`), `getFieldErrors` (erreurs 422 par champ), et `translateError` / `translateFieldError` / `translateGoogleError` (code d'erreur → message traduit). |
+| Traductions        | `i18n/` (`locales/fr.ts`, `locales/en.ts`), `components/LanguageSwitcher.tsx` | Tout texte affiché passe par `t()` (react-i18next) ; le français est la référence, l'anglais doit avoir les mêmes clés. Voir le [guide i18n](i18n.fr.md).                                                                               |
+| Constantes         | `constants/`                                                                  | Valeurs fixes : routes, statuts HTTP, limites et chemins d'auth, langues gérées. Aucun littéral dans les composants ni les fonctions d'API ; les textes affichés sont des traductions, pas des constantes.                              |
+| Client de requêtes | `api/queryClient.ts`                                                          | Politique de nouvel essai et journalisation des requêtes en échec, à un seul endroit.                                                                                                                                                   |
+| Types d'API        | `api/schema.d.ts`                                                             | Générés par `pnpm gen:api` ; jamais modifiés à la main.                                                                                                                                                                                 |
 
 Détails et modèle pour un nouvel endpoint : [README frontend, Récupération des données](../frontend/README.fr.md#8-récupération-des-données).
 
 ## Backend (`backend/app/`)
 
-| Couche         | Où aujourd'hui                                                                    | Responsabilité                                                                                                                                  |
-| -------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes         | `main.py`                                                                         | HTTP uniquement : lire la requête, appeler un service, traduire les erreurs prévues en `HTTPException`, renvoyer un modèle de réponse Pydantic. |
-| Schémas        | `main.py` (`HelloResponse`, `HealthResponse`), `core/errors.py` (`ErrorResponse`) | Contrats de requête et de réponse explicites (Pydantic). Ne jamais renvoyer directement un modèle ORM.                                          |
-| Services       | aucun pour l'instant                                                              | Règles métier et orchestration ; portent les frontières de transaction.                                                                         |
-| Repositories   | aucun pour l'instant                                                              | Requêtes en base (SQLAlchemy), sans règle métier.                                                                                               |
-| Modèles        | `db/base.py` (`Base`)                                                             | Modèles ORM ; leur metadata est la cible des migrations Alembic.                                                                                |
-| Infrastructure | `core/config.py`, `core/logging.py`, `core/errors.py`, `db/session.py`            | Configuration depuis `.env`, logs, format d'erreur, moteur et session (dépendance `get_db_session`).                                            |
+| Couche         | Où aujourd'hui                                                                                                    | Responsabilité                                                                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes         | `api/routes/auth.py`, `main.py` (hello, santé)                                                                    | HTTP uniquement : lire la requête, appeler un service, traduire les erreurs prévues en `AppHTTPException` (avec un `ErrorCode`), renvoyer un modèle de réponse Pydantic.                  |
+| Schémas        | `schemas/auth.py`, `main.py` (`HelloResponse`, `HealthResponse`), `core/errors.py` (`ErrorResponse`)              | Contrats de requête et de réponse explicites (Pydantic). Ne jamais renvoyer directement un modèle ORM.                                                                                    |
+| Services       | `services/auth.py`                                                                                                | Règles métier et orchestration ; portent les frontières de transaction.                                                                                                                   |
+| Repositories   | `repositories/users.py`, `repositories/refresh_tokens.py`                                                         | Requêtes en base (SQLAlchemy), sans règle métier.                                                                                                                                         |
+| Modèles        | `db/base.py` (`Base`), `models/user.py`                                                                           | Modèles ORM ; leur metadata est la cible des migrations Alembic.                                                                                                                          |
+| Infrastructure | `core/config.py`, `core/logging.py`, `core/errors.py`, `core/security.py`, `db/session.py`, `api/dependencies.py` | Configuration depuis `.env`, logs, format d'erreur, primitives de mots de passe et de tokens, moteur et session (dépendance `get_db_session`), dépendances communes (`get_current_user`). |
+| Constantes     | `constants/` (`auth.py`, `google.py`, `error_codes.py`, `messages.py`, `logging.py`)                              | Valeurs fixes : noms de cookies, types de tokens, longueurs liées au schéma, URL de Google, codes d'erreur de l'API, messages de l'API pour les développeurs.                             |
+| Exceptions     | `exceptions/` (`auth.py`, `google.py`, `http.py`)                                                                 | Exceptions du domaine, levées par les services et traduites en réponses HTTP par les routes ; `AppHTTPException`, l'erreur HTTP qui porte un `ErrorCode`.                                 |
 
-### Structure cible
+### Structure
 
-L'application n'a pas encore de ressource métier : `main.py` contient donc encore les quelques routes et schémas. Avec la **première vraie ressource**, il sera découpé selon AGENTS.md §10 :
+Depuis la première vraie ressource (l'authentification), le backend suit AGENTS.md §10 ; `main.py` contient encore les routes hello et santé :
 
 ```
 backend/app/
@@ -55,7 +60,9 @@ backend/app/
 ├── services/<ressource>.py     # logique métier
 ├── repositories/<ressource>.py # accès à la base
 ├── models/<ressource>.py       # modèles SQLAlchemy (sous-classes de db.base.Base)
-├── core/                       # inchangé : config, logs, erreurs
+├── constants/                  # valeurs fixes (noms, limites, URL, messages de l'API)
+├── exceptions/                 # exceptions du domaine
+├── core/                       # config, logs, erreurs, sécurité
 ├── db/                         # inchangé : Base, moteur, session
 └── main.py                     # création de l'app, handlers d'erreur, routers
 ```
@@ -65,9 +72,16 @@ Chaque nouveau modèle s'accompagne d'une migration Alembic (`uv run alembic rev
 ## Conventions transverses
 
 - **Contrat d'API** : après avoir modifié une route ou un schéma, lancer `uv run python scripts/export_openapi.py` (backend) puis `pnpm gen:api` (frontend), et commiter les deux fichiers. Un test et une étape CI vérifient qu'ils sont à jour.
-- **Erreurs** : toute réponse d'erreur est une `ErrorResponse` (`{"detail": ..., "errors"?: [...]}`). Lever `HTTPException` pour les erreurs prévues ; les exceptions imprévues deviennent une 500 générique et journalisée. Voir [README backend, Format d'erreur](../backend/README.fr.md#12-format-derreur).
+- **Erreurs** : toute réponse d'erreur est une `ErrorResponse` (`{"detail": ..., "code": ..., "params"?: {...}, "errors"?: [...]}`). `code` est un code d'erreur stable que le frontend traduit ; `detail` est un texte anglais pour les développeurs. Lever `AppHTTPException` avec un `ErrorCode` pour les erreurs prévues ; les exceptions imprévues deviennent une 500 générique et journalisée. Voir [README backend, Format d'erreur](../backend/README.fr.md#12-format-derreur).
 - **Sondes de santé** : `GET /health` (vie, sans dépendance) et `GET /health/db` (base joignable).
+- **Authentification** : une route protégée dépend de `get_current_user` (`api/dependencies.py`), qui vérifie l'access token Bearer. Parcours, tokens et carte du code : [guide de l'authentification](authentication.fr.md).
 - **Configuration** : variables d'environnement, lues depuis `backend/.env` par pydantic-settings (`core/config.py`) ; `backend/.env.example` les documente. Aucun secret dans le code (gitleaks vérifie chaque commit).
+- **Constantes et réglages** : aucun nombre magique ni message en dur dans les routes, les services ou les composants.
+  - Une valeur qui peut changer selon l'environnement (délai, timeout, règle de validation comme `PASSWORD_MIN_LENGTH`) est un **réglage** : un champ de `Settings` avec une valeur par défaut, documenté dans `backend/.env.example` et le README backend. On peut alors la changer sans pull request.
+  - Une valeur fixe (nom de cookie, algorithme, URL de Google, longueur liée à une colonne de la base) est une **constante** de `constants/` (backend `app/constants/`, frontend `src/constants/`).
+  - Les migrations Alembic gardent des valeurs en dur : une migration est un instantané du schéma et ne doit pas suivre une constante qui changerait plus tard.
+- **Traductions** : aucun texte destiné à l'utilisateur en dur dans un composant, ni envoyé par le backend : l'API renvoie des codes d'erreur, le frontend les traduit. Chaque clé existe en français et en anglais. Règles : AGENTS.md §50 ; mode d'emploi : [guide i18n](i18n.fr.md).
+- **Exceptions** : les exceptions du domaine vivent dans `app/exceptions/` (backend) et les classes d'erreur dans `src/errors/` (frontend), jamais dans les services, les routes ou les composants.
 - **Logs** : `logging.getLogger(__name__)` dans `app/...`, niveau donné par `LOG_LEVEL`.
 - **Tests** : backend dans `backend/tests/` (unitaires, plus `integration/` sur un vrai PostgreSQL), frontend à côté du code (`*.test.tsx`). Chaque test est décrit dans le [guide des tests](testing.fr.md).
 - **Git** : Conventional Commits (vérifiés par commitlint), une branche et une PR fusionnée en squash par changement vers `develop` ; voir AGENTS.md §39–40.
@@ -77,4 +91,6 @@ Chaque nouveau modèle s'accompagne d'une migration Alembic (`uv run alembic rev
 Volontairement repoussées (YAGNI), à trancher quand une fonctionnalité en aura besoin :
 
 - **Images Docker de production et déploiement** : une fois la cible d'hébergement choisie.
-- **Authentification, routage front (react-router), bibliothèque d'interface** : ces choix dépendent des fonctionnalités.
+- **Bibliothèque d'interface** : ce choix dépend des fonctionnalités.
+
+Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)) et le routage front (react-router).

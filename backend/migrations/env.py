@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+import app.models  # noqa: F401  (enregistre les modèles dans Base.metadata)
 from app.core.config import get_settings
 from app.db.base import Base
-from app.db.session import CONNECT_TIMEOUT_SECONDS
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -67,7 +67,7 @@ def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args={"connect_timeout": CONNECT_TIMEOUT_SECONDS},
+        connect_args={"connect_timeout": get_settings().database_connect_timeout_seconds},
     )
 
     with connectable.connect() as connection:

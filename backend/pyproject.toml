@@ -1,14 +1,17 @@
 [project]
 name = "tierlist-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "Backend FastAPI de l'application TierList"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.20.0",
     "fastapi[standard]>=0.142.2",
+    "httpx>=0.28.1",
     "psycopg[binary]>=3.3.6",
+    "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
+    "pyjwt[crypto]>=2.15.1",
     "sqlalchemy>=2.1.2",
 ]
 

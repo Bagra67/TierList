@@ -92,16 +92,24 @@ frontend/
 ├── public/                 # Fichiers statiques servis tels quels (favicon…)
 ├── src/
 │   ├── api/
-│   │   ├── client.ts       # Client HTTP commun (openapi-fetch) + ApiError
+│   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
+│   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
 │   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
-│   │   ├── hello.test.ts   # Tests de getHello : URL, JSON, ApiError
+│   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
+│   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
+│   ├── components/         # Composants réutilisables (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts
+│   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
+│   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
+│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
-│   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)
-│   │   └── renderWithQueryClient.tsx # render() dans un QueryClient neuf
-│   ├── App.tsx             # Affiche le message du backend
-│   ├── App.test.tsx        # Tests d'App : chargement, message, erreur
+│   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
+│   │   ├── renderWithQueryClient.tsx # render() dans un QueryClient neuf
+│   │   └── stubBackend.ts  # Faux backend qui remplace fetch, route par route
+│   ├── App.tsx             # Routes (react-router), dans le Layout commun
+│   ├── App.test.tsx        # Tests du routage : redirection, restauration de session, déconnexion
 │   └── main.tsx            # Point d'entrée React
 ├── eslint.config.js
 ├── vite.config.ts          # Config Vite + proxy /api + config Vitest
@@ -141,7 +149,7 @@ Les données du serveur passent par **TanStack Query**, au-dessus d'un client **
 Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`status`, `body`, et le `detail` du backend comme `message`) est levée pour toute réponse hors 2xx.
+- `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`src/errors/apiError.ts` : `status`, `body`, le `code` et les `params` de l'API, et le `detail` du backend comme `message`) est levée pour toute réponse hors 2xx. Les composants affichent `translateError(t, error)`, jamais `error.message`. Les valeurs fixes (routes, statuts HTTP, limites) viennent de `src/constants/`.
 - `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec dans la console, à un seul endroit.
 - TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
 
@@ -163,4 +171,24 @@ export function useHello() {
 
 Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useHello();`.
 
-Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch`, comme dans `App.test.tsx`.
+Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch` avec `stubBackend`, comme dans `App.test.tsx`.
+
+### Requêtes authentifiées
+
+`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/authentication.fr.md).
+
+---
+
+## 9. Traductions
+
+Tout texte affiché passe par `t()` de `react-i18next`, et l'interface existe en français et en anglais (sélecteur de langue dans l'en-tête de chaque page) :
+
+```tsx
+const { t } = useTranslation();
+return <h1>{t('auth.login.title')}</h1>;
+```
+
+- Les textes sont dans `src/i18n/locales/fr.ts` (référence) et `en.ts` ; une clé absente ou en trop dans `en.ts` est une erreur de `pnpm typecheck`, et les clés de `t('…')` sont vérifiées au typage elles aussi.
+- Les erreurs de l'API sont traduites à partir de leur code : `translateError(t, error)` et `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
+
+Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/i18n.fr.md).

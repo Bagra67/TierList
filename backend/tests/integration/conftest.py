@@ -1,5 +1,5 @@
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -11,8 +11,8 @@ from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
-from app.db.session import CONNECT_TIMEOUT_SECONDS, get_db_session
+from app.core.config import Settings, get_settings
+from app.db.session import get_db_session
 from app.main import app
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -38,7 +38,7 @@ def test_database_url() -> URL:
     admin_engine = create_engine(
         settings.database_url.set(database="postgres"),
         isolation_level="AUTOCOMMIT",
-        connect_args={"connect_timeout": CONNECT_TIMEOUT_SECONDS},
+        connect_args={"connect_timeout": settings.database_connect_timeout_seconds},
     )
     try:
         with admin_engine.connect() as connection:
@@ -70,9 +70,8 @@ def migrated_engine(test_database_url: URL) -> Iterator[Engine]:
     alembic_config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
     command.upgrade(alembic_config, "head")
 
-    engine = create_engine(
-        test_database_url, connect_args={"connect_timeout": CONNECT_TIMEOUT_SECONDS}
-    )
+    connect_timeout = get_settings().database_connect_timeout_seconds
+    engine = create_engine(test_database_url, connect_args={"connect_timeout": connect_timeout})
     yield engine
     engine.dispose()
 
@@ -97,3 +96,36 @@ def client(db_session: Session) -> Iterator[TestClient]:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
+
+
+def http_test_settings() -> Settings:
+    # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
+    # le cookie doit être non Secure et sur /auth pour que le client le renvoie.
+    return get_settings().model_copy(
+        update={"auth_cookie_secure": False, "auth_cookie_path": "/auth"}
+    )
+
+
+@pytest.fixture
+def auth_client(client: TestClient) -> Iterator[TestClient]:
+    app.dependency_overrides[get_settings] = http_test_settings
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+
+@pytest.fixture
+def override_settings(auth_client: TestClient) -> Callable[..., None]:
+    """Change des réglages pour un test, ex. override_settings(password_min_length=12).
+
+    Ne concerne que les réglages injectés par FastAPI (Depends(get_settings)) ; auth_client
+    retire la surcharge à la fin du test.
+    """
+
+    def apply(**changes: object) -> None:
+        app.dependency_overrides[get_settings] = lambda: http_test_settings().model_copy(
+            update=changes
+        )
+
+    return apply

@@ -1,7 +1,7 @@
 {
   "name": "tierlist-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "packageManager": "pnpm@12.8.1",
   "engines": {
@@ -31,9 +31,12 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.0",
+    "i18next": "^26.4.2",
     "openapi-fetch": "^0.17.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.15",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

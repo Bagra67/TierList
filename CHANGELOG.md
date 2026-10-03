@@ -3,6 +3,29 @@
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
 
+## [0.2.0] - 2026-10-03
+
+### Features
+
+- auth: add account registration and email/password sign-in (#26)
+- auth: let users delete their account (#27)
+- auth: sign in with google (#29)
+- api: return a stable error code with every error response (#31)
+- frontend: translate the interface into english (i18n fr / en) (#32)
+
+### Refactoring
+
+- group constants, settings and exceptions (#30)
+
+### Build & CI
+
+- release: skip pnpm git checks when bumping the version (#35)
+
+### Documentation
+
+- agents: explain why automatic head branch deletion is disabled (#25)
+- agents: allow merging a stack of prs with gh stack merge (#34)
+
 ## [0.1.0] - 2026-10-02
 
 ### Features

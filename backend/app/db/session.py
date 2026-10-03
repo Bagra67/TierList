@@ -6,16 +6,14 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 
-# Sans délai, une connexion vers une base arrêtée peut bloquer la requête très longtemps.
-CONNECT_TIMEOUT_SECONDS = 3
-
 
 @lru_cache
 def get_engine() -> Engine:
+    settings = get_settings()
     return create_engine(
-        get_settings().database_url,
+        settings.database_url,
         pool_pre_ping=True,
-        connect_args={"connect_timeout": CONNECT_TIMEOUT_SECONDS},
+        connect_args={"connect_timeout": settings.database_connect_timeout_seconds},
     )
 
 
