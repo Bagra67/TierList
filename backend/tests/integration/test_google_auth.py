@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_google_oauth_client
 from app.constants import messages
+from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
@@ -293,7 +294,10 @@ def test_google_only_account_deletion_requires_a_recent_sign_in(
     )
 
     assert response.status_code == 403
-    assert response.json() == {"detail": messages.REAUTHENTICATION_REQUIRED}
+    assert response.json() == {
+        "detail": messages.REAUTHENTICATION_REQUIRED,
+        "code": ErrorCode.REAUTHENTICATION_REQUIRED,
+    }
     assert db_session.scalars(select(User)).one().email == "alice@gmail.com"
 
 

@@ -1,13 +1,15 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.constants import messages
+from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.exceptions.auth import InvalidAccessTokenError
+from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.google_oauth import GoogleOAuthClient
@@ -42,8 +44,9 @@ def get_current_session(
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> AuthenticatedSession:
     """Session authentifiée par l'access token (en-tête Authorization: Bearer), sinon 401."""
-    unauthorized = HTTPException(
+    unauthorized = AppHTTPException(
         status_code=401,
+        code=ErrorCode.NOT_AUTHENTICATED,
         detail=messages.NOT_AUTHENTICATED,
         headers={"WWW-Authenticate": "Bearer"},
     )

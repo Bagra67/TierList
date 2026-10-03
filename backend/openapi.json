@@ -35,7 +35,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -45,7 +45,7 @@
             }
           },
           "409": {
-            "description": "Email déjà utilisé",
+            "description": "Email already registered",
             "content": {
               "application/json": {
                 "schema": {
@@ -96,7 +96,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -106,7 +106,7 @@
             }
           },
           "401": {
-            "description": "Non authentifié",
+            "description": "Not authenticated",
             "content": {
               "application/json": {
                 "schema": {
@@ -165,7 +165,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -175,7 +175,7 @@
             }
           },
           "401": {
-            "description": "Non authentifié",
+            "description": "Not authenticated",
             "content": {
               "application/json": {
                 "schema": {
@@ -227,7 +227,7 @@
             "description": "Successful Response"
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -268,7 +268,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -278,7 +278,7 @@
             }
           },
           "401": {
-            "description": "Non authentifié",
+            "description": "Not authenticated",
             "content": {
               "application/json": {
                 "schema": {
@@ -315,7 +315,7 @@
             "description": "Successful Response"
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -325,7 +325,7 @@
             }
           },
           "401": {
-            "description": "Non authentifié",
+            "description": "Not authenticated",
             "content": {
               "application/json": {
                 "schema": {
@@ -335,7 +335,7 @@
             }
           },
           "403": {
-            "description": "Mot de passe incorrect, ou connexion Google trop ancienne",
+            "description": "Incorrect password, or Google sign-in too old",
             "content": {
               "application/json": {
                 "schema": {
@@ -394,7 +394,7 @@
             "description": "Successful Response"
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -495,7 +495,7 @@
             "description": "Successful Response"
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -533,7 +533,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -561,7 +561,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -589,7 +589,7 @@
             }
           },
           "500": {
-            "description": "Erreur interne du serveur",
+            "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -599,7 +599,7 @@
             }
           },
           "503": {
-            "description": "Base de données indisponible",
+            "description": "Database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -639,6 +639,34 @@
             "type": "string",
             "title": "Detail"
           },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
+          },
           "errors": {
             "anyOf": [
               {
@@ -656,7 +684,8 @@
         },
         "type": "object",
         "required": [
-          "detail"
+          "detail",
+          "code"
         ],
         "title": "ErrorResponse"
       },
@@ -669,12 +698,41 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
           }
         },
         "type": "object",
         "required": [
           "field",
-          "message"
+          "message",
+          "code"
         ],
         "title": "FieldError"
       },

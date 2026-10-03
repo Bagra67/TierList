@@ -194,6 +194,12 @@ export interface components {
         ErrorResponse: {
             /** Detail */
             detail: string;
+            /** Code */
+            code: string;
+            /** Params */
+            params?: {
+                [key: string]: string | number;
+            } | null;
             /** Errors */
             errors?: components["schemas"]["FieldError"][] | null;
         };
@@ -203,6 +209,12 @@ export interface components {
             field: string;
             /** Message */
             message: string;
+            /** Code */
+            code: string;
+            /** Params */
+            params?: {
+                [key: string]: string | number;
+            } | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -317,7 +329,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
-            /** @description Email déjà utilisé */
+            /** @description Email already registered */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -335,7 +347,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -368,7 +380,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
-            /** @description Non authentifié */
+            /** @description Not authenticated */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -386,7 +398,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -417,7 +429,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
-            /** @description Non authentifié */
+            /** @description Not authenticated */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -435,7 +447,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -473,7 +485,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -502,7 +514,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserResponse"];
                 };
             };
-            /** @description Non authentifié */
+            /** @description Not authenticated */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -511,7 +523,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -542,7 +554,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Non authentifié */
+            /** @description Not authenticated */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -551,7 +563,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Mot de passe incorrect, ou connexion Google trop ancienne */
+            /** @description Incorrect password, or Google sign-in too old */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -569,7 +581,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -607,7 +619,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -649,7 +661,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -678,7 +690,7 @@ export interface operations {
                     "application/json": components["schemas"]["HelloResponse"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -707,7 +719,7 @@ export interface operations {
                     "application/json": components["schemas"]["HealthResponse"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -736,7 +748,7 @@ export interface operations {
                     "application/json": components["schemas"]["HealthResponse"];
                 };
             };
-            /** @description Erreur interne du serveur */
+            /** @description Internal server error */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -745,7 +757,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Base de données indisponible */
+            /** @description Database unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -1,16 +1,18 @@
 import logging
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.routes import auth
 from app.constants import messages
+from app.constants.error_codes import ErrorCode
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
+from app.exceptions.http import AppHTTPException
 
 configure_logging(get_logging_settings().log_level)
 
@@ -56,5 +58,9 @@ def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthRes
         ping_database(session)
     except SQLAlchemyError as exc:
         logger.exception("Échec de la connexion à la base de données")
-        raise HTTPException(status_code=503, detail=messages.DATABASE_UNAVAILABLE) from exc
+        raise AppHTTPException(
+            status_code=503,
+            code=ErrorCode.DATABASE_UNAVAILABLE,
+            detail=messages.DATABASE_UNAVAILABLE,
+        ) from exc
     return HealthResponse(status="ok")

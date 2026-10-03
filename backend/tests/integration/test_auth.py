@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants import messages
+from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import hash_refresh_token
 from app.main import app
@@ -55,7 +56,10 @@ def test_register_rejects_an_email_already_used_whatever_its_case(auth_client: T
     )
 
     assert response.status_code == 409
-    assert response.json() == {"detail": messages.EMAIL_ALREADY_REGISTERED}
+    assert response.json() == {
+        "detail": messages.EMAIL_ALREADY_REGISTERED,
+        "code": ErrorCode.EMAIL_ALREADY_REGISTERED,
+    }
 
 
 @pytest.mark.parametrize(
@@ -74,7 +78,12 @@ def test_short_password_error_states_the_minimum(auth_client: TestClient):
 
     assert response.status_code == 422
     assert response.json()["errors"] == [
-        {"field": "body.password", "message": messages.PASSWORD_TOO_SHORT.format(min_length=8)}
+        {
+            "field": "body.password",
+            "message": messages.PASSWORD_TOO_SHORT.format(min_length=8),
+            "code": ErrorCode.PASSWORD_TOO_SHORT,
+            "params": {"min_length": 8},
+        }
     ]
 
 
@@ -103,7 +112,9 @@ def test_password_min_length_is_configurable(auth_client: TestClient):
     assert too_short.json()["errors"] == [
         {
             "field": "body.password",
-            "message": "Le mot de passe doit contenir au moins 12 caractères",
+            "message": "The password must be at least 12 characters long",
+            "code": "password_too_short",
+            "params": {"min_length": 12},
         }
     ]
     assert long_enough.status_code == 201
@@ -129,7 +140,10 @@ def test_me_requires_a_valid_access_token(auth_client: TestClient, headers: dict
     response = auth_client.get("/auth/me", headers=headers)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": messages.NOT_AUTHENTICATED}
+    assert response.json() == {
+        "detail": messages.NOT_AUTHENTICATED,
+        "code": ErrorCode.NOT_AUTHENTICATED,
+    }
     assert response.headers["www-authenticate"] == "Bearer"
 
 
@@ -162,7 +176,10 @@ def test_login_failures_are_indistinguishable(auth_client: TestClient, credentia
     response = auth_client.post("/auth/login", json=credentials)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": messages.INVALID_CREDENTIALS}
+    assert response.json() == {
+        "detail": messages.INVALID_CREDENTIALS,
+        "code": ErrorCode.INVALID_CREDENTIALS,
+    }
 
 
 def test_refresh_rotates_the_refresh_token(auth_client: TestClient):
@@ -187,7 +204,7 @@ def test_replaying_a_rotated_refresh_token_revokes_the_whole_family(auth_client:
     replay = auth_client.post("/auth/refresh")
 
     assert replay.status_code == 401
-    assert replay.json() == {"detail": messages.SESSION_EXPIRED}
+    assert replay.json() == {"detail": messages.SESSION_EXPIRED, "code": ErrorCode.SESSION_EXPIRED}
     # Le token le plus récent, même légitime, est révoqué lui aussi
     auth_client.cookies.set("refresh_token", legitimate_refresh_token, path="/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
@@ -285,7 +302,10 @@ def test_delete_account_requires_the_right_password(auth_client: TestClient, db_
     response = delete_account(auth_client, access_token, "wrong password")
 
     assert response.status_code == 403
-    assert response.json() == {"detail": messages.INCORRECT_PASSWORD}
+    assert response.json() == {
+        "detail": messages.INCORRECT_PASSWORD,
+        "code": ErrorCode.INCORRECT_PASSWORD,
+    }
     assert db_session.scalars(select(User)).one().email == "alice@example.com"
 
 
@@ -305,4 +325,7 @@ def test_delete_account_without_password_is_refused_for_a_password_account(
     response = auth_client.request("DELETE", "/auth/me", json={}, headers=bearer(access_token))
 
     assert response.status_code == 403
-    assert response.json() == {"detail": messages.INCORRECT_PASSWORD}
+    assert response.json() == {
+        "detail": messages.INCORRECT_PASSWORD,
+        "code": ErrorCode.INCORRECT_PASSWORD,
+    }
