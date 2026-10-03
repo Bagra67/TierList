@@ -25,6 +25,7 @@ export const fr = {
       submitting: 'Connexion…',
       noAccount: 'Pas encore de compte ?',
       registerLink: 'Créer un compte',
+      forgotPassword: 'Mot de passe oublié ?',
     },
     register: {
       title: 'Créer un compte',
@@ -41,6 +42,24 @@ export const fr = {
       success: 'Votre adresse email est confirmée.',
       missingToken: 'Ce lien est incomplet : ouvrez le lien reçu par email.',
       continue: 'Continuer',
+    },
+    forgotPassword: {
+      title: 'Mot de passe oublié',
+      intro:
+        "Indiquez l'adresse de votre compte : vous recevrez un lien pour choisir un nouveau mot de passe.",
+      submit: 'Envoyer le lien',
+      submitting: 'Envoi…',
+      sent: "Si un compte existe pour cette adresse, un email vient d'être envoyé. Pensez à regarder vos spams.",
+      backToLogin: 'Retour à la connexion',
+    },
+    resetPassword: {
+      title: 'Choisir un nouveau mot de passe',
+      newPassword: 'Nouveau mot de passe',
+      submit: 'Changer le mot de passe',
+      submitting: 'Enregistrement…',
+      success: 'Votre mot de passe a été changé. Connectez-vous avec le nouveau.',
+      signIn: 'Se connecter',
+      missingToken: 'Ce lien est incomplet : ouvrez le lien reçu par email.',
     },
   },
   account: {

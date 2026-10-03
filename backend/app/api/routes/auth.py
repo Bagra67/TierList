@@ -47,8 +47,10 @@ from app.models.user import User
 from app.schemas.auth import (
     DeleteAccountRequest,
     EmailVerificationRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserResponse,
     VerifyEmailRequest,
@@ -359,3 +361,33 @@ def google_callback(
     response = _google_redirect(location, settings)
     _set_refresh_cookie(response, tokens.refresh_token, settings)
     return response
+
+
+@router.post("/password/forgot", status_code=204)
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    service: AuthServiceDep,
+    email_sender: EmailSenderDep,
+) -> None:
+    """Envoie un lien de réinitialisation si un compte a cette adresse ; répond 204 dans tous les
+    cas, après avoir mis l'envoi en tâche de fond : rien ne révèle quelles adresses ont un compte.
+    """
+    email_to_send = service.request_password_reset(payload.email, payload.language)
+    if email_to_send is not None:
+        background_tasks.add_task(email_sender.send, email_to_send)
+
+
+@router.post(
+    "/password/reset",
+    status_code=204,
+    responses={400: {"model": ErrorResponse, "description": messages.INVALID_TOKEN_DESCRIPTION}},
+)
+def reset_password(payload: ResetPasswordRequest, service: AuthServiceDep) -> None:
+    """Choisit un nouveau mot de passe avec le lien reçu ; toutes les sessions sont fermées."""
+    try:
+        service.reset_password(payload.token, payload.password)
+    except InvalidEmailTokenError as exc:
+        raise AppHTTPException(
+            status_code=400, code=ErrorCode.INVALID_TOKEN, detail=messages.INVALID_TOKEN
+        ) from exc

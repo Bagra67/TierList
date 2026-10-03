@@ -1,5 +1,5 @@
 """Règles métier de l'authentification : inscription, connexion, rotation des refresh tokens,
-vérification de l'adresse email.
+vérification de l'adresse email, réinitialisation du mot de passe.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 """
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.auth import (
     DISPLAY_NAME_MAX_LENGTH,
+    FRONTEND_RESET_PASSWORD,
     FRONTEND_VERIFY_EMAIL,
     GOOGLE_PROVIDER,
     TOKEN_PARAM,
@@ -24,16 +25,19 @@ from app.core.config import Settings
 from app.core.security import (
     create_access_token,
     create_email_verification_token,
+    create_password_reset_token,
     decode_access_token,
     decode_email_verification_token,
+    decode_password_reset_token,
     email_fingerprint,
     generate_refresh_token,
     hash_password,
     hash_refresh_token,
+    password_fingerprint,
     verify_dummy_password,
     verify_password,
 )
-from app.emails.templates import verification_email
+from app.emails.templates import password_reset_email, verification_email
 from app.exceptions.auth import (
     EmailAlreadyRegisteredError,
     GoogleEmailNotVerifiedError,
@@ -265,6 +269,67 @@ class AuthService:
             self._session.commit()
             logger.info("Adresse email confirmée : user_id=%s", user.id)
 
+    def request_password_reset(self, email: str, language: Language) -> Email | None:
+        """Email de réinitialisation à envoyer, ou None si aucun compte n'a cette adresse ou si
+        le précédent email date de moins de EMAIL_COOLDOWN_SECONDS.
+
+        La route répond pareil dans tous les cas : elle ne révèle pas quelles adresses ont un
+        compte. Un compte créé avec Google peut ainsi définir un mot de passe.
+        """
+        user = user_repository.get_user_by_email(self._session, normalize_email(email))
+        if user is None:
+            return None
+        now = datetime.now(UTC)
+        cooldown = timedelta(seconds=self._settings.email_cooldown_seconds)
+        sent_at = user.password_reset_email_sent_at
+        if sent_at is not None and now - sent_at < cooldown:
+            logger.info(
+                "Email de réinitialisation non renvoyé, trop rapproché : user_id=%s", user.id
+            )
+            return None
+
+        ttl_minutes = self._settings.password_reset_ttl_minutes
+        secret_key = self._settings.jwt_secret_key.get_secret_value()
+        token = create_password_reset_token(
+            user_id=user.id,
+            password_fingerprint=password_fingerprint(user.password_hash, secret_key=secret_key),
+            secret_key=secret_key,
+            ttl=timedelta(minutes=ttl_minutes),
+            now=now,
+        )
+        user.password_reset_email_sent_at = now
+        self._session.commit()
+        logger.info("Email de réinitialisation du mot de passe demandé : user_id=%s", user.id)
+        return password_reset_email(
+            language,
+            to=user.email,
+            display_name=user.display_name,
+            link=self._frontend_link(FRONTEND_RESET_PASSWORD, token),
+            ttl_minutes=ttl_minutes,
+        )
+
+    def reset_password(self, token: str, password: str) -> None:
+        """Remplace le mot de passe et ferme toutes les sessions ; lève InvalidEmailTokenError si
+        le lien est invalide, expiré ou déjà utilisé (le mot de passe a changé depuis)."""
+        secret_key = self._settings.jwt_secret_key.get_secret_value()
+        claims = decode_password_reset_token(token, secret_key=secret_key)
+        user = user_repository.get_user_by_id(self._session, claims.user_id)
+        if user is None or (
+            password_fingerprint(user.password_hash, secret_key=secret_key)
+            != claims.password_fingerprint
+        ):
+            raise InvalidEmailTokenError("Le lien ne correspond plus au compte")
+
+        now = datetime.now(UTC)
+        user.password_hash = hash_password(password)
+        # Ouvrir le lien reçu par email prouve la possession de l'adresse
+        if user.email_verified_at is None:
+            user.email_verified_at = now
+        # Le mot de passe a pu être volé : les sessions ouvertes avec lui sont fermées
+        refresh_token_repository.revoke_user_refresh_tokens(self._session, user.id, revoked_at=now)
+        self._session.commit()
+        logger.info("Mot de passe réinitialisé, sessions fermées : user_id=%s", user.id)
+
     def delete_account(self, session: AuthenticatedSession, password: str | None) -> None:
         """Supprime définitivement le compte et ses sessions, une fois l'utilisateur confirmé.
 
@@ -307,12 +372,17 @@ class AuthService:
             now=now,
         )
         user.verification_email_sent_at = now
-        link = f"{self._settings.frontend_base_url}{FRONTEND_VERIFY_EMAIL}?" + urlencode(
-            {TOKEN_PARAM: token}
-        )
         return verification_email(
-            language, to=user.email, display_name=user.display_name, link=link, ttl_hours=ttl_hours
+            language,
+            to=user.email,
+            display_name=user.display_name,
+            link=self._frontend_link(FRONTEND_VERIFY_EMAIL, token),
+            ttl_hours=ttl_hours,
         )
+
+    def _frontend_link(self, path: str, token: str) -> str:
+        """Lien vers une page du frontend, avec le token en paramètre (liens envoyés par email)."""
+        return f"{self._settings.frontend_base_url}{path}?{urlencode({TOKEN_PARAM: token})}"
 
     def _start_session(self, user: User, authenticated_at: datetime) -> IssuedTokens:
         return self._issue_tokens(user, family_id=uuid.uuid4(), authenticated_at=authenticated_at)

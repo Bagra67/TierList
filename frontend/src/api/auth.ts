@@ -16,6 +16,7 @@ export type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'la
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
+export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 // Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
 // Google puis, au retour, vers le frontend avec le cookie de session posé.
@@ -73,6 +74,24 @@ export async function requestEmailVerification(): Promise<void> {
   const { response, error } = await apiClient.POST('/auth/email/verification', {
     body: { language: currentLanguage() },
   });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Demande un lien de réinitialisation ; le backend répond pareil que le compte existe ou non
+export async function forgotPassword(email: string): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/password/forgot', {
+    body: { email, language: currentLanguage() },
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Choisit un nouveau mot de passe avec le token du lien reçu ; le backend ferme toutes les sessions
+export async function resetPassword(body: ResetPasswordRequest): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/password/reset', { body });
   if (!response.ok) {
     throw new ApiError(response.status, error);
   }
@@ -152,6 +171,22 @@ export function useLogout() {
     mutationFn: logout,
     // Même en cas d'échec réseau, l'interface repasse en mode déconnecté
     onSettled: () => forgetSession(queryClient),
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({ mutationFn: forgotPassword });
+}
+
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetPassword,
+    // Le backend a fermé toutes les sessions, y compris celle de ce navigateur
+    onSuccess: () => {
+      setAccessToken(null);
+      forgetSession(queryClient);
+    },
   });
 }
 
