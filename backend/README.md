@@ -252,6 +252,8 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `REFRESH_TOKEN_TTL_DAYS`                | Refresh token lifetime, in days                                                                                                                                              | `30`                                             |
 | `PASSWORD_MIN_LENGTH`                   | Minimum password length at registration (at most 128); the 422 states it                                                                                                     | `8`                                              |
 | `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Account created with Google: maximum age of the sign-in to delete the account                                                                                                | `5`                                              |
+| `EMAIL_VERIFICATION_TTL_HOURS`          | Validity of the email confirmation link, in hours                                                                                                                            | `24`                                             |
+| `EMAIL_COOLDOWN_SECONDS`                | Minimum time between two emails of the same type for one account (prevents flooding a mailbox)                                                                               | `60`                                             |
 | `AUTH_COOKIE_SECURE`                    | Refresh cookie sent over HTTPS only; set `false` locally (HTTP)                                                                                                              | `true`                                           |
 | `AUTH_COOKIE_PATH`                      | Refresh cookie path, as seen by the browser (through the `/api` proxy)                                                                                                       | `/api/auth`                                      |
 | `GOOGLE_CLIENT_ID`                      | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled                                                                        | — (optional)                                     |
@@ -340,18 +342,19 @@ Every error response of the API has the same JSON shape, `ErrorResponse` (`app/c
 
 Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 
-| Code                        | Status      | Meaning                                                              |
-| --------------------------- | ----------- | -------------------------------------------------------------------- |
-| `internal_error`            | 500         | Unexpected error                                                     |
-| `validation_error`          | 422         | Invalid request (see `errors`)                                       |
-| `http_error`                | any         | `HTTPException` without a dedicated code                             |
-| `database_unavailable`      | 503         | `GET /health/db`: the database does not answer                       |
-| `not_authenticated`         | 401         | Missing or invalid access token                                      |
-| `email_already_registered`  | 409         | Registration with an email already used                              |
-| `invalid_credentials`       | 401         | Wrong email or password                                              |
-| `session_expired`           | 401         | Missing, expired or revoked refresh token                            |
-| `incorrect_password`        | 403         | Wrong password when deleting the account                             |
-| `reauthentication_required` | 403         | Google account whose last sign-in is too old to confirm the deletion |
-| `password_too_short`        | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`     |
+| Code                        | Status      | Meaning                                                                    |
+| --------------------------- | ----------- | -------------------------------------------------------------------------- |
+| `internal_error`            | 500         | Unexpected error                                                           |
+| `validation_error`          | 422         | Invalid request (see `errors`)                                             |
+| `http_error`                | any         | `HTTPException` without a dedicated code                                   |
+| `database_unavailable`      | 503         | `GET /health/db`: the database does not answer                             |
+| `not_authenticated`         | 401         | Missing or invalid access token                                            |
+| `email_already_registered`  | 409         | Registration with an email already used                                    |
+| `invalid_credentials`       | 401         | Wrong email or password                                                    |
+| `session_expired`           | 401         | Missing, expired or revoked refresh token                                  |
+| `incorrect_password`        | 403         | Wrong password when deleting the account                                   |
+| `reauthentication_required` | 403         | Google account whose last sign-in is too old to confirm the deletion       |
+| `invalid_token`             | 400         | Link received by email invalid, expired, or no longer matching the account |
+| `password_too_short`        | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
 
 For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.

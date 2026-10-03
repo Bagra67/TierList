@@ -33,8 +33,23 @@ export const fr = {
       hasAccount: 'Déjà un compte ?',
       loginLink: 'Se connecter',
     },
+    verifyEmail: {
+      title: 'Confirmer votre adresse email',
+      intro: "Confirmez l'adresse de votre compte TierList.",
+      submit: 'Confirmer mon adresse',
+      submitting: 'Confirmation…',
+      success: 'Votre adresse email est confirmée.',
+      missingToken: 'Ce lien est incomplet : ouvrez le lien reçu par email.',
+      continue: 'Continuer',
+    },
   },
   account: {
+    verification: {
+      pending: 'Confirmez votre adresse : un lien a été envoyé à {{email}}.',
+      resend: "Renvoyer l'email",
+      resending: 'Envoi…',
+      resent: 'Email envoyé. Pensez à regarder vos spams (un envoi par minute au plus).',
+    },
     delete: {
       open: 'Supprimer mon compte',
       title: 'Supprimer mon compte',
@@ -60,6 +75,7 @@ export const fr = {
       session_expired: 'Session expirée, veuillez vous reconnecter.',
       incorrect_password: 'Mot de passe incorrect',
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
+      invalid_token: 'Ce lien est invalide ou a expiré.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

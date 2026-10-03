@@ -18,6 +18,15 @@ def add_refresh_token(session: Session, refresh_token: RefreshToken) -> None:
     session.add(refresh_token)
 
 
+def revoke_user_refresh_tokens(session: Session, user_id: uuid.UUID, revoked_at: datetime) -> None:
+    """Ferme toutes les sessions de l'utilisateur."""
+    session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+        .values(revoked_at=revoked_at)
+    )
+
+
 def revoke_refresh_token_family(
     session: Session, family_id: uuid.UUID, revoked_at: datetime
 ) -> None:

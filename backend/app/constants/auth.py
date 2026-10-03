@@ -12,6 +12,10 @@ GOOGLE_COOKIE_SUBPATH = "/google"
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_TYPE = "access"
 GOOGLE_LOGIN_TOKEN_TYPE = "google_login"
+# Lien de vérification de l'adresse email (envoyé par email)
+EMAIL_VERIFICATION_TOKEN_TYPE = "email_verification"
+# Caractères hexadécimaux de l'empreinte SHA-256 de l'email mise dans les liens (64 bits)
+EMAIL_FINGERPRINT_LENGTH = 16
 # Longueur minimale de JWT_SECRET_KEY : 256 bits pour HS256
 JWT_SECRET_KEY_MIN_LENGTH = 32
 # Octets aléatoires des secrets générés (secrets.token_urlsafe)
@@ -36,10 +40,15 @@ PASSWORD_HASH_MAX_LENGTH = 255
 REFRESH_TOKEN_HASH_LENGTH = 64
 PROVIDER_MAX_LENGTH = 20
 PROVIDER_SUBJECT_MAX_LENGTH = 255
+# Borne haute d'un token reçu par email : rejette une entrée démesurée avant tout décodage
+EMAIL_TOKEN_MAX_LENGTH = 2048
 
 # --- Retour vers le frontend (même origine, via le proxy) ----------------------------------
 FRONTEND_HOME = "/"
 FRONTEND_LOGIN = "/login"
+# Page qui confirme l'adresse email (lien envoyé par email, avec le paramètre token)
+FRONTEND_VERIFY_EMAIL = "/verify-email"
+TOKEN_PARAM = "token"
 # Paramètre de requête qui transmet une erreur à la page de connexion
 LOGIN_ERROR_PARAM = "error"
 # Paramètre de requête qui demande à la page d'accueil de reprendre une étape

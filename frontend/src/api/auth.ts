@@ -7,10 +7,12 @@ import {
 } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
 import { ApiError } from '../errors/apiError';
+import { currentLanguage } from '../i18n';
 import { apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
 import type { components } from './schema';
 
-export type RegisterRequest = components['schemas']['RegisterRequest'];
+// La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
+export type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
@@ -23,7 +25,9 @@ export function googleSignInUrl(next?: GoogleNextStep): string {
 }
 
 export async function register(body: RegisterRequest): Promise<void> {
-  const { data, error, response } = await apiClient.POST('/auth/register', { body });
+  const { data, error, response } = await apiClient.POST('/auth/register', {
+    body: { ...body, language: currentLanguage() },
+  });
   if (data === undefined) {
     throw new ApiError(response.status, error);
   }
@@ -53,6 +57,25 @@ export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
     throw new ApiError(response.status, error);
   }
   setAccessToken(null);
+}
+
+// Confirme l'adresse avec le token du lien reçu par email (sans session : le lien peut être
+// ouvert dans un autre navigateur)
+export async function verifyEmail(token: string): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/email/verify', { body: { token } });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
+// Renvoie l'email de vérification ; le backend l'ignore si le précédent est trop récent
+export async function requestEmailVerification(): Promise<void> {
+  const { response, error } = await apiClient.POST('/auth/email/verification', {
+    body: { language: currentLanguage() },
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
 }
 
 export async function getMe(signal?: AbortSignal): Promise<User> {
@@ -102,6 +125,19 @@ export function useLogin() {
     mutationFn: login,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
   });
+}
+
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: verifyEmail,
+    // Utilisateur connecté dans ce navigateur : son adresse apparaît désormais comme confirmée
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
+  });
+}
+
+export function useRequestEmailVerification() {
+  return useMutation({ mutationFn: requestEmailVerification });
 }
 
 // Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache
