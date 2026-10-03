@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -6,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings, get_settings
+from app.core.config import get_settings
 from app.core.security import hash_refresh_token
 from app.main import app
 from app.models.user import RefreshToken, User
@@ -15,23 +14,6 @@ pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
 REGISTRATION = {"email": "Alice@Example.com", "password": PASSWORD, "display_name": "Alice"}
-
-
-def http_test_settings() -> Settings:
-    # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
-    # le cookie doit être non Secure et sur /auth pour que le client le renvoie.
-    return get_settings().model_copy(
-        update={"auth_cookie_secure": False, "auth_cookie_path": "/auth"}
-    )
-
-
-@pytest.fixture
-def auth_client(client: TestClient) -> Iterator[TestClient]:
-    app.dependency_overrides[get_settings] = http_test_settings
-    try:
-        yield client
-    finally:
-        app.dependency_overrides.pop(get_settings, None)
 
 
 def register(client: TestClient) -> str:

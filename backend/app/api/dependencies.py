@@ -9,6 +9,7 @@ from app.core.security import InvalidAccessTokenError
 from app.db.session import get_db_session
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
+from app.services.google_oauth import GoogleOAuthClient
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -21,6 +22,19 @@ def get_auth_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthService:
     return AuthService(session, settings)
+
+
+def get_google_oauth_client(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> GoogleOAuthClient | None:
+    """Client Google, ou None si la connexion avec Google n'est pas configurée."""
+    if settings.google_client_id is None or settings.google_client_secret is None:
+        return None
+    return GoogleOAuthClient(
+        settings.google_client_id,
+        settings.google_client_secret.get_secret_value(),
+        settings.google_redirect_uri,
+    )
 
 
 def get_current_session(
