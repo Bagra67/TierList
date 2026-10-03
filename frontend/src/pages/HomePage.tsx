@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { useCurrentUser, useLogout } from '../api/auth';
@@ -13,6 +14,7 @@ export function HomePage() {
   const logoutMutation = useLogout();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
   // Retour d'une reconnexion Google demandée pour confirmer la suppression du compte
   const resumeDeletion = searchParams.get(CONFIRM_PARAM) === DELETE_ACCOUNT_STEP;
 
@@ -33,14 +35,14 @@ export function HomePage() {
     <main>
       {user && (
         <p>
-          Connecté en tant que {user.display_name}{' '}
+          {t('auth.signedInAs', { name: user.display_name })}{' '}
           <button type="button" onClick={handleLogout} disabled={logoutMutation.isPending}>
-            Se déconnecter
+            {t('auth.logout')}
           </button>
         </p>
       )}
-      {isPending && <p>Chargement…</p>}
-      {isError && <p role="alert">Impossible de joindre le backend : est-il lancé ?</p>}
+      {isPending && <p>{t('common.loading')}</p>}
+      {isError && <p role="alert">{t('common.backendUnreachable')}</p>}
       {hello && <h1>{hello.message}</h1>}
       {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>

@@ -3,8 +3,9 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
+import i18n from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
+import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { LoginPage } from './LoginPage';
 
 function renderLoginPage(path = '/login') {
@@ -49,8 +50,7 @@ describe('LoginPage', () => {
 
   it('shows the backend message when the credentials are wrong', async () => {
     stubBackend({
-      'POST /auth/login': () =>
-        Response.json({ detail: 'Email ou mot de passe incorrect' }, { status: 401 }),
+      'POST /auth/login': () => errorResponse(401, 'invalid_credentials'),
     });
     renderLoginPage();
 
@@ -58,6 +58,19 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Email ou mot de passe incorrect');
     expect(screen.getByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+  });
+
+  it('shows the page and the backend error in English', async () => {
+    await i18n.changeLanguage('en');
+    stubBackend({ 'POST /auth/login': () => errorResponse(401, 'invalid_credentials') });
+    renderLoginPage();
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect email or password');
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   it('disables the button while the request is pending', async () => {
@@ -72,19 +85,21 @@ describe('LoginPage', () => {
   it('shows validation errors next to the field', async () => {
     stubBackend({
       'POST /auth/login': () =>
-        Response.json(
-          {
-            detail: 'Requête invalide',
-            errors: [{ field: 'body.email', message: 'value is not a valid email address' }],
-          },
-          { status: 422 },
-        ),
+        errorResponse(422, 'validation_error', {
+          errors: [
+            {
+              field: 'body.email',
+              message: 'value is not a valid email address',
+              code: 'value_error',
+            },
+          ],
+        }),
     });
     renderLoginPage();
 
     fillAndSubmit('alice@example', 'correct horse battery staple');
 
-    expect(await screen.findByText('value is not a valid email address')).toBeInTheDocument();
+    expect(await screen.findByText('Valeur invalide.')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true');
   });
 

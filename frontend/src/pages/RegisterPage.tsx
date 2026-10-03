@@ -1,10 +1,11 @@
 import type { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
 import { useRegister } from '../api/auth';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES } from '../constants/routes';
-import { getFieldErrors } from '../errors/apiError';
+import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TextField } from '../components/TextField';
 
@@ -12,6 +13,7 @@ export function RegisterPage() {
   const registerMutation = useRegister();
   const navigate = useNavigate();
   const fieldErrors = getFieldErrors(registerMutation.error);
+  const { t } = useTranslation();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,43 +32,46 @@ export function RegisterPage() {
 
   return (
     <main>
-      <h1>Créer un compte</h1>
+      <h1>{t('auth.register.title')}</h1>
       <form onSubmit={handleSubmit}>
         <TextField
-          label="Nom affiché"
+          label={t('auth.displayName')}
           name="display_name"
           autoComplete="nickname"
           required
           maxLength={DISPLAY_NAME_MAX_LENGTH}
-          error={fieldErrors.display_name}
+          error={translateFieldError(t, fieldErrors.display_name)}
         />
         <TextField
-          label="Email"
+          label={t('auth.email')}
           name="email"
           type="email"
           autoComplete="email"
           required
-          error={fieldErrors.email}
+          error={translateFieldError(t, fieldErrors.email)}
         />
         <TextField
-          label="Mot de passe"
+          label={t('auth.password')}
           name="password"
           type="password"
           autoComplete="new-password"
           required
           maxLength={PASSWORD_MAX_LENGTH}
-          error={fieldErrors.password}
+          error={translateFieldError(t, fieldErrors.password)}
         />
-        {registerMutation.isError && <p role="alert">{registerMutation.error.message}</p>}
+        {registerMutation.isError && (
+          <p role="alert">{translateError(t, registerMutation.error)}</p>
+        )}
         <button type="submit" disabled={registerMutation.isPending}>
-          {registerMutation.isPending ? 'Création…' : 'Créer mon compte'}
+          {registerMutation.isPending ? t('auth.register.submitting') : t('auth.register.submit')}
         </button>
       </form>
       <p>
         <GoogleSignInLink />
       </p>
       <p>
-        Déjà un compte ? <Link to={ROUTES.LOGIN}>Se connecter</Link>
+        {t('auth.register.hasAccount')}{' '}
+        <Link to={ROUTES.LOGIN}>{t('auth.register.loginLink')}</Link>
       </p>
     </main>
   );
