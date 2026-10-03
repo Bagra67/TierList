@@ -158,7 +158,7 @@ sequenceDiagram
 - Le **`nonce`** est recopié par Google dans l'`id_token` : un token émis pour une autre connexion est refusé.
 - **PKCE** (`code_challenge` S256) : un code d'autorisation intercepté est inutilisable sans le vérificateur gardé dans le cookie.
 - Le **cookie `google_login`** garde ces trois valeurs pendant `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10 minutes par défaut), signées en JWT avec `JWT_SECRET_KEY` (le navigateur ne peut pas les modifier). Il est `HttpOnly`, limité à `/api/auth/google`, et `SameSite=Lax`, pas `Strict` : le retour depuis Google est une navigation venant d'un autre site, pour laquelle le navigateur n'enverrait pas un cookie `Strict`. Il est effacé dès qu'il a servi.
-- L'**`id_token`** est vérifié avec les clés publiques de Google (JWKS, mises en cache) : algorithme RS256, émetteur `accounts.google.com`, audience `GOOGLE_CLIENT_ID`, expiration et nonce.
+- L'**`id_token`** est vérifié avec les clés publiques de Google (JWKS, mises en cache) : algorithme RS256, émetteur `accounts.google.com`, audience `GOOGLE_CLIENT_ID`, expiration et nonce. `iat` et `exp` tolèrent 60 secondes d'écart d'horloge avec Google (`GOOGLE_ID_TOKEN_CLOCK_SKEW_SECONDS`) : sans cela, un token émis par une horloge de Google légèrement en avance sur la nôtre serait refusé comme « pas encore valide ».
 
 **Retrouver le compte**, dans cet ordre :
 
