@@ -203,13 +203,19 @@ How it works and how to add a text, an error code or a language: [i18n guide](..
 
 Styling uses **Tailwind CSS v4** (utility classes in `className`) and the components come from **shadcn/ui**: the CLI copies their code into `src/components/ui/`, built on Radix primitives (keyboard, focus, ARIA). The code belongs to the project and can be edited.
 
-| Action                      | Command / file                                                      |
-| --------------------------- | ------------------------------------------------------------------- |
-| Add a component             | `pnpm dlx shadcn@latest add <name>` (e.g. `dialog`), then review it |
-| Change the theme            | CSS variables in `src/index.css` (`:root`, `.dark`)                 |
-| Merge classes conditionally | `cn()` (`import { cn } from 'cn'`)                                  |
+More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`** (Radix base, Nova preset), recorded in `components.json`: the CLI reuses this style on every `add`, so new components match the existing ones. Catalog, examples and props of each component: [ui.shadcn.com/docs/components](https://ui.shadcn.com/docs/components).
+
+| Action                      | Command / file                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Add a component             | `pnpm dlx shadcn@latest add <name>` (e.g. `dialog`), then review it                                  |
+| See what an update changes  | `pnpm dlx shadcn@latest add <name> --diff`                                                           |
+| Update a component          | `pnpm dlx shadcn@latest add <name> --overwrite`, then review the git diff and put local changes back |
+| Change the theme            | CSS variables in `src/index.css` (`:root`, `.dark`)                                                  |
+| Merge classes conditionally | `cn()` (`import { cn } from 'cn'`)                                                                   |
 
 - Only add the components actually used. They go into `src/components/ui/`; business components (which call `t()` and the API hooks) stay in `src/components/`.
-- shadcn components import each other through the `@/` alias (`@/` → `src/`), configured in `tsconfig.json`, `tsconfig.app.json` and `vite.config.ts`. The rest of the code keeps relative imports.
+- The `@/` alias (`@/` → `src/`) is used by the CLI, through the `aliases` of `components.json`, to know where to write files and how to import them; it is configured in `tsconfig.json`, `tsconfig.app.json` and `vite.config.ts`. The generated components import `cn` and `radix-ui` directly; the rest of the code keeps relative imports.
+- `--overwrite` replaces the file entirely: local changes to a `ui/` component are lost unless put back from the git diff. Keep such changes small.
+- ESLint: `react-refresh/only-export-components` is off for `src/components/ui/` (`eslint.config.js`), since shadcn components also export their variants (e.g. `buttonVariants`); this keeps them close to the generated version.
 - Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
 - The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.
