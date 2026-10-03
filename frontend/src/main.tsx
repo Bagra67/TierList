@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router';
 
 import { createQueryClient } from './api/queryClient';
 import App from './App';
+// Initialise les traductions avant le premier rendu
+import './i18n';
 
 const queryClient = createQueryClient();
 
