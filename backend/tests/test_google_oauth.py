@@ -157,13 +157,26 @@ def test_fetch_identity_exchanges_the_code_and_verifies_the_id_token():
     }
 
 
+def test_id_token_issued_slightly_in_the_future_is_accepted():
+    # Horloge de Google légèrement en avance sur la nôtre : le token reste valide
+    attempt = GoogleLoginAttempt.start(None)
+    id_token = make_id_token(attempt.nonce, iat=datetime.now(UTC) + timedelta(seconds=30))
+
+    identity = google_client(token_endpoint_returning(id_token)).fetch_identity(
+        "auth-code", attempt
+    )
+
+    assert identity.subject == "google-subject-123"
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
         pytest.param({"aud": "another-client-id"}, id="other-audience"),
         pytest.param({"iss": "https://evil.example.com"}, id="other-issuer"),
         pytest.param({"nonce": "another-nonce"}, id="other-nonce"),
-        pytest.param({"exp": datetime.now(UTC) - timedelta(minutes=1)}, id="expired"),
+        pytest.param({"exp": datetime.now(UTC) - timedelta(minutes=10)}, id="expired"),
+        pytest.param({"iat": datetime.now(UTC) + timedelta(minutes=10)}, id="issued-in-the-future"),
         pytest.param({"key": OTHER_KEY}, id="not-signed-by-google"),
         pytest.param({"email": None}, id="no-email"),
     ],
