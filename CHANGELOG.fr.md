@@ -5,6 +5,26 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/releasing.fr.md](docs/releasing.fr.md).
 
+## [0.3.0] - 2026-10-03
+
+### Fonctionnalités
+
+- frontend : Tailwind CSS et shadcn/ui comme bibliothèque d'interface (#41)
+- frontend : mode sombre (clair / sombre / système) (#42)
+- backend : envoi des emails transactionnels par SMTP (#45)
+- vérification de l'adresse email par un lien envoyé par email (#46)
+- réinitialisation d'un mot de passe oublié par un lien envoyé par email (#48)
+
+### Corrections
+
+- backend : tolérance au décalage d'horloge lors de la vérification des id_token Google (#39)
+
+### Documentation
+
+- CHANGELOG en français, tenu à jour par le script de release (#38)
+- todo : retrait des sections terminées (configuration, vérifications, release) (#40)
+- todo : charte graphique prévue une fois l'éditeur de tier list en place (#44)
+
 ## [0.2.0] - 2026-10-03
 
 ### Fonctionnalités
