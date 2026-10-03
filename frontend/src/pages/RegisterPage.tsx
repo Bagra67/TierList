@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { useRegister } from '../api/auth';
 import { getFieldErrors } from '../api/client';
+import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TextField } from '../components/TextField';
 
 export function RegisterPage() {
@@ -60,6 +61,9 @@ export function RegisterPage() {
           {registerMutation.isPending ? 'Création…' : 'Créer mon compte'}
         </button>
       </form>
+      <p>
+        <GoogleSignInLink />
+      </p>
       <p>
         Déjà un compte ? <Link to="/login">Se connecter</Link>
       </p>

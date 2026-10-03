@@ -96,7 +96,7 @@ def test_invalid_access_tokens_are_rejected(token: str):
 
 def test_unsigned_access_token_is_rejected():
     # Attaque classique : un token « alg: none » sans signature
-    token = jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, key=None, algorithm="none")
+    token = jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, key="", algorithm="none")
 
     with pytest.raises(InvalidAccessTokenError):
         decode_access_token(token, secret_key=SECRET_KEY)

@@ -335,7 +335,7 @@
             }
           },
           "403": {
-            "description": "Mot de passe incorrect",
+            "description": "Mot de passe incorrect, ou connexion Google trop ancienne",
             "content": {
               "application/json": {
                 "schema": {
@@ -360,6 +360,161 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/auth/google/login": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Google Login",
+        "description": "Envoie le navigateur sur la page de connexion de Google.",
+        "operationId": "google_login_auth_google_login_get",
+        "parameters": [
+          {
+            "name": "next",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "delete-account",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Next"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Erreur interne du serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Google Callback",
+        "description": "Retour de Google : vérifie la réponse, ouvre la session, puis renvoie vers le frontend.",
+        "operationId": "google_callback_auth_google_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          },
+          {
+            "name": "google_login",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Google Login"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Erreur interne du serveur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/hello": {
@@ -462,16 +617,20 @@
       "DeleteAccountRequest": {
         "properties": {
           "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Password"
           }
         },
         "type": "object",
-        "required": [
-          "password"
-        ],
         "title": "DeleteAccountRequest"
       },
       "ErrorResponse": {
@@ -646,6 +805,10 @@
             "type": "string",
             "title": "Display Name"
           },
+          "has_password": {
+            "type": "boolean",
+            "title": "Has Password"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -657,6 +820,7 @@
           "id",
           "email",
           "display_name",
+          "has_password",
           "created_at"
         ],
         "title": "UserResponse"

@@ -34,9 +34,12 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     display_name: str
+    # False pour un compte créé avec Google : la suppression demande alors de se reconnecter
+    has_password: bool
     created_at: datetime
 
 
 class DeleteAccountRequest(BaseModel):
-    # Confirmation : un access token volé ne suffit pas pour supprimer le compte
-    password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
+    # Confirmation : un access token volé ne suffit pas pour supprimer le compte.
+    # Absent pour un compte Google, qui confirme par une connexion récente.
+    password: str | None = Field(default=None, min_length=1, max_length=PASSWORD_MAX_LENGTH)

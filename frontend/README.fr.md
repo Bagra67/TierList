@@ -99,7 +99,7 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
-│   ├── components/         # Composants réutilisables (TextField, DeleteAccountDialog)
+│   ├── components/         # Composants réutilisables (TextField, DeleteAccountDialog, GoogleSignInLink)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage)

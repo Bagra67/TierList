@@ -32,5 +32,6 @@ export const alice = {
   id: '0b6f3c1e-6d5c-4c1e-9f57-6d1c7e1f0a01',
   email: 'alice@example.com',
   display_name: 'Alice',
+  has_password: true,
   created_at: '2026-10-03T10:00:00Z',
 };

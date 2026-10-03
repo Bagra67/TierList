@@ -8,13 +8,14 @@ How users create an account and sign in to TierList: what the user sees, how it 
 
 ### What a user can do
 
-| Action             | Where                                                             | Result                                                                                                     |
-| ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Create an account  | `/register`: display name, email, password                        | The account is created and the user is signed in immediately.                                              |
-| Sign in            | `/login`: email, password                                         | The user is signed in and sent back to the page they wanted to open (home page by default).                |
-| Stay signed in     | automatic                                                         | Reloading the page or coming back later (up to 30 days of inactivity) does not ask for the password again. |
-| Sign out           | "Se déconnecter" button on the home page                          | The session is closed on the server: it cannot be reused, even by someone who copied it.                   |
-| Delete the account | "Supprimer mon compte" button on the home page, then the password | The account and all its sessions are erased permanently; the user is sent to `/login`.                     |
+| Action              | Where                                                                                                                               | Result                                                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Create an account   | `/register`: display name, email, password                                                                                          | The account is created and the user is signed in immediately.                                                               |
+| Sign in             | `/login`: email, password                                                                                                           | The user is signed in and sent back to the page they wanted to open (home page by default).                                 |
+| Sign in with Google | "Continuer avec Google" link on `/login` or `/register`                                                                             | The first time, the account is created (or linked to the existing account with the same email); then the user is signed in. |
+| Stay signed in      | automatic                                                                                                                           | Reloading the page or coming back later (up to 30 days of inactivity) does not ask for the password again.                  |
+| Sign out            | "Se déconnecter" button on the home page                                                                                            | The session is closed on the server: it cannot be reused, even by someone who copied it.                                    |
+| Delete the account  | "Supprimer mon compte" button on the home page, then the password (or, for an account created with Google, a recent Google sign-in) | The account and all its sessions are erased permanently; the user is sent to `/login`.                                      |
 
 Every other page requires a session: without one, the user is redirected to `/login`.
 
@@ -23,22 +24,28 @@ Every other page requires a session: without one, the user is redirected to `/lo
 - **Email**: must be a valid address; it is unique and **case-insensitive** (`Alice@Example.com` and `alice@example.com` are the same account). It is stored in lowercase.
 - **Password**: 8 to 128 characters. There is no other composition rule: length matters more than character classes.
 - **Display name**: 1 to 50 characters, surrounding spaces removed.
+- **Google**: an account created with Google has no password and signs in with Google only. Its display name comes from the Google profile. Google is used only when it reports the email as **verified**.
 
 ### Messages
 
-| Situation                                | HTTP | Message shown                                                  |
-| ---------------------------------------- | ---- | -------------------------------------------------------------- |
-| Email already used                       | 409  | `Cet email est déjà utilisé`                                   |
-| Wrong email **or** wrong password        | 401  | `Email ou mot de passe incorrect` (same message in both cases) |
-| Invalid field                            | 422  | Message next to the field (e.g. password too short)            |
-| Session expired or revoked               | 401  | The user is sent back to `/login`                              |
-| Wrong password when deleting the account | 403  | `Mot de passe incorrect` (the dialog stays open)               |
+| Situation                                                          | HTTP | Message shown                                                                                          |
+| ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------ |
+| Email already used                                                 | 409  | `Cet email est déjà utilisé`                                                                           |
+| Wrong email **or** wrong password                                  | 401  | `Email ou mot de passe incorrect` (same message in both cases)                                         |
+| Invalid field                                                      | 422  | Message next to the field (e.g. password too short)                                                    |
+| Session expired or revoked                                         | 401  | The user is sent back to `/login`                                                                      |
+| Wrong password when deleting the account                           | 403  | `Mot de passe incorrect` (the dialog stays open)                                                       |
+| Google account: last sign-in more than 5 minutes old when deleting | 403  | `Reconnectez-vous avec Google pour confirmer la suppression`, with a "Se reconnecter avec Google" link |
+| Google sign-in cancelled                                           | —    | `Connexion avec Google annulée.` on `/login`                                                           |
+| Google email not verified                                          | —    | `Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.`                  |
+| Google not configured on the server                                | —    | `La connexion avec Google n'est pas disponible pour le moment.`                                        |
+| Any other Google failure                                           | —    | `La connexion avec Google a échoué, veuillez réessayer.`                                               |
 
 ### Not available yet
 
 - Email address verification and "forgot password" (they need an email service).
 - Limiting repeated sign-in attempts (rate limiting).
-- Google sign-in: planned in the next pull request.
+- Other identity providers than Google.
 
 ## 2. Technical design
 
@@ -86,14 +93,16 @@ When the page loads, no access token is in memory: the frontend calls `POST /aut
 
 ### Endpoints
 
-| Method and path       | Auth                       | Success                                          | Errors                               |
-| --------------------- | -------------------------- | ------------------------------------------------ | ------------------------------------ |
-| `POST /auth/register` | —                          | `201` `TokenResponse` + refresh cookie           | `409`, `422`                         |
-| `POST /auth/login`    | —                          | `200` `TokenResponse` + refresh cookie           | `401`, `422`                         |
-| `POST /auth/refresh`  | refresh cookie             | `200` `TokenResponse` + new refresh cookie       | `401` (cookie cleared)               |
-| `POST /auth/logout`   | refresh cookie (optional)  | `204`, family revoked, cookie cleared            | —                                    |
-| `GET /auth/me`        | Bearer                     | `200` `UserResponse`                             | `401` (`WWW-Authenticate: Bearer`)   |
-| `DELETE /auth/me`     | Bearer + `{password}` body | `204`, user and sessions deleted, cookie cleared | `401`, `403` (wrong password), `422` |
+| Method and path                              | Auth                                                    | Success                                                           | Errors                                                                 |
+| -------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `POST /auth/register`                        | —                                                       | `201` `TokenResponse` + refresh cookie                            | `409`, `422`                                                           |
+| `POST /auth/login`                           | —                                                       | `200` `TokenResponse` + refresh cookie                            | `401`, `422`                                                           |
+| `POST /auth/refresh`                         | refresh cookie                                          | `200` `TokenResponse` + new refresh cookie                        | `401` (cookie cleared)                                                 |
+| `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, cookie cleared                             | —                                                                      |
+| `GET /auth/me`                               | Bearer                                                  | `200` `UserResponse`                                              | `401` (`WWW-Authenticate: Bearer`)                                     |
+| `DELETE /auth/me`                            | Bearer + `{password}` body (empty for a Google account) | `204`, user, sessions and Google identity deleted, cookie cleared | `401`, `403` (wrong password, or Google sign-in too old), `422`        |
+| `GET /auth/google/login?next=delete-account` | —                                                       | `302` to Google + `google_login` cookie (`next` optional)         | `302` to `/login?error=google_unavailable`; `422` for any other `next` |
+| `GET /auth/google/callback`                  | `google_login` cookie                                   | `302` to `/` (or `/?confirm=delete-account`) + refresh cookie     | `302` to `/login?error=<code>`                                         |
 
 `TokenResponse` is `{access_token, token_type: "bearer", expires_in}` (seconds). `UserResponse` is `{id, email, display_name, created_at}`; the password hash is never returned.
 
@@ -114,6 +123,54 @@ Deletion is **permanent** (no soft delete): the `users` row is deleted, and the 
 
 The current password is required: a stolen access token alone is not enough to delete an account. A wrong password returns `403`, not `401`: the user is authenticated, and a `401` would make the frontend try to refresh the session for nothing.
 
+An account created with Google has no password to ask for. Its confirmation is a **recent sign-in**: the `auth_time` claim of the access token (time of the original sign-in, kept across refreshes) must be less than 5 minutes old. Otherwise the API answers `403`; the dialog then offers "Se reconnecter avec Google" (`/api/auth/google/login?next=delete-account`), and once back, the home page reopens the deletion dialog (`/?confirm=delete-account`). The Google identity is deleted with the account (`ON DELETE CASCADE`).
+
+### Google sign-in (OpenID Connect)
+
+TierList is an **OpenID Connect client** of Google: it does not issue tokens to other applications. Google only proves who the user is; the session is then the same as after a password sign-in (access token + refresh cookie).
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as API (/auth/google)
+    participant G as Google
+    B->>A: GET /auth/google/login
+    A-->>B: 302 to Google + google_login cookie (state, nonce, PKCE verifier, signed)
+    B->>G: sign in, choose the account
+    G-->>B: 302 to /api/auth/google/callback?code&state
+    B->>A: GET /auth/google/callback + google_login cookie
+    A->>A: state from Google = state from the cookie?
+    A->>G: POST token endpoint (code, client secret, PKCE verifier)
+    G-->>A: id_token (JWT signed by Google)
+    A->>A: check signature (Google keys), iss, aud, exp, nonce
+    A->>A: find, link or create the account
+    A-->>B: 302 to / + refresh cookie, google_login cookie cleared
+    B->>A: POST /auth/refresh (page load), as after any sign-in
+```
+
+- **`state`** must come back unchanged: it ties Google's answer to this browser (CSRF protection).
+- **`nonce`** is copied by Google into the `id_token`: a token issued for another sign-in is refused.
+- **PKCE** (`code_challenge` S256): an intercepted authorization code is useless without the verifier kept in the cookie.
+- The **`google_login` cookie** holds these three values for 10 minutes, signed as a JWT with `JWT_SECRET_KEY` (the browser cannot change it). It is `HttpOnly`, limited to `/api/auth/google`, and `SameSite=Lax`, not `Strict`: the return from Google is a navigation coming from another site, for which the browser would not send a `Strict` cookie. It is cleared as soon as it has been used.
+- The **`id_token`** is checked against Google's public keys (JWKS, cached), with algorithm RS256, issuer `accounts.google.com`, audience `GOOGLE_CLIENT_ID`, expiry and nonce.
+
+**Finding the account**, in this order:
+
+1. the Google identity (claim `sub`, stable even if the email changes) is already linked: sign-in to that account;
+2. otherwise, an account already uses this email: the Google identity is linked to it;
+3. otherwise: a new account **without password** is created.
+
+Cases 2 and 3 require `email_verified` from Google: otherwise anyone could take over an existing account, or reserve someone else's address. Identities are stored in the `oauth_accounts` table (`provider`, `provider_subject`, unique together).
+
+**Setting up Google** (Google Cloud Console → APIs & Services → Credentials):
+
+1. Configure the OAuth consent screen (application name, support email; scopes `openid`, `email`, `profile`).
+2. Create an **OAuth client ID** of type **Web application**.
+3. Add the **authorized redirect URI** exactly as `GOOGLE_REDIRECT_URI`: `http://localhost:5173/api/auth/google/callback` in development, the HTTPS URL in production.
+4. Copy the client ID and secret into `backend/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), then restart the backend.
+
+Without these two variables, the "Continuer avec Google" link leads back to `/login` with "La connexion avec Google n'est pas disponible pour le moment."
+
 ### Security choices
 
 - **Passwords** are hashed with **Argon2id** (`pwdlib`, recommended parameters). The plain password is never stored or logged.
@@ -131,17 +188,18 @@ The current password is required: a stolen access token alone is not enough to d
 
 ### Backend (`backend/app/`)
 
-| Layer         | File                                                                  | Content                                                                                                               |
-| ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Routes        | `api/routes/auth.py`                                                  | The six `/auth` routes; set and clear the refresh cookie; map domain errors to `HTTPException`.                       |
-| Dependencies  | `api/dependencies.py`                                                 | `get_auth_service` and `get_current_user` (Bearer token → `User`, otherwise 401).                                     |
-| Schemas       | `schemas/auth.py`                                                     | `RegisterRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`.                                                   |
-| Service       | `services/auth.py`                                                    | `AuthService`: register, login, refresh with rotation and theft detection, logout. Owns the transactions (`commit`).  |
-| Repositories  | `repositories/users.py`, `repositories/refresh_tokens.py`             | Queries only. The refresh token is read `FOR UPDATE` so two simultaneous refreshes are processed one after the other. |
-| Models        | `models/user.py`                                                      | `User` (`users` table), `RefreshToken` (`refresh_tokens` table, `ON DELETE CASCADE` towards `users`).                 |
-| Crypto        | `core/security.py`                                                    | Pure functions: Argon2id hashing, JWT creation and decoding, refresh token generation and hashing.                    |
-| Configuration | `core/config.py`                                                      | `JWT_SECRET_KEY`, `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS`, `AUTH_COOKIE_SECURE`, `AUTH_COOKIE_PATH`.     |
-| Migration     | `migrations/versions/93f9cc04b237_create_users_and_refresh_tokens.py` | Creates both tables.                                                                                                  |
+| Layer         | File                                                                                                                      | Content                                                                                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Routes        | `api/routes/auth.py`                                                                                                      | The eight `/auth` routes, including `/auth/google/login` and `/auth/google/callback`; set and clear the cookies; map domain errors to `HTTPException` or to redirections.                              |
+| Dependencies  | `api/dependencies.py`                                                                                                     | `get_auth_service`, `get_current_session` (Bearer token → user + `auth_time`, otherwise 401), `get_current_user` (the user only) and `get_google_oauth_client` (`None` when Google is not configured). |
+| Schemas       | `schemas/auth.py`                                                                                                         | `RegisterRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`.                                                                                                                                    |
+| Service       | `services/auth.py`                                                                                                        | `AuthService`: register, login, Google sign-in (find, link or create), refresh with rotation and theft detection, logout, account deletion. Owns the transactions (`commit`).                          |
+| Google client | `services/google_oauth.py`                                                                                                | `GoogleLoginAttempt` (state, nonce, PKCE, signed cookie) and `GoogleOAuthClient` (authorization URL, code exchange with `httpx`, `id_token` check with the JWKS).                                      |
+| Repositories  | `repositories/users.py`, `repositories/refresh_tokens.py`, `repositories/oauth_accounts.py`                               | Queries only. The refresh token is read `FOR UPDATE` so two simultaneous refreshes are processed one after the other.                                                                                  |
+| Models        | `models/user.py`                                                                                                          | `User` (`users` table, `password_hash` empty for a Google account), `RefreshToken` (`refresh_tokens`) and `OAuthAccount` (`oauth_accounts`), both `ON DELETE CASCADE` towards `users`.                 |
+| Crypto        | `core/security.py`                                                                                                        | Pure functions: Argon2id hashing, JWT creation and decoding, refresh token generation and hashing.                                                                                                     |
+| Configuration | `core/config.py`                                                                                                          | `JWT_SECRET_KEY`, `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS`, `AUTH_COOKIE_SECURE`, `AUTH_COOKIE_PATH`.                                                                                      |
+| Migrations    | `migrations/versions/93f9cc04b237_create_users_and_refresh_tokens.py`, `95119a855a83_add_oauth_accounts_and_optional_.py` | Create the tables; the second one adds `oauth_accounts` and makes the password optional.                                                                                                               |
 
 **Protecting a new endpoint**: add the `get_current_user` dependency. The route then receives the authenticated user, and the OpenAPI schema shows the Bearer requirement.
 
@@ -161,15 +219,15 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 
 ### Frontend (`frontend/src/`)
 
-| File                                            | Content                                                                                                                                                                                                                                                 |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries; `getFieldErrors` for 422 messages.                                               |
-| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                         |
-| `auth/RequireAuth.tsx`                          | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                                                                |
-| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Forms with labelled fields, field errors, backend message, button disabled while sending.                                                                                                                                                               |
-| `components/TextField.tsx`                      | Labelled input whose error is linked with `aria-describedby`.                                                                                                                                                                                           |
-| `components/DeleteAccountDialog.tsx`            | "Supprimer mon compte" button and native `<dialog>` (opened with `showModal()`: the browser traps the focus and closes it with Escape), asking for the password. On success, the session and the query cache are cleared and the user goes to `/login`. |
-| `App.tsx`                                       | Routes (`react-router`): `/login`, `/register`, private `/`, unknown paths redirected to `/`.                                                                                                                                                           |
+| File                                            | Content                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries; `getFieldErrors` for 422 messages.                                                                                                                                                                                             |
+| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                                                                                                                                                                       |
+| `auth/RequireAuth.tsx`                          | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                                                                                                                                                                                                              |
+| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Forms with labelled fields, field errors, backend message, button disabled while sending, "Continuer avec Google" link (`components/GoogleSignInLink.tsx`); the login page explains the `?error=` codes of the Google return.                                                                                                                                                                         |
+| `components/TextField.tsx`                      | Labelled input whose error is linked with `aria-describedby`.                                                                                                                                                                                                                                                                                                                                         |
+| `components/DeleteAccountDialog.tsx`            | "Supprimer mon compte" button and native `<dialog>` (opened with `showModal()`: the browser traps the focus and closes it with Escape). It asks for the password, or for a Google account offers to sign in again when the API answers `403`. Opened at once when the home page has `?confirm=delete-account`. On success, the session and the query cache are cleared and the user goes to `/login`. |
+| `App.tsx`                                       | Routes (`react-router`): `/login`, `/register`, private `/`, unknown paths redirected to `/`.                                                                                                                                                                                                                                                                                                         |
 
 The current user is **server state**, kept in the TanStack Query cache under `['auth', 'me']`: no separate React context. Sign-in and registration refresh this entry; sign-out clears the whole cache.
 
@@ -177,4 +235,4 @@ Hiding pages in the frontend is only for comfort: the real protection is the bac
 
 ### Tests
 
-Described in the [testing guide](testing.md): `tests/test_security.py`, `tests/integration/test_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` and `src/components/DeleteAccountDialog.test.tsx` (frontend).
+Described in the [testing guide](testing.md): `tests/test_security.py`, `tests/test_google_oauth.py`, `tests/integration/test_auth.py`, `tests/integration/test_google_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` and `src/components/DeleteAccountDialog.test.tsx` (frontend).

@@ -180,10 +180,10 @@ backend/
 │   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
 │   │   ├── logging.py     # Application logging (LOG_LEVEL, uvicorn format)
 │   │   └── security.py    # Password hashing (Argon2id), JWT access tokens, refresh tokens
-│   ├── models/user.py     # User and RefreshToken (SQLAlchemy)
-│   ├── repositories/      # Database queries (users, refresh_tokens)
+│   ├── models/user.py     # User, RefreshToken and OAuthAccount (SQLAlchemy)
+│   ├── repositories/      # Database queries (users, refresh_tokens, oauth_accounts)
 │   ├── schemas/auth.py    # Pydantic request / response models of /auth
-│   ├── services/auth.py   # Authentication business rules (AuthService)
+│   ├── services/          # Business rules (auth.py: AuthService) and Google client (google_oauth.py)
 │   └── db/
 │       ├── base.py        # Base class for SQLAlchemy models
 │       └── session.py     # Engine, session (FastAPI dependency), database ping
@@ -194,6 +194,7 @@ backend/
 │   ├── test_main.py       # Unit tests with TestClient (no real database)
 │   ├── test_errors.py     # Error format tests (500, 422, HTTPException)
 │   ├── test_security.py   # Password, JWT and refresh token primitives
+│   ├── test_google_oauth.py # Google client (PKCE, id_token check), without network
 │   └── integration/       # Tests against a real PostgreSQL (database <POSTGRES_DB>_test)
 ├── .env.example           # .env template (PostgreSQL credentials)
 ├── alembic.ini            # Alembic configuration
@@ -237,6 +238,9 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifetime, in days | `30` |
 | `AUTH_COOKIE_SECURE` | Refresh cookie sent over HTTPS only; set `false` locally (HTTP) | `true` |
 | `AUTH_COOKIE_PATH` | Refresh cookie path, as seen by the browser (through the `/api` proxy) | `/api/auth` |
+| `GOOGLE_CLIENT_ID` | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled | — (optional) |
+| `GOOGLE_CLIENT_SECRET` | Secret of that client | — (optional) |
+| `GOOGLE_REDIRECT_URI` | Callback URL, identical to an authorized redirect URI of the client | `http://localhost:5173/api/auth/google/callback` |
 
 Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 

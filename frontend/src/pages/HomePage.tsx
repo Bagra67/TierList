@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { useCurrentUser, useLogout } from '../api/auth';
 import { useHello } from '../api/hello';
@@ -9,6 +10,17 @@ export function HomePage() {
   const { data: user } = useCurrentUser();
   const logoutMutation = useLogout();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Retour d'une reconnexion Google demandée pour confirmer la suppression du compte
+  const resumeDeletion = searchParams.get('confirm') === 'delete-account';
+
+  useEffect(() => {
+    // Une fois le dialogue affiché (donc ouvert), on retire le paramètre : un rechargement
+    // de la page ne doit pas le rouvrir.
+    if (resumeDeletion && user) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [resumeDeletion, user, setSearchParams]);
 
   async function handleLogout() {
     await logoutMutation.mutateAsync().catch(() => undefined);
@@ -28,7 +40,7 @@ export function HomePage() {
       {isPending && <p>Chargement…</p>}
       {isError && <p role="alert">Impossible de joindre le backend : est-il lancé ?</p>}
       {hello && <h1>{hello.message}</h1>}
-      {user && <DeleteAccountDialog />}
+      {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>
   );
 }

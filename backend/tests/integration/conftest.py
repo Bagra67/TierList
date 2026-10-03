@@ -11,7 +11,7 @@ from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.db.session import CONNECT_TIMEOUT_SECONDS, get_db_session
 from app.main import app
 
@@ -97,3 +97,20 @@ def client(db_session: Session) -> Iterator[TestClient]:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
+
+
+def http_test_settings() -> Settings:
+    # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
+    # le cookie doit être non Secure et sur /auth pour que le client le renvoie.
+    return get_settings().model_copy(
+        update={"auth_cookie_secure": False, "auth_cookie_path": "/auth"}
+    )
+
+
+@pytest.fixture
+def auth_client(client: TestClient) -> Iterator[TestClient]:
+    app.dependency_overrides[get_settings] = http_test_settings
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
