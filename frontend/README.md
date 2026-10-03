@@ -99,22 +99,25 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
-│   ├── components/         # Reusable components (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── components/         # Reusable components (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
-│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts
+│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
+│   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
 │   │   ├── renderWithQueryClient.tsx # render() inside a fresh QueryClient
+│   │   ├── matchMedia.ts   # Fake matchMedia: light / dark system theme
 │   │   └── stubBackend.ts  # Fake backend replacing fetch, route by route
 │   ├── App.tsx             # Routes (react-router), inside the shared Layout
 │   ├── App.test.tsx        # Routing tests: redirection, session restore, logout
 │   ├── index.css           # Tailwind CSS + shadcn/ui theme (colors, radius, font)
 │   └── main.tsx            # React entry point
 ├── components.json         # shadcn/ui CLI config (style, aliases)
+├── index.html              # HTML page + script applying the theme before the app loads
 ├── eslint.config.js
 ├── vite.config.ts          # Vite config (React, Tailwind CSS, @/ alias) + /api proxy + Vitest config
 └── package.json
@@ -219,3 +222,10 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - ESLint: `react-refresh/only-export-components` is off for `src/components/ui/` (`eslint.config.js`), since shadcn components also export their variants (e.g. `buttonVariants`); this keeps them close to the generated version.
 - Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
 - The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.
+
+### Dark mode
+
+- Three preferences, chosen with the theme switcher of the header: **System** (default, follows the operating system theme, live), **Light** and **Dark**. The choice is stored in `localStorage` (`tierlist.theme`), per browser.
+- `src/theme/index.ts` puts the `dark` class on `<html>` (or removes it). The colors then come from the `.dark` block of `src/index.css`: components using the theme tokens (`bg-background`, `text-muted-foreground`, `border-input`…) need nothing more. For a specific case, Tailwind's `dark:` variant applies (e.g. `dark:bg-input/30`).
+- A small inline script in `index.html` applies the theme before the application loads, to avoid a light flash in dark mode. It repeats the storage key: keep it equal to `THEME_STORAGE_KEY` (`src/constants/theme.ts`). A small inline `<style>` gives `html.dark` its dark background right away, since in development Vite injects `index.css` through JavaScript, after the first paint: keep its color equal to `--background` of the `.dark` block.
+- `color-scheme: dark` turns native elements (scrollbars, `<select>`, autofill) dark too.

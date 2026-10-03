@@ -4,7 +4,12 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 
 import { LANGUAGE_STORAGE_KEY } from '../constants/i18n';
+import { DARK_CLASS, THEME_STORAGE_KEY } from '../constants/theme';
 import i18n from '../i18n';
+import { installMatchMedia, resetSystemTheme } from './matchMedia';
+
+// Avant tout import de src/theme, qui appelle matchMedia dès son chargement
+installMatchMedia();
 
 // Les tests vérifient les textes français : chaque test démarre en français, quelle que soit
 // la langue de jsdom, et sans choix de langue mémorisé par un test précédent.
@@ -16,6 +21,10 @@ beforeEach(async () => {
 afterEach(() => {
   cleanup();
   localStorage.removeItem(LANGUAGE_STORAGE_KEY);
+  // Chaque test démarre en thème « system », avec un système en clair
+  localStorage.removeItem(THEME_STORAGE_KEY);
+  document.documentElement.classList.remove(DARK_CLASS);
+  resetSystemTheme();
 });
 
 // jsdom gère l'attribut open de <dialog> mais pas showModal() ni close() : comportement minimal.

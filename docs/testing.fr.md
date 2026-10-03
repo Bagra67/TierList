@@ -226,6 +226,7 @@ Aucun appel réseau : une paire de clés RSA générée pour les tests joue le r
 - **Simulations** (`vi.fn`, `vi.stubGlobal`, `vi.spyOn`) : remplacent une fonction par une version factice dont le test décide le comportement. Ici, le `fetch` global est remplacé par `vi.stubGlobal('fetch', …)` et restauré par `vi.unstubAllGlobals()` après chaque test : les tests **n'appellent jamais le vrai backend**. Ils sont donc rapides et ne dépendent d'aucun serveur lancé. Tout ce qui est au-dessus de `fetch` (client API, hooks TanStack Query, composants) tourne pour de vrai.
 - **`renderWithQueryClient`** (`src/test/renderWithQueryClient.tsx`) : affiche un composant dans un client TanStack Query **neuf** pour chaque test, pour qu'aucune donnée en cache ne passe d'un test à l'autre. Les nouveaux essais sont désactivés (`retry: false`) pour que les cas d'erreur échouent tout de suite. À utiliser à la place de `render` pour tout composant qui charge des données.
 - **`<dialog>` dans jsdom** : jsdom gère l'attribut `open` de `<dialog>` mais pas `showModal()` ni `close()` ; `src/test/setup.ts` en ajoute une version minimale (`close()` déclenche aussi l'événement `close`). Le piège du focus et la touche Échap, gérés par le navigateur, ne sont donc pas testables ici.
+- **Thème et `matchMedia`** : jsdom n'a pas `window.matchMedia`, que `src/theme` appelle dès son chargement. `src/test/matchMedia.ts` en installe un faux depuis `src/test/setup.ts` ; `setSystemDark(true)` change le thème du système d'exploitation et prévient les écouteurs, comme le navigateur. Après chaque test, `setup.ts` oublie le thème mémorisé, retire la classe `dark` de `<html>` et remet le système en clair.
 - **`stubBackend`** (`src/test/stubBackend.ts`) : remplace `fetch` par un faux backend décrit route par route (`'GET /auth/me': () => Response.json(alice)`) ; une route non déclarée répond `404`, pour qu'un appel inattendu fasse échouer le test. `calledRoutes` liste les appels reçus, et `alice`, `tokenResponse` et `unauthorized` sont des réponses toutes faites. `errorResponse(status, code, { params, errors })` construit une erreur au format `ErrorResponse` du backend ; l'interface traduit son `code`. Les tests qui passent par le client d'API appellent aussi `setAccessToken(null)` après chaque test, car l'access token est gardé en mémoire par `src/api/client.ts`.
 
 ### 2.2 Lancer les tests
@@ -364,6 +365,24 @@ Les erreurs sont traduites avec `i18n.t`, en français sauf si le test passe en 
 | ---------------------------------------------- | ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `shows the current language`                   | Affiche la page de connexion. | Le sélecteur reflète la langue de l'interface.       | Le champ `Langue` a la valeur `fr`.                                                                            |
 | `translates the page and remembers the choice` | Sélectionne `en`.             | Vérifier le changement de langue depuis l'interface. | Le titre `Sign in` ; le champ `Language` a la valeur `en` ; `localStorage` contient `en` ; `<html lang="en">`. |
+
+### 2.13 Tests : `src/theme/theme.test.ts` (mode sombre)
+
+| Test                                                         | Ce qu'il fait                                                                 | But                                                                     | Résultat attendu                                                            |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `follows the system theme in system mode, live`              | `applyTheme('system')`, puis `setSystemDark(true)` et `setSystemDark(false)`. | La préférence « Système » suit le thème de l'OS sans rechargement.      | `<html>` reçoit puis perd la classe `dark`.                                 |
+| `ignores the system theme once a theme is chosen`            | `changeTheme('light')`, puis `setSystemDark(true)`.                           | Un choix explicite l'emporte sur le thème de l'OS.                      | Pas de classe `dark` ; `localStorage` contient `light`.                     |
+| `falls back to the system theme for an unknown stored value` | `purple` mémorisé.                                                            | Une valeur mémorisée corrompue ne casse pas l'interface.                | `getTheme()` renvoie `system`.                                              |
+| `still applies the theme when localStorage is unavailable`   | `getItem` et `setItem` lèvent une exception, puis `changeTheme('dark')`.      | La navigation privée ou un stockage bloqué ne cassent pas le sélecteur. | Classe `dark` appliquée ; `getTheme()` renvoie `system` (rien de mémorisé). |
+
+### 2.14 Tests : `src/components/ThemeSwitcher.test.tsx`
+
+`App` est affiché sur `/login` sans session : le sélecteur est testé dans la mise en page commune.
+
+| Test                                                           | Ce qu'il fait                     | But                                                 | Résultat attendu                                                                                                              |
+| -------------------------------------------------------------- | --------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `follows the system theme by default`                          | Affiche la page de connexion.     | Sans choix mémorisé, le thème est « Système ».      | Le champ `Thème` a la valeur `system`.                                                                                        |
+| `switches to dark and back to light, and remembers the choice` | Sélectionne `dark`, puis `light`. | Vérifier le changement de thème depuis l'interface. | Classe `dark` sur `<html>` et `localStorage` contient `dark` ; puis plus de classe `dark` et `localStorage` contient `light`. |
 
 ---
 

@@ -84,6 +84,9 @@
 }
 
 .dark {
+  /* Éléments natifs (barres de défilement, <select>, autocomplétion) en sombre eux aussi */
+  color-scheme: dark;
+  /* Repris dans le <style> de index.html (fond avant le chargement du CSS) : garder les deux égaux */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

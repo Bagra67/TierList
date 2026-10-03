@@ -99,22 +99,25 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
-│   ├── components/         # Composants réutilisables (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── components/         # Composants réutilisables (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
-│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
 │   ├── lib/utils.ts        # cn() : fusionne les classes Tailwind (utilisé par shadcn/ui)
+│   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
 │   │   ├── renderWithQueryClient.tsx # render() dans un QueryClient neuf
+│   │   ├── matchMedia.ts   # Faux matchMedia : thème clair / sombre du système
 │   │   └── stubBackend.ts  # Faux backend qui remplace fetch, route par route
 │   ├── App.tsx             # Routes (react-router), dans le Layout commun
 │   ├── App.test.tsx        # Tests du routage : redirection, restauration de session, déconnexion
 │   ├── index.css           # Tailwind CSS + thème shadcn/ui (couleurs, arrondis, police)
 │   └── main.tsx            # Point d'entrée React
 ├── components.json         # Config de la CLI shadcn/ui (style, alias)
+├── index.html              # Page HTML + script qui applique le thème avant l'application
 ├── eslint.config.js
 ├── vite.config.ts          # Config Vite (React, Tailwind CSS, alias @/) + proxy /api + config Vitest
 └── package.json
@@ -219,3 +222,10 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - ESLint : `react-refresh/only-export-components` est désactivée pour `src/components/ui/` (`eslint.config.js`), car les composants shadcn exportent aussi leurs variantes (ex. `buttonVariants`) ; cela les garde proches de la version générée.
 - Aucun texte n'est écrit dans un composant de `ui/` : il les reçoit en props ou en enfants, traduits avec `t()`.
 - Le dialogue de suppression du compte garde le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind.
+
+### Mode sombre
+
+- Trois préférences, choisies avec le sélecteur de thème de l'en-tête : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.
+- `src/theme/index.ts` pose la classe `dark` sur `<html>` (ou la retire). Les couleurs viennent alors du bloc `.dark` de `src/index.css` : les composants qui utilisent les jetons du thème (`bg-background`, `text-muted-foreground`, `border-input`…) n'ont rien à faire de plus. Pour un cas particulier, la variante `dark:` de Tailwind s'applique (ex. `dark:bg-input/30`).
+- Un petit script inline dans `index.html` applique le thème avant le chargement de l'application, pour éviter un flash clair en mode sombre. Il reprend la clé de stockage : la garder égale à `THEME_STORAGE_KEY` (`src/constants/theme.ts`). Un petit `<style>` inline donne tout de suite à `html.dark` son fond sombre, car en développement Vite injecte `index.css` par JavaScript, après le premier affichage : garder sa couleur égale à `--background` du bloc `.dark`.
+- `color-scheme: dark` passe aussi les éléments natifs (barres de défilement, `<select>`, autocomplétion) en sombre.

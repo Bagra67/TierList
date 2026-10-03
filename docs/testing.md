@@ -226,6 +226,7 @@ No network: an RSA key pair generated for the tests plays the role of Google's s
 - **Mocks** (`vi.fn`, `vi.stubGlobal`, `vi.spyOn`): replace a function with a fake whose behavior the test decides. Here, the global `fetch` is replaced by `vi.stubGlobal('fetch', …)` and restored by `vi.unstubAllGlobals()` after each test, so tests **never call the real backend**: they are fast and do not depend on a running server. Everything above `fetch` (API client, TanStack Query hooks, components) runs for real.
 - **`renderWithQueryClient`** (`src/test/renderWithQueryClient.tsx`): renders a component inside a **new** TanStack Query client for each test, so no cached data leaks from one test to the next. Retries are disabled (`retry: false`) so error cases fail immediately. Use it instead of `render` for any component that loads data.
 - **`<dialog>` in jsdom**: jsdom handles the `open` attribute of `<dialog>` but not `showModal()` and `close()`; `src/test/setup.ts` adds a minimal version of both (`close()` also fires the `close` event). The focus trap and the Escape key, handled by the browser, cannot be tested here.
+- **Theme and `matchMedia`**: jsdom has no `window.matchMedia`, which `src/theme` calls as soon as it loads. `src/test/matchMedia.ts` installs a fake one from `src/test/setup.ts`; `setSystemDark(true)` changes the operating system theme and notifies listeners, like the browser. After each test, `setup.ts` forgets the stored theme, removes the `dark` class from `<html>` and puts the system back to light.
 - **`stubBackend`** (`src/test/stubBackend.ts`): replaces `fetch` with a fake backend described route by route (`'GET /auth/me': () => Response.json(alice)`); an undeclared route answers `404`, so an unexpected call makes the test fail. `calledRoutes` lists the calls received, and `alice`, `tokenResponse` and `unauthorized` are ready-made answers. `errorResponse(status, code, { params, errors })` builds an error in the backend `ErrorResponse` format; the interface translates its `code`. Tests that use the API client also call `setAccessToken(null)` after each test, since the access token is kept in memory by `src/api/client.ts`.
 
 ### 2.2 Running the tests
@@ -364,6 +365,24 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | ---------------------------------------------- | ----------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `shows the current language`                   | Renders the login page. | The switcher reflects the interface language.  | The `Langue` field has the value `fr`.                                                                         |
 | `translates the page and remembers the choice` | Selects `en`.           | Checks the language switch from the interface. | The `Sign in` heading; the `Language` field has the value `en`; `localStorage` holds `en`; `<html lang="en">`. |
+
+### 2.13 Tests: `src/theme/theme.test.ts` (dark mode)
+
+| Test                                                         | What it does                                                                   | Purpose                                                          | Expected result                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `follows the system theme in system mode, live`              | `applyTheme('system')`, then `setSystemDark(true)` and `setSystemDark(false)`. | The "System" preference follows the OS theme without reloading.  | `<html>` gets then loses the `dark` class.                            |
+| `ignores the system theme once a theme is chosen`            | `changeTheme('light')`, then `setSystemDark(true)`.                            | An explicit choice wins over the OS theme.                       | No `dark` class; `localStorage` holds `light`.                        |
+| `falls back to the system theme for an unknown stored value` | Stored `purple`.                                                               | A corrupted stored value does not break the interface.           | `getTheme()` returns `system`.                                        |
+| `still applies the theme when localStorage is unavailable`   | `getItem` and `setItem` throw, then `changeTheme('dark')`.                     | Private browsing or blocked storage does not break the switcher. | `dark` class applied; `getTheme()` returns `system` (nothing stored). |
+
+### 2.14 Tests: `src/components/ThemeSwitcher.test.tsx`
+
+`App` is rendered at `/login` without a session, so the switcher is tested in the shared layout.
+
+| Test                                                           | What it does                  | Purpose                                         | Expected result                                                                                                  |
+| -------------------------------------------------------------- | ----------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `follows the system theme by default`                          | Renders the login page.       | Without a stored choice, the theme is "System". | The `Thème` field has the value `system`.                                                                        |
+| `switches to dark and back to light, and remembers the choice` | Selects `dark`, then `light`. | Checks the theme switch from the interface.     | `dark` class on `<html>` and `localStorage` holds `dark`; then no `dark` class and `localStorage` holds `light`. |
 
 ---
 
