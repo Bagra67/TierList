@@ -2,18 +2,12 @@ import type { FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { useLogin } from '../api/auth';
-import { getFieldErrors } from '../api/client';
+import { PASSWORD_MAX_LENGTH } from '../constants/auth';
+import { GOOGLE_ERROR_MESSAGES, GOOGLE_GENERIC_ERROR_MESSAGE } from '../constants/messages';
+import { LOGIN_ERROR_PARAM, ROUTES } from '../constants/routes';
+import { getFieldErrors } from '../errors/apiError';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TextField } from '../components/TextField';
-
-// Codes d'erreur du retour de Google (backend : /auth/google/callback → /login?error=<code>)
-const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
-  google_cancelled: 'Connexion avec Google annulée.',
-  google_email_not_verified:
-    "Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.",
-  google_unavailable: "La connexion avec Google n'est pas disponible pour le moment.",
-  google_failed: 'La connexion avec Google a échoué, veuillez réessayer.',
-};
 
 export function LoginPage() {
   const loginMutation = useLogin();
@@ -21,7 +15,7 @@ export function LoginPage() {
   const location = useLocation();
   const fieldErrors = getFieldErrors(loginMutation.error);
   const [searchParams] = useSearchParams();
-  const googleError = searchParams.get('error');
+  const googleError = searchParams.get(LOGIN_ERROR_PARAM);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,7 +28,7 @@ export function LoginPage() {
     } catch {
       return; // l'erreur est affichée depuis loginMutation.error
     }
-    const from = (location.state as { from?: string } | null)?.from ?? '/';
+    const from = (location.state as { from?: string } | null)?.from ?? ROUTES.HOME;
     await navigate(from, { replace: true });
   }
 
@@ -42,9 +36,7 @@ export function LoginPage() {
     <main>
       <h1>Connexion</h1>
       {googleError !== null && (
-        <p role="alert">
-          {GOOGLE_ERROR_MESSAGES[googleError] ?? GOOGLE_ERROR_MESSAGES.google_failed}
-        </p>
+        <p role="alert">{GOOGLE_ERROR_MESSAGES[googleError] ?? GOOGLE_GENERIC_ERROR_MESSAGE}</p>
       )}
       <form onSubmit={handleSubmit}>
         <TextField
@@ -61,7 +53,7 @@ export function LoginPage() {
           type="password"
           autoComplete="current-password"
           required
-          maxLength={128}
+          maxLength={PASSWORD_MAX_LENGTH}
           error={fieldErrors.password}
         />
         {loginMutation.isError && <p role="alert">{loginMutation.error.message}</p>}
@@ -73,7 +65,7 @@ export function LoginPage() {
         <GoogleSignInLink />
       </p>
       <p>
-        Pas encore de compte ? <Link to="/register">Créer un compte</Link>
+        Pas encore de compte ? <Link to={ROUTES.REGISTER}>Créer un compte</Link>
       </p>
     </main>
   );

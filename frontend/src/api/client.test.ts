@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { getMe, login } from './auth';
-import { ApiError, getFieldErrors, setAccessToken } from './client';
+import { ApiError } from '../errors/apiError';
+import { setAccessToken } from './client';
 
 // Réponse de GET /auth/me qui n'accepte que l'access token donné
 const meAcceptingOnly = (accessToken: string) => (request: Request) =>
@@ -69,21 +70,5 @@ describe('apiClient authentication middleware', () => {
       'Email ou mot de passe incorrect',
     );
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/login']);
-  });
-});
-
-describe('getFieldErrors', () => {
-  it('maps validation errors to body field names', () => {
-    const error = new ApiError(422, {
-      detail: 'Requête invalide',
-      errors: [{ field: 'body.email', message: 'value is not a valid email address' }],
-    });
-
-    expect(getFieldErrors(error)).toEqual({ email: 'value is not a valid email address' });
-  });
-
-  it('returns no field error for other errors', () => {
-    expect(getFieldErrors(new ApiError(500, 'Bad Gateway'))).toEqual({});
-    expect(getFieldErrors(null)).toEqual({});
   });
 });

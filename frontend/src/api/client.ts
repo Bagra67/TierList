@@ -1,9 +1,9 @@
 import createClient from 'openapi-fetch';
 
-import type { components, paths } from './schema';
-
-// Format unique des erreurs du backend (app/core/errors.py)
-export type ErrorResponse = components['schemas']['ErrorResponse'];
+import { SESSION_PATHS } from '../constants/auth';
+import { HTTP_STATUS } from '../constants/http';
+import { ApiError } from '../errors/apiError';
+import type { paths } from './schema';
 
 // Client HTTP commun : chemins, paramètres et réponses typés par schema.d.ts (pnpm gen:api).
 // '/api' est redirigé vers le backend FastAPI par le proxy Vite (vite.config.ts).
@@ -36,7 +36,7 @@ export function refreshAccessToken(): Promise<boolean> {
     .POST('/auth/refresh')
     .then(({ data, error, response }) => {
       setAccessToken(data?.access_token ?? null);
-      if (data === undefined && response.status !== 401) {
+      if (data === undefined && response.status !== HTTP_STATUS.UNAUTHORIZED) {
         throw new ApiError(response.status, error);
       }
       return data !== undefined;
@@ -51,10 +51,6 @@ export function refreshAccessToken(): Promise<boolean> {
 // il en faut une copie intacte pour la renvoyer après un rafraîchissement.
 const pendingRequests = new Map<string, Request>();
 
-// Routes qui ouvrent ou ferment la session : leur 401 (identifiants faux, session expirée)
-// est la réponse attendue, il ne faut pas tenter de rafraîchir (ni boucler sur /auth/refresh).
-const SESSION_PATHS = new Set(['/auth/register', '/auth/login', '/auth/refresh', '/auth/logout']);
-
 apiClient.use({
   onRequest({ request, id }) {
     if (accessToken !== null) {
@@ -66,7 +62,11 @@ apiClient.use({
   async onResponse({ response, schemaPath, id }) {
     const original = pendingRequests.get(id);
     pendingRequests.delete(id);
-    if (response.status !== 401 || SESSION_PATHS.has(schemaPath) || original === undefined) {
+    if (
+      response.status !== HTTP_STATUS.UNAUTHORIZED ||
+      SESSION_PATHS.has(schemaPath) ||
+      original === undefined
+    ) {
       return response;
     }
     if (!(await refreshAccessToken())) {
@@ -79,33 +79,3 @@ apiClient.use({
     pendingRequests.delete(id);
   },
 });
-
-function isErrorResponse(body: unknown): body is ErrorResponse {
-  return (
-    typeof body === 'object' && body !== null && typeof (body as ErrorResponse).detail === 'string'
-  );
-}
-
-// Levée quand le backend répond avec un statut hors 2xx. Le corps n'est pas garanti
-// (ex. : page d'erreur du proxy quand le backend est arrêté), d'où `unknown`.
-export class ApiError extends Error {
-  readonly status: number;
-  readonly body: unknown;
-
-  constructor(status: number, body: unknown) {
-    super(isErrorResponse(body) ? body.detail : `HTTP ${status}`);
-    this.name = 'ApiError';
-    this.status = status;
-    this.body = body;
-  }
-}
-
-// Messages des erreurs de validation (422) par champ du corps : « body.email » → « email »
-export function getFieldErrors(error: unknown): Record<string, string> {
-  if (!(error instanceof ApiError) || !isErrorResponse(error.body)) {
-    return {};
-  }
-  return Object.fromEntries(
-    (error.body.errors ?? []).map(({ field, message }) => [field.replace(/^body\./, ''), message]),
-  );
-}

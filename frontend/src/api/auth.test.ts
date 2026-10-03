@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { deleteAccount, getCurrentUser, getMe, login, logout } from './auth';
-import { ApiError, setAccessToken } from './client';
+import { ApiError } from '../errors/apiError';
+import { setAccessToken } from './client';
 
 describe('auth API', () => {
   afterEach(() => {

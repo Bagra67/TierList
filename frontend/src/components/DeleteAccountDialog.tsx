@@ -2,7 +2,10 @@ import { useEffect, useId, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { googleSignInUrl, useDeleteAccount, type User } from '../api/auth';
-import { ApiError, getFieldErrors } from '../api/client';
+import { DELETE_ACCOUNT_STEP, PASSWORD_MAX_LENGTH } from '../constants/auth';
+import { HTTP_STATUS } from '../constants/http';
+import { ROUTES } from '../constants/routes';
+import { ApiError, getFieldErrors } from '../errors/apiError';
 import { TextField } from './TextField';
 
 interface DeleteAccountDialogProps {
@@ -24,7 +27,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
   const needsGoogleSignIn =
     !user.has_password &&
     deleteMutation.error instanceof ApiError &&
-    deleteMutation.error.status === 403;
+    deleteMutation.error.status === HTTP_STATUS.FORBIDDEN;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -48,7 +51,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
       return; // l'erreur est affichée depuis deleteMutation.error
     }
     dialogRef.current?.close();
-    await navigate('/login', { replace: true });
+    await navigate(ROUTES.LOGIN, { replace: true });
   }
 
   return (
@@ -67,7 +70,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
               type="password"
               autoComplete="current-password"
               required
-              maxLength={128}
+              maxLength={PASSWORD_MAX_LENGTH}
               error={fieldErrors.password}
             />
           ) : (
@@ -76,7 +79,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
           {deleteMutation.isError && <p role="alert">{deleteMutation.error.message}</p>}
           {needsGoogleSignIn && (
             <p>
-              <a href={googleSignInUrl('delete-account')}>Se reconnecter avec Google</a>
+              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)}>Se reconnecter avec Google</a>
             </p>
           )}
           <button type="button" onClick={() => dialogRef.current?.close()}>
