@@ -598,6 +598,7 @@ explicitly uses them.
 -   Keep business rules out of presentation components when they belong
     to the backend.
 -   Preserve accessibility.
+-   Translate every user-facing text (see §50).
 -   Keep state as local as possible.
 -   Lift state only when multiple components genuinely need it.
 
@@ -608,6 +609,7 @@ explicitly uses them.
 -   Duplicate API request logic.
 -   Duplicate backend business rules in the frontend.
 -   Store secrets in frontend code.
+-   Hard-code user-facing text in components (see §50).
 -   Use `useEffect` as a generic replacement for proper
     state/data-fetching architecture.
 
@@ -1494,6 +1496,8 @@ A task is considered complete only when:
 -   [ ] Relevant tests were executed.
 -   [ ] Linting/formatting/type checks were executed when available.
 -   [ ] Frontend build was executed when relevant.
+-   [ ] New user-facing texts and error codes are translated in every
+    language (§50).
 -   [ ] Backend validation was executed when relevant.
 -   [ ] Final Git diff was reviewed.
 -   [ ] No unrelated changes were introduced.
@@ -1543,3 +1547,36 @@ Mention:
 -   Follow-up work only when relevant.
 
 Never claim validation that was not performed.
+
+------------------------------------------------------------------------
+
+# 50. Internationalization (i18n)
+
+The interface is available in **French and English** (`react-i18next`).
+French is the reference language. How it works and step-by-step recipes:
+`docs/i18n.md`.
+
+## MUST
+
+-   Display every user-facing text through `t('…')` (`useTranslation()`):
+    labels, buttons, headings, loading/empty/error states, `aria-label`.
+-   Add every new key to `frontend/src/i18n/locales/fr.ts` **and** to
+    every other locale (`en.ts`…). `pnpm typecheck` fails when a key is
+    missing or extra.
+-   Use interpolation (`{{name}}`) for dynamic values; never build a
+    sentence by concatenating translated fragments.
+-   On the backend, never return text meant for the user: return an
+    `ErrorCode` (`app/constants/error_codes.py`) and its `params` through
+    `AppHTTPException`. `detail` stays English, for developers.
+-   When adding an `ErrorCode`, a validation error type or a code passed
+    to the frontend (e.g. `?error=` after Google sign-in), add its
+    translation under `errors.*` in every locale, in the same PR.
+
+## MUST NOT
+
+-   Display the backend `detail` or a Pydantic `message` to the user.
+-   Duplicate a backend setting in a translation (e.g. a minimum length):
+    use the `params` sent by the API.
+
+Not concerned: log messages, code comments, test names, and product
+names (`TierList`).
