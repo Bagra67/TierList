@@ -1,7 +1,4 @@
-"""Connexion avec Google (OpenID Connect, flux « authorization code » avec PKCE).
-
-Références : https://developers.google.com/identity/openid-connect/openid-connect
-"""
+"""Connexion avec Google (OpenID Connect, flux « authorization code » avec PKCE)."""
 
 import base64
 import hashlib
@@ -15,20 +12,24 @@ from urllib.parse import urlencode
 import httpx
 import jwt
 
-GOOGLE_AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs"
-GOOGLE_ISSUERS = ("https://accounts.google.com", "accounts.google.com")
-HTTP_TIMEOUT_SECONDS = 10
-
-# Durée laissée à l'utilisateur pour choisir son compte sur la page de Google
-LOGIN_ATTEMPT_TTL = timedelta(minutes=10)
-LOGIN_ATTEMPT_TOKEN_TYPE = "google_login"
-LOGIN_ATTEMPT_ALGORITHM = "HS256"
-
-
-class GoogleAuthError(Exception):
-    """Réponse de Google absente, invalide ou falsifiée ; le message ne contient aucun secret."""
+from app.constants.auth import (
+    GOOGLE_LOGIN_TOKEN_TYPE,
+    GOOGLE_NONCE_BYTES,
+    GOOGLE_STATE_BYTES,
+    JWT_ALGORITHM,
+    PKCE_VERIFIER_BYTES,
+)
+from app.constants.google import (
+    GOOGLE_AUTHORIZATION_URL,
+    GOOGLE_ID_TOKEN_ALGORITHM,
+    GOOGLE_ISSUERS,
+    GOOGLE_JWKS_URL,
+    GOOGLE_PROMPT,
+    GOOGLE_SCOPES,
+    GOOGLE_TOKEN_URL,
+    PKCE_CHALLENGE_METHOD,
+)
+from app.exceptions.google import GoogleAuthError
 
 
 @dataclass(frozen=True)
@@ -58,9 +59,9 @@ class GoogleLoginAttempt:
     @classmethod
     def start(cls, next_step: str | None) -> "GoogleLoginAttempt":
         return cls(
-            state=secrets.token_urlsafe(32),
-            nonce=secrets.token_urlsafe(32),
-            code_verifier=secrets.token_urlsafe(64),
+            state=secrets.token_urlsafe(GOOGLE_STATE_BYTES),
+            nonce=secrets.token_urlsafe(GOOGLE_NONCE_BYTES),
+            code_verifier=secrets.token_urlsafe(PKCE_VERIFIER_BYTES),
             next_step=next_step,
         )
 
@@ -69,19 +70,19 @@ class GoogleLoginAttempt:
         digest = hashlib.sha256(self.code_verifier.encode()).digest()
         return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
-    def to_cookie(self, secret_key: str) -> str:
+    def to_cookie(self, secret_key: str, ttl: timedelta) -> str:
         # Signé (JWT HS256) : le navigateur le garde, mais ne peut pas le modifier
         now = datetime.now(UTC)
         claims = {
-            "type": LOGIN_ATTEMPT_TOKEN_TYPE,
+            "type": GOOGLE_LOGIN_TOKEN_TYPE,
             "state": self.state,
             "nonce": self.nonce,
             "code_verifier": self.code_verifier,
             "next": self.next_step,
             "iat": now,
-            "exp": now + LOGIN_ATTEMPT_TTL,
+            "exp": now + ttl,
         }
-        return jwt.encode(claims, secret_key, algorithm=LOGIN_ATTEMPT_ALGORITHM)
+        return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
 
     @classmethod
     def from_cookie(cls, value: str, secret_key: str) -> "GoogleLoginAttempt":
@@ -89,12 +90,12 @@ class GoogleLoginAttempt:
             claims = jwt.decode(
                 value,
                 secret_key,
-                algorithms=[LOGIN_ATTEMPT_ALGORITHM],
+                algorithms=[JWT_ALGORITHM],
                 options={"require": ["type", "state", "nonce", "code_verifier", "exp"]},
             )
         except jwt.PyJWTError as exc:
             raise GoogleAuthError("Tentative de connexion invalide ou expirée") from exc
-        if claims["type"] != LOGIN_ATTEMPT_TOKEN_TYPE:
+        if claims["type"] != GOOGLE_LOGIN_TOKEN_TYPE:
             raise GoogleAuthError("Tentative de connexion invalide")
         return cls(
             state=claims["state"],
@@ -108,9 +109,9 @@ class GoogleLoginAttempt:
 
 
 @lru_cache
-def _google_jwk_client() -> jwt.PyJWKClient:
+def _google_jwk_client(timeout_seconds: int) -> jwt.PyJWKClient:
     # Partagé entre les requêtes : garde en cache les clés publiques de Google
-    return jwt.PyJWKClient(GOOGLE_JWKS_URL, cache_keys=True, timeout=HTTP_TIMEOUT_SECONDS)
+    return jwt.PyJWKClient(GOOGLE_JWKS_URL, cache_keys=True, timeout=timeout_seconds)
 
 
 class GoogleOAuthClient:
@@ -120,12 +121,14 @@ class GoogleOAuthClient:
         client_secret: str,
         redirect_uri: str,
         *,
+        http_timeout_seconds: int,
         transport: httpx.BaseTransport | None = None,
         jwk_client: jwt.PyJWKClient | None = None,
     ) -> None:
         self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
+        self._http_timeout_seconds = http_timeout_seconds
         # Remplaçables dans les tests : aucun appel réseau vers Google
         self._transport = transport
         self._jwk_client = jwk_client
@@ -135,13 +138,12 @@ class GoogleOAuthClient:
             "client_id": self._client_id,
             "redirect_uri": self._redirect_uri,
             "response_type": "code",
-            "scope": "openid email profile",
+            "scope": GOOGLE_SCOPES,
             "state": attempt.state,
             "nonce": attempt.nonce,
             "code_challenge": attempt.code_challenge,
-            "code_challenge_method": "S256",
-            # Laisse choisir le compte quand plusieurs sont ouverts dans le navigateur
-            "prompt": "select_account",
+            "code_challenge_method": PKCE_CHALLENGE_METHOD,
+            "prompt": GOOGLE_PROMPT,
         }
         return f"{GOOGLE_AUTHORIZATION_URL}?{urlencode(query)}"
 
@@ -151,7 +153,9 @@ class GoogleOAuthClient:
 
     def _exchange_code(self, code: str, code_verifier: str) -> str:
         try:
-            with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, transport=self._transport) as client:
+            with httpx.Client(
+                timeout=self._http_timeout_seconds, transport=self._transport
+            ) as client:
                 response = client.post(
                     GOOGLE_TOKEN_URL,
                     data={
@@ -173,13 +177,13 @@ class GoogleOAuthClient:
         return id_token
 
     def _verify_id_token(self, id_token: str, nonce: str) -> GoogleIdentity:
-        jwk_client = self._jwk_client or _google_jwk_client()
+        jwk_client = self._jwk_client or _google_jwk_client(self._http_timeout_seconds)
         try:
             signing_key = jwk_client.get_signing_key_from_jwt(id_token)
             claims = jwt.decode(
                 id_token,
                 signing_key.key,
-                algorithms=["RS256"],
+                algorithms=[GOOGLE_ID_TOKEN_ALGORITHM],
                 audience=self._client_id,
                 issuer=GOOGLE_ISSUERS,
                 options={"require": ["iss", "aud", "exp", "iat", "sub", "nonce"]},

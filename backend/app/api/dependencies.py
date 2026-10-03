@@ -4,17 +4,16 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.constants import messages
 from app.core.config import Settings, get_settings
-from app.core.security import InvalidAccessTokenError
 from app.db.session import get_db_session
+from app.exceptions.auth import InvalidAccessTokenError
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.google_oauth import GoogleOAuthClient
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
 bearer_scheme = HTTPBearer(auto_error=False)
-
-NOT_AUTHENTICATED_DETAIL = "Authentification requise"
 
 
 def get_auth_service(
@@ -34,6 +33,7 @@ def get_google_oauth_client(
         settings.google_client_id,
         settings.google_client_secret.get_secret_value(),
         settings.google_redirect_uri,
+        http_timeout_seconds=settings.google_http_timeout_seconds,
     )
 
 
@@ -44,7 +44,7 @@ def get_current_session(
     """Session authentifiée par l'access token (en-tête Authorization: Bearer), sinon 401."""
     unauthorized = HTTPException(
         status_code=401,
-        detail=NOT_AUTHENTICATED_DETAIL,
+        detail=messages.NOT_AUTHENTICATED,
         headers={"WWW-Authenticate": "Bearer"},
     )
     if credentials is None:

@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.constants.auth import DISPLAY_NAME_MAX_LENGTH, GOOGLE_PROVIDER
 from app.core.config import Settings
 from app.core.security import (
     create_access_token,
@@ -21,6 +22,14 @@ from app.core.security import (
     verify_dummy_password,
     verify_password,
 )
+from app.exceptions.auth import (
+    EmailAlreadyRegisteredError,
+    GoogleEmailNotVerifiedError,
+    IncorrectPasswordError,
+    InvalidCredentialsError,
+    InvalidRefreshTokenError,
+    ReauthenticationRequiredError,
+)
 from app.models.user import OAuthAccount, RefreshToken, User
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import refresh_tokens as refresh_token_repository
@@ -28,37 +37,6 @@ from app.repositories import users as user_repository
 from app.services.google_oauth import GoogleIdentity
 
 logger = logging.getLogger(__name__)
-
-
-class EmailAlreadyRegisteredError(Exception):
-    pass
-
-
-class InvalidCredentialsError(Exception):
-    pass
-
-
-class InvalidRefreshTokenError(Exception):
-    pass
-
-
-class IncorrectPasswordError(Exception):
-    pass
-
-
-class GoogleEmailNotVerifiedError(Exception):
-    """Google ne garantit pas que l'adresse appartient à ce compte : elle ne peut servir."""
-
-
-class ReauthenticationRequiredError(Exception):
-    """Compte sans mot de passe dont la dernière connexion est trop ancienne pour confirmer."""
-
-
-GOOGLE_PROVIDER = "google"
-
-# Un compte Google n'a pas de mot de passe à redemander : supprimer le compte exige alors
-# une connexion Google aussi récente que ce délai.
-RECENT_AUTHENTICATION_MAX_AGE = timedelta(minutes=5)
 
 
 @dataclass(frozen=True)
@@ -80,9 +58,9 @@ def normalize_email(email: str) -> str:
 
 
 def _display_name(identity: GoogleIdentity) -> str:
-    # Nom du profil Google, sinon la partie de l'email avant « @ », tronqué à 50 caractères
+    # Nom du profil Google, sinon la partie de l'email avant « @ », tronqué à la longueur maximale
     name = (identity.name or "").strip() or identity.email.split("@")[0]
-    return name[:50]
+    return name[:DISPLAY_NAME_MAX_LENGTH]
 
 
 class AuthService:
@@ -217,13 +195,16 @@ class AuthService:
     def delete_account(self, session: AuthenticatedSession, password: str | None) -> None:
         """Supprime définitivement le compte et ses sessions, une fois l'utilisateur confirmé.
 
-        Confirmation : le mot de passe pour un compte qui en a un, sinon une connexion récente.
+        Confirmation : le mot de passe pour un compte qui en a un, sinon une connexion récente
+        (moins de RECENT_AUTHENTICATION_MAX_AGE_MINUTES) : un compte Google n'a pas de mot de
+        passe à redemander.
         """
         user = session.user
+        max_age = timedelta(minutes=self._settings.recent_authentication_max_age_minutes)
         if user.password_hash is not None:
             if password is None or not verify_password(password, user.password_hash):
                 raise IncorrectPasswordError
-        elif datetime.now(UTC) - session.auth_time > RECENT_AUTHENTICATION_MAX_AGE:
+        elif datetime.now(UTC) - session.auth_time > max_age:
             raise ReauthenticationRequiredError
         user_id = user.id
         user_repository.delete_user(self._session, user)

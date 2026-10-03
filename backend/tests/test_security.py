@@ -4,9 +4,8 @@ from datetime import UTC, datetime, timedelta
 import jwt
 import pytest
 
+from app.constants.auth import JWT_ALGORITHM
 from app.core.security import (
-    JWT_ALGORITHM,
-    InvalidAccessTokenError,
     create_access_token,
     decode_access_token,
     generate_refresh_token,
@@ -14,6 +13,7 @@ from app.core.security import (
     hash_refresh_token,
     verify_password,
 )
+from app.exceptions.auth import InvalidAccessTokenError
 
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
 OTHER_SECRET_KEY = "another-unit-test-secret-key-32-chars-min"

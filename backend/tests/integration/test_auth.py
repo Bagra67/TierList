@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -5,6 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.constants import messages
 from app.core.config import get_settings
 from app.core.security import hash_refresh_token
 from app.main import app
@@ -53,7 +55,7 @@ def test_register_rejects_an_email_already_used_whatever_its_case(auth_client: T
     )
 
     assert response.status_code == 409
-    assert response.json() == {"detail": "Cet email est déjà utilisé"}
+    assert response.json() == {"detail": messages.EMAIL_ALREADY_REGISTERED}
 
 
 @pytest.mark.parametrize(
@@ -65,6 +67,46 @@ def test_register_validates_its_input(auth_client: TestClient, field: str, value
 
     assert response.status_code == 422
     assert [error["field"] for error in response.json()["errors"]] == [f"body.{field}"]
+
+
+def test_short_password_error_states_the_minimum(auth_client: TestClient):
+    response = auth_client.post("/auth/register", json={**REGISTRATION, "password": "short"})
+
+    assert response.status_code == 422
+    assert response.json()["errors"] == [
+        {"field": "body.password", "message": messages.PASSWORD_TOO_SHORT.format(min_length=8)}
+    ]
+
+
+@pytest.fixture
+def password_min_length_12(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    # Le schéma lit get_settings() directement (pas par injection) : on passe par
+    # l'environnement, et on vide le cache des réglages avant et après le test.
+    monkeypatch.setenv("PASSWORD_MIN_LENGTH", "12")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.mark.usefixtures("password_min_length_12")
+def test_password_min_length_is_configurable(auth_client: TestClient):
+    ten_characters = "abcdefghij"
+
+    too_short = auth_client.post(
+        "/auth/register", json={**REGISTRATION, "password": ten_characters}
+    )
+    long_enough = auth_client.post(
+        "/auth/register", json={**REGISTRATION, "password": ten_characters + "kl"}
+    )
+
+    assert too_short.status_code == 422
+    assert too_short.json()["errors"] == [
+        {
+            "field": "body.password",
+            "message": "Le mot de passe doit contenir au moins 12 caractères",
+        }
+    ]
+    assert long_enough.status_code == 201
 
 
 def test_me_returns_the_authenticated_user(auth_client: TestClient):
@@ -87,7 +129,7 @@ def test_me_requires_a_valid_access_token(auth_client: TestClient, headers: dict
     response = auth_client.get("/auth/me", headers=headers)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": "Authentification requise"}
+    assert response.json() == {"detail": messages.NOT_AUTHENTICATED}
     assert response.headers["www-authenticate"] == "Bearer"
 
 
@@ -120,7 +162,7 @@ def test_login_failures_are_indistinguishable(auth_client: TestClient, credentia
     response = auth_client.post("/auth/login", json=credentials)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": "Email ou mot de passe incorrect"}
+    assert response.json() == {"detail": messages.INVALID_CREDENTIALS}
 
 
 def test_refresh_rotates_the_refresh_token(auth_client: TestClient):
@@ -145,7 +187,7 @@ def test_replaying_a_rotated_refresh_token_revokes_the_whole_family(auth_client:
     replay = auth_client.post("/auth/refresh")
 
     assert replay.status_code == 401
-    assert replay.json() == {"detail": "Session expirée, veuillez vous reconnecter"}
+    assert replay.json() == {"detail": messages.SESSION_EXPIRED}
     # Le token le plus récent, même légitime, est révoqué lui aussi
     auth_client.cookies.set("refresh_token", legitimate_refresh_token, path="/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
@@ -243,7 +285,7 @@ def test_delete_account_requires_the_right_password(auth_client: TestClient, db_
     response = delete_account(auth_client, access_token, "wrong password")
 
     assert response.status_code == 403
-    assert response.json() == {"detail": "Mot de passe incorrect"}
+    assert response.json() == {"detail": messages.INCORRECT_PASSWORD}
     assert db_session.scalars(select(User)).one().email == "alice@example.com"
 
 
@@ -263,4 +305,4 @@ def test_delete_account_without_password_is_refused_for_a_password_account(
     response = auth_client.request("DELETE", "/auth/me", json={}, headers=bearer(access_token))
 
     assert response.status_code == 403
-    assert response.json() == {"detail": "Mot de passe incorrect"}
+    assert response.json() == {"detail": messages.INCORRECT_PASSWORD}

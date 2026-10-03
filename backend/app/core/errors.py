@@ -8,6 +8,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
+from app.constants import messages
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,17 +23,13 @@ class ErrorResponse(BaseModel):
     errors: list[FieldError] | None = None
 
 
-INTERNAL_ERROR_DETAIL = "Erreur interne du serveur"
-VALIDATION_ERROR_DETAIL = "Requête invalide"
-
-
 async def handle_validation_error(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)
     errors = [
         FieldError(field=".".join(str(part) for part in error["loc"]), message=error["msg"])
         for error in exc.errors()
     ]
-    body = ErrorResponse(detail=VALIDATION_ERROR_DETAIL, errors=errors)
+    body = ErrorResponse(detail=messages.VALIDATION_ERROR, errors=errors)
     return JSONResponse(status_code=422, content=body.model_dump(exclude_none=True))
 
 
@@ -44,7 +42,7 @@ async def handle_unexpected_error(
         return await call_next(request)
     except Exception:  # dernier filet : toute exception non prévue devient une 500 générique
         logger.exception("Erreur non gérée sur %s %s", request.method, request.url.path)
-        body = ErrorResponse(detail=INTERNAL_ERROR_DETAIL)
+        body = ErrorResponse(detail=messages.INTERNAL_ERROR)
         return JSONResponse(status_code=500, content=body.model_dump(exclude_none=True))
 
 

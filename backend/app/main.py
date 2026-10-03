@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.routes import auth
+from app.constants import messages
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
@@ -20,7 +21,7 @@ app = FastAPI(
     description="Backend FastAPI de l'application TierList",
     version="0.1.0",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
-    responses={500: {"model": ErrorResponse, "description": "Erreur interne du serveur"}},
+    responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(app)
 app.include_router(auth.router)
@@ -48,12 +49,12 @@ def health() -> HealthResponse:
 
 @app.get(
     "/health/db",
-    responses={503: {"model": ErrorResponse, "description": "Base de données indisponible"}},
+    responses={503: {"model": ErrorResponse, "description": messages.DATABASE_UNAVAILABLE}},
 )
 def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthResponse:
     try:
         ping_database(session)
     except SQLAlchemyError as exc:
         logger.exception("Échec de la connexion à la base de données")
-        raise HTTPException(status_code=503, detail="Base de données indisponible") from exc
+        raise HTTPException(status_code=503, detail=messages.DATABASE_UNAVAILABLE) from exc
     return HealthResponse(status="ok")
