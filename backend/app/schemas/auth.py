@@ -35,3 +35,8 @@ class UserResponse(BaseModel):
     email: str
     display_name: str
     created_at: datetime
+
+
+class DeleteAccountRequest(BaseModel):
+    # Confirmation : un access token volé ne suffit pas pour supprimer le compte
+    password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)

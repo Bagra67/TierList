@@ -6,10 +6,17 @@ from app.api.dependencies import get_auth_service, get_current_user
 from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas.auth import (
+    DeleteAccountRequest,
+    LoginRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserResponse,
+)
 from app.services.auth import (
     AuthService,
     EmailAlreadyRegisteredError,
+    IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
     IssuedTokens,
@@ -129,3 +136,26 @@ def logout(
 @router.get("/me", responses=UNAUTHORIZED_RESPONSE)
 def me(user: Annotated[User, Depends(get_current_user)]) -> UserResponse:
     return UserResponse.model_validate(user)
+
+
+@router.delete(
+    "/me",
+    status_code=204,
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        # 403 et non 401 : l'utilisateur est bien authentifié, seule la confirmation est fausse
+        403: {"model": ErrorResponse, "description": "Mot de passe incorrect"},
+    },
+)
+def delete_me(
+    payload: DeleteAccountRequest,
+    response: Response,
+    user: Annotated[User, Depends(get_current_user)],
+    service: AuthServiceDep,
+    settings: SettingsDep,
+) -> None:
+    try:
+        service.delete_account(user, payload.password)
+    except IncorrectPasswordError as exc:
+        raise HTTPException(status_code=403, detail="Mot de passe incorrect") from exc
+    _clear_refresh_cookie(response, settings)
