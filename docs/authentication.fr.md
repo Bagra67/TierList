@@ -22,24 +22,24 @@ Toutes les autres pages exigent une session : sans session, l'utilisateur est re
 ### Règles
 
 - **Email** : adresse valide, unique et **insensible à la casse** (`Alice@Example.com` et `alice@example.com` sont le même compte). Il est enregistré en minuscules.
-- **Mot de passe** : de 8 à 128 caractères. Aucune autre règle de composition : la longueur compte plus que les types de caractères.
+- **Mot de passe** : au moins `PASSWORD_MIN_LENGTH` caractères (8 par défaut, un réglage du serveur), au plus 128. Aucune autre règle de composition : la longueur compte plus que les types de caractères. Un mot de passe trop court reçoit une `422` dont le message indique le minimum, ex. `Le mot de passe doit contenir au moins 8 caractères`, affiché sous le champ.
 - **Nom affiché** : de 1 à 50 caractères, espaces de début et de fin retirés.
 - **Google** : un compte créé avec Google n'a pas de mot de passe et ne se connecte qu'avec Google. Son nom affiché vient du profil Google. Google n'est utilisé que s'il indique l'email comme **vérifié**.
 
 ### Messages
 
-| Situation                                                                | HTTP | Message affiché                                                                                           |
-| ------------------------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------------------------- |
-| Email déjà utilisé                                                       | 409  | `Cet email est déjà utilisé`                                                                              |
-| Email inconnu **ou** mot de passe faux                                   | 401  | `Email ou mot de passe incorrect` (même message dans les deux cas)                                        |
-| Champ invalide                                                           | 422  | Message à côté du champ (ex. mot de passe trop court)                                                     |
-| Session expirée ou révoquée                                              | 401  | L'utilisateur est renvoyé vers `/login`                                                                   |
-| Mot de passe faux à la suppression du compte                             | 403  | `Mot de passe incorrect` (le dialogue reste ouvert)                                                       |
-| Compte Google : dernière connexion de plus de 5 minutes à la suppression | 403  | `Reconnectez-vous avec Google pour confirmer la suppression`, avec un lien « Se reconnecter avec Google » |
-| Connexion Google annulée                                                 | —    | `Connexion avec Google annulée.` sur `/login`                                                             |
-| Email Google non vérifié                                                 | —    | `Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.`                     |
-| Google non configuré sur le serveur                                      | —    | `La connexion avec Google n'est pas disponible pour le moment.`                                           |
-| Tout autre échec de Google                                               | —    | `La connexion avec Google a échoué, veuillez réessayer.`                                                  |
+| Situation                                                                                                                    | HTTP | Message affiché                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------- |
+| Email déjà utilisé                                                                                                           | 409  | `Cet email est déjà utilisé`                                                                              |
+| Email inconnu **ou** mot de passe faux                                                                                       | 401  | `Email ou mot de passe incorrect` (même message dans les deux cas)                                        |
+| Champ invalide                                                                                                               | 422  | Message à côté du champ (ex. mot de passe trop court)                                                     |
+| Session expirée ou révoquée                                                                                                  | 401  | L'utilisateur est renvoyé vers `/login`                                                                   |
+| Mot de passe faux à la suppression du compte                                                                                 | 403  | `Mot de passe incorrect` (le dialogue reste ouvert)                                                       |
+| Compte Google : dernière connexion plus ancienne que `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5 par défaut) à la suppression | 403  | `Reconnectez-vous avec Google pour confirmer la suppression`, avec un lien « Se reconnecter avec Google » |
+| Connexion Google annulée                                                                                                     | —    | `Connexion avec Google annulée.` sur `/login`                                                             |
+| Email Google non vérifié                                                                                                     | —    | `Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.`                     |
+| Google non configuré sur le serveur                                                                                          | —    | `La connexion avec Google n'est pas disponible pour le moment.`                                           |
+| Tout autre échec de Google                                                                                                   | —    | `La connexion avec Google a échoué, veuillez réessayer.`                                                  |
 
 ### Pas encore disponible
 
@@ -91,6 +91,10 @@ sequenceDiagram
 
 Au chargement de la page, aucun access token n'est en mémoire : le frontend appelle `POST /auth/refresh`, et le cookie, s'il est encore valide, restaure la session.
 
+### Réglages
+
+Toutes les durées et règles qui peuvent changer selon l'environnement sont lues dans `backend/.env` (voir le README backend) : `ACCESS_TOKEN_TTL_MINUTES` (15), `REFRESH_TOKEN_TTL_DAYS` (30), `PASSWORD_MIN_LENGTH` (8), `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5), `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10), `GOOGLE_HTTP_TIMEOUT_SECONDS` (10). Les changer ne demande qu'un redémarrage du backend. Le frontend ne duplique pas `PASSWORD_MIN_LENGTH` : il affiche le message de la `422`.
+
 ### Endpoints
 
 | Méthode et chemin                            | Authentification                                         | Succès                                                                   | Erreurs                                                                     |
@@ -123,7 +127,7 @@ La suppression est **définitive** (pas de suppression douce) : la ligne de `use
 
 Le mot de passe actuel est exigé : un access token volé ne suffit pas pour supprimer un compte. Un mot de passe faux renvoie `403`, pas `401` : l'utilisateur est bien authentifié, et une `401` pousserait le frontend à rafraîchir la session pour rien.
 
-Un compte créé avec Google n'a pas de mot de passe à redemander. Sa confirmation est une **connexion récente** : le claim `auth_time` de l'access token (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre) doit dater de moins de 5 minutes. Sinon l'API répond `403` ; le dialogue propose alors « Se reconnecter avec Google » (`/api/auth/google/login?next=delete-account`), et au retour la page d'accueil rouvre le dialogue de suppression (`/?confirm=delete-account`). L'identité Google est supprimée avec le compte (`ON DELETE CASCADE`).
+Un compte créé avec Google n'a pas de mot de passe à redemander. Sa confirmation est une **connexion récente** : le claim `auth_time` de l'access token (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre) doit être plus récent que `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5 minutes par défaut). Sinon l'API répond `403` ; le dialogue propose alors « Se reconnecter avec Google » (`/api/auth/google/login?next=delete-account`), et au retour la page d'accueil rouvre le dialogue de suppression (`/?confirm=delete-account`). L'identité Google est supprimée avec le compte (`ON DELETE CASCADE`).
 
 ### Connexion avec Google (OpenID Connect)
 
@@ -151,7 +155,7 @@ sequenceDiagram
 - Le **`state`** doit revenir à l'identique : il lie la réponse de Google à ce navigateur (protection CSRF).
 - Le **`nonce`** est recopié par Google dans l'`id_token` : un token émis pour une autre connexion est refusé.
 - **PKCE** (`code_challenge` S256) : un code d'autorisation intercepté est inutilisable sans le vérificateur gardé dans le cookie.
-- Le **cookie `google_login`** garde ces trois valeurs pendant 10 minutes, signées en JWT avec `JWT_SECRET_KEY` (le navigateur ne peut pas les modifier). Il est `HttpOnly`, limité à `/api/auth/google`, et `SameSite=Lax`, pas `Strict` : le retour depuis Google est une navigation venant d'un autre site, pour laquelle le navigateur n'enverrait pas un cookie `Strict`. Il est effacé dès qu'il a servi.
+- Le **cookie `google_login`** garde ces trois valeurs pendant `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10 minutes par défaut), signées en JWT avec `JWT_SECRET_KEY` (le navigateur ne peut pas les modifier). Il est `HttpOnly`, limité à `/api/auth/google`, et `SameSite=Lax`, pas `Strict` : le retour depuis Google est une navigation venant d'un autre site, pour laquelle le navigateur n'enverrait pas un cookie `Strict`. Il est effacé dès qu'il a servi.
 - L'**`id_token`** est vérifié avec les clés publiques de Google (JWKS, mises en cache) : algorithme RS256, émetteur `accounts.google.com`, audience `GOOGLE_CLIENT_ID`, expiration et nonce.
 
 **Retrouver le compte**, dans cet ordre :
@@ -198,6 +202,8 @@ Sans ces deux variables, le lien « Continuer avec Google » ramène sur `/login
 | Repositories  | `repositories/users.py`, `repositories/refresh_tokens.py`, `repositories/oauth_accounts.py`                               | Requêtes uniquement. Le refresh token est lu `FOR UPDATE` : deux rafraîchissements simultanés sont traités l'un après l'autre.                                                                                      |
 | Modèles       | `models/user.py`                                                                                                          | `User` (table `users`, `password_hash` vide pour un compte Google), `RefreshToken` (`refresh_tokens`) et `OAuthAccount` (`oauth_accounts`), tous deux en `ON DELETE CASCADE` vers `users`.                          |
 | Cryptographie | `core/security.py`                                                                                                        | Fonctions pures : hachage Argon2id, création et décodage des JWT, génération et hachage des refresh tokens.                                                                                                         |
+| Exceptions    | `exceptions/auth.py`, `exceptions/google.py`                                                                              | Toutes les exceptions du domaine (`InvalidCredentialsError`, `InvalidRefreshTokenError`, `GoogleAuthError`…), levées par les services et traduites par les routes.                                                  |
+| Constantes    | `constants/auth.py`, `constants/google.py`, `constants/messages.py`                                                       | Noms de cookies, types de tokens, longueurs, chemins du frontend, URL de Google, messages de l'API.                                                                                                                 |
 | Configuration | `core/config.py`                                                                                                          | `JWT_SECRET_KEY`, `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS`, `AUTH_COOKIE_SECURE`, `AUTH_COOKIE_PATH`.                                                                                                   |
 | Migrations    | `migrations/versions/93f9cc04b237_create_users_and_refresh_tokens.py`, `95119a855a83_add_oauth_accounts_and_optional_.py` | Créent les tables ; la seconde ajoute `oauth_accounts` et rend le mot de passe facultatif.                                                                                                                          |
 
@@ -221,7 +227,9 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 
 | Fichier                                         | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/client.ts`                                 | Access token en mémoire (`setAccessToken`), middleware qui ajoute `Authorization` et, sur une `401`, rafraîchit **une seule fois** (mutualisé entre requêtes simultanées) puis renvoie la requête ; `getFieldErrors` pour les messages 422.                                                                                                                                                                               |
+| `api/client.ts`                                 | Access token en mémoire (`setAccessToken`), middleware qui ajoute `Authorization` et, sur une `401`, rafraîchit **une seule fois** (mutualisé entre requêtes simultanées) puis renvoie la requête.                                                                                                                                                                                                                        |
+| `errors/apiError.ts`                            | `ApiError` et `getFieldErrors` (messages 422 par champ).                                                                                                                                                                                                                                                                                                                                                                  |
+| `constants/`                                    | `auth.ts` (limites, chemin Google, routes de session, clé de cache), `routes.ts`, `http.ts`, `messages.ts` (messages d'erreur Google).                                                                                                                                                                                                                                                                                    |
 | `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restaure la session au chargement) et les hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                                                                                                                                                                                       |
 | `auth/RequireAuth.tsx`                          | Garde des routes : chargement, erreur, redirection vers `/login` (en mémorisant la page demandée) ou page privée.                                                                                                                                                                                                                                                                                                         |
 | `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Formulaires avec champs étiquetés, erreurs par champ, message du backend, bouton désactivé pendant l'envoi, lien « Continuer avec Google » (`components/GoogleSignInLink.tsx`) ; la page de connexion explique les codes `?error=` du retour de Google.                                                                                                                                                                   |

@@ -22,24 +22,24 @@ Every other page requires a session: without one, the user is redirected to `/lo
 ### Rules
 
 - **Email**: must be a valid address; it is unique and **case-insensitive** (`Alice@Example.com` and `alice@example.com` are the same account). It is stored in lowercase.
-- **Password**: 8 to 128 characters. There is no other composition rule: length matters more than character classes.
+- **Password**: at least `PASSWORD_MIN_LENGTH` characters (8 by default, a server setting), at most 128. There is no other composition rule: length matters more than character classes. A password that is too short gets a `422` whose message states the minimum, e.g. `Le mot de passe doit contenir au moins 8 caractères`, shown under the field.
 - **Display name**: 1 to 50 characters, surrounding spaces removed.
 - **Google**: an account created with Google has no password and signs in with Google only. Its display name comes from the Google profile. Google is used only when it reports the email as **verified**.
 
 ### Messages
 
-| Situation                                                          | HTTP | Message shown                                                                                          |
-| ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------ |
-| Email already used                                                 | 409  | `Cet email est déjà utilisé`                                                                           |
-| Wrong email **or** wrong password                                  | 401  | `Email ou mot de passe incorrect` (same message in both cases)                                         |
-| Invalid field                                                      | 422  | Message next to the field (e.g. password too short)                                                    |
-| Session expired or revoked                                         | 401  | The user is sent back to `/login`                                                                      |
-| Wrong password when deleting the account                           | 403  | `Mot de passe incorrect` (the dialog stays open)                                                       |
-| Google account: last sign-in more than 5 minutes old when deleting | 403  | `Reconnectez-vous avec Google pour confirmer la suppression`, with a "Se reconnecter avec Google" link |
-| Google sign-in cancelled                                           | —    | `Connexion avec Google annulée.` on `/login`                                                           |
-| Google email not verified                                          | —    | `Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.`                  |
-| Google not configured on the server                                | —    | `La connexion avec Google n'est pas disponible pour le moment.`                                        |
-| Any other Google failure                                           | —    | `La connexion avec Google a échoué, veuillez réessayer.`                                               |
+| Situation                                                                                                    | HTTP | Message shown                                                                                          |
+| ------------------------------------------------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------ |
+| Email already used                                                                                           | 409  | `Cet email est déjà utilisé`                                                                           |
+| Wrong email **or** wrong password                                                                            | 401  | `Email ou mot de passe incorrect` (same message in both cases)                                         |
+| Invalid field                                                                                                | 422  | Message next to the field (e.g. password too short)                                                    |
+| Session expired or revoked                                                                                   | 401  | The user is sent back to `/login`                                                                      |
+| Wrong password when deleting the account                                                                     | 403  | `Mot de passe incorrect` (the dialog stays open)                                                       |
+| Google account: last sign-in older than `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5 by default) when deleting | 403  | `Reconnectez-vous avec Google pour confirmer la suppression`, with a "Se reconnecter avec Google" link |
+| Google sign-in cancelled                                                                                     | —    | `Connexion avec Google annulée.` on `/login`                                                           |
+| Google email not verified                                                                                    | —    | `Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.`                  |
+| Google not configured on the server                                                                          | —    | `La connexion avec Google n'est pas disponible pour le moment.`                                        |
+| Any other Google failure                                                                                     | —    | `La connexion avec Google a échoué, veuillez réessayer.`                                               |
 
 ### Not available yet
 
@@ -91,6 +91,10 @@ sequenceDiagram
 
 When the page loads, no access token is in memory: the frontend calls `POST /auth/refresh`, and the cookie, if still valid, restores the session.
 
+### Settings
+
+Every duration and rule that may change per environment is read from `backend/.env` (see the backend README): `ACCESS_TOKEN_TTL_MINUTES` (15), `REFRESH_TOKEN_TTL_DAYS` (30), `PASSWORD_MIN_LENGTH` (8), `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5), `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10), `GOOGLE_HTTP_TIMEOUT_SECONDS` (10). Changing them only needs a restart of the backend. The frontend does not duplicate `PASSWORD_MIN_LENGTH`: it shows the message of the `422`.
+
 ### Endpoints
 
 | Method and path                              | Auth                                                    | Success                                                           | Errors                                                                 |
@@ -123,7 +127,7 @@ Deletion is **permanent** (no soft delete): the `users` row is deleted, and the 
 
 The current password is required: a stolen access token alone is not enough to delete an account. A wrong password returns `403`, not `401`: the user is authenticated, and a `401` would make the frontend try to refresh the session for nothing.
 
-An account created with Google has no password to ask for. Its confirmation is a **recent sign-in**: the `auth_time` claim of the access token (time of the original sign-in, kept across refreshes) must be less than 5 minutes old. Otherwise the API answers `403`; the dialog then offers "Se reconnecter avec Google" (`/api/auth/google/login?next=delete-account`), and once back, the home page reopens the deletion dialog (`/?confirm=delete-account`). The Google identity is deleted with the account (`ON DELETE CASCADE`).
+An account created with Google has no password to ask for. Its confirmation is a **recent sign-in**: the `auth_time` claim of the access token (time of the original sign-in, kept across refreshes) must be more recent than `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5 minutes by default). Otherwise the API answers `403`; the dialog then offers "Se reconnecter avec Google" (`/api/auth/google/login?next=delete-account`), and once back, the home page reopens the deletion dialog (`/?confirm=delete-account`). The Google identity is deleted with the account (`ON DELETE CASCADE`).
 
 ### Google sign-in (OpenID Connect)
 
@@ -151,7 +155,7 @@ sequenceDiagram
 - **`state`** must come back unchanged: it ties Google's answer to this browser (CSRF protection).
 - **`nonce`** is copied by Google into the `id_token`: a token issued for another sign-in is refused.
 - **PKCE** (`code_challenge` S256): an intercepted authorization code is useless without the verifier kept in the cookie.
-- The **`google_login` cookie** holds these three values for 10 minutes, signed as a JWT with `JWT_SECRET_KEY` (the browser cannot change it). It is `HttpOnly`, limited to `/api/auth/google`, and `SameSite=Lax`, not `Strict`: the return from Google is a navigation coming from another site, for which the browser would not send a `Strict` cookie. It is cleared as soon as it has been used.
+- The **`google_login` cookie** holds these three values for `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10 minutes by default), signed as a JWT with `JWT_SECRET_KEY` (the browser cannot change it). It is `HttpOnly`, limited to `/api/auth/google`, and `SameSite=Lax`, not `Strict`: the return from Google is a navigation coming from another site, for which the browser would not send a `Strict` cookie. It is cleared as soon as it has been used.
 - The **`id_token`** is checked against Google's public keys (JWKS, cached), with algorithm RS256, issuer `accounts.google.com`, audience `GOOGLE_CLIENT_ID`, expiry and nonce.
 
 **Finding the account**, in this order:
@@ -198,6 +202,8 @@ Without these two variables, the "Continuer avec Google" link leads back to `/lo
 | Repositories  | `repositories/users.py`, `repositories/refresh_tokens.py`, `repositories/oauth_accounts.py`                               | Queries only. The refresh token is read `FOR UPDATE` so two simultaneous refreshes are processed one after the other.                                                                                  |
 | Models        | `models/user.py`                                                                                                          | `User` (`users` table, `password_hash` empty for a Google account), `RefreshToken` (`refresh_tokens`) and `OAuthAccount` (`oauth_accounts`), both `ON DELETE CASCADE` towards `users`.                 |
 | Crypto        | `core/security.py`                                                                                                        | Pure functions: Argon2id hashing, JWT creation and decoding, refresh token generation and hashing.                                                                                                     |
+| Exceptions    | `exceptions/auth.py`, `exceptions/google.py`                                                                              | Every domain exception (`InvalidCredentialsError`, `InvalidRefreshTokenError`, `GoogleAuthError`…), raised by services and mapped by routes.                                                           |
+| Constants     | `constants/auth.py`, `constants/google.py`, `constants/messages.py`                                                       | Cookie names, token types, lengths, frontend paths, Google URLs, API messages.                                                                                                                         |
 | Configuration | `core/config.py`                                                                                                          | `JWT_SECRET_KEY`, `ACCESS_TOKEN_TTL_MINUTES`, `REFRESH_TOKEN_TTL_DAYS`, `AUTH_COOKIE_SECURE`, `AUTH_COOKIE_PATH`.                                                                                      |
 | Migrations    | `migrations/versions/93f9cc04b237_create_users_and_refresh_tokens.py`, `95119a855a83_add_oauth_accounts_and_optional_.py` | Create the tables; the second one adds `oauth_accounts` and makes the password optional.                                                                                                               |
 
@@ -221,7 +227,9 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 
 | File                                            | Content                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries; `getFieldErrors` for 422 messages.                                                                                                                                                                                             |
+| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries.                                                                                                                                                                                                                                |
+| `errors/apiError.ts`                            | `ApiError` and `getFieldErrors` (422 messages per field).                                                                                                                                                                                                                                                                                                                                             |
+| `constants/`                                    | `auth.ts` (limits, Google path, session routes, query key), `routes.ts`, `http.ts`, `messages.ts` (Google error messages).                                                                                                                                                                                                                                                                            |
 | `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                                                                                                                                                                       |
 | `auth/RequireAuth.tsx`                          | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                                                                                                                                                                                                              |
 | `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Forms with labelled fields, field errors, backend message, button disabled while sending, "Continuer avec Google" link (`components/GoogleSignInLink.tsx`); the login page explains the `?error=` codes of the Google return.                                                                                                                                                                         |

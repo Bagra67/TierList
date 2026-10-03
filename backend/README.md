@@ -175,6 +175,8 @@ backend/
 │   ├── api/
 │   │   ├── dependencies.py # Shared dependencies (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # /auth routes: register, login, refresh, logout, me
+│   ├── constants/         # Fixed values: auth.py, google.py, messages.py (API texts), logging.py
+│   ├── exceptions/        # Domain exceptions: auth.py, google.py
 │   ├── core/
 │   │   ├── config.py      # Configuration read from .env (pydantic-settings)
 │   │   ├── errors.py      # Single error format (ErrorResponse, 422 and 500 handlers)
@@ -232,15 +234,20 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `POSTGRES_DB` | Database name | — (required) |
 | `POSTGRES_HOST` | Host as seen from the backend | `127.0.0.1` |
 | `POSTGRES_PORT` | Port | `5432` |
+| `DATABASE_CONNECT_TIMEOUT_SECONDS` | Maximum time to connect to the database, in seconds | `3` |
 | `LOG_LEVEL` | Application log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` or `CRITICAL` (case-insensitive) | `INFO` |
 | `JWT_SECRET_KEY` | Key signing the access tokens, 32 characters minimum, different in each environment. Generate one with `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (required) |
 | `ACCESS_TOKEN_TTL_MINUTES` | Access token lifetime, in minutes | `15` |
 | `REFRESH_TOKEN_TTL_DAYS` | Refresh token lifetime, in days | `30` |
+| `PASSWORD_MIN_LENGTH` | Minimum password length at registration (at most 128); the 422 states it | `8` |
+| `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Account created with Google: maximum age of the sign-in to delete the account | `5` |
 | `AUTH_COOKIE_SECURE` | Refresh cookie sent over HTTPS only; set `false` locally (HTTP) | `true` |
 | `AUTH_COOKIE_PATH` | Refresh cookie path, as seen by the browser (through the `/api` proxy) | `/api/auth` |
 | `GOOGLE_CLIENT_ID` | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled | — (optional) |
 | `GOOGLE_CLIENT_SECRET` | Secret of that client | — (optional) |
 | `GOOGLE_REDIRECT_URI` | Callback URL, identical to an authorized redirect URI of the client | `http://localhost:5173/api/auth/google/callback` |
+| `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` | Time allowed on Google's page before the sign-in attempt expires | `10` |
+| `GOOGLE_HTTP_TIMEOUT_SECONDS` | Timeout of the calls to Google (code exchange, public keys) | `10` |
 
 Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
