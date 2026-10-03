@@ -99,14 +99,14 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
-│   ├── components/         # Reusable components (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── components/         # Reusable components (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
 │   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
-│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage) + tests
+│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
 │   │   ├── renderWithQueryClient.tsx # render() inside a fresh QueryClient

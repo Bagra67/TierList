@@ -46,3 +46,7 @@ Le backend envoie des emails transactionnels (vérification de l'adresse email, 
 3. Renseigner `SMTP_HOST`, `SMTP_PORT` (en général `587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` (une adresse du domaine autorisé) et `FRONTEND_BASE_URL` (l'adresse HTTPS du site). Garder `SMTP_STARTTLS=true`.
 
 Le port 465 (TLS implicite, sans STARTTLS) n'est pas géré : tous les fournisseurs ci-dessus proposent aussi le 587.
+
+## 5. Rédiger un email
+
+Les contenus sont dans `backend/app/emails/templates.py`, un jeu de textes par langue (`fr`, `en`), avec une version texte et une version HTML. La langue est celle envoyée par le frontend (champ `language`, français par défaut). Les valeurs choisies par l'utilisateur (nom affiché) sont échappées dans le HTML. Aujourd'hui : la confirmation de l'adresse email (`verification_email`).
