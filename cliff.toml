@@ -1,9 +1,12 @@
 # Configuration de git-cliff (https://git-cliff.org) : génère CHANGELOG.md à partir des
-# commits Conventional Commits de develop. Utilisé par scripts/prepare-release.sh.
+# commits Conventional Commits de develop. Utilisé par scripts/prepare-release.sh, qui génère aussi
+# la section de CHANGELOG.fr.md avec ces groupes et le body de cliff.fr.tera.
 
 [changelog]
 header = """
 # Changelog
+
+English | [Français](CHANGELOG.fr.md)
 
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).

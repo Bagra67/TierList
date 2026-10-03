@@ -16,16 +16,19 @@ Backend Python basé sur [FastAPI](https://fastapi.tiangolo.com/), géré avec l
 ### Installer uv
 
 **Windows (PowerShell)** :
+
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 **macOS / Linux** :
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Redémarrez ensuite votre terminal, puis vérifiez :
+
 ```bash
 uv --version
 ```
@@ -35,11 +38,13 @@ uv --version
 ## 2. Installer le projet
 
 Depuis le dossier `backend/` :
+
 ```bash
 uv sync
 ```
 
 Cette commande :
+
 - crée l'environnement virtuel `.venv/` s'il n'existe pas ;
 - installe toutes les dépendances (y compris celles de dev) exactement aux versions du fichier `uv.lock`.
 
@@ -48,36 +53,40 @@ Cette commande :
 Avec `uv run`, l'activation n'est **pas nécessaire** : uv utilise automatiquement `.venv`.
 Si vous voulez quand même l'activer (par ex. pour utiliser `python` ou `fastapi` directement) :
 
-| Système | Commande |
-|---|---|
+| Système              | Commande                     |
+| -------------------- | ---------------------------- |
 | Windows (PowerShell) | `.venv\Scripts\Activate.ps1` |
-| Windows (cmd) | `.venv\Scripts\activate.bat` |
-| macOS / Linux | `source .venv/bin/activate` |
+| Windows (cmd)        | `.venv\Scripts\activate.bat` |
+| macOS / Linux        | `source .venv/bin/activate`  |
 
 Pour le désactiver : `deactivate`.
 
-> VS Code est déjà configuré (`.vscode/settings.json` à la racine) pour utiliser `backend/.venv`. Sinon : `Ctrl+Shift+P` → *Python: Select Interpreter*.
+> VS Code est déjà configuré (`.vscode/settings.json` à la racine) pour utiliser `backend/.venv`. Sinon : `Ctrl+Shift+P` → _Python: Select Interpreter_.
 
 ---
 
 ## 3. Lancer le serveur
 
 **Mode développement** (rechargement automatique à chaque modification) :
+
 ```bash
 uv run fastapi dev app/main.py
 ```
 
 **Mode production** :
+
 ```bash
 uv run fastapi run app/main.py
 ```
 
 Changer le port / l'hôte :
+
 ```bash
 uv run fastapi dev app/main.py --port 8080 --host 0.0.0.0
 ```
 
 Une fois lancé :
+
 - API : http://127.0.0.1:8000
 - Documentation interactive (Swagger) : http://127.0.0.1:8000/docs
 - Documentation ReDoc : http://127.0.0.1:8000/redoc
@@ -90,20 +99,21 @@ Le frontend appelle le backend via le proxy Vite : une requête vers `http://loc
 
 > ⚠️ N'utilisez pas `pip install` directement : passez toujours par `uv` pour que `pyproject.toml` et `uv.lock` restent à jour.
 
-| Action | Commande |
-|---|---|
-| Ajouter un package | `uv add <package>` (ex : `uv add sqlalchemy`) |
-| Ajouter une version précise | `uv add "sqlalchemy>=2.0"` |
-| Ajouter un package de dev (tests, lint…) | `uv add --dev <package>` (ex : `uv add --dev ruff`) |
-| Supprimer un package | `uv remove <package>` |
-| Mettre à jour un package | `uv lock --upgrade-package <package>` puis `uv sync` |
-| Mettre à jour tous les packages | `uv lock --upgrade` puis `uv sync` |
-| Voir l'arbre des dépendances | `uv tree` |
-| Lister les packages installés | `uv pip list` |
-| Réinstaller depuis le lockfile | `uv sync` |
-| Installer sans les dépendances de dev (prod) | `uv sync --no-dev` |
+| Action                                       | Commande                                             |
+| -------------------------------------------- | ---------------------------------------------------- |
+| Ajouter un package                           | `uv add <package>` (ex : `uv add sqlalchemy`)        |
+| Ajouter une version précise                  | `uv add "sqlalchemy>=2.0"`                           |
+| Ajouter un package de dev (tests, lint…)     | `uv add --dev <package>` (ex : `uv add --dev ruff`)  |
+| Supprimer un package                         | `uv remove <package>`                                |
+| Mettre à jour un package                     | `uv lock --upgrade-package <package>` puis `uv sync` |
+| Mettre à jour tous les packages              | `uv lock --upgrade` puis `uv sync`                   |
+| Voir l'arbre des dépendances                 | `uv tree`                                            |
+| Lister les packages installés                | `uv pip list`                                        |
+| Réinstaller depuis le lockfile               | `uv sync`                                            |
+| Installer sans les dépendances de dev (prod) | `uv sync --no-dev`                                   |
 
 Exécuter n'importe quelle commande dans l'environnement du projet :
+
 ```bash
 uv run python script.py
 uv run <commande>
@@ -130,10 +140,10 @@ Les tests de `tests/integration/` (marqueur `integration`) tournent sur un vrai 
 - Chaque test s'exécute dans une transaction annulée à la fin.
 - Si PostgreSQL est injoignable, ils sont **ignorés** en local, mais ils **échouent** en CI.
 
-| Action | Commande |
-|---|---|
-| Tests unitaires seulement | `uv run pytest -m "not integration"` |
-| Tests d'intégration seulement | `uv run pytest -m integration` |
+| Action                        | Commande                             |
+| ----------------------------- | ------------------------------------ |
+| Tests unitaires seulement     | `uv run pytest -m "not integration"` |
+| Tests d'intégration seulement | `uv run pytest -m integration`       |
 
 ---
 
@@ -141,14 +151,15 @@ Les tests de `tests/integration/` (marqueur `integration`) tournent sur un vrai 
 
 [Ruff](https://docs.astral.sh/ruff/) sert à la fois de linter et de formateur. Il est configuré dans `pyproject.toml` (section `[tool.ruff]`).
 
-| Action | Commande |
-|---|---|
-| Analyser le code | `uv run ruff check .` |
-| Corriger automatiquement | `uv run ruff check . --fix` |
-| Formater le code | `uv run ruff format .` |
+| Action                                   | Commande                       |
+| ---------------------------------------- | ------------------------------ |
+| Analyser le code                         | `uv run ruff check .`          |
+| Corriger automatiquement                 | `uv run ruff check . --fix`    |
+| Formater le code                         | `uv run ruff format .`         |
 | Vérifier le formatage sans modifier (CI) | `uv run ruff format . --check` |
 
 Le hook git `pre-commit` (voir le [README racine](../README.fr.md)) lance automatiquement `ruff check` et `ruff format --check` avant chaque commit. Pour corriger avant de commiter :
+
 ```bash
 uv run ruff check . --fix && uv run ruff format .
 ```
@@ -227,27 +238,27 @@ La base tourne dans Docker (`compose.yaml` à la racine du dépôt, voir le [REA
 
 Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 
-| Variable | Rôle | Défaut |
-|---|---|---|
-| `POSTGRES_USER` | Utilisateur | — (obligatoire) |
-| `POSTGRES_PASSWORD` | Mot de passe | — (obligatoire) |
-| `POSTGRES_DB` | Nom de la base | — (obligatoire) |
-| `POSTGRES_HOST` | Hôte vu depuis le backend | `127.0.0.1` |
-| `POSTGRES_PORT` | Port | `5432` |
-| `DATABASE_CONNECT_TIMEOUT_SECONDS` | Délai maximal pour se connecter à la base, en secondes | `3` |
-| `LOG_LEVEL` | Niveau des logs de l'application : `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL` (insensible à la casse) | `INFO` |
-| `JWT_SECRET_KEY` | Clé de signature des access tokens, 32 caractères minimum, différente dans chaque environnement. En générer une avec `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (obligatoire) |
-| `ACCESS_TOKEN_TTL_MINUTES` | Durée de vie de l'access token, en minutes | `15` |
-| `REFRESH_TOKEN_TTL_DAYS` | Durée de vie du refresh token, en jours | `30` |
-| `PASSWORD_MIN_LENGTH` | Longueur minimale du mot de passe à l'inscription (au plus 128) ; la 422 l'indique | `8` |
-| `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Compte créé avec Google : âge maximal de la connexion pour supprimer le compte | `5` |
-| `AUTH_COOKIE_SECURE` | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP) | `true` |
-| `AUTH_COOKIE_PATH` | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`) | `/api/auth` |
-| `GOOGLE_CLIENT_ID` | ID client OAuth de la Google Cloud Console (Application Web) ; sans lui, la connexion Google est désactivée | — (facultatif) |
-| `GOOGLE_CLIENT_SECRET` | Secret de ce client | — (facultatif) |
-| `GOOGLE_REDIRECT_URI` | URL de retour, identique à un URI de redirection autorisé du client | `http://localhost:5173/api/auth/google/callback` |
-| `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` | Temps laissé sur la page de Google avant que la tentative expire | `10` |
-| `GOOGLE_HTTP_TIMEOUT_SECONDS` | Délai des appels vers Google (échange du code, clés publiques) | `10` |
+| Variable                                | Rôle                                                                                                                                                                                       | Défaut                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| `POSTGRES_USER`                         | Utilisateur                                                                                                                                                                                | — (obligatoire)                                  |
+| `POSTGRES_PASSWORD`                     | Mot de passe                                                                                                                                                                               | — (obligatoire)                                  |
+| `POSTGRES_DB`                           | Nom de la base                                                                                                                                                                             | — (obligatoire)                                  |
+| `POSTGRES_HOST`                         | Hôte vu depuis le backend                                                                                                                                                                  | `127.0.0.1`                                      |
+| `POSTGRES_PORT`                         | Port                                                                                                                                                                                       | `5432`                                           |
+| `DATABASE_CONNECT_TIMEOUT_SECONDS`      | Délai maximal pour se connecter à la base, en secondes                                                                                                                                     | `3`                                              |
+| `LOG_LEVEL`                             | Niveau des logs de l'application : `DEBUG`, `INFO`, `WARNING`, `ERROR` ou `CRITICAL` (insensible à la casse)                                                                               | `INFO`                                           |
+| `JWT_SECRET_KEY`                        | Clé de signature des access tokens, 32 caractères minimum, différente dans chaque environnement. En générer une avec `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"` | — (obligatoire)                                  |
+| `ACCESS_TOKEN_TTL_MINUTES`              | Durée de vie de l'access token, en minutes                                                                                                                                                 | `15`                                             |
+| `REFRESH_TOKEN_TTL_DAYS`                | Durée de vie du refresh token, en jours                                                                                                                                                    | `30`                                             |
+| `PASSWORD_MIN_LENGTH`                   | Longueur minimale du mot de passe à l'inscription (au plus 128) ; la 422 l'indique                                                                                                         | `8`                                              |
+| `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` | Compte créé avec Google : âge maximal de la connexion pour supprimer le compte                                                                                                             | `5`                                              |
+| `AUTH_COOKIE_SECURE`                    | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP)                                                                                                                     | `true`                                           |
+| `AUTH_COOKIE_PATH`                      | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`)                                                                                                              | `/api/auth`                                      |
+| `GOOGLE_CLIENT_ID`                      | ID client OAuth de la Google Cloud Console (Application Web) ; sans lui, la connexion Google est désactivée                                                                                | — (facultatif)                                   |
+| `GOOGLE_CLIENT_SECRET`                  | Secret de ce client                                                                                                                                                                        | — (facultatif)                                   |
+| `GOOGLE_REDIRECT_URI`                   | URL de retour, identique à un URI de redirection autorisé du client                                                                                                                        | `http://localhost:5173/api/auth/google/callback` |
+| `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Temps laissé sur la page de Google avant que la tentative expire                                                                                                                           | `10`                                             |
+| `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Délai des appels vers Google (échange du code, clés publiques)                                                                                                                             | `10`                                             |
 
 L'authentification est décrite dans le [guide de l'authentification](../docs/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
@@ -261,12 +272,12 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 
 ### Migrations (Alembic)
 
-| Action | Commande |
-|---|---|
+| Action                                   | Commande                                                  |
+| ---------------------------------------- | --------------------------------------------------------- |
 | Créer une migration à partir des modèles | `uv run alembic revision --autogenerate -m "description"` |
-| Appliquer les migrations | `uv run alembic upgrade head` |
-| Annuler la dernière migration | `uv run alembic downgrade -1` |
-| Voir la version actuelle de la base | `uv run alembic current` |
+| Appliquer les migrations                 | `uv run alembic upgrade head`                             |
+| Annuler la dernière migration            | `uv run alembic downgrade -1`                             |
+| Voir la version actuelle de la base      | `uv run alembic current`                                  |
 
 Les modèles doivent hériter de `app.db.base.Base` et être importés par `migrations/env.py` pour être détectés par `--autogenerate`. **Relisez toujours** une migration générée avant de l'appliquer.
 
@@ -306,7 +317,12 @@ Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/co
   "detail": "Invalid request",
   "code": "validation_error",
   "errors": [
-    { "field": "body.password", "message": "…", "code": "password_too_short", "params": { "min_length": 8 } }
+    {
+      "field": "body.password",
+      "message": "…",
+      "code": "password_too_short",
+      "params": { "min_length": 8 }
+    }
   ]
 }
 ```
@@ -315,27 +331,27 @@ Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/co
 - `params` (facultatif) : valeurs utilisées par la traduction (ex. `min_length`).
 - `detail` : texte anglais, réservé aux développeurs et aux logs.
 
-| Cas | Statut | Corps |
-| --- | --- | --- |
-| `AppHTTPException` levée par une route (`app/exceptions/http.py`) | celui donné | `detail` + son `code` (un `ErrorCode`) + `params` facultatifs ; en-têtes conservés (`WWW-Authenticate`, `set-cookie`) |
-| Autre `HTTPException` (ex. 404/405 de FastAPI) | celui donné | `detail` + `code: "http_error"` |
-| Requête invalide (chemin, query, corps) | `422` | `code: "validation_error"` + `errors` : une entrée par champ invalide (`field` = emplacement, `message`, `code` = type d'erreur Pydantic comme `missing` ou `string_too_short`, `params` = son contexte scalaire comme `min_length`) |
-| Exception non prévue | `500` | `{"detail": "Internal server error", "code": "internal_error"}` : aucun détail interne n'est envoyé au client ; l'erreur est journalisée avec sa trace, la méthode et le chemin |
+| Cas                                                               | Statut      | Corps                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AppHTTPException` levée par une route (`app/exceptions/http.py`) | celui donné | `detail` + son `code` (un `ErrorCode`) + `params` facultatifs ; en-têtes conservés (`WWW-Authenticate`, `set-cookie`)                                                                                                                |
+| Autre `HTTPException` (ex. 404/405 de FastAPI)                    | celui donné | `detail` + `code: "http_error"`                                                                                                                                                                                                      |
+| Requête invalide (chemin, query, corps)                           | `422`       | `code: "validation_error"` + `errors` : une entrée par champ invalide (`field` = emplacement, `message`, `code` = type d'erreur Pydantic comme `missing` ou `string_too_short`, `params` = son contexte scalaire comme `min_length`) |
+| Exception non prévue                                              | `500`       | `{"detail": "Internal server error", "code": "internal_error"}` : aucun détail interne n'est envoyé au client ; l'erreur est journalisée avec sa trace, la méthode et le chemin                                                      |
 
 Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 
-| Code | Statut | Signification |
-| --- | --- | --- |
-| `internal_error` | 500 | Erreur imprévue |
-| `validation_error` | 422 | Requête invalide (voir `errors`) |
-| `http_error` | tous | `HTTPException` sans code dédié |
-| `database_unavailable` | 503 | `GET /health/db` : la base ne répond pas |
-| `not_authenticated` | 401 | Access token absent ou invalide |
-| `email_already_registered` | 409 | Inscription avec un email déjà utilisé |
-| `invalid_credentials` | 401 | Email ou mot de passe incorrect |
-| `session_expired` | 401 | Refresh token absent, expiré ou révoqué |
-| `incorrect_password` | 403 | Mot de passe faux à la suppression du compte |
-| `reauthentication_required` | 403 | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
-| `password_too_short` | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length` |
+| Code                        | Statut      | Signification                                                                            |
+| --------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| `internal_error`            | 500         | Erreur imprévue                                                                          |
+| `validation_error`          | 422         | Requête invalide (voir `errors`)                                                         |
+| `http_error`                | tous        | `HTTPException` sans code dédié                                                          |
+| `database_unavailable`      | 503         | `GET /health/db` : la base ne répond pas                                                 |
+| `not_authenticated`         | 401         | Access token absent ou invalide                                                          |
+| `email_already_registered`  | 409         | Inscription avec un email déjà utilisé                                                   |
+| `invalid_credentials`       | 401         | Email ou mot de passe incorrect                                                          |
+| `session_expired`           | 401         | Refresh token absent, expiré ou révoqué                                                  |
+| `incorrect_password`        | 403         | Mot de passe faux à la suppression du compte                                             |
+| `reauthentication_required` | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
+| `password_too_short`        | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
 
 Pour les erreurs prévues (introuvable, conflit…), levez une `AppHTTPException` avec un `ErrorCode` et un `detail` en anglais (`app/constants/messages.py`), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. **Tout nouveau code d'erreur doit être traduit dans chaque langue du frontend.** Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

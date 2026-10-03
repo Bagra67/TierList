@@ -1,5 +1,7 @@
 # Changelog
 
+English | [Français](CHANGELOG.fr.md)
+
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
 
