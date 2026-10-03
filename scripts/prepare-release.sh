@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Prépare une release sur une branche partie de develop : calcule la version suivante (SemVer),
-# met à jour les fichiers de version, le contrat d'API et CHANGELOG.md. Voir docs/releasing.md.
+# met à jour les fichiers de version, le contrat d'API, CHANGELOG.md et CHANGELOG.fr.md.
+# Voir docs/releasing.md.
 #
 # Usage (Git Bash, macOS, Linux) : ./scripts/prepare-release.sh [--version X.Y.Z] [--dry-run]
 #   --version X.Y.Z : impose la version (ex. passage en 1.0.0) au lieu de la calculer
@@ -79,6 +80,8 @@ if [[ -n "$last_tag" ]] && [[ "$(printf '%s\n%s\n' "$current" "$version" | sort 
 fi
 $dry_run && exit 0
 
+[[ -f CHANGELOG.fr.md ]] || fail "CHANGELOG.fr.md est introuvable : il reçoit la section française de chaque release."
+
 [[ -z "$(git status --porcelain)" ]] || fail "Le dépôt a des modifications non commitées : commitez-les ou mettez-les de côté."
 git fetch -q origin develop
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/develop)" ]] ||
@@ -93,28 +96,37 @@ echo "[contrat] openapi.json et schema.d.ts"
 (cd backend && uv run python scripts/export_openapi.py > /dev/null)
 (cd frontend && pnpm gen:api > /dev/null)
 
-echo "[changelog] CHANGELOG.md"
+echo "[changelog] CHANGELOG.md, CHANGELOG.fr.md"
 # Lancé depuis la racine : avec --repository, git-cliff ne trouve pas cliff.toml (fichier introuvable)
 cliff() { frontend/node_modules/.bin/git-cliff --config cliff.toml "$@"; }
 # git-cliff veut une plage A..B : sans release précédente, il prend tout l'historique
 cliff_range=()
 [[ -n "$last_tag" ]] && cliff_range=("$last_tag..HEAD")
-if [[ -f CHANGELOG.md ]]; then
-  # Seule la nouvelle section est ajoutée, sous l'en-tête : les sections publiées (et relues)
-  # ne sont pas régénérées. (--prepend de git-cliff la placerait au-dessus de l'en-tête.)
-  section=$(cliff "${cliff_range[@]}" --tag "v$version" --strip header | tr -d '\r')
-  first_section=$(grep -n -m 1 '^## \[' CHANGELOG.md | cut -d: -f1)
+# Ajoute la section de la version sous l'en-tête du fichier $1 (options git-cliff en plus : $2…).
+# Les sections publiées (et relues) ne sont pas régénérées. (--prepend de git-cliff la placerait
+# au-dessus de l'en-tête.)
+add_section() {
+  local file=$1 section first_section
+  shift
+  # sed retire les lignes vides de tête (le trim de cliff.toml ne s'applique pas à --body-file)
+  section=$(cliff "${cliff_range[@]}" --tag "v$version" --strip header "$@" | tr -d '\r' | sed '/./,$!d')
+  first_section=$(grep -n -m 1 '^## \[' "$file" | cut -d: -f1)
   {
-    head -n "$((first_section - 1))" CHANGELOG.md
+    head -n "$((first_section - 1))" "$file"
     printf '%s\n\n' "$section"
-    tail -n "+$first_section" CHANGELOG.md
-  } > CHANGELOG.md.new
-  mv CHANGELOG.md.new CHANGELOG.md
+    tail -n "+$first_section" "$file"
+  } > "$file.new"
+  mv "$file.new" "$file"
+}
+if [[ -f CHANGELOG.md ]]; then
+  add_section CHANGELOG.md
 else
   cliff "${cliff_range[@]}" --tag "v$version" --output CHANGELOG.md
 fi
+# Titres en français ; les lignes, issues des sujets de commit en anglais, sont à traduire
+add_section CHANGELOG.fr.md --body-file cliff.fr.tera
 
 echo
-echo "Release v$version préparée. Relisez CHANGELOG.md, puis :"
+echo "Release v$version préparée. Relisez CHANGELOG.md, traduisez les lignes de CHANGELOG.fr.md, puis :"
 echo "  git add -A && git commit -m \"chore(release): prepare v$version\""
 echo "  PR vers develop (squash), puis PR develop -> main \"chore(release): v$version\" (merge commit)."

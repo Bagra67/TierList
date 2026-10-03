@@ -20,6 +20,7 @@ The highest change since the last release wins: one `feat` and three `fix` give 
 - **Breaking changes must be visible**: the PR's squash subject carries `!` (`feat(api)!: …`) and its body explains the migration in a `BREAKING CHANGE: …` footer. Reviewers check it before merging.
 - **Tags `vX.Y.Z` only exist on `main`**, created by the `Release` workflow, never by hand and never on `develop`.
 - **The CHANGELOG is generated** (`CHANGELOG.md`, by [git-cliff](https://git-cliff.org) with `cliff.toml`) and reviewed in the preparation PR. A line may be fixed by hand; published sections are never regenerated.
+- **The French CHANGELOG** (`CHANGELOG.fr.md`) gets the same section, with French headings (`cliff.fr.tera`). Its lines come from the English commit subjects: translate them when reviewing the preparation PR. The GitHub Release notes come from `CHANGELOG.md` only.
 - **No direct commit or hotfix on `main`**: a fix goes through `develop`, then a **Z** release.
 
 ## Making a release
@@ -33,9 +34,9 @@ The highest change since the last release wins: one `feat` and three `fix` give 
    ./scripts/prepare-release.sh                    # or --version X.Y.Z to force it
    ```
 
-   The script updates the three version fields, regenerates `openapi.json` and `schema.d.ts`, and adds the new section at the top of `CHANGELOG.md`. It refuses to run when there is nothing to release (no `feat`, `fix`, `perf` or breaking change since the last tag) or when the branch does not start from `origin/develop`.
+   The script updates the three version fields, regenerates `openapi.json` and `schema.d.ts`, and adds the new section at the top of `CHANGELOG.md` and `CHANGELOG.fr.md`. It refuses to run when there is nothing to release (no `feat`, `fix`, `perf` or breaking change since the last tag), when the branch does not start from `origin/develop`, or when `CHANGELOG.fr.md` is missing.
 
-   Review `CHANGELOG.md`, then commit `chore(release): prepare vX.Y.Z`, open a PR to `develop` and squash-merge it.
+   Review `CHANGELOG.md`, translate the new lines of `CHANGELOG.fr.md`, then commit `chore(release): prepare vX.Y.Z`, open a PR to `develop` and squash-merge it.
 
 2. **Publish**: open a PR from `develop` to `main` titled `chore(release): vX.Y.Z` and merge it with a **merge commit** (AGENTS.md §40).
 
