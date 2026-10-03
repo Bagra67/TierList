@@ -2,7 +2,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 
-from app.api.dependencies import get_auth_service, get_current_user
+from app.api.dependencies import get_auth_service, get_current_session, get_current_user
 from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse
 from app.models.user import User
@@ -14,12 +14,14 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth import (
+    AuthenticatedSession,
     AuthService,
     EmailAlreadyRegisteredError,
     IncorrectPasswordError,
     InvalidCredentialsError,
     InvalidRefreshTokenError,
     IssuedTokens,
+    ReauthenticationRequiredError,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -144,18 +146,26 @@ def me(user: Annotated[User, Depends(get_current_user)]) -> UserResponse:
     responses={
         **UNAUTHORIZED_RESPONSE,
         # 403 et non 401 : l'utilisateur est bien authentifié, seule la confirmation est fausse
-        403: {"model": ErrorResponse, "description": "Mot de passe incorrect"},
+        403: {
+            "model": ErrorResponse,
+            "description": "Mot de passe incorrect, ou connexion Google trop ancienne",
+        },
     },
 )
 def delete_me(
     payload: DeleteAccountRequest,
     response: Response,
-    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AuthenticatedSession, Depends(get_current_session)],
     service: AuthServiceDep,
     settings: SettingsDep,
 ) -> None:
     try:
-        service.delete_account(user, payload.password)
+        service.delete_account(session, payload.password)
     except IncorrectPasswordError as exc:
         raise HTTPException(status_code=403, detail="Mot de passe incorrect") from exc
+    except ReauthenticationRequiredError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail="Reconnectez-vous avec Google pour confirmer la suppression",
+        ) from exc
     _clear_refresh_cookie(response, settings)

@@ -148,7 +148,7 @@ export interface components {
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
             /** Password */
-            password: string;
+            password?: string | null;
         };
         /** ErrorResponse */
         ErrorResponse: {
@@ -225,6 +225,8 @@ export interface components {
             email: string;
             /** Display Name */
             display_name: string;
+            /** Has Password */
+            has_password: boolean;
             /**
              * Created At
              * Format: date-time
@@ -509,7 +511,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Mot de passe incorrect */
+            /** @description Mot de passe incorrect, ou connexion Google trop ancienne */
             403: {
                 headers: {
                     [name: string]: unknown;

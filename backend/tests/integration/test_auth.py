@@ -273,10 +273,12 @@ def test_delete_account_requires_an_access_token(auth_client: TestClient):
     assert response.status_code == 401
 
 
-def test_delete_account_requires_a_password(auth_client: TestClient):
+def test_delete_account_without_password_is_refused_for_a_password_account(
+    auth_client: TestClient,
+):
     access_token = register(auth_client)
 
     response = auth_client.request("DELETE", "/auth/me", json={}, headers=bearer(access_token))
 
-    assert response.status_code == 422
-    assert [error["field"] for error in response.json()["errors"]] == ["body.password"]
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Mot de passe incorrect"}

@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)
     auth_cookie_path: str = "/api/auth"
 
+    # Connexion avec Google (client OAuth « Application Web » de la Google Cloud Console).
+    # Sans identifiants, le bouton Google renvoie vers /login avec une erreur explicite.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    # Doit figurer à l'identique dans les « URI de redirection autorisés » du client Google
+    google_redirect_uri: str = "http://localhost:5173/api/auth/google/callback"
+
     @property
     def database_url(self) -> URL:
         return URL.create(

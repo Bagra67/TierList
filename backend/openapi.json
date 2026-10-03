@@ -335,7 +335,7 @@
             }
           },
           "403": {
-            "description": "Mot de passe incorrect",
+            "description": "Mot de passe incorrect, ou connexion Google trop ancienne",
             "content": {
               "application/json": {
                 "schema": {
@@ -462,16 +462,20 @@
       "DeleteAccountRequest": {
         "properties": {
           "password": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Password"
           }
         },
         "type": "object",
-        "required": [
-          "password"
-        ],
         "title": "DeleteAccountRequest"
       },
       "ErrorResponse": {
@@ -646,6 +650,10 @@
             "type": "string",
             "title": "Display Name"
           },
+          "has_password": {
+            "type": "boolean",
+            "title": "Has Password"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -657,6 +665,7 @@
           "id",
           "email",
           "display_name",
+          "has_password",
           "created_at"
         ],
         "title": "UserResponse"
