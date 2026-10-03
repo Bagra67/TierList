@@ -56,4 +56,4 @@ def test_health_db_unavailable():
 
     response = client.get("/health/db")
     assert response.status_code == 503
-    assert response.json() == {"detail": "Base de données indisponible"}
+    assert response.json() == {"detail": "Database unavailable", "code": "database_unavailable"}

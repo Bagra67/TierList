@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Cookie, Depends, Query, Response
 from fastapi.responses import RedirectResponse
 
 from app.api.dependencies import (
@@ -28,6 +28,7 @@ from app.constants.auth import (
     REFRESH_TOKEN_COOKIE,
     GoogleNextStep,
 )
+from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import (
@@ -39,6 +40,7 @@ from app.exceptions.auth import (
     ReauthenticationRequiredError,
 )
 from app.exceptions.google import GoogleAuthError
+from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.schemas.auth import (
     DeleteAccountRequest,
@@ -88,13 +90,14 @@ def _clear_refresh_cookie(response: Response, settings: Settings) -> None:
     )
 
 
-def _session_expired(settings: Settings) -> HTTPException:
+def _session_expired(settings: Settings) -> AppHTTPException:
     # Les en-têtes de la réponse injectée sont perdus quand une exception est levée :
-    # l'effacement du cookie invalide passe par les en-têtes de l'HTTPException.
+    # l'effacement du cookie invalide passe par les en-têtes de l'exception.
     cleared = Response()
     _clear_refresh_cookie(cleared, settings)
-    return HTTPException(
+    return AppHTTPException(
         status_code=401,
+        code=ErrorCode.SESSION_EXPIRED,
         detail=messages.SESSION_EXPIRED,
         headers={"set-cookie": cleared.headers["set-cookie"]},
     )
@@ -120,7 +123,11 @@ def register(
     try:
         tokens = service.register(payload.email, payload.password, payload.display_name)
     except EmailAlreadyRegisteredError as exc:
-        raise HTTPException(status_code=409, detail=messages.EMAIL_ALREADY_REGISTERED) from exc
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.EMAIL_ALREADY_REGISTERED,
+            detail=messages.EMAIL_ALREADY_REGISTERED,
+        ) from exc
     return _token_response(response, tokens, settings)
 
 
@@ -131,7 +138,11 @@ def login(
     try:
         tokens = service.login(payload.email, payload.password)
     except InvalidCredentialsError as exc:
-        raise HTTPException(status_code=401, detail=messages.INVALID_CREDENTIALS) from exc
+        raise AppHTTPException(
+            status_code=401,
+            code=ErrorCode.INVALID_CREDENTIALS,
+            detail=messages.INVALID_CREDENTIALS,
+        ) from exc
     return _token_response(response, tokens, settings)
 
 
@@ -187,9 +198,17 @@ def delete_me(
     try:
         service.delete_account(session, payload.password)
     except IncorrectPasswordError as exc:
-        raise HTTPException(status_code=403, detail=messages.INCORRECT_PASSWORD) from exc
+        raise AppHTTPException(
+            status_code=403,
+            code=ErrorCode.INCORRECT_PASSWORD,
+            detail=messages.INCORRECT_PASSWORD,
+        ) from exc
     except ReauthenticationRequiredError as exc:
-        raise HTTPException(status_code=403, detail=messages.REAUTHENTICATION_REQUIRED) from exc
+        raise AppHTTPException(
+            status_code=403,
+            code=ErrorCode.REAUTHENTICATION_REQUIRED,
+            detail=messages.REAUTHENTICATION_REQUIRED,
+        ) from exc
     _clear_refresh_cookie(response, settings)
 
 

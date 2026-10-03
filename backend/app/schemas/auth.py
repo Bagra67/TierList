@@ -25,11 +25,14 @@ class RegisterRequest(BaseModel):
     @classmethod
     def check_password_length(cls, password: str) -> str:
         # Lue à chaque requête : changer PASSWORD_MIN_LENGTH ne demande qu'un redémarrage.
-        # Le message (repris dans la 422) indique le minimum exact à l'utilisateur.
+        # Le param min_length (repris dans la 422) permet au frontend d'afficher le minimum exact.
         min_length = get_settings().password_min_length
         if len(password) < min_length:
             raise PydanticCustomError(
-                "password_too_short", messages.PASSWORD_TOO_SHORT, {"min_length": min_length}
+                # Pydantic exige un littéral : c'est la valeur de ErrorCode.PASSWORD_TOO_SHORT
+                "password_too_short",
+                messages.PASSWORD_TOO_SHORT,
+                {"min_length": min_length},
             )
         return password
 
