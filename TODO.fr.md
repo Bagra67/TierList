@@ -11,6 +11,8 @@
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
+- [ ] Emails en production ([guide des emails](docs/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`.
+- [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (proxy, Cloudflare…), et configurer les en-têtes de proxy de confiance (`X-Forwarded-For`, `--forwarded-allow-ips`) pour que le backend voie la vraie IP.
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
 
 ## 2. Décisions à prendre

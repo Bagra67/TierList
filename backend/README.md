@@ -260,7 +260,7 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Time allowed on Google's page before the sign-in attempt expires                                                                                                             | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Timeout of the calls to Google (code exchange, public keys)                                                                                                                  | `10`                                             |
 
-Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
+Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/emails.md). Authentication is described in the [authentication guide](../docs/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 

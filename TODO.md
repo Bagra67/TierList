@@ -11,6 +11,8 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
   - a `JWT_SECRET_KEY` different from development;
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
   - a strong `POSTGRES_PASSWORD`.
+- [ ] Emails in production ([emails guide](docs/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`.
+- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (proxy, Cloudflare…), and configure the trusted proxy headers (`X-Forwarded-For`, `--forwarded-allow-ips`) so the backend sees the real IP.
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 
 ## 2. Decisions to take
