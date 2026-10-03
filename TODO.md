@@ -22,24 +22,19 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
   - with an email already registered by password, Google sign-in links to that account;
   - cancelling on the Google page shows "Google sign-in cancelled" on `/login`;
   - deleting a Google account more than 5 minutes after sign-in asks to sign in again with Google, then reopens the deletion dialog.
-- [ ] **Translations (PR #32)**:
+- [ ] **Translations (#32)**:
   - with a browser set to English, the interface is in English;
   - the language switcher goes back to French, and the choice survives a reload;
   - registering with a too short password shows "The password must be at least 8 characters long" (in English) / "Le mot de passe doit contenir au moins 8 caractères" (in French);
   - a wrong password on sign-in shows the translated message;
   - `/login?error=google_cancelled` shows the message in both languages.
 
-## 3. Pull requests in progress
-
-- [ ] Review the stack, then mark it ready (`gh pr ready 31`, `gh pr ready 32`).
-- [ ] Merge **#31 first, then #32** (squash). Merged alone, #31 shows error messages in English until #32 is merged.
-
-## 4. Release
+## 3. Release
 
 - [ ] Publish the next release: `develop` contains features not released yet (sign-up and email/password sign-in, account deletion, Google sign-in, translations). Follow [docs/releasing.md](docs/releasing.md): `scripts/prepare-release.sh` on a `chore/release-vX.Y.Z` branch, then the release PR `develop` → `main` with a **merge commit**.
 - [ ] After the release, check that `origin/develop` still exists.
 
-## 5. Before the first deployment
+## 4. Before the first deployment
 
 - [ ] Choose a hosting target, then write the production Docker images and the deployment (open decision, see [architecture](docs/architecture.md#open-decisions)).
 - [ ] Production settings (`backend/.env` or the host's variables):
@@ -48,7 +43,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
   - a strong `POSTGRES_PASSWORD`.
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 
-## 6. Decisions to take
+## 5. Decisions to take
 
 - [ ] UI library (open decision, see [architecture](docs/architecture.md#open-decisions)).
 - [ ] Features not available yet ([authentication guide](docs/authentication.md#not-available-yet)): email verification and "forgot password" (need an email service to choose), limiting repeated sign-in attempts, other identity providers.
