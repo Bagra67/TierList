@@ -8,12 +8,13 @@ How users create an account and sign in to TierList: what the user sees, how it 
 
 ### What a user can do
 
-| Action            | Where                                      | Result                                                                                                     |
-| ----------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Create an account | `/register`: display name, email, password | The account is created and the user is signed in immediately.                                              |
-| Sign in           | `/login`: email, password                  | The user is signed in and sent back to the page they wanted to open (home page by default).                |
-| Stay signed in    | automatic                                  | Reloading the page or coming back later (up to 30 days of inactivity) does not ask for the password again. |
-| Sign out          | "Se déconnecter" button on the home page   | The session is closed on the server: it cannot be reused, even by someone who copied it.                   |
+| Action             | Where                                                             | Result                                                                                                     |
+| ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Create an account  | `/register`: display name, email, password                        | The account is created and the user is signed in immediately.                                              |
+| Sign in            | `/login`: email, password                                         | The user is signed in and sent back to the page they wanted to open (home page by default).                |
+| Stay signed in     | automatic                                                         | Reloading the page or coming back later (up to 30 days of inactivity) does not ask for the password again. |
+| Sign out           | "Se déconnecter" button on the home page                          | The session is closed on the server: it cannot be reused, even by someone who copied it.                   |
+| Delete the account | "Supprimer mon compte" button on the home page, then the password | The account and all its sessions are erased permanently; the user is sent to `/login`.                     |
 
 Every other page requires a session: without one, the user is redirected to `/login`.
 
@@ -25,18 +26,19 @@ Every other page requires a session: without one, the user is redirected to `/lo
 
 ### Messages
 
-| Situation                         | HTTP | Message shown                                                  |
-| --------------------------------- | ---- | -------------------------------------------------------------- |
-| Email already used                | 409  | `Cet email est déjà utilisé`                                   |
-| Wrong email **or** wrong password | 401  | `Email ou mot de passe incorrect` (same message in both cases) |
-| Invalid field                     | 422  | Message next to the field (e.g. password too short)            |
-| Session expired or revoked        | 401  | The user is sent back to `/login`                              |
+| Situation                                | HTTP | Message shown                                                  |
+| ---------------------------------------- | ---- | -------------------------------------------------------------- |
+| Email already used                       | 409  | `Cet email est déjà utilisé`                                   |
+| Wrong email **or** wrong password        | 401  | `Email ou mot de passe incorrect` (same message in both cases) |
+| Invalid field                            | 422  | Message next to the field (e.g. password too short)            |
+| Session expired or revoked               | 401  | The user is sent back to `/login`                              |
+| Wrong password when deleting the account | 403  | `Mot de passe incorrect` (the dialog stays open)               |
 
 ### Not available yet
 
 - Email address verification and "forgot password" (they need an email service).
 - Limiting repeated sign-in attempts (rate limiting).
-- Account deletion and Google sign-in: planned in the next pull requests.
+- Google sign-in: planned in the next pull request.
 
 ## 2. Technical design
 
@@ -84,13 +86,14 @@ When the page loads, no access token is in memory: the frontend calls `POST /aut
 
 ### Endpoints
 
-| Method and path       | Auth                      | Success                                    | Errors                             |
-| --------------------- | ------------------------- | ------------------------------------------ | ---------------------------------- |
-| `POST /auth/register` | —                         | `201` `TokenResponse` + refresh cookie     | `409`, `422`                       |
-| `POST /auth/login`    | —                         | `200` `TokenResponse` + refresh cookie     | `401`, `422`                       |
-| `POST /auth/refresh`  | refresh cookie            | `200` `TokenResponse` + new refresh cookie | `401` (cookie cleared)             |
-| `POST /auth/logout`   | refresh cookie (optional) | `204`, family revoked, cookie cleared      | —                                  |
-| `GET /auth/me`        | Bearer                    | `200` `UserResponse`                       | `401` (`WWW-Authenticate: Bearer`) |
+| Method and path       | Auth                       | Success                                          | Errors                               |
+| --------------------- | -------------------------- | ------------------------------------------------ | ------------------------------------ |
+| `POST /auth/register` | —                          | `201` `TokenResponse` + refresh cookie           | `409`, `422`                         |
+| `POST /auth/login`    | —                          | `200` `TokenResponse` + refresh cookie           | `401`, `422`                         |
+| `POST /auth/refresh`  | refresh cookie             | `200` `TokenResponse` + new refresh cookie       | `401` (cookie cleared)               |
+| `POST /auth/logout`   | refresh cookie (optional)  | `204`, family revoked, cookie cleared            | —                                    |
+| `GET /auth/me`        | Bearer                     | `200` `UserResponse`                             | `401` (`WWW-Authenticate: Bearer`)   |
+| `DELETE /auth/me`     | Bearer + `{password}` body | `204`, user and sessions deleted, cookie cleared | `401`, `403` (wrong password), `422` |
 
 `TokenResponse` is `{access_token, token_type: "bearer", expires_in}` (seconds). `UserResponse` is `{id, email, display_name, created_at}`; the password hash is never returned.
 
@@ -104,6 +107,12 @@ When the page loads, no access token is in memory: the frontend calls `POST /aut
 - `Path=/api/auth`: sent only to the authentication routes, not to the rest of the API. It is the path **seen by the browser**: the Vite proxy forwards `/api/auth/...` to the backend's `/auth/...` (`AUTH_COOKIE_PATH`).
 
 Frontend and backend are served from the same origin (Vite proxy in development), so no CORS configuration is needed.
+
+### Account deletion
+
+Deletion is **permanent** (no soft delete): the `users` row is deleted, and the database removes its refresh tokens through `ON DELETE CASCADE`, so every session of the account ends at once. The access tokens already issued are refused too, since `get_current_user` no longer finds the user.
+
+The current password is required: a stolen access token alone is not enough to delete an account. A wrong password returns `403`, not `401`: the user is authenticated, and a `401` would make the frontend try to refresh the session for nothing.
 
 ### Security choices
 
@@ -124,7 +133,7 @@ Frontend and backend are served from the same origin (Vite proxy in development)
 
 | Layer         | File                                                                  | Content                                                                                                               |
 | ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Routes        | `api/routes/auth.py`                                                  | The five `/auth` routes; set and clear the refresh cookie; map domain errors to `HTTPException`.                      |
+| Routes        | `api/routes/auth.py`                                                  | The six `/auth` routes; set and clear the refresh cookie; map domain errors to `HTTPException`.                       |
 | Dependencies  | `api/dependencies.py`                                                 | `get_auth_service` and `get_current_user` (Bearer token → `User`, otherwise 401).                                     |
 | Schemas       | `schemas/auth.py`                                                     | `RegisterRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`.                                                   |
 | Service       | `services/auth.py`                                                    | `AuthService`: register, login, refresh with rotation and theft detection, logout. Owns the transactions (`commit`).  |
@@ -152,14 +161,15 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 
 ### Frontend (`frontend/src/`)
 
-| File                                            | Content                                                                                                                                                                                                   |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries; `getFieldErrors` for 422 messages. |
-| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                           |
-| `auth/RequireAuth.tsx`                          | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                  |
-| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Forms with labelled fields, field errors, backend message, button disabled while sending.                                                                                                                 |
-| `components/TextField.tsx`                      | Labelled input whose error is linked with `aria-describedby`.                                                                                                                                             |
-| `App.tsx`                                       | Routes (`react-router`): `/login`, `/register`, private `/`, unknown paths redirected to `/`.                                                                                                             |
+| File                                            | Content                                                                                                                                                                                                                                                 |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/client.ts`                                 | In-memory access token (`setAccessToken`), middleware that adds `Authorization` and, on a `401`, refreshes **once** (shared between concurrent requests) then retries; `getFieldErrors` for 422 messages.                                               |
+| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                         |
+| `auth/RequireAuth.tsx`                          | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                                                                |
+| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Forms with labelled fields, field errors, backend message, button disabled while sending.                                                                                                                                                               |
+| `components/TextField.tsx`                      | Labelled input whose error is linked with `aria-describedby`.                                                                                                                                                                                           |
+| `components/DeleteAccountDialog.tsx`            | "Supprimer mon compte" button and native `<dialog>` (opened with `showModal()`: the browser traps the focus and closes it with Escape), asking for the password. On success, the session and the query cache are cleared and the user goes to `/login`. |
+| `App.tsx`                                       | Routes (`react-router`): `/login`, `/register`, private `/`, unknown paths redirected to `/`.                                                                                                                                                           |
 
 The current user is **server state**, kept in the TanStack Query cache under `['auth', 'me']`: no separate React context. Sign-in and registration refresh this entry; sign-out clears the whole cache.
 
@@ -167,4 +177,4 @@ Hiding pages in the frontend is only for comfort: the real protection is the bac
 
 ### Tests
 
-Described in the [testing guide](testing.md): `tests/test_security.py`, `tests/integration/test_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx` and `src/pages/*.test.tsx` (frontend).
+Described in the [testing guide](testing.md): `tests/test_security.py`, `tests/integration/test_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` and `src/components/DeleteAccountDialog.test.tsx` (frontend).

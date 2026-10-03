@@ -40,6 +40,10 @@ class InvalidRefreshTokenError(Exception):
     pass
 
 
+class IncorrectPasswordError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class IssuedTokens:
     access_token: str
@@ -137,6 +141,15 @@ class AuthService:
             self._session, stored.family_id, revoked_at=datetime.now(UTC)
         )
         self._session.commit()
+
+    def delete_account(self, user: User, password: str) -> None:
+        """Supprime définitivement le compte et ses sessions, si le mot de passe est correct."""
+        if not verify_password(password, user.password_hash):
+            raise IncorrectPasswordError
+        user_id = user.id
+        user_repository.delete_user(self._session, user)
+        self._session.commit()
+        logger.info("Compte supprimé : user_id=%s", user_id)
 
     def get_user_from_access_token(self, access_token: str) -> User | None:
         """Utilisateur du token, ou None s'il n'existe plus. Lève InvalidAccessTokenError."""

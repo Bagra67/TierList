@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 
 import { useCurrentUser, useLogout } from '../api/auth';
 import { useHello } from '../api/hello';
+import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 
 export function HomePage() {
   const { data: hello, isPending, isError } = useHello();
@@ -27,6 +28,7 @@ export function HomePage() {
       {isPending && <p>Chargement…</p>}
       {isError && <p role="alert">Impossible de joindre le backend : est-il lancé ?</p>}
       {hello && <h1>{hello.message}</h1>}
+      {user && <DeleteAccountDialog />}
     </main>
   );
 }

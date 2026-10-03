@@ -8,12 +8,13 @@ Comment un utilisateur crée un compte et se connecte à TierList : ce qu'il voi
 
 ### Ce que l'utilisateur peut faire
 
-| Action          | Où                                             | Résultat                                                                                                        |
-| --------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Créer un compte | `/register` : nom affiché, email, mot de passe | Le compte est créé et l'utilisateur est connecté tout de suite.                                                 |
-| Se connecter    | `/login` : email, mot de passe                 | L'utilisateur est connecté et renvoyé vers la page qu'il voulait ouvrir (l'accueil par défaut).                 |
-| Rester connecté | automatique                                    | Recharger la page ou revenir plus tard (jusqu'à 30 jours d'inactivité) ne redemande pas le mot de passe.        |
-| Se déconnecter  | bouton « Se déconnecter » de la page d'accueil | La session est fermée côté serveur : elle ne peut plus être réutilisée, même par quelqu'un qui l'aurait copiée. |
+| Action               | Où                                                                         | Résultat                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Créer un compte      | `/register` : nom affiché, email, mot de passe                             | Le compte est créé et l'utilisateur est connecté tout de suite.                                                 |
+| Se connecter         | `/login` : email, mot de passe                                             | L'utilisateur est connecté et renvoyé vers la page qu'il voulait ouvrir (l'accueil par défaut).                 |
+| Rester connecté      | automatique                                                                | Recharger la page ou revenir plus tard (jusqu'à 30 jours d'inactivité) ne redemande pas le mot de passe.        |
+| Se déconnecter       | bouton « Se déconnecter » de la page d'accueil                             | La session est fermée côté serveur : elle ne peut plus être réutilisée, même par quelqu'un qui l'aurait copiée. |
+| Supprimer son compte | bouton « Supprimer mon compte » de la page d'accueil, puis le mot de passe | Le compte et toutes ses sessions sont effacés définitivement ; l'utilisateur est renvoyé vers `/login`.         |
 
 Toutes les autres pages exigent une session : sans session, l'utilisateur est redirigé vers `/login`.
 
@@ -25,18 +26,19 @@ Toutes les autres pages exigent une session : sans session, l'utilisateur est re
 
 ### Messages
 
-| Situation                              | HTTP | Message affiché                                                    |
-| -------------------------------------- | ---- | ------------------------------------------------------------------ |
-| Email déjà utilisé                     | 409  | `Cet email est déjà utilisé`                                       |
-| Email inconnu **ou** mot de passe faux | 401  | `Email ou mot de passe incorrect` (même message dans les deux cas) |
-| Champ invalide                         | 422  | Message à côté du champ (ex. mot de passe trop court)              |
-| Session expirée ou révoquée            | 401  | L'utilisateur est renvoyé vers `/login`                            |
+| Situation                                    | HTTP | Message affiché                                                    |
+| -------------------------------------------- | ---- | ------------------------------------------------------------------ |
+| Email déjà utilisé                           | 409  | `Cet email est déjà utilisé`                                       |
+| Email inconnu **ou** mot de passe faux       | 401  | `Email ou mot de passe incorrect` (même message dans les deux cas) |
+| Champ invalide                               | 422  | Message à côté du champ (ex. mot de passe trop court)              |
+| Session expirée ou révoquée                  | 401  | L'utilisateur est renvoyé vers `/login`                            |
+| Mot de passe faux à la suppression du compte | 403  | `Mot de passe incorrect` (le dialogue reste ouvert)                |
 
 ### Pas encore disponible
 
 - Vérification de l'adresse email et « mot de passe oublié » (il faut un service d'envoi d'emails).
 - Limitation des tentatives de connexion répétées (rate limiting).
-- Suppression de compte et connexion avec Google : prévues dans les pull requests suivantes.
+- Connexion avec Google : prévue dans la pull request suivante.
 
 ## 2. Fonctionnement technique
 
@@ -84,13 +86,14 @@ Au chargement de la page, aucun access token n'est en mémoire : le frontend app
 
 ### Endpoints
 
-| Méthode et chemin     | Authentification               | Succès                                            | Erreurs                            |
-| --------------------- | ------------------------------ | ------------------------------------------------- | ---------------------------------- |
-| `POST /auth/register` | —                              | `201` `TokenResponse` + cookie de refresh         | `409`, `422`                       |
-| `POST /auth/login`    | —                              | `200` `TokenResponse` + cookie de refresh         | `401`, `422`                       |
-| `POST /auth/refresh`  | cookie de refresh              | `200` `TokenResponse` + nouveau cookie de refresh | `401` (cookie effacé)              |
-| `POST /auth/logout`   | cookie de refresh (facultatif) | `204`, famille révoquée, cookie effacé            | —                                  |
-| `GET /auth/me`        | Bearer                         | `200` `UserResponse`                              | `401` (`WWW-Authenticate: Bearer`) |
+| Méthode et chemin     | Authentification               | Succès                                                  | Erreurs                                 |
+| --------------------- | ------------------------------ | ------------------------------------------------------- | --------------------------------------- |
+| `POST /auth/register` | —                              | `201` `TokenResponse` + cookie de refresh               | `409`, `422`                            |
+| `POST /auth/login`    | —                              | `200` `TokenResponse` + cookie de refresh               | `401`, `422`                            |
+| `POST /auth/refresh`  | cookie de refresh              | `200` `TokenResponse` + nouveau cookie de refresh       | `401` (cookie effacé)                   |
+| `POST /auth/logout`   | cookie de refresh (facultatif) | `204`, famille révoquée, cookie effacé                  | —                                       |
+| `GET /auth/me`        | Bearer                         | `200` `UserResponse`                                    | `401` (`WWW-Authenticate: Bearer`)      |
+| `DELETE /auth/me`     | Bearer + corps `{password}`    | `204`, utilisateur et sessions supprimés, cookie effacé | `401`, `403` (mot de passe faux), `422` |
 
 `TokenResponse` vaut `{access_token, token_type: "bearer", expires_in}` (en secondes). `UserResponse` vaut `{id, email, display_name, created_at}` ; le hash du mot de passe n'est jamais renvoyé.
 
@@ -104,6 +107,12 @@ Au chargement de la page, aucun access token n'est en mémoire : le frontend app
 - `Path=/api/auth` : envoyé uniquement aux routes d'authentification, pas au reste de l'API. C'est le chemin **vu par le navigateur** : le proxy Vite transmet `/api/auth/...` au `/auth/...` du backend (`AUTH_COOKIE_PATH`).
 
 Frontend et backend sont servis depuis la même origine (proxy Vite en développement) : aucune configuration CORS n'est nécessaire.
+
+### Suppression de compte
+
+La suppression est **définitive** (pas de suppression douce) : la ligne de `users` est supprimée, et la base efface ses refresh tokens grâce à `ON DELETE CASCADE` ; toutes les sessions du compte prennent donc fin d'un coup. Les access tokens déjà émis sont refusés eux aussi, car `get_current_user` ne trouve plus l'utilisateur.
+
+Le mot de passe actuel est exigé : un access token volé ne suffit pas pour supprimer un compte. Un mot de passe faux renvoie `403`, pas `401` : l'utilisateur est bien authentifié, et une `401` pousserait le frontend à rafraîchir la session pour rien.
 
 ### Choix de sécurité
 
@@ -124,7 +133,7 @@ Frontend et backend sont servis depuis la même origine (proxy Vite en développ
 
 | Couche        | Fichier                                                               | Contenu                                                                                                                                       |
 | ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes        | `api/routes/auth.py`                                                  | Les cinq routes `/auth` ; pose et efface le cookie de refresh ; traduit les erreurs du domaine en `HTTPException`.                            |
+| Routes        | `api/routes/auth.py`                                                  | Les six routes `/auth` ; pose et efface le cookie de refresh ; traduit les erreurs du domaine en `HTTPException`.                             |
 | Dépendances   | `api/dependencies.py`                                                 | `get_auth_service` et `get_current_user` (token Bearer → `User`, sinon 401).                                                                  |
 | Schémas       | `schemas/auth.py`                                                     | `RegisterRequest`, `LoginRequest`, `TokenResponse`, `UserResponse`.                                                                           |
 | Service       | `services/auth.py`                                                    | `AuthService` : inscription, connexion, rafraîchissement avec rotation et détection de vol, déconnexion. Possède les transactions (`commit`). |
@@ -152,14 +161,15 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 
 ### Frontend (`frontend/src/`)
 
-| Fichier                                         | Contenu                                                                                                                                                                                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/client.ts`                                 | Access token en mémoire (`setAccessToken`), middleware qui ajoute `Authorization` et, sur une `401`, rafraîchit **une seule fois** (mutualisé entre requêtes simultanées) puis renvoie la requête ; `getFieldErrors` pour les messages 422. |
-| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restaure la session au chargement) et les hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                         |
-| `auth/RequireAuth.tsx`                          | Garde des routes : chargement, erreur, redirection vers `/login` (en mémorisant la page demandée) ou page privée.                                                                                                                           |
-| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Formulaires avec champs étiquetés, erreurs par champ, message du backend, bouton désactivé pendant l'envoi.                                                                                                                                 |
-| `components/TextField.tsx`                      | Champ étiqueté dont l'erreur est reliée par `aria-describedby`.                                                                                                                                                                             |
-| `App.tsx`                                       | Routes (`react-router`) : `/login`, `/register`, `/` privée, chemins inconnus redirigés vers `/`.                                                                                                                                           |
+| Fichier                                         | Contenu                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `api/client.ts`                                 | Access token en mémoire (`setAccessToken`), middleware qui ajoute `Authorization` et, sur une `401`, rafraîchit **une seule fois** (mutualisé entre requêtes simultanées) puis renvoie la requête ; `getFieldErrors` pour les messages 422.                              |
+| `api/auth.ts`                                   | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restaure la session au chargement) et les hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                                      |
+| `auth/RequireAuth.tsx`                          | Garde des routes : chargement, erreur, redirection vers `/login` (en mémorisant la page demandée) ou page privée.                                                                                                                                                        |
+| `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` | Formulaires avec champs étiquetés, erreurs par champ, message du backend, bouton désactivé pendant l'envoi.                                                                                                                                                              |
+| `components/TextField.tsx`                      | Champ étiqueté dont l'erreur est reliée par `aria-describedby`.                                                                                                                                                                                                          |
+| `components/DeleteAccountDialog.tsx`            | Bouton « Supprimer mon compte » et `<dialog>` natif (ouvert avec `showModal()` : le navigateur y piège le focus et le ferme avec Échap), qui demande le mot de passe. En cas de succès, la session et le cache des requêtes sont vidés et l'utilisateur va sur `/login`. |
+| `App.tsx`                                       | Routes (`react-router`) : `/login`, `/register`, `/` privée, chemins inconnus redirigés vers `/`.                                                                                                                                                                        |
 
 L'utilisateur courant est un **état serveur**, conservé dans le cache TanStack Query sous `['auth', 'me']` : pas de contexte React séparé. La connexion et l'inscription rafraîchissent cette entrée ; la déconnexion vide tout le cache.
 
@@ -167,4 +177,4 @@ Masquer des pages dans le frontend n'est qu'un confort : la vraie protection est
 
 ### Tests
 
-Décrits dans le [guide des tests](testing.fr.md) : `tests/test_security.py`, `tests/integration/test_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx` et `src/pages/*.test.tsx` (frontend).
+Décrits dans le [guide des tests](testing.fr.md) : `tests/test_security.py`, `tests/integration/test_auth.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` et `src/components/DeleteAccountDialog.test.tsx` (frontend).

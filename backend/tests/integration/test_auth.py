@@ -224,3 +224,59 @@ def test_refresh_cookie_attributes(client: TestClient):
     assert set_cookie.startswith("refresh_token=")
     for attribute in ("HttpOnly", "Secure", "SameSite=strict", "Path=/api/auth", "Max-Age=2592000"):
         assert attribute in set_cookie
+
+
+def delete_account(client: TestClient, access_token: str, password: str):
+    # TestClient.delete n'accepte pas de corps : on passe par request()
+    return client.request(
+        "DELETE", "/auth/me", json={"password": password}, headers=bearer(access_token)
+    )
+
+
+def test_delete_account_removes_the_user_and_its_sessions(
+    auth_client: TestClient, db_session: Session
+):
+    access_token = register(auth_client)
+    refresh_token = auth_client.cookies["refresh_token"]
+
+    response = delete_account(auth_client, access_token, PASSWORD)
+
+    assert response.status_code == 204
+    assert "refresh_token" not in auth_client.cookies
+    assert db_session.scalars(select(User)).all() == []
+    assert db_session.scalars(select(RefreshToken)).all() == []
+    # Plus aucune session ni connexion possible
+    assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
+    auth_client.cookies.set("refresh_token", refresh_token, path="/auth")
+    assert auth_client.post("/auth/refresh").status_code == 401
+    login = auth_client.post(
+        "/auth/login", json={"email": "alice@example.com", "password": PASSWORD}
+    )
+    assert login.status_code == 401
+
+
+def test_delete_account_requires_the_right_password(auth_client: TestClient, db_session: Session):
+    access_token = register(auth_client)
+
+    response = delete_account(auth_client, access_token, "wrong password")
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Mot de passe incorrect"}
+    assert db_session.scalars(select(User)).one().email == "alice@example.com"
+
+
+def test_delete_account_requires_an_access_token(auth_client: TestClient):
+    register(auth_client)
+
+    response = auth_client.request("DELETE", "/auth/me", json={"password": PASSWORD})
+
+    assert response.status_code == 401
+
+
+def test_delete_account_requires_a_password(auth_client: TestClient):
+    access_token = register(auth_client)
+
+    response = auth_client.request("DELETE", "/auth/me", json={}, headers=bearer(access_token))
+
+    assert response.status_code == 422
+    assert [error["field"] for error in response.json()["errors"]] == ["body.password"]
