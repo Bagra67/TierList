@@ -5,6 +5,12 @@ export const en: Translation = {
     loading: 'Loading…',
     backendUnreachable: 'Cannot reach the backend: is it running?',
     language: 'Language',
+    theme: 'Theme',
+  },
+  theme: {
+    system: 'System',
+    light: 'Light',
+    dark: 'Dark',
   },
   auth: {
     email: 'Email',

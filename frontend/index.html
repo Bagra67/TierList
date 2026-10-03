@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TierList</title>
+    <script>
+      // Applique le thème avant le chargement de l'application, pour éviter un flash clair en mode
+      // sombre. Même logique que src/theme/index.ts ; la clé doit rester égale à THEME_STORAGE_KEY.
+      (function () {
+        let theme = null;
+        try {
+          theme = localStorage.getItem('tierlist.theme');
+        } catch {
+          // stockage indisponible : thème du système
+        }
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || (theme !== 'light' && systemDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

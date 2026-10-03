@@ -5,6 +5,12 @@ export const fr = {
     loading: 'Chargement…',
     backendUnreachable: 'Impossible de joindre le backend : est-il lancé ?',
     language: 'Langue',
+    theme: 'Thème',
+  },
+  theme: {
+    system: 'Système',
+    light: 'Clair',
+    dark: 'Sombre',
   },
   auth: {
     email: 'Email',
