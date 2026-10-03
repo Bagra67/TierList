@@ -99,15 +99,16 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
-│   ├── components/         # Reusable components (TextField, DeleteAccountDialog, GoogleSignInLink)
-│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, messages.ts
-│   ├── errors/apiError.ts  # ApiError and getFieldErrors (+ tests)
+│   ├── components/         # Reusable components (Layout, LanguageSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink)
+│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts
+│   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
+│   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage) + tests
 │   ├── test/
-│   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup)
+│   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
 │   │   ├── renderWithQueryClient.tsx # render() inside a fresh QueryClient
 │   │   └── stubBackend.ts  # Fake backend replacing fetch, route by route
-│   ├── App.tsx             # Routes (react-router)
+│   ├── App.tsx             # Routes (react-router), inside the shared Layout
 │   ├── App.test.tsx        # Routing tests: redirection, session restore, logout
 │   └── main.tsx            # React entry point
 ├── eslint.config.js
@@ -148,7 +149,7 @@ Server data goes through **TanStack Query** on top of a shared **openapi-fetch**
 Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, and the backend `detail` as `message`) is thrown for any non-2xx response. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, the API `code` and `params`, and the backend `detail` as `message`) is thrown for any non-2xx response. Components display `translateError(t, error)`, never `error.message`. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
 - `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
 - TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
 
@@ -175,3 +176,19 @@ In tests, render components with `renderWithQueryClient` (`src/test/`) and stub 
 ### Authenticated requests
 
 `apiClient` adds the access token (kept in memory) to every request. When a request gets a `401`, it refreshes the token once through `POST /auth/refresh` (refresh cookie) and retries the request; concurrent requests share the same refresh. Nothing to do in a new `api/<resource>.ts`. The current user is read with `useCurrentUser()`, and private pages are placed under the `RequireAuth` route in `App.tsx`. Details: [authentication guide](../docs/authentication.md).
+
+---
+
+## 9. Translations
+
+Every displayed text goes through `t()` from `react-i18next`, and the interface is available in French and English (language switcher in the header of every page):
+
+```tsx
+const { t } = useTranslation();
+return <h1>{t('auth.login.title')}</h1>;
+```
+
+- Texts live in `src/i18n/locales/fr.ts` (reference) and `en.ts`; a missing or extra key in `en.ts` is a `pnpm typecheck` error, and `t('…')` keys are type-checked too.
+- API errors are translated from their code: `translateError(t, error)` and `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
+
+How it works and how to add a text, an error code or a language: [i18n guide](../docs/i18n.md).
