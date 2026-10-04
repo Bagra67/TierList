@@ -64,10 +64,10 @@ L'API renvoie un **code** d'erreur (voir [le format d'erreur](../backend/README.
 
 Pourquoi ce partage :
 
-- L'**access token** est vérifié par sa signature et son expiration, puis avec l'utilisateur chargé pour la requête : son claim `ver` doit être égal à `users.token_version`. La déconnexion, la réinitialisation du mot de passe et la prise de contrôle par Google incrémentent ce compteur, ce qui refuse d'un coup **tous les access tokens déjà émis** pour le compte. Les autres appareils du compte reçoivent une `401`, rafraîchissent leur session (si leur refresh token est encore valable) et continuent. Il n'est jamais écrit dans `localStorage`, lisible par n'importe quel script injecté.
+- L'**access token** est vérifié par sa signature et son expiration, puis avec l'utilisateur chargé pour la requête : son claim `token_version` doit être égal à `users.token_version`. La déconnexion, la réinitialisation du mot de passe et la prise de contrôle par Google incrémentent ce compteur, ce qui refuse d'un coup **tous les access tokens déjà émis** pour le compte. Les autres appareils du compte reçoivent une `401`, rafraîchissent leur session (si leur refresh token est encore valable) et continuent. Il n'est jamais écrit dans `localStorage`, lisible par n'importe quel script injecté.
 - Le **refresh token** est illisible par JavaScript (`HttpOnly`) et n'est stocké côté serveur **que sous forme de hash SHA-256**. Comme il est en base, il peut être **révoqué** : la déconnexion et la détection de vol prennent effet immédiatement, ce qu'un JWT seul ne permet pas.
 
-Claims de l'access token : `sub` (identifiant de l'utilisateur), `type` (`access`), `iat`, `exp`, `auth_time` (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre ; sert à exiger une connexion récente pour les actions sensibles), `ver` (`users.token_version` à l'émission). Un token sans `ver` (émis avant son ajout) est refusé : le frontend rafraîchit la session.
+Claims de l'access token : `sub` (identifiant de l'utilisateur), `type` (`access`), `iat`, `exp`, `auth_time` (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre ; sert à exiger une connexion récente pour les actions sensibles), `token_version` (`users.token_version` à l'émission). Un token sans `token_version` (émis avant son ajout) est refusé : le frontend rafraîchit la session.
 
 ### Rotation des refresh tokens et détection de vol
 

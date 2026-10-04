@@ -30,8 +30,8 @@ class User(Base):
     verification_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Dernier email de réinitialisation du mot de passe envoyé : limite la fréquence des envois
     password_reset_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # Copié dans chaque access token (claim « ver ») ; l'incrémenter refuse tous les access
-    # tokens déjà émis (déconnexion, nouveau mot de passe…)
+    # Copié dans chaque access token (claim « token_version ») ; l'incrémenter refuse tous les
+    # access tokens déjà émis (déconnexion, nouveau mot de passe…)
     token_version: Mapped[int] = mapped_column(default=0, server_default=text("0"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

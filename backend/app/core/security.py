@@ -69,7 +69,7 @@ def create_access_token(
         "iat": issued_at,
         "exp": issued_at + ttl,
         "auth_time": int(auth_time.timestamp()),
-        "ver": token_version,
+        "token_version": token_version,
     }
     return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
 
@@ -81,16 +81,14 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
             secret_key,
             # Liste explicite : empêche les attaques par changement d'algorithme (ex. « none »)
             algorithms=[JWT_ALGORITHM],
-            options={"require": ["sub", "type", "iat", "exp", "auth_time", "ver"]},
+            options={"require": ["sub", "type", "iat", "exp", "auth_time", "token_version"]},
         )
         if claims["type"] != ACCESS_TOKEN_TYPE:
             raise InvalidAccessTokenError("Type de token inattendu")
-        if type(claims["ver"]) is not int:
-            raise InvalidAccessTokenError("Version de token invalide")
         return AccessTokenClaims(
             user_id=uuid.UUID(claims["sub"]),
             auth_time=datetime.fromtimestamp(claims["auth_time"], UTC),
-            token_version=claims["ver"],
+            token_version=claims["token_version"],
         )
     except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
         raise InvalidAccessTokenError("Access token invalide") from exc

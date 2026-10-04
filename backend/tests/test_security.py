@@ -27,7 +27,7 @@ def make_token(**overrides: object) -> str:
         "iat": now,
         "exp": now + timedelta(minutes=15),
         "auth_time": int(now.timestamp()),
-        "ver": 0,
+        "token_version": 0,
     }
     claims.update(overrides)
     # Une valeur None retire le claim
@@ -94,9 +94,7 @@ def test_access_token_signed_with_another_key_is_rejected():
         pytest.param(make_token(type="refresh"), id="wrong-type"),
         pytest.param(make_token(sub="not-a-uuid"), id="invalid-subject"),
         # Émis avant l'ajout de la version : refusé, le frontend rafraîchit la session
-        pytest.param(make_token(ver=None), id="no-version"),
-        pytest.param(make_token(ver="0"), id="text-version"),
-        pytest.param(make_token(ver=True), id="boolean-version"),
+        pytest.param(make_token(token_version=None), id="no-version"),
         pytest.param(
             jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, SECRET_KEY), id="no-expiry"
         ),

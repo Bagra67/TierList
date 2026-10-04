@@ -64,10 +64,10 @@ The API returns an error **code** (see [the error format](../backend/README.md#1
 
 Why this split:
 
-- The **access token** is checked by its signature and expiry, then against the user loaded for the request: its `ver` claim must equal `users.token_version`. Sign-out, a password reset and a Google takeover increment that counter, which refuses **every access token already issued** for the account at once. The account's other devices get a `401`, refresh their session (if their refresh token is still valid) and go on. It is never written to `localStorage`, which any injected script could read.
+- The **access token** is checked by its signature and expiry, then against the user loaded for the request: its `token_version` claim must equal `users.token_version`. Sign-out, a password reset and a Google takeover increment that counter, which refuses **every access token already issued** for the account at once. The account's other devices get a `401`, refresh their session (if their refresh token is still valid) and go on. It is never written to `localStorage`, which any injected script could read.
 - The **refresh token** cannot be read by JavaScript (`HttpOnly`) and is stored server-side **as a SHA-256 hash only**. Because it lives in the database, it can be **revoked**: sign-out and theft detection work immediately, which a JWT alone cannot do.
 
-Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used to require a recent sign-in for sensitive actions), `ver` (`users.token_version` when issued). A token without `ver` (issued before it existed) is refused: the frontend refreshes the session.
+Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used to require a recent sign-in for sensitive actions), `token_version` (`users.token_version` when issued). A token without `token_version` (issued before it existed) is refused: the frontend refreshes the session.
 
 ### Refresh token rotation and theft detection
 

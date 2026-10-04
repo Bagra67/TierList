@@ -83,7 +83,7 @@ def normalize_email(email: str) -> str:
 
 
 def _revoke_access_tokens(user: User) -> None:
-    """Refuse tous les access tokens déjà émis pour l'utilisateur (claim « ver » dépassé).
+    """Refuse tous les access tokens déjà émis pour l'utilisateur (claim « token_version » dépassé).
 
     Ses autres appareils reçoivent une 401 et rafraîchissent leur session, si leur refresh
     token est encore valable.
