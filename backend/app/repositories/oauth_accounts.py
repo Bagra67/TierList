@@ -17,3 +17,5 @@ def get_user_by_oauth_account(
 
 def add_oauth_account(session: Session, oauth_account: OAuthAccount) -> None:
     session.add(oauth_account)
+    # Flush : déclenche tout de suite la contrainte d'unicité (provider, provider_subject)
+    session.flush()

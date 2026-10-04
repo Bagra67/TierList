@@ -191,6 +191,8 @@ sequenceDiagram
 
 Cases 2 and 3 require `email_verified` from Google: otherwise anyone could take over an existing account, or reserve someone else's address.
 
+Two **simultaneous first sign-ins** (double click, two tabs) can both reach case 2 or 3. The uniqueness constraints (`users.email`, `oauth_accounts` `(provider, provider_subject)`) let only one of them write; the other one is rolled back and tried again once, and then finds the account in case 1 or 2.
+
 **Why the password of an unconfirmed account is removed**: without it, someone could register with the Gmail address of another person, before her, and choose the password. When the real owner later signs in with Google, her Google identity would be linked to that account, whose password the other person knows: both would share the account (_pre-account takeover_). Google proves who owns the address, so the password set by someone else, and the sessions opened with it, are dropped. A real owner who had registered with a password can still sign in with Google. Identities are stored in the `oauth_accounts` table (`provider`, `provider_subject`, unique together).
 
 **Setting up Google** (Google Cloud Console → APIs & Services → Credentials):
