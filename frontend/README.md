@@ -79,6 +79,8 @@ It happens automatically in two places:
 - **On save in VS Code**: Prettier formatting + ESLint fixes. Install the recommended extensions (VS Code suggests them when opening the `TierList` folder): ESLint and Prettier.
 - **Before each commit**: the husky hook runs `lint-staged`, which fixes and formats the modified files. If an ESLint error cannot be fixed automatically, the commit is blocked.
 
+ESLint also checks **accessibility** with `eslint-plugin-jsx-a11y-x` (`recommended` rules): text alternatives (`alt`), labels, valid ARIA roles and attributes, keyboard support of clickable elements. It is the maintained fork of `eslint-plugin-jsx-a11y`, with the same rules, chosen because the original does not support ESLint 10. It finds what can be seen in the code; focus, contrast and screen reader behavior still need a check in the browser.
+
 Configuration: `eslint.config.js`, `.prettierrc`, `.prettierignore`, `lint-staged` section of `package.json`.
 
 `pnpm format` and `pnpm format:check` also cover the repository's `docs/` folder, with the same `.prettierrc` (CI checks it too). The pre-commit hook does not format `docs/`: run `pnpm format` before committing a doc change.

@@ -79,6 +79,8 @@ C'est automatique à deux endroits :
 - **À l'enregistrement dans VS Code** : formatage Prettier + corrections ESLint. Installez les extensions recommandées (VS Code les propose à l'ouverture du dossier `TierList`) : ESLint et Prettier.
 - **Avant chaque commit** : le hook husky lance `lint-staged`, qui corrige et formate les fichiers modifiés. Si une erreur ESLint ne peut pas être corrigée automatiquement, le commit est bloqué.
 
+ESLint vérifie aussi l'**accessibilité** avec `eslint-plugin-jsx-a11y-x` (règles `recommended`) : textes alternatifs (`alt`), labels, rôles et attributs ARIA valides, utilisation au clavier des éléments cliquables. C'est le fork maintenu d'`eslint-plugin-jsx-a11y`, avec les mêmes règles, choisi car l'original ne prend pas en charge ESLint 10. Il repère ce qui se voit dans le code ; le focus, le contraste et le comportement avec un lecteur d'écran restent à vérifier dans le navigateur.
+
 Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
 
 `pnpm format` et `pnpm format:check` couvrent aussi le dossier `docs/` du dépôt, avec le même `.prettierrc` (la CI le vérifie aussi). Le hook pre-commit ne formate pas `docs/` : lancez `pnpm format` avant de commiter une modification de doc.
