@@ -284,6 +284,10 @@ The same file is read by the PostgreSQL container: changing the password **after
 
 Models must inherit from `app.db.base.Base` and be imported by `migrations/env.py` to be detected by `--autogenerate`. **Always review** a generated migration before applying it.
 
+Constraint and index names follow the naming convention of `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…): a migration can refer to them by name without guessing what PostgreSQL chose.
+
+`tests/integration/test_migrations.py` fails when the models and the migrations no longer describe the same schema, or when a migration cannot be rolled back.
+
 ---
 
 ## 10. Logging
