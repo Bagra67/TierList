@@ -19,11 +19,11 @@ import {
 import type { components } from './schema';
 
 // La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
-export type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
+type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
-export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 // Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
 // Google puis, au retour, vers le frontend avec le cookie de session posé.
@@ -32,7 +32,7 @@ export function googleSignInUrl(next?: GoogleNextStep): string {
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 
-export async function register(body: RegisterRequest): Promise<void> {
+async function register(body: RegisterRequest): Promise<void> {
   const data = dataOrThrow(
     await apiClient.POST('/auth/register', { body: { ...body, language: currentLanguage() } }),
   );
@@ -57,12 +57,12 @@ export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
 
 // Confirme l'adresse avec le token du lien reçu par email (sans session : le lien peut être
 // ouvert dans un autre navigateur)
-export async function verifyEmail(token: string): Promise<void> {
+async function verifyEmail(token: string): Promise<void> {
   throwIfError(await apiClient.POST('/auth/email/verify', { body: { token } }));
 }
 
 // Renvoie l'email de vérification ; le backend l'ignore si le précédent est trop récent
-export async function requestEmailVerification(): Promise<void> {
+async function requestEmailVerification(): Promise<void> {
   throwIfError(
     await apiClient.POST('/auth/email/verification', {
       body: { language: currentLanguage() },
@@ -71,7 +71,7 @@ export async function requestEmailVerification(): Promise<void> {
 }
 
 // Demande un lien de réinitialisation ; le backend répond pareil que le compte existe ou non
-export async function forgotPassword(email: string): Promise<void> {
+async function forgotPassword(email: string): Promise<void> {
   throwIfError(
     await apiClient.POST('/auth/password/forgot', {
       body: { email, language: currentLanguage() },
@@ -80,7 +80,7 @@ export async function forgotPassword(email: string): Promise<void> {
 }
 
 // Choisit un nouveau mot de passe avec le token du lien reçu ; le backend ferme toutes les sessions
-export async function resetPassword(body: ResetPasswordRequest): Promise<void> {
+async function resetPassword(body: ResetPasswordRequest): Promise<void> {
   throwIfError(await apiClient.POST('/auth/password/reset', { body }));
 }
 

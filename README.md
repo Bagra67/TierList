@@ -146,6 +146,7 @@ Manual commands:
 | Fix              | `uv run ruff check . --fix` | `pnpm lint:fix`          |
 | Format           | `uv run ruff format .`      | `pnpm format`            |
 | Types            | `uv run pyright`            | `pnpm typecheck`         |
+| Unused code      | —                           | `pnpm knip`              |
 | Tests            | `uv run pytest`             | `pnpm test`              |
 | Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
@@ -158,7 +159,7 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 | Job          | Steps                                                                                                   |
 | ------------ | ------------------------------------------------------------------------------------------------------- |
 | **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest with coverage, production build       |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                     |
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/testing.md](docs/testing.md#31-test-report-on-ci).
