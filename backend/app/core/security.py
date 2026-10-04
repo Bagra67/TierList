@@ -36,6 +36,8 @@ class AccessTokenClaims:
     user_id: uuid.UUID
     # Heure de la dernière vraie connexion (mot de passe), conservée à travers les rafraîchissements
     auth_time: datetime
+    # users.token_version à l'émission : le token ne vaut plus rien une fois ce compteur incrémenté
+    token_version: int
 
 
 def hash_password(password: str) -> str:
@@ -55,6 +57,7 @@ def create_access_token(
     *,
     user_id: uuid.UUID,
     auth_time: datetime,
+    token_version: int,
     secret_key: str,
     ttl: timedelta,
     now: datetime | None = None,
@@ -66,6 +69,7 @@ def create_access_token(
         "iat": issued_at,
         "exp": issued_at + ttl,
         "auth_time": int(auth_time.timestamp()),
+        "ver": token_version,
     }
     return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
 
@@ -77,13 +81,16 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
             secret_key,
             # Liste explicite : empêche les attaques par changement d'algorithme (ex. « none »)
             algorithms=[JWT_ALGORITHM],
-            options={"require": ["sub", "type", "iat", "exp", "auth_time"]},
+            options={"require": ["sub", "type", "iat", "exp", "auth_time", "ver"]},
         )
         if claims["type"] != ACCESS_TOKEN_TYPE:
             raise InvalidAccessTokenError("Type de token inattendu")
+        if type(claims["ver"]) is not int:
+            raise InvalidAccessTokenError("Version de token invalide")
         return AccessTokenClaims(
             user_id=uuid.UUID(claims["sub"]),
             auth_time=datetime.fromtimestamp(claims["auth_time"], UTC),
+            token_version=claims["ver"],
         )
     except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
         raise InvalidAccessTokenError("Access token invalide") from exc

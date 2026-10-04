@@ -86,7 +86,8 @@ def test_asking_again_too_soon_sends_nothing(auth_client: TestClient, sent_email
 def test_reset_replaces_the_password_and_closes_every_session(
     auth_client: TestClient, sent_emails: list[Email]
 ):
-    register(auth_client)
+    registration = auth_client.post("/auth/register", json=REGISTRATION)
+    old_access_token = registration.json()["access_token"]
     old_refresh_token = auth_client.cookies["refresh_token"]
     forgot(auth_client)
     token = link_token(reset_emails(sent_emails)[0])
@@ -102,6 +103,9 @@ def test_reset_replaces_the_password_and_closes_every_session(
     auth_client.cookies.clear()
     auth_client.cookies.set("refresh_token", old_refresh_token)
     assert auth_client.post("/auth/refresh").status_code == 401
+    # Son access token est refusé tout de suite, sans attendre son expiration
+    old_bearer = {"Authorization": f"Bearer {old_access_token}"}
+    assert auth_client.get("/auth/me", headers=old_bearer).status_code == 401
 
 
 def test_reset_confirms_the_email_address(

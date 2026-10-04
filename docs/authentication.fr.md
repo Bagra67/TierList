@@ -64,10 +64,10 @@ L'API renvoie un **code** d'erreur (voir [le format d'erreur](../backend/README.
 
 Pourquoi ce partage :
 
-- L'**access token** est vérifié sans requête en base (signature et expiration). Comme il est court, un token volé ne sert que 15 minutes au plus. Il n'est jamais écrit dans `localStorage`, lisible par n'importe quel script injecté.
+- L'**access token** est vérifié par sa signature et son expiration, puis avec l'utilisateur chargé pour la requête : son claim `ver` doit être égal à `users.token_version`. La déconnexion, la réinitialisation du mot de passe et la prise de contrôle par Google incrémentent ce compteur, ce qui refuse d'un coup **tous les access tokens déjà émis** pour le compte. Les autres appareils du compte reçoivent une `401`, rafraîchissent leur session (si leur refresh token est encore valable) et continuent. Il n'est jamais écrit dans `localStorage`, lisible par n'importe quel script injecté.
 - Le **refresh token** est illisible par JavaScript (`HttpOnly`) et n'est stocké côté serveur **que sous forme de hash SHA-256**. Comme il est en base, il peut être **révoqué** : la déconnexion et la détection de vol prennent effet immédiatement, ce qu'un JWT seul ne permet pas.
 
-Claims de l'access token : `sub` (identifiant de l'utilisateur), `type` (`access`), `iat`, `exp`, `auth_time` (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre ; servira à exiger une connexion récente pour les actions sensibles).
+Claims de l'access token : `sub` (identifiant de l'utilisateur), `type` (`access`), `iat`, `exp`, `auth_time` (heure de la connexion d'origine, conservée d'un rafraîchissement à l'autre ; sert à exiger une connexion récente pour les actions sensibles), `ver` (`users.token_version` à l'émission). Un token sans `ver` (émis avant son ajout) est refusé : le frontend rafraîchit la session.
 
 ### Rotation des refresh tokens et détection de vol
 
@@ -110,7 +110,7 @@ Toutes les durées et règles qui peuvent changer selon l'environnement sont lue
 | `POST /auth/register`                        | — (`language` facultatif : langue de l'email)            | `201` `TokenResponse` + cookie de refresh ; email de confirmation envoyé                                                         | `409`, `422`                                                                |
 | `POST /auth/login`                           | —                                                        | `200` `TokenResponse` + cookie de refresh                                                                                        | `401`, `422`                                                                |
 | `POST /auth/refresh`                         | cookie de refresh                                        | `200` `TokenResponse` + nouveau cookie de refresh                                                                                | `401` (cookie effacé)                                                       |
-| `POST /auth/logout`                          | cookie de refresh (facultatif)                           | `204`, famille révoquée, cookie effacé                                                                                           | —                                                                           |
+| `POST /auth/logout`                          | cookie de refresh (facultatif)                           | `204`, famille révoquée, access tokens refusés, cookie effacé                                                                    | —                                                                           |
 | `GET /auth/me`                               | Bearer                                                   | `200` `UserResponse`                                                                                                             | `401` (`WWW-Authenticate: Bearer`)                                          |
 | `POST /auth/email/verification`              | Bearer + `{language}`                                    | `204` ; email renvoyé, sauf si l'adresse est confirmée ou si le précédent email est trop récent                                  | `401`                                                                       |
 | `POST /auth/email/verify`                    | — + `{token}`                                            | `204`, adresse confirmée (une deuxième utilisation ne change rien)                                                               | `400` `invalid_token`, `422`                                                |
@@ -144,7 +144,7 @@ Frontend et backend sont servis depuis la même origine (proxy Vite en développ
 
 - **Même réponse pour tous** : `POST /auth/password/forgot` répond `204` qu'un compte utilise l'adresse ou non, et l'email part en tâche de fond : ni la réponse ni sa durée ne révèlent qui est inscrit. La page affiche un message neutre (« Si un compte existe pour cette adresse… »).
 - **Lien** : `{FRONTEND_BASE_URL}/reset-password?token=<JWT>`. Le JWT (type `password_reset`) contient l'identifiant de l'utilisateur et une **empreinte du mot de passe actuel** (HMAC-SHA256 du hash avec `JWT_SECRET_KEY`, tronqué). Dès que le mot de passe change, l'empreinte ne correspond plus : le lien **ne sert qu'une fois**, et tous les liens plus anciens deviennent inutilisables, sans rien stocker. Il est valable `PASSWORD_RESET_TTL_MINUTES` (30 min).
-- **Après la réinitialisation** : le nouveau mot de passe suit les règles habituelles (`PASSWORD_MIN_LENGTH`) ; **toutes les sessions du compte sont fermées** (l'ancien mot de passe a pu être volé), y compris celle du navigateur utilisé, qui oublie sa session ; l'adresse devient confirmée, puisque ouvrir le lien prouve qu'on la possède.
+- **Après la réinitialisation** : le nouveau mot de passe suit les règles habituelles (`PASSWORD_MIN_LENGTH`) ; **toutes les sessions du compte sont fermées** et ses access tokens refusés (l'ancien mot de passe a pu être volé), y compris celle du navigateur utilisé, qui oublie sa session ; l'adresse devient confirmée, puisque ouvrir le lien prouve qu'on la possède.
 - **Compte sans mot de passe** (créé avec Google) : le même parcours définit un mot de passe ; le compte garde sa connexion Google.
 - **Fréquence** : au plus un email de réinitialisation toutes les `EMAIL_COOLDOWN_SECONDS` par compte (`users.password_reset_email_sent_at`) ; une demande trop rapprochée est ignorée, avec la même réponse.
 
@@ -217,7 +217,6 @@ Sans ces deux variables, le lien « Continuer avec Google » ramène sur `/login
 ### Limites connues
 
 - **Plusieurs onglets qui restaurent la session au même instant** (ex. réouverture du navigateur avec beaucoup d'onglets) peuvent présenter deux fois le même refresh token. Le second est traité comme un vol et la session est fermée : l'utilisateur se reconnecte. Dans un même onglet, les rafraîchissements sont mutualisés, donc cela ne peut pas arriver.
-- Un access token reste valide jusqu'à son expiration (15 min) même après la déconnexion ; seul son renouvellement est bloqué.
 
 ## 3. Dans le code
 

@@ -82,6 +82,15 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
+def _revoke_access_tokens(user: User) -> None:
+    """Refuse tous les access tokens déjà émis pour l'utilisateur (claim « ver » dépassé).
+
+    Ses autres appareils reçoivent une 401 et rafraîchissent leur session, si leur refresh
+    token est encore valable.
+    """
+    user.token_version += 1
+
+
 def _display_name(identity: GoogleIdentity) -> str:
     # Nom du profil Google, sinon la partie de l'email avant « @ », tronqué à la longueur maximale
     name = (identity.name or "").strip() or identity.email.split("@")[0]
@@ -188,6 +197,7 @@ class AuthService:
             refresh_token_repository.revoke_user_refresh_tokens(
                 self._session, user.id, revoked_at=now
             )
+            _revoke_access_tokens(user)
             logger.info(
                 "Identité Google liée à un compte non vérifié, mot de passe retiré : user_id=%s",
                 user.id,
@@ -249,6 +259,9 @@ class AuthService:
         refresh_token_repository.revoke_refresh_token_family(
             self._session, stored.family_id, revoked_at=datetime.now(UTC)
         )
+        user = user_repository.get_user_by_id(self._session, stored.user_id)
+        if user is not None:
+            _revoke_access_tokens(user)
         self._session.commit()
 
     def request_email_verification(self, user: User, language: Language) -> Email | None:
@@ -337,6 +350,7 @@ class AuthService:
             user.email_verified_at = now
         # Le mot de passe a pu être volé : les sessions ouvertes avec lui sont fermées
         refresh_token_repository.revoke_user_refresh_tokens(self._session, user.id, revoked_at=now)
+        _revoke_access_tokens(user)
         self._session.commit()
         logger.info("Mot de passe réinitialisé, sessions fermées : user_id=%s", user.id)
 
@@ -360,7 +374,8 @@ class AuthService:
         logger.info("Compte supprimé : user_id=%s", user_id)
 
     def authenticate_access_token(self, access_token: str) -> AuthenticatedSession | None:
-        """Session de l'access token, ou None si l'utilisateur n'existe plus.
+        """Session de l'access token, ou None si l'utilisateur n'existe plus ou si le token a
+        été révoqué depuis son émission (déconnexion, nouveau mot de passe…).
 
         Lève InvalidAccessTokenError si le token est invalide.
         """
@@ -368,7 +383,7 @@ class AuthService:
             access_token, secret_key=self._settings.jwt_secret_key.get_secret_value()
         )
         user = user_repository.get_user_by_id(self._session, claims.user_id)
-        if user is None:
+        if user is None or claims.token_version != user.token_version:
             return None
         return AuthenticatedSession(user=user, auth_time=claims.auth_time)
 
@@ -421,6 +436,7 @@ class AuthService:
         access_token = create_access_token(
             user_id=user.id,
             auth_time=authenticated_at,
+            token_version=user.token_version,
             secret_key=self._settings.jwt_secret_key.get_secret_value(),
             ttl=access_ttl,
             now=now,

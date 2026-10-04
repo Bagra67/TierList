@@ -27,8 +27,11 @@ def make_token(**overrides: object) -> str:
         "iat": now,
         "exp": now + timedelta(minutes=15),
         "auth_time": int(now.timestamp()),
+        "ver": 0,
     }
     claims.update(overrides)
+    # Une valeur None retire le claim
+    claims = {name: value for name, value in claims.items() if value is not None}
     return jwt.encode(claims, SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
@@ -45,18 +48,24 @@ def test_access_token_round_trip():
     auth_time = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
 
     token = create_access_token(
-        user_id=user_id, auth_time=auth_time, secret_key=SECRET_KEY, ttl=timedelta(minutes=15)
+        user_id=user_id,
+        auth_time=auth_time,
+        token_version=3,
+        secret_key=SECRET_KEY,
+        ttl=timedelta(minutes=15),
     )
     claims = decode_access_token(token, secret_key=SECRET_KEY)
 
     assert claims.user_id == user_id
     assert claims.auth_time == auth_time
+    assert claims.token_version == 3
 
 
 def test_expired_access_token_is_rejected():
     token = create_access_token(
         user_id=uuid.uuid4(),
         auth_time=datetime.now(UTC),
+        token_version=0,
         secret_key=SECRET_KEY,
         ttl=timedelta(minutes=15),
         now=datetime.now(UTC) - timedelta(hours=1),
@@ -70,6 +79,7 @@ def test_access_token_signed_with_another_key_is_rejected():
     token = create_access_token(
         user_id=uuid.uuid4(),
         auth_time=datetime.now(UTC),
+        token_version=0,
         secret_key=OTHER_SECRET_KEY,
         ttl=timedelta(minutes=15),
     )
@@ -83,6 +93,10 @@ def test_access_token_signed_with_another_key_is_rejected():
     [
         pytest.param(make_token(type="refresh"), id="wrong-type"),
         pytest.param(make_token(sub="not-a-uuid"), id="invalid-subject"),
+        # Émis avant l'ajout de la version : refusé, le frontend rafraîchit la session
+        pytest.param(make_token(ver=None), id="no-version"),
+        pytest.param(make_token(ver="0"), id="text-version"),
+        pytest.param(make_token(ver=True), id="boolean-version"),
         pytest.param(
             jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, SECRET_KEY), id="no-expiry"
         ),
