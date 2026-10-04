@@ -9,6 +9,7 @@ import { ROUTES } from '../constants/routes';
 import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
+import { ErrorMessage } from './ErrorMessage';
 
 interface DeleteAccountDialogProps {
   user: User;
@@ -87,9 +88,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
             <p>{t('account.delete.googleLinked')}</p>
           )}
           {deleteMutation.isError && (
-            <p role="alert" className="text-destructive">
-              {translateError(t, deleteMutation.error)}
-            </p>
+            <ErrorMessage>{translateError(t, deleteMutation.error)}</ErrorMessage>
           )}
           {needsGoogleSignIn && (
             <p>

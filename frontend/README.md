@@ -98,7 +98,7 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/RequireAuth.tsx # Guard of the private routes (redirects to /login)
-│   ├── components/         # Reusable components (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
+│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
