@@ -9,7 +9,10 @@ from sqlalchemy import URL
 
 from app.services.email import Email
 
-BACKEND_DIR = Path(__file__).resolve().parents[2]
+# Dossier backend/ : le premier dossier parent qui contient alembic.ini
+BACKEND_DIR = next(
+    parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
+)
 
 
 def alembic_config(database_url: URL) -> Config:

@@ -4,7 +4,12 @@ from pathlib import Path
 
 from app.main import app
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# Racine du dépôt : le premier dossier parent qui contient à la fois backend/ et frontend/
+REPO_ROOT = next(
+    parent
+    for parent in Path(__file__).resolve().parents
+    if (parent / "backend").is_dir() and (parent / "frontend").is_dir()
+)
 
 
 def test_versions_are_in_sync():
