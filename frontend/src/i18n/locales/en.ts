@@ -10,6 +10,12 @@ export const en: Translation = {
   home: {
     title: 'Home',
   },
+  renderError: {
+    title: 'Something went wrong',
+    message:
+      'The page could not be displayed. Reload it; if the problem persists, try again later.',
+    reload: 'Reload the page',
+  },
   notFound: {
     title: 'Page not found',
     message: 'This page does not exist or no longer exists.',
