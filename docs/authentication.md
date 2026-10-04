@@ -64,10 +64,10 @@ The API returns an error **code** (see [the error format](../backend/README.md#1
 
 Why this split:
 
-- The **access token** is checked without a database query (signature + expiry). Being short-lived, a stolen one is useful for 15 minutes at most. It is never written to `localStorage`, which any injected script could read.
+- The **access token** is checked by its signature and expiry, then against the user loaded for the request: its `token_version` claim must equal `users.token_version`. Sign-out, a password reset and a Google takeover increment that counter, which refuses **every access token already issued** for the account at once. The account's other devices get a `401`, refresh their session (if their refresh token is still valid) and go on. It is never written to `localStorage`, which any injected script could read.
 - The **refresh token** cannot be read by JavaScript (`HttpOnly`) and is stored server-side **as a SHA-256 hash only**. Because it lives in the database, it can be **revoked**: sign-out and theft detection work immediately, which a JWT alone cannot do.
 
-Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used later to require a recent sign-in for sensitive actions).
+Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used to require a recent sign-in for sensitive actions), `token_version` (`users.token_version` when issued). A token without `token_version` (issued before it existed) is refused: the frontend refreshes the session.
 
 ### Refresh token rotation and theft detection
 
@@ -110,7 +110,7 @@ Every duration and rule that may change per environment is read from `backend/.e
 | `POST /auth/register`                        | — (`language` optional: language of the email)          | `201` `TokenResponse` + refresh cookie; confirmation email sent                                              | `409`, `422`                                                           |
 | `POST /auth/login`                           | —                                                       | `200` `TokenResponse` + refresh cookie                                                                       | `401`, `422`                                                           |
 | `POST /auth/refresh`                         | refresh cookie                                          | `200` `TokenResponse` + new refresh cookie                                                                   | `401` (cookie cleared)                                                 |
-| `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, cookie cleared                                                                        | —                                                                      |
+| `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, access tokens refused, cookie cleared                                                 | —                                                                      |
 | `GET /auth/me`                               | Bearer                                                  | `200` `UserResponse`                                                                                         | `401` (`WWW-Authenticate: Bearer`)                                     |
 | `POST /auth/email/verification`              | Bearer + `{language}`                                   | `204`; email sent again, unless the address is confirmed or the previous email is too recent                 | `401`                                                                  |
 | `POST /auth/email/verify`                    | — + `{token}`                                           | `204`, address confirmed (a second use changes nothing)                                                      | `400` `invalid_token`, `422`                                           |
@@ -144,7 +144,7 @@ Frontend and backend are served from the same origin (Vite proxy in development)
 
 - **Same answer for everyone**: `POST /auth/password/forgot` answers `204` whether an account uses the address or not, and the email is sent in the background, so neither the answer nor its duration reveals who is registered. The page shows a neutral message ("Si un compte existe pour cette adresse…").
 - **Link**: `{FRONTEND_BASE_URL}/reset-password?token=<JWT>`. The JWT (type `password_reset`) holds the user id and a **fingerprint of the current password** (HMAC-SHA256 of the hash with `JWT_SECRET_KEY`, truncated). As soon as the password changes, the fingerprint no longer matches: the link **works only once**, and every older link becomes useless, without storing anything. It is valid `PASSWORD_RESET_TTL_MINUTES` (30 min).
-- **After the reset**: the new password follows the usual rules (`PASSWORD_MIN_LENGTH`); **every session of the account is closed** (the old password may have been stolen), including the one of the browser in use, which forgets its session; the address becomes confirmed, since opening the link proves its ownership.
+- **After the reset**: the new password follows the usual rules (`PASSWORD_MIN_LENGTH`); **every session of the account is closed** and its access tokens are refused (the old password may have been stolen), including the one of the browser in use, which forgets its session; the address becomes confirmed, since opening the link proves its ownership.
 - **Account without password** (created with Google): the same flow sets a password; the account keeps its Google sign-in.
 - **Frequency**: at most one reset email every `EMAIL_COOLDOWN_SECONDS` per account (`users.password_reset_email_sent_at`); a request that comes too soon is ignored, with the same answer.
 
@@ -217,7 +217,6 @@ Without these two variables, the "Continuer avec Google" link leads back to `/lo
 ### Known limitations
 
 - **Several tabs restoring the session at the same moment** (e.g. reopening the browser with many tabs) can present the same refresh token twice. The second one is treated as a theft and the session is closed: the user signs in again. Within one tab, refreshes are shared so this cannot happen.
-- An access token stays valid until it expires (15 min) even after sign-out; only its renewal is blocked.
 
 ## 3. In the code
 

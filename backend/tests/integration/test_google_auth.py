@@ -217,7 +217,8 @@ def test_google_takes_over_an_unverified_account_and_drops_its_password(
 ):
     # Quelqu'un s'inscrit avec l'adresse Gmail d'Alice sans pouvoir la confirmer
     registration = {"email": "alice@gmail.com", "password": PASSWORD, "display_name": "Mallory"}
-    assert google_client.post("/auth/register", json=registration).status_code == 201
+    squatter = google_client.post("/auth/register", json=registration)
+    assert squatter.status_code == 201
     squatter_refresh_token = google_client.cookies["refresh_token"]
     google_client.cookies.clear()
 
@@ -236,6 +237,8 @@ def test_google_takes_over_an_unverified_account_and_drops_its_password(
     google_client.cookies.clear()
     google_client.cookies.set("refresh_token", squatter_refresh_token)
     assert google_client.post("/auth/refresh").status_code == 401
+    squatter_bearer = {"Authorization": f"Bearer {squatter.json()['access_token']}"}
+    assert google_client.get("/auth/me", headers=squatter_bearer).status_code == 401
     assert db_session.scalars(select(OAuthAccount)).one().user_id == (
         db_session.scalars(select(User)).one().id
     )
@@ -345,6 +348,7 @@ def google_only_access_token(db_session: Session, signed_in_ago: timedelta) -> s
     return create_access_token(
         user_id=user.id,
         auth_time=datetime.now(UTC) - signed_in_ago,
+        token_version=user.token_version,
         secret_key=get_settings().jwt_secret_key.get_secret_value(),
         ttl=timedelta(minutes=15),
     )

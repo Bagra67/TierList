@@ -115,6 +115,7 @@ def test_the_link_confirms_the_address_and_can_be_reused(
             lambda user: create_access_token(
                 user_id=user.id,
                 auth_time=user.created_at,
+                token_version=user.token_version,
                 secret_key=get_settings().jwt_secret_key.get_secret_value(),
                 ttl=timedelta(minutes=15),
             ),

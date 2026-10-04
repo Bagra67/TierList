@@ -266,6 +266,26 @@ def test_logout_revokes_the_session(auth_client: TestClient):
     assert auth_client.post("/auth/refresh").status_code == 401
 
 
+def test_logout_revokes_the_access_tokens_of_every_device(auth_client: TestClient):
+    laptop_access_token = register(auth_client)
+    laptop_refresh_token = auth_client.cookies["refresh_token"]
+    # Seconde connexion, comme depuis un téléphone
+    login = {"email": "alice@example.com", "password": PASSWORD}
+    phone_access_token = auth_client.post("/auth/login", json=login).json()["access_token"]
+
+    assert auth_client.post("/auth/logout").status_code == 204
+
+    # Les access tokens déjà émis sont refusés tout de suite, sans attendre leur expiration
+    for access_token in (phone_access_token, laptop_access_token):
+        assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
+    # L'appareil resté connecté rafraîchit sa session et continue
+    auth_client.cookies.set("refresh_token", laptop_refresh_token, path="/auth")
+    refreshed = auth_client.post("/auth/refresh")
+    assert refreshed.status_code == 200
+    me = auth_client.get("/auth/me", headers=bearer(refreshed.json()["access_token"]))
+    assert me.status_code == 200
+
+
 def test_refresh_without_cookie_is_rejected(auth_client: TestClient):
     assert auth_client.post("/auth/refresh").status_code == 401
 
