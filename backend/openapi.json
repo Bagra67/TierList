@@ -732,34 +732,6 @@
         }
       }
     },
-    "/hello": {
-      "get": {
-        "summary": "Hello",
-        "operationId": "hello_hello_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HelloResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1014,19 +986,6 @@
           "status"
         ],
         "title": "HealthResponse"
-      },
-      "HelloResponse": {
-        "properties": {
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "message"
-        ],
-        "title": "HelloResponse"
       },
       "LoginRequest": {
         "properties": {

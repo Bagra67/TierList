@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { useCurrentUser, useLogout } from '../api/auth';
-import { useHello } from '../api/hello';
 import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { Button } from '../components/ui/button';
@@ -11,7 +10,6 @@ import { DELETE_ACCOUNT_STEP } from '../constants/auth';
 import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
 
 export function HomePage() {
-  const { data: hello, isPending, isError } = useHello();
   const { data: user } = useCurrentUser();
   const logoutMutation = useLogout();
   const navigate = useNavigate();
@@ -49,13 +47,7 @@ export function HomePage() {
         </div>
       )}
       {user && <EmailVerificationBanner user={user} />}
-      {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
-      {isError && (
-        <p role="alert" className="text-destructive">
-          {t('common.backendUnreachable')}
-        </p>
-      )}
-      {hello && <h1 className="text-2xl font-semibold">{hello.message}</h1>}
+      <h1 className="text-2xl font-semibold">{t('home.title')}</h1>
       {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>
   );

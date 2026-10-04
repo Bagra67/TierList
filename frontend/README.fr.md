@@ -2,7 +2,7 @@
 
 [English](README.md) | Français
 
-Frontend **React 19 + TypeScript**, construit avec **Vite**, qui affiche le message renvoyé par `GET /hello` du backend. Outillage :
+Frontend **React 19 + TypeScript**, construit avec **Vite**, l'interface web de TierList (comptes, connexion, confirmation de l'email, mot de passe oublié). Outillage :
 
 - **ESLint + Prettier** pour le lint et le formatage automatiques ;
 - **pnpm** comme gestionnaire de paquets.
@@ -95,7 +95,6 @@ frontend/
 │   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
 │   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
-│   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
@@ -127,12 +126,12 @@ frontend/
 
 ## 7. Types d'API (générés)
 
-Les types d'API ne sont **jamais écrits à la main** : `src/api/schema.d.ts` est généré par `pnpm gen:api` à partir de `backend/openapi.json`, le contrat exporté par le backend. Utilisez-les via `components['schemas'][...]`, comme dans `src/api/hello.ts` :
+Les types d'API ne sont **jamais écrits à la main** : `src/api/schema.d.ts` est généré par `pnpm gen:api` à partir de `backend/openapi.json`, le contrat exporté par le backend. Utilisez-les via `components['schemas'][...]`, comme dans `src/api/auth.ts` :
 
 ```ts
 import type { components } from './schema';
 
-export type HelloResponse = components['schemas']['HelloResponse'];
+export type User = components['schemas']['UserResponse'];
 ```
 
 Un changement du backend qui casse le frontend devient alors une erreur de `pnpm typecheck`.
@@ -160,23 +159,23 @@ Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fet
 - `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec dans la console, à un seul endroit.
 - TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
 
-Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `hello.ts` :
+Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `auth.ts`, par exemple une lecture :
 
 ```ts
-export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
-  const { data, error, response } = await apiClient.GET('/hello', { signal });
+export async function getMe(signal?: AbortSignal): Promise<User> {
+  const { data, error, response } = await apiClient.GET('/auth/me', { signal });
   if (data === undefined) {
     throw new ApiError(response.status, error);
   }
   return data;
 }
 
-export function useHello() {
-  return useQuery({ queryKey: ['hello'], queryFn: ({ signal }) => getHello(signal) });
+export function useMe() {
+  return useQuery({ queryKey: ['me'], queryFn: ({ signal }) => getMe(signal) });
 }
 ```
 
-Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useHello();`.
+Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useMe();`.
 
 Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch` avec `stubBackend`, comme dans `App.test.tsx`.
 

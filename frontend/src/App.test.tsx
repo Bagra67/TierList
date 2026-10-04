@@ -19,7 +19,6 @@ function renderAppAt(path: string) {
 const loggedInBackend = {
   'POST /auth/refresh': tokenResponse('restored-token'),
   'GET /auth/me': () => Response.json(alice),
-  'GET /hello': () => Response.json({ message: 'Hello World' }),
 };
 
 describe('App', () => {
@@ -41,7 +40,7 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
     expect(screen.getByText(/Connecté en tant que Alice/)).toBeInTheDocument();
   });
 
@@ -72,6 +71,6 @@ describe('App', () => {
 
     renderAppAt('/does-not-exist');
 
-    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
   });
 });

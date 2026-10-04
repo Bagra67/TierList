@@ -7,6 +7,9 @@ export const fr = {
     language: 'Langue',
     theme: 'Thème',
   },
+  home: {
+    title: 'Accueil',
+  },
   theme: {
     system: 'Système',
     light: 'Clair',
