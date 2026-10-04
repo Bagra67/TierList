@@ -10,6 +10,11 @@ export const fr = {
   home: {
     title: 'Accueil',
   },
+  notFound: {
+    title: 'Page introuvable',
+    message: "Cette page n'existe pas ou n'existe plus.",
+    backHome: "Retour à l'accueil",
+  },
   theme: {
     system: 'Système',
     light: 'Clair',

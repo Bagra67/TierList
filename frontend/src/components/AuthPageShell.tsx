@@ -8,7 +8,8 @@ interface AuthPageShellProps {
   footer?: ReactNode;
 }
 
-// Mise en page commune des pages de compte (connexion, inscription, liens reçus par email)
+// Mise en page commune des pages en carte centrée : compte (connexion, inscription, liens reçus
+// par email) et page introuvable
 export function AuthPageShell({ title, children, footer }: AuthPageShellProps) {
   return (
     <main className="mx-auto w-full max-w-sm px-4 py-10">

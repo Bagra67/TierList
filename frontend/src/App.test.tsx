@@ -91,11 +91,11 @@ describe('App', () => {
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 
-  it('redirects unknown pages to the home page', async () => {
-    stubBackend(loggedInBackend);
+  it('shows a not found page for unknown urls, with or without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
 
     renderAppAt('/does-not-exist');
 
-    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
   });
 });
