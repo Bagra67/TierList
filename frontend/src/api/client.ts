@@ -14,6 +14,28 @@ export const apiClient = createClient<paths>({
   fetch: (request) => fetch(request),
 });
 
+// Résultat d'un appel apiClient : data en cas de succès, sinon error (corps de la réponse)
+interface ApiResult<T> {
+  data?: T;
+  error?: unknown;
+  response: Response;
+}
+
+// Corps d'une réponse réussie ; lève ApiError pour toute réponse hors 2xx.
+export function dataOrThrow<T>({ data, error, response }: ApiResult<T>): T {
+  if (data === undefined) {
+    throw new ApiError(response.status, error);
+  }
+  return data;
+}
+
+// Pour les réponses sans corps (ex. 204) : lève ApiError si la réponse n'est pas un succès.
+export function throwIfError({ error, response }: ApiResult<unknown>): void {
+  if (!response.ok) {
+    throw new ApiError(response.status, error);
+  }
+}
+
 // Access token (JWT, ~15 min) gardé en mémoire seulement : jamais dans localStorage, lisible
 // par un script injecté. Le refresh token, lui, est un cookie HttpOnly géré par le navigateur.
 let accessToken: string | null = null;

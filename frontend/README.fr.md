@@ -163,11 +163,7 @@ Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `aut
 
 ```ts
 export async function getMe(signal?: AbortSignal): Promise<User> {
-  const { data, error, response } = await apiClient.GET('/auth/me', { signal });
-  if (data === undefined) {
-    throw new ApiError(response.status, error);
-  }
-  return data;
+  return dataOrThrow(await apiClient.GET('/auth/me', { signal }));
 }
 
 export function useMe() {
@@ -175,7 +171,7 @@ export function useMe() {
 }
 ```
 
-Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useMe();`.
+`dataOrThrow` (`src/api/client.ts`) renvoie le corps d'une réponse réussie et lève `ApiError` sinon ; `throwIfError` fait de même pour les réponses sans corps (`204`). Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useMe();`.
 
 Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch` avec `stubBackend`, comme dans `App.test.tsx`.
 
