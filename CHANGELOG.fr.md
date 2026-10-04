@@ -5,6 +5,40 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/releasing.fr.md](docs/releasing.fr.md).
 
+## [0.4.0] - 2026-10-04
+
+### Fonctionnalités
+
+- backend : refus des access tokens émis avant une déconnexion ou une réinitialisation du mot de passe (#56)
+- frontend : page « introuvable » pour les adresses inconnues (#61)
+- frontend : les erreurs d'affichage sont rattrapées par une error boundary (#62)
+
+### Corrections
+
+- backend : gestion de deux premières connexions Google simultanées (#54)
+- backend : suppression des refresh tokens expirés à la connexion (#55)
+- frontend : un utilisateur connecté est redirigé hors des pages de connexion (#60)
+
+### Refactorisation
+
+- backend : noms déterministes pour les contraintes de la base (#52)
+- frontend : vérification des erreurs d'API mise en commun (#58)
+- frontend : mise en page des pages de compte et message d'erreur mis en commun (#59)
+
+### Documentation
+
+- todo : tests de bout en bout prévus avec l'éditeur de tier list (#64)
+
+### Tests
+
+- backend : vérification que les migrations correspondent aux modèles (#51)
+
+### Maintenance
+
+- retrait de la démo Hello World (#57)
+- frontend : lint d'accessibilité avec eslint-plugin-jsx-a11y-x (#63)
+- frontend : détection des exports, fichiers et dépendances inutilisés avec knip (#65)
+
 ## [0.3.0] - 2026-10-03
 
 ### Fonctionnalités
