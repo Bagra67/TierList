@@ -16,6 +16,8 @@ from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import link_token
 
+# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
+# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -113,6 +115,7 @@ def test_the_link_confirms_the_address_and_can_be_reused(
             lambda user: create_access_token(
                 user_id=user.id,
                 auth_time=user.created_at,
+                token_version=user.token_version,
                 secret_key=get_settings().jwt_secret_key.get_secret_value(),
                 ttl=timedelta(minutes=15),
             ),

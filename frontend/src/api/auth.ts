@@ -8,15 +8,22 @@ import {
 import { HTTP_STATUS } from '../constants/http';
 import { ApiError } from '../errors/apiError';
 import { currentLanguage } from '../i18n';
-import { apiClient, hasAccessToken, refreshAccessToken, setAccessToken } from './client';
+import {
+  apiClient,
+  dataOrThrow,
+  hasAccessToken,
+  refreshAccessToken,
+  setAccessToken,
+  throwIfError,
+} from './client';
 import type { components } from './schema';
 
 // La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
-export type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
+type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
-export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 // Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
 // Google puis, au retour, vers le frontend avec le cookie de session posé.
@@ -25,84 +32,60 @@ export function googleSignInUrl(next?: GoogleNextStep): string {
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 
-export async function register(body: RegisterRequest): Promise<void> {
-  const { data, error, response } = await apiClient.POST('/auth/register', {
-    body: { ...body, language: currentLanguage() },
-  });
-  if (data === undefined) {
-    throw new ApiError(response.status, error);
-  }
+async function register(body: RegisterRequest): Promise<void> {
+  const data = dataOrThrow(
+    await apiClient.POST('/auth/register', { body: { ...body, language: currentLanguage() } }),
+  );
   setAccessToken(data.access_token);
 }
 
 export async function login(body: LoginRequest): Promise<void> {
-  const { data, error, response } = await apiClient.POST('/auth/login', { body });
-  if (data === undefined) {
-    throw new ApiError(response.status, error);
-  }
+  const data = dataOrThrow(await apiClient.POST('/auth/login', { body }));
   setAccessToken(data.access_token);
 }
 
 export async function logout(): Promise<void> {
   // Le token en mémoire est oublié même si le backend est injoignable
   setAccessToken(null);
-  const { response, error } = await apiClient.POST('/auth/logout');
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+  throwIfError(await apiClient.POST('/auth/logout'));
 }
 
 export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
-  const { response, error } = await apiClient.DELETE('/auth/me', { body });
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+  throwIfError(await apiClient.DELETE('/auth/me', { body }));
   setAccessToken(null);
 }
 
 // Confirme l'adresse avec le token du lien reçu par email (sans session : le lien peut être
 // ouvert dans un autre navigateur)
-export async function verifyEmail(token: string): Promise<void> {
-  const { response, error } = await apiClient.POST('/auth/email/verify', { body: { token } });
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+async function verifyEmail(token: string): Promise<void> {
+  throwIfError(await apiClient.POST('/auth/email/verify', { body: { token } }));
 }
 
 // Renvoie l'email de vérification ; le backend l'ignore si le précédent est trop récent
-export async function requestEmailVerification(): Promise<void> {
-  const { response, error } = await apiClient.POST('/auth/email/verification', {
-    body: { language: currentLanguage() },
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+async function requestEmailVerification(): Promise<void> {
+  throwIfError(
+    await apiClient.POST('/auth/email/verification', {
+      body: { language: currentLanguage() },
+    }),
+  );
 }
 
 // Demande un lien de réinitialisation ; le backend répond pareil que le compte existe ou non
-export async function forgotPassword(email: string): Promise<void> {
-  const { response, error } = await apiClient.POST('/auth/password/forgot', {
-    body: { email, language: currentLanguage() },
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+async function forgotPassword(email: string): Promise<void> {
+  throwIfError(
+    await apiClient.POST('/auth/password/forgot', {
+      body: { email, language: currentLanguage() },
+    }),
+  );
 }
 
 // Choisit un nouveau mot de passe avec le token du lien reçu ; le backend ferme toutes les sessions
-export async function resetPassword(body: ResetPasswordRequest): Promise<void> {
-  const { response, error } = await apiClient.POST('/auth/password/reset', { body });
-  if (!response.ok) {
-    throw new ApiError(response.status, error);
-  }
+async function resetPassword(body: ResetPasswordRequest): Promise<void> {
+  throwIfError(await apiClient.POST('/auth/password/reset', { body }));
 }
 
 export async function getMe(signal?: AbortSignal): Promise<User> {
-  const { data, error, response } = await apiClient.GET('/auth/me', { signal });
-  if (data === undefined) {
-    throw new ApiError(response.status, error);
-  }
-  return data;
+  return dataOrThrow(await apiClient.GET('/auth/me', { signal }));
 }
 
 // Utilisateur connecté, ou null. Au chargement de la page, aucun access token n'est en mémoire :

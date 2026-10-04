@@ -5,6 +5,40 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
 
+## [0.4.0] - 2026-10-04
+
+### Features
+
+- backend: reject access tokens issued before a logout or password reset (#56)
+- frontend: show a not found page for unknown URLs (#61)
+- frontend: catch rendering errors with an error boundary (#62)
+
+### Bug fixes
+
+- backend: handle concurrent first Google sign-ins (#54)
+- backend: delete expired refresh tokens at sign-in (#55)
+- frontend: redirect signed-in users away from sign-in pages (#60)
+
+### Refactoring
+
+- backend: name database constraints deterministically (#52)
+- frontend: share the API error check (#58)
+- frontend: share the auth page layout and error message (#59)
+
+### Documentation
+
+- todo: plan end-to-end tests with the tier list editor (#64)
+
+### Tests
+
+- backend: check that migrations match the models (#51)
+
+### Chores
+
+- remove the hello world demo (#57)
+- frontend: lint accessibility with eslint-plugin-jsx-a11y-x (#63)
+- frontend: detect unused exports, files and dependencies with knip (#65)
+
 ## [0.3.0] - 2026-10-03
 
 ### Features

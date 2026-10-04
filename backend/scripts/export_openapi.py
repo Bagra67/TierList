@@ -9,7 +9,10 @@ import json
 import sys
 from pathlib import Path
 
-BACKEND_DIR = Path(__file__).resolve().parents[1]
+# Dossier backend/ : le premier dossier parent qui contient alembic.ini
+BACKEND_DIR = next(
+    parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
+)
 OPENAPI_PATH = BACKEND_DIR / "openapi.json"
 
 # Permet `python scripts/export_openapi.py` : le paquet `app` est dans backend/.

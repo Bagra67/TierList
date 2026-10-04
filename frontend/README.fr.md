@@ -2,7 +2,7 @@
 
 [English](README.md) | Français
 
-Frontend **React 19 + TypeScript**, construit avec **Vite**, qui affiche le message renvoyé par `GET /hello` du backend. Outillage :
+Frontend **React 19 + TypeScript**, construit avec **Vite**, l'interface web de TierList (comptes, connexion, confirmation de l'email, mot de passe oublié). Outillage :
 
 - **ESLint + Prettier** pour le lint et le formatage automatiques ;
 - **pnpm** comme gestionnaire de paquets.
@@ -67,17 +67,28 @@ Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans 
 
 ## 5. Lint et formatage
 
-| Action                              | Commande            |
-| ----------------------------------- | ------------------- |
-| Analyser le code (ESLint)           | `pnpm lint`         |
-| Corriger automatiquement            | `pnpm lint:fix`     |
-| Formater tout le code (Prettier)    | `pnpm format`       |
-| Vérifier le formatage sans modifier | `pnpm format:check` |
+| Action                                              | Commande            |
+| --------------------------------------------------- | ------------------- |
+| Analyser le code (ESLint)                           | `pnpm lint`         |
+| Corriger automatiquement                            | `pnpm lint:fix`     |
+| Formater tout le code (Prettier)                    | `pnpm format`       |
+| Vérifier le formatage sans modifier                 | `pnpm format:check` |
+| Trouver exports, fichiers et dépendances inutilisés | `pnpm knip`         |
 
 C'est automatique à deux endroits :
 
 - **À l'enregistrement dans VS Code** : formatage Prettier + corrections ESLint. Installez les extensions recommandées (VS Code les propose à l'ouverture du dossier `TierList`) : ESLint et Prettier.
 - **Avant chaque commit** : le hook husky lance `lint-staged`, qui corrige et formate les fichiers modifiés. Si une erreur ESLint ne peut pas être corrigée automatiquement, le commit est bloqué.
+
+ESLint vérifie aussi l'**accessibilité** avec `eslint-plugin-jsx-a11y-x` (règles `recommended`) : textes alternatifs (`alt`), labels, rôles et attributs ARIA valides, utilisation au clavier des éléments cliquables. C'est le fork maintenu d'`eslint-plugin-jsx-a11y`, avec les mêmes règles, choisi car l'original ne prend pas en charge ESLint 10. Il repère ce qui se voit dans le code ; le focus, le contraste et le comportement avec un lecteur d'écran restent à vérifier dans le navigateur.
+
+**knip** liste ce que rien n'utilise : exports, fichiers et dépendances (`knip.jsonc` : `schema.d.ts` et les exports shadcn de `src/components/ui/` sont ignorés, `git-cliff` est lancé par `scripts/prepare-release.sh`). Il tourne en CI : supprimez ce qu'il signale, ou expliquez l'exception dans `knip.jsonc`.
+
+**Où ranger un type ou une interface** :
+
+- utilisé par **un seul fichier** (props d'un composant, types internes) : il reste dans ce fichier, **sans `export`**. TypeScript interdit alors à tout autre fichier de s'en servir.
+- nécessaire à **un deuxième fichier** : on l'exporte depuis le module auquel il appartient (ex. `src/api/<ressource>.ts` pour les types d'API, issus de `schema.d.ts`) et on l'importe de là.
+- `pnpm typecheck` bloque l'usage d'un type non exporté, et `pnpm knip` signale un export que personne n'importe. Seul un type recopié au lieu d'être importé reste à vérifier en review.
 
 Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
 
@@ -95,11 +106,10 @@ frontend/
 │   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
 │   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
-│   │   ├── hello.ts        # GET /hello : getHello() + hook useHello()
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
-│   ├── auth/RequireAuth.tsx # Garde des routes privées (redirige vers /login)
-│   ├── components/         # Composants réutilisables (Layout, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
+│   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
@@ -127,12 +137,12 @@ frontend/
 
 ## 7. Types d'API (générés)
 
-Les types d'API ne sont **jamais écrits à la main** : `src/api/schema.d.ts` est généré par `pnpm gen:api` à partir de `backend/openapi.json`, le contrat exporté par le backend. Utilisez-les via `components['schemas'][...]`, comme dans `src/api/hello.ts` :
+Les types d'API ne sont **jamais écrits à la main** : `src/api/schema.d.ts` est généré par `pnpm gen:api` à partir de `backend/openapi.json`, le contrat exporté par le backend. Utilisez-les via `components['schemas'][...]`, comme dans `src/api/auth.ts` :
 
 ```ts
 import type { components } from './schema';
 
-export type HelloResponse = components['schemas']['HelloResponse'];
+export type User = components['schemas']['UserResponse'];
 ```
 
 Un changement du backend qui casse le frontend devient alors une erreur de `pnpm typecheck`.
@@ -160,23 +170,19 @@ Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fet
 - `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec dans la console, à un seul endroit.
 - TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
 
-Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `hello.ts` :
+Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `auth.ts`, par exemple une lecture :
 
 ```ts
-export async function getHello(signal?: AbortSignal): Promise<HelloResponse> {
-  const { data, error, response } = await apiClient.GET('/hello', { signal });
-  if (data === undefined) {
-    throw new ApiError(response.status, error);
-  }
-  return data;
+export async function getMe(signal?: AbortSignal): Promise<User> {
+  return dataOrThrow(await apiClient.GET('/auth/me', { signal }));
 }
 
-export function useHello() {
-  return useQuery({ queryKey: ['hello'], queryFn: ({ signal }) => getHello(signal) });
+export function useMe() {
+  return useQuery({ queryKey: ['me'], queryFn: ({ signal }) => getMe(signal) });
 }
 ```
 
-Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useHello();`.
+`dataOrThrow` (`src/api/client.ts`) renvoie le corps d'une réponse réussie et lève `ApiError` sinon ; `throwIfError` fait de même pour les réponses sans corps (`204`). Le composant ne fait alors que lire l'état : `const { data, isPending, isError } = useMe();`.
 
 Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/`) et simulez `fetch` avec `stubBackend`, comme dans `App.test.tsx`.
 

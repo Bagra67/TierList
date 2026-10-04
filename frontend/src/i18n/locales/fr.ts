@@ -7,6 +7,20 @@ export const fr = {
     language: 'Langue',
     theme: 'Thème',
   },
+  home: {
+    title: 'Accueil',
+  },
+  renderError: {
+    title: 'Une erreur est survenue',
+    message:
+      "La page n'a pas pu s'afficher. Rechargez-la ; si le problème persiste, réessayez plus tard.",
+    reload: 'Recharger la page',
+  },
+  notFound: {
+    title: 'Page introuvable',
+    message: "Cette page n'existe pas ou n'existe plus.",
+    backHome: "Retour à l'accueil",
+  },
   theme: {
     system: 'Système',
     light: 'Clair',

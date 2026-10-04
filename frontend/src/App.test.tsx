@@ -19,7 +19,6 @@ function renderAppAt(path: string) {
 const loggedInBackend = {
   'POST /auth/refresh': tokenResponse('restored-token'),
   'GET /auth/me': () => Response.json(alice),
-  'GET /hello': () => Response.json({ message: 'Hello World' }),
 };
 
 describe('App', () => {
@@ -41,7 +40,7 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
     expect(screen.getByText(/Connecté en tant que Alice/)).toBeInTheDocument();
   });
 
@@ -67,11 +66,36 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
-  it('redirects unknown pages to the home page', async () => {
+  it('sends a signed-in user away from the login page', async () => {
     stubBackend(loggedInBackend);
+
+    renderAppAt('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+  });
+
+  it('returns to the requested page, query string included, after signing in', async () => {
+    stubBackend({
+      'POST /auth/refresh': unauthorized,
+      'POST /auth/login': tokenResponse('login-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderAppAt('/?confirm=delete-account');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    // ?confirm=delete-account rouvre le dialogue de suppression sur la page d'accueil
+    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
+  });
+
+  it('shows a not found page for unknown urls, with or without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
 
     renderAppAt('/does-not-exist');
 
-    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
   });
 });

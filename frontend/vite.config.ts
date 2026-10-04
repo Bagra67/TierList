@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // /api/hello -> http://127.0.0.1:8000/hello (backend FastAPI)
+      // /api/auth/me -> http://127.0.0.1:8000/auth/me (backend FastAPI)
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

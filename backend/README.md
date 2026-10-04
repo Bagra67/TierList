@@ -91,7 +91,7 @@ Once running:
 - Interactive documentation (Swagger): http://127.0.0.1:8000/docs
 - ReDoc documentation: http://127.0.0.1:8000/redoc
 
-The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/hello` is forwarded to `http://127.0.0.1:8000/hello`. The backend must therefore run on port **8000** during frontend development.
+The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/auth/me` is forwarded to `http://127.0.0.1:8000/auth/me`. The backend must therefore run on port **8000** during frontend development.
 
 ---
 
@@ -182,7 +182,7 @@ Configured in `pyproject.toml` (`[tool.pyright]`, `standard` mode, on `app/`, `t
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # FastAPI entry point (GET /hello, GET /health, GET /health/db, routers)
+│   ├── main.py            # FastAPI entry point (GET /health, GET /health/db, routers)
 │   ├── api/
 │   │   ├── dependencies.py # Shared dependencies (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # /auth routes: register, login, refresh, logout, me
@@ -283,6 +283,10 @@ The same file is read by the PostgreSQL container: changing the password **after
 | Show the database's current version | `uv run alembic current`                                  |
 
 Models must inherit from `app.db.base.Base` and be imported by `migrations/env.py` to be detected by `--autogenerate`. **Always review** a generated migration before applying it.
+
+Constraint and index names follow the naming convention of `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…): a migration can refer to them by name without guessing what PostgreSQL chose.
+
+`tests/integration/test_migrations.py` fails when the models and the migrations no longer describe the same schema, or when a migration cannot be rolled back.
 
 ---
 

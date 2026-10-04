@@ -91,7 +91,7 @@ Une fois lancé :
 - Documentation interactive (Swagger) : http://127.0.0.1:8000/docs
 - Documentation ReDoc : http://127.0.0.1:8000/redoc
 
-Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/hello` est redirigée vers `http://127.0.0.1:8000/hello`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est redirigée vers `http://127.0.0.1:8000/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
 
 ---
 
@@ -182,7 +182,7 @@ Configuré dans `pyproject.toml` (`[tool.pyright]`, mode `standard`, sur `app/`,
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (GET /hello, GET /health, GET /health/db, routers)
+│   ├── main.py            # Point d'entrée FastAPI (GET /health, GET /health/db, routers)
 │   ├── api/
 │   │   ├── dependencies.py # Dépendances communes (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # Routes /auth : register, login, refresh, logout, me
@@ -283,6 +283,10 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 | Voir la version actuelle de la base      | `uv run alembic current`                                  |
 
 Les modèles doivent hériter de `app.db.base.Base` et être importés par `migrations/env.py` pour être détectés par `--autogenerate`. **Relisez toujours** une migration générée avant de l'appliquer.
+
+Les noms des contraintes et des index suivent la convention de `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…) : une migration peut les désigner par leur nom sans deviner celui choisi par PostgreSQL.
+
+`tests/integration/test_migrations.py` échoue quand les modèles et les migrations ne décrivent plus le même schéma, ou quand une migration ne peut pas être annulée.
 
 ---
 

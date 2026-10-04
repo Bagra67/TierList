@@ -7,6 +7,20 @@ export const en: Translation = {
     language: 'Language',
     theme: 'Theme',
   },
+  home: {
+    title: 'Home',
+  },
+  renderError: {
+    title: 'Something went wrong',
+    message:
+      'The page could not be displayed. Reload it; if the problem persists, try again later.',
+    reload: 'Reload the page',
+  },
+  notFound: {
+    title: 'Page not found',
+    message: 'This page does not exist or no longer exists.',
+    backHome: 'Back to the home page',
+  },
   theme: {
     system: 'System',
     light: 'Light',

@@ -13,6 +13,8 @@ from app.core.security import hash_refresh_token
 from app.main import app
 from app.models.user import RefreshToken, User
 
+# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
+# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -221,6 +223,27 @@ def test_expired_refresh_token_is_rejected(auth_client: TestClient, db_session: 
     assert response.status_code == 401
 
 
+def test_sign_in_deletes_the_expired_refresh_tokens(auth_client: TestClient, db_session: Session):
+    register(auth_client)
+    expired = db_session.scalars(select(RefreshToken)).one()
+    expired.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    db_session.flush()
+    expired_id = expired.id
+    auth_client.cookies.clear()
+    login = {"email": "alice@example.com", "password": PASSWORD}
+    assert auth_client.post("/auth/login", json=login).status_code == 200
+    # Révoqué mais pas expiré : gardé, pour repérer une réutilisation
+    assert auth_client.post("/auth/logout").status_code == 204
+    revoked_id = db_session.scalars(select(RefreshToken)).one().id
+
+    assert auth_client.post("/auth/login", json=login).status_code == 200
+
+    remaining_ids = set(db_session.scalars(select(RefreshToken.id)).all())
+    assert expired_id not in remaining_ids
+    assert revoked_id in remaining_ids
+    assert len(remaining_ids) == 2
+
+
 def test_unknown_refresh_token_is_rejected_and_clears_the_cookie(auth_client: TestClient):
     auth_client.cookies.set("refresh_token", "unknown", path="/auth")
 
@@ -241,6 +264,26 @@ def test_logout_revokes_the_session(auth_client: TestClient):
     assert "refresh_token" not in auth_client.cookies
     auth_client.cookies.set("refresh_token", refresh_token, path="/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
+
+
+def test_logout_revokes_the_access_tokens_of_every_device(auth_client: TestClient):
+    laptop_access_token = register(auth_client)
+    laptop_refresh_token = auth_client.cookies["refresh_token"]
+    # Seconde connexion, comme depuis un téléphone
+    login = {"email": "alice@example.com", "password": PASSWORD}
+    phone_access_token = auth_client.post("/auth/login", json=login).json()["access_token"]
+
+    assert auth_client.post("/auth/logout").status_code == 204
+
+    # Les access tokens déjà émis sont refusés tout de suite, sans attendre leur expiration
+    for access_token in (phone_access_token, laptop_access_token):
+        assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
+    # L'appareil resté connecté rafraîchit sa session et continue
+    auth_client.cookies.set("refresh_token", laptop_refresh_token, path="/auth")
+    refreshed = auth_client.post("/auth/refresh")
+    assert refreshed.status_code == 200
+    me = auth_client.get("/auth/me", headers=bearer(refreshed.json()["access_token"]))
+    assert me.status_code == 200
 
 
 def test_refresh_without_cookie_is_rejected(auth_client: TestClient):

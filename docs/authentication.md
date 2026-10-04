@@ -64,10 +64,10 @@ The API returns an error **code** (see [the error format](../backend/README.md#1
 
 Why this split:
 
-- The **access token** is checked without a database query (signature + expiry). Being short-lived, a stolen one is useful for 15 minutes at most. It is never written to `localStorage`, which any injected script could read.
+- The **access token** is checked by its signature and expiry, then against the user loaded for the request: its `token_version` claim must equal `users.token_version`. Sign-out, a password reset and a Google takeover increment that counter, which refuses **every access token already issued** for the account at once. The account's other devices get a `401`, refresh their session (if their refresh token is still valid) and go on. It is never written to `localStorage`, which any injected script could read.
 - The **refresh token** cannot be read by JavaScript (`HttpOnly`) and is stored server-side **as a SHA-256 hash only**. Because it lives in the database, it can be **revoked**: sign-out and theft detection work immediately, which a JWT alone cannot do.
 
-Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used later to require a recent sign-in for sensitive actions).
+Access token claims: `sub` (user id), `type` (`access`), `iat`, `exp`, `auth_time` (time of the original sign-in, kept across refreshes, used to require a recent sign-in for sensitive actions), `token_version` (`users.token_version` when issued). A token without `token_version` (issued before it existed) is refused: the frontend refreshes the session.
 
 ### Refresh token rotation and theft detection
 
@@ -97,6 +97,8 @@ sequenceDiagram
 
 When the page loads, no access token is in memory: the frontend calls `POST /auth/refresh`, and the cookie, if still valid, restores the session.
 
+Each sign-in also **deletes the user's expired refresh tokens**, so the table does not grow forever, without a scheduled job. Revoked tokens are kept until they expire: they are what detects a replay. A stolen token replayed after its expiry is therefore simply refused (`401`) without revoking its family; it was unusable anyway.
+
 ### Settings
 
 Every duration and rule that may change per environment is read from `backend/.env` (see the backend README): `ACCESS_TOKEN_TTL_MINUTES` (15), `REFRESH_TOKEN_TTL_DAYS` (30), `PASSWORD_MIN_LENGTH` (8), `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5), `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10), `GOOGLE_HTTP_TIMEOUT_SECONDS` (10), `EMAIL_VERIFICATION_TTL_HOURS` (24), `PASSWORD_RESET_TTL_MINUTES` (30), `EMAIL_COOLDOWN_SECONDS` (60). Changing them only needs a restart of the backend. The frontend does not duplicate `PASSWORD_MIN_LENGTH`: it shows the message of the `422`.
@@ -108,7 +110,7 @@ Every duration and rule that may change per environment is read from `backend/.e
 | `POST /auth/register`                        | — (`language` optional: language of the email)          | `201` `TokenResponse` + refresh cookie; confirmation email sent                                              | `409`, `422`                                                           |
 | `POST /auth/login`                           | —                                                       | `200` `TokenResponse` + refresh cookie                                                                       | `401`, `422`                                                           |
 | `POST /auth/refresh`                         | refresh cookie                                          | `200` `TokenResponse` + new refresh cookie                                                                   | `401` (cookie cleared)                                                 |
-| `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, cookie cleared                                                                        | —                                                                      |
+| `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, access tokens refused, cookie cleared                                                 | —                                                                      |
 | `GET /auth/me`                               | Bearer                                                  | `200` `UserResponse`                                                                                         | `401` (`WWW-Authenticate: Bearer`)                                     |
 | `POST /auth/email/verification`              | Bearer + `{language}`                                   | `204`; email sent again, unless the address is confirmed or the previous email is too recent                 | `401`                                                                  |
 | `POST /auth/email/verify`                    | — + `{token}`                                           | `204`, address confirmed (a second use changes nothing)                                                      | `400` `invalid_token`, `422`                                           |
@@ -142,7 +144,7 @@ Frontend and backend are served from the same origin (Vite proxy in development)
 
 - **Same answer for everyone**: `POST /auth/password/forgot` answers `204` whether an account uses the address or not, and the email is sent in the background, so neither the answer nor its duration reveals who is registered. The page shows a neutral message ("Si un compte existe pour cette adresse…").
 - **Link**: `{FRONTEND_BASE_URL}/reset-password?token=<JWT>`. The JWT (type `password_reset`) holds the user id and a **fingerprint of the current password** (HMAC-SHA256 of the hash with `JWT_SECRET_KEY`, truncated). As soon as the password changes, the fingerprint no longer matches: the link **works only once**, and every older link becomes useless, without storing anything. It is valid `PASSWORD_RESET_TTL_MINUTES` (30 min).
-- **After the reset**: the new password follows the usual rules (`PASSWORD_MIN_LENGTH`); **every session of the account is closed** (the old password may have been stolen), including the one of the browser in use, which forgets its session; the address becomes confirmed, since opening the link proves its ownership.
+- **After the reset**: the new password follows the usual rules (`PASSWORD_MIN_LENGTH`); **every session of the account is closed** and its access tokens are refused (the old password may have been stolen), including the one of the browser in use, which forgets its session; the address becomes confirmed, since opening the link proves its ownership.
 - **Account without password** (created with Google): the same flow sets a password; the account keeps its Google sign-in.
 - **Frequency**: at most one reset email every `EMAIL_COOLDOWN_SECONDS` per account (`users.password_reset_email_sent_at`); a request that comes too soon is ignored, with the same answer.
 
@@ -191,6 +193,8 @@ sequenceDiagram
 
 Cases 2 and 3 require `email_verified` from Google: otherwise anyone could take over an existing account, or reserve someone else's address.
 
+Two **simultaneous first sign-ins** (double click, two tabs) can both reach case 2 or 3. The uniqueness constraints (`users.email`, `oauth_accounts` `(provider, provider_subject)`) let only one of them write; the other one is rolled back and tried again once, and then finds the account in case 1 or 2.
+
 **Why the password of an unconfirmed account is removed**: without it, someone could register with the Gmail address of another person, before her, and choose the password. When the real owner later signs in with Google, her Google identity would be linked to that account, whose password the other person knows: both would share the account (_pre-account takeover_). Google proves who owns the address, so the password set by someone else, and the sessions opened with it, are dropped. A real owner who had registered with a password can still sign in with Google. Identities are stored in the `oauth_accounts` table (`provider`, `provider_subject`, unique together).
 
 **Setting up Google** (Google Cloud Console → APIs & Services → Credentials):
@@ -213,7 +217,6 @@ Without these two variables, the "Continuer avec Google" link leads back to `/lo
 ### Known limitations
 
 - **Several tabs restoring the session at the same moment** (e.g. reopening the browser with many tabs) can present the same refresh token twice. The second one is treated as a theft and the session is closed: the user signs in again. Within one tab, refreshes are shared so this cannot happen.
-- An access token stays valid until it expires (15 min) even after sign-out; only its renewal is blocked.
 
 ## 3. In the code
 
@@ -260,6 +263,7 @@ def list_tierlists(user: Annotated[User, Depends(get_current_user)]) -> list[Tie
 | `i18n/locales/`                                               | Every text of the pages and every error message, in French (`fr.ts`) and English (`en.ts`): `auth.*`, `account.*`, `errors.api.*`, `errors.field.*`, `errors.google.*`.                                                                                                                                                                                                                               |
 | `api/auth.ts`                                                 | `register`, `login`, `logout`, `getMe`, `getCurrentUser` (restores the session at load) and the hooks `useCurrentUser`, `useRegister`, `useLogin`, `useLogout`.                                                                                                                                                                                                                                       |
 | `auth/RequireAuth.tsx`                                        | Route guard: loading, error, redirect to `/login` (remembering the requested page), or the private page.                                                                                                                                                                                                                                                                                              |
+| `auth/RedirectIfSignedIn.tsx`, `auth/signInRedirect.ts`       | Guard of `/login` and `/register`: a signed-in user is sent where they were going. `signInRedirectState` / `pathAfterSignIn` remember the requested page, query string included.                                                                                                                                                                                                                      |
 | `pages/LoginPage.tsx`, `pages/RegisterPage.tsx`               | Forms with labelled fields, field errors, backend message, button disabled while sending, "Continuer avec Google" link (`components/GoogleSignInLink.tsx`); the login page explains the `?error=` codes of the Google return.                                                                                                                                                                         |
 | `components/TextField.tsx`                                    | Labelled input whose error is linked with `aria-describedby`.                                                                                                                                                                                                                                                                                                                                         |
 | `components/DeleteAccountDialog.tsx`                          | "Supprimer mon compte" button and native `<dialog>` (opened with `showModal()`: the browser traps the focus and closes it with Escape). It asks for the password, or for a Google account offers to sign in again when the API answers `403`. Opened at once when the home page has `?confirm=delete-account`. On success, the session and the query cache are cleared and the user goes to `/login`. |

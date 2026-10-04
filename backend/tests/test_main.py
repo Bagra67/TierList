@@ -18,12 +18,6 @@ def clear_dependency_overrides() -> Iterator[None]:
     app.dependency_overrides.clear()
 
 
-def test_hello():
-    response = client.get("/hello")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello World"}
-
-
 def test_health():
     # Aucune dépendance remplacée : la sonde de vie ne doit pas toucher la base
     response = client.get("/health")

@@ -15,11 +15,15 @@ from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
 from app.main import app
 from app.models.user import OAuthAccount, User
+from app.repositories import oauth_accounts as oauth_account_repository
+from app.repositories import users as user_repository
 from app.services.email import Email
 from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
 from tests.integration.helpers import link_token
 
+# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
+# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -163,12 +167,58 @@ def test_google_identity_is_linked_to_an_existing_verified_account(
     )
 
 
+def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
+    """Le premier appel de module.name ne trouve rien : comme une requête simultanée qui a lu
+    la base juste avant que l'autre n'enregistre le compte."""
+    lookup = getattr(module, name)
+    calls: list[object] = []
+
+    def stale_lookup(*args: object, **kwargs: object) -> object:
+        calls.append(args)
+        return None if len(calls) == 1 else lookup(*args, **kwargs)
+
+    monkeypatch.setattr(module, name, stale_lookup)
+
+
+def test_simultaneous_first_google_sign_ins_create_a_single_account(
+    google_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    sign_in_with_google(google_client)
+    google_client.cookies.clear()
+    # La seconde requête ne voit ni l'identité ni l'email : elle tente de créer le compte
+    miss_first_lookup(monkeypatch, oauth_account_repository, "get_user_by_oauth_account")
+    miss_first_lookup(monkeypatch, user_repository, "get_user_by_email")
+
+    response = sign_in_with_google(google_client)
+
+    assert response.headers["location"] == "/"
+    assert current_user(google_client)["email"] == "alice@gmail.com"
+    assert len(db_session.scalars(select(User)).all()) == 1
+    assert len(db_session.scalars(select(OAuthAccount)).all()) == 1
+
+
+def test_simultaneous_google_sign_ins_link_the_identity_once(
+    google_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    sign_in_with_google(google_client)
+    google_client.cookies.clear()
+    # La seconde requête trouve le compte par son email et tente de lier l'identité à nouveau
+    miss_first_lookup(monkeypatch, oauth_account_repository, "get_user_by_oauth_account")
+
+    response = sign_in_with_google(google_client)
+
+    assert response.headers["location"] == "/"
+    assert current_user(google_client)["email"] == "alice@gmail.com"
+    assert len(db_session.scalars(select(OAuthAccount)).all()) == 1
+
+
 def test_google_takes_over_an_unverified_account_and_drops_its_password(
     google_client: TestClient, db_session: Session
 ):
     # Quelqu'un s'inscrit avec l'adresse Gmail d'Alice sans pouvoir la confirmer
     registration = {"email": "alice@gmail.com", "password": PASSWORD, "display_name": "Mallory"}
-    assert google_client.post("/auth/register", json=registration).status_code == 201
+    squatter = google_client.post("/auth/register", json=registration)
+    assert squatter.status_code == 201
     squatter_refresh_token = google_client.cookies["refresh_token"]
     google_client.cookies.clear()
 
@@ -187,6 +237,8 @@ def test_google_takes_over_an_unverified_account_and_drops_its_password(
     google_client.cookies.clear()
     google_client.cookies.set("refresh_token", squatter_refresh_token)
     assert google_client.post("/auth/refresh").status_code == 401
+    squatter_bearer = {"Authorization": f"Bearer {squatter.json()['access_token']}"}
+    assert google_client.get("/auth/me", headers=squatter_bearer).status_code == 401
     assert db_session.scalars(select(OAuthAccount)).one().user_id == (
         db_session.scalars(select(User)).one().id
     )
@@ -296,6 +348,7 @@ def google_only_access_token(db_session: Session, signed_in_ago: timedelta) -> s
     return create_access_token(
         user_id=user.id,
         auth_time=datetime.now(UTC) - signed_in_ago,
+        token_version=user.token_version,
         secret_key=get_settings().jwt_secret_key.get_secret_value(),
         ttl=timedelta(minutes=15),
     )

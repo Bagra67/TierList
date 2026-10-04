@@ -133,6 +133,9 @@ jobs:
       - name: Type check (tsc)
         run: pnpm typecheck
 
+      - name: Unused exports, files and dependencies (knip)
+        run: pnpm knip
+
       - name: Tests with coverage (Vitest)
         run: >-
           pnpm test:coverage --reporter=default --reporter=junit

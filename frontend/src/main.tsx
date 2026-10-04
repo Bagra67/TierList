@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router';
 
 import { createQueryClient } from './api/queryClient';
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 // Initialise les traductions avant le premier rendu
 import './i18n';
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

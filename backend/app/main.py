@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
-    version="0.3.0",
+    version="0.4.0",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
@@ -29,17 +29,8 @@ register_error_handlers(app)
 app.include_router(auth.router)
 
 
-class HelloResponse(BaseModel):
-    message: str
-
-
 class HealthResponse(BaseModel):
     status: str
-
-
-@app.get("/hello")
-def hello() -> HelloResponse:
-    return HelloResponse(message="Hello World")
 
 
 # Sonde de vie : ne dépend de rien, pour qu'une panne de la base ne fasse pas
