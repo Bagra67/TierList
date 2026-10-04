@@ -472,6 +472,13 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | --------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------- |
 | `says the page does not exist and links to the home page` | Opens an unknown path, then clicks `Retour à l'accueil`. | The user understands the address is wrong and can leave the page. | The `Page introuvable` heading, then the home page. |
 
+### 2.19 Tests: `src/components/ErrorBoundary.test.tsx`
+
+| Test                                                         | What it does                                                                                               | Purpose                                        | Expected result                                                                            |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `renders its children when nothing fails`                    | Renders a plain child.                                                                                     | The boundary is invisible in normal use.       | The child is shown.                                                                        |
+| `replaces a crashed page with a message and a reload button` | Renders a child that throws; `console.error` is silenced and `window.location` stubbed; clicks the button. | A rendering error must not leave a blank page. | The `Une erreur est survenue` heading; the click reloads the page; React logged the error. |
+
 ---
 
 ## 3. Reading the results

@@ -472,6 +472,13 @@ Les erreurs sont traduites avec `i18n.t`, en français sauf si le test passe en 
 | --------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------- |
 | `says the page does not exist and links to the home page` | Ouvre un chemin inconnu, puis clique sur `Retour à l'accueil`. | L'utilisateur comprend que l'adresse est fausse et peut quitter la page. | Le titre `Page introuvable`, puis la page d'accueil. |
 
+### 2.19 Tests : `src/components/ErrorBoundary.test.tsx`
+
+| Test                                                         | Ce qu'il fait                                                                                                                      | But                                                       | Résultat attendu                                                                             |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `renders its children when nothing fails`                    | Affiche un enfant simple.                                                                                                          | Le composant est invisible en temps normal.               | L'enfant est affiché.                                                                        |
+| `replaces a crashed page with a message and a reload button` | Affiche un enfant qui lève une erreur ; `console.error` est rendu silencieux et `window.location` remplacé ; clique sur le bouton. | Une erreur de rendu ne doit pas laisser une page blanche. | Le titre `Une erreur est survenue` ; le clic recharge la page ; React a journalisé l'erreur. |
+
 ---
 
 ## 3. Lire les résultats
