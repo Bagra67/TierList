@@ -97,6 +97,8 @@ sequenceDiagram
 
 When the page loads, no access token is in memory: the frontend calls `POST /auth/refresh`, and the cookie, if still valid, restores the session.
 
+Each sign-in also **deletes the user's expired refresh tokens**, so the table does not grow forever, without a scheduled job. Revoked tokens are kept until they expire: they are what detects a replay. A stolen token replayed after its expiry is therefore simply refused (`401`) without revoking its family; it was unusable anyway.
+
 ### Settings
 
 Every duration and rule that may change per environment is read from `backend/.env` (see the backend README): `ACCESS_TOKEN_TTL_MINUTES` (15), `REFRESH_TOKEN_TTL_DAYS` (30), `PASSWORD_MIN_LENGTH` (8), `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5), `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10), `GOOGLE_HTTP_TIMEOUT_SECONDS` (10), `EMAIL_VERIFICATION_TTL_HOURS` (24), `PASSWORD_RESET_TTL_MINUTES` (30), `EMAIL_COOLDOWN_SECONDS` (60). Changing them only needs a restart of the backend. The frontend does not duplicate `PASSWORD_MIN_LENGTH`: it shows the message of the `422`.
