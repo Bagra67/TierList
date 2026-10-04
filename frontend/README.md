@@ -73,6 +73,7 @@ Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` b
 | Fix automatically                    | `pnpm lint:fix`     |
 | Format all the code (Prettier)       | `pnpm format`       |
 | Check formatting without changing it | `pnpm format:check` |
+| Find unused exports, files and deps  | `pnpm knip`         |
 
 It happens automatically in two places:
 
@@ -80,6 +81,14 @@ It happens automatically in two places:
 - **Before each commit**: the husky hook runs `lint-staged`, which fixes and formats the modified files. If an ESLint error cannot be fixed automatically, the commit is blocked.
 
 ESLint also checks **accessibility** with `eslint-plugin-jsx-a11y-x` (`recommended` rules): text alternatives (`alt`), labels, valid ARIA roles and attributes, keyboard support of clickable elements. It is the maintained fork of `eslint-plugin-jsx-a11y`, with the same rules, chosen because the original does not support ESLint 10. It finds what can be seen in the code; focus, contrast and screen reader behavior still need a check in the browser.
+
+**knip** lists what nothing uses: exports, files and dependencies (`knip.jsonc`: `schema.d.ts` and the shadcn exports of `src/components/ui/` are ignored, `git-cliff` is run by `scripts/prepare-release.sh`). It runs on CI: remove what it reports, or explain an exception in `knip.jsonc`.
+
+**Where to put a type or an interface**:
+
+- used by **one file only** (component props, internal types): it stays in that file, **without `export`**. TypeScript then forbids any other file from using it.
+- needed by **a second file**: export it from the module that owns it (e.g. `src/api/<resource>.ts` for API types, which come from `schema.d.ts`) and import it from there.
+- `pnpm typecheck` blocks the use of a type that is not exported, and `pnpm knip` reports an export nobody imports. A type copied instead of imported is the only case left to review.
 
 Configuration: `eslint.config.js`, `.prettierrc`, `.prettierignore`, `lint-staged` section of `package.json`.
 

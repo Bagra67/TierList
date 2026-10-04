@@ -146,6 +146,7 @@ Commandes manuelles :
 | Corriger           | `uv run ruff check . --fix` | `pnpm lint:fix`          |
 | Formater           | `uv run ruff format .`      | `pnpm format`            |
 | Types              | `uv run pyright`            | `pnpm typecheck`         |
+| Code inutilisé     | —                           | `pnpm knip`              |
 | Tests              | `uv run pytest`             | `pnpm test`              |
 | Tests + couverture | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
@@ -155,11 +156,11 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 
 `.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
 
-| Job          | Étapes                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------------------ |
-| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, Vitest avec couverture, build de production |
-| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                       |
+| Job          | Étapes                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18       |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production |
+| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                             |
 
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/testing.fr.md](docs/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les trois jobs (`Backend`, `Frontend`, `Secrets`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.

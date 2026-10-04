@@ -67,12 +67,13 @@ Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans 
 
 ## 5. Lint et formatage
 
-| Action                              | Commande            |
-| ----------------------------------- | ------------------- |
-| Analyser le code (ESLint)           | `pnpm lint`         |
-| Corriger automatiquement            | `pnpm lint:fix`     |
-| Formater tout le code (Prettier)    | `pnpm format`       |
-| Vérifier le formatage sans modifier | `pnpm format:check` |
+| Action                                              | Commande            |
+| --------------------------------------------------- | ------------------- |
+| Analyser le code (ESLint)                           | `pnpm lint`         |
+| Corriger automatiquement                            | `pnpm lint:fix`     |
+| Formater tout le code (Prettier)                    | `pnpm format`       |
+| Vérifier le formatage sans modifier                 | `pnpm format:check` |
+| Trouver exports, fichiers et dépendances inutilisés | `pnpm knip`         |
 
 C'est automatique à deux endroits :
 
@@ -80,6 +81,14 @@ C'est automatique à deux endroits :
 - **Avant chaque commit** : le hook husky lance `lint-staged`, qui corrige et formate les fichiers modifiés. Si une erreur ESLint ne peut pas être corrigée automatiquement, le commit est bloqué.
 
 ESLint vérifie aussi l'**accessibilité** avec `eslint-plugin-jsx-a11y-x` (règles `recommended`) : textes alternatifs (`alt`), labels, rôles et attributs ARIA valides, utilisation au clavier des éléments cliquables. C'est le fork maintenu d'`eslint-plugin-jsx-a11y`, avec les mêmes règles, choisi car l'original ne prend pas en charge ESLint 10. Il repère ce qui se voit dans le code ; le focus, le contraste et le comportement avec un lecteur d'écran restent à vérifier dans le navigateur.
+
+**knip** liste ce que rien n'utilise : exports, fichiers et dépendances (`knip.jsonc` : `schema.d.ts` et les exports shadcn de `src/components/ui/` sont ignorés, `git-cliff` est lancé par `scripts/prepare-release.sh`). Il tourne en CI : supprimez ce qu'il signale, ou expliquez l'exception dans `knip.jsonc`.
+
+**Où ranger un type ou une interface** :
+
+- utilisé par **un seul fichier** (props d'un composant, types internes) : il reste dans ce fichier, **sans `export`**. TypeScript interdit alors à tout autre fichier de s'en servir.
+- nécessaire à **un deuxième fichier** : on l'exporte depuis le module auquel il appartient (ex. `src/api/<ressource>.ts` pour les types d'API, issus de `schema.d.ts`) et on l'importe de là.
+- `pnpm typecheck` bloque l'usage d'un type non exporté, et `pnpm knip` signale un export que personne n'importe. Seul un type recopié au lieu d'être importé reste à vérifier en review.
 
 Configuration : `eslint.config.js`, `.prettierrc`, `.prettierignore`, section `lint-staged` de `package.json`.
 

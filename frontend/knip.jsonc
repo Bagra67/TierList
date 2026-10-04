@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Généré par `pnpm gen:api` depuis backend/openapi.json : ses exports suivent le contrat, pas notre usage
+  "ignore": ["src/api/schema.d.ts"],
+  // Lancé par scripts/prepare-release.sh (frontend/node_modules/.bin/git-cliff), hors de package.json
+  "ignoreDependencies": ["git-cliff"],
+  // Composants shadcn/ui copiés tels quels : ils exportent aussi des variantes et sous-composants
+  // pas encore utilisés (buttonVariants, CardTitle…), gardés pour rester proches de la version générée
+  "ignoreIssues": {
+    "src/components/ui/**": ["exports", "types"],
+  },
+}
