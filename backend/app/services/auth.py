@@ -395,6 +395,11 @@ class AuthService:
         return f"{self._settings.frontend_base_url}{path}?{urlencode({TOKEN_PARAM: token})}"
 
     def _start_session(self, user: User, authenticated_at: datetime) -> IssuedTokens:
+        # Ménage à chaque connexion, sans tâche planifiée : la table ne garde que les tokens
+        # encore valables, ou révoqués mais pas expirés (utiles pour repérer une réutilisation).
+        refresh_token_repository.delete_expired_user_refresh_tokens(
+            self._session, user.id, now=authenticated_at
+        )
         return self._issue_tokens(user, family_id=uuid.uuid4(), authenticated_at=authenticated_at)
 
     def _issue_tokens(

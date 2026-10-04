@@ -97,6 +97,8 @@ sequenceDiagram
 
 Au chargement de la page, aucun access token n'est en mémoire : le frontend appelle `POST /auth/refresh`, et le cookie, s'il est encore valide, restaure la session.
 
+Chaque connexion **supprime aussi les refresh tokens expirés** de l'utilisateur : la table ne grossit pas indéfiniment, sans tâche planifiée. Les tokens révoqués sont gardés jusqu'à leur expiration : ce sont eux qui repèrent une réutilisation. Un token volé rejoué après son expiration est donc simplement refusé (`401`), sans révoquer sa famille ; il était de toute façon inutilisable.
+
 ### Réglages
 
 Toutes les durées et règles qui peuvent changer selon l'environnement sont lues dans `backend/.env` (voir le README backend) : `ACCESS_TOKEN_TTL_MINUTES` (15), `REFRESH_TOKEN_TTL_DAYS` (30), `PASSWORD_MIN_LENGTH` (8), `RECENT_AUTHENTICATION_MAX_AGE_MINUTES` (5), `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES` (10), `GOOGLE_HTTP_TIMEOUT_SECONDS` (10), `EMAIL_VERIFICATION_TTL_HOURS` (24), `PASSWORD_RESET_TTL_MINUTES` (30), `EMAIL_COOLDOWN_SECONDS` (60). Les changer ne demande qu'un redémarrage du backend. Le frontend ne duplique pas `PASSWORD_MIN_LENGTH` : il affiche le message de la `422`.

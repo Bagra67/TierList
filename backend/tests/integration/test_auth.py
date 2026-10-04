@@ -223,6 +223,27 @@ def test_expired_refresh_token_is_rejected(auth_client: TestClient, db_session: 
     assert response.status_code == 401
 
 
+def test_sign_in_deletes_the_expired_refresh_tokens(auth_client: TestClient, db_session: Session):
+    register(auth_client)
+    expired = db_session.scalars(select(RefreshToken)).one()
+    expired.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    db_session.flush()
+    expired_id = expired.id
+    auth_client.cookies.clear()
+    login = {"email": "alice@example.com", "password": PASSWORD}
+    assert auth_client.post("/auth/login", json=login).status_code == 200
+    # Révoqué mais pas expiré : gardé, pour repérer une réutilisation
+    assert auth_client.post("/auth/logout").status_code == 204
+    revoked_id = db_session.scalars(select(RefreshToken)).one().id
+
+    assert auth_client.post("/auth/login", json=login).status_code == 200
+
+    remaining_ids = set(db_session.scalars(select(RefreshToken.id)).all())
+    assert expired_id not in remaining_ids
+    assert revoked_id in remaining_ids
+    assert len(remaining_ids) == 2
+
+
 def test_unknown_refresh_token_is_rejected_and_clears_the_cookie(auth_client: TestClient):
     auth_client.cookies.set("refresh_token", "unknown", path="/auth")
 
