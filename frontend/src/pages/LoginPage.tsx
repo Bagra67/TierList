@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 
 import { useLogin } from '../api/auth';
+import { pathAfterSignIn } from '../auth/signInRedirect';
 import { PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { LOGIN_ERROR_PARAM, ROUTES } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
@@ -33,8 +34,7 @@ export function LoginPage() {
     } catch {
       return; // l'erreur est affichée depuis loginMutation.error
     }
-    const from = (location.state as { from?: string } | null)?.from ?? ROUTES.HOME;
-    await navigate(from, { replace: true });
+    await navigate(pathAfterSignIn(location), { replace: true });
   }
 
   return (

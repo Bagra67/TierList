@@ -66,6 +66,31 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
+  it('sends a signed-in user away from the login page', async () => {
+    stubBackend(loggedInBackend);
+
+    renderAppAt('/login');
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+  });
+
+  it('returns to the requested page, query string included, after signing in', async () => {
+    stubBackend({
+      'POST /auth/refresh': unauthorized,
+      'POST /auth/login': tokenResponse('login-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderAppAt('/?confirm=delete-account');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    // ?confirm=delete-account rouvre le dialogue de suppression sur la page d'accueil
+    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
+  });
+
   it('redirects unknown pages to the home page', async () => {
     stubBackend(loggedInBackend);
 

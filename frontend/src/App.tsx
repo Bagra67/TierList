@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router';
 
+import { RedirectIfSignedIn } from './auth/RedirectIfSignedIn';
 import { RequireAuth } from './auth/RequireAuth';
 import { Layout } from './components/Layout';
 import { ROUTES } from './constants/routes';
@@ -14,8 +15,10 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+        <Route element={<RedirectIfSignedIn />}>
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+        </Route>
         <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
