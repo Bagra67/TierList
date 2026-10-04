@@ -112,7 +112,7 @@ cd frontend
 pnpm dev
 ```
 
-Le frontend affiche le « Hello World » renvoyé par le backend. Il l'appelle via `/api/...` (proxy Vite → port 8000) : pas besoin de configurer CORS en développement.
+Le frontend appelle le backend via `/api/...` (proxy Vite → port 8000) : pas besoin de configurer CORS en développement.
 
 ---
 

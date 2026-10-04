@@ -28,7 +28,7 @@ Both test suites also run on **every pull request** in the CI (`.github/workflow
   - `tmp_path` provides an empty temporary folder;
   - `capsys` captures what is written to stdout/stderr.
 - **Markers**: labels on tests. `integration` marks the tests that need a real PostgreSQL, so you can select them with `-m integration` or exclude them with `-m "not integration"`.
-- **FastAPI `TestClient`**: sends HTTP requests to the application **in memory**, without starting a server. For example, `client.get("/hello")` returns a response whose `status_code` and `json()` can be checked.
+- **FastAPI `TestClient`**: sends HTTP requests to the application **in memory**, without starting a server. For example, `client.get("/health")` returns a response whose `status_code` and `json()` can be checked.
 - **`app.dependency_overrides`**: replaces a FastAPI dependency during a test. The tests replace `get_db_session`, the dependency that provides the database session, to simulate a working or broken database.
 
 ### 1.2 Running the tests
@@ -50,7 +50,6 @@ These tests call the API with `TestClient`. They never need a real database.
 
 | Test                         | What it does                                                                                                                                     | Purpose                                                                                   | Expected result                                                                 |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `test_hello`                 | Calls `GET /hello`.                                                                                                                              | Checks the endpoint the frontend displays.                                                | `200` and `{"message": "Hello World"}`.                                         |
 | `test_health`                | Calls `GET /health` without replacing any dependency.                                                                                            | The liveness probe must answer without the database.                                      | `200` and `{"status": "ok"}`.                                                   |
 | `test_health_db_ok`          | Replaces the database session with one on an **in-memory SQLite** database, then calls `GET /health/db`.                                         | Checks the success path of the database health check without PostgreSQL.                  | `200` and `{"status": "ok"}`.                                                   |
 | `test_health_db_unavailable` | Replaces the session with a fake object whose `execute` raises `OperationalError`, the error SQLAlchemy raises when the database is unreachable. | Checks that a database outage is turned into a clean API error, without internal details. | `503` and `{"detail": "Database unavailable", "code": "database_unavailable"}`. |
@@ -297,36 +296,24 @@ No SMTP server: `FakeSMTP` replaces `smtplib.SMTP` and keeps the calls. The sett
 
 `App` (the routes) is rendered inside a `MemoryRouter` at a given path, with `renderWithQueryClient` and `stubBackend`: router, guard, hooks and API client all run.
 
-| Test                                                | What it does                                        | Purpose                                               | Expected result                                             |
-| --------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
-| `redirects to the login page without a session`     | Opens `/`; `POST /auth/refresh` answers `401`.      | Private pages require a session.                      | The `Connexion` heading is shown.                           |
-| `restores the session and shows the home page`      | Opens `/`; refresh and `GET /auth/me` succeed.      | A valid refresh cookie restores the session at load.  | The `Hello World` heading and `Connecté en tant que Alice`. |
-| `shows an alert when the backend cannot be reached` | Refresh answers `502`. `console.error` is silenced. | A backend outage is not mistaken for "not signed in". | An `alert` containing `Impossible de joindre le backend`.   |
-| `logs out and goes back to the login page`          | Clicks `Se déconnecter`.                            | Checks sign-out.                                      | The `Connexion` heading is shown.                           |
-| `redirects unknown pages to the home page`          | Opens `/does-not-exist` with a session.             | Unknown paths do not show a blank page.               | The `Hello World` heading.                                  |
+| Test                                                | What it does                                        | Purpose                                               | Expected result                                           |
+| --------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------- |
+| `redirects to the login page without a session`     | Opens `/`; `POST /auth/refresh` answers `401`.      | Private pages require a session.                      | The `Connexion` heading is shown.                         |
+| `restores the session and shows the home page`      | Opens `/`; refresh and `GET /auth/me` succeed.      | A valid refresh cookie restores the session at load.  | The `Accueil` heading and `Connecté en tant que Alice`.   |
+| `shows an alert when the backend cannot be reached` | Refresh answers `502`. `console.error` is silenced. | A backend outage is not mistaken for "not signed in". | An `alert` containing `Impossible de joindre le backend`. |
+| `logs out and goes back to the login page`          | Clicks `Se déconnecter`.                            | Checks sign-out.                                      | The `Connexion` heading is shown.                         |
+| `redirects unknown pages to the home page`          | Opens `/does-not-exist` with a session.             | Unknown paths do not show a blank page.               | The `Accueil` heading.                                    |
 
-### 2.4 Tests: `src/api/hello.test.ts`
+### 2.4 Tests: `src/pages/HomePage.test.tsx`
 
-Tests of `getHello`, the API call itself, with a stubbed `fetch`.
+The home page with a restored session.
 
-| Test                                                                  | What it does                                                                                                    | Purpose                                                                                                                      | Expected result                                                                                        |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `calls GET /api/hello and returns the JSON body`                      | `fetch` answers `200` with `{ message: 'Hello World' }`; the test inspects the request sent.                    | Checks that the shared client targets the right URL (`/api` prefix, forwarded by the Vite proxy) and returns the typed body. | `{ message: 'Hello World' }` is returned; the request is a `GET` on `/api/hello`.                      |
-| `throws an ApiError carrying the status when the backend fails`       | `fetch` answers `500` with `{ detail: 'boom', code: 'internal_error' }` (the backend's `ErrorResponse` format). | Checks the error contract: every non-2xx response becomes an `ApiError` that callers can inspect.                            | An `ApiError` with `status: 500`, `code: 'internal_error'`, the body, and `message: 'boom'` is thrown. |
-| `falls back to the HTTP status when the body is not an ErrorResponse` | `fetch` answers `502` with a plain-text body, as the Vite proxy does when the backend is down.                  | The error stays usable even when the body does not come from the backend.                                                    | An `ApiError` with `status: 502` and `message: 'HTTP 502'` is thrown.                                  |
+| Test                                                  | What it does                                     | Purpose                                                              | Expected result                                         |
+| ----------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- | ------------------------------------------------------- |
+| `shows the page title and the connected user`         | Opens `/` with a session.                        | Checks the page content.                                             | The `Accueil` heading and `Connecté en tant que Alice`. |
+| `reopens the account deletion after a Google sign-in` | Opens `/?confirm=delete-account` with a session. | Back from the re-authentication, the user goes on with the deletion. | The dialog `Supprimer mon compte` is visible.           |
 
-### 2.5 Tests: `src/pages/HomePage.test.tsx`
-
-The home page with a restored session; only `GET /hello` changes between tests.
-
-| Test                                                               | What it does                                                         | Purpose                                                              | Expected result                                                                           |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `shows a loading message while the backend answers`                | `GET /hello` never answers.                                          | Checks the loading state.                                            | `Chargement…` is shown.                                                                   |
-| `shows the message returned by the backend and the connected user` | `GET /hello` answers `{ message: 'Hello World' }`.                   | Checks the success state.                                            | The `Hello World` heading and `Connecté en tant que Alice`.                               |
-| `shows an alert when the backend cannot be reached`                | `GET /hello` answers `500`; `console.error` is silenced and checked. | The user is told, and the error is logged by the query client.       | An `alert` containing `Impossible de joindre le backend`, and `console.error` was called. |
-| `reopens the account deletion after a Google sign-in`              | Opens `/?confirm=delete-account` with a session.                     | Back from the re-authentication, the user goes on with the deletion. | The dialog `Supprimer mon compte` is visible.                                             |
-
-### 2.6 Tests: `src/pages/LoginPage.test.tsx` and `src/pages/RegisterPage.test.tsx`
+### 2.5 Tests: `src/pages/LoginPage.test.tsx` and `src/pages/RegisterPage.test.tsx`
 
 The form is filled with `fireEvent.change` and sent with `fireEvent.click`; a `/` route shows `Accueil` to check the redirection.
 
@@ -345,7 +332,7 @@ The form is filled with `fireEvent.change` and sent with `fireEvent.click`; a `/
 | Login: `explains the Google error %s` (5 cases)                       | Opens `/login?error=<code>` for each known code and an unknown one.                                                         | The user understands why the Google sign-in failed.                                               | An `alert` with the matching message; an unknown code shows the generic failure message.                                       |
 | Register: `links to the Google sign-in`                               | Renders the page.                                                                                                           | Google sign-up is offered.                                                                        | A `Continuer avec Google` link to `/api/auth/google/login`.                                                                    |
 
-### 2.7 Tests: `src/api/client.test.ts` (authentication middleware)
+### 2.6 Tests: `src/api/client.test.ts` (authentication middleware)
 
 | Test                                                               | What it does                                                 | Purpose                                                                    | Expected result                                                                                                  |
 | ------------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -355,18 +342,21 @@ The form is filled with `fireEvent.change` and sent with `fireEvent.click`; a `/
 | `returns the 401 when the session cannot be refreshed`             | Both `GET /auth/me` and refresh answer `401`.                | No infinite loop; the caller sees the 401.                                 | An `ApiError` with `status: 401`.                                                                                |
 | `never refreshes on a 401 from a session route such as login`      | `POST /auth/login` answers `401` with `invalid_credentials`. | A wrong password must not trigger a refresh.                               | Only `POST /auth/login` is called; an `ApiError` with `status: 401` and `code: 'invalid_credentials'` is thrown. |
 
-### 2.8 Tests: `src/api/auth.test.ts`
+### 2.7 Tests: `src/api/auth.test.ts`
 
-| Test                                                                             | What it does                                                           | Purpose                                                    | Expected result                                                                                            |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `restores the session from the refresh cookie when no access token is in memory` | Refresh and `GET /auth/me` succeed.                                    | Checks the session restoration at page load.               | The user; calls: refresh then `GET /auth/me`.                                                              |
-| `returns no user when there is no valid session`                                 | Refresh answers `401`.                                                 | "Not signed in" is a normal state, not an error.           | `null`, without calling `GET /auth/me`.                                                                    |
-| `reports an unreachable backend instead of an anonymous user`                    | Refresh answers `502`.                                                 | A backend outage must not send the user to the login page. | An `ApiError` with `status: 502`.                                                                          |
-| `keeps the access token returned by login for the next requests`                 | Signs in, then calls `GET /auth/me`, which only accepts the new token. | The token from sign-in is used afterwards.                 | The user is returned.                                                                                      |
-| `forgets the access token on logout, even if the backend fails`                  | `POST /auth/logout` answers `500`.                                     | Signing out locally must always work.                      | An `ApiError` is thrown, and the logout request carries no `Authorization` header.                         |
-| `forgets the access token once the account is deleted`                           | `DELETE /auth/me` answers `204`, then the session is read again.       | After deletion, no request may use the old token.          | `getCurrentUser()` returns `null`; calls: `DELETE /auth/me` then `POST /auth/refresh` (no `GET /auth/me`). |
+| Test                                                                             | What it does                                                                                                    | Purpose                                                                                                                      | Expected result                                                                                            |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `calls GET /api/auth/me and returns the JSON body`                               | `fetch` answers `200` with Alice; the test inspects the request sent.                                           | Checks that the shared client targets the right URL (`/api` prefix, forwarded by the Vite proxy) and returns the typed body. | Alice is returned; the request is a `GET` on `/api/auth/me`.                                               |
+| `throws an ApiError carrying the status when the backend fails`                  | `fetch` answers `500` with `{ detail: 'boom', code: 'internal_error' }` (the backend's `ErrorResponse` format). | Checks the error contract: every non-2xx response becomes an `ApiError` that callers can inspect.                            | An `ApiError` with `status: 500`, `code: 'internal_error'`, the body, and `message: 'boom'` is thrown.     |
+| `falls back to the HTTP status when the body is not an ErrorResponse`            | `fetch` answers `502` with a plain-text body, as the Vite proxy does when the backend is down.                  | The error stays usable even when the body does not come from the backend.                                                    | An `ApiError` with `status: 502` and `message: 'HTTP 502'` is thrown.                                      |
+| `restores the session from the refresh cookie when no access token is in memory` | Refresh and `GET /auth/me` succeed.                                                                             | Checks the session restoration at page load.                                                                                 | The user; calls: refresh then `GET /auth/me`.                                                              |
+| `returns no user when there is no valid session`                                 | Refresh answers `401`.                                                                                          | "Not signed in" is a normal state, not an error.                                                                             | `null`, without calling `GET /auth/me`.                                                                    |
+| `reports an unreachable backend instead of an anonymous user`                    | Refresh answers `502`.                                                                                          | A backend outage must not send the user to the login page.                                                                   | An `ApiError` with `status: 502`.                                                                          |
+| `keeps the access token returned by login for the next requests`                 | Signs in, then calls `GET /auth/me`, which only accepts the new token.                                          | The token from sign-in is used afterwards.                                                                                   | The user is returned.                                                                                      |
+| `forgets the access token on logout, even if the backend fails`                  | `POST /auth/logout` answers `500`.                                                                              | Signing out locally must always work.                                                                                        | An `ApiError` is thrown, and the logout request carries no `Authorization` header.                         |
+| `forgets the access token once the account is deleted`                           | `DELETE /auth/me` answers `204`, then the session is read again.                                                | After deletion, no request may use the old token.                                                                            | `getCurrentUser()` returns `null`; calls: `DELETE /auth/me` then `POST /auth/refresh` (no `GET /auth/me`). |
 
-### 2.9 Tests: `src/components/DeleteAccountDialog.test.tsx`
+### 2.8 Tests: `src/components/DeleteAccountDialog.test.tsx`
 
 The dialog is rendered for Alice (with a password, or `googleOnlyAlice` without) and with a `/login` route that shows `Connexion`, to check the redirection.
 
@@ -382,7 +372,7 @@ The dialog is rendered for Alice (with a password, or `googleOnlyAlice` without)
 
 ---
 
-### 2.10 Tests: `src/errors/apiError.test.ts` and `src/errors/googleError.test.ts`
+### 2.9 Tests: `src/errors/apiError.test.ts` and `src/errors/googleError.test.ts`
 
 The errors are translated with `i18n.t`, in French unless the test switches to English.
 
@@ -400,7 +390,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `translateFieldError` › `returns nothing for a valid field`                                          | A field without error.                                                 | The field shows no message.                                   | `undefined`.                                                                 |
 | `translateGoogleError` › `translates the Google error code, and treats an unknown code as a failure` | In English: `google_cancelled`, then an unknown code.                  | The Google sign-in errors are translated too.                 | `Google sign-in cancelled.`, then `Google sign-in failed, please try again.` |
 
-### 2.11 Tests: `src/i18n/i18n.test.ts` (translations)
+### 2.10 Tests: `src/i18n/i18n.test.ts` (translations)
 
 | Test                                                                             | What it does                                          | Purpose                                                  | Expected result                                           |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
@@ -414,7 +404,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `changeLanguage` › `translates, remembers the choice and sets the page language` | `changeLanguage('en')`.                               | Checks the effect of the switcher.                       | `Sign in`; `localStorage` holds `en`; `<html lang="en">`. |
 | `changeLanguage` › `interpolates values`                                         | `t('auth.signedInAs', { name: 'Alice' })` in English. | Dynamic values are inserted in the text.                 | `Signed in as Alice`.                                     |
 
-### 2.12 Tests: `src/components/LanguageSwitcher.test.tsx`
+### 2.11 Tests: `src/components/LanguageSwitcher.test.tsx`
 
 `App` is rendered at `/login` without a session, so the switcher is tested in the shared layout.
 
@@ -423,7 +413,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `shows the current language`                   | Renders the login page. | The switcher reflects the interface language.  | The `Langue` field has the value `fr`.                                                                         |
 | `translates the page and remembers the choice` | Selects `en`.           | Checks the language switch from the interface. | The `Sign in` heading; the `Language` field has the value `en`; `localStorage` holds `en`; `<html lang="en">`. |
 
-### 2.13 Tests: `src/theme/theme.test.ts` (dark mode)
+### 2.12 Tests: `src/theme/theme.test.ts` (dark mode)
 
 | Test                                                         | What it does                                                                   | Purpose                                                          | Expected result                                                       |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
@@ -432,7 +422,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `falls back to the system theme for an unknown stored value` | Stored `purple`.                                                               | A corrupted stored value does not break the interface.           | `getTheme()` returns `system`.                                        |
 | `still applies the theme when localStorage is unavailable`   | `getItem` and `setItem` throw, then `changeTheme('dark')`.                     | Private browsing or blocked storage does not break the switcher. | `dark` class applied; `getTheme()` returns `system` (nothing stored). |
 
-### 2.14 Tests: `src/components/ThemeSwitcher.test.tsx`
+### 2.13 Tests: `src/components/ThemeSwitcher.test.tsx`
 
 `App` is rendered at `/login` without a session, so the switcher is tested in the shared layout.
 
@@ -441,7 +431,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `follows the system theme by default`                          | Renders the login page.       | Without a stored choice, the theme is "System". | The `Thème` field has the value `system`.                                                                        |
 | `switches to dark and back to light, and remembers the choice` | Selects `dark`, then `light`. | Checks the theme switch from the interface.     | `dark` class on `<html>` and `localStorage` holds `dark`; then no `dark` class and `localStorage` holds `light`. |
 
-### 2.15 Tests: `src/pages/VerifyEmailPage.test.tsx`
+### 2.14 Tests: `src/pages/VerifyEmailPage.test.tsx`
 
 | Test                                              | What it does                                  | Purpose                                                             | Expected result                                                                                         |
 | ------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -450,7 +440,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `explains an invalid or expired link`             | The backend answers `400 invalid_token`.      | Translated error message.                                           | `Ce lien est invalide ou a expiré.`                                                                     |
 | `explains a link without token`                   | Opens `/verify-email`.                        | An incomplete link is explained, without button.                    | `Ce lien est incomplet…`; no button.                                                                    |
 
-### 2.16 Tests: `src/components/EmailVerificationBanner.test.tsx`
+### 2.15 Tests: `src/components/EmailVerificationBanner.test.tsx`
 
 | Test                                              | What it does                                          | Purpose                                  | Expected result                                                                      |
 | ------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -458,14 +448,14 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 | `sends the email again in the interface language` | Clicks "Renvoyer l'email"; the backend answers `204`. | Checks the request and the confirmation. | `Email envoyé.`; a single `POST /auth/email/verification` with `{ language: 'fr' }`. |
 | `shows nothing once the address is confirmed`     | Renders the banner for a confirmed account.           | No banner once confirmed.                | Empty render.                                                                        |
 
-### 2.17 Tests: `src/pages/ForgotPasswordPage.test.tsx`
+### 2.16 Tests: `src/pages/ForgotPasswordPage.test.tsx`
 
 | Test                                                                           | What it does                                 | Purpose                                     | Expected result                                                                     |
 | ------------------------------------------------------------------------------ | -------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `asks for a link and shows the same message whether the account exists or not` | Submits an email; the backend answers `204`. | Checks the request and the neutral message. | `Si un compte existe pour cette adresse…`; the body is `{ email, language: 'fr' }`. |
 | `links back to the sign-in page`                                               | Renders the page.                            | Way back to the sign-in.                    | A "Retour à la connexion" link to `/login`.                                         |
 
-### 2.18 Tests: `src/pages/ResetPasswordPage.test.tsx`
+### 2.17 Tests: `src/pages/ResetPasswordPage.test.tsx`
 
 | Test                                                             | What it does                                                                       | Purpose                                                         | Expected result                                                                                                          |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |

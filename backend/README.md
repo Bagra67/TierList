@@ -91,7 +91,7 @@ Once running:
 - Interactive documentation (Swagger): http://127.0.0.1:8000/docs
 - ReDoc documentation: http://127.0.0.1:8000/redoc
 
-The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/hello` is forwarded to `http://127.0.0.1:8000/hello`. The backend must therefore run on port **8000** during frontend development.
+The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/auth/me` is forwarded to `http://127.0.0.1:8000/auth/me`. The backend must therefore run on port **8000** during frontend development.
 
 ---
 
@@ -182,7 +182,7 @@ Configured in `pyproject.toml` (`[tool.pyright]`, `standard` mode, on `app/`, `t
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # FastAPI entry point (GET /hello, GET /health, GET /health/db, routers)
+│   ├── main.py            # FastAPI entry point (GET /health, GET /health/db, routers)
 │   ├── api/
 │   │   ├── dependencies.py # Shared dependencies (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # /auth routes: register, login, refresh, logout, me

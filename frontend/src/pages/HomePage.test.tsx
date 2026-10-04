@@ -26,36 +26,17 @@ describe('HomePage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows a loading message while the backend answers', () => {
-    stubBackend({ ...session, 'GET /hello': () => new Promise<Response>(() => {}) });
+  it('shows the page title and the connected user', async () => {
+    stubBackend(session);
 
     renderHomePage();
 
-    expect(screen.getByText('Chargement…')).toBeInTheDocument();
-  });
-
-  it('shows the message returned by the backend and the connected user', async () => {
-    stubBackend({ ...session, 'GET /hello': () => Response.json({ message: 'Hello World' }) });
-
-    renderHomePage();
-
-    expect(await screen.findByRole('heading', { name: 'Hello World' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
     expect(await screen.findByText(/Connecté en tant que Alice/)).toBeInTheDocument();
   });
 
-  it('shows an alert when the backend cannot be reached', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    stubBackend({ ...session, 'GET /hello': () => new Response(null, { status: 500 }) });
-
-    renderHomePage();
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
   it('reopens the account deletion after a Google sign-in', async () => {
-    stubBackend({ ...session, 'GET /hello': () => Response.json({ message: 'Hello World' }) });
+    stubBackend(session);
 
     renderHomePage('/?confirm=delete-account');
 

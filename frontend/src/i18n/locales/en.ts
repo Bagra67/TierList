@@ -7,6 +7,9 @@ export const en: Translation = {
     language: 'Language',
     theme: 'Theme',
   },
+  home: {
+    title: 'Home',
+  },
   theme: {
     system: 'System',
     light: 'Light',

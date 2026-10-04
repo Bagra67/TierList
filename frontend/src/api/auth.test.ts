@@ -11,6 +11,47 @@ describe('auth API', () => {
     vi.unstubAllGlobals();
   });
 
+  it('calls GET /api/auth/me and returns the JSON body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json(alice));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getMe()).resolves.toEqual(alice);
+
+    const request = fetchMock.mock.calls[0][0] as Request;
+    expect(request.method).toBe('GET');
+    expect(new URL(request.url).pathname).toBe('/api/auth/me');
+  });
+
+  it('throws an ApiError carrying the status when the backend fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ detail: 'boom', code: 'internal_error' }, { status: 500 }),
+        ),
+    );
+
+    const error = await getMe().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 500,
+      code: 'internal_error',
+      body: { detail: 'boom', code: 'internal_error' },
+      message: 'boom',
+    });
+  });
+
+  it('falls back to the HTTP status when the body is not an ErrorResponse', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad Gateway', { status: 502 })));
+
+    const error = await getMe().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 502, message: 'HTTP 502' });
+  });
+
   it('restores the session from the refresh cookie when no access token is in memory', async () => {
     const fetchMock = stubBackend({
       'POST /auth/refresh': tokenResponse('restored-token'),

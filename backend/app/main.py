@@ -29,17 +29,8 @@ register_error_handlers(app)
 app.include_router(auth.router)
 
 
-class HelloResponse(BaseModel):
-    message: str
-
-
 class HealthResponse(BaseModel):
     status: str
-
-
-@app.get("/hello")
-def hello() -> HelloResponse:
-    return HelloResponse(message="Hello World")
 
 
 # Sonde de vie : ne dépend de rien, pour qu'une panne de la base ne fasse pas
