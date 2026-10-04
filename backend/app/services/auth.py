@@ -143,6 +143,16 @@ class AuthService:
         Les cas 2 et 3 exigent un email vérifié par Google : sans cela, n'importe qui pourrait
         prendre le contrôle d'un compte existant, ou réserver l'adresse de quelqu'un d'autre.
         """
+        try:
+            return self._login_with_google(identity)
+        except IntegrityError:
+            # Première connexion simultanée (double clic, deux onglets) : l'autre requête a
+            # créé le compte ou lié l'identité entre-temps, la nouvelle tentative le retrouve.
+            self._session.rollback()
+            logger.info("Connexion Google simultanée, nouvelle tentative")
+            return self._login_with_google(identity)
+
+    def _login_with_google(self, identity: GoogleIdentity) -> IssuedTokens:
         user = oauth_account_repository.get_user_by_oauth_account(
             self._session, GOOGLE_PROVIDER, identity.subject
         )

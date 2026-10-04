@@ -191,6 +191,8 @@ sequenceDiagram
 
 Les cas 2 et 3 exigent `email_verified` de Google : sinon n'importe qui pourrait prendre le contrôle d'un compte existant, ou réserver l'adresse de quelqu'un d'autre.
 
+Deux **premières connexions simultanées** (double clic, deux onglets) peuvent arriver toutes les deux aux cas 2 ou 3. Les contraintes d'unicité (`users.email`, `(provider, provider_subject)` de `oauth_accounts`) ne laissent écrire que l'une d'elles ; l'autre est annulée et retentée une fois, et retrouve alors le compte au cas 1 ou 2.
+
 **Pourquoi le mot de passe d'un compte non confirmé est supprimé** : sans cela, quelqu'un pourrait s'inscrire avec l'adresse Gmail d'une autre personne, avant elle, et choisir le mot de passe. Quand la vraie propriétaire se connecterait ensuite avec Google, son identité Google serait reliée à ce compte, dont l'autre personne connaît le mot de passe : les deux partageraient le compte (_prise de contrôle préalable_). Google prouve qui possède l'adresse : le mot de passe posé par quelqu'un d'autre, et les sessions ouvertes avec lui, sont donc supprimés. Une vraie propriétaire qui s'était inscrite avec un mot de passe peut toujours se connecter avec Google. Les identités sont enregistrées dans la table `oauth_accounts` (`provider`, `provider_subject`, uniques ensemble).
 
 **Configurer Google** (Google Cloud Console → API et services → Identifiants) :
