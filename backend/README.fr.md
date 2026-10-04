@@ -284,6 +284,10 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 
 Les modèles doivent hériter de `app.db.base.Base` et être importés par `migrations/env.py` pour être détectés par `--autogenerate`. **Relisez toujours** une migration générée avant de l'appliquer.
 
+Les noms des contraintes et des index suivent la convention de `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…) : une migration peut les désigner par leur nom sans deviner celui choisi par PostgreSQL.
+
+`tests/integration/test_migrations.py` échoue quand les modèles et les migrations ne décrivent plus le même schéma, ou quand une migration ne peut pas être annulée.
+
 ---
 
 ## 10. Logs
