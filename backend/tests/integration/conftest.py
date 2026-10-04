@@ -1,10 +1,8 @@
 import os
 from collections.abc import Callable, Iterator
-from pathlib import Path
 
 import pytest
 from alembic import command
-from alembic.config import Config
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import URL, Engine, create_engine, text
@@ -16,8 +14,7 @@ from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
 from app.services.email import Email, EmailSender
-
-BACKEND_DIR = Path(__file__).resolve().parents[2]
+from tests.integration.helpers import alembic_config
 
 
 def _database_unavailable(reason: str) -> None:
@@ -27,16 +24,15 @@ def _database_unavailable(reason: str) -> None:
     pytest.skip(reason)
 
 
-@pytest.fixture(scope="session")
-def test_database_url() -> URL:
-    """URL de la base de test `<POSTGRES_DB>_test`, créée si besoin (jamais la base de dev)."""
+def _test_database_url(suffix: str) -> URL:
+    """URL de la base `<POSTGRES_DB><suffix>`, créée si besoin (jamais la base de dev)."""
     try:
         settings = get_settings()
     except ValidationError:
         _database_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
         raise
 
-    test_database = f"{settings.postgres_db}_test"
+    test_database = f"{settings.postgres_db}{suffix}"
     admin_engine = create_engine(
         settings.database_url.set(database="postgres"),
         isolation_level="AUTOCOMMIT",
@@ -63,14 +59,22 @@ def test_database_url() -> URL:
 
 
 @pytest.fixture(scope="session")
+def test_database_url() -> URL:
+    """URL de la base de test `<POSTGRES_DB>_test`, partagée par les tests d'intégration."""
+    return _test_database_url("_test")
+
+
+@pytest.fixture(scope="session")
+def migrations_database_url() -> URL:
+    """URL de la base `<POSTGRES_DB>_test_migrations`, réservée aux tests qui descendent les
+    migrations : la base de test partagée garde son schéma pendant toute la session."""
+    return _test_database_url("_test_migrations")
+
+
+@pytest.fixture(scope="session")
 def migrated_engine(test_database_url: URL) -> Iterator[Engine]:
     """Applique les migrations Alembic sur la base de test, puis fournit un engine."""
-    # Config sans fichier .ini : évite qu'Alembic reconfigure le logging de pytest.
-    alembic_config = Config()
-    alembic_config.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
-    url = test_database_url.render_as_string(hide_password=False)
-    alembic_config.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
-    command.upgrade(alembic_config, "head")
+    command.upgrade(alembic_config(test_database_url), "head")
 
     connect_timeout = get_settings().database_connect_timeout_seconds
     engine = create_engine(test_database_url, connect_args={"connect_timeout": connect_timeout})

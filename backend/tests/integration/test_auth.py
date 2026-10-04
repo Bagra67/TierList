@@ -13,6 +13,8 @@ from app.core.security import hash_refresh_token
 from app.main import app
 from app.models.user import RefreshToken, User
 
+# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
+# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"

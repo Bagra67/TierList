@@ -16,6 +16,8 @@ from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import link_token
 
+# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
+# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
