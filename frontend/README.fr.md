@@ -43,7 +43,7 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
 Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
 
-Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/testing.fr.md).
+Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/technical/testing.fr.md).
 
 ---
 
@@ -188,7 +188,7 @@ Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/
 
 ### Requêtes authentifiées
 
-`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/authentication.fr.md).
+`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/technical/authentication.fr.md).
 
 ---
 
@@ -204,7 +204,7 @@ return <h1>{t('auth.login.title')}</h1>;
 - Les textes sont dans `src/i18n/locales/fr.ts` (référence) et `en.ts` ; une clé absente ou en trop dans `en.ts` est une erreur de `pnpm typecheck`, et les clés de `t('…')` sont vérifiées au typage elles aussi.
 - Les erreurs de l'API sont traduites à partir de leur code : `translateError(t, error)` et `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
-Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/i18n.fr.md).
+Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/technical/i18n.fr.md).
 
 ---
 

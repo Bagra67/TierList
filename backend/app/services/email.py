@@ -1,4 +1,4 @@
-"""Envoi des emails transactionnels par SMTP (docs/emails.md).
+"""Envoi des emails transactionnels par SMTP (docs/technical/emails.md).
 
 Le fournisseur (Brevo, Resend, Amazon SES…) n'est qu'une configuration SMTP : en changer ne
 demande pas de modifier le code. En développement, Mailpit reçoit les emails sans les distribuer.

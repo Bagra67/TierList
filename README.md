@@ -9,7 +9,7 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-What the product is and how it is played: [docs/product.md](docs/product.md), with its [game rules](docs/game-rules.md), [permissions](docs/permissions.md) and [roadmap](docs/roadmap.md). How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Emails (SMTP, Mailpit): [docs/emails.md](docs/emails.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
@@ -23,7 +23,9 @@ TierList/
 ├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
-├── docs/               # Documentation (product, game rules, permissions, roadmap, architecture, testing guide, i18n, emails, releasing)
+├── docs/
+│   ├── product/        # Business docs: product, game rules, permissions, roadmap
+│   └── technical/      # Technical docs: architecture, authentication, testing guide, i18n, emails, releasing
 ├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```
@@ -70,7 +72,7 @@ Docker Desktop must be running. From the `TierList/` root:
 | -------------------------------------------- | ----------------------------------------------------------------- |
 | Start the database (waits until it is ready) | `docker compose up -d --wait`                                     |
 | Show its status / logs                       | `docker compose ps` / `docker compose logs db`                    |
-| Read the emails sent by the backend          | Mailpit: http://localhost:8025 ([docs/emails.md](docs/emails.md)) |
+| Read the emails sent by the backend          | Mailpit: http://localhost:8025 ([docs/technical/emails.md](docs/technical/emails.md)) |
 | Stop it (data is kept)                       | `docker compose down`                                             |
 | Reset everything (⚠️ **deletes the data**)   | `docker compose down -v`                                          |
 
@@ -150,7 +152,7 @@ Manual commands:
 | Tests            | `uv run pytest`             | `pnpm test`              |
 | Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
-Backend integration tests need the database: `docker compose up -d --wait` (otherwise they are skipped locally). How each test works and what it checks: [docs/testing.md](docs/testing.md).
+Backend integration tests need the database: `docker compose up -d --wait` (otherwise they are skipped locally). How each test works and what it checks: [docs/technical/testing.md](docs/technical/testing.md).
 
 ### Continuous integration (GitHub Actions)
 
@@ -162,9 +164,9 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                     |
 
-`.github/workflows/docs.yml` runs the **Docs** job on the same events: every doc has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with both testing guides (`docs/testing.md` + `docs/testing.fr.md`). For a justified exception (e.g. a typo fixed in one language), add the `skip-docs-sync` label to the PR and explain why. See [docs/testing.md](docs/testing.md#5-ci-script-tests-githubscripts).
+`.github/workflows/docs.yml` runs the **Docs** job on the same events: every doc has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with both testing guides (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). For a justified exception (e.g. a typo fixed in one language), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
 
-- The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/testing.md](docs/testing.md#31-test-report-on-ci).
+- The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/technical/testing.md](docs/technical/testing.md#31-test-report-on-ci).
 - The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.

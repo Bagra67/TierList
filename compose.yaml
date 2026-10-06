@@ -18,7 +18,7 @@ services:
       retries: 15
     restart: unless-stopped
 
-  # Reçoit les emails envoyés par le backend sans jamais les distribuer (docs/emails.md).
+  # Reçoit les emails envoyés par le backend sans jamais les distribuer (docs/technical/emails.md).
   # Interface web : http://localhost:8025
   mailpit:
     image: axllent/mailpit:v1

@@ -79,7 +79,7 @@ def guide_link() -> str:
     ref = os.environ.get("GITHUB_SHA")
     if server and repository and ref:
         return f"{server}/{repository}/blob/{ref}/docs/testing.md"
-    return "docs/testing.md"
+    return "docs/technical/testing.md"
 
 
 def render(title: str, results: list[TestResult]) -> str:

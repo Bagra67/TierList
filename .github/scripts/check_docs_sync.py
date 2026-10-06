@@ -8,7 +8,7 @@ Always checked, on every tracked Markdown file:
 
 Checked on the changes since `--base` (the PR base), unless `--skip-sync`:
 - an English doc is never changed without its French version, and the other way round;
-- a changed test, test fixture or test tool comes with `docs/testing.md` and `docs/testing.fr.md`.
+- a changed test, test fixture or test tool comes with `docs/technical/testing.md` and `docs/technical/testing.fr.md`.
 
 Errors are printed as GitHub Actions annotations; the exit code is 1 when there is one.
 Standard library only, so it runs on any runner without installing anything.
@@ -26,7 +26,7 @@ ENGLISH_ONLY = {"AGENTS.md"}
 EXCLUDED_DIRS = (".github/",)
 # The switcher sits on the first line, or just under the title.
 SWITCHER_MAX_LINE = 5
-TESTING_GUIDE = ("docs/testing.md", "docs/testing.fr.md")
+TESTING_GUIDE = ("docs/technical/testing.md", "docs/technical/testing.fr.md")
 SKIP_LABEL = "skip-docs-sync"
 
 
@@ -45,7 +45,7 @@ def is_french(path: str) -> bool:
 
 
 def counterpart(path: str) -> str:
-    """`docs/i18n.md` <-> `docs/i18n.fr.md`."""
+    """`docs/technical/i18n.md` <-> `docs/technical/i18n.fr.md`."""
     if is_french(path):
         return path.removesuffix(".fr.md") + ".md"
     return path.removesuffix(".md") + ".fr.md"
@@ -93,7 +93,7 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
 
 
 def is_test_file(path: str) -> bool:
-    """Tests, fixtures and test tools that docs/testing.md describes."""
+    """Tests, fixtures and test tools that docs/technical/testing.md describes."""
     return path.startswith(("backend/tests/", "frontend/src/test/", ".github/scripts/test_")) or (
         path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx"))
     )
@@ -106,8 +106,8 @@ def find_tests_without_guide(changed_paths: Iterable[str]) -> list[Problem]:
     return [
         Problem(
             path,
-            "Test changed without the testing guide: update docs/testing.md "
-            "and docs/testing.fr.md.",
+            "Test changed without the testing guide: update docs/technical/testing.md "
+            "and docs/technical/testing.fr.md.",
         )
         for path in sorted(changed)
         if is_test_file(path)

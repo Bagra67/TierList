@@ -2,9 +2,9 @@
 
 English | [Français](roadmap.fr.md)
 
-In which order the [product](product.md) is built, and the technical questions to settle along the way. Today the repository contains the foundations: accounts and sign-in ([authentication.md](authentication.md)), translations ([i18n.md](i18n.md)) and emails ([emails.md](emails.md)).
+In which order the [product](product.md) is built, and the technical questions to settle along the way. Today the repository contains the foundations: accounts and sign-in ([authentication.md](../technical/authentication.md)), translations ([i18n.md](../technical/i18n.md)) and emails ([emails.md](../technical/emails.md)).
 
-Milestones are not version numbers: releases keep following [releasing.md](releasing.md). A feature gets its technical documentation (in [architecture.md](architecture.md) or its own page) once it is **implemented**, not before.
+Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.
 
 ## Milestone 1 — MVP
 

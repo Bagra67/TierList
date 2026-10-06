@@ -22,7 +22,7 @@ def paths_of(problems):
 
 class UnpairedDocsTest(unittest.TestCase):
     def test_a_complete_pair_is_accepted(self):
-        self.assertEqual(find_unpaired_docs(["docs/i18n.md", "docs/i18n.fr.md"]), [])
+        self.assertEqual(find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), [])
 
     def test_an_english_doc_without_french_is_reported(self):
         problems = find_unpaired_docs(["docs/new.md"])
@@ -73,9 +73,9 @@ class OneSidedChangesTest(unittest.TestCase):
         self.assertEqual(find_one_sided_changes(["README.md", "README.fr.md", "app.py"]), [])
 
     def test_a_single_language_changed_is_reported(self):
-        problems = find_one_sided_changes(["docs/i18n.fr.md", "app.py"])
-        self.assertEqual(paths_of(problems), ["docs/i18n.fr.md"])
-        self.assertIn("docs/i18n.md", problems[0].message)
+        problems = find_one_sided_changes(["docs/technical/i18n.fr.md", "app.py"])
+        self.assertEqual(paths_of(problems), ["docs/technical/i18n.fr.md"])
+        self.assertIn("docs/technical/i18n.md", problems[0].message)
 
     def test_english_only_files_are_ignored(self):
         self.assertEqual(
@@ -84,7 +84,7 @@ class OneSidedChangesTest(unittest.TestCase):
 
 
 class TestsWithoutGuideTest(unittest.TestCase):
-    GUIDE = ["docs/testing.md", "docs/testing.fr.md"]
+    GUIDE = ["docs/technical/testing.md", "docs/technical/testing.fr.md"]
 
     def test_every_kind_of_test_file_requires_the_guide(self):
         tests = [
@@ -101,7 +101,7 @@ class TestsWithoutGuideTest(unittest.TestCase):
         self.assertEqual(find_tests_without_guide(["backend/tests/test_main.py", *self.GUIDE]), [])
 
     def test_tests_with_a_single_guide_are_reported(self):
-        changed = ["frontend/src/App.test.tsx", "docs/testing.md"]
+        changed = ["frontend/src/App.test.tsx", "docs/technical/testing.md"]
         self.assertEqual(paths_of(find_tests_without_guide(changed)), ["frontend/src/App.test.tsx"])
 
     def test_non_test_files_do_not_require_the_guide(self):

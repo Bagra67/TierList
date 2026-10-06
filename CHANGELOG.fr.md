@@ -3,7 +3,7 @@
 [English](CHANGELOG.md) | Français
 
 Tous les changements notables du projet sont consignés dans ce fichier.
-Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/releasing.fr.md](docs/releasing.fr.md).
+Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
 ## [0.4.0] - 2026-10-04
 

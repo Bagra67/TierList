@@ -2,9 +2,9 @@
 
 [English](roadmap.md) | Français
 
-Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Aujourd'hui, le dépôt contient les fondations : comptes et connexion ([authentication.fr.md](authentication.fr.md)), traductions ([i18n.fr.md](i18n.fr.md)) et emails ([emails.fr.md](emails.fr.md)).
+Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Aujourd'hui, le dépôt contient les fondations : comptes et connexion ([authentication.fr.md](../technical/authentication.fr.md)), traductions ([i18n.fr.md](../technical/i18n.fr.md)) et emails ([emails.fr.md](../technical/emails.fr.md)).
 
-Les jalons ne sont pas des numéros de version : les releases suivent toujours [releasing.fr.md](releasing.fr.md). Une fonctionnalité reçoit sa documentation technique (dans [architecture.fr.md](architecture.fr.md) ou sa propre page) une fois **implémentée**, pas avant.
+Les jalons ne sont pas des numéros de version : les releases suivent toujours [releasing.fr.md](../technical/releasing.fr.md). Une fonctionnalité reçoit sa documentation technique (dans [architecture.fr.md](../technical/architecture.fr.md) ou sa propre page dans `docs/technical/`) une fois **implémentée**, pas avant.
 
 ## Jalon 1 — MVP
 

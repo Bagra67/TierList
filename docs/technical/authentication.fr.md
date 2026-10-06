@@ -32,7 +32,7 @@ Toutes les autres pages exigent une session : sans session, l'utilisateur est re
 
 ### Messages
 
-L'API renvoie un **code** d'erreur (voir [le format d'erreur](../backend/README.fr.md#12-format-derreur)) ; le frontend affiche le message correspondant à ce code, dans la langue de l'interface. Les messages ci-dessous sont les messages français ; les anglais sont dans `frontend/src/i18n/locales/en.ts`.
+L'API renvoie un **code** d'erreur (voir [le format d'erreur](../../backend/README.fr.md#12-format-derreur)) ; le frontend affiche le message correspondant à ce code, dans la langue de l'interface. Les messages ci-dessous sont les messages français ; les anglais sont dans `frontend/src/i18n/locales/en.ts`.
 
 | Situation                                                                                                                    | HTTP | Code de l'API                              | Message affiché                                                                                           |
 | ---------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |

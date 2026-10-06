@@ -129,7 +129,7 @@ uv run pytest
 
 Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
 
-Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/testing.fr.md).
+Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/technical/testing.fr.md).
 
 ### Tests d'intégration (vrai PostgreSQL)
 
@@ -263,7 +263,7 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Temps laissé sur la page de Google avant que la tentative expire                                                                                                                           | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Délai des appels vers Google (échange du code, clés publiques)                                                                                                                             | `10`                                             |
 
-Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
+Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 

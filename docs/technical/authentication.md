@@ -32,7 +32,7 @@ Every other page requires a session: without one, the user is redirected to `/lo
 
 ### Messages
 
-The API returns an error **code** (see [the error format](../backend/README.md#12-error-format)); the frontend displays the message matching that code, in the interface language. The messages below are the French ones; the English ones are in `frontend/src/i18n/locales/en.ts`.
+The API returns an error **code** (see [the error format](../../backend/README.md#12-error-format)); the frontend displays the message matching that code, in the interface language. The messages below are the French ones; the English ones are in `frontend/src/i18n/locales/en.ts`.
 
 | Situation                                                                                                    | HTTP | API code                                 | Message shown                                                                                          |
 | ------------------------------------------------------------------------------------------------------------ | ---- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
