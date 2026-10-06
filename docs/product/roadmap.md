@@ -15,6 +15,12 @@ The first playable version: a live room with friends.
 - **Private board** (no holograms).
 - **Final cooldown**: players can move all their tiles again.
 - **Results**: per player, overall, and the **median ranking**.
+- **Absent players**: absent votes, reconnection, catching up during the final cooldown.
+- **Persisting room**: new games in the same room, closed by the room admin or after inactivity.
+- **Links**: public results link, guest personal link.
+- **Free plan limits**: 10 players per room, 32 tiles per template.
+
+Detailed design (user stories, domain model, lifecycles, game flow, wireframes): [milestone-1/](milestone-1/README.md).
 
 ## Milestone 2 — Blind mode
 

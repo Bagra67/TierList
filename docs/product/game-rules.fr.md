@@ -11,7 +11,7 @@ Les règles métier de TierList : comment se joue chaque mode, ce qui est config
 - On rejoint une room par un **lien** ou par un **code** saisi dans l'appli.
 - Les joueurs ont un compte ou sont **invités**. Un invité a moins d'options de personnalisation (par ex. pas de photo de profil).
 - Une room **persiste entre les parties** : même salon, même code, on peut relancer une partie sur le même template.
-- Une room est fermée par son **admin**, ou **automatiquement** après un temps d'inactivité.
+- Une room est fermée par son **admin**, ou **automatiquement** après un temps d'inactivité. Une room fermée **n'est pas gardée** : seules ses **parties** le sont, dans l'historique et par leurs liens publics des résultats.
 - Le nombre maximal de joueurs dépend de l'[offre](#7-offres-et-limites) de l'admin de la room.
 
 ### Déroulé d'une partie
@@ -59,6 +59,7 @@ Les rooms privées sont **très configurables**. Réglages cités jusqu'ici :
 - passage automatique à l'item suivant (aucun / timer / tout le monde a fini) ;
 - durée du cooldown final ;
 - l'admin de la room joue ou non ;
+- arrivées acceptées ou non pendant une partie (l'admin de la room peut aussi le changer pendant la partie) ;
 - moment où les résultats sont visibles (avant ou après la clôture) ;
 - rythme de la révélation animée (mené par l'admin de la room ou automatique) ;
 - validité du lien invité (30 jours max) ;
@@ -121,10 +122,10 @@ Les joueurs classent des items **sans savoir ce que c'est**, puis les items sont
 
 ### Liens
 
-| Lien                          | Rôle                                                      | Validité                                                                 |
-| ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Lien perso de l'invité**    | Permet à un invité de retrouver sa place et ses résultats | Configurable, **30 jours max** ; ne marche plus une fois la room fermée. |
-| **Lien public des résultats** | Permet à n'importe qui de voir la partie                  | Reste valable.                                                           |
+| Lien                          | Rôle                                                                                                                                              | Validité                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Lien perso de l'invité**    | Permet à un invité de retrouver sa place et ses résultats, depuis n'importe quel appareil (sur le même navigateur, l'invité est reconnu sans lui) | Configurable, **30 jours max** ; ne marche plus une fois la room fermée. |
+| **Lien public des résultats** | Permet à n'importe qui de voir la partie                                                                                                          | Reste valable.                                                           |
 
 Un lien invité perdu ne se récupère pas, et une partie jouée en invité **ne peut pas être rattachée** à un compte créé ensuite. Un **compte** est nécessaire pour garder l'**historique à vie**.
 
@@ -167,7 +168,7 @@ Idées, à confirmer quand la fonctionnalité sera conçue :
 ## 8. Templates et marketplace
 
 - Les tuiles peuvent être du **texte**, une **image**, un **son** ou une **vidéo**. Son et vidéo peuvent être des **fichiers envoyés** ou des **liens intégrés** (YouTube…), dans les [limites de l'offre](#7-offres-et-limites).
-- **Tiers par défaut** (S, A, B…) qu'on peut **ajouter**, **supprimer** et **configurer**.
+- **Tiers par défaut** (S, A, B, C, D, E) qu'on peut **ajouter**, **supprimer** et **configurer**.
 - Les templates sont **privés** ou **publics**. Les templates publics apparaissent dans la **marketplace** : recherche par **tags** et **mots-clés**, tri par **popularité**, **nouveauté**, etc.
 - On peut **liker** un template et l'ajouter à ses **favoris**.
 - Un template peut être **forké** si son propriétaire l'autorise. Un fork **crédite toujours toute sa lignée** (fork d'un fork… jusqu'à l'original).

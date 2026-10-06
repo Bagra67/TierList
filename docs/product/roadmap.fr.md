@@ -15,6 +15,12 @@ La première version jouable : une room en direct entre amis.
 - **Board privé** (pas d'hologramme).
 - **Cooldown final** : les joueurs peuvent replacer toutes leurs tuiles.
 - **Résultats** : par joueur, globaux, et le **classement médian**.
+- **Joueurs absents** : votes absents, reconnexion, rattrapage pendant le cooldown final.
+- **Room qui persiste** : nouvelles parties dans la même room, fermée par l'admin de la room ou après inactivité.
+- **Liens** : lien public des résultats, lien perso de l'invité.
+- **Limites de l'offre gratuite** : 10 joueurs par room, 32 tuiles par template.
+
+Conception détaillée (user stories, modèle de domaine, cycles de vie, déroulé, wireframes) : [milestone-1/](milestone-1/README.fr.md).
 
 ## Jalon 2 — Mode à l'aveugle
 
