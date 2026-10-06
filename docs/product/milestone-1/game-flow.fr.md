@@ -33,7 +33,7 @@ sequenceDiagram
     participant Appli
     Admin->>Appli: Créer une room à partir de « Chips » (US-2.1)
     Appli-->>Admin: Room ouverte : lien + code
-    Admin->>Appli: Réglages : ordre aléatoire, timer 30 s, cooldown 60 s, je joue (US-2.2)
+    Admin->>Appli: Réglages : ordre aléatoire, timer 30 s, cooldown 60 s, je joue, arrivées acceptées (US-2.2)
     Admin-->>Joueur: Partage le lien (hors de l'appli)
     Admin-->>Invite: Partage le code (hors de l'appli)
     Joueur->>Appli: Ouvrir le lien, connecté (US-2.4)
@@ -83,10 +83,12 @@ sequenceDiagram
     Note over Invite,Appli: Tour 3 en cours
     Invite--xAppli: Connexion perdue
     Appli->>Appli: Fin du tour 3 : vote absent pour l'invité
-    Invite->>Appli: Ouvrir le lien perso d'invité (US-4.4)
+    Invite->>Appli: Revenir depuis le même navigateur (US-4.4)
+    Appli->>Appli: Reconnaître l'invité par le cookie du navigateur
     Appli-->>Invite: Même place, même classement, tour 4
     Retard->>Appli: Rejoindre pendant le tour 5 (US-4.5)
     Appli-->>Retard: Place, les tours 1 à 4 comptent comme absents
+    Note over Retard,Appli: L'admin de la room peut maintenant verrouiller les arrivées (US-2.10)
     Note over Invite,Appli: Cooldown final
     Appli-->>Invite: Item 3 manqué affiché à part (US-4.6)
     Invite->>Appli: Placer l'item 3 dans le tier B

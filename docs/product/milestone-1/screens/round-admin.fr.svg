@@ -33,5 +33,8 @@
 <rect x="748" y="140" width="168" height="48" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
 <text x="832.0" y="169.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Item suivant</text>
 <text x="748" y="222" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Auto : timer 30 s</text>
+<rect x="748" y="255" width="15" height="15" rx="3" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<polyline points="751,263 754,266 760,259" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text x="772" y="268" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Arrivées ouvertes</text>
 <text x="24" y="452" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">L'admin de la room qui joue a aussi sa propre tier list.</text>
 </svg>

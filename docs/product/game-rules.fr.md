@@ -59,6 +59,7 @@ Les rooms privées sont **très configurables**. Réglages cités jusqu'ici :
 - passage automatique à l'item suivant (aucun / timer / tout le monde a fini) ;
 - durée du cooldown final ;
 - l'admin de la room joue ou non ;
+- arrivées acceptées ou non pendant une partie (l'admin de la room peut aussi le changer pendant la partie) ;
 - moment où les résultats sont visibles (avant ou après la clôture) ;
 - rythme de la révélation animée (mené par l'admin de la room ou automatique) ;
 - validité du lien invité (30 jours max) ;
@@ -121,10 +122,10 @@ Les joueurs classent des items **sans savoir ce que c'est**, puis les items sont
 
 ### Liens
 
-| Lien                          | Rôle                                                      | Validité                                                                 |
-| ----------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Lien perso de l'invité**    | Permet à un invité de retrouver sa place et ses résultats | Configurable, **30 jours max** ; ne marche plus une fois la room fermée. |
-| **Lien public des résultats** | Permet à n'importe qui de voir la partie                  | Reste valable.                                                           |
+| Lien                          | Rôle                                                                                                                                              | Validité                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Lien perso de l'invité**    | Permet à un invité de retrouver sa place et ses résultats, depuis n'importe quel appareil (sur le même navigateur, l'invité est reconnu sans lui) | Configurable, **30 jours max** ; ne marche plus une fois la room fermée. |
+| **Lien public des résultats** | Permet à n'importe qui de voir la partie                                                                                                          | Reste valable.                                                           |
 
 Un lien invité perdu ne se récupère pas, et une partie jouée en invité **ne peut pas être rattachée** à un compte créé ensuite. Un **compte** est nécessaire pour garder l'**historique à vie**.
 

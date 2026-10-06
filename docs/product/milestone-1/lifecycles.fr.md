@@ -23,7 +23,7 @@ stateDiagram-v2
 | État          | Sens                                                                                                                                                                               | Qui peut rejoindre                           |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | **Ouverte**   | Le salon : les participants se rassemblent, l'admin de la room change les réglages, on peut revoir les résultats passés.                                                           | N'importe qui avec le lien ou le code (≤ 10) |
-| **En partie** | Une partie est en cours. Les réglages sont verrouillés.                                                                                                                            | N'importe qui avec le lien ou le code (≤ 10) |
+| **En partie** | Une partie est en cours. Les réglages sont verrouillés, sauf les arrivées.                                                                                                         | Si les arrivées sont acceptées (≤ 10)        |
 | **Fermée**    | Définitif : la room **n'est pas gardée** (lien et code supprimés, liens perso des invités morts). Seules ses **parties** sont gardées : historique et liens publics des résultats. | Personne                                     |
 
 | Transition          | Déclenchée par                                                                        | Story          |
@@ -86,7 +86,7 @@ stateDiagram-v2
     Parti : Parti
     [*] --> Connecte : rejoint la room
     Connecte --> Deconnecte : connexion perdue ou page fermée
-    Deconnecte --> Connecte : revient (compte ou lien perso d'invité)
+    Deconnecte --> Connecte : revient (compte, même navigateur ou lien invité)
     Connecte --> Parti : room fermée
     Deconnecte --> Parti : room fermée ou lien invité expiré
     Parti --> [*]

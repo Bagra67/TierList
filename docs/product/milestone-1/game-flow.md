@@ -33,7 +33,7 @@ sequenceDiagram
     participant App
     Admin->>App: Create a room from "Chips" (US-2.1)
     App-->>Admin: Room open: link + code
-    Admin->>App: Settings: random order, timer 30 s, cooldown 60 s, I play (US-2.2)
+    Admin->>App: Settings: random order, timer 30 s, cooldown 60 s, I play, late arrivals allowed (US-2.2)
     Admin-->>Player: Shares the link (outside the app)
     Admin-->>Guest: Shares the code (outside the app)
     Player->>App: Open the link, signed in (US-2.4)
@@ -83,10 +83,12 @@ sequenceDiagram
     Note over Guest,App: Round 3 in progress
     Guest--xApp: Connection lost
     App->>App: Round 3 ends: absent vote for Guest
-    Guest->>App: Open the guest personal link (US-4.4)
+    Guest->>App: Come back from the same browser (US-4.4)
+    App->>App: Recognize the guest by the browser cookie
     App-->>Guest: Same seat, same ranking, round 4
     Late->>App: Join during round 5 (US-4.5)
     App-->>Late: Seat, rounds 1 to 4 count as absent
+    Note over Late,App: The room admin can now lock arrivals (US-2.10)
     Note over Guest,App: Final cooldown
     App-->>Guest: Missed item 3 shown apart (US-4.6)
     Guest->>App: Place item 3 in tier B

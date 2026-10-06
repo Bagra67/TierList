@@ -87,20 +87,23 @@ As a **user**, I want to create a room from one of my templates, so that I can p
 
 As a **room admin**, I want to choose the room settings, so that the game fits my group.
 
-- _Given_ my room before a game starts, _when_ I set the **item order** (template or random), the **automatic move** (none, timer per item with its duration, or when everyone has placed), the **cooldown duration** and **whether I play**, _then_ the next game uses these settings.
-- _Given_ a game in progress, _when_ I open the settings, _then_ they cannot be changed until the game is closed.
+- _Given_ my room before a game starts, _when_ I set the **item order** (template or random), the **automatic move** (none, timer per item with its duration, or when everyone has placed), the **cooldown duration**, **whether I play** and whether **late arrivals** are allowed during a game, _then_ the next game uses these settings.
+- _Given_ a game in progress, _when_ I open the settings, _then_ they cannot be changed until the game is closed, **except late arrivals** (US-2.10).
 
 ### US-2.3 Invite players — Must
 
 As a **room admin**, I want to share the room link or code, so that my friends can join.
 
 - _Given_ my room, _when_ I copy the link or read the code, _then_ anyone with them can join (US-2.4, US-2.5).
+- Both work for everyone; in practice the **link** suits a message (guests open it and join), the **code** suits people already in the app or a code read aloud (stream, same room).
 
 ### US-2.4 Join with an account — Must
 
 As a **user**, I want to join a room with its link or code, so that I can play.
 
-- _Given_ a valid link or code, _when_ I join while signed in, _then_ I enter the room as a **player**, shown with my display name.
+- _Given_ I am signed in, _when_ I open the room link, _then_ I enter the room **directly with my account** as a **player**, shown with my display name: no nickname, no extra step.
+- _Given_ I am signed in, _when_ I type the code in the app's "Join a room" field, _then_ the result is the same.
+- _Given_ I am not signed in, _when_ I open the link, _then_ I can sign in (and come back to the room right after) or join as a guest (US-2.5).
 - _Given_ a wrong code or a closed room, _when_ I try to join, _then_ a message says the room cannot be found or is closed.
 - _Given_ I am already in the room, _when_ I open the link again, _then_ I get my seat back instead of a second one.
 
@@ -136,6 +139,14 @@ As the **application**, I want to close rooms left inactive, so that abandoned r
 As a **room admin**, I want to start a new game in the same room, so that my group can replay without a new link.
 
 - _Given_ a closed game in my room, _when_ I start a new game, _then_ the participants still in the room take part, with the same link and code, on the **current** version of the template.
+
+### US-2.10 Lock arrivals during a game — Must
+
+As a **room admin**, I want to allow or block new arrivals during a game, so that nobody joins at a bad moment.
+
+- _Given_ a game in progress, _when_ I lock arrivals, _then_ nobody new can join until I unlock them; participants already in the room can **still come back** to their seat (US-4.4).
+- _Given_ arrivals are locked, _when_ someone new tries to join, _then_ a message says a game is in progress and the room is locked.
+- _Given_ I change it during the game, _then_ the change is kept as the room setting for the next games.
 
 ## E3 — Game
 
@@ -203,13 +214,13 @@ As the **application**, I want to record an absent vote when a participant misse
 
 As a **participant**, I want to get my seat back after a disconnection, so that I keep my ranking.
 
-- _Given_ I was disconnected, _when_ I come back (signed in, or with my guest personal link), _then_ I find my ranking and the current round.
+- _Given_ I was disconnected, _when_ I come back (signed in; as a guest, automatically from the same browser, or with my guest personal link from any device), _then_ I find my ranking and the current round.
 
 ### US-4.5 Join during a game — Must
 
 As a **user** or **guest**, I want to join a game already started, so that I can play the rest of it.
 
-- _Given_ a game in progress and a free seat, _when_ I join, _then_ I take part from the current round, and the past rounds count as **absent votes** for me.
+- _Given_ a game in progress, late arrivals allowed (US-2.10) and a free seat, _when_ I join, _then_ I take part from the current round, and the past rounds count as **absent votes** for me.
 
 ### US-4.6 Catch up missed items — Must
 
@@ -243,12 +254,15 @@ As a **participant**, I want a public link to the results, so that I can share t
 - _Given_ a closed game, _when_ I copy its public link, _then_ any **visitor** opening it sees the results (US-5.2), read-only, without an account.
 - _Given_ the room is closed later, _then_ the public link **keeps working**.
 
-### US-5.4 Guest personal link — Must
+### US-5.4 Guest return — Must
 
-As a **guest**, I want a personal link, so that I can get back to my seat and results without an account.
+As a **guest**, I want the app to remember me, so that I can get back to my seat and results without an account.
+
+- _Given_ I joined as a guest, _when_ I come back to the room **from the same browser**, _then_ I get my seat back automatically: the browser remembers me (a cookie), as long as its data is not cleared. The app **never** uses the IP address to recognize anyone.
 
 - _Given_ I joined as a guest, _then_ I receive a personal link, valid for a duration set by the application (**30 days max**).
 - _Given_ the link has expired or the room is closed, _when_ I open it, _then_ a message says it is no longer valid; the public results link still works.
+- _Given_ another device or cleared browser data, _then_ my personal link is the way back.
 - _Given_ I lose it, _then_ it cannot be recovered, and my guest game cannot be attached to an account created later.
 
 ### US-5.5 History — Should

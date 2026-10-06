@@ -87,20 +87,23 @@ En tant qu'**utilisateur**, je veux créer une room à partir d'un de mes templa
 
 En tant qu'**admin de la room**, je veux choisir les réglages de la room, afin que la partie convienne à mon groupe.
 
-- _Étant donné_ ma room avant le début d'une partie, _quand_ je règle l'**ordre des items** (template ou aléatoire), le **passage automatique** (aucun, timer par item avec sa durée, ou quand tout le monde a placé), la **durée du cooldown** et **si je joue**, _alors_ la prochaine partie utilise ces réglages.
-- _Étant donné_ une partie en cours, _quand_ j'ouvre les réglages, _alors_ ils ne sont pas modifiables avant la clôture de la partie.
+- _Étant donné_ ma room avant le début d'une partie, _quand_ je règle l'**ordre des items** (template ou aléatoire), le **passage automatique** (aucun, timer par item avec sa durée, ou quand tout le monde a placé), la **durée du cooldown**, **si je joue** et si les **arrivées en cours de partie** sont acceptées, _alors_ la prochaine partie utilise ces réglages.
+- _Étant donné_ une partie en cours, _quand_ j'ouvre les réglages, _alors_ ils ne sont pas modifiables avant la clôture de la partie, **sauf les arrivées** (US-2.10).
 
 ### US-2.3 Inviter des joueurs — Must
 
 En tant qu'**admin de la room**, je veux partager le lien ou le code de la room, afin que mes amis la rejoignent.
 
 - _Étant donné_ ma room, _quand_ je copie le lien ou lis le code, _alors_ n'importe qui les ayant peut la rejoindre (US-2.4, US-2.5).
+- Les deux marchent pour tout le monde ; en pratique, le **lien** convient à un message (les invités l'ouvrent et rejoignent), le **code** convient à ceux déjà dans l'appli ou à un code lu à voix haute (stream, même pièce).
 
 ### US-2.4 Rejoindre avec un compte — Must
 
 En tant qu'**utilisateur**, je veux rejoindre une room par son lien ou son code, afin de jouer.
 
-- _Étant donné_ un lien ou un code valide, _quand_ je rejoins en étant connecté, _alors_ j'entre dans la room comme **joueur**, affiché avec mon nom affiché.
+- _Étant donné_ que je suis connecté, _quand_ j'ouvre le lien de la room, _alors_ j'entre dans la room **directement avec mon compte** comme **joueur**, affiché avec mon nom affiché : pas de pseudo, pas d'étape en plus.
+- _Étant donné_ que je suis connecté, _quand_ je saisis le code dans le champ « Rejoindre une room » de l'appli, _alors_ le résultat est le même.
+- _Étant donné_ que je ne suis pas connecté, _quand_ j'ouvre le lien, _alors_ je peux me connecter (et revenir dans la room juste après) ou rejoindre en invité (US-2.5).
 - _Étant donné_ un mauvais code ou une room fermée, _quand_ j'essaie de rejoindre, _alors_ un message indique que la room est introuvable ou fermée.
 - _Étant donné_ que je suis déjà dans la room, _quand_ j'ouvre à nouveau le lien, _alors_ je retrouve ma place au lieu d'en prendre une seconde.
 
@@ -136,6 +139,14 @@ En tant qu'**application**, je veux fermer les rooms inactives, afin que les roo
 En tant qu'**admin de la room**, je veux lancer une nouvelle partie dans la même room, afin que mon groupe rejoue sans nouveau lien.
 
 - _Étant donné_ une partie clôturée dans ma room, _quand_ je lance une nouvelle partie, _alors_ les participants encore dans la room y prennent part, avec le même lien et le même code, sur la version **actuelle** du template.
+
+### US-2.10 Verrouiller les arrivées pendant une partie — Must
+
+En tant qu'**admin de la room**, je veux accepter ou bloquer les nouvelles arrivées pendant une partie, afin que personne n'arrive au mauvais moment.
+
+- _Étant donné_ une partie en cours, _quand_ je verrouille les arrivées, _alors_ plus personne de nouveau ne peut rejoindre tant que je ne les rouvre pas ; les participants déjà dans la room peuvent **toujours revenir** à leur place (US-4.4).
+- _Étant donné_ que les arrivées sont verrouillées, _quand_ quelqu'un de nouveau essaie de rejoindre, _alors_ un message indique qu'une partie est en cours et que la room est verrouillée.
+- _Étant donné_ que je le change pendant la partie, _alors_ le changement est gardé comme réglage de la room pour les parties suivantes.
 
 ## E3 — Partie
 
@@ -203,13 +214,13 @@ En tant qu'**application**, je veux enregistrer un vote absent quand un particip
 
 En tant que **participant**, je veux retrouver ma place après une déconnexion, afin de garder mon classement.
 
-- _Étant donné_ que j'ai été déconnecté, _quand_ je reviens (connecté, ou avec mon lien perso d'invité), _alors_ je retrouve mon classement et le tour en cours.
+- _Étant donné_ que j'ai été déconnecté, _quand_ je reviens (connecté ; en invité, automatiquement depuis le même navigateur, ou avec mon lien perso depuis n'importe quel appareil), _alors_ je retrouve mon classement et le tour en cours.
 
 ### US-4.5 Rejoindre pendant une partie — Must
 
 En tant qu'**utilisateur** ou **invité**, je veux rejoindre une partie déjà commencée, afin de jouer la suite.
 
-- _Étant donné_ une partie en cours et une place libre, _quand_ je rejoins, _alors_ je participe à partir du tour en cours, et les tours passés comptent comme des **votes absents** pour moi.
+- _Étant donné_ une partie en cours, les arrivées acceptées (US-2.10) et une place libre, _quand_ je rejoins, _alors_ je participe à partir du tour en cours, et les tours passés comptent comme des **votes absents** pour moi.
 
 ### US-4.6 Rattraper les items manqués — Must
 
@@ -243,12 +254,15 @@ En tant que **participant**, je veux un lien public vers les résultats, afin de
 - _Étant donné_ une partie clôturée, _quand_ je copie son lien public, _alors_ n'importe quel **visiteur** qui l'ouvre voit les résultats (US-5.2), en lecture seule, sans compte.
 - _Étant donné_ que la room est fermée plus tard, _alors_ le lien public **continue de marcher**.
 
-### US-5.4 Lien perso de l'invité — Must
+### US-5.4 Retour de l'invité — Must
 
-En tant qu'**invité**, je veux un lien perso, afin de retrouver ma place et mes résultats sans compte.
+En tant qu'**invité**, je veux que l'appli se souvienne de moi, afin de retrouver ma place et mes résultats sans compte.
+
+- _Étant donné_ que j'ai rejoint en invité, _quand_ je reviens dans la room **depuis le même navigateur**, _alors_ je retrouve ma place automatiquement : le navigateur se souvient de moi (un cookie), tant que ses données ne sont pas effacées. L'appli n'utilise **jamais** l'adresse IP pour reconnaître quelqu'un.
 
 - _Étant donné_ que j'ai rejoint en invité, _alors_ je reçois un lien perso, valable pendant une durée fixée par l'application (**30 jours max**).
 - _Étant donné_ que le lien a expiré ou que la room est fermée, _quand_ je l'ouvre, _alors_ un message indique qu'il n'est plus valable ; le lien public des résultats marche toujours.
+- _Étant donné_ un autre appareil ou des données de navigateur effacées, _alors_ mon lien perso est le moyen de revenir.
 - _Étant donné_ que je le perds, _alors_ il ne se récupère pas, et ma partie d'invité ne peut pas être rattachée à un compte créé ensuite.
 
 ### US-5.5 Historique — Should

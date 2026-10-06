@@ -44,6 +44,7 @@ classDiagram
         durée du timer
         durée du cooldown
         admin joue : oui | non
+        arrivées : acceptées | verrouillées
     }
     class Participant {
         type : compte | invité
@@ -98,7 +99,7 @@ classDiagram
 | **Tile** (tuile)                       | Un item à classer : un texte, une image (stockée compressée), ou les deux. Son ordre est l'ordre du template.                                                                                |
 | **TemplateSnapshot** (version figée)   | La copie figée des tiers et des tuiles d'un template, prise au lancement d'une partie. Modifier ou supprimer le template ne la change jamais.                                                |
 | **Room**                               | L'endroit où un groupe joue, rejoint par son lien ou son code. Persiste entre les parties jusqu'à sa fermeture ; ensuite elle **n'est pas gardée**, seules ses parties le sont.              |
-| **RoomSettings** (réglages de la room) | Les quatre réglages du jalon. S'appliquent à la prochaine partie.                                                                                                                            |
+| **RoomSettings** (réglages de la room) | Les cinq réglages du jalon. S'appliquent à la prochaine partie.                                                                                                                              |
 | **Participant**                        | Une place dans une room : un utilisateur (joueur) ou un invité avec un pseudo et un lien perso. Garde sa place malgré les déconnexions.                                                      |
 | **Game** (partie)                      | Une partie d'une version figée dans une room : l'ordre des items, les tours, les placements et, une fois clôturée, les résultats et leur lien public.                                        |
 | **Round** (tour)                       | Le moment où une tuile est affichée et placée par tous. Une partie a un tour par tuile de sa version figée.                                                                                  |

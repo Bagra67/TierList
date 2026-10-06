@@ -20,7 +20,7 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 ![Réglages de la room : ordre des items, item suivant, cooldown, je joue](screens/room-settings.fr.svg)
 
 - **Stories** : US-2.1, US-2.2.
-- Les quatre réglages du jalon. La note rappelle que l'admin de la room peut **toujours** passer à la main.
+- Les cinq réglages du jalon. La note rappelle que l'admin de la room peut **toujours** passer à la main.
 - Le même formulaire sert à changer les réglages depuis le salon, entre deux parties.
 
 ## 3. Rejoindre une room
@@ -28,8 +28,9 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 ![Rejoindre une room : code, avec un compte ou en invité](screens/join.fr.svg)
 
 - **Stories** : US-2.4, US-2.5, US-5.4.
-- Ouvrir le lien de la room remplit le code. Connecté, un clic suffit ; sinon, un pseudo suffit.
-- L'invité est prévenu qu'il n'a pas d'historique, seulement son **lien perso**.
+- L'écran vu **sans être connecté** : ouvrir le lien de la room remplit le code. « Se connecter » ramène ensuite dans la room ; sinon, un pseudo suffit.
+- Un utilisateur **connecté** qui ouvre le lien ne voit pas cet écran : il entre directement dans la room avec son compte. Les utilisateurs connectés peuvent aussi saisir le code depuis l'appli.
+- L'invité est prévenu qu'il n'a pas d'historique : le navigateur se souvient de lui, et son **lien perso** marche depuis n'importe quel appareil.
 
 ## 4. Salon
 
@@ -51,8 +52,9 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 
 ![Tour, vue admin de la room : item en cours, placements, item suivant](screens/round-admin.fr.svg)
 
-- **Stories** : US-3.4, US-3.5, US-4.3.
+- **Stories** : US-3.4, US-3.5, US-4.3, US-2.10.
 - « Item suivant » est toujours disponible, quel que soit le réglage automatique. Le compteur n'attend que les participants **connectés**.
+- « Arrivées ouvertes » verrouille ou rouvre les arrivées pendant la partie ; les participants déjà dans la room peuvent toujours revenir.
 - Un admin de la room qui joue voit ce panneau **et** sa propre tier list (écran 5).
 
 ## 7. Cooldown final

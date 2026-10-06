@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="632" viewBox="0 0 960 632" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
 <title>Réglages de la room</title>
-<rect width="960" height="600" fill="#ffffff"/>
+<rect width="960" height="632" fill="#ffffff"/>
 <rect x="0" y="0" width="960" height="52" rx="0" fill="#f4f4f5" stroke="#f4f4f5" stroke-width="1"/>
 <line x1="0" y1="52" x2="960" y2="52" stroke="#a1a1aa" stroke-width="1"/>
 <text x="24" y="33" font-size="18" fill="#18181b" font-weight="bold" text-anchor="start">TierList</text>
 <circle cx="928" cy="26" r="13" fill="#d4d4d8" stroke="#a1a1aa"/>
 <text x="906" y="31" font-size="14" fill="#71717a" font-weight="normal" text-anchor="end">Alex</text>
-<rect x="200" y="76" width="560" height="500" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="200" y="76" width="560" height="532" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
 <text x="232" y="116" font-size="20" fill="#18181b" font-weight="bold" text-anchor="start">Réglages de la room</text>
 <text x="232" y="148" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">Template</text>
 <rect x="232" y="156" width="496" height="36" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
@@ -34,6 +34,9 @@
 <rect x="232" y="503" width="15" height="15" rx="3" fill="#52525b" stroke="#52525b" stroke-width="1"/>
 <polyline points="235,511 238,514 244,507" fill="none" stroke="#ffffff" stroke-width="2"/>
 <text x="256" y="516" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Je joue aussi</text>
-<rect x="568" y="526" width="160" height="36" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
-<text x="648.0" y="549.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Créer une room</text>
+<rect x="232" y="535" width="15" height="15" rx="3" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<polyline points="235,543 238,546 244,539" fill="none" stroke="#ffffff" stroke-width="2"/>
+<text x="256" y="548" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Accepter les arrivées pendant la partie</text>
+<rect x="568" y="558" width="160" height="36" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="648.0" y="581.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Créer une room</text>
 </svg>

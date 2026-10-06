@@ -12,17 +12,17 @@
 <text x="340" y="179.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">K7P2QX</text>
 <rect x="120" y="230" width="340" height="280" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
 <text x="144" y="268" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Avec un compte</text>
-<circle cx="160" cy="320" r="18" fill="#d4d4d8" stroke="#a1a1aa"/>
-<text x="190" y="325" font-size="15" fill="#18181b" font-weight="normal" text-anchor="start">Alex</text>
+<text x="144" y="316" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Garde cette partie dans ton historique.</text>
+<text x="144" y="336" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Tu reviens dans cette room après connexion.</text>
 <rect x="144" y="440" width="292" height="36" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
-<text x="290.0" y="463.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Rejoindre en tant qu'Alex</text>
+<text x="290.0" y="463.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Se connecter</text>
 <rect x="500" y="230" width="340" height="280" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
 <text x="524" y="268" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">En invité</text>
 <text x="524" y="308" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">Pseudo</text>
 <rect x="524" y="316" width="292" height="36" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
 <text x="534" y="339.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Lou</text>
-<text x="524" y="384" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Pas d'historique : tes résultats restent</text>
-<text x="524" y="402" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">accessibles par ton lien perso (30 jours max).</text>
+<text x="524" y="384" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Pas d'historique. Ce navigateur se souvient de toi,</text>
+<text x="524" y="402" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">et ton lien perso marche sur tout appareil.</text>
 <rect x="524" y="440" width="292" height="36" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
 <text x="670.0" y="463.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="middle">Rejoindre en invité</text>
 </svg>

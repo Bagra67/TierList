@@ -22,13 +22,14 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 
 - **Templates** : privés, tuiles texte et image (images envoyées, compressées par le serveur), **tiers par défaut S, A, B, C, D, E**, qu'on peut ajouter, supprimer, renommer, recolorer et réordonner.
 - **Room privée** : créée à partir d'un de ses templates, rejointe par **lien** ou par **code**, avec un compte ou en **invité**.
-- **Réglages de la room** : ordre des items (template ou aléatoire), passage automatique à l'item suivant (timer ou tout le monde a fini ; le passage manuel reste toujours possible), durée du cooldown final, l'admin de la room joue ou non.
+- **Réglages de la room** : ordre des items (template ou aléatoire), passage automatique à l'item suivant (timer ou tout le monde a fini ; le passage manuel reste toujours possible), durée du cooldown final, l'admin de la room joue ou non, arrivées acceptées ou non pendant une partie (l'admin de la room peut aussi les verrouiller ou les rouvrir pendant la partie).
 - **Partie** : tours menés par l'admin de la room, **board privé**, classements ordonnés.
 - **Cooldown final** : replacer toutes ses tuiles ; les deux placements sont gardés.
 - **Joueurs absents** : votes absents, reconnexion à sa place, rattrapage des items manqués pendant le cooldown.
 - **Room qui persiste** : relancer une partie dans la même room ; fermée par l'admin de la room ou après inactivité. Une room fermée **n'est pas gardée** : seules ses parties le sont (historique, liens publics).
 - **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents.
 - **Liens** : lien public des résultats ; lien perso de l'invité (30 jours max, mort une fois la room fermée).
+- **Retour des invités** : reconnus par leur navigateur (un cookie) ; le lien perso sert de secours sur un autre appareil. Jamais par l'adresse IP.
 - **Historique** des parties pour les comptes.
 - **Limites de l'offre gratuite** : **10 joueurs** par room, **32 tuiles** par template.
 
@@ -46,7 +47,7 @@ Points pas encore décidés, pris dans leur version la plus simple pour ce jalon
 - **Règles ajoutées par les user stories**, à confirmer :
   - un template garde **au moins un tier**, et une room a besoin d'un template avec **au moins une tuile** ;
   - le **pseudo d'un invité est unique** dans la room ;
-  - les réglages de la room **ne changent pas pendant une partie** ;
+  - les réglages de la room **ne changent pas pendant une partie**, sauf les arrivées ;
   - un admin de la room qui ne joue pas **compte quand même** dans les 10 participants, mais ni dans « tout le monde a fini » ni dans les résultats ;
   - les items des tours passés **ne se déplacent pas** avant le cooldown final ;
   - sur un board privé, les participants voient **qui a placé** l'item en cours, pas où ;

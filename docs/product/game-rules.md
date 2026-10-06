@@ -59,6 +59,7 @@ Private rooms are **highly configurable**. Settings named so far:
 - automatic move to the next item (none / timer / everyone done);
 - final cooldown duration;
 - whether the room admin plays;
+- whether late arrivals are allowed during a game (the room admin can also change it during the game);
 - when results are visible (before or after closing);
 - animated reveal pace (led by the room admin or automatic);
 - guest link validity (30 days max);
@@ -121,10 +122,10 @@ Players rank items **without knowing what they are**, then the items are reveale
 
 ### Links
 
-| Link                    | Purpose                                         | Validity                                                              |
-| ----------------------- | ----------------------------------------------- | --------------------------------------------------------------------- |
-| **Guest personal link** | Lets a guest get back to their seat and results | Configurable, **30 days max**; stops working once the room is closed. |
-| **Public results link** | Lets anyone see the game                        | Stays valid.                                                          |
+| Link                    | Purpose                                                                                                                  | Validity                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| **Guest personal link** | Lets a guest get back to their seat and results, on any device (on the same browser, the guest is remembered without it) | Configurable, **30 days max**; stops working once the room is closed. |
+| **Public results link** | Lets anyone see the game                                                                                                 | Stays valid.                                                          |
 
 A lost guest link cannot be recovered, and a guest game **cannot be attached** to an account created later. An **account** is required to keep the **history for life**.
 

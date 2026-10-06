@@ -20,7 +20,7 @@ Each image exists in English (shown here) and in French ([screens.fr.md](screens
 ![Room settings: item order, next item, cooldown, I play](screens/room-settings.en.svg)
 
 - **Stories**: US-2.1, US-2.2.
-- The four settings of the milestone. The note reminds that the room admin can **always** move on by hand.
+- The five settings of the milestone. The note reminds that the room admin can **always** move on by hand.
 - The same form is used to change the settings from the lobby, between games.
 
 ## 3. Join a room
@@ -28,8 +28,9 @@ Each image exists in English (shown here) and in French ([screens.fr.md](screens
 ![Join a room: code, with an account or as a guest](screens/join.en.svg)
 
 - **Stories**: US-2.4, US-2.5, US-5.4.
-- Opening the room link fills the code. Signed in, one click; otherwise a nickname is enough.
-- The guest is told that they have no history, only their **personal link**.
+- The screen seen **when not signed in**: opening the room link fills the code. "Sign in" brings the user back to the room; otherwise a nickname is enough.
+- A **signed-in** user who opens the link does not see this screen: they enter the room directly with their account. Signed-in users can also type the code from the app.
+- The guest is told that they have no history: the browser remembers them, and their **personal link** works on any device.
 
 ## 4. Lobby
 
@@ -51,8 +52,9 @@ Each image exists in English (shown here) and in French ([screens.fr.md](screens
 
 ![Round, room admin view: current item, placements, next item](screens/round-admin.en.svg)
 
-- **Stories**: US-3.4, US-3.5, US-4.3.
+- **Stories**: US-3.4, US-3.5, US-4.3, US-2.10.
 - "Next item" is always available, whatever the automatic setting. The counter only waits for **connected** participants.
+- "Arrivals open" locks or unlocks late arrivals during the game; participants already in the room can always come back.
 - A room admin who plays sees this panel **and** their own tier list (screen 5).
 
 ## 7. Final cooldown

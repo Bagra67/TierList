@@ -22,13 +22,14 @@ This is **business design**, not technical documentation: no tables, endpoints o
 
 - **Templates**: private, text and image tiles (uploaded images, compressed by the server), **default tiers S, A, B, C, D, E**, which can be added, removed, renamed, recolored and reordered.
 - **Private room**: created from one of your templates, joined with a **link** or a **code**, with an account or as a **guest**.
-- **Room settings**: item order (template or random), automatic move to the next item (timer or everyone done; manual is always possible), final cooldown duration, whether the room admin plays.
+- **Room settings**: item order (template or random), automatic move to the next item (timer or everyone done; manual is always possible), final cooldown duration, whether the room admin plays, whether late arrivals are allowed during a game (the room admin can also lock or unlock them during the game).
 - **Game**: rounds run by the room admin, **private board**, ordered rankings.
 - **Final cooldown**: move all your tiles again; both placements are kept.
 - **Absent players**: absent votes, reconnection to your seat, catching up missed items during the cooldown.
 - **Persisting room**: start a new game in the same room; closed by the room admin or after inactivity. A closed room is **not kept**: only its games are (history, public links).
 - **Results**: per player, overall (distribution per item), **median ranking**, with or without absent votes.
 - **Links**: public results link; guest personal link (30 days max, dead once the room is closed).
+- **Returning guests**: recognized by their browser (a cookie); the personal link is the fallback on another device. Never by IP address.
 - **History** of games for accounts.
 - **Free plan limits**: **10 players** per room, **32 tiles** per template.
 
@@ -46,7 +47,7 @@ Points not decided yet, taken as the simplest option for this milestone. Each on
 - **Rules added by the user stories**, to confirm:
   - a template keeps **at least one tier**, and a room needs a template with **at least one tile**;
   - a guest **nickname is unique** within the room;
-  - room settings **cannot change during a game**;
+  - room settings **cannot change during a game**, except late arrivals;
   - a room admin who does not play **still counts** in the 10 participants, but not in "everyone done" nor in the results;
   - items from past rounds **cannot be moved** before the final cooldown;
   - on a private board, participants see **who has placed** the current item, not where;

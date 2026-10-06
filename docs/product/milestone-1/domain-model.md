@@ -42,6 +42,7 @@ classDiagram
         timer duration
         cooldown duration
         admin plays: yes | no
+        late arrivals: allowed | locked
     }
     class Participant {
         kind: account | guest
@@ -96,7 +97,7 @@ classDiagram
 | **Tile**             | An item to rank: a text, an image (stored compressed), or both. Its order is the template order.                                                                               |
 | **TemplateSnapshot** | The frozen copy of a template's tiers and tiles, taken when a game starts. Editing or deleting the template never changes it.                                                  |
 | **Room**             | The place where a group plays, reached by its link or code. Persists between games until closed; then it is **not kept**, only its games are.                                  |
-| **RoomSettings**     | The four settings of the milestone. Apply to the next game.                                                                                                                    |
+| **RoomSettings**     | The five settings of the milestone. Apply to the next game.                                                                                                                    |
 | **Participant**      | A seat in a room: a user (player) or a guest with a nickname and a personal link. Keeps their seat across disconnections.                                                      |
 | **Game**             | One play of a template snapshot in a room: the item order, the rounds, the placements and, once closed, the results and their public link.                                     |
 | **Round**            | The moment one tile is shown and placed by everyone. A game has one round per tile of its snapshot.                                                                            |
