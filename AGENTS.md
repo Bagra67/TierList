@@ -884,7 +884,7 @@ For new functionality:
 
 ## Testing guide
 
-`docs/testing.md` (English) and `docs/testing.fr.md` (French) describe
+`docs/technical/testing.md` (English) and `docs/technical/testing.fr.md` (French) describe
 every test: what it does, its purpose and the expected result.
 
 Whenever a test, a test fixture or a test tool is added, changed,
@@ -977,6 +977,17 @@ await asyncio.sleep(0.5)
 Do not leave misleading comments.
 
 Update comments when behavior changes.
+
+## Documentation location
+
+Files under `docs/` are split by audience:
+
+-   `docs/product/`: business documentation (product, game rules,
+    permissions, roadmap). Describes what the product does, not how
+    it is built.
+-   `docs/technical/`: technical documentation (architecture,
+    authentication, testing guide, i18n, emails, releasing). A feature
+    gets its technical documentation once it is implemented.
 
 ## Documentation language
 
@@ -1297,7 +1308,7 @@ the stack is gone (`gh stack view`).
 ## Releases and versioning
 
 Every merge of `develop` into `main` is a release `vX.Y.Z` (Semantic
-Versioning). Full process: `docs/releasing.md`.
+Versioning). Full process: `docs/technical/releasing.md`.
 
 -   The version is computed from the squash commits since the last tag:
     `!` or a `BREAKING CHANGE:` footer bumps X (Y while in 0.x),
@@ -1579,7 +1590,7 @@ Never claim validation that was not performed.
 
 The interface is available in **French and English** (`react-i18next`).
 French is the reference language. How it works and step-by-step recipes:
-`docs/i18n.md`.
+`docs/technical/i18n.md`.
 
 ## MUST
 
@@ -1594,7 +1605,7 @@ French is the reference language. How it works and step-by-step recipes:
     `ErrorCode` (`app/constants/error_codes.py`) and its `params` through
     `AppHTTPException`. `detail` stays English, for developers.
 -   Exception: emails are written by the backend, in every supported
-    language, in the language sent by the frontend (`docs/emails.md`).
+    language, in the language sent by the frontend (`docs/technical/emails.md`).
 -   When adding an `ErrorCode`, a validation error type or a code passed
     to the frontend (e.g. `?error=` after Google sign-in), add its
     translation under `errors.*` in every locale, in the same PR.

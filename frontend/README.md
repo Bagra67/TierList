@@ -43,7 +43,7 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
 Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
 
-Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/testing.md).
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/technical/testing.md).
 
 ---
 
@@ -188,7 +188,7 @@ In tests, render components with `renderWithQueryClient` (`src/test/`) and stub 
 
 ### Authenticated requests
 
-`apiClient` adds the access token (kept in memory) to every request. When a request gets a `401`, it refreshes the token once through `POST /auth/refresh` (refresh cookie) and retries the request; concurrent requests share the same refresh. Nothing to do in a new `api/<resource>.ts`. The current user is read with `useCurrentUser()`, and private pages are placed under the `RequireAuth` route in `App.tsx`. Details: [authentication guide](../docs/authentication.md).
+`apiClient` adds the access token (kept in memory) to every request. When a request gets a `401`, it refreshes the token once through `POST /auth/refresh` (refresh cookie) and retries the request; concurrent requests share the same refresh. Nothing to do in a new `api/<resource>.ts`. The current user is read with `useCurrentUser()`, and private pages are placed under the `RequireAuth` route in `App.tsx`. Details: [authentication guide](../docs/technical/authentication.md).
 
 ---
 
@@ -204,7 +204,7 @@ return <h1>{t('auth.login.title')}</h1>;
 - Texts live in `src/i18n/locales/fr.ts` (reference) and `en.ts`; a missing or extra key in `en.ts` is a `pnpm typecheck` error, and `t('…')` keys are type-checked too.
 - API errors are translated from their code: `translateError(t, error)` and `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
-How it works and how to add a text, an error code or a language: [i18n guide](../docs/i18n.md).
+How it works and how to add a text, an error code or a language: [i18n guide](../docs/technical/i18n.md).
 
 ---
 

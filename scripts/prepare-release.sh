@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prépare une release sur une branche partie de develop : calcule la version suivante (SemVer),
 # met à jour les fichiers de version, le contrat d'API, CHANGELOG.md et CHANGELOG.fr.md.
-# Voir docs/releasing.md.
+# Voir docs/technical/releasing.md.
 #
 # Usage (Git Bash, macOS, Linux) : ./scripts/prepare-release.sh [--version X.Y.Z] [--dry-run]
 #   --version X.Y.Z : impose la version (ex. passage en 1.0.0) au lieu de la calculer

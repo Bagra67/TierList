@@ -9,7 +9,7 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite                         | pnpm, ESLint, Prettier                |
 
-Le produit et comment on y joue : [docs/product.fr.md](docs/product.fr.md), avec ses [règles du jeu](docs/game-rules.fr.md), ses [permissions](docs/permissions.fr.md) et sa [roadmap](docs/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/architecture.fr.md](docs/architecture.fr.md). Comptes et connexion : [docs/authentication.fr.md](docs/authentication.fr.md). Traductions (français / anglais) : [docs/i18n.fr.md](docs/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/emails.fr.md](docs/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/releasing.fr.md](docs/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
+Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
 
 ```
 TierList/
@@ -23,7 +23,9 @@ TierList/
 ├── .nvmrc              # Version de Node.js (24)
 ├── dev.sh              # Lance backend + frontend en dev (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
-├── docs/               # Documentation (produit, règles du jeu, permissions, roadmap, architecture, guide des tests, i18n, emails, releases)
+├── docs/
+│   ├── product/        # Docs métier : produit, règles du jeu, permissions, roadmap
+│   └── technical/      # Docs techniques : architecture, authentification, guide des tests, i18n, emails, releases
 ├── TODO.md / TODO.fr.md       # Étapes manuelles restantes (déploiement, décisions)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
@@ -70,7 +72,7 @@ Docker Desktop doit être lancé. Depuis la racine `TierList/` :
 | ---------------------------------------------- | ------------------------------------------------------------------------ |
 | Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                            |
 | Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                           |
-| Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/emails.fr.md](docs/emails.fr.md)) |
+| Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/technical/emails.fr.md](docs/technical/emails.fr.md)) |
 | Arrêter (les données sont conservées)          | `docker compose down`                                                    |
 | Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                 |
 
@@ -150,7 +152,7 @@ Commandes manuelles :
 | Tests              | `uv run pytest`             | `pnpm test`              |
 | Tests + couverture | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
-Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/testing.fr.md](docs/testing.fr.md).
+Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/technical/testing.fr.md](docs/technical/testing.fr.md).
 
 ### Intégration continue (GitHub Actions)
 
@@ -162,9 +164,9 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production |
 | **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                             |
 
-`.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/testing.md` + `docs/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/testing.fr.md](docs/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
+`.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
 
-- Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/testing.fr.md](docs/testing.fr.md#31-rapport-de-tests-en-ci).
+- Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.

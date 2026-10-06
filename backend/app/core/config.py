@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Sans délai, une connexion vers une base arrêtée peut bloquer la requête très longtemps
     database_connect_timeout_seconds: int = Field(default=3, gt=0)
 
-    # Authentification (docs/authentication.md)
+    # Authentification (docs/technical/authentication.md)
     jwt_secret_key: SecretStr = Field(min_length=JWT_SECRET_KEY_MIN_LENGTH)
     access_token_ttl_minutes: int = Field(default=15, gt=0)
     refresh_token_ttl_days: int = Field(default=30, gt=0)
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # Délai des appels vers Google (échange du code, clés publiques)
     google_http_timeout_seconds: int = Field(default=10, gt=0)
 
-    # Envoi des emails (docs/emails.md). Sans SMTP_HOST, aucun email ne part : l'envoi est
+    # Envoi des emails (docs/technical/emails.md). Sans SMTP_HOST, aucun email ne part : l'envoi est
     # seulement journalisé. En développement, Mailpit (compose.yaml) les reçoit sur le port 1025.
     smtp_host: str | None = None
     smtp_port: int = Field(default=587, gt=0)
