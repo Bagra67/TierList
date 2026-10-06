@@ -9,7 +9,7 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Emails (SMTP, Mailpit): [docs/emails.md](docs/emails.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+What the product is and how it is played: [docs/product.md](docs/product.md), with its [game rules](docs/game-rules.md), [permissions](docs/permissions.md) and [roadmap](docs/roadmap.md). How the code is organized and where new code goes: [docs/architecture.md](docs/architecture.md). Accounts and sign-in: [docs/authentication.md](docs/authentication.md). Translations (French / English): [docs/i18n.md](docs/i18n.md). Emails (SMTP, Mailpit): [docs/emails.md](docs/emails.md). Versions and releases (`develop` → `main`): [docs/releasing.md](docs/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
@@ -23,7 +23,7 @@ TierList/
 ├── .nvmrc              # Node.js version (24)
 ├── dev.sh              # Runs backend + frontend in dev mode (Git Bash, macOS, Linux)
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
-├── docs/               # Documentation (architecture, testing guide, i18n, emails, releasing)
+├── docs/               # Documentation (product, game rules, permissions, roadmap, architecture, testing guide, i18n, emails, releasing)
 ├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```
