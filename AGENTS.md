@@ -889,7 +889,9 @@ every test: what it does, its purpose and the expected result.
 
 Whenever a test, a test fixture or a test tool is added, changed,
 renamed or removed, BOTH files MUST be updated in the same PR, so that
-the guide always matches the actual tests.
+the guide always matches the actual tests. The `Docs` CI check enforces
+it; the `skip-docs-sync` PR label is reserved for justified exceptions,
+explained in the PR description.
 
 ## MUST NOT
 
@@ -990,6 +992,10 @@ MUST exist in **English and French**:
     (e.g. `README.fr.md` links to `backend/README.fr.md`).
 -   Both versions MUST be updated in the same PR and stay equivalent in
     content.
+-   The `Docs` CI check enforces the pairs, the switchers and the
+    same-PR rule (`.github/scripts/check_docs_sync.py`); the
+    `skip-docs-sync` PR label is reserved for justified exceptions
+    (e.g. a typo fixed in one language), explained in the PR description.
 
 Exceptions:
 

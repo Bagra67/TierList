@@ -162,8 +162,10 @@ Backend integration tests need the database: `docker compose up -d --wait` (othe
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                     |
 
+`.github/workflows/docs.yml` runs the **Docs** job on the same events: every doc has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with both testing guides (`docs/testing.md` + `docs/testing.fr.md`). For a justified exception (e.g. a typo fixed in one language), add the `skip-docs-sync` label to the PR and explain why. See [docs/testing.md](docs/testing.md#5-ci-script-tests-githubscripts).
+
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/testing.md](docs/testing.md#31-test-report-on-ci).
-- The three jobs (`Backend`, `Frontend`, `Secrets`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
+- The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
 

@@ -162,8 +162,10 @@ Les tests d'intégration du backend ont besoin de la base : `docker compose up -
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production |
 | **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                             |
 
+`.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/testing.md` + `docs/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/testing.fr.md](docs/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
+
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/testing.fr.md](docs/testing.fr.md#31-rapport-de-tests-en-ci).
-- Les trois jobs (`Backend`, `Frontend`, `Secrets`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
+- Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
 
