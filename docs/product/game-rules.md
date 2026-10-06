@@ -167,7 +167,7 @@ Ideas, to confirm when the feature is designed:
 ## 8. Templates and marketplace
 
 - Tiles can be **text**, **image**, **sound** or **video**. Sound and video can be **uploaded files** or **embedded links** (YouTube…), within the [plan limits](#7-plans-and-limits).
-- **Default tiers** (S, A, B…) that can be **added**, **removed** and **configured**.
+- **Default tiers** (S, A, B, C, D, E) that can be **added**, **removed** and **configured**.
 - Templates are **private** or **public**. Public templates appear in the **marketplace**: search by **tags** and **keywords**, sort by **popularity**, **newest**, etc.
 - A template can be **liked** and added to **favorites**.
 - A template can be **forked** when its owner allows it. A fork **always credits its whole lineage** (fork of a fork… up to the original).

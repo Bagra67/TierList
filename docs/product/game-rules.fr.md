@@ -167,7 +167,7 @@ Idées, à confirmer quand la fonctionnalité sera conçue :
 ## 8. Templates et marketplace
 
 - Les tuiles peuvent être du **texte**, une **image**, un **son** ou une **vidéo**. Son et vidéo peuvent être des **fichiers envoyés** ou des **liens intégrés** (YouTube…), dans les [limites de l'offre](#7-offres-et-limites).
-- **Tiers par défaut** (S, A, B…) qu'on peut **ajouter**, **supprimer** et **configurer**.
+- **Tiers par défaut** (S, A, B, C, D, E) qu'on peut **ajouter**, **supprimer** et **configurer**.
 - Les templates sont **privés** ou **publics**. Les templates publics apparaissent dans la **marketplace** : recherche par **tags** et **mots-clés**, tri par **popularité**, **nouveauté**, etc.
 - On peut **liker** un template et l'ajouter à ses **favoris**.
 - Un template peut être **forké** si son propriétaire l'autorise. Un fork **crédite toujours toute sa lignée** (fork d'un fork… jusqu'à l'original).
