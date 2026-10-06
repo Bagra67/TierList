@@ -1,0 +1,41 @@
+name: Docs
+
+on:
+  # labeled / unlabeled: adding or removing the skip-docs-sync label runs the check again.
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [develop, main]
+
+# A new push on the same branch / PR cancels the run still in progress.
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: the PR changes are compared with the base commit.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Test the check script
+        run: python3 -m unittest discover -s .github/scripts
+
+      # On a PR: also checks that both languages and the testing guide changed together,
+      # unless the skip-docs-sync label is set. On a push: pairs and language switchers only.
+      - name: Check bilingual docs and testing guide
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SKIP_SYNC: ${{ contains(github.event.pull_request.labels.*.name, 'skip-docs-sync') }}
+        run: |
+          args=()
+          if [ -n "$BASE_SHA" ]; then args+=(--base "$BASE_SHA"); fi
+          if [ "$SKIP_SYNC" = "true" ]; then args+=(--skip-sync); fi
+          python3 .github/scripts/check_docs_sync.py "${args[@]}"
