@@ -81,6 +81,7 @@ Les **rooms publiques** (ouvertes à tous) sont possibles mais repoussées : ell
 ## 3. Solo
 
 - Une tier list faite **seul**, à partir d'un template.
+- **Un compte est obligatoire**.
 - **Sauvegardée dans l'historique**, **partageable** et **exportable** comme une partie.
 
 ## 4. Mode à l'aveugle

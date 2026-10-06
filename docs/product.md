@@ -45,12 +45,12 @@ Around this live game:
 
 ## Game modes
 
-| Mode                | Played                                     | Real time                          | Account required                 | Details                                  |
-| ------------------- | ------------------------------------------ | ---------------------------------- | -------------------------------- | ---------------------------------------- |
-| **Room**            | Together, round by round, led by the admin | Yes (holograms on a public board)  | No, guests allowed               | [Room game](game-rules.md#1-room-game)   |
-| **Open mode**       | Each person alone, during a set duration   | No (results update on each submit) | Yes (prevents mass voting)       | [Open mode](game-rules.md#2-open-mode)   |
-| **Solo**            | Alone                                      | No                                 | To decide (saved in the history) | [Solo](game-rules.md#3-solo)             |
-| **Blind** (variant) | In a room, from a blind template           | Yes                                | As for a room                    | [Blind mode](game-rules.md#4-blind-mode) |
+| Mode                | Played                                     | Real time                          | Account required           | Details                                  |
+| ------------------- | ------------------------------------------ | ---------------------------------- | -------------------------- | ---------------------------------------- |
+| **Room**            | Together, round by round, led by the admin | Yes (holograms on a public board)  | No, guests allowed         | [Room game](game-rules.md#1-room-game)   |
+| **Open mode**       | Each person alone, during a set duration   | No (results update on each submit) | Yes (prevents mass voting) | [Open mode](game-rules.md#2-open-mode)   |
+| **Solo**            | Alone                                      | No                                 | Yes (saved in the history) | [Solo](game-rules.md#3-solo)             |
+| **Blind** (variant) | In a room, from a blind template           | Yes                                | As for a room              | [Blind mode](game-rules.md#4-blind-mode) |
 
 ## Platforms
 

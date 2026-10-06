@@ -81,6 +81,7 @@ Private rooms are **highly configurable**. Settings named so far:
 ## 3. Solo
 
 - A tier list made **alone**, from a template.
+- **An account is required**.
 - **Saved in the history**, **shareable** and **exportable** like a game.
 
 ## 4. Blind mode

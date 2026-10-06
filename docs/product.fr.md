@@ -45,12 +45,12 @@ Autour de cette partie en direct :
 
 ## Modes de jeu
 
-| Mode                       | Comment on joue                                | Temps réel                                | Compte obligatoire                       | Détails                                                |
-| -------------------------- | ---------------------------------------------- | ----------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
-| **Room**                   | Ensemble, tour par tour, mené par l'admin      | Oui (hologrammes sur un board public)     | Non, invités acceptés                    | [Partie en room](game-rules.fr.md#1-partie-en-room)    |
-| **Mode ouvert**            | Chacun dans son coin, pendant une durée donnée | Non (résultats mis à jour à chaque envoi) | Oui (évite les votes en masse)           | [Mode ouvert](game-rules.fr.md#2-mode-ouvert)          |
-| **Solo**                   | Seul                                           | Non                                       | À décider (sauvegardé dans l'historique) | [Solo](game-rules.fr.md#3-solo)                        |
-| **À l'aveugle** (variante) | En room, avec un template à l'aveugle          | Oui                                       | Comme pour une room                      | [Mode à l'aveugle](game-rules.fr.md#4-mode-à-laveugle) |
+| Mode                       | Comment on joue                                | Temps réel                                | Compte obligatoire                 | Détails                                                |
+| -------------------------- | ---------------------------------------------- | ----------------------------------------- | ---------------------------------- | ------------------------------------------------------ |
+| **Room**                   | Ensemble, tour par tour, mené par l'admin      | Oui (hologrammes sur un board public)     | Non, invités acceptés              | [Partie en room](game-rules.fr.md#1-partie-en-room)    |
+| **Mode ouvert**            | Chacun dans son coin, pendant une durée donnée | Non (résultats mis à jour à chaque envoi) | Oui (évite les votes en masse)     | [Mode ouvert](game-rules.fr.md#2-mode-ouvert)          |
+| **Solo**                   | Seul                                           | Non                                       | Oui (sauvegardé dans l'historique) | [Solo](game-rules.fr.md#3-solo)                        |
+| **À l'aveugle** (variante) | En room, avec un template à l'aveugle          | Oui                                       | Comme pour une room                | [Mode à l'aveugle](game-rules.fr.md#4-mode-à-laveugle) |
 
 ## Plateformes
 
