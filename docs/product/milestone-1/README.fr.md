@@ -43,4 +43,12 @@ Points pas encore décidés, pris dans leur version la plus simple pour ce jalon
 - **Les résultats sont visibles une fois la partie clôturée** (le réglage « avant ou après la clôture » vient plus tard).
 - **Personne n'a de photo de profil** dans ce jalon : les participants sont affichés par leur nom affiché (compte) ou leur pseudo (invité).
 - **Les durées** (timer par item, cooldown, inactivité avant fermeture, validité du lien invité) sont des réglages de la room ou de l'application, dont les valeurs par défaut se choisissent à l'implémentation.
+- **Règles ajoutées par les user stories**, à confirmer :
+  - un template garde **au moins un tier**, et une room a besoin d'un template avec **au moins une tuile** ;
+  - le **pseudo d'un invité est unique** dans la room ;
+  - les réglages de la room **ne changent pas pendant une partie** ;
+  - un admin de la room qui ne joue pas **compte quand même** dans les 10 participants, mais ni dans « tout le monde a fini » ni dans les résultats ;
+  - les items des tours passés **ne se déplacent pas** avant le cooldown final ;
+  - sur un board privé, les participants voient **qui a placé** l'item en cours, pas où ;
+  - l'admin de la room peut **terminer le cooldown plus tôt**.
 - **Le calcul des stats** (médiane de classements ordonnés, effet des votes absents) se décide à l'implémentation (voir [roadmap.fr.md](../roadmap.fr.md#questions-techniques)).

@@ -43,4 +43,12 @@ Points not decided yet, taken as the simplest option for this milestone. Each on
 - **Results are visible once the game is closed** (the "before or after closing" setting comes later).
 - **Nobody has a profile picture** in this milestone: participants are shown by their display name (account) or nickname (guest).
 - **Durations** (timer per item, cooldown, inactivity before closing, guest link validity) are room settings or application settings whose default values are chosen at implementation.
+- **Rules added by the user stories**, to confirm:
+  - a template keeps **at least one tier**, and a room needs a template with **at least one tile**;
+  - a guest **nickname is unique** within the room;
+  - room settings **cannot change during a game**;
+  - a room admin who does not play **still counts** in the 10 participants, but not in "everyone done" nor in the results;
+  - items from past rounds **cannot be moved** before the final cooldown;
+  - on a private board, participants see **who has placed** the current item, not where;
+  - the room admin can **end the cooldown early**.
 - **How statistics are computed** (median of ordered rankings, effect of absent votes) is decided at implementation (see [roadmap.md](../roadmap.md#technical-questions)).
