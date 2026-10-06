@@ -20,11 +20,11 @@ stateDiagram-v2
     Fermee --> [*]
 ```
 
-| État          | Sens                                                                                                                                      | Qui peut rejoindre                           |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| **Ouverte**   | Le salon : les participants se rassemblent, l'admin de la room change les réglages, on peut revoir les résultats passés.                  | N'importe qui avec le lien ou le code (≤ 10) |
-| **En partie** | Une partie est en cours. Les réglages sont verrouillés.                                                                                   | N'importe qui avec le lien ou le code (≤ 10) |
-| **Fermée**    | Définitif. Personne ne peut rejoindre ni jouer ; les liens perso des invités ne marchent plus ; les liens publics des résultats marchent. | Personne                                     |
+| État          | Sens                                                                                                                                                                               | Qui peut rejoindre                           |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| **Ouverte**   | Le salon : les participants se rassemblent, l'admin de la room change les réglages, on peut revoir les résultats passés.                                                           | N'importe qui avec le lien ou le code (≤ 10) |
+| **En partie** | Une partie est en cours. Les réglages sont verrouillés.                                                                                                                            | N'importe qui avec le lien ou le code (≤ 10) |
+| **Fermée**    | Définitif : la room **n'est pas gardée** (lien et code supprimés, liens perso des invités morts). Seules ses **parties** sont gardées : historique et liens publics des résultats. | Personne                                     |
 
 | Transition          | Déclenchée par                                                                        | Story          |
 | ------------------- | ------------------------------------------------------------------------------------- | -------------- |

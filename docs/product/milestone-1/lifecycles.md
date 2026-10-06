@@ -17,11 +17,11 @@ stateDiagram-v2
     Closed --> [*]
 ```
 
-| State       | Meaning                                                                                          | Who can join                        |
-| ----------- | ------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| **Open**    | The lobby: participants gather, the room admin changes the settings, past results can be viewed. | Anyone with the link or code (≤ 10) |
-| **Playing** | A game is in progress. Settings are locked.                                                      | Anyone with the link or code (≤ 10) |
-| **Closed**  | Final. Nobody can join or play; guest personal links stop working; public results links work.    | Nobody                              |
+| State       | Meaning                                                                                                                                         | Who can join                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **Open**    | The lobby: participants gather, the room admin changes the settings, past results can be viewed.                                                | Anyone with the link or code (≤ 10) |
+| **Playing** | A game is in progress. Settings are locked.                                                                                                     | Anyone with the link or code (≤ 10) |
+| **Closed**  | Final: the room is **not kept** (link and code gone, guest personal links dead). Only its **games** are kept: history and public results links. | Nobody                              |
 
 | Transition       | Triggered by                                                               | Story          |
 | ---------------- | -------------------------------------------------------------------------- | -------------- |

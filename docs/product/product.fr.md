@@ -19,29 +19,29 @@ Autour de cette partie en direct :
 
 ## Glossaire
 
-| Terme                | Sens                                                                                                                                                                    |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Template**         | Un set de tier list réutilisable : ses tuiles et ses tiers. Créé à l'avance, privé ou public. **Classique** ou **à l'aveugle**.                                         |
-| **Tuile**            | Un item à classer : texte, image, son ou vidéo. Une tuile à l'aveugle a en plus un indice, un nom de réponse et une image de réponse.                                   |
-| **Tier**             | Une ligne de la tier list (S, A, B…). Un template part de tiers par défaut qu'on peut ajouter, supprimer et configurer.                                                 |
-| **Classement**       | La tier list d'un joueur : chaque tuile dans un tier, **ordonnée à l'intérieur du tier**.                                                                               |
-| **Room**             | Un salon où les joueurs se retrouvent pour jouer en direct. On la rejoint par lien ou par code. Elle persiste entre les parties jusqu'à sa fermeture.                   |
-| **Admin de la room** | La personne qui prépare la room, choisit le template, mène la partie et la configure. Joue ou non.                                                                      |
-| **Joueur**           | Quelqu'un qui participe à une partie, avec un compte ou en invité.                                                                                                      |
-| **Invité**           | Un joueur sans compte : moins d'options de personnalisation, accès à ses résultats uniquement par un lien temporaire.                                                   |
-| **Partie**           | Une utilisation d'un template dans une room, du premier tour à la clôture. Sauvegardée pour tous les joueurs une fois clôturée, figée sur la version du template jouée. |
-| **Tour**             | Un item affiché par l'admin de la room, placé par tous les joueurs en même temps.                                                                                       |
-| **Cooldown final**   | Une phase chronométrée et configurable en fin de partie, pendant laquelle les joueurs peuvent replacer toutes leurs tuiles.                                             |
-| **Board**            | Ce que voit un joueur pendant la partie. **Privé** : seulement le sien. **Public** : les placements de tous, en **hologrammes** semi-transparents.                      |
-| **Vote absent**      | Enregistré pour un item qu'un joueur a manqué (déconnecté, arrivé en retard), pour calculer les stats avec ou sans les absences.                                        |
-| **Mode ouvert**      | Une tier list ouverte à tous pendant une durée donnée, sans room : chacun la remplit dans son coin et l'envoie. Lancé par le propriétaire du template.                  |
-| **Solo**             | Une tier list faite seul.                                                                                                                                               |
-| **Mode à l'aveugle** | Les items sont cachés derrière un numéro pendant le classement, puis révélés. Les joueurs peuvent les deviner pour marquer des points.                                  |
-| **Marketplace**      | Le catalogue gratuit des templates publics : recherche par tags et mots-clés, tri par popularité ou nouveauté, likes, favoris, forks.                                   |
-| **Fork**             | Une copie d'un template, modifiable par quelqu'un d'autre, si le propriétaire l'autorise. Elle crédite toujours toute sa lignée.                                        |
-| **Super admin**      | Un fondateur de l'application : voit tout et modère.                                                                                                                    |
-| **Grade spécial**    | Un grade accordé sur demande aux créateurs (YouTuber, streamer…), dont les tier lists en mode ouvert sont mises en avant en premier.                                    |
-| **Offre**            | La taille maximale des rooms : gratuite (10 joueurs), niveau 2 (32 joueurs), spéciale (illimitée). Achetée une fois, à vie ; tout est gratuit pour l'instant.           |
+| Terme                | Sens                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Template**         | Un set de tier list réutilisable : ses tuiles et ses tiers. Créé à l'avance, privé ou public. **Classique** ou **à l'aveugle**.                                                                  |
+| **Tuile**            | Un item à classer : texte, image, son ou vidéo. Une tuile à l'aveugle a en plus un indice, un nom de réponse et une image de réponse.                                                            |
+| **Tier**             | Une ligne de la tier list (S, A, B…). Un template part de tiers par défaut qu'on peut ajouter, supprimer et configurer.                                                                          |
+| **Classement**       | La tier list d'un joueur : chaque tuile dans un tier, **ordonnée à l'intérieur du tier**.                                                                                                        |
+| **Room**             | Un salon où les joueurs se retrouvent pour jouer en direct. On la rejoint par lien ou par code. Elle persiste entre les parties jusqu'à sa fermeture ; ensuite, seules ses parties sont gardées. |
+| **Admin de la room** | La personne qui prépare la room, choisit le template, mène la partie et la configure. Joue ou non.                                                                                               |
+| **Joueur**           | Quelqu'un qui participe à une partie, avec un compte ou en invité.                                                                                                                               |
+| **Invité**           | Un joueur sans compte : moins d'options de personnalisation, accès à ses résultats uniquement par un lien temporaire.                                                                            |
+| **Partie**           | Une utilisation d'un template dans une room, du premier tour à la clôture. Sauvegardée pour tous les joueurs une fois clôturée, figée sur la version du template jouée.                          |
+| **Tour**             | Un item affiché par l'admin de la room, placé par tous les joueurs en même temps.                                                                                                                |
+| **Cooldown final**   | Une phase chronométrée et configurable en fin de partie, pendant laquelle les joueurs peuvent replacer toutes leurs tuiles.                                                                      |
+| **Board**            | Ce que voit un joueur pendant la partie. **Privé** : seulement le sien. **Public** : les placements de tous, en **hologrammes** semi-transparents.                                               |
+| **Vote absent**      | Enregistré pour un item qu'un joueur a manqué (déconnecté, arrivé en retard), pour calculer les stats avec ou sans les absences.                                                                 |
+| **Mode ouvert**      | Une tier list ouverte à tous pendant une durée donnée, sans room : chacun la remplit dans son coin et l'envoie. Lancé par le propriétaire du template.                                           |
+| **Solo**             | Une tier list faite seul.                                                                                                                                                                        |
+| **Mode à l'aveugle** | Les items sont cachés derrière un numéro pendant le classement, puis révélés. Les joueurs peuvent les deviner pour marquer des points.                                                           |
+| **Marketplace**      | Le catalogue gratuit des templates publics : recherche par tags et mots-clés, tri par popularité ou nouveauté, likes, favoris, forks.                                                            |
+| **Fork**             | Une copie d'un template, modifiable par quelqu'un d'autre, si le propriétaire l'autorise. Elle crédite toujours toute sa lignée.                                                                 |
+| **Super admin**      | Un fondateur de l'application : voit tout et modère.                                                                                                                                             |
+| **Grade spécial**    | Un grade accordé sur demande aux créateurs (YouTuber, streamer…), dont les tier lists en mode ouvert sont mises en avant en premier.                                                             |
+| **Offre**            | La taille maximale des rooms : gratuite (10 joueurs), niveau 2 (32 joueurs), spéciale (illimitée). Achetée une fois, à vie ; tout est gratuit pour l'instant.                                    |
 
 ## Modes de jeu
 

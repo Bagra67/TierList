@@ -11,7 +11,7 @@ Les règles métier de TierList : comment se joue chaque mode, ce qui est config
 - On rejoint une room par un **lien** ou par un **code** saisi dans l'appli.
 - Les joueurs ont un compte ou sont **invités**. Un invité a moins d'options de personnalisation (par ex. pas de photo de profil).
 - Une room **persiste entre les parties** : même salon, même code, on peut relancer une partie sur le même template.
-- Une room est fermée par son **admin**, ou **automatiquement** après un temps d'inactivité.
+- Une room est fermée par son **admin**, ou **automatiquement** après un temps d'inactivité. Une room fermée **n'est pas gardée** : seules ses **parties** le sont, dans l'historique et par leurs liens publics des résultats.
 - Le nombre maximal de joueurs dépend de l'[offre](#7-offres-et-limites) de l'admin de la room.
 
 ### Déroulé d'une partie

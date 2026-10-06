@@ -74,9 +74,10 @@ classDiagram
     User "1" --> "0..*" Room : administers
     Room "0..*" --> "1" Template : plays
     Room "1" *-- "1" RoomSettings : configured by
-    Room "1" *-- "0..10" Participant : gathers
+    Room "0..1" o-- "0..10" Participant : gathers
     Participant "0..*" --> "0..1" User : is
-    Room "1" *-- "0..*" Game : hosts
+    Room "0..1" o-- "0..*" Game : hosts
+    Game "0..*" o-- "1..*" Participant : played by
     Game "0..*" --> "1" TemplateSnapshot : played on
     Game "1" *-- "1..*" Round : one per tile
     Round "0..*" --> "1" Tile : shows
@@ -94,7 +95,7 @@ classDiagram
 | **Tier**             | A row of the tier list, with a name, a color and its place in the list. Default: S, A, B, C, D, E.                                                                             |
 | **Tile**             | An item to rank: a text, an image (stored compressed), or both. Its order is the template order.                                                                               |
 | **TemplateSnapshot** | The frozen copy of a template's tiers and tiles, taken when a game starts. Editing or deleting the template never changes it.                                                  |
-| **Room**             | The place where a group plays, reached by its link or code. Persists between games until closed.                                                                               |
+| **Room**             | The place where a group plays, reached by its link or code. Persists between games until closed; then it is **not kept**, only its games are.                                  |
 | **RoomSettings**     | The four settings of the milestone. Apply to the next game.                                                                                                                    |
 | **Participant**      | A seat in a room: a user (player) or a guest with a nickname and a personal link. Keeps their seat across disconnections.                                                      |
 | **Game**             | One play of a template snapshot in a room: the item order, the rounds, the placements and, once closed, the results and their public link.                                     |
@@ -117,4 +118,4 @@ Rules the model always respects, whatever the screen or the action:
 8. A round placement is either a **tier and position** or **absent**; an absent round placement has no tier.
 9. Placements can change only **during their round** (round phase) or **during the cooldown** (final phase); once the game is closed, nothing changes.
 10. A guest participant is **never linked to a user**; a player is linked to exactly one user, and a user has **at most one seat** per room.
-11. A closed room accepts **no new participant** and **no new game**; its games' public results links keep working.
+11. Closing a room **removes it**, with its link, its code and the seats that took part in no game. Its **games are kept**, with their participants, placements, results and public links: a game **outlives** its room.

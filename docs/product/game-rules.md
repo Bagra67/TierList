@@ -11,7 +11,7 @@ The business rules of TierList: how each mode is played, what can be configured,
 - A room is joined with a **link** or with a **code** typed in the app.
 - Players can have an account or be **guests**. A guest has fewer personalization options (e.g. no profile picture).
 - A room **persists between games**: same lobby, same code, a new game can be started on the same template.
-- A room is closed by its **admin**, or **automatically** after some time of inactivity.
+- A room is closed by its **admin**, or **automatically** after some time of inactivity. A closed room is **not kept**: only its **games** are, in the history and through their public results links.
 - The maximum number of players depends on the room admin's [plan](#7-plans-and-limits).
 
 ### Running a game

@@ -26,7 +26,7 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 - **Partie** : tours menés par l'admin de la room, **board privé**, classements ordonnés.
 - **Cooldown final** : replacer toutes ses tuiles ; les deux placements sont gardés.
 - **Joueurs absents** : votes absents, reconnexion à sa place, rattrapage des items manqués pendant le cooldown.
-- **Room qui persiste** : relancer une partie dans la même room ; fermée par l'admin de la room ou après inactivité.
+- **Room qui persiste** : relancer une partie dans la même room ; fermée par l'admin de la room ou après inactivité. Une room fermée **n'est pas gardée** : seules ses parties le sont (historique, liens publics).
 - **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents.
 - **Liens** : lien public des résultats ; lien perso de l'invité (30 jours max, mort une fois la room fermée).
 - **Historique** des parties pour les comptes.

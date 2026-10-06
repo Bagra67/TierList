@@ -26,7 +26,7 @@ This is **business design**, not technical documentation: no tables, endpoints o
 - **Game**: rounds run by the room admin, **private board**, ordered rankings.
 - **Final cooldown**: move all your tiles again; both placements are kept.
 - **Absent players**: absent votes, reconnection to your seat, catching up missed items during the cooldown.
-- **Persisting room**: start a new game in the same room; closed by the room admin or after inactivity.
+- **Persisting room**: start a new game in the same room; closed by the room admin or after inactivity. A closed room is **not kept**: only its games are (history, public links).
 - **Results**: per player, overall (distribution per item), **median ranking**, with or without absent votes.
 - **Links**: public results link; guest personal link (30 days max, dead once the room is closed).
 - **History** of games for accounts.

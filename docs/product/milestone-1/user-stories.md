@@ -122,7 +122,7 @@ As the **application**, I want to cap rooms at the free plan size, so that the p
 
 As a **room admin**, I want to close my room, so that nobody can join or play any more.
 
-- _Given_ my room with no game in progress, _when_ I close it, _then_ it can no longer be joined, guest personal links stop working, and public results links **keep working**.
+- _Given_ my room with no game in progress, _when_ I close it, _then_ the room is **not kept**: it disappears with its link and code, and guest personal links stop working. Its **games are kept**: they stay in the history of participants with an account, and their public results links **keep working**.
 - _Given_ a game in progress, _when_ I close the room, _then_ I am asked to confirm, the game is closed first (US-5.1), then the room.
 
 ### US-2.8 Automatic closing — Should

@@ -25,7 +25,7 @@ Around this live game:
 | **Tile**           | One item to rank: text, image, sound or video. A blind tile also has a hint, an answer name and an answer image.                                              |
 | **Tier**           | A row of the tier list (S, A, B…). A template starts with default tiers that can be added, removed and configured.                                            |
 | **Ranking**        | A player's tier list: every tile in a tier, **ordered within the tier**.                                                                                      |
-| **Room**           | A lobby where players meet to play live. Joined with a link or a code. It persists between games until it is closed.                                          |
+| **Room**           | A lobby where players meet to play live. Joined with a link or a code. It persists between games until it is closed; then only its games are kept.            |
 | **Room admin**     | The person who prepares the room, picks the template, runs the game and configures it. May play or not.                                                       |
 | **Player**         | Someone taking part in a game, with an account or as a guest.                                                                                                 |
 | **Guest**          | A player without an account: fewer personalization options, access to their results through a temporary link only.                                            |

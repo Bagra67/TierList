@@ -122,7 +122,7 @@ En tant qu'**application**, je veux limiter les rooms à la taille de l'offre gr
 
 En tant qu'**admin de la room**, je veux fermer ma room, afin que plus personne ne puisse la rejoindre ni y jouer.
 
-- _Étant donné_ ma room sans partie en cours, _quand_ je la ferme, _alors_ on ne peut plus la rejoindre, les liens perso des invités ne marchent plus, et les liens publics des résultats **continuent de marcher**.
+- _Étant donné_ ma room sans partie en cours, _quand_ je la ferme, _alors_ la room **n'est pas gardée** : elle disparaît avec son lien et son code, et les liens perso des invités ne marchent plus. Ses **parties sont gardées** : elles restent dans l'historique des participants avec un compte, et leurs liens publics des résultats **continuent de marcher**.
 - _Étant donné_ une partie en cours, _quand_ je ferme la room, _alors_ je dois confirmer, la partie est d'abord clôturée (US-5.1), puis la room.
 
 ### US-2.8 Fermeture automatique — Should

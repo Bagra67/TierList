@@ -76,9 +76,10 @@ classDiagram
     User "1" --> "0..*" Room : administre
     Room "0..*" --> "1" Template : joue
     Room "1" *-- "1" RoomSettings : réglée par
-    Room "1" *-- "0..10" Participant : réunit
+    Room "0..1" o-- "0..10" Participant : réunit
     Participant "0..*" --> "0..1" User : est
-    Room "1" *-- "0..*" Game : accueille
+    Room "0..1" o-- "0..*" Game : accueille
+    Game "0..*" o-- "1..*" Participant : jouée par
     Game "0..*" --> "1" TemplateSnapshot : jouée sur
     Game "1" *-- "1..*" Round : un par tuile
     Round "0..*" --> "1" Tile : affiche
@@ -96,7 +97,7 @@ classDiagram
 | **Tier**                               | Une ligne de la tier list, avec un nom, une couleur et sa place dans la liste. Par défaut : S, A, B, C, D, E.                                                                                |
 | **Tile** (tuile)                       | Un item à classer : un texte, une image (stockée compressée), ou les deux. Son ordre est l'ordre du template.                                                                                |
 | **TemplateSnapshot** (version figée)   | La copie figée des tiers et des tuiles d'un template, prise au lancement d'une partie. Modifier ou supprimer le template ne la change jamais.                                                |
-| **Room**                               | L'endroit où un groupe joue, rejoint par son lien ou son code. Persiste entre les parties jusqu'à sa fermeture.                                                                              |
+| **Room**                               | L'endroit où un groupe joue, rejoint par son lien ou son code. Persiste entre les parties jusqu'à sa fermeture ; ensuite elle **n'est pas gardée**, seules ses parties le sont.              |
 | **RoomSettings** (réglages de la room) | Les quatre réglages du jalon. S'appliquent à la prochaine partie.                                                                                                                            |
 | **Participant**                        | Une place dans une room : un utilisateur (joueur) ou un invité avec un pseudo et un lien perso. Garde sa place malgré les déconnexions.                                                      |
 | **Game** (partie)                      | Une partie d'une version figée dans une room : l'ordre des items, les tours, les placements et, une fois clôturée, les résultats et leur lien public.                                        |
@@ -119,4 +120,4 @@ Règles que le modèle respecte toujours, quel que soit l'écran ou l'action :
 8. Un placement du tour est soit un **tier et une position**, soit **absent** ; un placement absent n'a pas de tier.
 9. Les placements ne changent que **pendant leur tour** (phase tour) ou **pendant le cooldown** (phase finale) ; une fois la partie clôturée, plus rien ne change.
 10. Un participant invité n'est **jamais relié à un utilisateur** ; un joueur est relié à exactement un utilisateur, et un utilisateur a **au plus une place** par room.
-11. Une room fermée n'accepte **ni nouveau participant ni nouvelle partie** ; les liens publics des résultats de ses parties continuent de marcher.
+11. Fermer une room **la supprime**, avec son lien, son code et les places qui n'ont joué aucune partie. Ses **parties sont gardées**, avec leurs participants, placements, résultats et liens publics : une partie **survit** à sa room.
