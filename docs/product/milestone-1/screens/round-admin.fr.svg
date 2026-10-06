@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+<title>Tour (admin de la room)</title>
+<rect width="960" height="480" fill="#ffffff"/>
+<rect x="0" y="0" width="960" height="52" rx="0" fill="#f4f4f5" stroke="#f4f4f5" stroke-width="1"/>
+<line x1="0" y1="52" x2="960" y2="52" stroke="#a1a1aa" stroke-width="1"/>
+<text x="24" y="33" font-size="18" fill="#18181b" font-weight="bold" text-anchor="start">TierList</text>
+<circle cx="928" cy="26" r="13" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="906" y="31" font-size="14" fill="#71717a" font-weight="normal" text-anchor="end">Alex</text>
+<text x="24" y="88" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Item 4 / 12</text>
+<rect x="160" y="76" width="560" height="14" rx="7" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="160" y="76" width="186" height="14" rx="7" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="936" y="90" font-size="22" fill="#18181b" font-weight="bold" text-anchor="end">0:18</text>
+<rect x="24" y="120" width="260" height="300" rx="6" fill="#ffffff" stroke="#52525b" stroke-width="2"/>
+<rect x="44" y="140" width="220" height="200" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="44" y1="140" x2="264" y2="340" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="264" y1="140" x2="44" y2="340" stroke="#d4d4d8" stroke-width="1"/>
+<text x="154" y="380" font-size="18" fill="#18181b" font-weight="bold" text-anchor="middle">Barbecue</text>
+<rect x="316" y="120" width="380" height="300" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="340" y="154" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Placé 2 / 3 connectés</text>
+<circle cx="356" cy="191" r="14" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="382" y="196" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Alex</text>
+<text x="672" y="196" font-size="13" fill="#71717a" font-weight="normal" text-anchor="end">a placé</text>
+<circle cx="356" cy="241" r="14" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="382" y="246" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Sam</text>
+<text x="672" y="246" font-size="13" fill="#71717a" font-weight="normal" text-anchor="end">en attente</text>
+<circle cx="356" cy="291" r="14" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="382" y="296" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Lou</text>
+<text x="672" y="296" font-size="13" fill="#71717a" font-weight="normal" text-anchor="end">a placé</text>
+<circle cx="356" cy="341" r="14" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="382" y="346" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Max</text>
+<text x="672" y="346" font-size="13" fill="#71717a" font-weight="normal" text-anchor="end">déconnecté</text>
+<rect x="728" y="120" width="208" height="300" rx="6" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="748" y="140" width="168" height="48" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="832.0" y="169.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Item suivant</text>
+<text x="748" y="222" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Auto : timer 30 s</text>
+<text x="24" y="452" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">L'admin de la room qui joue a aussi sa propre tier list.</text>
+</svg>
