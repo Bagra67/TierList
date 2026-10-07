@@ -17,11 +17,17 @@ class UUIDPrimaryKeyMixin:
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # clock_timestamp() et non now() : now() est l'heure du début de la transaction, identique
+    # pour toutes les écritures d'une même transaction (ex. un test d'intégration entier).
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.clock_timestamp()
+    )
     # onupdate ne voit que les UPDATE de la ligne elle-même : un changement dans une table liée
     # (ex. une tuile d'un template) doit mettre la date à jour explicitement.
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        server_default=func.clock_timestamp(),
+        onupdate=func.clock_timestamp(),
     )
 
 
