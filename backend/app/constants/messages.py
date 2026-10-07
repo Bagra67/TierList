@@ -23,8 +23,12 @@ INVALID_TOKEN = "Invalid or expired link"
 # {min_length} est remplacé par la valeur de PASSWORD_MIN_LENGTH
 PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long"
 
+# --- Templates -----------------------------------------------------------------------------
+TEMPLATE_NOT_FOUND = "Template not found"
+
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
 EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
 DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION = "Incorrect password, or Google sign-in too old"
 INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
+TEMPLATE_NOT_FOUND_DESCRIPTION = "Template not found"

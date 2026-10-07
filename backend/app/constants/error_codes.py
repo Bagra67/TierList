@@ -28,3 +28,7 @@ class ErrorCode(StrEnum):
     INVALID_TOKEN = "invalid_token"
     # Code d'erreur de champ (FieldError) de la 422, avec le param min_length
     PASSWORD_TOO_SHORT = "password_too_short"
+
+    # --- Templates -------------------------------------------------------------------------
+    # Inexistant, supprimé ou à un autre utilisateur (indiscernables)
+    TEMPLATE_NOT_FOUND = "template_not_found"
