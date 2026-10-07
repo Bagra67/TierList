@@ -54,17 +54,22 @@ class TemplateService:
         return template
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
-        return [
-            TemplateSummary(
+        """Templates actifs du propriétaire, le plus récemment modifié d'abord."""
+        # Le repository renvoie des paires (template, nombre de tuiles), déjà triées
+        templates_with_tile_count = template_repository.list_owned_templates_with_tile_count(
+            self._session, owner.id
+        )
+
+        summaries: list[TemplateSummary] = []
+        for template, tile_count in templates_with_tile_count:
+            summary = TemplateSummary(
                 id=template.id,
                 name=template.name,
                 tile_count=tile_count,
                 updated_at=template.updated_at,
             )
-            for template, tile_count in template_repository.list_owned_templates_with_tile_count(
-                self._session, owner.id
-            )
-        ]
+            summaries.append(summary)
+        return summaries
 
     def get(self, owner: User, template_id: uuid.UUID) -> Template:
         template = template_repository.get_owned_template(self._session, template_id, owner.id)
