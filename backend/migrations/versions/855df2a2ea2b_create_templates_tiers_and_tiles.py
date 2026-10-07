@@ -52,6 +52,18 @@ def upgrade() -> None:
         sa.Column("name", sa.String(length=50), nullable=False),
         sa.Column("color", sa.String(length=7), nullable=False),
         sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(
             ["template_id"],
             ["templates.id"],
@@ -67,6 +79,18 @@ def upgrade() -> None:
         sa.Column("template_id", sa.Uuid(), nullable=False),
         sa.Column("text", sa.String(length=200), nullable=True),
         sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(
             ["template_id"],
             ["templates.id"],

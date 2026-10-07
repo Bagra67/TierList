@@ -6,17 +6,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.constants.templates import TILE_TEXT_MAX_LENGTH
 from app.db.base import Base
+from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.models.template import Template
 
 
-class Tile(Base):
+class Tile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Un item à classer d'un template."""
 
     __tablename__ = "tiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     template_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("templates.id", ondelete="CASCADE"), index=True
     )
