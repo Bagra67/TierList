@@ -210,6 +210,16 @@ These tests go through the real routes, service, repository and migrations, with
 | `test_template_routes_require_authentication` (5 cases)   | Calls each route without an access token.                                  | Every template route is protected.                                                  | `401` `not_authenticated`.                                                                                                                   |
 | `test_deleting_the_account_deletes_its_templates`         | Alice creates a template, then deletes her account.                        | No template is left behind by a deleted account.                                    | `204`; the `templates` and `tiers` tables are empty.                                                                                         |
 
+#### `tests/integration/test_template_purge.py` (purge of deleted templates)
+
+These tests call `TemplateService.purge_deleted` directly (what `scripts/purge_deleted_templates.py` runs), with a fixed date `NOW` and the retention given by `settings_with_retention(days)`, so they do not depend on `backend/.env`. The `alice` fixture (automatic) adds a user; `create_template` gives her a template with the default tiers and one tile, deleted a given number of days ago or active.
+
+| Test                                                             | What it does                                                                            | Purpose                                       | Expected result                                    |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------- |
+| `test_purge_deletes_templates_deleted_longer_than_the_retention` | With a 30-day retention: one template deleted 31 days ago, one 29 days ago, one active. | Only expired templates are purged.            | `1` purged; `Active` and `Recent` remain.          |
+| `test_purge_also_deletes_the_tiers_and_tiles`                    | Purges a template deleted 31 days ago.                                                  | Nothing is left behind (`ON DELETE CASCADE`). | `tiers` and `tiles` tables empty.                  |
+| `test_purge_retention_is_configurable`                           | Template deleted 10 days ago, purged with 30 days, then with 7 days.                    | The retention is a setting.                   | Kept with 30 days (`0`), purged with 7 days (`1`). |
+
 ### 1.6 Contract test: `tests/test_openapi.py` (API contract)
 
 | Test                                | What it does                                                                                                                                                  | Purpose                                                                                        | Expected result                                                                                                          |
