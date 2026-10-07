@@ -55,9 +55,8 @@ class TemplateService:
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
         """Templates actifs du propriétaire, le plus récemment modifié d'abord."""
-        # Le repository renvoie des paires (template, nombre de tuiles), déjà triées
-        templates_with_tile_count = template_repository.list_owned_templates_with_tile_count(
-            self._session, owner.id
+        templates_with_tile_count: list[tuple[Template, int]] = (
+            template_repository.list_owned_templates_with_tile_count(self._session, owner.id)
         )
 
         summaries: list[TemplateSummary] = []
