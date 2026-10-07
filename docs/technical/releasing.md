@@ -42,6 +42,8 @@ The highest change since the last release wins: one `feat` and three `fix` give 
 
 3. **Automatic**: when the CI passes on `main`, the `Release` workflow (`.github/workflows/release.yml`) checks that the versions are equal, that the tag does not exist yet and that `CHANGELOG.md` has the section, then creates the `vX.Y.Z` tag on the merge commit and the GitHub Release with that section as notes. If a check fails, the workflow fails with the reason and nothing is published.
 
+   The workflow is triggered by `workflow_run`, so GitHub runs the version of `release.yml` found on the **default branch**, `develop`: a change to this file applies as soon as it is merged into `develop`, before the next release.
+
 ## How the version is computed
 
 Tags are on the merge commits of `main`, which `develop` does not contain. The script therefore takes the highest `vX.Y.Z` tag of the repository and analyses the commits of `vX.Y.Z..HEAD`: this range excludes everything already released.
