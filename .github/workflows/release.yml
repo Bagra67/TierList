@@ -2,7 +2,8 @@ name: Release
 
 # After a release PR (develop -> main) is merged and the CI passed on main: tag vX.Y.Z on the
 # merge commit and publish the GitHub Release with the CHANGELOG section. See docs/technical/releasing.md.
-# workflow_run always uses this file from the default branch (main).
+# workflow_run always uses this file from the default branch (develop): a change to it applies
+# as soon as it is merged into develop, before the next release.
 on:
   workflow_run:
     workflows: [CI]

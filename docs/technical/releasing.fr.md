@@ -42,6 +42,8 @@ Le changement le plus fort depuis la dernière release l'emporte : un `feat` et 
 
 3. **Automatique** : quand la CI passe sur `main`, le workflow `Release` (`.github/workflows/release.yml`) vérifie que les versions sont égales, que le tag n'existe pas encore et que `CHANGELOG.md` contient la section, puis crée le tag `vX.Y.Z` sur le merge commit et la GitHub Release avec cette section comme notes. Si une vérification échoue, le workflow échoue avec la raison et rien n'est publié.
 
+   Le workflow est déclenché par `workflow_run` : GitHub exécute donc la version de `release.yml` présente sur la **branche par défaut**, `develop`. Une modification de ce fichier s'applique dès son merge dans `develop`, avant la release suivante.
+
 ## Calcul de la version
 
 Les tags sont sur les merge commits de `main`, que `develop` ne contient pas. Le script prend donc le plus grand tag `vX.Y.Z` du dépôt et analyse les commits de `vX.Y.Z..HEAD` : cette plage exclut tout ce qui a déjà été publié.
