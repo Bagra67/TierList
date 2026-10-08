@@ -257,13 +257,14 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `EMAIL_COOLDOWN_SECONDS`                | Minimum time between two emails of the same type for one account (prevents flooding a mailbox)                                                                               | `60`                                             |
 | `AUTH_COOKIE_SECURE`                    | Refresh cookie sent over HTTPS only; set `false` locally (HTTP)                                                                                                              | `true`                                           |
 | `AUTH_COOKIE_PATH`                      | Refresh cookie path, as seen by the browser (through the `/api` proxy)                                                                                                       | `/api/auth`                                      |
+| `DELETED_TEMPLATE_RETENTION_DAYS`       | Days a deleted template stays in the database before being purged                                                                                                            | `30`                                             |
 | `GOOGLE_CLIENT_ID`                      | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled                                                                        | — (optional)                                     |
 | `GOOGLE_CLIENT_SECRET`                  | Secret of that client                                                                                                                                                        | — (optional)                                     |
 | `GOOGLE_REDIRECT_URI`                   | Callback URL, identical to an authorized redirect URI of the client                                                                                                          | `http://localhost:5173/api/auth/google/callback` |
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Time allowed on Google's page before the sign-in attempt expires                                                                                                             | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Timeout of the calls to Google (code exchange, public keys)                                                                                                                  | `10`                                             |
 
-Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/technical/emails.md). Authentication is described in the [authentication guide](../docs/technical/authentication.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
+Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/technical/emails.md). Authentication is described in the [authentication guide](../docs/technical/authentication.md), templates and their purge in the [templates guide](../docs/technical/templates.md). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 
@@ -361,5 +362,6 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `reauthentication_required` | 403         | Google account whose last sign-in is too old to confirm the deletion       |
 | `invalid_token`             | 400         | Link received by email invalid, expired, or no longer matching the account |
 | `password_too_short`        | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
+| `template_not_found`        | 404         | Template unknown, deleted or owned by another user (indistinguishable)     |
 
 For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
