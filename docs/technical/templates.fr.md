@@ -22,7 +22,7 @@ Les écrans arrivent avec #78 ; pour l'instant, seule l'API existe.
 
 - **Nom** : 1 à 100 caractères, espaces de début et de fin retirés (un nom fait seulement d'espaces est vide, donc refusé avec une `422`).
 - **Tiers par défaut**, du haut vers le bas : `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
-- **Dernière modification** (`updated_at`) : change quand le template, un de ses tiers ou une de ses tuiles change. C'est la date montrée à l'utilisateur et l'ordre de la liste.
+- **Dernière modification** (`updated_at`) : change quand le template change, et doit aussi changer quand un de ses tiers ou une de ses tuiles change : le service la met à jour explicitement (§2.2). C'est la date montrée à l'utilisateur et l'ordre de la liste.
 - **Confidentialité** : un template d'un autre utilisateur répond `404`, exactement comme un template inconnu ou supprimé : l'API ne révèle jamais qu'il existe.
 - **La suppression du compte** efface les templates de l'utilisateur, y compris ceux déjà supprimés.
 

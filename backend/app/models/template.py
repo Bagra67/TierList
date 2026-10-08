@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     """Ce qu'on classe : ses tiers et ses tuiles. Privé à son propriétaire.
 
-    updated_at est la « dernière modification » montrée à l'utilisateur : le service la met
-    aussi à jour quand un de ses tiers ou une de ses tuiles change. Supprimé logiquement
+    updated_at est la « dernière modification » montrée à l'utilisateur : le service doit
+    aussi la mettre à jour quand un de ses tiers ou une de ses tuiles change. Supprimé logiquement
     (deleted_at), un template disparaît pour son propriétaire, puis est purgé définitivement
     après DELETED_TEMPLATE_RETENTION_DAYS.
     """

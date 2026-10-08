@@ -22,7 +22,7 @@ The screens come with #78; for now only the API exists.
 
 - **Name**: 1 to 100 characters, surrounding spaces removed (a name made only of spaces is empty, hence refused with a `422`).
 - **Default tiers**, from top to bottom: `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
-- **Last modification** (`updated_at`): changes when the template, one of its tiers or one of its tiles changes. It is the date shown to the user and the order of the list.
+- **Last modification** (`updated_at`): changes when the template changes, and must also change when one of its tiers or tiles changes: the service updates it explicitly (§2.2). It is the date shown to the user and the order of the list.
 - **Privacy**: a template of another user answers `404`, exactly like an unknown or deleted one: the API never reveals that it exists.
 - **Account deletion** erases the user's templates, deleted ones included.
 
