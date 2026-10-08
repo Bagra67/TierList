@@ -109,6 +109,7 @@ export const fr = {
       incorrect_password: 'Mot de passe incorrect',
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
       invalid_token: 'Ce lien est invalide ou a expiré.',
+      template_not_found: 'Ce template est introuvable.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

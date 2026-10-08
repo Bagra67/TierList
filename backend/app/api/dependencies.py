@@ -14,6 +14,7 @@ from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
+from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -24,6 +25,13 @@ def get_auth_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthService:
     return AuthService(session, settings)
+
+
+def get_template_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> TemplateService:
+    return TemplateService(session, settings)
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:

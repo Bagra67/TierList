@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)
     auth_cookie_path: str = "/api/auth"
 
+    # Templates (docs/technical/templates.md) : durée pendant laquelle un template supprimé
+    # reste en base avant d'être purgé définitivement
+    deleted_template_retention_days: int = Field(default=30, gt=0)
+
     # Connexion avec Google (client OAuth « Application Web » de la Google Cloud Console).
     # Sans identifiants, le bouton Google renvoie vers /login avec une erreur explicite.
     google_client_id: str | None = None

@@ -14,6 +14,7 @@
 - [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`.
 - [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (proxy, Cloudflare…), et configurer les en-têtes de proxy de confiance (`X-Forwarded-For`, `--forwarded-allow-ips`) pour que le backend voie la vraie IP.
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
+- [ ] Planifier la purge des templates supprimés une fois par jour : `uv run python scripts/purge_deleted_templates.py` dans `backend/` (cron ou tâche planifiée de l'hébergeur). Sans elle, les templates supprimés restent en base ; la durée de conservation est `DELETED_TEMPLATE_RETENTION_DAYS` (30 jours par défaut).
 
 ## 2. Décisions à prendre
 

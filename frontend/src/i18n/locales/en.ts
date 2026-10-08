@@ -107,6 +107,7 @@ export const en: Translation = {
       incorrect_password: 'Incorrect password',
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
       invalid_token: 'This link is invalid or has expired.',
+      template_not_found: 'This template could not be found.',
     },
     field: {
       invalid: 'Invalid value.',
