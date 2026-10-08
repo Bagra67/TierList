@@ -26,9 +26,7 @@ class TierResponse(BaseModel):
 
     id: uuid.UUID
     name: str
-    # Format #RRGGBB
     color: str
-    # 0 = en haut
     position: int
 
 
@@ -37,7 +35,6 @@ class TileResponse(BaseModel):
 
     id: uuid.UUID
     text: str | None
-    # Ordre du template, 0 = première
     position: int
 
 
@@ -47,9 +44,7 @@ class TemplateResponse(BaseModel):
     id: uuid.UUID
     name: str
     created_at: datetime
-    # Dernière modification du template, de ses tiers ou de ses tuiles
     updated_at: datetime
-    # Triés par position
     tiers: list[TierResponse]
     tiles: list[TileResponse]
 
@@ -64,5 +59,4 @@ class TemplateSummaryResponse(BaseModel):
 
 
 class TemplateListResponse(BaseModel):
-    # Objet plutôt que tableau : une pagination pourra ajouter un champ sans casser le contrat
     items: list[TemplateSummaryResponse]
