@@ -212,7 +212,7 @@ Ces tests passent par les vraies routes, le service, le repository et les migrat
 
 #### `tests/integration/test_template_purge.py` (purge des templates supprimés)
 
-Ces tests appellent directement `TemplateService.purge_deleted` (ce que lance `scripts/purge_deleted_templates.py`), avec une date fixe `NOW` et la durée de conservation donnée par `settings_with_retention(days)` : ils ne dépendent pas de `backend/.env`. La fixture `alice` (automatique) ajoute une utilisatrice ; `create_template` lui crée un template avec les tiers par défaut et une tuile, supprimé il y a un nombre de jours donné, ou actif.
+Ces tests appellent directement `TemplateService.purge_deleted` (ce que lance `scripts/purge_deleted_templates.py`), avec la durée de conservation donnée par `settings_with_retention(days)` : ils ne dépendent pas de `backend/.env`. Les dates de suppression sont fixées par rapport à l'heure courante, à au moins un jour de la limite : le résultat ne dépend pas du moment où les tests tournent. La fixture `alice` (automatique) ajoute une utilisatrice ; `create_template` lui crée un template avec les tiers par défaut et une tuile, supprimé il y a un nombre de jours donné, ou actif.
 
 | Test                                                             | Ce qu'il fait                                                                                       | But                                           | Résultat attendu                                     |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------- |

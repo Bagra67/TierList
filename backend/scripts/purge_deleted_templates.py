@@ -6,7 +6,6 @@ TODO.md. Relancer la commande ne pose aucun problème : elle ne supprime que ce 
 """
 
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -30,7 +29,7 @@ def main() -> None:
     configure_logging(get_logging_settings().log_level)
     with Session(get_engine()) as session:
         service = TemplateService(session, get_settings())
-        purged_count = service.purge_deleted(datetime.now(UTC))
+        purged_count = service.purge_deleted()
     print(f"Deleted templates purged: {purged_count}")
 
 

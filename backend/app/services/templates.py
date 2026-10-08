@@ -90,10 +90,10 @@ class TemplateService:
         self._session.commit()
         logger.info("Template supprimé : template_id=%s owner_id=%s", template.id, owner.id)
 
-    def purge_deleted(self, now: datetime) -> int:
+    def purge_deleted(self) -> int:
         """Supprime définitivement les templates supprimés depuis plus que la durée de
         rétention ; renvoie leur nombre."""
-        limit = now - timedelta(days=self._settings.deleted_template_retention_days)
+        limit = datetime.now(UTC) - timedelta(days=self._settings.deleted_template_retention_days)
         purged = template_repository.delete_templates_deleted_before(self._session, limit)
         self._session.commit()
         logger.info("Templates purgés : %d (supprimés avant %s)", purged, limit.isoformat())
