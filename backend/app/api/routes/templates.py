@@ -9,7 +9,8 @@ from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.errors import ErrorResponse
 from app.exceptions.http import AppHTTPException
-from app.exceptions.templates import TemplateNotFoundError
+from app.exceptions.templates import LastTierError, TemplateNotFoundError, TierNotFoundError
+from app.models.template import Template
 from app.models.user import User
 from app.schemas.templates import (
     CreateTemplateRequest,
@@ -17,14 +18,19 @@ from app.schemas.templates import (
     TemplateListResponse,
     TemplateResponse,
     TemplateSummaryResponse,
+    UpdateTierRequest,
 )
-from app.services.templates import TemplateService
+from app.services.templates import TemplateService, TemplateSummary, TierChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 TEMPLATE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
+}
+TIER_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **UNAUTHORIZED_RESPONSE,
+    404: {"model": ErrorResponse, "description": messages.TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION},
 }
 
 TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
@@ -39,17 +45,25 @@ def _template_not_found() -> AppHTTPException:
     )
 
 
+def _tier_not_found() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=404,
+        code=ErrorCode.TIER_NOT_FOUND,
+        detail=messages.TIER_NOT_FOUND,
+    )
+
+
 @router.post("", status_code=201, responses=UNAUTHORIZED_RESPONSE)
 def create_template(
     payload: CreateTemplateRequest, user: CurrentUserDep, service: TemplateServiceDep
 ) -> TemplateResponse:
-    template = service.create(user, payload.name)
+    template: Template = service.create(user, payload.name)
     return TemplateResponse.model_validate(template)
 
 
 @router.get("", responses=UNAUTHORIZED_RESPONSE)
 def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
-    summaries = service.list_for_owner(user)
+    summaries: list[TemplateSummary] = service.list_for_owner(user)
 
     items: list[TemplateSummaryResponse] = []
     for summary in summaries:
@@ -62,7 +76,7 @@ def get_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
 ) -> TemplateResponse:
     try:
-        template = service.get(user, template_id)
+        template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     return TemplateResponse.model_validate(template)
@@ -76,7 +90,7 @@ def rename_template(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.rename(user, template_id, payload.name)
+        template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     return TemplateResponse.model_validate(template)
@@ -90,3 +104,63 @@ def delete_template(
         service.delete(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
+
+
+@router.post("/{template_id}/tiers", status_code=201, responses=TEMPLATE_NOT_FOUND_RESPONSES)
+def add_tier(
+    template_id: uuid.UUID,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+) -> TemplateResponse:
+    try:
+        template: Template = service.add_tier(user, template_id)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    return TemplateResponse.model_validate(template)
+
+
+@router.patch("/{template_id}/tiers/{tier_id}", responses=TIER_NOT_FOUND_RESPONSES)
+def update_tier(
+    template_id: uuid.UUID,
+    tier_id: uuid.UUID,
+    payload: UpdateTierRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+) -> TemplateResponse:
+    # Seuls les champs envoyés (non nuls) changent
+    changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
+    try:
+        template: Template = service.update_tier(user, template_id, tier_id, changes)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    except TierNotFoundError as exc:
+        raise _tier_not_found() from exc
+    return TemplateResponse.model_validate(template)
+
+
+@router.delete(
+    "/{template_id}/tiers/{tier_id}",
+    responses={
+        **TIER_NOT_FOUND_RESPONSES,
+        409: {"model": ErrorResponse, "description": messages.LAST_TIER_DESCRIPTION},
+    },
+)
+def delete_tier(
+    template_id: uuid.UUID,
+    tier_id: uuid.UUID,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+) -> TemplateResponse:
+    try:
+        template: Template = service.delete_tier(user, template_id, tier_id)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    except TierNotFoundError as exc:
+        raise _tier_not_found() from exc
+    except LastTierError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.LAST_TIER,
+            detail=messages.LAST_TIER,
+        ) from exc
+    return TemplateResponse.model_validate(template)

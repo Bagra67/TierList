@@ -1,12 +1,20 @@
 import uuid
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
-from app.constants.templates import DEFAULT_TIERS, TEMPLATE_NAME_MAX_LENGTH
+from app.constants.templates import (
+    DEFAULT_TIERS,
+    NEW_TIER_COLOR,
+    NEW_TIER_NAME,
+    TEMPLATE_NAME_MAX_LENGTH,
+    TIER_NAME_MAX_LENGTH,
+)
 from app.models.template import Template
 from app.models.tier import Tier
 from app.models.tile import Tile
@@ -18,10 +26,13 @@ pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
 
+# Objet JSON renvoyé par l'API (template, tier, tuile…) : sa forme est vérifiée par les tests
+JsonObject = dict[str, Any]
+
 
 def register(client: TestClient, email: str) -> dict[str, str]:
     """Crée un compte et renvoie l'en-tête Authorization de son access token."""
-    response = client.post(
+    response: Response = client.post(
         "/auth/register",
         json={"email": email, "password": PASSWORD, "display_name": email.split("@")[0]},
     )
@@ -39,8 +50,8 @@ def bob(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, "bob@example.com")
 
 
-def create_template(client: TestClient, headers: dict[str, str], name: str) -> dict:
-    response = client.post("/templates", json={"name": name}, headers=headers)
+def create_template(client: TestClient, headers: dict[str, str], name: str) -> JsonObject:
+    response: Response = client.post("/templates", json={"name": name}, headers=headers)
     assert response.status_code == 201
     return response.json()
 
@@ -57,19 +68,25 @@ def add_tiles(db_session: Session, template_id: str, count: int) -> None:
 def test_create_template_with_the_default_tiers(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):
-    response = auth_client.post("/templates", json={"name": "  Video games  "}, headers=alice)
+    response: Response = auth_client.post(
+        "/templates", json={"name": "  Video games  "}, headers=alice
+    )
 
     assert response.status_code == 201
-    body = response.json()
+    body: JsonObject = response.json()
     assert body["name"] == "Video games"
-    tiers = [(tier["name"], tier["color"], tier["position"]) for tier in body["tiers"]]
-    expected_tiers = [
+    tiers: list[tuple[str, str, int]] = [
+        (tier["name"], tier["color"], tier["position"]) for tier in body["tiers"]
+    ]
+    expected_tiers: list[tuple[str, str, int]] = [
         (name, color, position) for position, (name, color) in enumerate(DEFAULT_TIERS)
     ]
     assert tiers == expected_tiers
     assert body["tiles"] == []
-    template = db_session.scalars(select(Template)).one()
-    alice_user = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    template: Template = db_session.scalars(select(Template)).one()
+    alice_user: User = db_session.scalars(
+        select(User).where(User.email == "alice@example.com")
+    ).one()
     assert template.owner_id == alice_user.id
     assert template.deleted_at is None
 
@@ -78,7 +95,7 @@ def test_create_template_with_the_default_tiers(
 def test_create_template_validates_the_name(
     auth_client: TestClient, alice: dict[str, str], db_session: Session, name: str
 ):
-    response = auth_client.post("/templates", json={"name": name}, headers=alice)
+    response: Response = auth_client.post("/templates", json={"name": name}, headers=alice)
 
     assert response.status_code == 422
     assert [error["field"] for error in response.json()["errors"]] == ["body.name"]
@@ -88,7 +105,7 @@ def test_create_template_validates_the_name(
 def test_list_is_empty_when_the_user_has_no_template(
     auth_client: TestClient, alice: dict[str, str]
 ):
-    response = auth_client.get("/templates", headers=alice)
+    response: Response = auth_client.get("/templates", headers=alice)
 
     assert response.status_code == 200
     assert response.json() == {"items": []}
@@ -97,27 +114,27 @@ def test_list_is_empty_when_the_user_has_no_template(
 def test_list_shows_only_my_templates_with_their_tile_count(
     auth_client: TestClient, alice: dict[str, str], bob: dict[str, str], db_session: Session
 ):
-    movies = create_template(auth_client, alice, "Movies")
+    movies: JsonObject = create_template(auth_client, alice, "Movies")
     create_template(auth_client, alice, "Games")
     create_template(auth_client, bob, "Bob's template")
     add_tiles(db_session, movies["id"], 3)
 
-    response = auth_client.get("/templates", headers=alice)
+    response: Response = auth_client.get("/templates", headers=alice)
 
     assert response.status_code == 200
-    items = response.json()["items"]
-    tile_count_by_name = {item["name"]: item["tile_count"] for item in items}
+    items: list[JsonObject] = response.json()["items"]
+    tile_count_by_name: dict[str, int] = {item["name"]: item["tile_count"] for item in items}
     assert tile_count_by_name == {"Movies": 3, "Games": 0}
 
 
 def test_list_shows_the_last_modified_template_first(
     auth_client: TestClient, alice: dict[str, str]
 ):
-    first = create_template(auth_client, alice, "First")
+    first: JsonObject = create_template(auth_client, alice, "First")
     create_template(auth_client, alice, "Second")
     auth_client.patch(f"/templates/{first['id']}", json={"name": "First, renamed"}, headers=alice)
 
-    response = auth_client.get("/templates", headers=alice)
+    response: Response = auth_client.get("/templates", headers=alice)
 
     assert [item["name"] for item in response.json()["items"]] == ["First, renamed", "Second"]
 
@@ -125,13 +142,13 @@ def test_list_shows_the_last_modified_template_first(
 def test_get_template_returns_its_tiers_and_tiles(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):
-    template = create_template(auth_client, alice, "Movies")
+    template: JsonObject = create_template(auth_client, alice, "Movies")
     add_tiles(db_session, template["id"], 2)
 
-    response = auth_client.get(f"/templates/{template['id']}", headers=alice)
+    response: Response = auth_client.get(f"/templates/{template['id']}", headers=alice)
 
     assert response.status_code == 200
-    body = response.json()
+    body: JsonObject = response.json()
     assert len(body["tiers"]) == len(DEFAULT_TIERS)
     assert [tile["text"] for tile in body["tiles"]] == ["Tile 0", "Tile 1"]
 
@@ -139,9 +156,9 @@ def test_get_template_returns_its_tiers_and_tiles(
 def test_rename_template_updates_the_last_modification_date(
     auth_client: TestClient, alice: dict[str, str]
 ):
-    template = create_template(auth_client, alice, "Movies")
+    template: JsonObject = create_template(auth_client, alice, "Movies")
 
-    response = auth_client.patch(
+    response: Response = auth_client.patch(
         f"/templates/{template['id']}", json={"name": "Films"}, headers=alice
     )
 
@@ -153,15 +170,15 @@ def test_rename_template_updates_the_last_modification_date(
 def test_delete_template_is_a_soft_delete(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):
-    template = create_template(auth_client, alice, "Movies")
+    template: JsonObject = create_template(auth_client, alice, "Movies")
 
-    response = auth_client.delete(f"/templates/{template['id']}", headers=alice)
+    response: Response = auth_client.delete(f"/templates/{template['id']}", headers=alice)
 
     assert response.status_code == 204
     assert auth_client.get("/templates", headers=alice).json() == {"items": []}
     assert auth_client.get(f"/templates/{template['id']}", headers=alice).status_code == 404
     # Toujours en base, avec ses tiers, jusqu'à la purge
-    stored = db_session.scalars(select(Template)).one()
+    stored: Template = db_session.scalars(select(Template)).one()
     assert stored.deleted_at is not None
     assert len(db_session.scalars(select(Tier)).all()) == len(DEFAULT_TIERS)
 
@@ -169,28 +186,35 @@ def test_delete_template_is_a_soft_delete(
 def test_templates_of_other_users_are_not_found(
     auth_client: TestClient, alice: dict[str, str], bob: dict[str, str]
 ):
-    template = create_template(auth_client, alice, "Alice's template")
-    url = f"/templates/{template['id']}"
+    template: JsonObject = create_template(auth_client, alice, "Alice's template")
+    url: str = f"/templates/{template['id']}"
 
-    responses = [
+    tier_url: str = f"{url}/tiers/{template['tiers'][0]['id']}"
+
+    responses: list[Response] = [
         auth_client.get(url, headers=bob),
         auth_client.patch(url, json={"name": "Stolen"}, headers=bob),
         auth_client.delete(url, headers=bob),
+        auth_client.post(f"{url}/tiers", headers=bob),
+        auth_client.patch(tier_url, json={"name": "Stolen"}, headers=bob),
+        auth_client.delete(tier_url, headers=bob),
     ]
 
     for response in responses:
         assert response.status_code == 404
         assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
     # Le template d'Alice n'a pas changé
-    assert auth_client.get(url, headers=alice).json()["name"] == "Alice's template"
+    unchanged: JsonObject = auth_client.get(url, headers=alice).json()
+    assert unchanged["name"] == "Alice's template"
+    assert unchanged["tiers"] == template["tiers"]
 
 
 def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice: dict[str, str]):
-    deleted = create_template(auth_client, alice, "Deleted")
+    deleted: JsonObject = create_template(auth_client, alice, "Deleted")
     auth_client.delete(f"/templates/{deleted['id']}", headers=alice)
 
     for template_id in (deleted["id"], str(uuid.uuid4())):
-        url = f"/templates/{template_id}"
+        url: str = f"/templates/{template_id}"
         for response in (
             auth_client.get(url, headers=alice),
             auth_client.patch(url, json={"name": "New name"}, headers=alice),
@@ -208,10 +232,13 @@ def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice
         ("GET", f"/templates/{uuid.uuid4()}"),
         ("PATCH", f"/templates/{uuid.uuid4()}"),
         ("DELETE", f"/templates/{uuid.uuid4()}"),
+        ("POST", f"/templates/{uuid.uuid4()}/tiers"),
+        ("PATCH", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
+        ("DELETE", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
     ],
 )
 def test_template_routes_require_authentication(auth_client: TestClient, method: str, path: str):
-    response = auth_client.request(method, path, json={"name": "Movies"})
+    response: Response = auth_client.request(method, path, json={"name": "Movies"})
 
     assert response.status_code == 401
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
@@ -222,8 +249,184 @@ def test_deleting_the_account_deletes_its_templates(
 ):
     create_template(auth_client, alice, "Movies")
 
-    response = auth_client.request("DELETE", "/auth/me", json={"password": PASSWORD}, headers=alice)
+    response: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=alice
+    )
 
     assert response.status_code == 204
     assert db_session.scalars(select(Template)).all() == []
     assert db_session.scalars(select(Tier)).all() == []
+
+
+# --- Tiers ---------------------------------------------------------------------------------
+
+
+def tier_names(template: JsonObject) -> list[str]:
+    return [tier["name"] for tier in template["tiers"]]
+
+
+def tier_positions(template: JsonObject) -> list[int]:
+    return [tier["position"] for tier in template["tiers"]]
+
+
+def tier_id(template: JsonObject, name: str) -> str:
+    for tier in template["tiers"]:
+        if tier["name"] == name:
+            return tier["id"]
+    raise AssertionError(f"Tier {name} absent")
+
+
+def test_add_tier_at_the_bottom_with_the_default_name_and_color(
+    auth_client: TestClient, alice: dict[str, str]
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+
+    response: Response = auth_client.post(f"/templates/{template['id']}/tiers", headers=alice)
+
+    assert response.status_code == 201
+    body: JsonObject = response.json()
+    assert tier_names(body) == ["S", "A", "B", "C", "D", "E", NEW_TIER_NAME]
+    assert body["tiers"][-1]["color"] == NEW_TIER_COLOR
+    assert tier_positions(body) == list(range(len(DEFAULT_TIERS) + 1))
+    assert body["updated_at"] > template["updated_at"]
+
+
+def test_rename_and_recolor_a_tier(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, 'S')}"
+
+    response: Response = auth_client.patch(
+        url, json={"name": "  Masterpiece  ", "color": "#a1b2c3"}, headers=alice
+    )
+
+    assert response.status_code == 200
+    body: JsonObject = response.json()
+    assert body["tiers"][0]["name"] == "Masterpiece"
+    # Enregistrée en majuscules
+    assert body["tiers"][0]["color"] == "#A1B2C3"
+    assert tier_names(body)[1:] == ["A", "B", "C", "D", "E"]
+    assert body["updated_at"] > template["updated_at"]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"name": ""},
+        {"name": "   "},
+        {"name": "x" * (TIER_NAME_MAX_LENGTH + 1)},
+        {"color": "red"},
+        {"color": "#12345"},
+        {"color": "#GGGGGG"},
+        {"position": -1},
+    ],
+)
+def test_update_tier_validates_the_fields(
+    auth_client: TestClient, alice: dict[str, str], payload: JsonObject
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, 'S')}"
+
+    response: Response = auth_client.patch(url, json=payload, headers=alice)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == ErrorCode.VALIDATION_ERROR
+    unchanged: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert unchanged["tiers"] == template["tiers"]
+
+
+@pytest.mark.parametrize(
+    ("name", "position", "expected_names"),
+    [
+        # Vers le bas
+        ("S", 2, ["A", "B", "S", "C", "D", "E"]),
+        # Vers le haut
+        ("D", 0, ["D", "S", "A", "B", "C", "E"]),
+        # Au-delà de la fin : en dernier
+        ("B", 99, ["S", "A", "C", "D", "E", "B"]),
+        # Sur place
+        ("C", 3, ["S", "A", "B", "C", "D", "E"]),
+    ],
+)
+def test_move_a_tier_keeps_the_positions_continuous(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    name: str,
+    position: int,
+    expected_names: list[str],
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, name)}"
+
+    response: Response = auth_client.patch(url, json={"position": position}, headers=alice)
+
+    assert response.status_code == 200
+    assert tier_names(response.json()) == expected_names
+    assert tier_positions(response.json()) == list(range(len(DEFAULT_TIERS)))
+    # Relu depuis la base : l'ordre est bien enregistré
+    stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert tier_names(stored) == expected_names
+
+
+@pytest.mark.parametrize("payload", [{}, {"name": None, "color": None, "position": None}])
+def test_an_empty_tier_update_changes_nothing(
+    auth_client: TestClient, alice: dict[str, str], payload: JsonObject
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, 'S')}"
+
+    response: Response = auth_client.patch(url, json=payload, headers=alice)
+
+    assert response.status_code == 200
+    body: JsonObject = response.json()
+    assert body["tiers"] == template["tiers"]
+    # Rien n'a changé : la date de dernière modification non plus
+    assert body["updated_at"] == template["updated_at"]
+    unknown_url: str = f"/templates/{template['id']}/tiers/{uuid.uuid4()}"
+    assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
+
+
+def test_delete_a_tier_renumbers_the_others(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, 'B')}"
+
+    response: Response = auth_client.delete(url, headers=alice)
+
+    assert response.status_code == 200
+    body: JsonObject = response.json()
+    assert tier_names(body) == ["S", "A", "C", "D", "E"]
+    assert tier_positions(body) == [0, 1, 2, 3, 4]
+    assert body["updated_at"] > template["updated_at"]
+    assert len(db_session.scalars(select(Tier)).all()) == len(DEFAULT_TIERS) - 1
+
+
+def test_the_last_tier_cannot_be_deleted(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    for name in ["S", "A", "B", "C", "D"]:
+        auth_client.delete(
+            f"/templates/{template['id']}/tiers/{tier_id(template, name)}", headers=alice
+        )
+
+    response: Response = auth_client.delete(
+        f"/templates/{template['id']}/tiers/{tier_id(template, 'E')}", headers=alice
+    )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.LAST_TIER
+    remaining: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert tier_names(remaining) == ["E"]
+
+
+def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    other: JsonObject = create_template(auth_client, alice, "Books")
+    # Un tier inconnu, puis un tier d'un autre template du même utilisateur
+    for unknown_tier_id in (str(uuid.uuid4()), tier_id(other, "S")):
+        url: str = f"/templates/{template['id']}/tiers/{unknown_tier_id}"
+        for response in (
+            auth_client.patch(url, json={"name": "New name"}, headers=alice),
+            auth_client.delete(url, headers=alice),
+        ):
+            assert response.status_code == 404
+            assert response.json()["code"] == ErrorCode.TIER_NOT_FOUND

@@ -123,7 +123,32 @@ export const en: Translation = {
     },
     editor: {
       back: 'Back to my templates',
+      name: 'Template name',
       tiers: 'Tiers',
+      addTier: 'Add a tier',
+      tierName: 'Name of tier {{position}}',
+      tierColor: 'Color of tier {{name}}',
+      color: {
+        area: 'Saturation and brightness',
+        areaValue: 'Saturation {{saturation}}%, brightness {{brightness}}%',
+        hue: 'Hue',
+        presets: 'Suggested colors',
+        preset: 'Choose {{color}}',
+        hex: 'Hex code',
+        done: 'OK',
+      },
+      moveUp: 'Move {{name}} up',
+      moveDown: 'Move {{name}} down',
+      deleteTier: 'Delete tier {{name}}',
+      dragHandle: 'Move {{name}}',
+      dnd: {
+        instructions:
+          'To move an item, press Space or Enter, use the arrow keys, then Space or Enter to drop it, or Escape to cancel.',
+        pickedUp: '{{item}} picked up, position {{position}} of {{count}}.',
+        movedOver: '{{item}} moved to position {{position}} of {{count}}.',
+        dropped: '{{item}} dropped at position {{position}} of {{count}}.',
+        cancelled: 'Moving {{item}} cancelled.',
+      },
     },
   },
   errors: {
@@ -141,6 +166,8 @@ export const en: Translation = {
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
       invalid_token: 'This link is invalid or has expired.',
       template_not_found: 'This template could not be found.',
+      tier_not_found: 'This tier could not be found.',
+      last_tier: 'A template keeps at least one tier.',
     },
     field: {
       invalid: 'Invalid value.',
@@ -148,6 +175,7 @@ export const en: Translation = {
       string_too_short: 'At least {{min_length}} characters.',
       string_too_long: 'At most {{max_length}} characters.',
       value_error: 'Invalid value.',
+      string_pattern_mismatch: 'Invalid format.',
       password_too_short: 'The password must be at least {{min_length}} characters long',
     },
     google: {

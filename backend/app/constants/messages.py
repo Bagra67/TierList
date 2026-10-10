@@ -25,6 +25,8 @@ PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long
 
 # --- Templates -----------------------------------------------------------------------------
 TEMPLATE_NOT_FOUND = "Template not found"
+TIER_NOT_FOUND = "Tier not found"
+LAST_TIER = "A template keeps at least one tier"
 
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
@@ -32,3 +34,5 @@ EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
 DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION = "Incorrect password, or Google sign-in too old"
 INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
 TEMPLATE_NOT_FOUND_DESCRIPTION = "Template not found"
+TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION = "Template or tier not found"
+LAST_TIER_DESCRIPTION = "The last tier of a template cannot be deleted"

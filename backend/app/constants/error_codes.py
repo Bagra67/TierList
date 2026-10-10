@@ -32,3 +32,7 @@ class ErrorCode(StrEnum):
     # --- Templates -------------------------------------------------------------------------
     # Inexistant, supprimé ou à un autre utilisateur (indiscernables)
     TEMPLATE_NOT_FOUND = "template_not_found"
+    # Tier inexistant dans ce template
+    TIER_NOT_FOUND = "tier_not_found"
+    # Suppression du dernier tier refusée : une tier list a au moins un tier
+    LAST_TIER = "last_tier"
