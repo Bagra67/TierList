@@ -27,6 +27,11 @@ afterEach(() => {
   resetSystemTheme();
 });
 
+// jsdom n'a pas URL.createObjectURL (aperçu local d'une image choisie) : une adresse factice
+// suffit, l'image n'est jamais décodée dans les tests
+URL.createObjectURL ??= (blob: Blob) => `blob:preview-${blob.size}`;
+URL.revokeObjectURL ??= () => undefined;
+
 // jsdom gère l'attribut open de <dialog> mais pas showModal() ni close() : comportement minimal.
 // Le piège du focus et la touche Échap, assurés par le navigateur, ne sont donc pas testables ici.
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {

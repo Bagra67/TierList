@@ -10,6 +10,8 @@ interface InlineEditFieldProps {
   hideLabel?: boolean;
   value: string;
   maxLength: number;
+  // false : le champ peut être vidé (ex. le texte d'une tuile qui a une image)
+  required?: boolean;
   error?: string;
   onSave: (value: string) => void;
   className?: string;
@@ -23,6 +25,7 @@ export function InlineEditField({
   hideLabel = false,
   value,
   maxLength,
+  required = true,
   error,
   onSave,
   className,
@@ -70,7 +73,7 @@ export function InlineEditField({
         id={id}
         value={draft}
         maxLength={maxLength}
-        required
+        required={required}
         aria-invalid={error !== undefined}
         aria-describedby={error === undefined ? undefined : errorId}
         onChange={(event) => handleChange(event.target.value)}
