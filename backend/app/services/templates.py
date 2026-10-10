@@ -1,5 +1,5 @@
 """Règles métier des templates : création avec les tiers par défaut, liste, renommage,
-suppression logique et purge définitive.
+configuration des tiers, suppression logique et purge définitive.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 Un template n'est visible que de son propriétaire.
@@ -10,17 +10,37 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.constants.templates import DEFAULT_TIERS
+from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
 from app.core.config import Settings
-from app.exceptions.templates import TemplateNotFoundError
+from app.exceptions.templates import LastTierError, TemplateNotFoundError, TierNotFoundError
 from app.models.template import Template
 from app.models.tier import Tier
 from app.models.user import User
 from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
+
+
+def _renumber(tiers: list[Tier]) -> None:
+    """Positions continues 0..n-1 dans l'ordre de la liste (aucune contrainte d'unicité en base)."""
+    for position, tier in enumerate(tiers):
+        tier.position = position
+
+
+def _move(tiers: list[Tier], tier: Tier, position: int) -> None:
+    """Déplace le tier à cette position ; au-delà de la fin, il passe en dernier."""
+    tiers.remove(tier)
+    tiers.insert(min(position, len(tiers)), tier)
+    _renumber(tiers)
+
+
+def _touch(template: Template) -> None:
+    """Met à jour la dernière modification du template : onupdate ne voit pas les changements
+    de ses tiers, qui sont dans une autre table."""
+    template.updated_at = func.clock_timestamp()
 
 
 @dataclass(frozen=True)
@@ -31,6 +51,15 @@ class TemplateSummary:
     name: str
     tile_count: int
     updated_at: datetime
+
+
+@dataclass(frozen=True)
+class TierChanges:
+    """Modifications d'un tier ; None = inchangé."""
+
+    name: str | None = None
+    color: str | None = None
+    position: int | None = None
 
 
 class TemplateService:
@@ -81,6 +110,56 @@ class TemplateService:
         template.name = name
         self._session.commit()
         return template
+
+    def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
+        """Ajoute un tier en bas, avec le nom et la couleur par défaut."""
+        template = self.get(owner, template_id)
+        template.tiers.append(
+            Tier(name=NEW_TIER_NAME, color=NEW_TIER_COLOR, position=len(template.tiers))
+        )
+        _touch(template)
+        self._session.commit()
+        return template
+
+    def update_tier(
+        self,
+        owner: User,
+        template_id: uuid.UUID,
+        tier_id: uuid.UUID,
+        changes: TierChanges,
+    ) -> Template:
+        """Renomme, recolore et/ou déplace un tier ; les champs à None restent tels quels."""
+        template = self.get(owner, template_id)
+        tier = self._get_tier(template, tier_id)
+        if changes.name is not None:
+            tier.name = changes.name
+        if changes.color is not None:
+            tier.color = changes.color
+        if changes.position is not None:
+            _move(template.tiers, tier, changes.position)
+        _touch(template)
+        self._session.commit()
+        return template
+
+    def delete_tier(self, owner: User, template_id: uuid.UUID, tier_id: uuid.UUID) -> Template:
+        """Supprime un tier ; le dernier tier d'un template ne peut pas l'être."""
+        template = self.get(owner, template_id)
+        tier = self._get_tier(template, tier_id)
+        if len(template.tiers) == 1:
+            raise LastTierError
+        # delete-orphan : retiré de la liste, le tier est supprimé de la base
+        template.tiers.remove(tier)
+        _renumber(template.tiers)
+        _touch(template)
+        self._session.commit()
+        return template
+
+    @staticmethod
+    def _get_tier(template: Template, tier_id: uuid.UUID) -> Tier:
+        for tier in template.tiers:
+            if tier.id == tier_id:
+                return tier
+        raise TierNotFoundError
 
     def delete(self, owner: User, template_id: uuid.UUID) -> None:
         """Suppression logique : le template disparaît pour son propriétaire, et sera purgé

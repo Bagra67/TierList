@@ -14,3 +14,7 @@ DEFAULT_TIERS: tuple[tuple[str, str], ...] = (
     ("D", "#BFFF7F"),
     ("E", "#7FFF7F"),
 )
+
+# --- Tier ajouté par le propriétaire (en bas de la liste), à renommer et recolorer ensuite ------
+NEW_TIER_NAME = "?"
+NEW_TIER_COLOR = "#BFBFBF"
