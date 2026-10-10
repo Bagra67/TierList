@@ -110,7 +110,7 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog)
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, InlineEditField, ColorField, SortableList)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
@@ -229,6 +229,7 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - ESLint : `react-refresh/only-export-components` est désactivée pour `src/components/ui/` (`eslint.config.js`), car les composants shadcn exportent aussi leurs variantes (ex. `buttonVariants`) ; cela les garde proches de la version générée.
 - Aucun texte n'est écrit dans un composant de `ui/` : il les reçoit en props ou en enfants, traduits avec `t()`.
 - Le dialogue de suppression du compte garde le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind.
+- Le glisser-déposer (éditeur de template) utilise **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), enveloppé dans `SortableList` : ni Radix ni shadcn/ui ne proposent de liste réordonnable, et dnd-kit gère la souris, le toucher et le clavier (Espace, flèches, Échap) avec des annonces pour les lecteurs d'écran, traduites via `templates.editor.dnd.*`.
 
 ### Mode sombre
 

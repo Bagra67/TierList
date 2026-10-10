@@ -110,7 +110,7 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/               # Route guards: RequireAuth (private pages → /login), RedirectIfSignedIn (/login, /register → back where the user was going)
-│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog)
+│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, InlineEditField, ColorField, SortableList)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
@@ -229,6 +229,7 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - ESLint: `react-refresh/only-export-components` is off for `src/components/ui/` (`eslint.config.js`), since shadcn components also export their variants (e.g. `buttonVariants`); this keeps them close to the generated version.
 - Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
 - The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.
+- Drag and drop (template editor) uses **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), wrapped in `SortableList`: neither Radix nor shadcn/ui offers a sortable list, and dnd-kit handles the mouse, touch and the keyboard (Space, arrows, Escape) with screen reader announcements, translated through `templates.editor.dnd.*`.
 
 ### Dark mode
 
