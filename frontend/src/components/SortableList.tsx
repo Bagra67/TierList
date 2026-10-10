@@ -18,7 +18,13 @@ import {
   type SortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import {
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+  useRef,
+} from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 interface SortableItem {
@@ -35,6 +41,8 @@ interface SortableListProps<Item extends SortableItem> {
   getItemLabel: (item: Item) => string;
   // Appelée quand un élément est déposé à une autre place (index dans la liste)
   onMove: (item: Item, newIndex: number) => void;
+  // Désactive le glisser-déposer, par exemple pendant l'enregistrement d'un déplacement
+  disabled?: boolean;
   renderItem: (item: Item, sortable: SortableRender) => ReactNode;
 }
 
@@ -51,9 +59,13 @@ export function SortableList<Item extends SortableItem>({
   strategy,
   getItemLabel,
   onMove,
+  disabled = false,
   renderItem,
 }: SortableListProps<Item>) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  // Vrai dès que l'élément saisi a quitté sa place. Au moment de la saisie, dnd-kit signale aussi
+  // un survol de l'élément par lui-même : l'annoncer remplacerait aussitôt l'annonce « saisi ».
+  const hasLeftItsPlace: RefObject<boolean> = useRef<boolean>(false);
   const sensors: SensorDescriptor<SensorOptions>[] = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -78,9 +90,16 @@ export function SortableList<Item extends SortableItem>({
   }
 
   const announcements: Announcements = {
-    onDragStart: ({ active }) => t('templates.editor.dnd.pickedUp', describe(active.id)),
-    onDragOver: ({ active, over }) =>
-      over ? t('templates.editor.dnd.movedOver', describe(active.id, over.id)) : undefined,
+    onDragStart: ({ active }) => {
+      hasLeftItsPlace.current = false;
+      return t('templates.editor.dnd.pickedUp', describe(active.id));
+    },
+    onDragOver: ({ active, over }) => {
+      if (over === null) return undefined;
+      if (over.id === active.id && !hasLeftItsPlace.current) return undefined;
+      hasLeftItsPlace.current = true;
+      return t('templates.editor.dnd.movedOver', describe(active.id, over.id));
+    },
     onDragEnd: ({ active, over }) =>
       over ? t('templates.editor.dnd.dropped', describe(active.id, over.id)) : undefined,
     onDragCancel: ({ active }) => t('templates.editor.dnd.cancelled', describe(active.id)),
@@ -105,7 +124,7 @@ export function SortableList<Item extends SortableItem>({
         screenReaderInstructions: { draggable: t('templates.editor.dnd.instructions') },
       }}
     >
-      <SortableContext items={items} strategy={strategy}>
+      <SortableContext items={items} strategy={strategy} disabled={disabled}>
         {items.map((item) => (
           <SortableEntry key={item.id} item={item} renderItem={renderItem} />
         ))}

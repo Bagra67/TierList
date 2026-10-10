@@ -17,7 +17,7 @@ interface InlineEditFieldProps {
 
 // Champ enregistré dès qu'on le valide (Entrée) ou qu'on le quitte, s'il a changé ; Échap
 // rétablit la valeur enregistrée. Le parent lui donne key={value} : une nouvelle valeur
-// enregistrée remplace le brouillon.
+// enregistrée remplace le brouillon. Après un échec, valider à nouveau renvoie la valeur.
 export function InlineEditField({
   label,
   hideLabel = false,
@@ -28,21 +28,31 @@ export function InlineEditField({
   className,
 }: InlineEditFieldProps) {
   const [draft, setDraft] = useState<string>(value);
-  // Valeur déjà envoyée : Entrée puis la perte du focus ne l'envoient pas deux fois
-  const lastSentValue: RefObject<string> = useRef<string>(value);
+  // Brouillon envoyé avec Entrée : quitter ensuite le champ sans rien changer ne le renvoie pas
+  const draftSentWithEnter: RefObject<string | null> = useRef<string | null>(null);
   const id: string = useId();
   const errorId: string = `${id}-error`;
 
   function save() {
     const trimmedDraft: string = draft.trim();
-    if (trimmedDraft === value || trimmedDraft === lastSentValue.current) return;
-    lastSentValue.current = trimmedDraft;
+    if (trimmedDraft === value) return;
     onSave(draft);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    draftSentWithEnter.current = draft;
     save();
+  }
+
+  function handleBlur() {
+    if (draft === draftSentWithEnter.current) return;
+    save();
+  }
+
+  function handleChange(newDraft: string) {
+    draftSentWithEnter.current = null;
+    setDraft(newDraft);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -63,8 +73,8 @@ export function InlineEditField({
         required
         aria-invalid={error !== undefined}
         aria-describedby={error === undefined ? undefined : errorId}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={save}
+        onChange={(event) => handleChange(event.target.value)}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
       />
       {error !== undefined && (
