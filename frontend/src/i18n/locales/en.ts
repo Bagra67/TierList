@@ -10,6 +10,11 @@ export const en: Translation = {
   home: {
     title: 'Home',
   },
+  nav: {
+    label: 'Main navigation',
+    home: 'Home',
+    templates: 'My templates',
+  },
   renderError: {
     title: 'Something went wrong',
     message:
@@ -91,6 +96,34 @@ export const en: Translation = {
       cancel: 'Cancel',
       submit: 'Delete permanently',
       submitting: 'Deleting…',
+    },
+  },
+  templates: {
+    title: 'My templates',
+    empty: 'You have no template yet: create one to get started.',
+    tileCount_one: '{{count}} tile',
+    tileCount_other: '{{count}} tiles',
+    updatedAt: 'Modified on {{date, datetime(dateStyle: long)}}',
+    create: {
+      open: 'New template',
+      title: 'New template',
+      name: 'Name',
+      cancel: 'Cancel',
+      submit: 'Create',
+      submitting: 'Creating…',
+    },
+    delete: {
+      open: 'Delete',
+      openLabel: 'Delete {{name}}',
+      title: 'Delete “{{name}}”?',
+      warning: 'The template will disappear from your list.',
+      cancel: 'Cancel',
+      submit: 'Delete',
+      submitting: 'Deleting…',
+    },
+    editor: {
+      back: 'Back to my templates',
+      tiers: 'Tiers',
     },
   },
   errors: {

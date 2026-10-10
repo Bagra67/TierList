@@ -10,6 +10,11 @@ export const fr = {
   home: {
     title: 'Accueil',
   },
+  nav: {
+    label: 'Navigation principale',
+    home: 'Accueil',
+    templates: 'Mes templates',
+  },
   renderError: {
     title: 'Une erreur est survenue',
     message:
@@ -92,6 +97,34 @@ export const fr = {
       cancel: 'Annuler',
       submit: 'Supprimer définitivement',
       submitting: 'Suppression…',
+    },
+  },
+  templates: {
+    title: 'Mes templates',
+    empty: "Vous n'avez encore aucun template : créez-en un pour commencer.",
+    tileCount_one: '{{count}} tuile',
+    tileCount_other: '{{count}} tuiles',
+    updatedAt: 'Modifié le {{date, datetime(dateStyle: long)}}',
+    create: {
+      open: 'Nouveau template',
+      title: 'Nouveau template',
+      name: 'Nom',
+      cancel: 'Annuler',
+      submit: 'Créer',
+      submitting: 'Création…',
+    },
+    delete: {
+      open: 'Supprimer',
+      openLabel: 'Supprimer {{name}}',
+      title: 'Supprimer « {{name}} » ?',
+      warning: 'Le template disparaîtra de votre liste.',
+      cancel: 'Annuler',
+      submit: 'Supprimer',
+      submitting: 'Suppression…',
+    },
+    editor: {
+      back: 'Retour à mes templates',
+      tiers: 'Tiers',
     },
   },
   errors: {
