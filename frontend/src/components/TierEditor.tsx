@@ -41,6 +41,9 @@ export function TierEditor({ template }: TierEditorProps) {
     getFieldErrors(updateMutation.error).name,
   );
   const lastError: Error | null = addMutation.error ?? updateMutation.error ?? deleteMutation.error;
+  // Une erreur de champ (422) s'affiche déjà sous son champ : pas de second message
+  const showLastError: boolean =
+    lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
 
   function moveTier(tier: Tier, position: number) {
     updateMutation.mutate({ tierId: tier.id, changes: { position } });
@@ -57,6 +60,7 @@ export function TierEditor({ template }: TierEditorProps) {
           strategy={verticalListSortingStrategy}
           getItemLabel={(tier) => tier.name}
           onMove={moveTier}
+          disabled={isChangingOrder}
           renderItem={(tier, { setNodeRef, style, handleProps }) => (
             <li
               ref={setNodeRef}
@@ -122,7 +126,7 @@ export function TierEditor({ template }: TierEditorProps) {
           )}
         />
       </ol>
-      {lastError !== null && <ErrorMessage>{translateError(t, lastError)}</ErrorMessage>}
+      {showLastError && <ErrorMessage>{translateError(t, lastError)}</ErrorMessage>}
       <Button
         type="button"
         variant="outline"

@@ -404,4 +404,159 @@ describe('TemplateEditorPage', () => {
       expect(screen.getByText('1 / 32 tuiles')).toBeInTheDocument();
     });
   });
+  describe('editing safeguards', () => {
+    it('shows a tile text error only under its field', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () =>
+          errorResponse(422, 'validation_error', {
+            errors: [
+              {
+                field: 'body.text',
+                message: 'String should have at least 1 character',
+                code: 'string_too_short',
+                params: { min_length: 1 },
+              },
+            ],
+          }),
+      });
+      renderEditor();
+      const tileText: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Texte de la tuile 1',
+      });
+
+      fireEvent.change(tileText, { target: { value: '   ' } });
+      fireEvent.blur(tileText);
+
+      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('disables the drag and drop of tiles while a tile move is being saved', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        // L'enregistrement du déplacement ne répond jamais : il reste en cours
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => new Promise<Response>(() => {}),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Déplacer Pizza après' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Déplacer Sushi' })).toHaveAttribute(
+          'aria-disabled',
+          'true',
+        ),
+      );
+    });
+
+    it('sends the name once when Enter is followed by leaving the field', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}`]: () =>
+          Response.json(makeTemplate([tierS, tierA, tierB], 'Crisps')),
+      });
+      renderEditor();
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du template',
+      });
+
+      fireEvent.change(nameField, { target: { value: 'Crisps' } });
+      fireEvent.submit(nameField);
+      fireEvent.blur(nameField);
+
+      await screen.findByRole('heading', { name: 'Crisps' });
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`, `PATCH ${templateUrl}`]);
+    });
+
+    it('sends the name again when it is validated after a failed save', async () => {
+      const consoleError: MockInstance<typeof console.error> = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      let attempts: number = 0;
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}`]: () => {
+          attempts += 1;
+          return attempts === 1
+            ? errorResponse(500, 'internal_error')
+            : Response.json(makeTemplate([tierS, tierA, tierB], 'Crisps'));
+        },
+      });
+      renderEditor();
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du template',
+      });
+
+      fireEvent.change(nameField, { target: { value: 'Crisps' } });
+      fireEvent.submit(nameField);
+      await screen.findByRole('alert');
+      fireEvent.submit(nameField);
+
+      expect(await screen.findByRole('heading', { name: 'Crisps' })).toBeInTheDocument();
+      expect(calledRoutes(fetchMock).filter((route) => route.startsWith('PATCH'))).toHaveLength(2);
+      consoleError.mockRestore();
+    });
+
+    it('shows a field error only under its field', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          errorResponse(422, 'validation_error', {
+            errors: [
+              {
+                field: 'body.name',
+                message: 'String should have at least 1 character',
+                code: 'string_too_short',
+                params: { min_length: 1 },
+              },
+            ],
+          }),
+      });
+      renderEditor();
+      const firstTierName: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du tier 1',
+      });
+
+      fireEvent.change(firstTierName, { target: { value: '   ' } });
+      fireEvent.blur(firstTierName);
+
+      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('disables drag and drop while a move is being saved', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        // L'enregistrement du déplacement ne répond jamais : il reste en cours
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () => new Promise<Response>(() => {}),
+      });
+      renderEditor();
+      const dragHandle: HTMLElement = await screen.findByRole('button', { name: 'Déplacer S' });
+      expect(dragHandle).toHaveAttribute('aria-disabled', 'false');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Descendre S' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Déplacer B' })).toHaveAttribute(
+          'aria-disabled',
+          'true',
+        ),
+      );
+    });
+
+    it('keeps the pick-up announcement when a tier is picked up with the keyboard', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(chips) });
+      renderEditor();
+      const dragHandle: HTMLElement = await screen.findByRole('button', { name: 'Déplacer S' });
+
+      fireEvent.keyDown(dragHandle, { code: 'Space', key: ' ' });
+
+      await waitFor(() =>
+        expect(document.querySelector('[aria-live="assertive"]')).toHaveTextContent(
+          'S saisi, position 1 sur 3.',
+        ),
+      );
+    });
+  });
 });

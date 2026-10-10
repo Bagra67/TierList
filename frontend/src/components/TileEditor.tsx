@@ -46,6 +46,9 @@ export function TileEditor({ template }: TileEditorProps) {
     getFieldErrors(addMutation.error).text,
   );
   const lastError: Error | null = updateMutation.error ?? deleteMutation.error;
+  // Une erreur de champ (422) s'affiche déjà sous son champ : pas de second message
+  const showLastError: boolean =
+    lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
 
   function tileLabel(tile: Tile): string {
     return tile.text ?? t('templates.editor.tileText', { position: tile.position + 1 });
@@ -83,6 +86,7 @@ export function TileEditor({ template }: TileEditorProps) {
             strategy={rectSortingStrategy}
             getItemLabel={tileLabel}
             onMove={moveTile}
+            disabled={isChangingOrder}
             renderItem={(tile, { setNodeRef, style, handleProps }) => (
               <li
                 ref={setNodeRef}
@@ -142,7 +146,7 @@ export function TileEditor({ template }: TileEditorProps) {
           />
         </ol>
       )}
-      {lastError !== null && <ErrorMessage>{translateError(t, lastError)}</ErrorMessage>}
+      {showLastError && <ErrorMessage>{translateError(t, lastError)}</ErrorMessage>}
       <form ref={addFormRef} onSubmit={handleAdd} className="flex w-full items-end gap-2">
         <div className="flex-1">
           <TextField
