@@ -9,7 +9,7 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
@@ -25,7 +25,7 @@ TierList/
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
 ├── docs/
 │   ├── product/        # Business docs: product, game rules, permissions, roadmap
-│   └── technical/      # Technical docs: architecture, authentication, templates, testing guide, i18n, emails, releasing
+│   └── technical/      # Technical docs: architecture, authentication, templates, real time, testing guide, i18n, emails, releasing
 ├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```

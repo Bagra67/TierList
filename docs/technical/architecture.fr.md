@@ -95,4 +95,4 @@ Volontairement repoussées (YAGNI), à trancher quand une fonctionnalité en aur
 
 - **Images Docker de production et déploiement** : une fois la cible d'hébergement choisie.
 
-Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le routage front (react-router) et la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui).
+Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le temps réel des rooms (push WebSocket + commandes REST, voir le [guide du temps réel](realtime.fr.md)), le routage front (react-router) et la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui).
