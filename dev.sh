@@ -3,7 +3,7 @@
 # Ctrl+C arrête les deux serveurs.
 #
 # Usage (Git Bash, macOS, Linux) : ./dev.sh [--no-db] [--no-open]
-#   --no-db   : ne démarre pas la base PostgreSQL (Docker)
+#   --no-db   : ne démarre pas les services Docker (PostgreSQL, Mailpit, SeaweedFS)
 #   --no-open : n'ouvre pas les liens de dev dans le navigateur
 # Sous PowerShell / cmd, utilisez plutôt dev.cmd.
 
@@ -31,6 +31,8 @@ done
 BACKEND_PORT=8000
 FRONTEND_PORT=5173
 MAILPIT_PORT=8025
+# Interface web du filer SeaweedFS, ouverte sur le bucket des images
+SEAWEEDFS_FILER_URL="http://localhost:8888/buckets/tierlist-images/"
 # Délai maximal d'attente des serveurs avant d'ouvrir le navigateur (premier lancement de Vite compris)
 OPEN_BROWSER_TIMEOUT_SECONDS=60
 
@@ -87,6 +89,7 @@ open_dev_links_when_ready() {
   open_url "http://127.0.0.1:$BACKEND_PORT/docs"
   if $start_db; then
     open_url "http://localhost:$MAILPIT_PORT"
+    open_url "$SEAWEEDFS_FILER_URL"
   fi
 }
 
@@ -135,7 +138,7 @@ if $start_db; then
     echo "Docker ne répond pas : lancez Docker Desktop puis relancez (ou ./dev.sh --no-db pour démarrer sans base)." >&2
     exit 1
   fi
-  echo "[db] Démarrage de PostgreSQL (docker compose up -d --wait)..."
+  echo "[db] Démarrage de PostgreSQL, Mailpit et SeaweedFS (docker compose up -d --wait)..."
   docker compose up -d --wait
 fi
 

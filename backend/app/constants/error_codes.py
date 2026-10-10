@@ -40,3 +40,11 @@ class ErrorCode(StrEnum):
     TILE_NOT_FOUND = "tile_not_found"
     # Nombre maximal de tuiles atteint, avec le param max_tiles
     TILE_LIMIT_REACHED = "tile_limit_reached"
+
+    # --- Images ----------------------------------------------------------------------------
+    # Pas une image JPEG, PNG ou WebP, ou fichier illisible
+    IMAGE_UNSUPPORTED_FORMAT = "image_unsupported_format"
+    # Fichier trop lourd, avec le param max_bytes
+    IMAGE_TOO_LARGE = "image_too_large"
+    # Image décodée trop grande (bombe de décompression)
+    IMAGE_TOO_MANY_PIXELS = "image_too_many_pixels"

@@ -9,14 +9,15 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite                         | pnpm, ESLint, Prettier                |
 
-Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Templates (modèle, API, purge) : [docs/technical/templates.fr.md](docs/technical/templates.fr.md). Temps réel des rooms (décision : WebSocket, reconnexion, timers, montée en charge) : [docs/technical/realtime.fr.md](docs/technical/realtime.fr.md). Images des tuiles (décision : formats, compression, stockage S3, modération) : [docs/technical/images.fr.md](docs/technical/images.fr.md). Calcul des résultats (classement médian, votes absents, exemples chiffrés) : [docs/technical/results.fr.md](docs/technical/results.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
+Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Templates (modèle, API, purge) : [docs/technical/templates.fr.md](docs/technical/templates.fr.md). Temps réel des rooms (décision : WebSocket, reconnexion, timers, montée en charge) : [docs/technical/realtime.fr.md](docs/technical/realtime.fr.md). Images des tuiles (formats, compression, stockage S3, SeaweedFS, modération) : [docs/technical/images.fr.md](docs/technical/images.fr.md). Calcul des résultats (classement médian, votes absents, exemples chiffrés) : [docs/technical/results.fr.md](docs/technical/results.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
 
 ```
 TierList/
 ├── backend/            # API FastAPI  → voir backend/README.fr.md
 ├── frontend/           # App React    → voir frontend/README.fr.md
 │   └── .husky/         # Hook git pre-commit (pour tout le dépôt)
-├── compose.yaml        # Base PostgreSQL et boîte Mailpit de développement (Docker)
+├── compose.yaml        # Base PostgreSQL, boîte Mailpit et stockage SeaweedFS de développement (Docker)
+├── seaweedfs/          # Configuration de SeaweedFS (identités S3), développement et CI seulement
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement, configurations de débogage…)
 ├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
@@ -68,13 +69,14 @@ cp backend/.env.example backend/.env   # puis changez le mot de passe dans backe
 
 Docker Desktop doit être lancé. Depuis la racine `TierList/` :
 
-| Action                                         | Commande                                                                 |
-| ---------------------------------------------- | ------------------------------------------------------------------------ |
-| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                            |
-| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                           |
-| Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/technical/emails.fr.md](docs/technical/emails.fr.md)) |
-| Arrêter (les données sont conservées)          | `docker compose down`                                                    |
-| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                 |
+| Action                                         | Commande                                                                                                                                             |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                                                                                                        |
+| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                                                                                                       |
+| Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/technical/emails.fr.md](docs/technical/emails.fr.md))                                                         |
+| Parcourir les images envoyées                  | Filer SeaweedFS : http://localhost:8888/buckets/tierlist-images/ ([docs/technical/images.fr.md](docs/technical/images.fr.md#27-stockage-et-service)) |
+| Arrêter (les données sont conservées)          | `docker compose down`                                                                                                                                |
+| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                                                                                             |
 
 La base reste lancée en arrière-plan entre deux sessions de dev : pas besoin de la redémarrer à chaque fois. Vérifier que le backend y accède : http://127.0.0.1:8000/health/db → `{"status":"ok"}`.
 
@@ -90,8 +92,8 @@ Depuis la racine `TierList/`, selon votre terminal :
 Lance le backend (http://127.0.0.1:8000) et le frontend (http://localhost:5173) dans le même terminal, avec rechargement automatique. **Ctrl+C arrête les deux.**
 
 - Au premier lancement, le script installe automatiquement les dépendances si besoin (`uv sync`, `pnpm install`).
-- Il démarre d'abord la base PostgreSQL (`docker compose up -d --wait`) et attend qu'elle soit prête. Si Docker Desktop n'est pas lancé, il s'arrête avec un message clair. Pour démarrer sans la base : `./dev.sh --no-db` ou `.\dev.cmd -NoDb`.
-- Dès que le backend et le frontend répondent, il ouvre le frontend, la doc de l'API (http://127.0.0.1:8000/docs) et Mailpit (http://localhost:8025, pas avec `--no-db`) dans le navigateur par défaut. Pour ne pas les ouvrir : `./dev.sh --no-open` ou `.\dev.cmd -NoOpen`.
+- Il démarre d'abord les services Docker, PostgreSQL, Mailpit et SeaweedFS (`docker compose up -d --wait`), et attend qu'ils soient prêts. Si Docker Desktop n'est pas lancé, il s'arrête avec un message clair. Pour démarrer sans eux : `./dev.sh --no-db` ou `.\dev.cmd -NoDb`.
+- Dès que le backend et le frontend répondent, il ouvre le frontend, la doc de l'API (http://127.0.0.1:8000/docs), Mailpit (http://localhost:8025) et le filer SeaweedFS sur le bucket des images (http://localhost:8888, ces deux-là pas avec `--no-db`) dans le navigateur par défaut. Pour ne pas les ouvrir : `./dev.sh --no-open` ou `.\dev.cmd -NoOpen`.
 - Si l'un des deux serveurs s'arrête (erreur, crash…), l'autre est arrêté aussi.
 - Si le port 8000 ou 5173 est déjà occupé, `dev.sh` refuse de démarrer et vous l'indique.
 - Dans `dev.sh`, les logs sont préfixés `[backend]` / `[frontend]`.
@@ -153,17 +155,17 @@ Commandes manuelles :
 | Tests              | `uv run pytest`             | `pnpm test`              |
 | Tests + couverture | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 
-Les tests d'intégration du backend ont besoin de la base : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/technical/testing.fr.md](docs/technical/testing.fr.md).
+Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour les tests du stockage des images : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/technical/testing.fr.md](docs/technical/testing.fr.md).
 
 ### Intégration continue (GitHub Actions)
 
 `.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
 
-| Job          | Étapes                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------ |
-| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18       |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production |
-| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                             |
+| Job          | Étapes                                                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml` |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                             |
+| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                         |
 
 `.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
 

@@ -2,8 +2,10 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import {
+  BYTES_PER_MEGABYTE,
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
+  MEGABYTES_FORMAT,
   SUPPORTED_LANGUAGES,
   type Language,
 } from '../constants/i18n';
@@ -71,5 +73,15 @@ void i18next.use(initReactI18next).init({
   // React échappe déjà les valeurs affichées
   interpolation: { escapeValue: false },
 });
+
+// Le backend envoie les tailles en octets (ex. max_bytes) : affichées en Mo, au format de la
+// langue (« 10 Mo », « 10 MB »), sans recopier la limite dans les traductions
+i18next.services.formatter?.add(MEGABYTES_FORMAT, (value: number, language: string | undefined) =>
+  new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: 'megabyte',
+    maximumFractionDigits: 1,
+  }).format(value / BYTES_PER_MEGABYTE),
+);
 
 export default i18next;
