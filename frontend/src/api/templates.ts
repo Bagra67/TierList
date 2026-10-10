@@ -22,6 +22,8 @@ type CreateTemplateRequest = components['schemas']['CreateTemplateRequest'];
 export type Tier = Template['tiers'][number];
 type TierChanges = components['schemas']['UpdateTierRequest'];
 export type Tile = Template['tiles'][number];
+// Un texte, une image envoyée avant (image_id), ou les deux
+export type NewTile = components['schemas']['CreateTileRequest'];
 type TileChanges = components['schemas']['UpdateTileRequest'];
 
 // Templates de l'utilisateur connecté, du plus récemment modifié au plus ancien (tri du backend)
@@ -81,11 +83,11 @@ async function deleteTier(templateId: string, tierId: string): Promise<Template>
   );
 }
 
-async function addTile(templateId: string, text: string): Promise<Template> {
+async function addTile(templateId: string, newTile: NewTile): Promise<Template> {
   return dataOrThrow(
     await apiClient.POST('/templates/{template_id}/tiles', {
       params: { path: { template_id: templateId } },
-      body: { text },
+      body: newTile,
     }),
   );
 }
@@ -256,8 +258,8 @@ export function useDeleteTier(templateId: string): TemplateChange<string> {
   return useTemplateChange(templateId, (tierId: string) => deleteTier(templateId, tierId));
 }
 
-export function useAddTile(templateId: string): TemplateChange<string> {
-  return useTemplateChange(templateId, (text: string) => addTile(templateId, text));
+export function useAddTile(templateId: string): TemplateChange<NewTile> {
+  return useTemplateChange(templateId, (newTile: NewTile) => addTile(templateId, newTile));
 }
 
 export interface TileUpdate {

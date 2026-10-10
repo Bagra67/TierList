@@ -2,7 +2,7 @@
 
 [English](images.md) | Français
 
-Comment les images des tuiles sont reçues, compressées, stockées, servies, nettoyées et modérées. Décidé dans le spike #75, construit dans #81 : **l'envoi, la compression, le stockage, les tuiles image, la limite d'envois par compte et le ramasse-miettes sont implémentés** (§3) ; l'éditeur arrive avec la suite de #81. Ce qu'est une tuile pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-1.2 et US-1.3.
+Comment les images des tuiles sont reçues, compressées, stockées, servies, nettoyées et modérées. Décidé dans le spike #75, **construit dans #81** (§3) : envoi, compression, stockage, tuiles image dans l'éditeur de template, limite d'envois par compte et ramasse-miettes. Ce qu'est une tuile pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-1.2 et US-1.3.
 
 ## 1. Vue fonctionnelle
 
@@ -18,7 +18,7 @@ Comment les images des tuiles sont reçues, compressées, stockées, servies, ne
 
 ### Pas encore disponible
 
-L'éditeur de template n'envoie ni n'affiche encore d'image : cela arrive avec la suite de #81. Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les fonctionnalités de modération sont des issues à part (§2.9).
+Les images ne s'affichent pas encore dans les parties : les écrans de jeu et les instantanés arrivent avec leurs propres issues. Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les fonctionnalités de modération sont des issues à part (§2.9).
 
 ## 2. Conception technique
 
@@ -191,4 +191,11 @@ Backend (tests : [guide des tests](testing.fr.md)) :
 | `app/constants/images.py`          | Formats, taille de sortie, qualité WebP, `Content-Type` et `Cache-Control` des objets.                                                                                                                                                                          |
 | `app/core/config.py`               | Réglages `IMAGE_*` (§2.4).                                                                                                                                                                                                                                      |
 
-Développement : `compose.yaml` et `seaweedfs/` (§2.7). Frontend : les codes d'erreur sont traduits dans `src/i18n/locales/`, et `src/i18n/index.ts` définit le formateur `megabytes`.
+Développement : `compose.yaml` et `seaweedfs/` (§2.7).
+
+Frontend (détails dans le [guide des templates](templates.fr.md#3-dans-le-code)) :
+
+- `components/ImageDropZone.tsx` : la vignette d'image d'une tuile. Un clic ouvre le sélecteur de fichier ; on peut y déposer un fichier, avec une mise en évidence pendant le glisser. L'image choisie s'affiche aussitôt, avec un indicateur pendant l'envoi. Un petit bouton retire l'image. Seuls le JPEG, le PNG et le WebP sont envoyés (`constants/images.ts`), pour un retour immédiat : le backend reste l'autorité.
+- `components/TileEditor.tsx` : l'image de chaque tuile peut être remplacée (clic ou dépôt) ou retirée ; la nouvelle tuile prend un texte, une image ou les deux. Une image est envoyée dès qu'elle est choisie, puis rattachée par `image_id`.
+- `api/images.ts` : `useUploadImage` (`POST /images`, `multipart/form-data`).
+- Les codes d'erreur sont traduits dans `src/i18n/locales/`, et `src/i18n/index.ts` définit le formateur `megabytes`.

@@ -2,7 +2,7 @@
 
 English | [Français](images.fr.md)
 
-How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, built in #81: **the upload, the compression, the storage, the image tiles, the upload limit per account and the garbage collection are implemented** (§3); the editor comes with the rest of #81. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
+How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, **built in #81** (§3): upload, compression, storage, image tiles in the template editor, upload limit per account and garbage collection. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
 
@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-The template editor does not upload nor show images yet: it comes with the rest of #81. The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation features are separate issues (§2.9).
+The images are not shown in games yet: the game screens and the snapshots come with their own issues. The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation features are separate issues (§2.9).
 
 ## 2. Technical design
 
@@ -191,4 +191,11 @@ Backend (tests: [testing guide](testing.md)):
 | `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                                                                                              |
 | `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                          |
 
-Development: `compose.yaml` and `seaweedfs/` (§2.7). Frontend: the error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.
+Development: `compose.yaml` and `seaweedfs/` (§2.7).
+
+Frontend (details in the [templates guide](templates.md#3-in-the-code)):
+
+- `components/ImageDropZone.tsx`: the image thumbnail of a tile. A click opens the file picker; a file can be dropped on it, with a highlight while dragging. The chosen image is shown at once with a spinner during the upload. A small button removes the image. Only JPEG, PNG and WebP are sent (`constants/images.ts`), as an immediate feedback: the backend stays the authority.
+- `components/TileEditor.tsx`: the image of each tile can be replaced (click or drop) or removed; the new tile takes a text, an image or both. An image is uploaded as soon as it is chosen, then attached by `image_id`.
+- `api/images.ts`: `useUploadImage` (`POST /images`, `multipart/form-data`).
+- The error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.
