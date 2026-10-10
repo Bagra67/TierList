@@ -27,6 +27,7 @@ Côté frontend, la page _Mes templates_ liste, crée et supprime les templates 
 - **Tiers par défaut**, du haut vers le bas : `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
 - **Tiers** : nom de 1 à 50 caractères (espaces retirés), couleur `#RRGGBB` enregistrée en majuscules. Un template garde **au moins un tier** : supprimer le dernier répond `409` `last_tier`.
 - **Positions** des tiers : à partir de 0 et continues (sans trou) ; déplacer ou supprimer un tier renumérote les autres. Une position au-delà de la fin place le tier en dernier.
+- **Modification vide** : un `PATCH` sans aucun champ (ou avec seulement des valeurs `null`) ne change rien, pas même la date de dernière modification ; le tier doit quand même exister (`404` sinon).
 - **Modifications simultanées** : chaque modification des tiers verrouille la ligne du template (`SELECT … FOR UPDATE`) jusqu'à son commit. Deux requêtes sur le même template passent l'une après l'autre, la seconde voyant le résultat de la première : deux suppressions simultanées ne peuvent pas retirer le dernier tier.
 - **Dernière modification** (`updated_at`) : change quand le template change, et doit aussi changer quand un de ses tiers ou une de ses tuiles change : le service la met à jour explicitement (§2.2). C'est la date montrée à l'utilisateur et l'ordre de la liste.
 - **Confidentialité** : un template d'un autre utilisateur répond `404`, exactement comme un template inconnu ou supprimé : l'API ne révèle jamais qu'il existe.

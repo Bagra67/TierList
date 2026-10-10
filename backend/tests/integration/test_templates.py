@@ -367,6 +367,24 @@ def test_move_a_tier_keeps_the_positions_continuous(
     assert tier_names(stored) == expected_names
 
 
+@pytest.mark.parametrize("payload", [{}, {"name": None, "color": None, "position": None}])
+def test_an_empty_tier_update_changes_nothing(
+    auth_client: TestClient, alice: dict[str, str], payload: JsonObject
+):
+    template: JsonObject = create_template(auth_client, alice, "Movies")
+    url: str = f"/templates/{template['id']}/tiers/{tier_id(template, 'S')}"
+
+    response: Response = auth_client.patch(url, json=payload, headers=alice)
+
+    assert response.status_code == 200
+    body: JsonObject = response.json()
+    assert body["tiers"] == template["tiers"]
+    # Rien n'a changé : la date de dernière modification non plus
+    assert body["updated_at"] == template["updated_at"]
+    unknown_url: str = f"/templates/{template['id']}/tiers/{uuid.uuid4()}"
+    assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
+
+
 def test_delete_a_tier_renumbers_the_others(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):

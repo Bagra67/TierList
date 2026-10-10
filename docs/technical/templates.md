@@ -27,6 +27,7 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 - **Default tiers**, from top to bottom: `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
 - **Tiers**: name 1 to 50 characters (spaces removed), color `#RRGGBB` stored in upper case. A template keeps **at least one tier**: deleting the last one answers `409` `last_tier`.
 - **Positions** of tiers start at 0 and stay continuous (no gap): moving or deleting a tier renumbers the others. A position past the end puts the tier last.
+- **Empty update**: a `PATCH` without any field (or with only `null` values) changes nothing, not even the last modification date; the tier must still exist (`404` otherwise).
 - **Simultaneous changes**: every change of the tiers locks the template row (`SELECT … FOR UPDATE`) until its commit. Two requests on the same template run one after the other, the second one seeing the result of the first: two simultaneous deletions cannot remove the last tier.
 - **Last modification** (`updated_at`): changes when the template changes, and must also change when one of its tiers or tiles changes: the service updates it explicitly (§2.2). It is the date shown to the user and the order of the list.
 - **Privacy**: a template of another user answers `404`, exactly like an unknown or deleted one: the API never reveals that it exists.

@@ -369,5 +369,23 @@ describe('TemplateEditorPage', () => {
         ),
       );
     });
+
+    it('restores the color when it cannot be saved', async () => {
+      const consoleError: MockInstance<typeof console.error> = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () => errorResponse(500, 'internal_error'),
+      });
+      renderEditor();
+      const colorField: HTMLElement = await screen.findByLabelText('Couleur du tier A');
+
+      fireEvent.change(colorField, { target: { value: '#112233' } });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');
+      await waitFor(() => expect(colorField).toHaveValue(tierA.color.toLowerCase()));
+      consoleError.mockRestore();
+    });
   });
 });
