@@ -111,7 +111,7 @@ class TemplateService:
 
     def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
         """Ajoute un tier en bas, avec le nom et la couleur par défaut."""
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_for_change(owner, template_id)
         new_tier: Tier = Tier(
             name=NEW_TIER_NAME, color=NEW_TIER_COLOR, position=len(template.tiers)
         )
@@ -127,7 +127,7 @@ class TemplateService:
         changes: TierChanges,
     ) -> Template:
         """Renomme, recolore et/ou déplace un tier ; les champs absents restent tels quels."""
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_for_change(owner, template_id)
         tier: Tier = self._get_tier(template, tier_id)
         for field_name, value in changes.items():
             # La position ne se recopie pas : déplacer un tier décale aussi les autres
@@ -140,7 +140,7 @@ class TemplateService:
 
     def delete_tier(self, owner: User, template_id: uuid.UUID, tier_id: uuid.UUID) -> Template:
         """Supprime un tier ; le dernier tier d'un template ne peut pas l'être."""
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_for_change(owner, template_id)
         tier: Tier = self._get_tier(template, tier_id)
         if len(template.tiers) == 1:
             raise LastTierError
@@ -148,6 +148,16 @@ class TemplateService:
         template.tiers.remove(tier)
         _renumber(template.tiers)
         self._save_change(template)
+        return template
+
+    def _get_for_change(self, owner: User, template_id: uuid.UUID) -> Template:
+        """Template à modifier, verrouillé jusqu'au commit : les règles « au moins un tier » et
+        « au plus max_tiles tuiles » tiennent même avec des requêtes simultanées."""
+        template: Template | None = template_repository.get_owned_template(
+            self._session, template_id, owner.id, for_update=True
+        )
+        if template is None:
+            raise TemplateNotFoundError
         return template
 
     def _save_change(self, template: Template) -> None:

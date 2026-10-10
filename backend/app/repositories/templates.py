@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.sql.dml import ReturningDelete
 
 from app.models.template import Template
 from app.models.tile import Tile
@@ -13,10 +14,14 @@ def add_template(session: Session, template: Template) -> None:
 
 
 def get_owned_template(
-    session: Session, template_id: uuid.UUID, owner_id: uuid.UUID
+    session: Session, template_id: uuid.UUID, owner_id: uuid.UUID, for_update: bool = False
 ) -> Template | None:
-    """Template actif (non supprimé) du propriétaire, avec ses tiers et ses tuiles."""
-    statement = (
+    """Template actif (non supprimé) du propriétaire, avec ses tiers et ses tuiles.
+
+    for_update verrouille la ligne du template jusqu'à la fin de la transaction : deux
+    modifications du même template passent l'une après l'autre, chacune voyant le résultat de
+    la précédente (sinon deux suppressions simultanées pourraient retirer le dernier tier)."""
+    statement: Select[Template] = (
         select(Template)
         .where(
             Template.id == template_id,
@@ -25,6 +30,8 @@ def get_owned_template(
         )
         .options(selectinload(Template.tiers), selectinload(Template.tiles))
     )
+    if for_update:
+        statement = statement.with_for_update(of=Template)
     return session.scalars(statement).one_or_none()
 
 
@@ -33,7 +40,7 @@ def list_owned_templates_with_tile_count(
 ) -> list[tuple[Template, int]]:
     """Templates actifs du propriétaire et leur nombre de tuiles, le plus récemment modifié
     d'abord. Une seule requête : le nombre de tuiles est compté par la base (pas de N+1)."""
-    statement = (
+    statement: Select[Template, int] = (
         select(Template, func.count(Tile.id))
         .outerjoin(Tile, Tile.template_id == Template.id)
         .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
@@ -47,5 +54,7 @@ def list_owned_templates_with_tile_count(
 def delete_templates_deleted_before(session: Session, limit: datetime) -> int:
     """Supprime définitivement les templates supprimés logiquement avant limit ; leurs tiers et
     tuiles partent avec eux (ON DELETE CASCADE). Renvoie le nombre de templates supprimés."""
-    statement = delete(Template).where(Template.deleted_at < limit).returning(Template.id)
+    statement: ReturningDelete[uuid.UUID] = (
+        delete(Template).where(Template.deleted_at < limit).returning(Template.id)
+    )
     return len(session.scalars(statement).all())
