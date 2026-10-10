@@ -1,14 +1,15 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.auth import REFRESH_TOKEN_HASH_LENGTH
 from app.db.base import Base
+from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class RefreshToken(Base):
+class RefreshToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Refresh token émis à un utilisateur ; seul son hash SHA-256 est stocké.
 
     Les tokens issus d'une même connexion forment une famille (family_id) : à chaque
@@ -17,7 +18,6 @@ class RefreshToken(Base):
 
     __tablename__ = "refresh_tokens"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
@@ -27,4 +27,3 @@ class RefreshToken(Base):
     authenticated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

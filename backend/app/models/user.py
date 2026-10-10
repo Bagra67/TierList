@@ -1,17 +1,16 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func, text
+from sqlalchemy import DateTime, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.auth import DISPLAY_NAME_MAX_LENGTH, EMAIL_MAX_LENGTH, PASSWORD_HASH_MAX_LENGTH
 from app.db.base import Base
+from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 
-class User(Base):
+class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     # Toujours enregistré en minuscules (normalisé par le service) : l'unicité ignore la casse
     email: Mapped[str] = mapped_column(String(EMAIL_MAX_LENGTH), unique=True)
     # None pour un compte créé avec Google, qui n'a pas de mot de passe
@@ -26,7 +25,6 @@ class User(Base):
     # Copié dans chaque access token (claim « token_version ») ; l'incrémenter refuse tous les
     # access tokens déjà émis (déconnexion, nouveau mot de passe…)
     token_version: Mapped[int] = mapped_column(default=0, server_default=text("0"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     @property
     def has_password(self) -> bool:
