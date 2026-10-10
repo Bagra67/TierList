@@ -91,6 +91,7 @@ Starts the backend (http://127.0.0.1:8000) and the frontend (http://localhost:51
 
 - On first run, the script installs the dependencies if needed (`uv sync`, `pnpm install`).
 - It first starts the PostgreSQL database (`docker compose up -d --wait`) and waits until it is ready. If Docker Desktop is not running, it stops with a clear message. To start without the database: `./dev.sh --no-db` or `.\dev.cmd -NoDb`.
+- Once the backend and the frontend answer, it opens the frontend, the API docs (http://127.0.0.1:8000/docs) and Mailpit (http://localhost:8025, not with `--no-db`) in the default browser. To skip it: `./dev.sh --no-open` or `.\dev.cmd -NoOpen`.
 - If one of the two servers stops (error, crash…), the other one is stopped too.
 - If port 8000 or 5173 is already in use, `dev.sh` refuses to start and tells you.
 - In `dev.sh`, logs are prefixed with `[backend]` / `[frontend]`.

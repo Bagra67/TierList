@@ -91,6 +91,7 @@ Lance le backend (http://127.0.0.1:8000) et le frontend (http://localhost:5173) 
 
 - Au premier lancement, le script installe automatiquement les dépendances si besoin (`uv sync`, `pnpm install`).
 - Il démarre d'abord la base PostgreSQL (`docker compose up -d --wait`) et attend qu'elle soit prête. Si Docker Desktop n'est pas lancé, il s'arrête avec un message clair. Pour démarrer sans la base : `./dev.sh --no-db` ou `.\dev.cmd -NoDb`.
+- Dès que le backend et le frontend répondent, il ouvre le frontend, la doc de l'API (http://127.0.0.1:8000/docs) et Mailpit (http://localhost:8025, pas avec `--no-db`) dans le navigateur par défaut. Pour ne pas les ouvrir : `./dev.sh --no-open` ou `.\dev.cmd -NoOpen`.
 - Si l'un des deux serveurs s'arrête (erreur, crash…), l'autre est arrêté aussi.
 - Si le port 8000 ou 5173 est déjà occupé, `dev.sh` refuse de démarrer et vous l'indique.
 - Dans `dev.sh`, les logs sont préfixés `[backend]` / `[frontend]`.
