@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from app.models.user import RefreshToken
+from app.models.refresh_token import RefreshToken
 
 
 def get_refresh_token_for_update(session: Session, token_hash: str) -> RefreshToken | None:
