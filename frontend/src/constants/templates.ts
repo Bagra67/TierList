@@ -2,6 +2,7 @@
 // schéma de la base
 export const TEMPLATE_NAME_MAX_LENGTH = 100;
 export const TIER_NAME_MAX_LENGTH = 50;
+export const TILE_TEXT_MAX_LENGTH = 200;
 
 // TanStack Query garde en cache chaque donnée lue sur l'API, rangée sous une « clé » (un
 // tableau). Les clés des templates commencent toutes par 'templates' :

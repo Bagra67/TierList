@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { Template, Tier } from '../api/templates';
+import type { Template, Tier, Tile } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
@@ -14,14 +14,18 @@ function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
   return { id: `tier-${name}`, name, color, position };
 }
 
-function makeTemplate(tiers: Tier[], name = 'Chips'): Template {
+function makeTile(text: string, position: number): Tile {
+  return { id: `tile-${text}`, text, position };
+}
+
+function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Template {
   return {
     id: templateId,
     name,
     created_at: '2026-10-05T12:00:00Z',
     updated_at: '2026-10-05T12:00:00Z',
     tiers: tiers.map((tier, position) => ({ ...tier, position })),
-    tiles: [],
+    tiles: tiles.map((tile, position) => ({ ...tile, position })),
     max_tiles: 32,
   };
 }
@@ -37,6 +41,16 @@ function renderEditor() {
       </Routes>
     </MemoryRouter>,
   );
+}
+
+const [pizza, sushi] = [makeTile('Pizza', 0), makeTile('Sushi', 1)];
+const withTiles = (tiles: Tile[]) => makeTemplate([tierS, tierA, tierB], 'Chips', tiles);
+
+// Textes des tuiles dans l'ordre affiché (un champ de texte par tuile)
+function displayedTileTexts(): string[] {
+  return screen
+    .queryAllByRole('textbox', { name: /^Texte de la tuile/ })
+    .map((input) => (input as HTMLInputElement).value);
 }
 
 // Noms des tiers dans l'ordre affiché (un champ de nom par ligne)
@@ -242,6 +256,132 @@ describe('TemplateEditorPage', () => {
         'Un template garde au moins un tier.',
       );
       expect(displayedTierNames()).toEqual(['S', 'A', 'B']);
+    });
+  });
+
+  describe('tiles', () => {
+    it('shows the tiles in template order with the tile count', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])) });
+
+      renderEditor();
+
+      expect(await screen.findByText('2 / 32 tuiles')).toBeInTheDocument();
+      expect(displayedTileTexts()).toEqual(['Pizza', 'Sushi']);
+    });
+
+    it('adds a text tile at the end', async () => {
+      const fetchMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])),
+        [`POST ${templateUrl}/tiles`]: () =>
+          Response.json(withTiles([pizza, makeTile('Tacos', 1)]), { status: 201 }),
+      });
+      renderEditor();
+      const newTileField = await screen.findByLabelText('Texte de la nouvelle tuile');
+
+      fireEvent.change(newTileField, { target: { value: 'Tacos' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Pizza', 'Tacos']));
+      await expect(requestBody(fetchMock, 'POST')).resolves.toEqual({ text: 'Tacos' });
+      // Le champ est vidé pour la tuile suivante
+      expect(newTileField).toHaveValue('');
+    });
+
+    it('shows the field error when the new tile is blank', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
+        [`POST ${templateUrl}/tiles`]: () =>
+          errorResponse(422, 'validation_error', {
+            errors: [
+              {
+                field: 'body.text',
+                message: 'String should have at least 1 character',
+                code: 'string_too_short',
+                params: { min_length: 1 },
+              },
+            ],
+          }),
+      });
+      renderEditor();
+      const newTileField = await screen.findByLabelText('Texte de la nouvelle tuile');
+
+      fireEvent.change(newTileField, { target: { value: '   ' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
+
+      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(newTileField).toHaveAttribute('aria-invalid', 'true');
+      expect(displayedTileTexts()).toEqual([]);
+    });
+
+    it('shows the limit sent by the backend when the template is full', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])),
+        [`POST ${templateUrl}/tiles`]: () =>
+          errorResponse(409, 'tile_limit_reached', { params: { max_tiles: 32 } }),
+      });
+      renderEditor();
+
+      fireEvent.change(await screen.findByLabelText('Texte de la nouvelle tuile'), {
+        target: { value: 'Tacos' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Un template a au plus 32 tuiles.',
+      );
+    });
+
+    it('disables adding once the template has its maximum number of tiles', async () => {
+      const fullTemplate: Template = { ...withTiles([pizza, sushi]), max_tiles: 2 };
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(fullTemplate) });
+
+      renderEditor();
+
+      expect(await screen.findByText('Un template a au plus 2 tuiles.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Ajouter la tuile' })).toBeDisabled();
+      expect(screen.getByLabelText('Texte de la nouvelle tuile')).toBeDisabled();
+    });
+
+    it('edits the text of a tile', async () => {
+      const fetchMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () =>
+          Response.json(withTiles([{ ...pizza, text: 'Pizza 4 fromages' }])),
+      });
+      renderEditor();
+      const tileText = await screen.findByRole('textbox', { name: 'Texte de la tuile 1' });
+
+      fireEvent.change(tileText, { target: { value: 'Pizza 4 fromages' } });
+      fireEvent.submit(tileText);
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Pizza 4 fromages']));
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: 'Pizza 4 fromages' });
+    });
+
+    it('moves a tile with the move after button', async () => {
+      const fetchMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => Response.json(withTiles([sushi, pizza])),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Déplacer Pizza après' }));
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']));
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ position: 1 });
+    });
+
+    it('deletes a tile', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`DELETE ${templateUrl}/tiles/${pizza.id}`]: () => Response.json(withTiles([sushi])),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer la tuile Pizza' }));
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Sushi']));
+      expect(screen.getByText('1 / 32 tuiles')).toBeInTheDocument();
     });
   });
 });

@@ -9,6 +9,8 @@ export type Template = components['schemas']['TemplateResponse'];
 type CreateTemplateRequest = components['schemas']['CreateTemplateRequest'];
 export type Tier = Template['tiers'][number];
 type TierChanges = components['schemas']['UpdateTierRequest'];
+export type Tile = Template['tiles'][number];
+type TileChanges = components['schemas']['UpdateTileRequest'];
 
 // Templates de l'utilisateur connecté, du plus récemment modifié au plus ancien (tri du backend)
 async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
@@ -63,6 +65,36 @@ async function deleteTier(templateId: string, tierId: string): Promise<Template>
   return dataOrThrow(
     await apiClient.DELETE('/templates/{template_id}/tiers/{tier_id}', {
       params: { path: { template_id: templateId, tier_id: tierId } },
+    }),
+  );
+}
+
+async function addTile(templateId: string, text: string): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.POST('/templates/{template_id}/tiles', {
+      params: { path: { template_id: templateId } },
+      body: { text },
+    }),
+  );
+}
+
+async function updateTile(
+  templateId: string,
+  tileId: string,
+  changes: TileChanges,
+): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PATCH('/templates/{template_id}/tiles/{tile_id}', {
+      params: { path: { template_id: templateId, tile_id: tileId } },
+      body: changes,
+    }),
+  );
+}
+
+async function deleteTile(templateId: string, tileId: string): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.DELETE('/templates/{template_id}/tiles/{tile_id}', {
+      params: { path: { template_id: templateId, tile_id: tileId } },
     }),
   );
 }
@@ -128,40 +160,64 @@ export function useAddTier(templateId: string) {
   });
 }
 
+interface Positioned {
+  id: string;
+  position: number;
+}
+
+// Éléments dans le nouvel ordre, avant la réponse du backend (qui applique la même règle)
+function moveItem<Item extends Positioned>(
+  items: Item[],
+  itemId: string,
+  position: number,
+): Item[] {
+  const movedItem = items.find((item) => item.id === itemId);
+  if (movedItem === undefined) return items;
+  const reordered: Item[] = items.filter((item) => item.id !== itemId);
+  reordered.splice(Math.min(position, reordered.length), 0, movedItem);
+  return reordered.map((item, index) => ({ ...item, position: index }));
+}
+
+// Déplacement optimiste : après un glisser-déposer, l'élément reste où il a été déposé
+// pendant l'enregistrement, au lieu de revenir à sa place puis de sauter. Renvoie le
+// template d'avant, rétabli si l'enregistrement échoue.
+async function applyMove(
+  queryClient: QueryClient,
+  templateId: string,
+  list: 'tiers' | 'tiles',
+  itemId: string,
+  position: number | null | undefined,
+): Promise<Template | undefined> {
+  if (position === undefined || position === null) return undefined;
+  const queryKey = templateQueryKey(templateId);
+  await queryClient.cancelQueries({ queryKey });
+  const previous = queryClient.getQueryData<Template>(queryKey);
+  if (previous !== undefined) {
+    const moved: Template =
+      list === 'tiers'
+        ? { ...previous, tiers: moveItem(previous.tiers, itemId, position) }
+        : { ...previous, tiles: moveItem(previous.tiles, itemId, position) };
+    queryClient.setQueryData<Template>(queryKey, moved);
+  }
+  return previous;
+}
+
+function restoreTemplate(queryClient: QueryClient, previous: Template | undefined): void {
+  if (previous !== undefined) queryClient.setQueryData(templateQueryKey(previous.id), previous);
+}
+
 interface TierUpdate {
   tierId: string;
   changes: TierChanges;
 }
 
-// Tiers dans le nouvel ordre, avant la réponse du backend (qui applique la même règle)
-function moveTier(tiers: Tier[], tierId: string, position: number): Tier[] {
-  const reordered: Tier[] = tiers.filter((tier) => tier.id !== tierId);
-  const movedTier = tiers.find((tier) => tier.id === tierId);
-  if (movedTier === undefined) return tiers;
-  reordered.splice(Math.min(position, reordered.length), 0, movedTier);
-  return reordered.map((tier, index) => ({ ...tier, position: index }));
-}
-
 export function useUpdateTier(templateId: string) {
   const queryClient = useQueryClient();
-  const queryKey = templateQueryKey(templateId);
   return useMutation({
     mutationFn: ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
-    // Déplacement optimiste : après un glisser-déposer, le tier reste où il a été déposé
-    // pendant l'enregistrement, au lieu de revenir à sa place puis de sauter.
-    onMutate: async ({ tierId, changes }: TierUpdate) => {
-      if (changes.position === undefined || changes.position === null) return undefined;
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<Template>(queryKey);
-      if (previous !== undefined) {
-        const tiers = moveTier(previous.tiers, tierId, changes.position);
-        queryClient.setQueryData<Template>(queryKey, { ...previous, tiers });
-      }
-      return previous;
-    },
-    onError: (_error, _update, previous) => {
-      if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
-    },
+    onMutate: ({ tierId, changes }: TierUpdate) =>
+      applyMove(queryClient, templateId, 'tiers', tierId, changes.position),
+    onError: (_error, _update, previous) => restoreTemplate(queryClient, previous),
     onSuccess: (template) => storeTemplate(queryClient, template),
   });
 }
@@ -170,6 +226,38 @@ export function useDeleteTier(templateId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (tierId: string) => deleteTier(templateId, tierId),
+    onSuccess: (template) => storeTemplate(queryClient, template),
+  });
+}
+
+export function useAddTile(templateId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (text: string) => addTile(templateId, text),
+    onSuccess: (template) => storeTemplate(queryClient, template),
+  });
+}
+
+interface TileUpdate {
+  tileId: string;
+  changes: TileChanges;
+}
+
+export function useUpdateTile(templateId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
+    onMutate: ({ tileId, changes }: TileUpdate) =>
+      applyMove(queryClient, templateId, 'tiles', tileId, changes.position),
+    onError: (_error, _update, previous) => restoreTemplate(queryClient, previous),
+    onSuccess: (template) => storeTemplate(queryClient, template),
+  });
+}
+
+export function useDeleteTile(templateId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tileId: string) => deleteTile(templateId, tileId),
     onSuccess: (template) => storeTemplate(queryClient, template),
   });
 }

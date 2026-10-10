@@ -133,6 +133,15 @@ export const fr = {
       moveDown: 'Descendre {{name}}',
       deleteTier: 'Supprimer le tier {{name}}',
       dragHandle: 'Déplacer {{name}}',
+      tiles: 'Tuiles',
+      tileCount: '{{count}} / {{max}} tuiles',
+      newTileText: 'Texte de la nouvelle tuile',
+      addTile: 'Ajouter la tuile',
+      addingTile: 'Ajout…',
+      tileText: 'Texte de la tuile {{position}}',
+      moveBefore: 'Déplacer {{name}} avant',
+      moveAfter: 'Déplacer {{name}} après',
+      deleteTile: 'Supprimer la tuile {{name}}',
       // Annonces des lecteurs d'écran pendant un glisser-déposer au clavier
       dnd: {
         instructions:
@@ -162,6 +171,8 @@ export const fr = {
       template_not_found: 'Ce template est introuvable.',
       tier_not_found: 'Ce tier est introuvable.',
       last_tier: 'Un template garde au moins un tier.',
+      tile_not_found: 'Cette tuile est introuvable.',
+      tile_limit_reached: 'Un template a au plus {{max_tiles}} tuiles.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

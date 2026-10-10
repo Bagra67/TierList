@@ -132,6 +132,15 @@ export const en: Translation = {
       moveDown: 'Move {{name}} down',
       deleteTier: 'Delete tier {{name}}',
       dragHandle: 'Move {{name}}',
+      tiles: 'Tiles',
+      tileCount: '{{count}} / {{max}} tiles',
+      newTileText: 'Text of the new tile',
+      addTile: 'Add the tile',
+      addingTile: 'Adding…',
+      tileText: 'Text of tile {{position}}',
+      moveBefore: 'Move {{name}} before',
+      moveAfter: 'Move {{name}} after',
+      deleteTile: 'Delete tile {{name}}',
       dnd: {
         instructions:
           'To move an item, press Space or Enter, use the arrow keys, then Space or Enter to drop it, or Escape to cancel.',
@@ -159,6 +168,8 @@ export const en: Translation = {
       template_not_found: 'This template could not be found.',
       tier_not_found: 'This tier could not be found.',
       last_tier: 'A template keeps at least one tier.',
+      tile_not_found: 'This tile could not be found.',
+      tile_limit_reached: 'A template has at most {{max_tiles}} tiles.',
     },
     field: {
       invalid: 'Invalid value.',
