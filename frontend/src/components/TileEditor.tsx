@@ -1,10 +1,12 @@
 import { rectSortingStrategy } from '@dnd-kit/sortable';
-import { useId, useRef, type FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type FormEvent, type RefObject, useId, useRef } from 'react';
+import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
   type Template,
+  type TemplateChange,
   type Tile,
+  type TileUpdate,
   useAddTile,
   useDeleteTile,
   useUpdateTile,
@@ -24,20 +26,26 @@ interface TileEditorProps {
 // Tuiles texte d'un template (US-1.2, US-1.3), dans l'ordre du template : chaque action est
 // enregistrée tout de suite. Le nombre maximal vient du backend (max_tiles).
 export function TileEditor({ template }: TileEditorProps) {
-  const titleId = useId();
-  const addFormRef = useRef<HTMLFormElement>(null);
-  const addMutation = useAddTile(template.id);
-  const updateMutation = useUpdateTile(template.id);
-  const deleteMutation = useDeleteTile(template.id);
-  const { t } = useTranslation();
+  const titleId: string = useId();
+  const addFormRef: RefObject<HTMLFormElement | null> = useRef<HTMLFormElement>(null);
+  const addMutation: TemplateChange<string> = useAddTile(template.id);
+  const updateMutation: TemplateChange<TileUpdate> = useUpdateTile(template.id);
+  const deleteMutation: TemplateChange<string> = useDeleteTile(template.id);
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiles: Tile[] = template.tiles;
-  const isFull = tiles.length >= template.max_tiles;
+  const isFull: boolean = tiles.length >= template.max_tiles;
   // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
-  const isChangingOrder = updateMutation.isPending || deleteMutation.isPending;
-  const failedTileId = updateMutation.variables?.tileId;
-  const textError = translateFieldError(t, getFieldErrors(updateMutation.error).text);
-  const newTextError = translateFieldError(t, getFieldErrors(addMutation.error).text);
-  const lastError = updateMutation.error ?? deleteMutation.error;
+  const isChangingOrder: boolean = updateMutation.isPending || deleteMutation.isPending;
+  const failedTileId: string | undefined = updateMutation.variables?.tileId;
+  const textError: string | undefined = translateFieldError(
+    t,
+    getFieldErrors(updateMutation.error).text,
+  );
+  const newTextError: string | undefined = translateFieldError(
+    t,
+    getFieldErrors(addMutation.error).text,
+  );
+  const lastError: Error | null = updateMutation.error ?? deleteMutation.error;
 
   function tileLabel(tile: Tile): string {
     return tile.text ?? t('templates.editor.tileText', { position: tile.position + 1 });
@@ -49,7 +57,7 @@ export function TileEditor({ template }: TileEditorProps) {
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const text = String(new FormData(event.currentTarget).get('text'));
+    const text: string = String(new FormData(event.currentTarget).get('text'));
     try {
       await addMutation.mutateAsync(text);
     } catch {

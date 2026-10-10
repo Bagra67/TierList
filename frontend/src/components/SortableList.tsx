@@ -7,6 +7,8 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
+  type SensorDescriptor,
+  type SensorOptions,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
@@ -17,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 interface SortableItem {
   id: string;
@@ -51,8 +53,8 @@ export function SortableList<Item extends SortableItem>({
   onMove,
   renderItem,
 }: SortableListProps<Item>) {
-  const { t } = useTranslation();
-  const sensors = useSensors(
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const sensors: SensorDescriptor<SensorOptions>[] = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
@@ -67,7 +69,7 @@ export function SortableList<Item extends SortableItem>({
   }
 
   function describe(id: UniqueIdentifier, positionId: UniqueIdentifier = id) {
-    const item = findItem(id);
+    const item: Item | undefined = findItem(id);
     return {
       item: item === undefined ? '' : getItemLabel(item),
       position: positionOf(positionId),
@@ -86,8 +88,8 @@ export function SortableList<Item extends SortableItem>({
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (over === null || active.id === over.id) return;
-    const movedItem = findItem(active.id);
-    const newIndex = items.findIndex((item) => item.id === over.id);
+    const movedItem: Item | undefined = findItem(active.id);
+    const newIndex: number = items.findIndex((item) => item.id === over.id);
     if (movedItem !== undefined && newIndex !== -1) {
       onMove(movedItem, newIndex);
     }
@@ -118,7 +120,14 @@ interface SortableEntryProps<Item extends SortableItem> {
 }
 
 function SortableEntry<Item extends SortableItem>({ item, renderItem }: SortableEntryProps<Item>) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  }: ReturnType<typeof useSortable> = useSortable({
     id: item.id,
   });
   const style: CSSProperties = {

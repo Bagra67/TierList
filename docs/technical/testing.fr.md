@@ -527,7 +527,7 @@ Les erreurs sont traduites avec `i18n.t`, en français sauf si le test passe en 
 
 ### 2.20 Tests : `src/pages/TemplatesPage.test.tsx`
 
-La page _Mes templates_ dans un `MemoryRouter` ; la route de l'éditeur est remplacée par un simple titre `Éditeur`, pour ne vérifier que la navigation vers lui.
+La page _Mes templates_ dans un `MemoryRouter` ; la route de l'éditeur est remplacée par un simple titre `Éditeur`, pour ne vérifier que la navigation vers lui. Chaque variable est typée (`TemplateSummary`, `Template`, `HTMLElement`, `BackendMock`).
 
 | Test                                                             | Ce qu'il fait                                                                           | But                                                                                        | Résultat attendu                                                                                                                                        |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -542,7 +542,7 @@ La page _Mes templates_ dans un `MemoryRouter` ; la route de l'éditeur est remp
 
 ### 2.21 Tests : `src/pages/TemplateEditorPage.test.tsx`
 
-L'éditeur ouvert sur `/templates/<id>`, avec un template de trois tiers (S, A, B) et, pour les tuiles, `Pizza` et `Sushi`. Chaque modification reçoit en réponse tout le template, comme le fait le backend. Le glisser-déposer au clavier de dnd-kit n'est pas testé ici : jsdom ne calcule aucune mise en page, il ne peut donc pas trouver les tiers voisins ; les boutons de déplacement sont testés à la place (le glisser-déposer relève des tests de bout en bout prévus dans `TODO.md`).
+L'éditeur ouvert sur `/templates/<id>`, avec un template de trois tiers (S, A, B) et, pour les tuiles, `Pizza` et `Sushi`. Chaque variable est typée (`Template`, `Tier`, `Tile`, `HTMLElement`, `BackendMock` pour le faux backend). Chaque modification reçoit en réponse tout le template, comme le fait le backend. Le glisser-déposer au clavier de dnd-kit n'est pas testé ici : jsdom ne calcule aucune mise en page, il ne peut donc pas trouver les tiers voisins ; les boutons de déplacement sont testés à la place (le glisser-déposer relève des tests de bout en bout prévus dans `TODO.md`).
 
 | Test                                                                          | Ce qu'il fait                                                                                | But                                                                   | Résultat attendu                                                                                                                                       |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |

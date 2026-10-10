@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from 'react';
 
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
@@ -27,14 +27,14 @@ export function InlineEditField({
   onSave,
   className,
 }: InlineEditFieldProps) {
-  const [draft, setDraft] = useState(value);
+  const [draft, setDraft] = useState<string>(value);
   // Valeur déjà envoyée : Entrée puis la perte du focus ne l'envoient pas deux fois
-  const lastSentValue = useRef(value);
-  const id = useId();
-  const errorId = `${id}-error`;
+  const lastSentValue: RefObject<string> = useRef<string>(value);
+  const id: string = useId();
+  const errorId: string = `${id}-error`;
 
   function save() {
-    const trimmedDraft = draft.trim();
+    const trimmedDraft: string = draft.trim();
     if (trimmedDraft === value || trimmedDraft === lastSentValue.current) return;
     lastSentValue.current = trimmedDraft;
     onSave(draft);

@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
-import type { TemplateSummary } from '../api/templates';
+import type { Template, TemplateSummary } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplatesPage } from './TemplatesPage';
@@ -21,7 +21,9 @@ const sodas: TemplateSummary = {
   updated_at: '2026-10-04T12:00:00Z',
 };
 
-const createdTemplate = {
+type BackendMock = ReturnType<typeof stubBackend>;
+
+const createdTemplate: Template = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e03',
   name: 'Fromages',
   created_at: '2026-10-06T12:00:00Z',
@@ -43,7 +45,10 @@ function renderTemplatesPage() {
   );
 }
 
-const listOf = (templates: TemplateSummary[]) => () => Response.json({ items: templates });
+// Route simulée de GET /templates, qui renvoie ces templates
+function listOf(templates: TemplateSummary[]): () => Response {
+  return () => Response.json({ items: templates });
+}
 
 describe('TemplatesPage', () => {
   afterEach(() => {
@@ -56,7 +61,7 @@ describe('TemplatesPage', () => {
     renderTemplatesPage();
 
     expect(screen.getByText('Chargement…')).toBeInTheDocument();
-    const items = await screen.findAllByRole('listitem');
+    const items: HTMLElement[] = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[0]).getByRole('link', { name: 'Chips' })).toHaveAttribute(
       'href',
@@ -78,7 +83,9 @@ describe('TemplatesPage', () => {
   });
 
   it('shows an error when the list cannot be loaded', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError: MockInstance<typeof console.error> = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     stubBackend({ 'GET /templates': () => errorResponse(500, 'internal_error') });
 
     renderTemplatesPage();
@@ -88,19 +95,21 @@ describe('TemplatesPage', () => {
   });
 
   it('creates a template and opens it in the editor', async () => {
-    const fetchMock = stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       'GET /templates': listOf([]),
       'POST /templates': () => Response.json(createdTemplate, { status: 201 }),
     });
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Nouveau template' }));
-    const dialog = screen.getByRole('dialog', { name: 'Nouveau template' });
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau template' });
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: 'Fromages' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
     expect(await screen.findByRole('heading', { name: 'Éditeur' })).toBeInTheDocument();
-    const createCall = fetchMock.mock.calls.find(([request]) => request.method === 'POST');
+    const createCall: [request: Request] | undefined = fetchMock.mock.calls.find(
+      ([request]) => request.method === 'POST',
+    );
     await expect(createCall?.[0].json()).resolves.toEqual({ name: 'Fromages' });
   });
 
@@ -122,7 +131,7 @@ describe('TemplatesPage', () => {
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Nouveau template' }));
-    const dialog = screen.getByRole('dialog', { name: 'Nouveau template' });
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau template' });
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: '   ' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
@@ -133,8 +142,8 @@ describe('TemplatesPage', () => {
   });
 
   it('deletes a template after confirmation and refreshes the list', async () => {
-    let templates = [chips, sodas];
-    const fetchMock = stubBackend({
+    let templates: TemplateSummary[] = [chips, sodas];
+    const fetchMock: BackendMock = stubBackend({
       'GET /templates': () => Response.json({ items: templates }),
       [`DELETE /templates/${chips.id}`]: () => {
         templates = [sodas];
@@ -144,7 +153,7 @@ describe('TemplatesPage', () => {
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Supprimer Chips' }));
-    const dialog = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Supprimer' }));
 
     await waitFor(() => expect(screen.queryByText('Chips')).not.toBeInTheDocument());
@@ -157,11 +166,11 @@ describe('TemplatesPage', () => {
   });
 
   it('keeps the template when the deletion is cancelled', async () => {
-    const fetchMock = stubBackend({ 'GET /templates': listOf([chips]) });
+    const fetchMock: BackendMock = stubBackend({ 'GET /templates': listOf([chips]) });
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Supprimer Chips' }));
-    const dialog = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Annuler' }));
 
     expect(dialog).not.toBeVisible();
@@ -177,7 +186,7 @@ describe('TemplatesPage', () => {
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Supprimer Chips' }));
-    const dialog = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Supprimer « Chips » ?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Supprimer' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(

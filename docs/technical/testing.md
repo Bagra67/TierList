@@ -527,7 +527,7 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 
 ### 2.20 Tests: `src/pages/TemplatesPage.test.tsx`
 
-The _My templates_ page in a `MemoryRouter`; the editor route is replaced by a plain `Éditeur` heading, so that only the navigation to it is checked.
+The _My templates_ page in a `MemoryRouter`; the editor route is replaced by a plain `Éditeur` heading, so that only the navigation to it is checked. Every variable is typed (`TemplateSummary`, `Template`, `HTMLElement`, `BackendMock`).
 
 | Test                                                             | What it does                                                                     | Purpose                                                                | Expected result                                                                                                                               |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -542,7 +542,7 @@ The _My templates_ page in a `MemoryRouter`; the editor route is replaced by a p
 
 ### 2.21 Tests: `src/pages/TemplateEditorPage.test.tsx`
 
-The editor opened at `/templates/<id>`, with a template of three tiers (S, A, B) and, for the tiles, `Pizza` and `Sushi`. Each change is answered with the whole template, as the backend does. The keyboard drag and drop of dnd-kit is not tested here: jsdom computes no layout, so it cannot find the neighbouring tiers; the move buttons are tested instead (the drag and drop is for the end-to-end tests planned in `TODO.md`).
+The editor opened at `/templates/<id>`, with a template of three tiers (S, A, B) and, for the tiles, `Pizza` and `Sushi`. Every variable is typed (`Template`, `Tier`, `Tile`, `HTMLElement`, `BackendMock` for the fake backend). Each change is answered with the whole template, as the backend does. The keyboard drag and drop of dnd-kit is not tested here: jsdom computes no layout, so it cannot find the neighbouring tiers; the move buttons are tested instead (the drag and drop is for the end-to-end tests planned in `TODO.md`).
 
 | Test                                                                          | What it does                                                                         | Purpose                                                                   | Expected result                                                                                                                                |
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
