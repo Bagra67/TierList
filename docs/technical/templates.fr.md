@@ -32,7 +32,7 @@ Côté frontend, la page _Mes templates_ liste, crée et supprime les templates 
 - **Positions** des tiers : à partir de 0 et continues (sans trou) ; déplacer ou supprimer un tier renumérote les autres. Une position au-delà de la fin place le tier en dernier.
 - **Modification vide** : un `PATCH` sans aucun champ (ou avec seulement des valeurs `null`) ne change rien, pas même la date de dernière modification ; le tier doit quand même exister (`404` sinon).
 - De même pour les tuiles : un `PATCH` vide d'une tuile ne change rien.
-- **Tuiles** : texte de 1 à 200 caractères (espaces retirés). Sans image (#81), une tuile sans texte serait vide, d'où la `422`. Les tuiles suivent les mêmes règles de position que les tiers : leur ordre est **l'ordre du template**.
+- **Tuiles** : texte de 1 à 200 caractères (espaces retirés). Sans image (#81, voir le [guide des images](images.fr.md)), une tuile sans texte serait vide, d'où la `422`. Les tuiles suivent les mêmes règles de position que les tiers : leur ordre est **l'ordre du template**.
 - **Limite de tuiles** (plan gratuit) : **32 tuiles** par template (`FREE_PLAN_MAX_TILES`), renvoyée en `max_tiles` dans `TemplateResponse` (propriété `Template.max_tiles`, qui dépendra du plan du propriétaire). Au-delà, `409` `tile_limit_reached` avec le param `max_tiles`.
 - **Modifications simultanées** : chaque modification des tiers ou des tuiles verrouille la ligne du template (`SELECT … FOR UPDATE`) jusqu'à son commit. Deux requêtes sur le même template passent l'une après l'autre, la seconde voyant le résultat de la première : deux suppressions simultanées ne peuvent pas retirer le dernier tier, deux ajouts simultanés ne peuvent pas dépasser la limite de tuiles.
 - **Dernière modification** (`updated_at`) : change quand le template change, et doit aussi changer quand un de ses tiers ou une de ses tuiles change : le service la met à jour explicitement (§2.2). C'est la date montrée à l'utilisateur et l'ordre de la liste.
@@ -130,7 +130,7 @@ Chaque route exige l'access token Bearer (`401` sinon).
 
 - Pas encore de pagination de la liste (#105).
 - Pas encore de vue super admin des templates supprimés (#104).
-- Les tuiles n'ont pas encore d'image (#81) : une tuile est un texte.
+- Les tuiles n'ont pas encore d'image (#81, décidé dans le [guide des images](images.fr.md)) : une tuile est un texte.
 
 ## 3. Dans le code
 

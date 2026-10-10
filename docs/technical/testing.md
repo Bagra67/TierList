@@ -315,6 +315,15 @@ No SMTP server: `FakeSMTP` replaces `smtplib.SMTP` and keeps the calls. The sett
 | `test_nothing_is_sent_without_smtp_host`               | No `SMTP_HOST`.                          | The application works without email configuration.                       | No SMTP connection; a warning mentions `SMTP_HOST`.                                           |
 | `test_a_smtp_failure_is_logged_without_the_address`    | The server refuses the recipient.        | A failure must not break the request nor leak the address into the logs. | No exception; the log holds `SMTPRecipientsRefused` but not the address.                      |
 
+### 1.12 Unit tests: `tests/test_config.py` (settings)
+
+Tests of the image settings of `app/core/config.py` ([images guide](images.md)). The `isolate_from_local_configuration` fixture runs each test from an empty temporary folder (no `.env` read) and removes the `IMAGE_*` environment variables, so that only the defaults of the code are tested.
+
+| Test                                                | What it does                                       | Purpose                                                                                               | Expected result                                                              |
+| --------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `test_image_settings_default_to_the_decided_limits` | Builds the settings with the required fields only. | The defaults are the values decided in the images guide.                                              | `IMAGE_UPLOAD_MAX_BYTES` is 10 MiB, `IMAGE_MAX_SOURCE_PIXELS` is 40 million. |
+| `test_image_limits_must_be_positive` (4 cases)      | Sets each image limit to `0` or `-1`.              | A wrong value in `.env` is refused when the settings are loaded, instead of making every upload fail. | `ValidationError` each time.                                                 |
+
 ---
 
 ## 2. Frontend (Vitest)

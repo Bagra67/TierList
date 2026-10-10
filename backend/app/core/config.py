@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     # reste en base avant d'être purgé définitivement
     deleted_template_retention_days: int = Field(default=30, gt=0)
 
+    # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
+    # alignée sur la limite de corps du reverse proxy (10 Mio)
+    image_upload_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    # Nombre maximal de pixels de l'image décodée : protège contre les bombes de décompression
+    image_max_source_pixels: int = Field(default=40_000_000, gt=0)
+
     # Connexion avec Google (client OAuth « Application Web » de la Google Cloud Console).
     # Sans identifiants, le bouton Google renvoie vers /login avec une erreur explicite.
     google_client_id: str | None = None
