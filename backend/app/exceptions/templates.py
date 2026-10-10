@@ -9,3 +9,15 @@ class TierNotFoundError(Exception):
 
 class LastTierError(Exception):
     """Suppression du dernier tier : une tier list a toujours au moins un tier."""
+
+
+class TileNotFoundError(Exception):
+    """Tuile inexistante dans ce template (le template, lui, appartient bien à l'utilisateur)."""
+
+
+class TileLimitReachedError(Exception):
+    """Le template a déjà le nombre maximal de tuiles de son plan."""
+
+    def __init__(self, max_tiles: int) -> None:
+        super().__init__(max_tiles)
+        self.max_tiles = max_tiles

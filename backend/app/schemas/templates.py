@@ -4,7 +4,11 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
-from app.constants.templates import TEMPLATE_NAME_MAX_LENGTH, TIER_NAME_MAX_LENGTH
+from app.constants.templates import (
+    TEMPLATE_NAME_MAX_LENGTH,
+    TIER_NAME_MAX_LENGTH,
+    TILE_TEXT_MAX_LENGTH,
+)
 
 # Espaces de début et de fin retirés : un nom fait seulement d'espaces est un nom vide
 TemplateName = Annotated[
@@ -42,6 +46,23 @@ class UpdateTierRequest(BaseModel):
     position: Position | None = None
 
 
+# Texte d'une tuile : sans image (pas encore gérée), une tuile sans texte serait vide
+TileText = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=TILE_TEXT_MAX_LENGTH),
+]
+
+
+class CreateTileRequest(BaseModel):
+    text: TileText
+
+
+# Champs à changer : ceux qui sont absents restent tels quels
+class UpdateTileRequest(BaseModel):
+    text: TileText | None = None
+    position: Position | None = None
+
+
 class TierResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -68,6 +89,8 @@ class TemplateResponse(BaseModel):
     updated_at: datetime
     tiers: list[TierResponse]
     tiles: list[TileResponse]
+    # Nombre maximal de tuiles du template, affiché par l'éditeur
+    max_tiles: int
 
 
 class TemplateSummaryResponse(BaseModel):

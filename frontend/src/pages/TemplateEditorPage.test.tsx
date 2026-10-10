@@ -22,6 +22,7 @@ function makeTemplate(tiers: Tier[], name = 'Chips'): Template {
     updated_at: '2026-10-05T12:00:00Z',
     tiers: tiers.map((tier, position) => ({ ...tier, position })),
     tiles: [],
+    max_tiles: 32,
   };
 }
 

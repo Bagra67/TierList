@@ -28,6 +28,7 @@ const createdTemplate = {
   updated_at: '2026-10-06T12:00:00Z',
   tiers: [],
   tiles: [],
+  max_tiles: 32,
 };
 
 // L'éditeur est remplacé par un simple titre : seule la navigation vers lui est vérifiée ici

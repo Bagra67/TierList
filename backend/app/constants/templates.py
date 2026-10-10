@@ -18,3 +18,6 @@ DEFAULT_TIERS: tuple[tuple[str, str], ...] = (
 # --- Tier ajouté par le propriétaire (en bas de la liste), à renommer et recolorer ensuite ------
 NEW_TIER_NAME = "?"
 NEW_TIER_COLOR = "#BFBFBF"
+
+# --- Limites du plan gratuit (docs/product/game-rules.md, « Plans and limits ») -------------
+FREE_PLAN_MAX_TILES = 32

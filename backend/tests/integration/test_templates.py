@@ -8,10 +8,12 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.templates import (
     DEFAULT_TIERS,
+    FREE_PLAN_MAX_TILES,
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
     TEMPLATE_NAME_MAX_LENGTH,
     TIER_NAME_MAX_LENGTH,
+    TILE_TEXT_MAX_LENGTH,
 )
 from app.models.template import Template
 from app.models.tier import Tier
@@ -52,7 +54,8 @@ def create_template(client: TestClient, headers: dict[str, str], name: str) -> d
 
 
 def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    """Ajoute des tuiles directement en base : l'API des tuiles n'existe pas encore."""
+    """Ajoute des tuiles directement en base : plus rapide que l'API quand un test a besoin de
+    beaucoup de tuiles (ex. atteindre la limite)."""
     for position in range(count):
         db_session.add(
             Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
@@ -74,6 +77,7 @@ def test_create_template_with_the_default_tiers(
     ]
     assert tiers == expected_tiers
     assert body["tiles"] == []
+    assert body["max_tiles"] == FREE_PLAN_MAX_TILES
     template = db_session.scalars(select(Template)).one()
     alice_user = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
     assert template.owner_id == alice_user.id
@@ -179,6 +183,8 @@ def test_templates_of_other_users_are_not_found(
     url = f"/templates/{template['id']}"
 
     tier_url = f"{url}/tiers/{template['tiers'][0]['id']}"
+    tile_url = f"{url}/tiles/{add_tile(auth_client, alice, template['id'], 'Pizza')['id']}"
+    template = auth_client.get(url, headers=alice).json()
 
     responses = [
         auth_client.get(url, headers=bob),
@@ -187,6 +193,9 @@ def test_templates_of_other_users_are_not_found(
         auth_client.post(f"{url}/tiers", headers=bob),
         auth_client.patch(tier_url, json={"name": "Stolen"}, headers=bob),
         auth_client.delete(tier_url, headers=bob),
+        auth_client.post(f"{url}/tiles", json={"text": "Stolen"}, headers=bob),
+        auth_client.patch(tile_url, json={"text": "Stolen"}, headers=bob),
+        auth_client.delete(tile_url, headers=bob),
     ]
 
     for response in responses:
@@ -196,6 +205,7 @@ def test_templates_of_other_users_are_not_found(
     unchanged = auth_client.get(url, headers=alice).json()
     assert unchanged["name"] == "Alice's template"
     assert unchanged["tiers"] == template["tiers"]
+    assert unchanged["tiles"] == template["tiles"]
 
 
 def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice: dict[str, str]):
@@ -224,10 +234,13 @@ def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice
         ("POST", f"/templates/{uuid.uuid4()}/tiers"),
         ("PATCH", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
         ("DELETE", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
+        ("POST", f"/templates/{uuid.uuid4()}/tiles"),
+        ("PATCH", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
+        ("DELETE", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
     ],
 )
 def test_template_routes_require_authentication(auth_client: TestClient, method: str, path: str):
-    response = auth_client.request(method, path, json={"name": "Movies"})
+    response = auth_client.request(method, path, json={"name": "Movies", "text": "Pizza"})
 
     assert response.status_code == 401
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
@@ -399,3 +412,161 @@ def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str
         ):
             assert response.status_code == 404
             assert response.json()["code"] == ErrorCode.TIER_NOT_FOUND
+
+
+# --- Tuiles --------------------------------------------------------------------------------
+
+
+def add_tile(client: TestClient, headers: dict[str, str], template_id: str, text: str) -> dict:
+    """Ajoute une tuile par l'API et renvoie la tuile créée (la dernière)."""
+    response = client.post(f"/templates/{template_id}/tiles", json={"text": text}, headers=headers)
+    assert response.status_code == 201
+    return response.json()["tiles"][-1]
+
+
+def tile_texts(template: dict) -> list[str]:
+    return [tile["text"] for tile in template["tiles"]]
+
+
+def tile_positions(template: dict) -> list[int]:
+    return [tile["position"] for tile in template["tiles"]]
+
+
+def test_add_text_tiles_at_the_end(auth_client: TestClient, alice: dict[str, str]):
+    template = create_template(auth_client, alice, "Food")
+    add_tile(auth_client, alice, template["id"], "Pizza")
+
+    response = auth_client.post(
+        f"/templates/{template['id']}/tiles", json={"text": "  Sushi  "}, headers=alice
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert tile_texts(body) == ["Pizza", "Sushi"]
+    assert tile_positions(body) == [0, 1]
+    assert body["updated_at"] > template["updated_at"]
+
+
+@pytest.mark.parametrize("text", ["", "   ", "x" * (TILE_TEXT_MAX_LENGTH + 1)])
+def test_add_tile_validates_the_text(auth_client: TestClient, alice: dict[str, str], text: str):
+    template = create_template(auth_client, alice, "Food")
+
+    response = auth_client.post(
+        f"/templates/{template['id']}/tiles", json={"text": text}, headers=alice
+    )
+
+    # Sans image (pas encore gérée), une tuile sans texte n'aurait aucun contenu
+    assert response.status_code == 422
+    errors = response.json()["errors"]
+    assert [error["field"] for error in errors] == ["body.text"]
+    assert auth_client.get(f"/templates/{template['id']}", headers=alice).json()["tiles"] == []
+
+
+def test_the_tile_limit_is_refused_with_the_limit(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    template = create_template(auth_client, alice, "Food")
+    add_tiles(db_session, template["id"], FREE_PLAN_MAX_TILES)
+
+    response = auth_client.post(
+        f"/templates/{template['id']}/tiles", json={"text": "One too many"}, headers=alice
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["code"] == ErrorCode.TILE_LIMIT_REACHED
+    assert body["params"] == {"max_tiles": FREE_PLAN_MAX_TILES}
+    assert len(db_session.scalars(select(Tile)).all()) == FREE_PLAN_MAX_TILES
+
+
+def test_edit_a_tile_text(auth_client: TestClient, alice: dict[str, str]):
+    template = create_template(auth_client, alice, "Food")
+    tile = add_tile(auth_client, alice, template["id"], "Piza")
+    url = f"/templates/{template['id']}/tiles/{tile['id']}"
+
+    response = auth_client.patch(url, json={"text": " Pizza "}, headers=alice)
+
+    assert response.status_code == 200
+    assert tile_texts(response.json()) == ["Pizza"]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{"text": ""}, {"text": "   "}, {"text": "x" * (TILE_TEXT_MAX_LENGTH + 1)}, {"position": -1}],
+)
+def test_update_tile_validates_the_fields(
+    auth_client: TestClient, alice: dict[str, str], payload: dict
+):
+    template = create_template(auth_client, alice, "Food")
+    tile = add_tile(auth_client, alice, template["id"], "Pizza")
+    url = f"/templates/{template['id']}/tiles/{tile['id']}"
+
+    response = auth_client.patch(url, json=payload, headers=alice)
+
+    assert response.status_code == 422
+    assert tile_texts(auth_client.get(f"/templates/{template['id']}", headers=alice).json()) == [
+        "Pizza"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "position", "expected_texts"),
+    [
+        ("Pizza", 2, ["Sushi", "Tacos", "Pizza"]),
+        ("Tacos", 0, ["Tacos", "Pizza", "Sushi"]),
+        ("Sushi", 99, ["Pizza", "Tacos", "Sushi"]),
+    ],
+)
+def test_move_a_tile_keeps_the_positions_continuous(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    text: str,
+    position: int,
+    expected_texts: list[str],
+):
+    template = create_template(auth_client, alice, "Food")
+    tile_ids: dict[str, str] = {}
+    for name in ("Pizza", "Sushi", "Tacos"):
+        tile_ids[name] = add_tile(auth_client, alice, template["id"], name)["id"]
+    url = f"/templates/{template['id']}/tiles/{tile_ids[text]}"
+
+    response = auth_client.patch(url, json={"position": position}, headers=alice)
+
+    assert response.status_code == 200
+    assert tile_texts(response.json()) == expected_texts
+    assert tile_positions(response.json()) == [0, 1, 2]
+    stored = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert tile_texts(stored) == expected_texts
+
+
+def test_delete_a_tile_renumbers_the_others(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    template = create_template(auth_client, alice, "Food")
+    add_tile(auth_client, alice, template["id"], "Pizza")
+    sushi = add_tile(auth_client, alice, template["id"], "Sushi")
+    add_tile(auth_client, alice, template["id"], "Tacos")
+
+    response = auth_client.delete(f"/templates/{template['id']}/tiles/{sushi['id']}", headers=alice)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert tile_texts(body) == ["Pizza", "Tacos"]
+    assert tile_positions(body) == [0, 1]
+    assert body["updated_at"] > template["updated_at"]
+    assert len(db_session.scalars(select(Tile)).all()) == 2
+
+
+def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str]):
+    template = create_template(auth_client, alice, "Food")
+    other = create_template(auth_client, alice, "Drinks")
+    other_tile = add_tile(auth_client, alice, other["id"], "Water")
+    # Une tuile inconnue, puis une tuile d'un autre template du même utilisateur
+    for unknown_tile_id in (str(uuid.uuid4()), other_tile["id"]):
+        url = f"/templates/{template['id']}/tiles/{unknown_tile_id}"
+        for response in (
+            auth_client.patch(url, json={"text": "New text"}, headers=alice),
+            auth_client.delete(url, headers=alice),
+        ):
+            assert response.status_code == 404
+            assert response.json()["code"] == ErrorCode.TILE_NOT_FOUND
