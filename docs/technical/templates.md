@@ -16,7 +16,7 @@ A template is what gets ranked: its **tiers** (the rows of the tier list) and it
 | Rename a template | `PATCH /templates/{id}`  | The new name; the last modification date is updated.                                                        |
 | Delete a template | `DELETE /templates/{id}` | The template disappears for its owner at once, and is erased permanently after the retention period (§2.3). |
 
-The screens come with #78; for now only the API exists.
+On the frontend, the _My templates_ page lists, creates and deletes templates; opening one shows its tiers, read-only until the editor comes (#79, #80). See §3.
 
 ### Rules
 
@@ -128,8 +128,19 @@ Every route requires the Bearer access token (`401` otherwise).
 
 ### Frontend (`frontend/src/`)
 
-Only the generated types (`api/schema.d.ts`) and the `errors.api.template_not_found` translation exist so far; the screens come with #78.
+| Layer        | File                                            | Content                                                                                                                                           |
+| ------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API          | `api/templates.ts`                              | One function per endpoint used (list, get, create, delete) and the hooks `useTemplates`, `useTemplate`, `useCreateTemplate`, `useDeleteTemplate`. |
+| Constants    | `constants/templates.ts`, `constants/routes.ts` | `TEMPLATE_NAME_MAX_LENGTH` (equal to the backend), the query keys; `ROUTES.TEMPLATES`, `ROUTES.TEMPLATE_EDITOR` and `templateEditorPath(id)`.     |
+| Pages        | `pages/TemplatesPage.tsx`                       | _My templates_ (`/templates`): name, number of tiles and last modification date of each template, empty state, loading and error states.          |
+|              | `pages/TemplateEditorPage.tsx`                  | `/templates/:templateId`: name and tiers of the template, read-only for now; the editing of tiers (#79) and tiles (#80) comes here.               |
+| Components   | `components/CreateTemplateDialog.tsx`           | Native `<dialog>`: required name, error of the field from the `422`, then opens the new template.                                                 |
+|              | `components/DeleteTemplateDialog.tsx`           | Native `<dialog>` of confirmation; the list is refreshed after the deletion.                                                                      |
+| Navigation   | `components/MainNav.tsx` (in `Layout.tsx`)      | Links _Home_ and _My templates_ in the header, shown once signed in.                                                                              |
+| Translations | `i18n/locales/fr.ts`, `en.ts`                   | `nav.*`, `templates.*` (number of tiles with plural forms, date formatted in the language of the interface) and `errors.api.template_not_found`.  |
+
+Every change invalidates the `['templates']` cache: the list and the opened templates are read again.
 
 ### Tests
 
-`backend/tests/integration/test_templates.py` (endpoints) and `test_template_purge.py` (purge), against a real PostgreSQL; described in the [testing guide](testing.md).
+`backend/tests/integration/test_templates.py` (endpoints) and `test_template_purge.py` (purge), against a real PostgreSQL; `frontend/src/pages/TemplatesPage.test.tsx` and `TemplateEditorPage.test.tsx` for the screens. All are described in the [testing guide](testing.md).
