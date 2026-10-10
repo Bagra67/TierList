@@ -193,7 +193,7 @@ backend/
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, HTTPException, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
-│   ├── models/user.py     # User, RefreshToken et OAuthAccount (SQLAlchemy)
+│   ├── models/            # Modèles SQLAlchemy, un par fichier : user.py, refresh_token.py, oauth_account.py…
 │   ├── repositories/      # Requêtes en base (users, refresh_tokens, oauth_accounts)
 │   ├── schemas/auth.py    # Modèles Pydantic de requête / réponse de /auth
 │   ├── services/          # Règles métier (auth.py : AuthService) et client Google (google_oauth.py)
