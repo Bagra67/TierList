@@ -105,6 +105,23 @@ def test_a_failed_database_save_leaves_no_file_in_the_storage(
     assert stored_images == {}
 
 
+def test_deleting_the_account_keeps_its_images_for_the_garbage_collection(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    uploaded: Response = upload(auth_client, alice, make_image_file((100, 100), "PNG"))
+
+    # TestClient.delete n'accepte pas de corps : on passe par request()
+    deleted: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=alice
+    )
+
+    assert deleted.status_code == 204
+    image: Image | None = db_session.get(Image, uuid.UUID(uploaded.json()["id"]))
+    assert image is not None
+    db_session.refresh(image)
+    assert image.owner_id is None
+
+
 def test_the_format_is_read_from_the_content_not_the_name_or_type(
     auth_client: TestClient, alice: dict[str, str]
 ):

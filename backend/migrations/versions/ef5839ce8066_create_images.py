@@ -23,7 +23,7 @@ def upgrade() -> None:
     op.create_table(
         "images",
         sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("owner_id", sa.Uuid(), nullable=False),
+        sa.Column("owner_id", sa.Uuid(), nullable=True),
         sa.Column("storage_key", sa.String(length=64), nullable=False),
         sa.Column("width", sa.Integer(), nullable=False),
         sa.Column("height", sa.Integer(), nullable=False),
@@ -58,7 +58,7 @@ def upgrade() -> None:
             ["owner_id"],
             ["users.id"],
             name=op.f("fk_images_owner_id_users"),
-            ondelete="CASCADE",
+            ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_images")),
         sa.UniqueConstraint("storage_key", name=op.f("uq_images_storage_key")),

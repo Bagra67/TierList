@@ -30,8 +30,10 @@ class Image(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         Index("ix_images_owner_id_created_at", "owner_id", "created_at"),
     )
 
-    # Toute image a un auteur connu : seuls les comptes en envoient
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # Toute image a un auteur connu : seuls les comptes en envoient. SET NULL et non CASCADE :
+    # supprimer le compte garde la ligne, pour que le ramasse-miettes retrouve et efface le
+    # fichier une fois l'image inutilisée (une partie passée peut encore l'afficher)
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     # Clé aléatoire ({uuid}.webp) : l'URL publique est impossible à deviner
     storage_key: Mapped[str] = mapped_column(String(IMAGE_STORAGE_KEY_MAX_LENGTH), unique=True)
     width: Mapped[int]

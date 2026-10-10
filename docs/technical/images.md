@@ -85,7 +85,7 @@ All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`,
 
 ### 2.5 Data model
 
-- A table **`images`**: `id`, storage key, width, height, size in bytes, author (`owner_id`), creation date, **SHA-256 of the received file**, moderation status (`visible`, `hidden`, `deleted`).
+- A table **`images`**: `id`, storage key, width, height, size in bytes, author (`owner_id`), creation date, **SHA-256 of the received file**, moderation status (`visible`, `hidden`, `deleted`). Deleting the account sets `owner_id` to `NULL` (`ON DELETE SET NULL`) instead of deleting the row: the garbage collection still finds the file, and a past game can still show the image.
 - `tiles.image_id`: nullable foreign key to `images`. The tiles of a game snapshot will reference `image_id` the same way.
 - **Immutable images**: the storage key is random (`{uuid}.webp`). Replacing the image of a tile creates a **new** image; an existing file is never overwritten. Caches can keep a file forever, and a snapshot always finds the image it was taken with.
 
@@ -123,7 +123,7 @@ SeaweedFS in development:
 
 ### 2.8 Cleanup
 
-No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE`). It is a command run next to `scripts/purge_deleted_templates.py`.
+No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It is a command run next to `scripts/purge_deleted_templates.py`.
 
 ### 2.9 Moderation
 

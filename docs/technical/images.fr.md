@@ -85,7 +85,7 @@ Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui 
 
 ### 2.5 Modèle de données
 
-- Une table **`images`** : `id`, clé de stockage, largeur, hauteur, taille en octets, auteur (`owner_id`), date de création, **SHA-256 du fichier reçu**, statut de modération (`visible`, `hidden`, `deleted`).
+- Une table **`images`** : `id`, clé de stockage, largeur, hauteur, taille en octets, auteur (`owner_id`), date de création, **SHA-256 du fichier reçu**, statut de modération (`visible`, `hidden`, `deleted`). Supprimer le compte met `owner_id` à `NULL` (`ON DELETE SET NULL`) au lieu de supprimer la ligne : le ramasse-miettes retrouve encore le fichier, et une partie passée peut encore afficher l'image.
 - `tiles.image_id` : clé étrangère nullable vers `images`. Les tuiles d'un instantané de partie référenceront `image_id` de la même façon.
 - **Images immuables** : la clé de stockage est aléatoire (`{uuid}.webp`). Remplacer l'image d'une tuile crée une **nouvelle** image ; un fichier existant n'est jamais écrasé. Les caches peuvent garder un fichier indéfiniment, et un instantané retrouve toujours l'image avec laquelle il a été pris.
 
@@ -123,7 +123,7 @@ SeaweedFS en développement :
 
 ### 2.8 Nettoyage
 
-Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE`). C'est une commande lancée à côté de `scripts/purge_deleted_templates.py`.
+Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). C'est une commande lancée à côté de `scripts/purge_deleted_templates.py`.
 
 ### 2.9 Modération
 
