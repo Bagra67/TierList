@@ -162,7 +162,7 @@ def client(
     db_session: Session, sent_emails: list[Email], stored_images: dict[str, bytes]
 ) -> Iterator[TestClient]:
     email_sender = FakeEmailSender(sent_emails)
-    image_storage = FakeImageStorage(stored_images)
+    image_storage: FakeImageStorage = FakeImageStorage(stored_images)
     app.dependency_overrides[get_db_session] = lambda: db_session
     app.dependency_overrides[get_email_sender] = lambda: email_sender
     app.dependency_overrides[get_image_storage] = lambda: image_storage
