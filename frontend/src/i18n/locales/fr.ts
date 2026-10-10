@@ -124,7 +124,24 @@ export const fr = {
     },
     editor: {
       back: 'Retour à mes templates',
+      name: 'Nom du template',
       tiers: 'Tiers',
+      addTier: 'Ajouter un tier',
+      tierName: 'Nom du tier {{position}}',
+      tierColor: 'Couleur du tier {{name}}',
+      moveUp: 'Monter {{name}}',
+      moveDown: 'Descendre {{name}}',
+      deleteTier: 'Supprimer le tier {{name}}',
+      dragHandle: 'Déplacer {{name}}',
+      // Annonces des lecteurs d'écran pendant un glisser-déposer au clavier
+      dnd: {
+        instructions:
+          'Pour déplacer un élément, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.',
+        pickedUp: '{{item}} saisi, position {{position}} sur {{count}}.',
+        movedOver: '{{item}} déplacé en position {{position}} sur {{count}}.',
+        dropped: '{{item}} déposé en position {{position}} sur {{count}}.',
+        cancelled: 'Déplacement de {{item}} annulé.',
+      },
     },
   },
   errors: {
@@ -143,6 +160,8 @@ export const fr = {
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
       invalid_token: 'Ce lien est invalide ou a expiré.',
       template_not_found: 'Ce template est introuvable.',
+      tier_not_found: 'Ce tier est introuvable.',
+      last_tier: 'Un template garde au moins un tier.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {
@@ -151,6 +170,7 @@ export const fr = {
       string_too_short: 'Au moins {{min_length}} caractères.',
       string_too_long: 'Au plus {{max_length}} caractères.',
       value_error: 'Valeur invalide.',
+      string_pattern_mismatch: 'Format invalide.',
       password_too_short: 'Le mot de passe doit contenir au moins {{min_length}} caractères',
     },
     // Codes du retour de Google (backend : /auth/google/callback → /login?error=<code>)

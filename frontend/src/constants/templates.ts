@@ -1,6 +1,7 @@
-// Doit rester égale à la limite du backend (backend/app/constants/templates.py), liée au schéma
-// de la base
+// Doivent rester égales aux limites du backend (backend/app/constants/templates.py), liées au
+// schéma de la base
 export const TEMPLATE_NAME_MAX_LENGTH = 100;
+export const TIER_NAME_MAX_LENGTH = 50;
 
 // TanStack Query garde en cache chaque donnée lue sur l'API, rangée sous une « clé » (un
 // tableau). Les clés des templates commencent toutes par 'templates' :
