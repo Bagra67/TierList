@@ -15,6 +15,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 - [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (proxy, Cloudflare…), and configure the trusted proxy headers (`X-Forwarded-For`, `--forwarded-allow-ips`) so the backend sees the real IP.
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 - [ ] Schedule the purge of deleted templates once a day: `uv run python scripts/purge_deleted_templates.py` in `backend/` (cron or the host's scheduled task). Without it, deleted templates stay in the database; the retention is `DELETED_TEMPLATE_RETENTION_DAYS` (default 30).
+- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: choose an S3-compatible provider and a CDN able to **purge one URL** (needed to hide an image), create the bucket with public read, set the `IMAGE_*` settings, set the reverse proxy body limit to at least `IMAGE_UPLOAD_MAX_BYTES`, and schedule the image garbage collection next to the template purge.
 
 ## 2. Decisions to take
 

@@ -32,7 +32,7 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 - **Positions** of tiers start at 0 and stay continuous (no gap): moving or deleting a tier renumbers the others. A position past the end puts the tier last.
 - **Empty update**: a `PATCH` without any field (or with only `null` values) changes nothing, not even the last modification date; the tier must still exist (`404` otherwise).
 - The same goes for the tiles: an empty `PATCH` of a tile changes nothing.
-- **Tiles**: text 1 to 200 characters (spaces removed). Without images (#81), a tile with no text would be empty, hence the `422`. The tiles follow the same position rules as the tiers: their order is the **template order**.
+- **Tiles**: text 1 to 200 characters (spaces removed). Without images (#81, see the [images guide](images.md)), a tile with no text would be empty, hence the `422`. The tiles follow the same position rules as the tiers: their order is the **template order**.
 - **Tile limit** (free plan): **32 tiles** per template (`FREE_PLAN_MAX_TILES`), returned as `max_tiles` in `TemplateResponse` (property `Template.max_tiles`, which will depend on the owner's plan). Beyond it, `409` `tile_limit_reached` with the param `max_tiles`.
 - **Simultaneous changes**: every change of the tiers or tiles locks the template row (`SELECT … FOR UPDATE`) until its commit. Two requests on the same template run one after the other, the second one seeing the result of the first: two simultaneous deletions cannot remove the last tier, two simultaneous additions cannot go beyond the tile limit.
 - **Last modification** (`updated_at`): changes when the template changes, and must also change when one of its tiers or tiles changes: the service updates it explicitly (§2.2). It is the date shown to the user and the order of the list.
@@ -130,7 +130,7 @@ Every route requires the Bearer access token (`401` otherwise).
 
 - No pagination of the list yet (#105).
 - No super admin view of deleted templates yet (#104).
-- Tiles have no image yet (#81): a tile is a text.
+- Tiles have no image yet (#81, decided in the [images guide](images.md)): a tile is a text.
 
 ## 3. In the code
 
