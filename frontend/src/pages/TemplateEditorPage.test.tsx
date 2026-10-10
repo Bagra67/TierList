@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
@@ -181,23 +181,6 @@ describe('TemplateEditorPage', () => {
 
       await waitFor(() => expect(displayedTierNames()).toEqual(['Top', 'A', 'B']));
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ name: 'Top' });
-    });
-
-    it('recolors a tier once the color is chosen', async () => {
-      const fetchMock: BackendMock = stubBackend({
-        [`GET ${templateUrl}`]: () => Response.json(chips),
-        [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
-          Response.json(makeTemplate([tierS, { ...tierA, color: '#112233' }, tierB])),
-      });
-      renderEditor();
-      const colorField: HTMLElement = await screen.findByLabelText('Couleur du tier A');
-
-      fireEvent.change(colorField, { target: { value: '#112233' } });
-
-      await waitFor(() =>
-        expect(calledRoutes(fetchMock)).toContain(`PATCH ${templateUrl}/tiers/${tierA.id}`),
-      );
-      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#112233' });
     });
 
     it('moves a tier with the move down button', async () => {
@@ -558,6 +541,83 @@ describe('TemplateEditorPage', () => {
         ),
       );
     });
+  });
+
+  describe('tier color', () => {
+    // Ouvre le sélecteur de couleur du tier A et renvoie son contenu
+    async function openColorPicker(): Promise<HTMLElement> {
+      fireEvent.click(await screen.findByRole('button', { name: 'Couleur du tier A' }));
+      return screen.findByRole('dialog');
+    }
+
+    it('recolors a tier with a suggested color once the picker is closed', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
+          Response.json(makeTemplate([tierS, { ...tierA, color: '#7FBFFF' }, tierB])),
+      });
+      renderEditor();
+      const picker: HTMLElement = await openColorPicker();
+
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
+      fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
+
+      await waitFor(() =>
+        expect(calledRoutes(fetchMock)).toContain(`PATCH ${templateUrl}/tiers/${tierA.id}`),
+      );
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#7FBFFF' });
+    });
+
+    it('recolors a tier with a hex code', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
+          Response.json(makeTemplate([tierS, { ...tierA, color: '#112233' }, tierB])),
+      });
+      renderEditor();
+      const picker: HTMLElement = await openColorPicker();
+
+      fireEvent.change(within(picker).getByLabelText('Code hexadécimal'), {
+        target: { value: '112233' },
+      });
+      fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
+
+      await waitFor(() =>
+        expect(calledRoutes(fetchMock)).toContain(`PATCH ${templateUrl}/tiers/${tierA.id}`),
+      );
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#112233' });
+    });
+
+    it('cancels the color change with Escape', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
+      renderEditor();
+      const picker: HTMLElement = await openColorPicker();
+
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.keyDown(picker, { key: 'Escape' });
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+        backgroundColor: tierA.color,
+      });
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
+    });
+
+    it('sends nothing when the color did not change', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
+      renderEditor();
+      const picker: HTMLElement = await openColorPicker();
+
+      fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
+    });
 
     it('restores the color when it cannot be saved', async () => {
       const consoleError: MockInstance<typeof console.error> = vi
@@ -568,13 +628,33 @@ describe('TemplateEditorPage', () => {
         [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () => errorResponse(500, 'internal_error'),
       });
       renderEditor();
-      const colorField: HTMLElement = await screen.findByLabelText('Couleur du tier A');
+      const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.change(colorField, { target: { value: '#112233' } });
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');
-      await waitFor(() => expect(colorField).toHaveValue(tierA.color.toLowerCase()));
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+          backgroundColor: tierA.color,
+        }),
+      );
       consoleError.mockRestore();
+    });
+
+    it('labels the picker in the language of the interface', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(chips) });
+      renderEditor();
+      const picker: HTMLElement = await openColorPicker();
+
+      expect(
+        within(picker).getByRole('slider', { name: 'Saturation et luminosité' }),
+      ).toHaveAttribute(
+        'aria-valuetext',
+        expect.stringMatching(/^Saturation \d+ %, luminosité \d+ %$/),
+      );
+      expect(within(picker).getByRole('slider', { name: 'Teinte' })).toBeInTheDocument();
+      expect(within(picker).getByRole('group', { name: 'Couleurs proposées' })).toBeInTheDocument();
     });
   });
 });

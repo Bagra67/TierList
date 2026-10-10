@@ -129,6 +129,16 @@ export const fr = {
       addTier: 'Ajouter un tier',
       tierName: 'Nom du tier {{position}}',
       tierColor: 'Couleur du tier {{name}}',
+      // Sélecteur de couleur d'un tier (react-colorful)
+      color: {
+        area: 'Saturation et luminosité',
+        areaValue: 'Saturation {{saturation}} %, luminosité {{brightness}} %',
+        hue: 'Teinte',
+        presets: 'Couleurs proposées',
+        preset: 'Choisir {{color}}',
+        hex: 'Code hexadécimal',
+        done: 'OK',
+      },
       moveUp: 'Monter {{name}}',
       moveDown: 'Descendre {{name}}',
       deleteTier: 'Supprimer le tier {{name}}',
