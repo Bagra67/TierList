@@ -11,7 +11,8 @@ from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import hash_refresh_token
 from app.main import app
-from app.models.user import RefreshToken, User
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 
 # Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
 # les saute (marqueur déclaré dans pyproject.toml)
