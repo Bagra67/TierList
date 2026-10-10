@@ -315,6 +315,15 @@ Aucun serveur SMTP : `FakeSMTP` remplace `smtplib.SMTP` et garde les appels. Les
 | `test_nothing_is_sent_without_smtp_host`               | Pas de `SMTP_HOST`.                            | L'application fonctionne sans configuration d'email.                           | Aucune connexion SMTP ; un avertissement mentionne `SMTP_HOST`.                                          |
 | `test_a_smtp_failure_is_logged_without_the_address`    | Le serveur refuse le destinataire.             | Un échec ne doit ni casser la requête ni faire fuiter l'adresse dans les logs. | Pas d'exception ; le log contient `SMTPRecipientsRefused` mais pas l'adresse.                            |
 
+### 1.12 Tests unitaires : `tests/test_config.py` (réglages)
+
+Tests des réglages d'images de `app/core/config.py` ([guide des images](images.fr.md)). La fixture `isolate_from_local_configuration` lance chaque test depuis un dossier temporaire vide (aucun `.env` lu) et retire les variables d'environnement `IMAGE_*`, pour ne tester que les valeurs par défaut du code.
+
+| Test                                                | Ce qu'il fait                                              | But                                                                                                                | Résultat attendu                                                             |
+| --------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `test_image_settings_default_to_the_decided_limits` | Construit les réglages avec les seuls champs obligatoires. | Les valeurs par défaut sont celles décidées dans le guide des images.                                              | `IMAGE_UPLOAD_MAX_BYTES` vaut 10 Mio, `IMAGE_MAX_SOURCE_PIXELS` 40 millions. |
+| `test_image_limits_must_be_positive` (4 cas)        | Met chaque limite d'image à `0` ou `-1`.                   | Une mauvaise valeur dans `.env` est refusée au chargement des réglages, au lieu de faire échouer tous les uploads. | `ValidationError` à chaque fois.                                             |
+
 ---
 
 ## 2. Frontend (Vitest)
