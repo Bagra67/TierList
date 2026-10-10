@@ -517,10 +517,7 @@ export interface components {
             /** Expires In */
             expires_in: number;
         };
-        /**
-         * UpdateTierRequest
-         * @description Champs à changer : ceux qui sont absents restent tels quels.
-         */
+        /** UpdateTierRequest */
         UpdateTierRequest: {
             /** Name */
             name?: string | null;

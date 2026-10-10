@@ -1928,8 +1928,7 @@
           }
         },
         "type": "object",
-        "title": "UpdateTierRequest",
-        "description": "Champs à changer : ceux qui sont absents restent tels quels."
+        "title": "UpdateTierRequest"
       },
       "UserResponse": {
         "properties": {

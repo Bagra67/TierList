@@ -35,9 +35,8 @@ TierColor = Annotated[
 Position = Annotated[int, Field(ge=0)]
 
 
+# Champs à changer : ceux qui sont absents restent tels quels
 class UpdateTierRequest(BaseModel):
-    """Champs à changer : ceux qui sont absents restent tels quels."""
-
     name: TierName | None = None
     color: TierColor | None = None
     position: Position | None = None
