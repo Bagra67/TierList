@@ -1,0 +1,18 @@
+{
+  "identities": [
+    {
+      "name": "anonymous",
+      "actions": ["Read:tierlist-images"]
+    },
+    {
+      "name": "tierlist-backend",
+      "credentials": [
+        {
+          "accessKey": "tierlist-dev",
+          "secretKey": "tierlist-dev-not-a-secret"
+        }
+      ],
+      "actions": ["Read:tierlist-images", "Write:tierlist-images", "List:tierlist-images"]
+    }
+  ]
+}
