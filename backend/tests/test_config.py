@@ -17,6 +17,8 @@ REQUIRED_SETTINGS: dict[str, object] = {
 IMAGE_SETTINGS_ENV_VARS: tuple[str, ...] = (
     "IMAGE_UPLOAD_MAX_BYTES",
     "IMAGE_MAX_SOURCE_PIXELS",
+    "IMAGE_UPLOADS_PER_HOUR_MAX",
+    "UNUSED_IMAGE_RETENTION_DAYS",
     "IMAGE_S3_ENDPOINT_URL",
     "IMAGE_S3_BUCKET",
     "IMAGE_S3_REGION",
@@ -45,11 +47,19 @@ def test_image_settings_default_to_the_decided_limits() -> None:
 
     assert settings.image_upload_max_bytes == 10 * 1024 * 1024
     assert settings.image_max_source_pixels == 40_000_000
+    assert settings.image_uploads_per_hour_max == 120
+    assert settings.unused_image_retention_days == 7
 
 
 @pytest.mark.parametrize(
     "field_name",
-    ["image_upload_max_bytes", "image_max_source_pixels", "image_s3_timeout_seconds"],
+    [
+        "image_upload_max_bytes",
+        "image_max_source_pixels",
+        "image_uploads_per_hour_max",
+        "unused_image_retention_days",
+        "image_s3_timeout_seconds",
+    ],
 )
 @pytest.mark.parametrize("invalid_value", [0, -1])
 def test_image_limits_must_be_positive(field_name: str, invalid_value: int) -> None:

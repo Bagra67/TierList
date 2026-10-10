@@ -30,12 +30,16 @@ LAST_TIER = "A template keeps at least one tier"
 TILE_NOT_FOUND = "Tile not found"
 # {max_tiles} est remplacé par la limite du plan
 TILE_LIMIT_REACHED = "A template has at most {max_tiles} tiles"
+TILE_EMPTY = "A tile needs a text or an image"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
 # {max_bytes} est remplacé par IMAGE_UPLOAD_MAX_BYTES
 IMAGE_TOO_LARGE = "The file is larger than {max_bytes} bytes"
 IMAGE_TOO_MANY_PIXELS = "The image has too many pixels"
+# {max_uploads} est remplacé par IMAGE_UPLOADS_PER_HOUR_MAX
+IMAGE_UPLOAD_LIMIT_REACHED = "At most {max_uploads} images can be uploaded per hour"
+IMAGE_NOT_FOUND = "Image not found"
 
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
@@ -50,3 +54,7 @@ TILE_LIMIT_REACHED_DESCRIPTION = "Maximum number of tiles reached"
 IMAGE_UNSUPPORTED_FORMAT_DESCRIPTION = "Not a JPEG, PNG or WebP image"
 IMAGE_TOO_LARGE_DESCRIPTION = "File too large"
 IMAGE_TOO_MANY_PIXELS_DESCRIPTION = "Image with too many pixels"
+IMAGE_UPLOAD_LIMIT_REACHED_DESCRIPTION = "Too many images uploaded in the last hour"
+TILE_EMPTY_DESCRIPTION = "Tile without text nor image, or invalid request"
+TEMPLATE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template or image not found"
+TEMPLATE_TILE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template, tile or image not found"
