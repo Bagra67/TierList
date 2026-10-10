@@ -7,9 +7,14 @@ on:
   push:
     branches: [develop, main]
 
-# A new push on the same branch / PR cancels the run still in progress.
+# Only a new commit (push, or synchronize on a PR) cancels the run still in progress: that run checks
+# an outdated commit. Other events (opened, labeled...) get their own group: a cancelled run on the
+# current commit leaves the required Docs check failed and the PR blocked (#109). They cannot share a
+# group without cancel-in-progress either, since a group also cancels its pending run.
 concurrency:
-  group: docs-${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    docs-${{ github.workflow }}-${{ github.ref }}-${{
+    (github.event_name == 'push' || github.event.action == 'synchronize') && 'commit' || github.run_id }}
   cancel-in-progress: true
 
 permissions:
