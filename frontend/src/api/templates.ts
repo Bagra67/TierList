@@ -112,20 +112,68 @@ function storeTemplate(queryClient: QueryClient, template: Template): Promise<vo
   return queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY, exact: true });
 }
 
-export function useRenameTemplate(templateId: string) {
+// Déplacement d'un tier, connu avant la réponse du backend
+interface PendingMove {
+  itemId: string;
+  position: number;
+}
+
+interface Positioned {
+  id: string;
+  position: number;
+}
+
+// Éléments dans le nouvel ordre, avant la réponse du backend (qui applique la même règle)
+function moveItem<Item extends Positioned>(
+  items: Item[],
+  itemId: string,
+  position: number,
+): Item[] {
+  const movedItem: Item | undefined = items.find((item) => item.id === itemId);
+  if (movedItem === undefined) return items;
+  const reordered: Item[] = items.filter((item) => item.id !== itemId);
+  reordered.splice(Math.min(position, reordered.length), 0, movedItem);
+  return reordered.map((item, index) => ({ ...item, position: index }));
+}
+
+// Mutation qui modifie un template ouvert dans l'éditeur et renvoie le template à jour. Tout ce
+// qui est commun à ces modifications est écrit ici une seule fois : le template renvoyé remplace
+// celui du cache et, quand getMove décrit un déplacement, celui-ci est affiché tout de suite
+// (après un glisser-déposer, l'élément reste où il a été déposé au lieu de revenir puis sauter),
+// puis annulé si l'enregistrement échoue.
+function useTemplateChange<Variables = void>(
+  templateId: string,
+  mutationFn: (variables: Variables) => Promise<Template>,
+  getMove?: (variables: Variables) => PendingMove | undefined,
+) {
   const queryClient = useQueryClient();
+  const queryKey = templateQueryKey(templateId);
   return useMutation({
-    mutationFn: (name: string) => renameTemplate(templateId, name),
+    mutationFn,
+    onMutate: async (variables: Variables): Promise<Template | undefined> => {
+      const move: PendingMove | undefined = getMove?.(variables);
+      if (move === undefined) return undefined;
+      await queryClient.cancelQueries({ queryKey });
+      const previous: Template | undefined = queryClient.getQueryData<Template>(queryKey);
+      if (previous !== undefined) {
+        const tiers: Tier[] = moveItem(previous.tiers, move.itemId, move.position);
+        queryClient.setQueryData<Template>(queryKey, { ...previous, tiers });
+      }
+      return previous;
+    },
+    onError: (_error, _variables, previous) => {
+      if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
+    },
     onSuccess: (template) => storeTemplate(queryClient, template),
   });
 }
 
+export function useRenameTemplate(templateId: string) {
+  return useTemplateChange(templateId, (name: string) => renameTemplate(templateId, name));
+}
+
 export function useAddTier(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => addTier(templateId),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(templateId, () => addTier(templateId));
 }
 
 interface TierUpdate {
@@ -133,43 +181,17 @@ interface TierUpdate {
   changes: TierChanges;
 }
 
-// Tiers dans le nouvel ordre, avant la réponse du backend (qui applique la même règle)
-function moveTier(tiers: Tier[], tierId: string, position: number): Tier[] {
-  const reordered: Tier[] = tiers.filter((tier) => tier.id !== tierId);
-  const movedTier = tiers.find((tier) => tier.id === tierId);
-  if (movedTier === undefined) return tiers;
-  reordered.splice(Math.min(position, reordered.length), 0, movedTier);
-  return reordered.map((tier, index) => ({ ...tier, position: index }));
-}
-
 export function useUpdateTier(templateId: string) {
-  const queryClient = useQueryClient();
-  const queryKey = templateQueryKey(templateId);
-  return useMutation({
-    mutationFn: ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
-    // Déplacement optimiste : après un glisser-déposer, le tier reste où il a été déposé
-    // pendant l'enregistrement, au lieu de revenir à sa place puis de sauter.
-    onMutate: async ({ tierId, changes }: TierUpdate) => {
-      if (changes.position === undefined || changes.position === null) return undefined;
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<Template>(queryKey);
-      if (previous !== undefined) {
-        const tiers = moveTier(previous.tiers, tierId, changes.position);
-        queryClient.setQueryData<Template>(queryKey, { ...previous, tiers });
-      }
-      return previous;
-    },
-    onError: (_error, _update, previous) => {
-      if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
-    },
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(
+    templateId,
+    ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
+    ({ tierId, changes }: TierUpdate) =>
+      changes.position === undefined || changes.position === null
+        ? undefined
+        : { itemId: tierId, position: changes.position },
+  );
 }
 
 export function useDeleteTier(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (tierId: string) => deleteTier(templateId, tierId),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(templateId, (tierId: string) => deleteTier(templateId, tierId));
 }
