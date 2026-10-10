@@ -17,8 +17,8 @@ A template is what gets ranked: its **tiers** (the rows of the tier list) and it
 | Add a tier        | `POST /templates/{id}/tiers`             | A tier at the bottom, named `?`, color `#BFBFBF`.                                                           |
 | Change a tier     | `PATCH /templates/{id}/tiers/{tier_id}`  | Its name, its color and/or its position (the others are shifted).                                           |
 | Delete a tier     | `DELETE /templates/{id}/tiers/{tier_id}` | The tier disappears, the others move up; refused for the last tier.                                         |
-| Add a tile        | `POST /templates/{id}/tiles`             | A text tile at the end; refused beyond the maximum number of tiles.                                         |
-| Change a tile     | `PATCH /templates/{id}/tiles/{tile_id}`  | Its text and/or its position in the template order.                                                         |
+| Add a tile        | `POST /templates/{id}/tiles`             | A tile with a text, an image or both, at the end; refused beyond the maximum number of tiles.               |
+| Change a tile     | `PATCH /templates/{id}/tiles/{tile_id}`  | Its text, its image (replace or remove) and/or its position in the template order.                          |
 | Delete a tile     | `DELETE /templates/{id}/tiles/{tile_id}` | The tile disappears, the next ones move up.                                                                 |
 | Delete a template | `DELETE /templates/{id}`                 | The template disappears for its owner at once, and is erased permanently after the retention period (§2.3). |
 
@@ -32,7 +32,7 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 - **Positions** of tiers start at 0 and stay continuous (no gap): moving or deleting a tier renumbers the others. A position past the end puts the tier last.
 - **Empty update**: a `PATCH` without any field (or with only `null` values) changes nothing, not even the last modification date; the tier must still exist (`404` otherwise).
 - The same goes for the tiles: an empty `PATCH` of a tile changes nothing.
-- **Tiles**: text 1 to 200 characters (spaces removed). Without images (#81, see the [images guide](images.md)), a tile with no text would be empty, hence the `422`. The tiles follow the same position rules as the tiers: their order is the **template order**.
+- **Tiles**: a **text, an image, or both**, never neither (`422` `tile_empty`). The text has 1 to 200 characters (spaces removed); a text made only of spaces is a `422` `validation_error`, `null` means "no text". The image is one uploaded before by the owner (`POST /images`, see the [images guide](images.md)); an unknown image or one of another user is a `404` `image_not_found`. In a `PATCH`, an explicit `null` **removes** the text or the image, as long as the tile keeps the other one; `position: null` is ignored. The tiles follow the same position rules as the tiers: their order is the **template order**.
 - **Tile limit** (free plan): **32 tiles** per template (`FREE_PLAN_MAX_TILES`), returned as `max_tiles` in `TemplateResponse` (property `Template.max_tiles`, which will depend on the owner's plan). Beyond it, `409` `tile_limit_reached` with the param `max_tiles`.
 - **Simultaneous changes**: every change of the tiers or tiles locks the template row (`SELECT … FOR UPDATE`) until its commit. Two requests on the same template run one after the other, the second one seeing the result of the first: two simultaneous deletions cannot remove the last tier, two simultaneous additions cannot go beyond the tile limit.
 - **Last modification** (`updated_at`): changes when the template changes, and must also change when one of its tiers or tiles changes: the service updates it explicitly (§2.2). It is the date shown to the user and the order of the list.
@@ -50,6 +50,8 @@ The API returns an error **code**; the frontend translates it (`errors.api.*` in
 | Deleting the last tier                                            | 409  | `last_tier`                              | `Un template garde au moins un tier.` / `A template keeps at least one tier.`                 |
 | Tile unknown in this template                                     | 404  | `tile_not_found`                         | `Cette tuile est introuvable.` / `This tile could not be found.`                              |
 | Too many tiles                                                    | 409  | `tile_limit_reached` (param `max_tiles`) | `Un template a au plus {{max_tiles}} tuiles.` / `A template has at most {{max_tiles}} tiles.` |
+| Tile without text nor image                                       | 422  | `tile_empty`                             | `Une tuile a besoin d'un texte ou d'une image.` / `A tile needs a text or an image.`          |
+| Image unknown or of another user                                  | 404  | `image_not_found`                        | `Cette image est introuvable.` / `This image could not be found.`                             |
 | Invalid name, color or tile text (empty, too long, not `#RRGGBB`) | 422  | `validation_error`                       | `Certains champs sont invalides.` / `Some fields are invalid.`, plus the error of the field   |
 | Missing or invalid access token                                   | 401  | `not_authenticated`                      | Handled by the API client: refresh of the session, otherwise back to `/login`                 |
 
@@ -63,11 +65,11 @@ users ──< templates ──< tiers
               └──────< tiles
 ```
 
-| Table       | Columns                                                                                          | Notes                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
-| `templates` | `id`, `owner_id` → `users`, `name` (100), `created_at`, `updated_at`, `deleted_at`               | `ON DELETE CASCADE` towards `users`; index on `owner_id`.      |
-| `tiers`     | `id`, `template_id` → `templates`, `name` (50), `color` (`#RRGGBB`), `position`, dates           | `ON DELETE CASCADE` towards `templates`; `position` 0 = top.   |
-| `tiles`     | `id`, `template_id` → `templates`, `text` (200, empty for an image-only tile), `position`, dates | `ON DELETE CASCADE` towards `templates`; `position` 0 = first. |
+| Table       | Columns                                                                                                                                              | Notes                                                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `templates` | `id`, `owner_id` → `users`, `name` (100), `created_at`, `updated_at`, `deleted_at`                                                                   | `ON DELETE CASCADE` towards `users`; index on `owner_id`.                                                                                     |
+| `tiers`     | `id`, `template_id` → `templates`, `name` (50), `color` (`#RRGGBB`), `position`, dates                                                               | `ON DELETE CASCADE` towards `templates`; `position` 0 = top.                                                                                  |
+| `tiles`     | `id`, `template_id` → `templates`, `text` (200, empty for an image-only tile), `image_id` → `images` (empty for a text-only tile), `position`, dates | `ON DELETE CASCADE` towards `templates`; no `ON DELETE` towards `images` (only the garbage collection erases an image); `position` 0 = first. |
 
 `position` has **no unique constraint**: reordering would break it while the other rows are being shifted. The service keeps positions continuous.
 
@@ -108,21 +110,21 @@ It must be scheduled once a day on the server (cron or the host's scheduled task
 
 Every route requires the Bearer access token (`401` otherwise).
 
-| Method and path                          | Body                         | Success                      | Errors                     |
-| ---------------------------------------- | ---------------------------- | ---------------------------- | -------------------------- |
-| `POST /templates`                        | `{name}`                     | `201` `TemplateResponse`     | `401`, `422`               |
-| `GET /templates`                         | —                            | `200` `TemplateListResponse` | `401`                      |
-| `GET /templates/{id}`                    | —                            | `200` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}`                  | `{name}`                     | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `POST /templates/{id}/tiers`             | —                            | `201` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}` | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiers/{tier_id}` | —                            | `200` `TemplateResponse`     | `401`, `404`, `409`        |
-| `POST /templates/{id}/tiles`             | `{text}`                     | `201` `TemplateResponse`     | `401`, `404`, `409`, `422` |
-| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, position?}`         | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiles/{tile_id}` | —                            | `200` `TemplateResponse`     | `401`, `404`               |
-| `DELETE /templates/{id}`                 | —                            | `204`                        | `401`, `404`               |
+| Method and path                          | Body                            | Success                      | Errors                     |
+| ---------------------------------------- | ------------------------------- | ---------------------------- | -------------------------- |
+| `POST /templates`                        | `{name}`                        | `201` `TemplateResponse`     | `401`, `422`               |
+| `GET /templates`                         | —                               | `200` `TemplateListResponse` | `401`                      |
+| `GET /templates/{id}`                    | —                               | `200` `TemplateResponse`     | `401`, `404`               |
+| `PATCH /templates/{id}`                  | `{name}`                        | `200` `TemplateResponse`     | `401`, `404`, `422`        |
+| `POST /templates/{id}/tiers`             | —                               | `201` `TemplateResponse`     | `401`, `404`               |
+| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}`    | `200` `TemplateResponse`     | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiers/{tier_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`, `409`        |
+| `POST /templates/{id}/tiles`             | `{text?, image_id?}`            | `201` `TemplateResponse`     | `401`, `404`, `409`, `422` |
+| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, image_id?, position?}` | `200` `TemplateResponse`     | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`               |
+| `DELETE /templates/{id}`                 | —                               | `204`                        | `401`, `404`               |
 
-- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, position}], max_tiles}`, tiers and tiles sorted by `position`.
+- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles}`, tiers and tiles sorted by `position`. `image_url` is the public address of the compressed image, `null` for a text-only tile; the route builds it with `ImageStorage.url`, given to the schema in the validation context (`_template_response`).
 - `TemplateListResponse` is `{items: [{id, name, tile_count, updated_at}]}`. An object rather than an array, so that pagination (#105) can add a field without breaking the contract. The list is read in **one query**: the database counts the tiles (no N+1).
 - The tier and tile routes return the whole template, so that the editor replaces its copy without reading it again. The `404` is `template_not_found` for the template, `tier_not_found` / `tile_not_found` for a tier or a tile that is not in it.
 
@@ -130,25 +132,25 @@ Every route requires the Bearer access token (`401` otherwise).
 
 - No pagination of the list yet (#105).
 - No super admin view of deleted templates yet (#104).
-- Tiles have no image yet (#81, decided in the [images guide](images.md)): a tile is a text.
+- The editor does not show nor upload images yet: it comes with the rest of #81.
 
 ## 3. In the code
 
 ### Backend (`backend/app/`)
 
-| Layer         | File                                                                          | Content                                                                                                                                                                                                                                                         |
-| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes        | `api/routes/templates.py`                                                     | The `/templates` routes, the tier and tile routes; map the domain exceptions to `404` `template_not_found` / `tier_not_found` / `tile_not_found`, `409` `last_tier` / `tile_limit_reached` (param `max_tiles`).                                                 |
-| Dependencies  | `api/dependencies.py`, `api/responses.py`                                     | `get_template_service`; `UNAUTHORIZED_RESPONSE`, the `401` documented in OpenAPI, shared with the `/auth` routes.                                                                                                                                               |
-| Schemas       | `schemas/templates.py`                                                        | `CreateTemplateRequest`, `RenameTemplateRequest` (shared `TemplateName` rule), `UpdateTierRequest` (`TierName`, `TierColor`, `Position`), `CreateTileRequest`, `UpdateTileRequest` (`TileText`), `TemplateResponse` (with `max_tiles`), `TemplateListResponse`. |
-| Service       | `services/templates.py`                                                       | `TemplateService`: create with the default tiers, list, get, rename, add / update / delete a tier or a tile (`_move`, `_renumber` shared by both, `_get_for_change` (locked), `_save_change`), soft delete, `purge_deleted`. Owns the transactions (`commit`).  |
-| Repository    | `repositories/templates.py`                                                   | Queries only: active template of an owner (with tiers and tiles, locked with `for_update`), list with tile count, purge.                                                                                                                                        |
-| Models        | `models/template.py`, `models/tier.py`, `models/tile.py`, `db/mixins.py`      | One file per class; the mixins of §2.2.                                                                                                                                                                                                                         |
-| Exceptions    | `exceptions/templates.py`                                                     | `TemplateNotFoundError`, `TierNotFoundError`, `LastTierError`, `TileNotFoundError`, `TileLimitReachedError` (carries `max_tiles`).                                                                                                                              |
-| Constants     | `constants/templates.py`, `constants/error_codes.py`, `constants/messages.py` | Lengths tied to the schema, `DEFAULT_TIERS`, `NEW_TIER_NAME` / `NEW_TIER_COLOR`, `FREE_PLAN_MAX_TILES`, the codes `TEMPLATE_NOT_FOUND`, `TIER_NOT_FOUND`, `LAST_TIER`, `TILE_NOT_FOUND`, `TILE_LIMIT_REACHED` and their developer messages.                     |
-| Configuration | `core/config.py`                                                              | `DELETED_TEMPLATE_RETENTION_DAYS`.                                                                                                                                                                                                                              |
-| Migration     | `migrations/versions/855df2a2ea2b_create_templates_tiers_and_tiles.py`        | Creates the three tables.                                                                                                                                                                                                                                       |
-| Command       | `scripts/purge_deleted_templates.py` (in `backend/`)                          | Purge of §2.3.                                                                                                                                                                                                                                                  |
+| Layer         | File                                                                          | Content                                                                                                                                                                                                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes        | `api/routes/templates.py`                                                     | The `/templates` routes, the tier and tile routes; map the domain exceptions to `404` `template_not_found` / `tier_not_found` / `tile_not_found` / `image_not_found`, `409` `last_tier` / `tile_limit_reached` (param `max_tiles`), `422` `tile_empty`; `_template_response` adds the image URLs.         |
+| Dependencies  | `api/dependencies.py`, `api/responses.py`                                     | `get_template_service`; `UNAUTHORIZED_RESPONSE`, the `401` documented in OpenAPI, shared with the `/auth` routes.                                                                                                                                                                                         |
+| Schemas       | `schemas/templates.py`                                                        | `CreateTemplateRequest`, `RenameTemplateRequest` (shared `TemplateName` rule), `UpdateTierRequest` (`TierName`, `TierColor`, `Position`), `CreateTileRequest`, `UpdateTileRequest` (`TileText`, `image_id`), `TileResponse` (`image_url`), `TemplateResponse` (with `max_tiles`), `TemplateListResponse`. |
+| Service       | `services/templates.py`                                                       | `TemplateService`: create with the default tiers, list, get, rename, add / update / delete a tier or a tile (`_move`, `_renumber` shared by both, `_get_for_change` (locked), `_save_change`, `_check_owned_image`), soft delete, `purge_deleted`. Owns the transactions (`commit`).                      |
+| Repository    | `repositories/templates.py`                                                   | Queries only: active template of an owner (with tiers and tiles, locked with `for_update`), list with tile count, purge.                                                                                                                                                                                  |
+| Models        | `models/template.py`, `models/tier.py`, `models/tile.py`, `db/mixins.py`      | One file per class; the mixins of §2.2.                                                                                                                                                                                                                                                                   |
+| Exceptions    | `exceptions/templates.py`                                                     | `TemplateNotFoundError`, `TierNotFoundError`, `LastTierError`, `TileNotFoundError`, `TileLimitReachedError` (carries `max_tiles`), `TileEmptyError`.                                                                                                                                                      |
+| Constants     | `constants/templates.py`, `constants/error_codes.py`, `constants/messages.py` | Lengths tied to the schema, `DEFAULT_TIERS`, `NEW_TIER_NAME` / `NEW_TIER_COLOR`, `FREE_PLAN_MAX_TILES`, the codes `TEMPLATE_NOT_FOUND`, `TIER_NOT_FOUND`, `LAST_TIER`, `TILE_NOT_FOUND`, `TILE_LIMIT_REACHED` and their developer messages.                                                               |
+| Configuration | `core/config.py`                                                              | `DELETED_TEMPLATE_RETENTION_DAYS`.                                                                                                                                                                                                                                                                        |
+| Migration     | `migrations/versions/855df2a2ea2b_create_templates_tiers_and_tiles.py`        | Creates the three tables; `a2ee58bb5b26_add_image_id_to_tiles.py` adds `tiles.image_id`.                                                                                                                                                                                                                  |
+| Command       | `scripts/purge_deleted_templates.py` (in `backend/`)                          | Purge of §2.3.                                                                                                                                                                                                                                                                                            |
 
 ### Frontend (`frontend/src/`)
 

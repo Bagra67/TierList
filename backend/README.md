@@ -266,7 +266,7 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Time allowed on Google's page before the sign-in attempt expires                                                                                                             | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Timeout of the calls to Google (code exchange, public keys)                                                                                                                  | `10`                                             |
 
-Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/technical/emails.md). Authentication is described in the [authentication guide](../docs/technical/authentication.md), templates and their purge in the [templates guide](../docs/technical/templates.md), tile images and their S3 storage (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL`; SeaweedFS values in `.env.example`) in the [images guide](../docs/technical/images.md#24-limits-and-settings). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
+Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/technical/emails.md). Authentication is described in the [authentication guide](../docs/technical/authentication.md), templates and their purge in the [templates guide](../docs/technical/templates.md), tile images, their S3 storage (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL`; SeaweedFS values in `.env.example`), the upload limit (`IMAGE_UPLOADS_PER_HOUR_MAX`) and the garbage collection (`UNUSED_IMAGE_RETENTION_DAYS`) in the [images guide](../docs/technical/images.md#24-limits-and-settings). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
 The same file is read by the PostgreSQL container: changing the password **after** the volume was created has no effect on an existing database (you then need `docker compose down -v`, which deletes the data).
 
@@ -350,23 +350,26 @@ Every error response of the API has the same JSON shape, `ErrorResponse` (`app/c
 
 Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 
-| Code                        | Status      | Meaning                                                                    |
-| --------------------------- | ----------- | -------------------------------------------------------------------------- |
-| `internal_error`            | 500         | Unexpected error                                                           |
-| `validation_error`          | 422         | Invalid request (see `errors`)                                             |
-| `http_error`                | any         | `HTTPException` without a dedicated code                                   |
-| `database_unavailable`      | 503         | `GET /health/db`: the database does not answer                             |
-| `not_authenticated`         | 401         | Missing or invalid access token                                            |
-| `email_already_registered`  | 409         | Registration with an email already used                                    |
-| `invalid_credentials`       | 401         | Wrong email or password                                                    |
-| `session_expired`           | 401         | Missing, expired or revoked refresh token                                  |
-| `incorrect_password`        | 403         | Wrong password when deleting the account                                   |
-| `reauthentication_required` | 403         | Google account whose last sign-in is too old to confirm the deletion       |
-| `invalid_token`             | 400         | Link received by email invalid, expired, or no longer matching the account |
-| `password_too_short`        | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
-| `template_not_found`        | 404         | Template unknown, deleted or owned by another user (indistinguishable)     |
-| `image_unsupported_format`  | 415         | `POST /images`: not a JPEG, PNG or WebP image, or unreadable               |
-| `image_too_large`           | 413         | `POST /images`: file over `IMAGE_UPLOAD_MAX_BYTES`; `params.max_bytes`     |
-| `image_too_many_pixels`     | 422         | `POST /images`: decoded image over `IMAGE_MAX_SOURCE_PIXELS`               |
+| Code                         | Status      | Meaning                                                                    |
+| ---------------------------- | ----------- | -------------------------------------------------------------------------- |
+| `internal_error`             | 500         | Unexpected error                                                           |
+| `validation_error`           | 422         | Invalid request (see `errors`)                                             |
+| `http_error`                 | any         | `HTTPException` without a dedicated code                                   |
+| `database_unavailable`       | 503         | `GET /health/db`: the database does not answer                             |
+| `not_authenticated`          | 401         | Missing or invalid access token                                            |
+| `email_already_registered`   | 409         | Registration with an email already used                                    |
+| `invalid_credentials`        | 401         | Wrong email or password                                                    |
+| `session_expired`            | 401         | Missing, expired or revoked refresh token                                  |
+| `incorrect_password`         | 403         | Wrong password when deleting the account                                   |
+| `reauthentication_required`  | 403         | Google account whose last sign-in is too old to confirm the deletion       |
+| `invalid_token`              | 400         | Link received by email invalid, expired, or no longer matching the account |
+| `password_too_short`         | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
+| `template_not_found`         | 404         | Template unknown, deleted or owned by another user (indistinguishable)     |
+| `image_unsupported_format`   | 415         | `POST /images`: not a JPEG, PNG or WebP image, or unreadable               |
+| `image_too_large`            | 413         | `POST /images`: file over `IMAGE_UPLOAD_MAX_BYTES`; `params.max_bytes`     |
+| `image_too_many_pixels`      | 422         | `POST /images`: decoded image over `IMAGE_MAX_SOURCE_PIXELS`               |
+| `image_upload_limit_reached` | 429         | `POST /images`: `IMAGE_UPLOADS_PER_HOUR_MAX` reached; `params.max_uploads` |
+| `image_not_found`            | 404         | Tile `image_id` unknown or of another user                                 |
+| `tile_empty`                 | 422         | Tile without text nor image                                                |
 
 For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
