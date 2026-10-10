@@ -52,4 +52,4 @@ Points not decided yet, taken as the simplest option for this milestone. Each on
   - items from past rounds **cannot be moved** before the final cooldown;
   - on a private board, participants see **who has placed** the current item, not where;
   - the room admin can **end the cooldown early**.
-- **How statistics are computed** (median of ordered rankings, effect of absent votes) is decided at implementation (see [roadmap.md](../roadmap.md#technical-questions)).
+- **How statistics are computed** (median of ordered rankings, effect of absent votes) is decided: see the [results guide](../../technical/results.md).

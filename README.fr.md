@@ -9,7 +9,7 @@ Application TierList composée de deux projets dans un seul dépôt git :
 | [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite                         | pnpm, ESLint, Prettier                |
 
-Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Templates (modèle, API, purge) : [docs/technical/templates.fr.md](docs/technical/templates.fr.md). Temps réel des rooms (décision : WebSocket, reconnexion, timers, montée en charge) : [docs/technical/realtime.fr.md](docs/technical/realtime.fr.md). Images des tuiles (décision : formats, compression, stockage S3, modération) : [docs/technical/images.fr.md](docs/technical/images.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
+Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Templates (modèle, API, purge) : [docs/technical/templates.fr.md](docs/technical/templates.fr.md). Temps réel des rooms (décision : WebSocket, reconnexion, timers, montée en charge) : [docs/technical/realtime.fr.md](docs/technical/realtime.fr.md). Images des tuiles (décision : formats, compression, stockage S3, modération) : [docs/technical/images.fr.md](docs/technical/images.fr.md). Calcul des résultats (classement médian, votes absents, exemples chiffrés) : [docs/technical/results.fr.md](docs/technical/results.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
 
 ```
 TierList/
@@ -25,7 +25,7 @@ TierList/
 ├── dev.cmd / dev.ps1   # Idem pour PowerShell / cmd
 ├── docs/
 │   ├── product/        # Docs métier : produit, règles du jeu, permissions, roadmap
-│   └── technical/      # Docs techniques : architecture, authentification, templates, images, temps réel, guide des tests, i18n, emails, releases
+│   └── technical/      # Docs techniques : architecture, authentification, templates, images, temps réel, résultats, guide des tests, i18n, emails, releases
 ├── TODO.md / TODO.fr.md       # Étapes manuelles restantes (déploiement, décisions)
 └── README.md / README.fr.md   # Ce fichier (anglais / français)
 ```
