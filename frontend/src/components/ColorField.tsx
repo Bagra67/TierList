@@ -3,7 +3,9 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 interface ColorFieldProps {
   label: string;
   value: string;
-  onSave: (color: string) => void;
+  // Promesse rejetée si l'enregistrement échoue : le sélecteur revient alors à la couleur
+  // enregistrée
+  onSave: (color: string) => Promise<unknown>;
 }
 
 // Sélecteur de couleur natif. L'événement input (onChange de React) suit chaque mouvement
@@ -18,7 +20,8 @@ export function ColorField({ label, value, onSave }: ColorFieldProps) {
     if (input === null) return;
     function handleCommit() {
       if (input !== null && input.value.toUpperCase() !== value) {
-        onSave(input.value);
+        // L'erreur elle-même est affichée par le parent
+        onSave(input.value).catch(() => setDraft(value));
       }
     }
     input.addEventListener('change', handleCommit);

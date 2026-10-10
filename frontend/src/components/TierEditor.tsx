@@ -79,7 +79,9 @@ export function TierEditor({ template }: TierEditorProps) {
                 key={tier.color}
                 label={t('templates.editor.tierColor', { name: tier.name })}
                 value={tier.color}
-                onSave={(color) => updateMutation.mutate({ tierId: tier.id, changes: { color } })}
+                onSave={(color) =>
+                  updateMutation.mutateAsync({ tierId: tier.id, changes: { color } })
+                }
               />
               <InlineEditField
                 key={tier.name}

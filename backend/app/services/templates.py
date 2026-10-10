@@ -148,6 +148,11 @@ class TemplateService:
         """Renomme, recolore et/ou déplace un tier ; les champs absents restent tels quels."""
         template: Template = self._get_for_change(owner, template_id)
         tier: Tier = self._get_tier(template, tier_id)
+        if not changes:
+            # Rien à modifier : la date de dernière modification ne bouge pas (le commit libère
+            # seulement le verrou)
+            self._session.commit()
+            return template
         for field_name, value in changes.items():
             # La position ne se recopie pas : déplacer un tier décale aussi les autres
             if field_name != "position":
@@ -189,6 +194,11 @@ class TemplateService:
         """Change le texte et/ou la place d'une tuile dans l'ordre du template."""
         template: Template = self._get_for_change(owner, template_id)
         tile: Tile = self._get_tile(template, tile_id)
+        if not changes:
+            # Rien à modifier : la date de dernière modification ne bouge pas (le commit libère
+            # seulement le verrou)
+            self._session.commit()
+            return template
         for field_name, value in changes.items():
             # La position ne se recopie pas : déplacer une tuile décale aussi les autres
             if field_name != "position":
