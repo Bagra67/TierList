@@ -13,7 +13,7 @@ Frontend **React 19 + TypeScript**, construit avec **Vite**, l'interface web de 
 
 ## 1. Prérequis
 
-- **Node.js 24 LTS** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
+- **Node.js 26** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
 - **pnpm** : `npm install -g pnpm`, puis `pnpm --version`. La version exacte est épinglée dans le champ `packageManager` de `package.json` et verrouillée dans `pnpm-lock.yaml`.
 
 ---
