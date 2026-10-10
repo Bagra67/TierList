@@ -95,4 +95,4 @@ Deliberately postponed (YAGNI), to decide when a feature needs them:
 
 - **Production Docker images and deployment**: once a hosting target is chosen.
 
-Decided since: authentication (JWT access token + rotating refresh token, see the [authentication guide](authentication.md)) frontend routing (react-router), and the UI library (Tailwind CSS v4 + shadcn/ui).
+Decided since: authentication (JWT access token + rotating refresh token, see the [authentication guide](authentication.md)), real time for rooms (WebSocket push + REST commands, see the [real-time guide](realtime.md)), frontend routing (react-router), and the UI library (Tailwind CSS v4 + shadcn/ui).
