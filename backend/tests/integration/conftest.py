@@ -1,24 +1,28 @@
 import os
 from collections.abc import Callable, Iterator
+from unittest.mock import MagicMock
 
 import pytest
 from alembic import command
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_email_sender
+from app.api.dependencies import get_email_sender, get_image_storage
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
 from app.services.email import Email, EmailSender
+from app.services.image_storage import ImageStorage, create_image_storage
 from tests.integration.helpers import alembic_config
 
 
-def _database_unavailable(reason: str) -> None:
-    # En CI, une base injoignable est une erreur : on ne masque jamais un test d'intégration.
+def _service_unavailable(reason: str) -> None:
+    # En CI, un service injoignable (base, stockage S3) est une erreur : on ne masque jamais un
+    # test d'intégration.
     if os.environ.get("CI") == "true":
         pytest.fail(reason)
     pytest.skip(reason)
@@ -29,7 +33,7 @@ def _test_database_url(suffix: str) -> URL:
     try:
         settings = get_settings()
     except ValidationError:
-        _database_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
+        _service_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
         raise
 
     test_database = f"{settings.postgres_db}{suffix}"
@@ -48,7 +52,7 @@ def _test_database_url(suffix: str) -> URL:
                 quoted_name = connection.dialect.identifier_preparer.quote(test_database)
                 connection.execute(text(f"CREATE DATABASE {quoted_name}"))
     except OperationalError:
-        _database_unavailable(
+        _service_unavailable(
             "PostgreSQL is not reachable: start it with `docker compose up -d --wait`"
         )
         raise
@@ -95,6 +99,24 @@ def db_session(migrated_engine: Engine) -> Iterator[Session]:
             transaction.rollback()
 
 
+@pytest.fixture(scope="session")
+def s3_image_storage() -> ImageStorage:
+    """Vrai stockage des images, configuré par les réglages IMAGE_S3_* (SeaweedFS en local et en
+    CI) : seuls les tests du stockage l'utilisent, les tests d'API ont FakeImageStorage."""
+    settings: Settings = get_settings()
+    storage: ImageStorage = create_image_storage(settings)
+    try:
+        # Supprimer une clé absente ne fait rien, mais vérifie l'adresse, les clés et le bucket
+        storage.delete("connectivity-check")
+    except (BotoCoreError, ClientError):
+        _service_unavailable(
+            "S3 image storage is not reachable: start it with `docker compose up -d --wait` "
+            "and set the IMAGE_S3_* settings (backend/.env.example)"
+        )
+        raise
+    return storage
+
+
 class FakeEmailSender(EmailSender):
     """Garde les emails au lieu de les envoyer : aucun test ne contacte un serveur SMTP."""
 
@@ -111,16 +133,45 @@ def sent_emails() -> list[Email]:
     return []
 
 
+FAKE_IMAGE_BASE_URL = "https://images.example.com"
+
+
+class FakeImageStorage(ImageStorage):
+    """Garde les images en mémoire : les tests d'API ne contactent pas le stockage S3 (le vrai
+    stockage est testé par test_image_storage.py)."""
+
+    def __init__(self, stored: dict[str, bytes]) -> None:
+        super().__init__(client=MagicMock(), bucket="fake", public_base_url=FAKE_IMAGE_BASE_URL)
+        self.stored = stored
+
+    def save(self, key: str, data: bytes) -> None:
+        self.stored[key] = data
+
+    def delete(self, key: str) -> None:
+        self.stored.pop(key, None)
+
+
 @pytest.fixture
-def client(db_session: Session, sent_emails: list[Email]) -> Iterator[TestClient]:
+def stored_images() -> dict[str, bytes]:
+    """Images « stockées » pendant le test, par clé de stockage."""
+    return {}
+
+
+@pytest.fixture
+def client(
+    db_session: Session, sent_emails: list[Email], stored_images: dict[str, bytes]
+) -> Iterator[TestClient]:
     email_sender = FakeEmailSender(sent_emails)
+    image_storage = FakeImageStorage(stored_images)
     app.dependency_overrides[get_db_session] = lambda: db_session
     app.dependency_overrides[get_email_sender] = lambda: email_sender
+    app.dependency_overrides[get_image_storage] = lambda: image_storage
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
         app.dependency_overrides.pop(get_email_sender, None)
+        app.dependency_overrides.pop(get_image_storage, None)
 
 
 def http_test_settings() -> Settings:
