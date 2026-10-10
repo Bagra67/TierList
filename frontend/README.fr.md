@@ -106,17 +106,18 @@ frontend/
 │   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
 │   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
+│   │   ├── templates.ts    # Appels /templates + hooks useTemplates, useTemplate, useCreateTemplate, useDeleteTemplate
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
-│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
 │   ├── lib/utils.ts        # cn() : fusionne les classes Tailwind (utilisé par shadcn/ui)
 │   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
-│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage) + tests
+│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
 │   │   ├── renderWithQueryClient.tsx # render() dans un QueryClient neuf

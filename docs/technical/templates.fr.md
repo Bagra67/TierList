@@ -16,7 +16,7 @@ Un template est ce qu'on classe : ses **tiers** (les lignes de la tier list) et 
 | Renommer un template  | `PATCH /templates/{id}`  | Le nouveau nom ; la date de dernière modification est mise à jour.                                                       |
 | Supprimer un template | `DELETE /templates/{id}` | Le template disparaît aussitôt pour son propriétaire, puis est effacé définitivement après la durée de rétention (§2.3). |
 
-Les écrans arrivent avec #78 ; pour l'instant, seule l'API existe.
+Côté frontend, la page _Mes templates_ liste, crée et supprime les templates ; ouvrir un template affiche ses tiers, en lecture seule jusqu'à l'arrivée de l'éditeur (#79, #80). Voir §3.
 
 ### Règles
 
@@ -128,8 +128,19 @@ Chaque route exige l'access token Bearer (`401` sinon).
 
 ### Frontend (`frontend/src/`)
 
-Seuls les types générés (`api/schema.d.ts`) et la traduction `errors.api.template_not_found` existent pour l'instant ; les écrans arrivent avec #78.
+| Couche      | Fichier                                         | Contenu                                                                                                                                                         |
+| ----------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API         | `api/templates.ts`                              | Une fonction par endpoint utilisé (liste, lecture, création, suppression) et les hooks `useTemplates`, `useTemplate`, `useCreateTemplate`, `useDeleteTemplate`. |
+| Constantes  | `constants/templates.ts`, `constants/routes.ts` | `TEMPLATE_NAME_MAX_LENGTH` (égale au backend), les clés de cache ; `ROUTES.TEMPLATES`, `ROUTES.TEMPLATE_EDITOR` et `templateEditorPath(id)`.                    |
+| Pages       | `pages/TemplatesPage.tsx`                       | _Mes templates_ (`/templates`) : nom, nombre de tuiles et date de dernière modification de chaque template, état vide, états de chargement et d'erreur.         |
+|             | `pages/TemplateEditorPage.tsx`                  | `/templates/:templateId` : nom et tiers du template, en lecture seule pour l'instant ; l'édition des tiers (#79) et des tuiles (#80) viendra ici.               |
+| Composants  | `components/CreateTemplateDialog.tsx`           | `<dialog>` natif : nom obligatoire, erreur du champ issue de la `422`, puis ouverture du nouveau template.                                                      |
+|             | `components/DeleteTemplateDialog.tsx`           | `<dialog>` natif de confirmation ; la liste est rafraîchie après la suppression.                                                                                |
+| Navigation  | `components/MainNav.tsx` (dans `Layout.tsx`)    | Liens _Accueil_ et _Mes templates_ dans l'en-tête, affichés une fois connecté.                                                                                  |
+| Traductions | `i18n/locales/fr.ts`, `en.ts`                   | `nav.*`, `templates.*` (nombre de tuiles avec pluriel, date formatée dans la langue de l'interface) et `errors.api.template_not_found`.                         |
+
+Chaque modification invalide le cache `['templates']` : la liste et les templates ouverts sont relus.
 
 ### Tests
 
-`backend/tests/integration/test_templates.py` (endpoints) et `test_template_purge.py` (purge), sur un vrai PostgreSQL ; décrits dans le [guide des tests](testing.fr.md).
+`backend/tests/integration/test_templates.py` (endpoints) et `test_template_purge.py` (purge), sur un vrai PostgreSQL ; `frontend/src/pages/TemplatesPage.test.tsx` et `TemplateEditorPage.test.tsx` pour les écrans. Tous sont décrits dans le [guide des tests](testing.fr.md).
