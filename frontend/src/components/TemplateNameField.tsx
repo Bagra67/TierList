@@ -1,8 +1,13 @@
-import { useTranslation } from 'react-i18next';
+import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
-import { type Template, useRenameTemplate } from '../api/templates';
+import { type Template, type TemplateChange, useRenameTemplate } from '../api/templates';
 import { TEMPLATE_NAME_MAX_LENGTH } from '../constants/templates';
-import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import {
+  type FieldError,
+  getFieldErrors,
+  translateError,
+  translateFieldError,
+} from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { InlineEditField } from './InlineEditField';
 
@@ -12,9 +17,9 @@ interface TemplateNameFieldProps {
 
 // Nom du template, enregistré dès qu'il est validé ou que le champ est quitté
 export function TemplateNameField({ template }: TemplateNameFieldProps) {
-  const renameMutation = useRenameTemplate(template.id);
-  const { t } = useTranslation();
-  const nameError = getFieldErrors(renameMutation.error).name;
+  const renameMutation: TemplateChange<string> = useRenameTemplate(template.id);
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const nameError: FieldError | undefined = getFieldErrors(renameMutation.error).name;
 
   return (
     <div className="flex w-full flex-col gap-1">

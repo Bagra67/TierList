@@ -1,14 +1,16 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Template, Tier } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
 
-const templateId = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
-const templateUrl = `/templates/${templateId}`;
+type BackendMock = ReturnType<typeof stubBackend>;
+
+const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
+const templateUrl: string = `/templates/${templateId}`;
 
 function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
   return { id: `tier-${name}`, name, color, position };
@@ -25,8 +27,8 @@ function makeTemplate(tiers: Tier[], name = 'Chips'): Template {
   };
 }
 
-const [tierS, tierA, tierB] = [makeTier('S', 0), makeTier('A', 1), makeTier('B', 2)];
-const chips = makeTemplate([tierS, tierA, tierB]);
+const [tierS, tierA, tierB]: Tier[] = [makeTier('S', 0), makeTier('A', 1), makeTier('B', 2)];
+const chips: Template = makeTemplate([tierS, tierA, tierB]);
 
 function renderEditor() {
   return renderWithQueryClient(
@@ -45,8 +47,10 @@ function displayedTierNames(): string[] {
     .map((input) => (input as HTMLInputElement).value);
 }
 
-async function requestBody(fetchMock: ReturnType<typeof stubBackend>, method: string) {
-  const call = fetchMock.mock.calls.find(([request]) => request.method === method);
+async function requestBody(fetchMock: BackendMock, method: string): Promise<unknown> {
+  const call: [request: Request] | undefined = fetchMock.mock.calls.find(
+    ([request]) => request.method === method,
+  );
   return call?.[0].json();
 }
 
@@ -70,7 +74,9 @@ describe('TemplateEditorPage', () => {
   });
 
   it('shows an error when the template does not exist', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError: MockInstance<typeof console.error> = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     stubBackend({ [`GET ${templateUrl}`]: () => errorResponse(404, 'template_not_found') });
 
     renderEditor();
@@ -81,13 +87,15 @@ describe('TemplateEditorPage', () => {
 
   describe('template name', () => {
     it('renames the template when the field is validated', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}`]: () =>
           Response.json(makeTemplate([tierS, tierA, tierB], 'Crisps')),
       });
       renderEditor();
-      const nameField = await screen.findByRole('textbox', { name: 'Nom du template' });
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du template',
+      });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
       fireEvent.submit(nameField);
@@ -97,9 +105,13 @@ describe('TemplateEditorPage', () => {
     });
 
     it('sends nothing when the name did not change', async () => {
-      const fetchMock = stubBackend({ [`GET ${templateUrl}`]: () => Response.json(chips) });
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
       renderEditor();
-      const nameField = await screen.findByRole('textbox', { name: 'Nom du template' });
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du template',
+      });
 
       fireEvent.change(nameField, { target: { value: '  Chips ' } });
       fireEvent.blur(nameField);
@@ -123,7 +135,9 @@ describe('TemplateEditorPage', () => {
           }),
       });
       renderEditor();
-      const nameField = await screen.findByRole('textbox', { name: 'Nom du template' });
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du template',
+      });
 
       fireEvent.change(nameField, { target: { value: '   ' } });
       fireEvent.blur(nameField);
@@ -135,13 +149,15 @@ describe('TemplateEditorPage', () => {
 
   describe('tiers', () => {
     it('renames a tier when the field loses focus', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
           Response.json(makeTemplate([{ ...tierS, name: 'Top' }, tierA, tierB])),
       });
       renderEditor();
-      const firstTierName = await screen.findByRole('textbox', { name: 'Nom du tier 1' });
+      const firstTierName: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du tier 1',
+      });
 
       fireEvent.change(firstTierName, { target: { value: 'Top' } });
       fireEvent.blur(firstTierName);
@@ -151,13 +167,13 @@ describe('TemplateEditorPage', () => {
     });
 
     it('recolors a tier once the color is chosen', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
           Response.json(makeTemplate([tierS, { ...tierA, color: '#112233' }, tierB])),
       });
       renderEditor();
-      const colorField = await screen.findByLabelText('Couleur du tier A');
+      const colorField: HTMLElement = await screen.findByLabelText('Couleur du tier A');
 
       fireEvent.change(colorField, { target: { value: '#112233' } });
 
@@ -168,7 +184,7 @@ describe('TemplateEditorPage', () => {
     });
 
     it('moves a tier with the move down button', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
           Response.json(makeTemplate([tierA, tierS, tierB])),
@@ -192,7 +208,7 @@ describe('TemplateEditorPage', () => {
     });
 
     it('adds a tier at the bottom', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`POST ${templateUrl}/tiers`]: () =>
           Response.json(makeTemplate([tierS, tierA, tierB, makeTier('?', 3, '#BFBFBF')]), {

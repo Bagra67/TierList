@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 
 interface ColorFieldProps {
   label: string;
@@ -10,11 +10,11 @@ interface ColorFieldProps {
 // dans le sélecteur : il ne sert qu'à l'aperçu. La couleur n'est enregistrée qu'à l'événement
 // change natif, émis quand l'utilisateur valide son choix. Le parent lui donne key={value}.
 export function ColorField({ label, value, onSave }: ColorFieldProps) {
-  const [draft, setDraft] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState<string>(value);
+  const inputRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const input = inputRef.current;
+    const input: HTMLInputElement | null = inputRef.current;
     if (input === null) return;
     function handleCommit() {
       if (input !== null && input.value.toUpperCase() !== value) {

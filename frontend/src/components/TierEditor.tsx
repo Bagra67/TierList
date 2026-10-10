@@ -1,10 +1,12 @@
 import { verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useId } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
   type Template,
+  type TemplateChange,
   type Tier,
+  type TierUpdate,
   useAddTier,
   useDeleteTier,
   useUpdateTier,
@@ -23,19 +25,22 @@ interface TierEditorProps {
 
 // Tiers d'un template (US-1.4) : chaque action est enregistrée tout de suite
 export function TierEditor({ template }: TierEditorProps) {
-  const titleId = useId();
-  const addMutation = useAddTier(template.id);
-  const updateMutation = useUpdateTier(template.id);
-  const deleteMutation = useDeleteTier(template.id);
-  const { t } = useTranslation();
+  const titleId: string = useId();
+  const addMutation: TemplateChange<void> = useAddTier(template.id);
+  const updateMutation: TemplateChange<TierUpdate> = useUpdateTier(template.id);
+  const deleteMutation: TemplateChange<string> = useDeleteTier(template.id);
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiers: Tier[] = template.tiers;
   // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
-  const isChangingOrder =
+  const isChangingOrder: boolean =
     addMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
   // L'erreur de champ de la 422 concerne le tier dont le nom vient d'être envoyé
-  const failedTierId = updateMutation.variables?.tierId;
-  const nameError = translateFieldError(t, getFieldErrors(updateMutation.error).name);
-  const lastError = addMutation.error ?? updateMutation.error ?? deleteMutation.error;
+  const failedTierId: string | undefined = updateMutation.variables?.tierId;
+  const nameError: string | undefined = translateFieldError(
+    t,
+    getFieldErrors(updateMutation.error).name,
+  );
+  const lastError: Error | null = addMutation.error ?? updateMutation.error ?? deleteMutation.error;
 
   function moveTier(tier: Tier, position: number) {
     updateMutation.mutate({ tierId: tier.id, changes: { position } });

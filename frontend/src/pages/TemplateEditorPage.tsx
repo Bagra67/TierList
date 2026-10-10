@@ -1,7 +1,8 @@
-import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { type UseTranslationResponse, useTranslation } from 'react-i18next';
+import { Link, type Params, useParams } from 'react-router';
 
-import { useTemplate } from '../api/templates';
+import { type Template, useTemplate } from '../api/templates';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
@@ -11,9 +12,14 @@ import { translateError } from '../errors/apiError';
 // Éditeur d'un template : son nom et ses tiers (US-1.4) ; les tuiles (#80) viendront s'y ajouter.
 export function TemplateEditorPage() {
   // Toujours présent : la route TEMPLATE_EDITOR déclare ce paramètre
-  const { templateId = '' } = useParams();
-  const { data: template, isPending, isError, error } = useTemplate(templateId);
-  const { t } = useTranslation();
+  const { templateId = '' }: Readonly<Params> = useParams();
+  const {
+    data: template,
+    isPending,
+    isError,
+    error,
+  }: UseQueryResult<Template> = useTemplate(templateId);
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
