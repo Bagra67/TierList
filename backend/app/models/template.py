@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.constants.templates import TEMPLATE_NAME_MAX_LENGTH
+from app.constants.templates import FREE_PLAN_MAX_TILES, TEMPLATE_NAME_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -36,3 +36,9 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     tiles: Mapped[list["Tile"]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tile.position"
     )
+
+    @property
+    def max_tiles(self) -> int:
+        """Nombre maximal de tuiles. Tout est gratuit pour l'instant : la limite dépendra du plan
+        du propriétaire quand les plans payants arriveront."""
+        return FREE_PLAN_MAX_TILES

@@ -36,3 +36,7 @@ class ErrorCode(StrEnum):
     TIER_NOT_FOUND = "tier_not_found"
     # Suppression du dernier tier refusée : une tier list a au moins un tier
     LAST_TIER = "last_tier"
+    # Tuile inexistante dans ce template
+    TILE_NOT_FOUND = "tile_not_found"
+    # Nombre maximal de tuiles atteint, avec le param max_tiles
+    TILE_LIMIT_REACHED = "tile_limit_reached"

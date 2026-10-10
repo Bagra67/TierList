@@ -1,5 +1,5 @@
 """Règles métier des templates : création avec les tiers par défaut, liste, renommage,
-configuration des tiers, suppression logique et purge définitive.
+configuration des tiers, tuiles, suppression logique et purge définitive.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 Un template n'est visible que de son propriétaire.
@@ -9,33 +9,44 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict
+from typing import TypedDict, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
 from app.core.config import Settings
-from app.exceptions.templates import LastTierError, TemplateNotFoundError, TierNotFoundError
+from app.exceptions.templates import (
+    LastTierError,
+    TemplateNotFoundError,
+    TierNotFoundError,
+    TileLimitReachedError,
+    TileNotFoundError,
+)
 from app.models.template import Template
 from app.models.tier import Tier
+from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
 
 
-def _renumber(tiers: list[Tier]) -> None:
+# Les tiers et les tuiles sont ordonnés de la même façon, par leur position
+Positioned = TypeVar("Positioned", Tier, Tile)
+
+
+def _renumber(items: list[Positioned]) -> None:
     """Positions continues 0..n-1 dans l'ordre de la liste (aucune contrainte d'unicité en base)."""
-    for position, tier in enumerate(tiers):
-        tier.position = position
+    for position, item in enumerate(items):
+        item.position = position
 
 
-def _move(tiers: list[Tier], tier: Tier, position: int) -> None:
-    """Déplace le tier à cette position ; au-delà de la fin, il passe en dernier."""
-    tiers.remove(tier)
-    tiers.insert(min(position, len(tiers)), tier)
-    _renumber(tiers)
+def _move(items: list[Positioned], item: Positioned, position: int) -> None:
+    """Déplace l'élément à cette position ; au-delà de la fin, il passe en dernier."""
+    items.remove(item)
+    items.insert(min(position, len(items)), item)
+    _renumber(items)
 
 
 @dataclass(frozen=True)
@@ -55,6 +66,14 @@ class TierChanges(TypedDict, total=False):
 
     name: str
     color: str
+    position: int
+
+
+class TileChanges(TypedDict, total=False):
+    """Modifications d'une tuile : seules les clés présentes changent. Hors position, chaque clé
+    est un attribut de Tile, recopié tel quel, comme pour TierChanges."""
+
+    text: str
     position: int
 
 
@@ -155,6 +174,49 @@ class TemplateService:
         self._save_change(template)
         return template
 
+    def add_tile(self, owner: User, template_id: uuid.UUID, text: str) -> Template:
+        """Ajoute une tuile texte à la fin ; refusé au-delà du nombre maximal de tuiles."""
+        template: Template = self._get_for_change(owner, template_id)
+        if len(template.tiles) >= template.max_tiles:
+            raise TileLimitReachedError(template.max_tiles)
+        new_tile: Tile = Tile(text=text, position=len(template.tiles))
+        template.tiles.append(new_tile)
+        self._save_change(template)
+        return template
+
+    def update_tile(
+        self,
+        owner: User,
+        template_id: uuid.UUID,
+        tile_id: uuid.UUID,
+        changes: TileChanges,
+    ) -> Template:
+        """Change le texte et/ou la place d'une tuile dans l'ordre du template."""
+        template: Template = self._get_for_change(owner, template_id)
+        tile: Tile = self._get_tile(template, tile_id)
+        if not changes:
+            # Rien à modifier : la date de dernière modification ne bouge pas (le commit libère
+            # seulement le verrou)
+            self._session.commit()
+            return template
+        for field_name, value in changes.items():
+            # La position ne se recopie pas : déplacer une tuile décale aussi les autres
+            if field_name != "position":
+                setattr(tile, field_name, value)
+        if "position" in changes:
+            _move(template.tiles, tile, changes["position"])
+        self._save_change(template)
+        return template
+
+    def delete_tile(self, owner: User, template_id: uuid.UUID, tile_id: uuid.UUID) -> Template:
+        template: Template = self._get_for_change(owner, template_id)
+        tile: Tile = self._get_tile(template, tile_id)
+        # delete-orphan : retirée de la liste, la tuile est supprimée de la base
+        template.tiles.remove(tile)
+        _renumber(template.tiles)
+        self._save_change(template)
+        return template
+
     def _get_for_change(self, owner: User, template_id: uuid.UUID) -> Template:
         """Template à modifier, verrouillé jusqu'au commit : les règles « au moins un tier » et
         « au plus max_tiles tuiles » tiennent même avec des requêtes simultanées."""
@@ -170,6 +232,13 @@ class TemplateService:
         de dernière modification : onupdate ne voit pas les changements des autres tables."""
         template.updated_at = func.clock_timestamp()
         self._session.commit()
+
+    @staticmethod
+    def _get_tile(template: Template, tile_id: uuid.UUID) -> Tile:
+        for tile in template.tiles:
+            if tile.id == tile_id:
+                return tile
+        raise TileNotFoundError
 
     @staticmethod
     def _get_tier(template: Template, tier_id: uuid.UUID) -> Tier:

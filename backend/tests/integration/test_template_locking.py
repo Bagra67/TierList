@@ -7,10 +7,12 @@ import pytest
 from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
+from app.constants.templates import FREE_PLAN_MAX_TILES
 from app.core.config import get_settings
-from app.exceptions.templates import LastTierError
+from app.exceptions.templates import LastTierError, TileLimitReachedError
 from app.models.template import Template
 from app.models.tier import Tier
+from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import templates as template_repository
 from app.services.templates import TemplateService
@@ -25,9 +27,9 @@ SECOND_REQUEST_HEAD_START_SECONDS = 0.3
 
 @pytest.fixture
 def committed_template(migrated_engine: Engine) -> Iterator[tuple[uuid.UUID, uuid.UUID]]:
-    """Utilisateur et template de deux tiers réellement validés en base : deux requêtes
-    simultanées utilisent deux connexions, ce que la session isolée des autres tests ne permet
-    pas. Supprimés à la fin."""
+    """Utilisateur et template réellement validés en base : deux requêtes simultanées utilisent
+    deux connexions, ce que la session isolée des autres tests ne permet pas. Le template a deux
+    tiers et une tuile de moins que la limite. Supprimés à la fin."""
     with Session(migrated_engine) as session:
         owner: User = User(email=f"lock-{uuid.uuid4()}@example.com", display_name="Lock")
         session.add(owner)
@@ -36,6 +38,9 @@ def committed_template(migrated_engine: Engine) -> Iterator[tuple[uuid.UUID, uui
         # Deux tiers seulement : supprimer les deux en même temps viderait la tier list
         for extra_tier in template.tiers[2:]:
             session.delete(extra_tier)
+        # Une seule tuile de plus atteint la limite : deux ajouts simultanés la dépasseraient
+        for position in range(FREE_PLAN_MAX_TILES - 1):
+            template.tiles.append(Tile(text=f"Tile {position}", position=position))
         session.commit()
         owner_id: uuid.UUID = owner.id
         template_id: uuid.UUID = template.id
@@ -90,3 +95,47 @@ def test_two_simultaneous_deletions_keep_the_last_tier(
             session.scalars(select(Tier).where(Tier.template_id == template_id)).all()
         )
     assert [tier.id for tier in remaining] == [second_tier_id]
+
+
+def test_two_simultaneous_additions_stay_within_the_tile_limit(
+    migrated_engine: Engine, committed_template: tuple[uuid.UUID, uuid.UUID]
+):
+    owner_id: uuid.UUID = committed_template[0]
+    template_id: uuid.UUID = committed_template[1]
+    errors: list[Exception] = []
+
+    with Session(migrated_engine) as first_request:
+        # Première requête : ajoute la dernière tuile permise, sans avoir encore validé
+        template: Template | None = template_repository.get_owned_template(
+            first_request, template_id, owner_id, for_update=True
+        )
+        assert template is not None
+        template.tiles.append(Tile(text="Last allowed", position=len(template.tiles)))
+        first_request.flush()
+
+        # Seconde requête, en parallèle : ajoute une tuile de plus
+        def add_one_more_tile() -> None:
+            with Session(migrated_engine) as second_request:
+                owner: User | None = second_request.get(User, owner_id)
+                assert owner is not None
+                try:
+                    TemplateService(second_request, get_settings()).add_tile(
+                        owner, template_id, "One too many"
+                    )
+                except TileLimitReachedError as error:
+                    errors.append(error)
+
+        second_request_thread: threading.Thread = threading.Thread(target=add_one_more_tile)
+        second_request_thread.start()
+        time.sleep(SECOND_REQUEST_HEAD_START_SECONDS)
+        first_request.commit()
+        second_request_thread.join(timeout=10)
+
+    # La seconde requête a attendu la première, puis a vu la limite atteinte
+    assert len(errors) == 1
+    with Session(migrated_engine) as session:
+        tile_texts: list[str | None] = list(
+            session.scalars(select(Tile.text).where(Tile.template_id == template_id)).all()
+        )
+    assert len(tile_texts) == FREE_PLAN_MAX_TILES
+    assert "One too many" not in tile_texts

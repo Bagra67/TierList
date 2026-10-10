@@ -21,6 +21,8 @@ type TemplateList = components['schemas']['TemplateListResponse'];
 type CreateTemplateRequest = components['schemas']['CreateTemplateRequest'];
 export type Tier = Template['tiers'][number];
 type TierChanges = components['schemas']['UpdateTierRequest'];
+export type Tile = Template['tiles'][number];
+type TileChanges = components['schemas']['UpdateTileRequest'];
 
 // Templates de l'utilisateur connecté, du plus récemment modifié au plus ancien (tri du backend)
 async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
@@ -79,6 +81,36 @@ async function deleteTier(templateId: string, tierId: string): Promise<Template>
   );
 }
 
+async function addTile(templateId: string, text: string): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.POST('/templates/{template_id}/tiles', {
+      params: { path: { template_id: templateId } },
+      body: { text },
+    }),
+  );
+}
+
+async function updateTile(
+  templateId: string,
+  tileId: string,
+  changes: TileChanges,
+): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PATCH('/templates/{template_id}/tiles/{tile_id}', {
+      params: { path: { template_id: templateId, tile_id: tileId } },
+      body: changes,
+    }),
+  );
+}
+
+async function deleteTile(templateId: string, tileId: string): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.DELETE('/templates/{template_id}/tiles/{tile_id}', {
+      params: { path: { template_id: templateId, tile_id: tileId } },
+    }),
+  );
+}
+
 async function deleteTemplate(templateId: string): Promise<void> {
   throwIfError(
     await apiClient.DELETE('/templates/{template_id}', {
@@ -133,8 +165,9 @@ export type TemplateChange<Variables> = UseMutationResult<
   Template | undefined
 >;
 
-// Déplacement d'un tier, connu avant la réponse du backend
+// Déplacement d'un tier ou d'une tuile, connu avant la réponse du backend
 interface PendingMove {
+  list: 'tiers' | 'tiles';
   itemId: string;
   position: number;
 }
@@ -157,6 +190,13 @@ function moveItem<Item extends Positioned>(
   return reordered.map((item, index) => ({ ...item, position: index }));
 }
 
+function applyMove(template: Template, move: PendingMove): Template {
+  if (move.list === 'tiers') {
+    return { ...template, tiers: moveItem(template.tiers, move.itemId, move.position) };
+  }
+  return { ...template, tiles: moveItem(template.tiles, move.itemId, move.position) };
+}
+
 // Mutation qui modifie un template ouvert dans l'éditeur et renvoie le template à jour. Tout ce
 // qui est commun à ces modifications est écrit ici une seule fois : le template renvoyé remplace
 // celui du cache et, quand getMove décrit un déplacement, celui-ci est affiché tout de suite
@@ -177,8 +217,7 @@ function useTemplateChange<Variables = void>(
       await queryClient.cancelQueries({ queryKey });
       const previous: Template | undefined = queryClient.getQueryData<Template>(queryKey);
       if (previous !== undefined) {
-        const tiers: Tier[] = moveItem(previous.tiers, move.itemId, move.position);
-        queryClient.setQueryData<Template>(queryKey, { ...previous, tiers });
+        queryClient.setQueryData<Template>(queryKey, applyMove(previous, move));
       }
       return previous;
     },
@@ -209,10 +248,34 @@ export function useUpdateTier(templateId: string): TemplateChange<TierUpdate> {
     ({ tierId, changes }: TierUpdate) =>
       changes.position === undefined || changes.position === null
         ? undefined
-        : { itemId: tierId, position: changes.position },
+        : { list: 'tiers', itemId: tierId, position: changes.position },
   );
 }
 
 export function useDeleteTier(templateId: string): TemplateChange<string> {
   return useTemplateChange(templateId, (tierId: string) => deleteTier(templateId, tierId));
+}
+
+export function useAddTile(templateId: string): TemplateChange<string> {
+  return useTemplateChange(templateId, (text: string) => addTile(templateId, text));
+}
+
+export interface TileUpdate {
+  tileId: string;
+  changes: TileChanges;
+}
+
+export function useUpdateTile(templateId: string): TemplateChange<TileUpdate> {
+  return useTemplateChange(
+    templateId,
+    ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
+    ({ tileId, changes }: TileUpdate) =>
+      changes.position === undefined || changes.position === null
+        ? undefined
+        : { list: 'tiles', itemId: tileId, position: changes.position },
+  );
+}
+
+export function useDeleteTile(templateId: string): TemplateChange<string> {
+  return useTemplateChange(templateId, (tileId: string) => deleteTile(templateId, tileId));
 }

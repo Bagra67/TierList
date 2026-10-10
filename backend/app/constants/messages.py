@@ -27,6 +27,9 @@ PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long
 TEMPLATE_NOT_FOUND = "Template not found"
 TIER_NOT_FOUND = "Tier not found"
 LAST_TIER = "A template keeps at least one tier"
+TILE_NOT_FOUND = "Tile not found"
+# {max_tiles} est remplacé par la limite du plan
+TILE_LIMIT_REACHED = "A template has at most {max_tiles} tiles"
 
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
@@ -36,3 +39,5 @@ INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
 TEMPLATE_NOT_FOUND_DESCRIPTION = "Template not found"
 TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION = "Template or tier not found"
 LAST_TIER_DESCRIPTION = "The last tier of a template cannot be deleted"
+TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION = "Template or tile not found"
+TILE_LIMIT_REACHED_DESCRIPTION = "Maximum number of tiles reached"
