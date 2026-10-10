@@ -2,7 +2,7 @@
 
 English | [Français](images.fr.md)
 
-How tile images are received, compressed, stored, served, cleaned up and moderated. **This is a decision, not implemented yet** (spike #75): only the upload limits exist in the code (§2.4); the rest is built in #81, and §3 will be filled in then. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
+How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, built in #81: **the upload, the compression and the storage are implemented** (§3); attaching an image to a tile, the upload limit per account, the garbage collection and the editor come with the rest of #81. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
 
@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-Everything except the two upload limits of §2.4: no upload, storage or display of images exists in the code (#81).
+An uploaded image is not attached to a tile yet: `image_id` on tiles, the upload limit per account and hour, the garbage collection and the template editor come with the rest of #81. The moderation features are separate issues (§2.9).
 
 ## 2. Technical design
 
@@ -33,25 +33,27 @@ Everything except the two upload limits of §2.4: no upload, storage or display 
 
 ### 2.2 Accepted files
 
-- **JPEG, PNG, WebP and GIF** (only the first frame of an animated GIF is kept).
+- **JPEG, PNG and WebP** (only the first frame of an animated PNG or WebP is kept).
 - The format is detected from the **content** of the file by Pillow, never from its extension or its `Content-Type`, which the client chooses freely.
-- **Refused**: SVG (it can contain scripts, hence XSS), HEIC and AVIF (an extra decoder would be needed; browsers already convert iPhone photos to JPEG when uploading them), and anything Pillow cannot open.
+- **Refused**: GIF (product decision in #81: tiles are still pictures), SVG (it can contain scripts, hence XSS), HEIC and AVIF (an extra decoder would be needed; browsers already convert iPhone photos to JPEG when uploading them), and anything Pillow cannot open, truncated files included.
 
 ### 2.3 Processing
 
 Every accepted image goes through the same pipeline; the received file is **never stored**:
 
-1. open and verify the file (Pillow);
+1. open and verify the file (Pillow), refusing it if its decoded image would have too many pixels: only the header is read for that check;
 2. apply the EXIF orientation (`ImageOps.exif_transpose`), so that phone photos are upright;
-3. convert the color mode, **keeping transparency** (PNG, WebP, GIF);
-4. shrink it to fit in **512 × 512 px**, keeping its proportions, never enlarged;
-5. encode it in **WebP, quality 80**, without any metadata (EXIF, GPS position: privacy).
+3. convert the color mode, **keeping transparency** (PNG, WebP);
+4. resize it so that its **longest side is 512 px**, keeping its proportions, with the **Lanczos** filter: a larger image is shrunk (4000 × 3000 gives 512 × 384), a smaller one is **enlarged** (200 × 100 gives 512 × 256), never cropped nor stretched;
+5. encode it in **WebP, quality 80**, without any metadata (EXIF, GPS position: privacy). Only the color profile (ICC) is kept, otherwise wide-gamut photos (Display P3) would look dull.
 
 Why 512 px: the largest display is about 150 CSS px, and a screen with a pixel ratio of 3 needs about 450 real pixels. A single size is stored: the small tiles use the same file (no thumbnails, YAGNI). WebP is read by every current browser and is much lighter than JPEG or PNG at equal quality.
 
+Why enlarge small images (decided in #81): every stored image then has the same size, and a small image is shown as sharp as possible in the large frame. Lanczos is the classic interpolation filter with the best quality, the one image editors use; it is part of Pillow, so no extra library. AI upscalers (Real-ESRGAN…) are excluded. Enlarging does not invent details: a tiny image (a 32 px icon, pixel art) comes out smooth and slightly blurred, not pixelated.
+
 Re-encoding also neutralises files crafted to be both an image and something else (polyglots). The processing uses the CPU: the upload route is synchronous, so FastAPI runs it in its threadpool without blocking the event loop.
 
-Fixed values become constants in `app/constants/` with #81 (`IMAGE_OUTPUT_MAX_SIDE_PX = 512`, `IMAGE_WEBP_QUALITY = 80`); values that may differ between environments are settings (§2.4).
+Fixed values are constants in `app/constants/images.py` (`IMAGE_OUTPUT_MAX_SIDE_PX = 512`, `IMAGE_WEBP_QUALITY = 80`, accepted formats); values that may differ between environments are settings (§2.4).
 
 ### 2.4 Limits and settings
 
@@ -60,20 +62,26 @@ Fixed values become constants in `app/constants/` with #81 (`IMAGE_OUTPUT_MAX_SI
 | `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file, checked while reading it; keep it aligned with the reverse proxy limit.                                                 | `10485760` (10 MiB) |
 | `IMAGE_MAX_SOURCE_PIXELS` | Maximum number of pixels of the decoded image (Pillow `MAX_IMAGE_PIXELS`): protects against decompression bombs, small files that expand into huge images. | `40000000` (40 Mpx) |
 
-10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors. Both are in `Settings` (`app/core/config.py`) and `backend/.env.example` **now**.
+10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors.
 
-Added **with #81**, together with the code that uses and tests them:
+Storage settings:
 
-| Variable                     | Description                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------ |
-| `IMAGE_S3_ENDPOINT_URL`      | S3 API address (SeaweedFS in development; empty for AWS).                            |
-| `IMAGE_S3_BUCKET`            | Bucket of the images.                                                                |
-| `IMAGE_S3_REGION`            | Region of the bucket.                                                                |
-| `IMAGE_S3_ACCESS_KEY_ID`     | Access key.                                                                          |
-| `IMAGE_S3_SECRET_ACCESS_KEY` | Secret key (`SecretStr`).                                                            |
-| `IMAGE_PUBLIC_BASE_URL`      | Public address of the images (CDN or bucket URL); an image URL is this plus its key. |
-| Uploads per account and hour | Limits abuse (§2.9).                                                                 |
-| Garbage collection delay     | Time an unused image is kept before being erased (§2.8).                             |
+| Variable                     | Description                                                                                                                       | Default                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `IMAGE_S3_ENDPOINT_URL`      | S3 API address (SeaweedFS in development); unset for AWS S3.                                                                      | unset                                   |
+| `IMAGE_S3_BUCKET`            | Bucket of the images.                                                                                                             | `tierlist-images`                       |
+| `IMAGE_S3_REGION`            | Region of the bucket.                                                                                                             | `us-east-1`                             |
+| `IMAGE_S3_ACCESS_KEY_ID`     | Access key; unset, boto3 looks for its usual credentials (`AWS_*` variables, machine role).                                       | unset                                   |
+| `IMAGE_S3_SECRET_ACCESS_KEY` | Secret key (`SecretStr`).                                                                                                         | unset                                   |
+| `IMAGE_S3_TIMEOUT_SECONDS`   | Timeout of the storage calls (connection, then response).                                                                         | `10`                                    |
+| `IMAGE_PUBLIC_BASE_URL`      | Public address of the images (CDN or bucket URL); an image URL is this plus its key. `127.0.0.1`: SeaweedFS only listens on IPv4. | `http://127.0.0.1:8333/tierlist-images` |
+
+All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`, which holds the SeaweedFS values. Coming with the rest of #81:
+
+| Setting                      | Description                                              |
+| ---------------------------- | -------------------------------------------------------- |
+| Uploads per account and hour | Limits abuse (§2.9).                                     |
+| Garbage collection delay     | Time an unused image is kept before being erased (§2.8). |
 
 ### 2.5 Data model
 
@@ -83,9 +91,9 @@ Added **with #81**, together with the code that uses and tests them:
 
 ### 2.6 API
 
-- `POST /images` (`multipart/form-data`, one `file` field): checks the size, processes and stores the image, returns `{id, url, width, height}`.
-- The tile creation and update bodies gain `image_id` (an image of the caller, otherwise `404`); `TileResponse` gains `image_url`. The rule "a text or an image" replaces today's rule "a text" (`422` when both are missing).
-- Error codes, created and translated in FR and EN with #81:
+- `POST /images` (`multipart/form-data`, one `file` field, authenticated): checks the size, processes and stores the image, returns `201` and `{id, url, width, height}`.
+- The tile creation and update bodies gain `image_id` (an image of the caller, otherwise `404`); `TileResponse` gains `image_url`. The rule "a text or an image" replaces today's rule "a text" (`422` when both are missing). Coming with the rest of #81.
+- Error codes, translated in FR and EN (`image_not_found` comes with `image_id` on tiles). The frontend shows `max_bytes` in megabytes (`megabytes` i18next formatter):
 
 | Situation                               | HTTP | API code                              |
 | --------------------------------------- | ---- | ------------------------------------- |
@@ -98,10 +106,17 @@ Added **with #81**, together with the code that uses and tests them:
 
 The **S3 API is used everywhere**, through a single `ImageStorage` service (`save`, `delete`, `url`) built on **boto3**: development and CI run exactly the production code.
 
-| Environment        | S3 service                                                                                                                                                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Development and CI | **SeaweedFS** container (`weed server -s3`), added to `compose.yaml` and as a CI service with #81, the way Mailpit stands in for an SMTP provider. Credentials in its S3 identities file, anonymous **read** on the bucket, image pinned to an exact version. |
-| Production         | An S3-compatible provider, chosen with the hosting ([TODO](../../TODO.md)). Public read through a CDN, or the bucket URL.                                                                                                                                     |
+| Environment        | S3 service                                                                                                                                                                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Development and CI | **SeaweedFS** container (`weed mini`: master, volume, filer and S3 in one process), the way Mailpit stands in for an SMTP provider. Same service in `compose.yaml` and in the backend CI job (`docker compose up -d --wait seaweedfs`). See below. |
+| Production         | An S3-compatible provider, chosen with the hosting ([TODO](../../TODO.md)). Public read through a CDN, or the bucket URL.                                                                                                                          |
+
+SeaweedFS in development:
+
+- Image pinned to an exact version (`chrislusf/seaweedfs:4.48`), ports published on `127.0.0.1` only: the **S3 API** on `8333` and the **filer web UI** on **http://localhost:8888**, which shows the images in `buckets/tierlist-images/` and opens them. `dev.sh` / `dev.ps1` open it on the bucket.
+- The bucket is created at startup (`-bucket=tierlist-images`); the container is healthy once it exists.
+- `seaweedfs/s3.json` gives two identities: the backend (`tierlist-dev` key, read, write and list on the bucket only) and `anonymous` (**read** only, so that the image URLs work without authentication; listing, writing and deleting are refused). `seaweedfs/security.toml` holds a filer signing key, development only: without it SeaweedFS refuses to load the identities.
+- Data is kept in the `seaweedfs-data` Docker volume.
 
 - Each object is written with `Content-Type: image/webp` and `Cache-Control: public, max-age=31536000, immutable` (the content of a key never changes).
 - **Access model**: image URLs are public but **impossible to guess** (random UUID). Anyone holding a URL can see the image, which the public results link requires anyway: an image used in a game becomes public through it.
@@ -130,10 +145,11 @@ Everything is done **inside the application**, in super admin pages, without any
 
 ### 2.10 Dependencies
 
-Nothing is added by this spike. With #81:
+Added with #81:
 
 - **Pillow**: reading, checking and resizing images, WebP encoding, decompression bomb guard. No equivalent in the current dependencies.
 - **boto3**: the reference S3 client, compatible with every S3 provider and with SeaweedFS.
+- **boto3-stubs[s3]** (development only): types of the S3 client for Pyright.
 
 `python-multipart`, needed to receive a file, is already installed by `fastapi[standard]`.
 
@@ -145,4 +161,16 @@ Nothing is added by this spike. With #81:
 
 ## 3. In the code
 
-Already present: `IMAGE_UPLOAD_MAX_BYTES` and `IMAGE_MAX_SOURCE_PIXELS` in `backend/app/core/config.py`, tested by `backend/tests/test_config.py` ([testing guide](testing.md)). The rest comes with #81.
+Backend (tests: [testing guide](testing.md)):
+
+| File                               | Role                                                                                                                                                                  |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`) and `422`.                                                                                     |
+| `app/services/images.py`           | `ImageService.upload`: reads the file without going over the limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails). |
+| `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                       |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                  |
+| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                           |
+| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                |
+| `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                            |
+
+Development: `compose.yaml` and `seaweedfs/` (§2.7). Frontend: the error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.
