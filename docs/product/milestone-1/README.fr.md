@@ -52,4 +52,4 @@ Points pas encore décidés, pris dans leur version la plus simple pour ce jalon
   - les items des tours passés **ne se déplacent pas** avant le cooldown final ;
   - sur un board privé, les participants voient **qui a placé** l'item en cours, pas où ;
   - l'admin de la room peut **terminer le cooldown plus tôt**.
-- **Le calcul des stats** (médiane de classements ordonnés, effet des votes absents) se décide à l'implémentation (voir [roadmap.fr.md](../roadmap.fr.md#questions-techniques)).
+- **Le calcul des stats** (médiane de classements ordonnés, effet des votes absents) est décidé : voir le [guide des résultats](../../technical/results.fr.md).
