@@ -9,7 +9,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TypeVar
+from typing import TypedDict, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -49,12 +49,6 @@ def _move(items: list[Positioned], item: Positioned, position: int) -> None:
     _renumber(items)
 
 
-def _touch(template: Template) -> None:
-    """Met à jour la dernière modification du template : onupdate ne voit pas les changements
-    de ses tiers et de ses tuiles, qui sont dans d'autres tables."""
-    template.updated_at = func.clock_timestamp()
-
-
 @dataclass(frozen=True)
 class TemplateSummary:
     """Un template dans la liste « Mes templates »."""
@@ -65,21 +59,22 @@ class TemplateSummary:
     updated_at: datetime
 
 
-@dataclass(frozen=True)
-class TierChanges:
-    """Modifications d'un tier ; None = inchangé."""
+class TierChanges(TypedDict, total=False):
+    """Modifications d'un tier : seules les clés présentes changent. Hors position, chaque clé
+    est un attribut de Tier, recopié tel quel : un nouveau champ simple n'a besoin que d'une
+    clé ici."""
 
-    name: str | None = None
-    color: str | None = None
-    position: int | None = None
+    name: str
+    color: str
+    position: int
 
 
-@dataclass(frozen=True)
-class TileChanges:
-    """Modifications d'une tuile ; None = inchangé."""
+class TileChanges(TypedDict, total=False):
+    """Modifications d'une tuile : seules les clés présentes changent. Hors position, chaque clé
+    est un attribut de Tile, recopié tel quel, comme pour TierChanges."""
 
-    text: str | None = None
-    position: int | None = None
+    text: str
+    position: int
 
 
 class TemplateService:
@@ -89,7 +84,7 @@ class TemplateService:
 
     def create(self, owner: User, name: str) -> Template:
         """Crée un template privé, avec les tiers par défaut et sans tuile."""
-        template = Template(
+        template: Template = Template(
             owner_id=owner.id,
             name=name,
             tiers=[
@@ -110,7 +105,7 @@ class TemplateService:
 
         summaries: list[TemplateSummary] = []
         for template, tile_count in templates_with_tile_count:
-            summary = TemplateSummary(
+            summary: TemplateSummary = TemplateSummary(
                 id=template.id,
                 name=template.name,
                 tile_count=tile_count,
@@ -120,25 +115,27 @@ class TemplateService:
         return summaries
 
     def get(self, owner: User, template_id: uuid.UUID) -> Template:
-        template = template_repository.get_owned_template(self._session, template_id, owner.id)
+        template: Template | None = template_repository.get_owned_template(
+            self._session, template_id, owner.id
+        )
         if template is None:
             raise TemplateNotFoundError
         return template
 
     def rename(self, owner: User, template_id: uuid.UUID, name: str) -> Template:
-        template = self.get(owner, template_id)
+        template: Template = self.get(owner, template_id)
         template.name = name
         self._session.commit()
         return template
 
     def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
         """Ajoute un tier en bas, avec le nom et la couleur par défaut."""
-        template = self.get(owner, template_id)
-        template.tiers.append(
-            Tier(name=NEW_TIER_NAME, color=NEW_TIER_COLOR, position=len(template.tiers))
+        template: Template = self.get(owner, template_id)
+        new_tier: Tier = Tier(
+            name=NEW_TIER_NAME, color=NEW_TIER_COLOR, position=len(template.tiers)
         )
-        _touch(template)
-        self._session.commit()
+        template.tiers.append(new_tier)
+        self._save_change(template)
         return template
 
     def update_tier(
@@ -148,40 +145,38 @@ class TemplateService:
         tier_id: uuid.UUID,
         changes: TierChanges,
     ) -> Template:
-        """Renomme, recolore et/ou déplace un tier ; les champs à None restent tels quels."""
-        template = self.get(owner, template_id)
-        tier = self._get_tier(template, tier_id)
-        if changes.name is not None:
-            tier.name = changes.name
-        if changes.color is not None:
-            tier.color = changes.color
-        if changes.position is not None:
-            _move(template.tiers, tier, changes.position)
-        _touch(template)
-        self._session.commit()
+        """Renomme, recolore et/ou déplace un tier ; les champs absents restent tels quels."""
+        template: Template = self.get(owner, template_id)
+        tier: Tier = self._get_tier(template, tier_id)
+        for field_name, value in changes.items():
+            # La position ne se recopie pas : déplacer un tier décale aussi les autres
+            if field_name != "position":
+                setattr(tier, field_name, value)
+        if "position" in changes:
+            _move(template.tiers, tier, changes["position"])
+        self._save_change(template)
         return template
 
     def delete_tier(self, owner: User, template_id: uuid.UUID, tier_id: uuid.UUID) -> Template:
         """Supprime un tier ; le dernier tier d'un template ne peut pas l'être."""
-        template = self.get(owner, template_id)
-        tier = self._get_tier(template, tier_id)
+        template: Template = self.get(owner, template_id)
+        tier: Tier = self._get_tier(template, tier_id)
         if len(template.tiers) == 1:
             raise LastTierError
         # delete-orphan : retiré de la liste, le tier est supprimé de la base
         template.tiers.remove(tier)
         _renumber(template.tiers)
-        _touch(template)
-        self._session.commit()
+        self._save_change(template)
         return template
 
     def add_tile(self, owner: User, template_id: uuid.UUID, text: str) -> Template:
         """Ajoute une tuile texte à la fin ; refusé au-delà du nombre maximal de tuiles."""
-        template = self.get(owner, template_id)
+        template: Template = self.get(owner, template_id)
         if len(template.tiles) >= template.max_tiles:
             raise TileLimitReachedError(template.max_tiles)
-        template.tiles.append(Tile(text=text, position=len(template.tiles)))
-        _touch(template)
-        self._session.commit()
+        new_tile: Tile = Tile(text=text, position=len(template.tiles))
+        template.tiles.append(new_tile)
+        self._save_change(template)
         return template
 
     def update_tile(
@@ -192,25 +187,31 @@ class TemplateService:
         changes: TileChanges,
     ) -> Template:
         """Change le texte et/ou la place d'une tuile dans l'ordre du template."""
-        template = self.get(owner, template_id)
-        tile = self._get_tile(template, tile_id)
-        if changes.text is not None:
-            tile.text = changes.text
-        if changes.position is not None:
-            _move(template.tiles, tile, changes.position)
-        _touch(template)
-        self._session.commit()
+        template: Template = self.get(owner, template_id)
+        tile: Tile = self._get_tile(template, tile_id)
+        for field_name, value in changes.items():
+            # La position ne se recopie pas : déplacer une tuile décale aussi les autres
+            if field_name != "position":
+                setattr(tile, field_name, value)
+        if "position" in changes:
+            _move(template.tiles, tile, changes["position"])
+        self._save_change(template)
         return template
 
     def delete_tile(self, owner: User, template_id: uuid.UUID, tile_id: uuid.UUID) -> Template:
-        template = self.get(owner, template_id)
-        tile = self._get_tile(template, tile_id)
+        template: Template = self.get(owner, template_id)
+        tile: Tile = self._get_tile(template, tile_id)
         # delete-orphan : retirée de la liste, la tuile est supprimée de la base
         template.tiles.remove(tile)
         _renumber(template.tiles)
-        _touch(template)
-        self._session.commit()
+        self._save_change(template)
         return template
+
+    def _save_change(self, template: Template) -> None:
+        """Valide une modification des tiers ou des tuiles du template, en mettant à jour sa date
+        de dernière modification : onupdate ne voit pas les changements des autres tables."""
+        template.updated_at = func.clock_timestamp()
+        self._session.commit()
 
     @staticmethod
     def _get_tile(template: Template, tile_id: uuid.UUID) -> Tile:
@@ -229,7 +230,7 @@ class TemplateService:
     def delete(self, owner: User, template_id: uuid.UUID) -> None:
         """Suppression logique : le template disparaît pour son propriétaire, et sera purgé
         définitivement après DELETED_TEMPLATE_RETENTION_DAYS (purge_deleted)."""
-        template = self.get(owner, template_id)
+        template: Template = self.get(owner, template_id)
         template.deleted_at = datetime.now(UTC)
         self._session.commit()
         logger.info("Template supprimé : template_id=%s owner_id=%s", template.id, owner.id)
@@ -237,8 +238,10 @@ class TemplateService:
     def purge_deleted(self) -> int:
         """Supprime définitivement les templates supprimés depuis plus que la durée de
         rétention ; renvoie leur nombre."""
-        limit = datetime.now(UTC) - timedelta(days=self._settings.deleted_template_retention_days)
-        purged = template_repository.delete_templates_deleted_before(self._session, limit)
+        limit: datetime = datetime.now(UTC) - timedelta(
+            days=self._settings.deleted_template_retention_days
+        )
+        purged: int = template_repository.delete_templates_deleted_before(self._session, limit)
         self._session.commit()
         logger.info("Templates purgés : %d (supprimés avant %s)", purged, limit.isoformat())
         return purged

@@ -16,6 +16,7 @@ from app.exceptions.templates import (
     TileLimitReachedError,
     TileNotFoundError,
 )
+from app.models.template import Template
 from app.models.user import User
 from app.schemas.templates import (
     CreateTemplateRequest,
@@ -27,7 +28,7 @@ from app.schemas.templates import (
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.templates import TemplateService, TierChanges, TileChanges
+from app.services.templates import TemplateService, TemplateSummary, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -76,13 +77,13 @@ def _tile_not_found() -> AppHTTPException:
 def create_template(
     payload: CreateTemplateRequest, user: CurrentUserDep, service: TemplateServiceDep
 ) -> TemplateResponse:
-    template = service.create(user, payload.name)
+    template: Template = service.create(user, payload.name)
     return TemplateResponse.model_validate(template)
 
 
 @router.get("", responses=UNAUTHORIZED_RESPONSE)
 def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
-    summaries = service.list_for_owner(user)
+    summaries: list[TemplateSummary] = service.list_for_owner(user)
 
     items: list[TemplateSummaryResponse] = []
     for summary in summaries:
@@ -95,7 +96,7 @@ def get_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
 ) -> TemplateResponse:
     try:
-        template = service.get(user, template_id)
+        template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     return TemplateResponse.model_validate(template)
@@ -109,7 +110,7 @@ def rename_template(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.rename(user, template_id, payload.name)
+        template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     return TemplateResponse.model_validate(template)
@@ -132,7 +133,7 @@ def add_tier(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.add_tier(user, template_id)
+        template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     return TemplateResponse.model_validate(template)
@@ -146,9 +147,10 @@ def update_tier(
     user: CurrentUserDep,
     service: TemplateServiceDep,
 ) -> TemplateResponse:
-    changes = TierChanges(name=payload.name, color=payload.color, position=payload.position)
+    # Seuls les champs envoyés (non nuls) changent
+    changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
-        template = service.update_tier(user, template_id, tier_id, changes)
+        template: Template = service.update_tier(user, template_id, tier_id, changes)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     except TierNotFoundError as exc:
@@ -170,7 +172,7 @@ def delete_tier(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.delete_tier(user, template_id, tier_id)
+        template: Template = service.delete_tier(user, template_id, tier_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     except TierNotFoundError as exc:
@@ -199,7 +201,7 @@ def add_tile(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.add_tile(user, template_id, payload.text)
+        template: Template = service.add_tile(user, template_id, payload.text)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     except TileLimitReachedError as exc:
@@ -221,9 +223,10 @@ def update_tile(
     user: CurrentUserDep,
     service: TemplateServiceDep,
 ) -> TemplateResponse:
-    changes = TileChanges(text=payload.text, position=payload.position)
+    # Seuls les champs envoyés (non nuls) changent
+    changes: TileChanges = TileChanges(**payload.model_dump(exclude_none=True))
     try:
-        template = service.update_tile(user, template_id, tile_id, changes)
+        template: Template = service.update_tile(user, template_id, tile_id, changes)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     except TileNotFoundError as exc:
@@ -239,7 +242,7 @@ def delete_tile(
     service: TemplateServiceDep,
 ) -> TemplateResponse:
     try:
-        template = service.delete_tile(user, template_id, tile_id)
+        template: Template = service.delete_tile(user, template_id, tile_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
     except TileNotFoundError as exc:

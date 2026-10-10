@@ -144,20 +144,11 @@ function storeTemplate(queryClient: QueryClient, template: Template): Promise<vo
   return queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY, exact: true });
 }
 
-export function useRenameTemplate(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (name: string) => renameTemplate(templateId, name),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
-}
-
-export function useAddTier(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => addTier(templateId),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+// Déplacement d'un tier ou d'une tuile, connu avant la réponse du backend
+interface PendingMove {
+  list: 'tiers' | 'tiles';
+  itemId: string;
+  position: number;
 }
 
 interface Positioned {
@@ -171,39 +162,57 @@ function moveItem<Item extends Positioned>(
   itemId: string,
   position: number,
 ): Item[] {
-  const movedItem = items.find((item) => item.id === itemId);
+  const movedItem: Item | undefined = items.find((item) => item.id === itemId);
   if (movedItem === undefined) return items;
   const reordered: Item[] = items.filter((item) => item.id !== itemId);
   reordered.splice(Math.min(position, reordered.length), 0, movedItem);
   return reordered.map((item, index) => ({ ...item, position: index }));
 }
 
-// Déplacement optimiste : après un glisser-déposer, l'élément reste où il a été déposé
-// pendant l'enregistrement, au lieu de revenir à sa place puis de sauter. Renvoie le
-// template d'avant, rétabli si l'enregistrement échoue.
-async function applyMove(
-  queryClient: QueryClient,
-  templateId: string,
-  list: 'tiers' | 'tiles',
-  itemId: string,
-  position: number | null | undefined,
-): Promise<Template | undefined> {
-  if (position === undefined || position === null) return undefined;
-  const queryKey = templateQueryKey(templateId);
-  await queryClient.cancelQueries({ queryKey });
-  const previous = queryClient.getQueryData<Template>(queryKey);
-  if (previous !== undefined) {
-    const moved: Template =
-      list === 'tiers'
-        ? { ...previous, tiers: moveItem(previous.tiers, itemId, position) }
-        : { ...previous, tiles: moveItem(previous.tiles, itemId, position) };
-    queryClient.setQueryData<Template>(queryKey, moved);
+function applyMove(template: Template, move: PendingMove): Template {
+  if (move.list === 'tiers') {
+    return { ...template, tiers: moveItem(template.tiers, move.itemId, move.position) };
   }
-  return previous;
+  return { ...template, tiles: moveItem(template.tiles, move.itemId, move.position) };
 }
 
-function restoreTemplate(queryClient: QueryClient, previous: Template | undefined): void {
-  if (previous !== undefined) queryClient.setQueryData(templateQueryKey(previous.id), previous);
+// Mutation qui modifie un template ouvert dans l'éditeur et renvoie le template à jour. Tout ce
+// qui est commun à ces modifications est écrit ici une seule fois : le template renvoyé remplace
+// celui du cache et, quand getMove décrit un déplacement, celui-ci est affiché tout de suite
+// (après un glisser-déposer, l'élément reste où il a été déposé au lieu de revenir puis sauter),
+// puis annulé si l'enregistrement échoue.
+function useTemplateChange<Variables = void>(
+  templateId: string,
+  mutationFn: (variables: Variables) => Promise<Template>,
+  getMove?: (variables: Variables) => PendingMove | undefined,
+) {
+  const queryClient = useQueryClient();
+  const queryKey = templateQueryKey(templateId);
+  return useMutation({
+    mutationFn,
+    onMutate: async (variables: Variables): Promise<Template | undefined> => {
+      const move: PendingMove | undefined = getMove?.(variables);
+      if (move === undefined) return undefined;
+      await queryClient.cancelQueries({ queryKey });
+      const previous: Template | undefined = queryClient.getQueryData<Template>(queryKey);
+      if (previous !== undefined) {
+        queryClient.setQueryData<Template>(queryKey, applyMove(previous, move));
+      }
+      return previous;
+    },
+    onError: (_error, _variables, previous) => {
+      if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
+    },
+    onSuccess: (template) => storeTemplate(queryClient, template),
+  });
+}
+
+export function useRenameTemplate(templateId: string) {
+  return useTemplateChange(templateId, (name: string) => renameTemplate(templateId, name));
+}
+
+export function useAddTier(templateId: string) {
+  return useTemplateChange(templateId, () => addTier(templateId));
 }
 
 interface TierUpdate {
@@ -212,30 +221,22 @@ interface TierUpdate {
 }
 
 export function useUpdateTier(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
-    onMutate: ({ tierId, changes }: TierUpdate) =>
-      applyMove(queryClient, templateId, 'tiers', tierId, changes.position),
-    onError: (_error, _update, previous) => restoreTemplate(queryClient, previous),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(
+    templateId,
+    ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
+    ({ tierId, changes }: TierUpdate) =>
+      changes.position === undefined || changes.position === null
+        ? undefined
+        : { list: 'tiers', itemId: tierId, position: changes.position },
+  );
 }
 
 export function useDeleteTier(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (tierId: string) => deleteTier(templateId, tierId),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(templateId, (tierId: string) => deleteTier(templateId, tierId));
 }
 
 export function useAddTile(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (text: string) => addTile(templateId, text),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(templateId, (text: string) => addTile(templateId, text));
 }
 
 interface TileUpdate {
@@ -244,20 +245,16 @@ interface TileUpdate {
 }
 
 export function useUpdateTile(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
-    onMutate: ({ tileId, changes }: TileUpdate) =>
-      applyMove(queryClient, templateId, 'tiles', tileId, changes.position),
-    onError: (_error, _update, previous) => restoreTemplate(queryClient, previous),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(
+    templateId,
+    ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
+    ({ tileId, changes }: TileUpdate) =>
+      changes.position === undefined || changes.position === null
+        ? undefined
+        : { list: 'tiles', itemId: tileId, position: changes.position },
+  );
 }
 
 export function useDeleteTile(templateId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (tileId: string) => deleteTile(templateId, tileId),
-    onSuccess: (template) => storeTemplate(queryClient, template),
-  });
+  return useTemplateChange(templateId, (tileId: string) => deleteTile(templateId, tileId));
 }
