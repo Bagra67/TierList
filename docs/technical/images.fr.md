@@ -2,7 +2,7 @@
 
 [English](images.md) | Français
 
-Comment les images des tuiles sont reçues, compressées, stockées, servies, nettoyées et modérées. Décidé dans le spike #75, construit dans #81 : **l'envoi, la compression et le stockage sont implémentés** (§3) ; le rattachement d'une image à une tuile, la limite d'envois par compte, le ramasse-miettes et l'éditeur arrivent avec la suite de #81. Ce qu'est une tuile pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-1.2 et US-1.3.
+Comment les images des tuiles sont reçues, compressées, stockées, servies, nettoyées et modérées. Décidé dans le spike #75, construit dans #81 : **l'envoi, la compression, le stockage, les tuiles image, la limite d'envois par compte et le ramasse-miettes sont implémentés** (§3) ; l'éditeur arrive avec la suite de #81. Ce qu'est une tuile pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-1.2 et US-1.3.
 
 ## 1. Vue fonctionnelle
 
@@ -18,7 +18,7 @@ Comment les images des tuiles sont reçues, compressées, stockées, servies, ne
 
 ### Pas encore disponible
 
-Une image envoyée n'est pas encore rattachée à une tuile : `image_id` sur les tuiles, la limite d'envois par compte et par heure, le ramasse-miettes et l'éditeur de template arrivent avec la suite de #81. Les fonctionnalités de modération sont des issues à part (§2.9).
+L'éditeur de template n'envoie ni n'affiche encore d'image : cela arrive avec la suite de #81. Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les fonctionnalités de modération sont des issues à part (§2.9).
 
 ## 2. Conception technique
 
@@ -76,12 +76,14 @@ Réglages du stockage :
 | `IMAGE_S3_TIMEOUT_SECONDS`   | Délai des appels au stockage (connexion, puis réponse).                                                                                            | `10`                                    |
 | `IMAGE_PUBLIC_BASE_URL`      | Adresse publique des images (CDN ou URL du bucket) ; l'URL d'une image est cette adresse plus sa clé. `127.0.0.1` : SeaweedFS n'écoute qu'en IPv4. | `http://127.0.0.1:8333/tierlist-images` |
 
-Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui contient les valeurs de SeaweedFS. Avec la suite de #81 :
+Réglages contre les abus et de nettoyage :
 
-| Réglage                        | Description                                                                       |
-| ------------------------------ | --------------------------------------------------------------------------------- |
-| Envois par compte et par heure | Limite les abus (§2.9).                                                           |
-| Délai du ramasse-miettes       | Temps pendant lequel une image inutilisée est gardée avant d'être effacée (§2.8). |
+| Variable                      | Description                                                                                                               | Défaut |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `IMAGE_UPLOADS_PER_HOUR_MAX`  | Nombre maximal d'images envoyées par un compte sur l'heure écoulée (§2.9) ; au-delà, `429`.                               | `120`  |
+| `UNUSED_IMAGE_RETENTION_DAYS` | Jours pendant lesquels une image qu'aucune tuile n'utilise est gardée avant d'être effacée par le ramasse-miettes (§2.8). | `7`    |
+
+Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui contient les valeurs de SeaweedFS.
 
 ### 2.5 Modèle de données
 
@@ -92,15 +94,17 @@ Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui 
 ### 2.6 API
 
 - `POST /images` (`multipart/form-data`, un champ `file`, authentifié) : vérifie la taille, traite et stocke l'image, renvoie `201` et `{id, url, width, height}`.
-- Les corps de création et de modification d'une tuile gagnent `image_id` (une image de l'appelant, sinon `404`) ; `TileResponse` gagne `image_url`. La règle « un texte ou une image » remplace la règle actuelle « un texte » (`422` quand les deux manquent). Arrive avec la suite de #81.
-- Codes d'erreur, traduits en FR et EN (`image_not_found` arrive avec `image_id` sur les tuiles). Le frontend affiche `max_bytes` en mégaoctets (formateur i18next `megabytes`) :
+- Les corps de création et de modification d'une tuile ont `image_id` (une image visible de l'appelant, sinon `404`) ; `TileResponse` a `image_url`, `null` sans image. Une tuile a un texte, une image ou les deux (`422` `tile_empty` sinon) ; dans une modification, `image_id: null` retire l'image. Détails dans le [guide des templates](templates.fr.md). Une image peut servir à plusieurs tuiles.
+- Codes d'erreur, traduits en FR et EN. Le frontend affiche `max_bytes` en mégaoctets (formateur i18next `megabytes`) :
 
-| Situation                                 | HTTP | Code API                              |
-| ----------------------------------------- | ---- | ------------------------------------- |
-| Pas une image acceptée                    | 415  | `image_unsupported_format`            |
-| Fichier trop lourd                        | 413  | `image_too_large` (param `max_bytes`) |
-| Trop de pixels une fois décodée           | 422  | `image_too_many_pixels`               |
-| Image inconnue, ou d'un autre utilisateur | 404  | `image_not_found`                     |
+| Situation                                 | HTTP | Code API                                           |
+| ----------------------------------------- | ---- | -------------------------------------------------- |
+| Pas une image acceptée                    | 415  | `image_unsupported_format`                         |
+| Fichier trop lourd                        | 413  | `image_too_large` (param `max_bytes`)              |
+| Trop de pixels une fois décodée           | 422  | `image_too_many_pixels`                            |
+| Image inconnue, ou d'un autre utilisateur | 404  | `image_not_found`                                  |
+| Trop d'envois sur l'heure écoulée         | 429  | `image_upload_limit_reached` (param `max_uploads`) |
+| Tuile sans texte ni image                 | 422  | `tile_empty`                                       |
 
 ### 2.7 Stockage et service
 
@@ -123,7 +127,16 @@ SeaweedFS en développement :
 
 ### 2.8 Nettoyage
 
-Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). C'est une commande lancée à côté de `scripts/purge_deleted_templates.py`.
+Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). C'est une commande lancée à côté de `scripts/purge_deleted_templates.py` :
+
+```bash
+cd backend
+uv run python scripts/purge_unused_images.py   # affiche "Unused images purged: n"
+```
+
+- Elle efface les images **visibles** créées il y a plus de `UNUSED_IMAGE_RETENTION_DAYS` jours qu'aucune tuile n'utilise. Les images masquées ou supprimées par la modération gardent leur ligne (#124). Les instantanés n'existent pas encore ; quand ils existeront, la requête devra aussi garder les images qu'ils utilisent.
+- Les lignes sont supprimées d'abord, en une seule requête, puis les fichiers : une tuile ne pointe jamais vers un fichier effacé. Une tuile qui rattache l'une de ces images au même moment attend la fin de la suppression, puis échoue sur la clé étrangère. Un fichier qu'on n'arrive pas à effacer (stockage en panne) est journalisé avec sa clé, pour l'effacer à la main.
+- La relancer ne pose aucun problème : elle n'efface que ce qui a expiré. Elle doit être planifiée une fois par jour sur le serveur ([TODO](../../TODO.fr.md)).
 
 ### 2.9 Modération
 
@@ -163,14 +176,19 @@ Ajoutées avec #81 :
 
 Backend (tests : [guide des tests](testing.fr.md)) :
 
-| Fichier                            | Rôle                                                                                                                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/routes/images.py`         | `POST /images` : transforme les erreurs en `415`, `413` (param `max_bytes`) et `422`.                                                                                         |
-| `app/services/images.py`           | `ImageService.upload` : lit le fichier sans dépasser la limite, le compresse, l'écrit sous une nouvelle clé, puis enregistre la ligne (le fichier est retiré si cela échoue). |
-| `app/services/image_processing.py` | `compress_image` : le traitement Pillow du §2.3, une fonction pure.                                                                                                           |
-| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) sur un client boto3, partagé entre les requêtes.                                                                                     |
-| `app/models/image.py`              | Modèle `Image` et `ImageStatus` ; migration `ef5839ce8066_create_images.py`.                                                                                                  |
-| `app/constants/images.py`          | Formats, taille de sortie, qualité WebP, `Content-Type` et `Cache-Control` des objets.                                                                                        |
-| `app/core/config.py`               | Réglages `IMAGE_*` (§2.4).                                                                                                                                                    |
+| Fichier                            | Rôle                                                                                                                                                                                                                                                            |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/routes/images.py`         | `POST /images` : transforme les erreurs en `415`, `413` (param `max_bytes`), `422` et `429` (param `max_uploads`).                                                                                                                                              |
+| `app/services/images.py`           | `ImageService.upload` : vérifie la limite horaire, lit le fichier sans dépasser la limite de taille, le compresse, l'écrit sous une nouvelle clé, puis enregistre la ligne (le fichier est retiré si cela échoue). `purge_unused` : le ramasse-miettes du §2.8. |
+| `app/repositories/images.py`       | Image d'un auteur, nombre d'envois récents, suppression des images inutilisées.                                                                                                                                                                                 |
+| `app/services/templates.py`        | Tuiles avec une image : `_check_owned_image`, règle « un texte ou une image » (`TileEmptyError`).                                                                                                                                                               |
+| `app/schemas/templates.py`         | `TileResponse.image_url`, construite avec `ImageStorage.url` donné dans le contexte de validation.                                                                                                                                                              |
+| `app/models/tile.py`               | `Tile.image_id` et `Tile.image` ; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                            |
+| `scripts/purge_unused_images.py`   | Commande du ramasse-miettes.                                                                                                                                                                                                                                    |
+| `app/services/image_processing.py` | `compress_image` : le traitement Pillow du §2.3, une fonction pure.                                                                                                                                                                                             |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) sur un client boto3, partagé entre les requêtes.                                                                                                                                                                       |
+| `app/models/image.py`              | Modèle `Image` et `ImageStatus` ; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                                    |
+| `app/constants/images.py`          | Formats, taille de sortie, qualité WebP, `Content-Type` et `Cache-Control` des objets.                                                                                                                                                                          |
+| `app/core/config.py`               | Réglages `IMAGE_*` (§2.4).                                                                                                                                                                                                                                      |
 
 Développement : `compose.yaml` et `seaweedfs/` (§2.7). Frontend : les codes d'erreur sont traduits dans `src/i18n/locales/`, et `src/i18n/index.ts` définit le formateur `megabytes`.

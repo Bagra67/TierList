@@ -2,7 +2,7 @@
 
 English | [Français](images.fr.md)
 
-How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, built in #81: **the upload, the compression and the storage are implemented** (§3); attaching an image to a tile, the upload limit per account, the garbage collection and the editor come with the rest of #81. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
+How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, built in #81: **the upload, the compression, the storage, the image tiles, the upload limit per account and the garbage collection are implemented** (§3); the editor comes with the rest of #81. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
 
@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-An uploaded image is not attached to a tile yet: `image_id` on tiles, the upload limit per account and hour, the garbage collection and the template editor come with the rest of #81. The moderation features are separate issues (§2.9).
+The template editor does not upload nor show images yet: it comes with the rest of #81. The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation features are separate issues (§2.9).
 
 ## 2. Technical design
 
@@ -76,12 +76,14 @@ Storage settings:
 | `IMAGE_S3_TIMEOUT_SECONDS`   | Timeout of the storage calls (connection, then response).                                                                         | `10`                                    |
 | `IMAGE_PUBLIC_BASE_URL`      | Public address of the images (CDN or bucket URL); an image URL is this plus its key. `127.0.0.1`: SeaweedFS only listens on IPv4. | `http://127.0.0.1:8333/tierlist-images` |
 
-All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`, which holds the SeaweedFS values. Coming with the rest of #81:
+Abuse and cleanup settings:
 
-| Setting                      | Description                                              |
-| ---------------------------- | -------------------------------------------------------- |
-| Uploads per account and hour | Limits abuse (§2.9).                                     |
-| Garbage collection delay     | Time an unused image is kept before being erased (§2.8). |
+| Variable                      | Description                                                                                  | Default |
+| ----------------------------- | -------------------------------------------------------------------------------------------- | ------- |
+| `IMAGE_UPLOADS_PER_HOUR_MAX`  | Maximum number of images uploaded by an account over the last hour (§2.9); beyond it, `429`. | `120`   |
+| `UNUSED_IMAGE_RETENTION_DAYS` | Days an image that no tile uses is kept before the garbage collection erases it (§2.8).      | `7`     |
+
+All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`, which holds the SeaweedFS values.
 
 ### 2.5 Data model
 
@@ -92,15 +94,17 @@ All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`,
 ### 2.6 API
 
 - `POST /images` (`multipart/form-data`, one `file` field, authenticated): checks the size, processes and stores the image, returns `201` and `{id, url, width, height}`.
-- The tile creation and update bodies gain `image_id` (an image of the caller, otherwise `404`); `TileResponse` gains `image_url`. The rule "a text or an image" replaces today's rule "a text" (`422` when both are missing). Coming with the rest of #81.
-- Error codes, translated in FR and EN (`image_not_found` comes with `image_id` on tiles). The frontend shows `max_bytes` in megabytes (`megabytes` i18next formatter):
+- The tile creation and update bodies have `image_id` (a visible image of the caller, otherwise `404`); `TileResponse` has `image_url`, `null` without image. A tile has a text, an image or both (`422` `tile_empty` otherwise); in an update, `image_id: null` removes the image. Details in the [templates guide](templates.md). An image can be used by several tiles.
+- Error codes, translated in FR and EN. The frontend shows `max_bytes` in megabytes (`megabytes` i18next formatter):
 
-| Situation                               | HTTP | API code                              |
-| --------------------------------------- | ---- | ------------------------------------- |
-| Not a supported image                   | 415  | `image_unsupported_format`            |
-| File too large                          | 413  | `image_too_large` (param `max_bytes`) |
-| Too many pixels once decoded            | 422  | `image_too_many_pixels`               |
-| Unknown image, or image of another user | 404  | `image_not_found`                     |
+| Situation                               | HTTP | API code                                           |
+| --------------------------------------- | ---- | -------------------------------------------------- |
+| Not a supported image                   | 415  | `image_unsupported_format`                         |
+| File too large                          | 413  | `image_too_large` (param `max_bytes`)              |
+| Too many pixels once decoded            | 422  | `image_too_many_pixels`                            |
+| Unknown image, or image of another user | 404  | `image_not_found`                                  |
+| Too many uploads in the last hour       | 429  | `image_upload_limit_reached` (param `max_uploads`) |
+| Tile without text nor image             | 422  | `tile_empty`                                       |
 
 ### 2.7 Storage and serving
 
@@ -123,7 +127,16 @@ SeaweedFS in development:
 
 ### 2.8 Cleanup
 
-No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It is a command run next to `scripts/purge_deleted_templates.py`.
+No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It is a command run next to `scripts/purge_deleted_templates.py`:
+
+```bash
+cd backend
+uv run python scripts/purge_unused_images.py   # prints "Unused images purged: n"
+```
+
+- It erases the **visible** images created more than `UNUSED_IMAGE_RETENTION_DAYS` days ago that no tile uses. The images hidden or deleted by the moderation keep their row (#124). Snapshots do not exist yet; when they do, the query must also keep the images they use.
+- The rows are deleted first, in a single query, then the files: a tile can never point to an erased file. A tile that attaches one of these images at the same moment waits for the deletion, then fails on the foreign key. A file that cannot be erased (storage down) is logged with its key, to be erased by hand.
+- It can be run again safely: it only erases what has expired. It must be scheduled once a day on the server ([TODO](../../TODO.md)).
 
 ### 2.9 Moderation
 
@@ -163,14 +176,19 @@ Added with #81:
 
 Backend (tests: [testing guide](testing.md)):
 
-| File                               | Role                                                                                                                                                                  |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`) and `422`.                                                                                     |
-| `app/services/images.py`           | `ImageService.upload`: reads the file without going over the limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails). |
-| `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                       |
-| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                  |
-| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                           |
-| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                |
-| `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                            |
+| File                               | Role                                                                                                                                                                                                                                                |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`), `422` and `429` (param `max_uploads`).                                                                                                                                      |
+| `app/services/images.py`           | `ImageService.upload`: checks the hourly limit, reads the file without going over the size limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails). `purge_unused`: the garbage collection of §2.8. |
+| `app/repositories/images.py`       | Image of an owner, number of recent uploads, deletion of the unused images.                                                                                                                                                                         |
+| `app/services/templates.py`        | Tiles with an image: `_check_owned_image`, rule "a text or an image" (`TileEmptyError`).                                                                                                                                                            |
+| `app/schemas/templates.py`         | `TileResponse.image_url`, built with the `ImageStorage.url` given in the validation context.                                                                                                                                                        |
+| `app/models/tile.py`               | `Tile.image_id` and `Tile.image`; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                |
+| `scripts/purge_unused_images.py`   | Command of the garbage collection.                                                                                                                                                                                                                  |
+| `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                                                                                                     |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                                                                                                |
+| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                         |
+| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                                                                                              |
+| `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                          |
 
 Development: `compose.yaml` and `seaweedfs/` (§2.7). Frontend: the error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.

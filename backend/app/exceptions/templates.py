@@ -15,6 +15,10 @@ class TileNotFoundError(Exception):
     """Tuile inexistante dans ce template (le template, lui, appartient bien à l'utilisateur)."""
 
 
+class TileEmptyError(Exception):
+    """La tuile n'aurait ni texte ni image : elle n'aurait aucun contenu à classer."""
+
+
 class TileLimitReachedError(Exception):
     """Le template a déjà le nombre maximal de tuiles de son plan."""
 

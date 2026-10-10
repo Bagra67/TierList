@@ -266,7 +266,7 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Temps laissé sur la page de Google avant que la tentative expire                                                                                                                           | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Délai des appels vers Google (échange du code, clés publiques)                                                                                                                             | `10`                                             |
 
-Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les images des tuiles et leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
+Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
@@ -350,23 +350,26 @@ Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/co
 
 Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 
-| Code                        | Statut      | Signification                                                                            |
-| --------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
-| `internal_error`            | 500         | Erreur imprévue                                                                          |
-| `validation_error`          | 422         | Requête invalide (voir `errors`)                                                         |
-| `http_error`                | tous        | `HTTPException` sans code dédié                                                          |
-| `database_unavailable`      | 503         | `GET /health/db` : la base ne répond pas                                                 |
-| `not_authenticated`         | 401         | Access token absent ou invalide                                                          |
-| `email_already_registered`  | 409         | Inscription avec un email déjà utilisé                                                   |
-| `invalid_credentials`       | 401         | Email ou mot de passe incorrect                                                          |
-| `session_expired`           | 401         | Refresh token absent, expiré ou révoqué                                                  |
-| `incorrect_password`        | 403         | Mot de passe faux à la suppression du compte                                             |
-| `reauthentication_required` | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
-| `invalid_token`             | 400         | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                 |
-| `password_too_short`        | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
-| `template_not_found`        | 404         | Template inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables)        |
-| `image_unsupported_format`  | 415         | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                           |
-| `image_too_large`           | 413         | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`        |
-| `image_too_many_pixels`     | 422         | `POST /images` : image décodée au-delà de `IMAGE_MAX_SOURCE_PIXELS`                      |
+| Code                         | Statut      | Signification                                                                            |
+| ---------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| `internal_error`             | 500         | Erreur imprévue                                                                          |
+| `validation_error`           | 422         | Requête invalide (voir `errors`)                                                         |
+| `http_error`                 | tous        | `HTTPException` sans code dédié                                                          |
+| `database_unavailable`       | 503         | `GET /health/db` : la base ne répond pas                                                 |
+| `not_authenticated`          | 401         | Access token absent ou invalide                                                          |
+| `email_already_registered`   | 409         | Inscription avec un email déjà utilisé                                                   |
+| `invalid_credentials`        | 401         | Email ou mot de passe incorrect                                                          |
+| `session_expired`            | 401         | Refresh token absent, expiré ou révoqué                                                  |
+| `incorrect_password`         | 403         | Mot de passe faux à la suppression du compte                                             |
+| `reauthentication_required`  | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
+| `invalid_token`              | 400         | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                 |
+| `password_too_short`         | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
+| `template_not_found`         | 404         | Template inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables)        |
+| `image_unsupported_format`   | 415         | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                           |
+| `image_too_large`            | 413         | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`        |
+| `image_too_many_pixels`      | 422         | `POST /images` : image décodée au-delà de `IMAGE_MAX_SOURCE_PIXELS`                      |
+| `image_upload_limit_reached` | 429         | `POST /images` : `IMAGE_UPLOADS_PER_HOUR_MAX` atteint ; `params.max_uploads`             |
+| `image_not_found`            | 404         | `image_id` d'une tuile inconnue ou d'un autre utilisateur                                |
+| `tile_empty`                 | 422         | Tuile sans texte ni image                                                                |
 
 Pour les erreurs prévues (introuvable, conflit…), levez une `AppHTTPException` avec un `ErrorCode` et un `detail` en anglais (`app/constants/messages.py`), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. **Tout nouveau code d'erreur doit être traduit dans chaque langue du frontend.** Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

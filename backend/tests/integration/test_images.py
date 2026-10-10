@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from typing import Any
 
@@ -8,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from PIL import Image as PillowImage
+from sqlalchemy import update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -36,6 +38,11 @@ def register(client: TestClient, email: str) -> dict[str, str]:
 @pytest.fixture
 def alice(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, "alice@example.com")
+
+
+@pytest.fixture
+def bob(auth_client: TestClient) -> dict[str, str]:
+    return register(auth_client, "bob@example.com")
 
 
 def upload(
@@ -199,6 +206,49 @@ def test_upload_refuses_an_image_with_too_many_pixels(
     assert response.status_code == 422
     assert response.json()["code"] == ErrorCode.IMAGE_TOO_MANY_PIXELS
     assert stored_images == {}
+
+
+def test_uploads_are_limited_per_account_and_hour(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    override_settings: Callable[..., None],
+    stored_images: dict[str, bytes],
+):
+    override_settings(image_uploads_per_hour_max=2)
+    content: bytes = make_image_file((100, 100), "PNG")
+    for _ in range(2):
+        assert upload(auth_client, alice, content).status_code == 201
+
+    refused: Response = upload(auth_client, alice, content)
+
+    assert refused.status_code == 429
+    body: JsonObject = refused.json()
+    assert body["code"] == ErrorCode.IMAGE_UPLOAD_LIMIT_REACHED
+    assert body["params"] == {"max_uploads": 2}
+    assert len(stored_images) == 2
+    # La limite est propre à chaque compte
+    assert upload(auth_client, bob, content).status_code == 201
+
+
+def test_uploads_older_than_an_hour_do_not_count(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    db_session: Session,
+    override_settings: Callable[..., None],
+):
+    override_settings(image_uploads_per_hour_max=1)
+    content: bytes = make_image_file((100, 100), "PNG")
+    first: Response = upload(auth_client, alice, content)
+    db_session.execute(
+        update(Image)
+        .where(Image.id == uuid.UUID(first.json()["id"]))
+        .values(created_at=datetime.now(UTC) - timedelta(hours=1, minutes=1))
+    )
+
+    response: Response = upload(auth_client, alice, content)
+
+    assert response.status_code == 201
 
 
 def test_upload_without_a_file_is_a_validation_error(

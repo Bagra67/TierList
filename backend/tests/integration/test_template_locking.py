@@ -120,7 +120,7 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
                 assert owner is not None
                 try:
                     TemplateService(second_request, get_settings()).add_tile(
-                        owner, template_id, "One too many"
+                        owner, template_id, "One too many", None
                     )
                 except TileLimitReachedError as error:
                     errors.append(error)
