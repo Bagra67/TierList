@@ -12,6 +12,11 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: {
+    // Écoute en IPv4 sur la boucle locale. Par défaut, Vite écoute sur « localhost », que Node
+    // résout en ::1 seulement : sous Windows, Firefox essaie d'abord 127.0.0.1 et attend ~2 s
+    // le refus avant de basculer sur ::1, à chaque nouvelle connexion. 127.0.0.1 reste rapide
+    // dans tous les navigateurs, sans exposer le serveur au réseau comme '::' ou true.
+    host: '127.0.0.1',
     proxy: {
       // /api/auth/me -> http://127.0.0.1:8000/auth/me (backend FastAPI)
       '/api': {
