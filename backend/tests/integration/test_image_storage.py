@@ -13,7 +13,7 @@ pytestmark = pytest.mark.integration
 HTTP_TIMEOUT_SECONDS: float = 10
 
 
-def test_a_saved_image_is_publicly_readable_with_long_caching(s3_image_storage: ImageStorage):
+def test_a_saved_image_is_publicly_readable_with_a_one_day_cache(s3_image_storage: ImageStorage):
     key: str = f"test-{uuid.uuid4()}.webp"
     data: bytes = b"RIFF\x00\x00\x00\x00WEBPtest"
 

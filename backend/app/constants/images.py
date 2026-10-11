@@ -11,8 +11,10 @@ IMAGE_WEBP_QUALITY = 80
 
 # --- Stockage ------------------------------------------------------------------------------
 IMAGE_CONTENT_TYPE = "image/webp"
-# Le contenu d'une clé ne change jamais (une nouvelle image a une nouvelle clé) : cache illimité
-IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable"
+# Un jour : le contenu d'une clé ne change jamais (une nouvelle image a une nouvelle clé), mais une
+# image masquée par la modération ou effacée doit quitter les caches des navigateurs en 24 h au
+# plus (la purge du CDN, elle, est immédiate)
+IMAGE_CACHE_CONTROL = "public, max-age=86400"
 IMAGE_FILE_EXTENSION = "webp"
 # Longueur d'une clé de stockage : un UUID (36 caractères) suivi de « .webp »
 IMAGE_STORAGE_KEY_MAX_LENGTH = 64

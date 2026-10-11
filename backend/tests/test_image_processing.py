@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from io import BytesIO
 
 import pytest
@@ -80,6 +81,8 @@ def test_the_pixel_limit_is_inclusive() -> None:
         pytest.param((200, 100), (512, 256), id="small-landscape"),
         pytest.param((30, 60), (256, 512), id="small-portrait"),
         pytest.param((1, 1), (512, 512), id="single-pixel"),
+        # Le petit côté s'arrondirait à 0 px : il est gardé à 1 px
+        pytest.param((2000, 1), (512, 1), id="extremely-elongated"),
         pytest.param((512, 300), (512, 300), id="already-512"),
     ],
 )
@@ -92,6 +95,44 @@ def test_the_longest_side_is_resized_to_512_keeping_proportions(
 
     assert (compressed.width, compressed.height) == expected_size
     assert open_output(compressed).size == expected_size
+
+
+@pytest.mark.parametrize(
+    ("source_size", "expected_size"),
+    [
+        pytest.param((4000, 3000), (512, 384), id="photo-landscape"),
+        pytest.param((3000, 4000), (384, 512), id="photo-portrait"),
+        # Petit côté sous 512 px : le décodeur ne réduit pas l'image en la lisant
+        pytest.param((4000, 300), (512, 38), id="panorama"),
+    ],
+)
+def test_a_large_jpeg_decoded_at_a_reduced_scale_keeps_the_exact_output_size(
+    source_size: tuple[int, int], expected_size: tuple[int, int]
+) -> None:
+    content: bytes = make_image_file(source_size, "JPEG")
+
+    compressed: CompressedImage = compress_image(content, MAX_SOURCE_PIXELS)
+
+    assert (compressed.width, compressed.height) == expected_size
+
+
+def test_a_large_jpeg_is_decoded_at_a_reduced_scale(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Créé avant d'espionner load : seul le décodage par compress_image est observé
+    content: bytes = make_image_file((4000, 3000), "JPEG")
+    decoded_sizes: list[tuple[int, int]] = []
+    original_load: Callable[[Image.Image], object] = Image.Image.load
+
+    def record_load(image: Image.Image) -> object:
+        loaded: object = original_load(image)
+        decoded_sizes.append(image.size)
+        return loaded
+
+    monkeypatch.setattr(Image.Image, "load", record_load)
+    # 4000 × 3000 : réduite au 1/4 en lisant (1000 × 750), le 1/8 passerait sous 512 px
+    compress_image(content, MAX_SOURCE_PIXELS)
+
+    assert (1000, 750) in decoded_sizes
+    assert (4000, 3000) not in decoded_sizes
 
 
 def test_exif_orientation_is_applied() -> None:

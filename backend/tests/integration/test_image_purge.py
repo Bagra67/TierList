@@ -3,7 +3,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from botocore.exceptions import ClientError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,7 +12,7 @@ from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.images import ImageService
-from tests.integration.conftest import FakeImageStorage
+from tests.integration.conftest import FailingImageStorage, FakeImageStorage
 
 pytestmark = pytest.mark.integration
 
@@ -130,19 +129,6 @@ def test_purge_retention_is_configurable(
 
     assert kept_count == 0
     assert purged_count == 1
-
-
-class FailingImageStorage(FakeImageStorage):
-    """Stockage qui refuse d'effacer une clé donnée, comme un fournisseur S3 en panne."""
-
-    def __init__(self, stored: dict[str, bytes], failing_key: str) -> None:
-        super().__init__(stored)
-        self.failing_key = failing_key
-
-    def delete(self, key: str) -> None:
-        if key == self.failing_key:
-            raise ClientError({"Error": {"Code": "InternalError"}}, "DeleteObject")
-        super().delete(key)
 
 
 def test_a_file_that_cannot_be_erased_is_logged_and_the_others_are_still_erased(
