@@ -374,6 +374,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/guests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join As Guest */
+        post: operations["join_as_guest_rooms__code__guests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/guest-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Guest Session */
+        post: operations["restore_guest_session_rooms__code__guest_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rooms/{code}/join": {
         parameters: {
             query?: never;
@@ -531,6 +565,31 @@ export interface components {
              */
             language: "fr" | "en";
         };
+        /**
+         * GuestRoomResponse
+         * @description Salle rejointe en invité, avec le lien perso : donné une seule fois, la base n'en gardant
+         *     que l'empreinte.
+         */
+        GuestRoomResponse: {
+            /** Code */
+            code: string;
+            /** Link */
+            link: string;
+            status: components["schemas"]["RoomStatus"];
+            template: components["schemas"]["RoomTemplateResponse"] | null;
+            settings: components["schemas"]["RoomSettingsResponse"];
+            /** Participants */
+            participants: components["schemas"]["ParticipantResponse"][];
+            /** Is Admin */
+            is_admin: boolean;
+            /** Guest Link */
+            guest_link: string;
+            /**
+             * Guest Link Expires At
+             * Format: date-time
+             */
+            guest_link_expires_at: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -561,6 +620,11 @@ export interface components {
          * @enum {string}
          */
         ItemOrder: "template" | "random";
+        /** JoinAsGuestRequest */
+        JoinAsGuestRequest: {
+            /** Nickname */
+            nickname: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -582,6 +646,8 @@ export interface components {
             display_name: string;
             /** Is Admin */
             is_admin: boolean;
+            /** Is Guest */
+            is_guest: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -612,6 +678,11 @@ export interface components {
             token: string;
             /** Password */
             password: string;
+        };
+        /** RestoreGuestRequest */
+        RestoreGuestRequest: {
+            /** Token */
+            token: string;
         };
         /** RoomResponse */
         RoomResponse: {
@@ -2178,7 +2249,9 @@ export interface operations {
             path: {
                 code: string;
             };
-            cookie?: never;
+            cookie?: {
+                guest_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2201,6 +2274,121 @@ export interface operations {
                 };
             };
             /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    join_as_guest_rooms__code__guests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinAsGuestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestRoomResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Nickname already used in the room */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    restore_guest_session_rooms__code__guest_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreGuestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestRoomResponse"];
+                };
+            };
+            /** @description Guest link unknown, expired, or room closed */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -52,6 +52,10 @@ class ErrorCode(StrEnum):
     ROOM_ADMIN_REQUIRED = "room_admin_required"
     # Réglage modifié pendant une partie (seules les arrivées peuvent l'être)
     ROOM_SETTINGS_LOCKED = "room_settings_locked"
+    # Pseudo d'invité déjà porté dans la salle (sans tenir compte de la casse)
+    NICKNAME_TAKEN = "nickname_taken"
+    # Lien perso d'invité inconnu, expiré ou d'une salle fermée
+    GUEST_LINK_INVALID = "guest_link_invalid"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

@@ -1,4 +1,5 @@
-"""Règles métier des salles : création à partir d'un template, jonction, lecture et réglages.
+"""Règles métier des salles : création à partir d'un template, jonction (compte ou invité),
+lecture et réglages.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 Une salle n'est visible que de ses participants ; seul son room admin change les réglages.
@@ -7,6 +8,8 @@ Une salle n'est visible que de ses participants ; seul son room admin change les
 import logging
 import secrets
 import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
 from psycopg.errors import UniqueViolation
@@ -15,12 +18,20 @@ from sqlalchemy.orm import Session
 
 from app.constants.rooms import (
     FRONTEND_ROOM,
+    GUEST_LINK_FRAGMENT,
     ROOM_CODE_ALPHABET,
     ROOM_CODE_LENGTH,
     ROOM_CODE_MAX_ATTEMPTS,
 )
 from app.core.config import Settings
-from app.exceptions.rooms import RoomAdminRequiredError, RoomNotFoundError, RoomSettingsLockedError
+from app.core.security import generate_guest_token, hash_guest_token
+from app.exceptions.rooms import (
+    GuestLinkInvalidError,
+    NicknameTakenError,
+    RoomAdminRequiredError,
+    RoomNotFoundError,
+    RoomSettingsLockedError,
+)
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
 from app.models.participant import Participant
 from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
@@ -55,6 +66,25 @@ class RoomSettingsChanges(TypedDict, total=False):
 
 # Seul réglage modifiable pendant une partie (US-2.10, #88)
 SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
+
+
+@dataclass(frozen=True)
+class RoomViewer:
+    """Qui lit la salle : un compte (access token), sinon peut-être un invité (jeton de son
+    cookie). Un compte connecté passe toujours avant un éventuel cookie d'invité."""
+
+    user: User | None
+    guest_token: str | None
+
+
+@dataclass(frozen=True)
+class GuestSeat:
+    """Place d'un invité, avec son jeton en clair : il n'existe qu'ici, le temps de poser le
+    cookie et de donner le lien perso (la base n'en garde que l'empreinte)."""
+
+    room: Room
+    participant: Participant
+    token: str
 
 
 class RoomService:
@@ -122,6 +152,74 @@ class RoomService:
         logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
         return room
 
+    def join_as_guest(self, code: str, nickname: str) -> GuestSeat:
+        """Donne une place d'invité (US-2.5) : un pseudo suffit, unique dans la salle sans tenir
+        compte de la casse. L'invité reçoit un jeton valable guest_link_ttl_days, porté par son
+        cookie et son lien perso ; il n'est jamais lié à un compte."""
+        room: Room | None = room_repository.get_room_by_code(
+            self._session, code.upper(), for_update=True
+        )
+        if room is None:
+            raise RoomNotFoundError
+        now: datetime = datetime.now(UTC)
+        # Les invités dont le lien a expiré ont perdu leur place : elle libère leur pseudo
+        for participant in list(room.participants):
+            if participant.has_expired(now):
+                room.participants.remove(participant)
+        # Supprimées tout de suite : au flush, SQLAlchemy passe les INSERT avant les DELETE, et
+        # le nouvel invité buterait sur l'index unique du pseudo libéré
+        self._session.flush()
+        taken_names: set[str] = {
+            participant.display_name.lower() for participant in room.participants
+        }
+        if nickname.lower() in taken_names:
+            raise NicknameTakenError
+        token: str = generate_guest_token()
+        guest: Participant = Participant(
+            nickname=nickname,
+            guest_token_hash=hash_guest_token(token),
+            guest_expires_at=now + timedelta(days=self._settings.guest_link_ttl_days),
+        )
+        room.participants.append(guest)
+        self._session.commit()
+        logger.info("Salle rejointe en invité : room_id=%s participant_id=%s", room.id, guest.id)
+        return GuestSeat(room=room, participant=guest, token=token)
+
+    def restore_guest(self, code: str, token: str) -> GuestSeat:
+        """Retrouve la place d'un invité à partir de son lien perso, depuis n'importe quel
+        appareil (US-5.4) ; la validité n'est pas prolongée."""
+        room: Room | None = room_repository.get_room_by_code(self._session, code.upper())
+        if room is None:
+            raise GuestLinkInvalidError
+        guest: Participant | None = self._find_guest(room, token)
+        if guest is None:
+            raise GuestLinkInvalidError
+        return GuestSeat(room=room, participant=guest, token=token)
+
+    def get_for_viewer(self, viewer: RoomViewer, code: str) -> Room:
+        """Salle dont le lecteur a une place : un compte participant, ou un invité dont le
+        cookie porte un jeton valable pour cette salle."""
+        if viewer.user is not None:
+            return self.get(viewer.user, code)
+        room: Room | None = room_repository.get_room_by_code(self._session, code.upper())
+        if room is None or viewer.guest_token is None:
+            raise RoomNotFoundError
+        if self._find_guest(room, viewer.guest_token) is None:
+            raise RoomNotFoundError
+        return room
+
+    def seated_participants(self, room: Room) -> list[Participant]:
+        """Participants qui ont encore leur place : sans les invités dont le lien a expiré."""
+        now: datetime = datetime.now(UTC)
+        return [
+            participant for participant in room.participants if not participant.has_expired(now)
+        ]
+
+    def guest_link(self, seat: GuestSeat) -> str:
+        """Lien perso de l'invité : le jeton est dans le fragment, que le navigateur n'envoie
+        jamais au serveur (ni dans ses journaux)."""
+        return f"{self.link(seat.room)}#{GUEST_LINK_FRAGMENT}={seat.token}"
+
     def update_settings(self, user: User, code: str, changes: RoomSettingsChanges) -> Room:
         """Change les réglages de la prochaine partie (room admin seulement). Pendant une partie,
         seules les arrivées peuvent changer."""
@@ -155,6 +253,16 @@ class RoomService:
     @staticmethod
     def _has_seat(room: Room, user: User) -> bool:
         return any(participant.user_id == user.id for participant in room.participants)
+
+    @staticmethod
+    def _find_guest(room: Room, token: str) -> Participant | None:
+        """Place d'invité de cette salle dont le jeton est celui-ci, si elle n'a pas expiré."""
+        token_hash: str = hash_guest_token(token)
+        now: datetime = datetime.now(UTC)
+        for participant in room.participants:
+            if participant.guest_token_hash == token_hash and not participant.has_expired(now):
+                return participant
+        return None
 
     def _insert_unless_code_taken(self, room: Room) -> bool:
         """Insère la salle dans un savepoint ; False si son code est déjà pris (la transaction

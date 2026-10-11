@@ -20,8 +20,18 @@ export const aliceRoom: Room = {
     late_arrivals_allowed: true,
   },
   participants: [
-    { id: '9a1b2c3d-0000-4000-8000-000000000001', display_name: 'Alice', is_admin: true },
-    { id: '9a1b2c3d-0000-4000-8000-000000000002', display_name: 'Bob', is_admin: false },
+    {
+      id: '9a1b2c3d-0000-4000-8000-000000000001',
+      display_name: 'Alice',
+      is_admin: true,
+      is_guest: false,
+    },
+    {
+      id: '9a1b2c3d-0000-4000-8000-000000000002',
+      display_name: 'Bob',
+      is_admin: false,
+      is_guest: false,
+    },
   ],
   is_admin: true,
 };

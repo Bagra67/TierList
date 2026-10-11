@@ -23,6 +23,7 @@ from app.constants.auth import (
     PASSWORD_RESET_TOKEN_TYPE,
     REFRESH_TOKEN_BYTES,
 )
+from app.constants.rooms import GUEST_TOKEN_BYTES
 from app.exceptions.auth import InvalidAccessTokenError, InvalidEmailTokenError
 
 # Argon2id avec les paramètres recommandés par pwdlib
@@ -208,3 +209,13 @@ def generate_refresh_token() -> str:
 def hash_refresh_token(refresh_token: str) -> str:
     # SHA-256 suffit : le token est aléatoire (256 bits), un hachage lent n'apporterait rien.
     return hashlib.sha256(refresh_token.encode()).hexdigest()
+
+
+def generate_guest_token() -> str:
+    """Jeton de la place d'un invité : porté par son cookie et son lien perso."""
+    return secrets.token_urlsafe(GUEST_TOKEN_BYTES)
+
+
+def hash_guest_token(guest_token: str) -> str:
+    # Seule l'empreinte est gardée en base, comme pour un refresh token (jeton de 256 bits)
+    return hashlib.sha256(guest_token.encode()).hexdigest()
