@@ -1726,6 +1726,276 @@
         ]
       }
     },
+    "/rooms": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Create Room",
+        "operationId": "create_room_rooms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Template without tiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/rooms/{code}": {
+      "get": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Get Room",
+        "operationId": "get_room_rooms__code__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/settings": {
+      "patch": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Update Room Settings",
+        "operationId": "update_room_settings_rooms__code__settings_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoomSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Settings locked during a game, except late arrivals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -1795,6 +2065,16 @@
   },
   "components": {
     "schemas": {
+      "AutoAdvance": {
+        "type": "string",
+        "enum": [
+          "none",
+          "timer",
+          "everyone_placed"
+        ],
+        "title": "AutoAdvance",
+        "description": "Passage automatique à l'item suivant."
+      },
       "Body_upload_image_images_post": {
         "properties": {
           "file": {
@@ -1808,6 +2088,20 @@
           "file"
         ],
         "title": "Body_upload_image_images_post"
+      },
+      "CreateRoomRequest": {
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Template Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "template_id"
+        ],
+        "title": "CreateRoomRequest"
       },
       "CreateTemplateRequest": {
         "properties": {
@@ -2070,6 +2364,15 @@
         ],
         "title": "ImageUploadResponse"
       },
+      "ItemOrder": {
+        "type": "string",
+        "enum": [
+          "template",
+          "random"
+        ],
+        "title": "ItemOrder",
+        "description": "Ordre de passage des tuiles pendant une partie."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -2090,6 +2393,30 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "ParticipantResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "is_admin"
+        ],
+        "title": "ParticipantResponse"
       },
       "RegisterRequest": {
         "properties": {
@@ -2162,6 +2489,120 @@
           "password"
         ],
         "title": "ResetPasswordRequest"
+      },
+      "RoomResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomTemplateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "settings": {
+            "$ref": "#/components/schemas/RoomSettingsResponse"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipantResponse"
+            },
+            "type": "array",
+            "title": "Participants"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "link",
+          "status",
+          "template",
+          "settings",
+          "participants",
+          "is_admin"
+        ],
+        "title": "RoomResponse"
+      },
+      "RoomSettingsResponse": {
+        "properties": {
+          "item_order": {
+            "$ref": "#/components/schemas/ItemOrder"
+          },
+          "auto_advance": {
+            "$ref": "#/components/schemas/AutoAdvance"
+          },
+          "timer_seconds": {
+            "type": "integer",
+            "title": "Timer Seconds"
+          },
+          "cooldown_seconds": {
+            "type": "integer",
+            "title": "Cooldown Seconds"
+          },
+          "admin_plays": {
+            "type": "boolean",
+            "title": "Admin Plays"
+          },
+          "late_arrivals_allowed": {
+            "type": "boolean",
+            "title": "Late Arrivals Allowed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_order",
+          "auto_advance",
+          "timer_seconds",
+          "cooldown_seconds",
+          "admin_plays",
+          "late_arrivals_allowed"
+        ],
+        "title": "RoomSettingsResponse"
+      },
+      "RoomStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "playing"
+        ],
+        "title": "RoomStatus",
+        "description": "Une salle fermée n'est pas gardée (docs/product/milestone-1/lifecycles.md) : elle est\nsupprimée, il n'y a donc pas de statut « fermée »."
+      },
+      "RoomTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RoomTemplateResponse"
       },
       "TemplateListResponse": {
         "properties": {
@@ -2356,6 +2797,80 @@
           "expires_in"
         ],
         "title": "TokenResponse"
+      },
+      "UpdateRoomSettingsRequest": {
+        "properties": {
+          "item_order": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ItemOrder"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_advance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoAdvance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timer_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 300.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timer Seconds"
+          },
+          "cooldown_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 600.0,
+                "minimum": 10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cooldown Seconds"
+          },
+          "admin_plays": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Plays"
+          },
+          "late_arrivals_allowed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Arrivals Allowed"
+          }
+        },
+        "type": "object",
+        "title": "UpdateRoomSettingsRequest"
       },
       "UpdateTierRequest": {
         "properties": {

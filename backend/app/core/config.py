@@ -5,6 +5,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 from app.constants.auth import JWT_SECRET_KEY_MIN_LENGTH, PASSWORD_MAX_LENGTH
+from app.constants.rooms import (
+    COOLDOWN_SECONDS_MAX,
+    COOLDOWN_SECONDS_MIN,
+    TIMER_SECONDS_MAX,
+    TIMER_SECONDS_MIN,
+)
 
 
 class Settings(BaseSettings):
@@ -41,6 +47,13 @@ class Settings(BaseSettings):
     # Templates (docs/technical/templates.md) : durée pendant laquelle un template supprimé
     # reste en base avant d'être purgé définitivement
     deleted_template_retention_days: int = Field(default=30, gt=0)
+
+    # Salles (docs/technical/rooms.md) : durées données à une nouvelle salle, que le room admin
+    # change ensuite dans ses réglages, entre les mêmes bornes
+    room_default_timer_seconds: int = Field(default=30, ge=TIMER_SECONDS_MIN, le=TIMER_SECONDS_MAX)
+    room_default_cooldown_seconds: int = Field(
+        default=60, ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECONDS_MAX
+    )
 
     # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
     # alignée sur la limite de corps du reverse proxy (10 Mio)

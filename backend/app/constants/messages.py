@@ -32,6 +32,12 @@ TILE_NOT_FOUND = "Tile not found"
 TILE_LIMIT_REACHED = "A template has at most {max_tiles} tiles"
 TILE_EMPTY = "A tile needs a text or an image"
 
+# --- Salles --------------------------------------------------------------------------------
+TEMPLATE_HAS_NO_TILES = "The template has no tiles"
+ROOM_NOT_FOUND = "Room not found"
+ROOM_ADMIN_REQUIRED = "Only the room admin can do this"
+ROOM_SETTINGS_LOCKED = "Only late arrivals can be changed during a game"
+
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
 # {max_bytes} est remplacé par IMAGE_UPLOAD_MAX_BYTES
@@ -58,3 +64,7 @@ IMAGE_UPLOAD_LIMIT_REACHED_DESCRIPTION = "Too many images uploaded in the last h
 TILE_EMPTY_DESCRIPTION = "Tile without text nor image, or invalid request"
 TEMPLATE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template or image not found"
 TEMPLATE_TILE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template, tile or image not found"
+TEMPLATE_HAS_NO_TILES_DESCRIPTION = "Template without tiles"
+ROOM_NOT_FOUND_DESCRIPTION = "Room not found"
+ROOM_ADMIN_REQUIRED_DESCRIPTION = "Not the room admin"
+ROOM_SETTINGS_LOCKED_DESCRIPTION = "Settings locked during a game, except late arrivals"

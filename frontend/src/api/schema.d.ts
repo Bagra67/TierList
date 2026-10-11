@@ -340,6 +340,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Room */
+        post: operations["create_room_rooms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Room */
+        get: operations["get_room_rooms__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Room Settings */
+        patch: operations["update_room_settings_rooms__code__settings_patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -378,10 +429,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AutoAdvance
+         * @description Passage automatique à l'item suivant.
+         * @enum {string}
+         */
+        AutoAdvance: "none" | "timer" | "everyone_placed";
         /** Body_upload_image_images_post */
         Body_upload_image_images_post: {
             /** File */
             file: string;
+        };
+        /** CreateRoomRequest */
+        CreateRoomRequest: {
+            /**
+             * Template Id
+             * Format: uuid
+             */
+            template_id: string;
         };
         /** CreateTemplateRequest */
         CreateTemplateRequest: {
@@ -473,6 +538,12 @@ export interface components {
             /** Height */
             height: number;
         };
+        /**
+         * ItemOrder
+         * @description Ordre de passage des tuiles pendant une partie.
+         * @enum {string}
+         */
+        ItemOrder: "template" | "random";
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -482,6 +553,18 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** ParticipantResponse */
+        ParticipantResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Is Admin */
+            is_admin: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -512,6 +595,50 @@ export interface components {
             token: string;
             /** Password */
             password: string;
+        };
+        /** RoomResponse */
+        RoomResponse: {
+            /** Code */
+            code: string;
+            /** Link */
+            link: string;
+            status: components["schemas"]["RoomStatus"];
+            template: components["schemas"]["RoomTemplateResponse"] | null;
+            settings: components["schemas"]["RoomSettingsResponse"];
+            /** Participants */
+            participants: components["schemas"]["ParticipantResponse"][];
+            /** Is Admin */
+            is_admin: boolean;
+        };
+        /** RoomSettingsResponse */
+        RoomSettingsResponse: {
+            item_order: components["schemas"]["ItemOrder"];
+            auto_advance: components["schemas"]["AutoAdvance"];
+            /** Timer Seconds */
+            timer_seconds: number;
+            /** Cooldown Seconds */
+            cooldown_seconds: number;
+            /** Admin Plays */
+            admin_plays: boolean;
+            /** Late Arrivals Allowed */
+            late_arrivals_allowed: boolean;
+        };
+        /**
+         * RoomStatus
+         * @description Une salle fermée n'est pas gardée (docs/product/milestone-1/lifecycles.md) : elle est
+         *     supprimée, il n'y a donc pas de statut « fermée ».
+         * @enum {string}
+         */
+        RoomStatus: "open" | "playing";
+        /** RoomTemplateResponse */
+        RoomTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** TemplateListResponse */
         TemplateListResponse: {
@@ -601,6 +728,19 @@ export interface components {
             token_type: "bearer";
             /** Expires In */
             expires_in: number;
+        };
+        /** UpdateRoomSettingsRequest */
+        UpdateRoomSettingsRequest: {
+            item_order?: components["schemas"]["ItemOrder"] | null;
+            auto_advance?: components["schemas"]["AutoAdvance"] | null;
+            /** Timer Seconds */
+            timer_seconds?: number | null;
+            /** Cooldown Seconds */
+            cooldown_seconds?: number | null;
+            /** Admin Plays */
+            admin_plays?: boolean | null;
+            /** Late Arrivals Allowed */
+            late_arrivals_allowed?: boolean | null;
         };
         /** UpdateTierRequest */
         UpdateTierRequest: {
@@ -1932,6 +2072,213 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_room_rooms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoomRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template without tiles */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_room_rooms__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_room_settings_rooms__code__settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoomSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Settings locked during a game, except late arrivals */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */

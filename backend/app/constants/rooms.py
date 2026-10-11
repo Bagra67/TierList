@@ -6,6 +6,9 @@ ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 # déjà rare
 ROOM_CODE_MAX_ATTEMPTS = 5
 
+# Page de la salle côté frontend : le lien d'une salle est cette page suivie de son code (#84)
+FRONTEND_ROOM = "/r"
+
 # --- Bornes des durées des réglages, en secondes -------------------------------------------
 # Les valeurs par défaut sont dans Settings (ROOM_DEFAULT_*), qui doivent rester entre ces bornes
 TIMER_SECONDS_MIN = 5
