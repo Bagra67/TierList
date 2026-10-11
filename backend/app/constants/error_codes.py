@@ -40,6 +40,8 @@ class ErrorCode(StrEnum):
     TILE_NOT_FOUND = "tile_not_found"
     # Nombre maximal de tuiles atteint, avec le param max_tiles
     TILE_LIMIT_REACHED = "tile_limit_reached"
+    # Tuile sans texte ni image
+    TILE_EMPTY = "tile_empty"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible
@@ -48,3 +50,7 @@ class ErrorCode(StrEnum):
     IMAGE_TOO_LARGE = "image_too_large"
     # Image décodée trop grande (bombe de décompression)
     IMAGE_TOO_MANY_PIXELS = "image_too_many_pixels"
+    # Trop d'envois sur l'heure écoulée, avec le param max_uploads
+    IMAGE_UPLOAD_LIMIT_REACHED = "image_upload_limit_reached"
+    # Image inexistante ou d'un autre utilisateur (indiscernables)
+    IMAGE_NOT_FOUND = "image_not_found"

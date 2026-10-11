@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     image_upload_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     # Nombre maximal de pixels de l'image décodée : protège contre les bombes de décompression
     image_max_source_pixels: int = Field(default=40_000_000, gt=0)
+    # Nombre maximal d'images envoyées par un compte sur une heure glissante (contre les abus)
+    image_uploads_per_hour_max: int = Field(default=120, gt=0)
+    # Jours pendant lesquels une image qu'aucune tuile n'utilise est gardée avant d'être effacée
+    # par le ramasse-miettes (scripts/purge_unused_images.py)
+    unused_image_retention_days: int = Field(default=7, gt=0)
     # Stockage S3 des images. En développement, SeaweedFS (compose.yaml) : ses valeurs sont dans
     # .env.example. Sans adresse, boto3 vise AWS S3 ; sans clés, il cherche ses identifiants
     # habituels (variables AWS_*, rôle de la machine).

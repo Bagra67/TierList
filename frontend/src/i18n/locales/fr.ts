@@ -183,9 +183,13 @@ export const fr = {
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',
       tile_limit_reached: 'Un template a au plus {{max_tiles}} tuiles.',
+      tile_empty: "Une tuile a besoin d'un texte ou d'une image.",
       image_unsupported_format: "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
       image_too_large: "L'image est trop lourde : {{max_bytes, megabytes}} au maximum.",
       image_too_many_pixels: "L'image est trop grande : réduisez sa définition puis réessayez.",
+      image_upload_limit_reached:
+        "Vous avez envoyé {{max_uploads}} images dans l'heure : réessayez un peu plus tard.",
+      image_not_found: 'Cette image est introuvable.',
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

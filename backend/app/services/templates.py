@@ -16,17 +16,21 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
 from app.core.config import Settings
+from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     LastTierError,
     TemplateNotFoundError,
     TierNotFoundError,
+    TileEmptyError,
     TileLimitReachedError,
     TileNotFoundError,
 )
+from app.models.image import Image
 from app.models.template import Template
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories import images as image_repository
 from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
@@ -71,9 +75,11 @@ class TierChanges(TypedDict, total=False):
 
 class TileChanges(TypedDict, total=False):
     """Modifications d'une tuile : seules les clés présentes changent. Hors position, chaque clé
-    est un attribut de Tile, recopié tel quel, comme pour TierChanges."""
+    est un attribut de Tile, recopié tel quel, comme pour TierChanges ; None retire le texte ou
+    l'image."""
 
-    text: str
+    text: str | None
+    image_id: uuid.UUID | None
     position: int
 
 
@@ -174,12 +180,23 @@ class TemplateService:
         self._save_change(template)
         return template
 
-    def add_tile(self, owner: User, template_id: uuid.UUID, text: str) -> Template:
-        """Ajoute une tuile texte à la fin ; refusé au-delà du nombre maximal de tuiles."""
+    def add_tile(
+        self,
+        owner: User,
+        template_id: uuid.UUID,
+        text: str | None,
+        image_id: uuid.UUID | None,
+    ) -> Template:
+        """Ajoute une tuile à la fin, avec un texte, une image de l'utilisateur, ou les deux ;
+        refusé au-delà du nombre maximal de tuiles."""
+        if text is None and image_id is None:
+            raise TileEmptyError
         template: Template = self._get_for_change(owner, template_id)
         if len(template.tiles) >= template.max_tiles:
             raise TileLimitReachedError(template.max_tiles)
-        new_tile: Tile = Tile(text=text, position=len(template.tiles))
+        if image_id is not None:
+            self._check_owned_image(owner, image_id)
+        new_tile: Tile = Tile(text=text, image_id=image_id, position=len(template.tiles))
         template.tiles.append(new_tile)
         self._save_change(template)
         return template
@@ -191,7 +208,8 @@ class TemplateService:
         tile_id: uuid.UUID,
         changes: TileChanges,
     ) -> Template:
-        """Change le texte et/ou la place d'une tuile dans l'ordre du template."""
+        """Change le texte, l'image et/ou la place d'une tuile dans l'ordre du template ; la
+        tuile doit garder un texte ou une image."""
         template: Template = self._get_for_change(owner, template_id)
         tile: Tile = self._get_tile(template, tile_id)
         if not changes:
@@ -199,6 +217,12 @@ class TemplateService:
             # seulement le verrou)
             self._session.commit()
             return template
+        new_text: str | None = changes.get("text", tile.text)
+        new_image_id: uuid.UUID | None = changes.get("image_id", tile.image_id)
+        if new_text is None and new_image_id is None:
+            raise TileEmptyError
+        if "image_id" in changes and new_image_id is not None:
+            self._check_owned_image(owner, new_image_id)
         for field_name, value in changes.items():
             # La position ne se recopie pas : déplacer une tuile décale aussi les autres
             if field_name != "position":
@@ -232,6 +256,12 @@ class TemplateService:
         de dernière modification : onupdate ne voit pas les changements des autres tables."""
         template.updated_at = func.clock_timestamp()
         self._session.commit()
+
+    def _check_owned_image(self, owner: User, image_id: uuid.UUID) -> None:
+        """Une tuile ne peut afficher qu'une image envoyée par le propriétaire du template."""
+        image: Image | None = image_repository.get_owned_image(self._session, image_id, owner.id)
+        if image is None:
+            raise ImageNotFoundError
 
     @staticmethod
     def _get_tile(template: Template, tile_id: uuid.UUID) -> Tile:

@@ -179,9 +179,13 @@ export const en: Translation = {
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',
       tile_limit_reached: 'A template has at most {{max_tiles}} tiles.',
+      tile_empty: 'A tile needs a text or an image.',
       image_unsupported_format: 'This file is not a JPEG, PNG or WebP image.',
       image_too_large: 'The image is too heavy: {{max_bytes, megabytes}} at most.',
       image_too_many_pixels: 'The image is too large: reduce its resolution and try again.',
+      image_upload_limit_reached:
+        'You uploaded {{max_uploads}} images in the last hour: try again a little later.',
+      image_not_found: 'This image could not be found.',
     },
     field: {
       invalid: 'Invalid value.',

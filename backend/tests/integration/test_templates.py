@@ -21,6 +21,8 @@ from app.models.template import Template
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
+from tests.image_files import make_image_file
+from tests.integration.conftest import FAKE_IMAGE_BASE_URL
 
 # Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
 # les saute (marqueur déclaré dans pyproject.toml)
@@ -490,7 +492,7 @@ def test_add_tile_validates_the_text(auth_client: TestClient, alice: dict[str, s
         f"/templates/{template['id']}/tiles", json={"text": text}, headers=alice
     )
 
-    # Sans image (pas encore gérée), une tuile sans texte n'aurait aucun contenu
+    # Un texte vide n'est pas « pas de texte » : envoyer null pour une tuile image seule
     assert response.status_code == 422
     errors: list[JsonObject] = response.json()["errors"]
     assert [error["field"] for error in errors] == ["body.text"]
@@ -574,7 +576,8 @@ def test_move_a_tile_keeps_the_positions_continuous(
     assert tile_texts(stored) == expected_texts
 
 
-@pytest.mark.parametrize("payload", [{}, {"text": None, "position": None}])
+# Une position null est ignorée ; un texte null, lui, retire le texte (tests des tuiles image)
+@pytest.mark.parametrize("payload", [{}, {"position": None}])
 def test_an_empty_tile_update_changes_nothing(
     auth_client: TestClient, alice: dict[str, str], payload: JsonObject
 ):
@@ -627,3 +630,155 @@ def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str
         ):
             assert response.status_code == 404
             assert response.json()["code"] == ErrorCode.TILE_NOT_FOUND
+
+
+# --- Tuiles image --------------------------------------------------------------------------
+
+
+def upload_image(client: TestClient, headers: dict[str, str]) -> JsonObject:
+    """Envoie une image par l'API (stockage factice) et renvoie {id, url, width, height}."""
+    response: Response = client.post(
+        "/images",
+        files={"file": ("photo.png", make_image_file((100, 100), "PNG"), "image/png")},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+def tiles_url(template: JsonObject) -> str:
+    return f"/templates/{template['id']}/tiles"
+
+
+def test_add_an_image_only_tile(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+
+    response: Response = auth_client.post(
+        tiles_url(template), json={"image_id": image["id"]}, headers=alice
+    )
+
+    assert response.status_code == 201
+    tile: JsonObject = response.json()["tiles"][0]
+    assert tile["text"] is None
+    assert tile["image_url"] == image["url"]
+    assert tile["image_url"].startswith(FAKE_IMAGE_BASE_URL)
+
+
+def test_add_a_tile_with_a_text_and_an_image(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+
+    response: Response = auth_client.post(
+        tiles_url(template), json={"text": "Pizza", "image_id": image["id"]}, headers=alice
+    )
+
+    assert response.status_code == 201
+    tile: JsonObject = response.json()["tiles"][0]
+    assert (tile["text"], tile["image_url"]) == ("Pizza", image["url"])
+    # Une tuile texte n'a pas d'image
+    text_tile: JsonObject = add_tile(auth_client, alice, template["id"], "Sushi")
+    assert text_tile["image_url"] is None
+
+
+@pytest.mark.parametrize("payload", [{}, {"text": None}, {"text": None, "image_id": None}])
+def test_a_tile_without_text_nor_image_is_refused(
+    auth_client: TestClient, alice: dict[str, str], payload: JsonObject
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+
+    response: Response = auth_client.post(tiles_url(template), json=payload, headers=alice)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == ErrorCode.TILE_EMPTY
+    assert auth_client.get(f"/templates/{template['id']}", headers=alice).json()["tiles"] == []
+
+
+def test_a_tile_cannot_use_an_unknown_image_or_the_image_of_another_user(
+    auth_client: TestClient, alice: dict[str, str], bob: dict[str, str]
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    tile: JsonObject = add_tile(auth_client, alice, template["id"], "Pizza")
+    bob_image: JsonObject = upload_image(auth_client, bob)
+
+    for image_id in (str(uuid.uuid4()), bob_image["id"]):
+        added: Response = auth_client.post(
+            tiles_url(template), json={"text": "Sushi", "image_id": image_id}, headers=alice
+        )
+        updated: Response = auth_client.patch(
+            f"{tiles_url(template)}/{tile['id']}", json={"image_id": image_id}, headers=alice
+        )
+
+        for response in (added, updated):
+            assert response.status_code == 404
+            assert response.json()["code"] == ErrorCode.IMAGE_NOT_FOUND
+    stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert [(tile["text"], tile["image_url"]) for tile in stored["tiles"]] == [("Pizza", None)]
+
+
+def test_replace_then_remove_the_image_of_a_tile(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    first_image: JsonObject = upload_image(auth_client, alice)
+    second_image: JsonObject = upload_image(auth_client, alice)
+    created: Response = auth_client.post(
+        tiles_url(template), json={"text": "Pizza", "image_id": first_image["id"]}, headers=alice
+    )
+    tile_url: str = f"{tiles_url(template)}/{created.json()['tiles'][0]['id']}"
+
+    replaced: Response = auth_client.patch(
+        tile_url, json={"image_id": second_image["id"]}, headers=alice
+    )
+    removed: Response = auth_client.patch(tile_url, json={"image_id": None}, headers=alice)
+
+    assert replaced.status_code == 200
+    assert replaced.json()["tiles"][0]["image_url"] == second_image["url"]
+    assert removed.status_code == 200
+    tile: JsonObject = removed.json()["tiles"][0]
+    assert (tile["text"], tile["image_url"]) == ("Pizza", None)
+
+
+def test_remove_the_text_of_a_tile_that_has_an_image(
+    auth_client: TestClient, alice: dict[str, str]
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+    created: Response = auth_client.post(
+        tiles_url(template), json={"text": "Pizza", "image_id": image["id"]}, headers=alice
+    )
+    tile_url: str = f"{tiles_url(template)}/{created.json()['tiles'][0]['id']}"
+
+    response: Response = auth_client.patch(tile_url, json={"text": None}, headers=alice)
+
+    assert response.status_code == 200
+    tile: JsonObject = response.json()["tiles"][0]
+    assert (tile["text"], tile["image_url"]) == (None, image["url"])
+
+
+@pytest.mark.parametrize("payload", [{"text": None}, {"text": None, "image_id": None}])
+def test_removing_the_last_content_of_a_tile_is_refused(
+    auth_client: TestClient, alice: dict[str, str], payload: JsonObject
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    tile: JsonObject = add_tile(auth_client, alice, template["id"], "Pizza")
+
+    response: Response = auth_client.patch(
+        f"{tiles_url(template)}/{tile['id']}", json=payload, headers=alice
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == ErrorCode.TILE_EMPTY
+    stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert tile_texts(stored) == ["Pizza"]
+
+
+def test_an_image_can_be_shared_by_several_tiles(auth_client: TestClient, alice: dict[str, str]):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+
+    for text in ("Pizza", "Sushi"):
+        auth_client.post(
+            tiles_url(template), json={"text": text, "image_id": image["id"]}, headers=alice
+        )
+
+    stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
+    assert [tile["image_url"] for tile in stored["tiles"]] == [image["url"], image["url"]]

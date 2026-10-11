@@ -391,7 +391,9 @@ export interface components {
         /** CreateTileRequest */
         CreateTileRequest: {
             /** Text */
-            text: string;
+            text?: string | null;
+            /** Image Id */
+            image_id?: string | null;
         };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
@@ -582,6 +584,8 @@ export interface components {
             id: string;
             /** Text */
             text: string | null;
+            /** Image Url */
+            image_url: string | null;
             /** Position */
             position: number;
         };
@@ -611,6 +615,8 @@ export interface components {
         UpdateTileRequest: {
             /** Text */
             text?: string | null;
+            /** Image Id */
+            image_id?: string | null;
             /** Position */
             position?: number | null;
         };
@@ -1701,7 +1707,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Template not found */
+            /** @description Template or image not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1719,13 +1725,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Tile without text nor image, or invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */
@@ -1832,7 +1838,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Template or tile not found */
+            /** @description Template, tile or image not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1841,13 +1847,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Tile without text nor image, or invalid request */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */
@@ -1912,6 +1918,15 @@ export interface operations {
             };
             /** @description Image with too many pixels */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many images uploaded in the last hour */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1413,7 +1413,7 @@
             }
           },
           "404": {
-            "description": "Template not found",
+            "description": "Template or image not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1433,11 +1433,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Tile without text nor image, or invalid request",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1521,7 +1521,7 @@
             }
           },
           "404": {
-            "description": "Template or tile not found",
+            "description": "Template, tile or image not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1531,11 +1531,11 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Tile without text nor image, or invalid request",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1707,6 +1707,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many images uploaded in the last hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1817,16 +1827,32 @@
       "CreateTileRequest": {
         "properties": {
           "text": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Text"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
           }
         },
         "type": "object",
-        "required": [
-          "text"
-        ],
         "title": "CreateTileRequest"
       },
       "DeleteAccountRequest": {
@@ -2282,6 +2308,17 @@
             ],
             "title": "Text"
           },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
           "position": {
             "type": "integer",
             "title": "Position"
@@ -2291,6 +2328,7 @@
         "required": [
           "id",
           "text",
+          "image_url",
           "position"
         ],
         "title": "TileResponse"
@@ -2376,6 +2414,18 @@
               }
             ],
             "title": "Text"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
           },
           "position": {
             "anyOf": [

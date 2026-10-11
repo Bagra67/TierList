@@ -17,7 +17,7 @@ function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
 }
 
 function makeTile(text: string, position: number): Tile {
-  return { id: `tile-${text}`, text, position };
+  return { id: `tile-${text}`, text, image_url: null, position };
 }
 
 function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Template {

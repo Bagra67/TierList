@@ -12,6 +12,7 @@ from app.exceptions.images import (
     ImageTooLargeError,
     ImageTooManyPixelsError,
     ImageUnsupportedFormatError,
+    ImageUploadLimitReachedError,
 )
 from app.models.image import Image
 from app.models.user import User
@@ -25,6 +26,7 @@ UPLOAD_IMAGE_RESPONSES: dict[int | str, dict[str, Any]] = {
     413: {"model": ErrorResponse, "description": messages.IMAGE_TOO_LARGE_DESCRIPTION},
     415: {"model": ErrorResponse, "description": messages.IMAGE_UNSUPPORTED_FORMAT_DESCRIPTION},
     422: {"model": ErrorResponse, "description": messages.IMAGE_TOO_MANY_PIXELS_DESCRIPTION},
+    429: {"model": ErrorResponse, "description": messages.IMAGE_UPLOAD_LIMIT_REACHED_DESCRIPTION},
 }
 
 
@@ -39,6 +41,13 @@ def upload_image(
     """Envoie une image de tuile (JPEG, PNG ou WebP), compressée en WebP par le serveur."""
     try:
         image: Image = service.upload(user, file.file)
+    except ImageUploadLimitReachedError as exc:
+        raise AppHTTPException(
+            status_code=429,
+            code=ErrorCode.IMAGE_UPLOAD_LIMIT_REACHED,
+            detail=messages.IMAGE_UPLOAD_LIMIT_REACHED.format(max_uploads=exc.max_uploads),
+            params={"max_uploads": exc.max_uploads},
+        ) from exc
     except ImageTooLargeError as exc:
         # La limite part en param : le frontend l'affiche sans la recopier dans ses traductions
         raise AppHTTPException(
