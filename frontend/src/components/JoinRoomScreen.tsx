@@ -4,6 +4,7 @@ import { type Location, Link, useLocation } from 'react-router';
 
 import { type GuestRoom, useJoinAsGuest } from '../api/rooms';
 import { signInRedirectState } from '../auth/signInRedirect';
+import { canonicalRoomCode } from '../constants/rooms';
 import { ROUTES } from '../constants/routes';
 import {
   type FieldError,
@@ -46,7 +47,9 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
       <h1 className="text-2xl font-semibold">{t('rooms.join.title')}</h1>
       <div className="flex flex-col gap-1">
         <h2 className="text-sm text-muted-foreground">{t('rooms.lobby.code')}</h2>
-        <p className="font-mono text-3xl font-semibold tracking-widest">{code.toUpperCase()}</p>
+        <p className="font-mono text-3xl font-semibold tracking-widest">
+          {canonicalRoomCode(code)}
+        </p>
       </div>
       <section className="flex w-full flex-col items-start gap-2 rounded-xl border p-4">
         <h2 className="font-semibold">{t('rooms.join.withAccount')}</h2>

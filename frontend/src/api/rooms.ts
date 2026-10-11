@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import { roomQueryKey } from '../constants/rooms';
+import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
 import { apiClient, dataOrThrow } from './client';
 import type { components } from './schema';
@@ -25,12 +25,6 @@ export type RoomSettingsChanges = components['schemas']['UpdateRoomSettingsReque
 
 async function createRoom(body: CreateRoomRequest): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms', { body }));
-}
-
-// Code tel que le backend l'enregistre : un code tapé en minuscules ouvre la même salle, sous la
-// même clé de cache
-function canonicalCode(code: string): string {
-  return code.trim().toUpperCase();
 }
 
 async function getRoom(code: string, signal?: AbortSignal): Promise<Room> {
@@ -117,7 +111,7 @@ export function useRoom(
   viewer: RoomViewer | undefined,
   guestToken: string | null = null,
 ): UseQueryResult<Room> {
-  const roomCode: string = canonicalCode(code);
+  const roomCode: string = canonicalRoomCode(code);
   return useQuery({
     queryKey: roomQueryKey(roomCode),
     queryFn: ({ signal }) => {
@@ -146,7 +140,7 @@ export function useJoinAsGuest(
 ): UseMutationResult<GuestRoom, Error, JoinAsGuestRequest> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: JoinAsGuestRequest) => joinAsGuest(canonicalCode(code), body),
+    mutationFn: (body: JoinAsGuestRequest) => joinAsGuest(canonicalRoomCode(code), body),
     onSuccess: (guestRoom: GuestRoom) => storeRoom(queryClient, guestRoom),
   });
 }
@@ -155,7 +149,7 @@ export function useJoinAsGuest(
 export function useRenewGuestLink(code: string): UseMutationResult<GuestRoom, Error, void> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => renewGuestLink(canonicalCode(code)),
+    mutationFn: () => renewGuestLink(canonicalRoomCode(code)),
     onSuccess: (guestRoom: GuestRoom) => storeRoom(queryClient, guestRoom),
   });
 }
@@ -166,7 +160,8 @@ export function useUpdateRoomSettings(
 ): UseMutationResult<Room, Error, RoomSettingsChanges> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
-    mutationFn: (changes: RoomSettingsChanges) => updateRoomSettings(canonicalCode(code), changes),
+    mutationFn: (changes: RoomSettingsChanges) =>
+      updateRoomSettings(canonicalRoomCode(code), changes),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

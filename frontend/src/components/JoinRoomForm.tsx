@@ -2,6 +2,7 @@ import { type FormEvent, useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { type NavigateFunction, useNavigate } from 'react-router';
 
+import { canonicalRoomCode } from '../constants/rooms';
 import { roomPath } from '../constants/routes';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -16,9 +17,9 @@ export function JoinRoomForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const code: string = String(new FormData(event.currentTarget).get('code')).trim();
+    const code: string = canonicalRoomCode(String(new FormData(event.currentTarget).get('code')));
     if (code === '') return;
-    await navigate(roomPath(code.toUpperCase()));
+    await navigate(roomPath(code));
   }
 
   return (
