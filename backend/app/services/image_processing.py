@@ -38,6 +38,10 @@ def compress_image(content: bytes, max_source_pixels: int) -> CompressedImage:
     _verify(content, max_source_pixels)
     try:
         with Image.open(BytesIO(content), formats=ACCEPTED_IMAGE_FORMATS) as source:
+            # JPEG : le décodeur réduit l'image (jusqu'à 1/8) en la lisant, sans descendre sous
+            # 512 px de côté ; une photo de 40 Mpx n'occupe plus 120 Mo de mémoire. Sans effet pour
+            # PNG et WebP. Lanczos fait ensuite le redimensionnement final.
+            source.draft(None, (IMAGE_OUTPUT_MAX_SIDE_PX, IMAGE_OUTPUT_MAX_SIDE_PX))
             # Seule la première image d'un fichier animé (WebP, PNG) est gardée
             source.load()
             icc_profile: bytes | None = source.info.get("icc_profile")
@@ -94,6 +98,8 @@ def _fit_to_output_size(image: Image.Image) -> Image.Image:
     Agrandir n'invente pas de détails : une toute petite image sort lisse, un peu floue.
     """
     scale: float = IMAGE_OUTPUT_MAX_SIDE_PX / max(image.width, image.height)
+    # Au moins 1 px : pour une image très allongée (plus de 1024 fois plus large que haute), le
+    # petit côté s'arrondirait à 0, une taille que Pillow refuse (2000 × 1 donne 512 × 1)
     target_size: tuple[int, int] = (
         max(1, round(image.width * scale)),
         max(1, round(image.height * scale)),
