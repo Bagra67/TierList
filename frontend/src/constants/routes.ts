@@ -13,10 +13,16 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
+  // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
+  ROOM: '/r/:code',
 } as const;
 
 export function templateEditorPath(templateId: string): string {
   return generatePath(ROUTES.TEMPLATE_EDITOR, { templateId });
+}
+
+export function roomPath(code: string): string {
+  return generatePath(ROUTES.ROOM, { code });
 }
 
 // Token du lien reçu par email (backend : TOKEN_PARAM)
