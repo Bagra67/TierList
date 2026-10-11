@@ -1,8 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
-import { aliceRoom, renderRoomPage, settingsSummary } from '../test/rooms';
 import type { Room } from '../api/rooms';
+import { setAccessToken } from '../api/client';
+import { aliceRoom, renderRoomPage, settingsSummary, signedInSession } from '../test/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
 type BackendMock = ReturnType<typeof stubBackend>;
@@ -14,6 +15,7 @@ function stubClipboard(writeText: (text: string) => Promise<void>): void {
 
 describe('RoomPage', () => {
   afterEach(() => {
+    setAccessToken(null);
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, 'clipboard');
   });
@@ -71,6 +73,7 @@ describe('RoomPage', () => {
   it('joins the room as a player when the user has no seat yet', async () => {
     const bobRoom: Room = { ...aliceRoom, is_admin: false };
     const fetchMock: BackendMock = stubBackend({
+      ...signedInSession,
       'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
@@ -79,7 +82,10 @@ describe('RoomPage', () => {
     renderRoomPage('k7p2qx');
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
-    expect(calledRoutes(fetchMock)).toEqual(['GET /rooms/K7P2QX', 'POST /rooms/K7P2QX/join']);
+    expect(calledRoutes(fetchMock).filter((route) => route.includes('/rooms/'))).toEqual([
+      'GET /rooms/K7P2QX',
+      'POST /rooms/K7P2QX/join',
+    ]);
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
   });
 
@@ -87,6 +93,7 @@ describe('RoomPage', () => {
     // Le cache de requêtes journalise l'erreur attendue
     const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({
+      ...signedInSession,
       'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
       'POST /rooms/ZZZZZZ/join': () => errorResponse(404, 'room_not_found'),
     });

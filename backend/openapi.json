@@ -1833,6 +1833,22 @@
               "type": "string",
               "title": "Code"
             }
+          },
+          {
+            "name": "guest_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Guest Token"
+            }
           }
         ],
         "responses": {
@@ -1842,6 +1858,253 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/guests": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Join As Guest",
+        "operationId": "join_as_guest_rooms__code__guests_post",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinAsGuestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestRoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nickname already used in the room",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/guest-session": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Restore Guest Session",
+        "operationId": "restore_guest_session_rooms__code__guest_session_post",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreGuestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestRoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Guest link unknown, expired, or room closed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/guest-link": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Renew Guest Link",
+        "operationId": "renew_guest_link_rooms__code__guest_link_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "guest_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Guest Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestRoomResponse"
                 }
               }
             }
@@ -2386,6 +2649,68 @@
         ],
         "title": "ForgotPasswordRequest"
       },
+      "GuestRoomResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoomTemplateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "settings": {
+            "$ref": "#/components/schemas/RoomSettingsResponse"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/ParticipantResponse"
+            },
+            "type": "array",
+            "title": "Participants"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin"
+          },
+          "guest_link": {
+            "type": "string",
+            "title": "Guest Link"
+          },
+          "guest_link_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Guest Link Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "link",
+          "status",
+          "template",
+          "settings",
+          "participants",
+          "is_admin",
+          "guest_link",
+          "guest_link_expires_at"
+        ],
+        "title": "GuestRoomResponse",
+        "description": "Salle rejointe en invité, avec le lien perso : donné une seule fois, la base n'en gardant\nque l'empreinte."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2450,6 +2775,21 @@
         "title": "ItemOrder",
         "description": "Ordre de passage des tuiles pendant une partie."
       },
+      "JoinAsGuestRequest": {
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Nickname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nickname"
+        ],
+        "title": "JoinAsGuestRequest"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -2485,13 +2825,18 @@
           "is_admin": {
             "type": "boolean",
             "title": "Is Admin"
+          },
+          "is_guest": {
+            "type": "boolean",
+            "title": "Is Guest"
           }
         },
         "type": "object",
         "required": [
           "id",
           "display_name",
-          "is_admin"
+          "is_admin",
+          "is_guest"
         ],
         "title": "ParticipantResponse"
       },
@@ -2566,6 +2911,19 @@
           "password"
         ],
         "title": "ResetPasswordRequest"
+      },
+      "RestoreGuestRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "RestoreGuestRequest"
       },
       "RoomResponse": {
         "properties": {

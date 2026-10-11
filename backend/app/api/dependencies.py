@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Cookie, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.exceptions.auth import InvalidAccessTokenError
@@ -16,7 +17,7 @@ from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
-from app.services.rooms import RoomService
+from app.services.rooms import RoomService, RoomViewer
 from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -103,3 +104,17 @@ def get_current_user(
 ) -> User:
     """Utilisateur authentifié : la dépendance à utiliser pour protéger une route."""
     return session.user
+
+
+def get_room_viewer(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    service: Annotated[AuthService, Depends(get_auth_service)],
+    guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
+) -> RoomViewer:
+    """Lecteur d'une salle : un compte s'il envoie un access token (vérifié comme partout : un
+    token invalide répond 401, pour que le frontend rafraîchisse sa session), sinon peut-être un
+    invité, reconnu par le cookie de sa salle. Sans les deux, la salle répondra 404."""
+    if credentials is not None:
+        session: AuthenticatedSession = get_current_session(credentials, service)
+        return RoomViewer(user=session.user, guest_token=None)
+    return RoomViewer(user=None, guest_token=guest_token)

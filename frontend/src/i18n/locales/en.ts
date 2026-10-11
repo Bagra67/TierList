@@ -196,6 +196,28 @@ export const en: Translation = {
       copyFailed: 'The link could not be copied: select it and copy it by hand.',
       participants: 'Participants ({{count}})',
       admin: 'room admin',
+      guest: 'guest',
+    },
+    join: {
+      title: 'Join the room',
+      withAccount: 'With an account',
+      withAccountHint:
+        'Keep this game in your history. You come back to this room after signing in.',
+      signIn: 'Sign in',
+      asGuest: 'As a guest',
+      nickname: 'Nickname',
+      asGuestHint:
+        'No history. This browser remembers you, and your personal link works on any device.',
+      submit: 'Join as guest',
+      submitting: 'Joining…',
+    },
+    guestLink: {
+      title: 'Your personal link',
+      hint: 'Keep it: it brings you back to your seat from any device, until {{date, datetime(dateStyle: long)}}. It cannot be recovered.',
+      label: 'Personal link',
+      renew: 'Get a new personal link',
+      renewHint: 'Lost your personal link? A new link replaces the old one, which stops working.',
+      renewing: 'Creating the link…',
     },
     settings: {
       title: 'Settings',
@@ -258,6 +280,8 @@ export const en: Translation = {
       room_not_found: 'This room could not be found or has been closed.',
       room_admin_required: 'Only the room admin can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
+      nickname_taken: 'This nickname is already used in this room.',
+      guest_link_invalid: 'This personal link has expired, or the room was closed.',
       tier_not_found: 'This tier could not be found.',
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',

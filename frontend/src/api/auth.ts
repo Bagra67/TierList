@@ -6,6 +6,7 @@ import {
   type GoogleNextStep,
 } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
+import { ROOMS_QUERY_KEY } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
 import { currentLanguage } from '../i18n';
 import {
@@ -113,11 +114,19 @@ export function useCurrentUser() {
   });
 }
 
+// Après une connexion ou une inscription : l'utilisateur est relu, et les salles lues comme
+// visiteur sont oubliées (une salle introuvable, ou sa vue d'invité, ne doit pas s'afficher au
+// compte le temps de la relire avec lui)
+function startSession(queryClient: QueryClient): Promise<void> {
+  queryClient.removeQueries({ queryKey: ROOMS_QUERY_KEY });
+  return queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
+}
+
 export function useRegister() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: register,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
+    onSuccess: () => startSession(queryClient),
   });
 }
 
@@ -125,7 +134,7 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: login,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
+    onSuccess: () => startSession(queryClient),
   });
 }
 

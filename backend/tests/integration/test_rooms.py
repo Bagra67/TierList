@@ -1,6 +1,5 @@
 import uuid
 from collections.abc import Callable, Iterator
-from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,27 +21,12 @@ from app.core.config import get_settings
 from app.models.participant import Participant
 from app.models.room import Room, RoomStatus
 from app.models.template import Template
-from app.models.tile import Tile
 from app.models.user import User
 from app.services import rooms as room_service_module
 from app.services.rooms import RoomService
+from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
-
-PASSWORD = "correct horse battery staple"
-
-# Objet JSON renvoyé par l'API : sa forme est vérifiée par les tests
-JsonObject = dict[str, Any]
-
-
-def register(client: TestClient, email: str) -> dict[str, str]:
-    """Crée un compte et renvoie l'en-tête Authorization de son access token."""
-    response: Response = client.post(
-        "/auth/register",
-        json={"email": email, "password": PASSWORD, "display_name": email.split("@")[0]},
-    )
-    assert response.status_code == 201
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
 @pytest.fixture
@@ -57,27 +41,6 @@ def bob(auth_client: TestClient) -> dict[str, str]:
 
 def user_with_email(db_session: Session, email: str) -> User:
     return db_session.scalars(select(User).where(User.email == email)).one()
-
-
-def create_template(
-    client: TestClient, db_session: Session, headers: dict[str, str], tile_count: int = 3
-) -> str:
-    """Template « Food » avec tile_count tuiles (ajoutées directement en base) ; renvoie son id."""
-    response: Response = client.post("/templates", json={"name": "Food"}, headers=headers)
-    assert response.status_code == 201
-    template_id: str = response.json()["id"]
-    for position in range(tile_count):
-        db_session.add(
-            Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
-        )
-    db_session.flush()
-    return template_id
-
-
-def create_room(client: TestClient, headers: dict[str, str], template_id: str) -> JsonObject:
-    response: Response = client.post("/rooms", json={"template_id": template_id}, headers=headers)
-    assert response.status_code == 201
-    return response.json()
 
 
 @pytest.fixture

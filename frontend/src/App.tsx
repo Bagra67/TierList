@@ -30,8 +30,9 @@ export default function App() {
           <Route path={ROUTES.HOME} element={<HomePage />} />
           <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
           <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
-          <Route path={ROUTES.ROOM} element={<RoomPage />} />
         </Route>
+        {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}
+        <Route path={ROUTES.ROOM} element={<RoomPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

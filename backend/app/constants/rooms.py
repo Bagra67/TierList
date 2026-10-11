@@ -9,6 +9,18 @@ ROOM_CODE_MAX_ATTEMPTS = 5
 # Page de la salle côté frontend : le lien d'une salle est cette page suivie de son code (#84)
 FRONTEND_ROOM = "/r"
 
+# --- Invités (docs/technical/rooms.md, « Guests ») --------------------------------------------
+# Octets aléatoires du jeton d'un invité (secrets.token_urlsafe), comme un refresh token
+GUEST_TOKEN_BYTES = 32
+# Longueur de son empreinte SHA-256 en hexadécimal, seule gardée en base
+GUEST_TOKEN_HASH_LENGTH = 64
+# Cookie HttpOnly qui fait reconnaître l'invité par son navigateur, un par salle
+GUEST_COOKIE = "guest_token"
+# Le lien perso porte le jeton dans le fragment (#guest=<jeton>), jamais envoyé au serveur
+GUEST_LINK_FRAGMENT = "guest"
+# Durée maximale du lien perso, en jours (docs/product/game-rules.md : 30 jours au plus)
+GUEST_LINK_MAX_TTL_DAYS = 30
+
 # --- Bornes des durées des réglages, en secondes -------------------------------------------
 # Les valeurs par défaut sont dans Settings (ROOM_DEFAULT_*), qui doivent rester entre ces bornes
 TIMER_SECONDS_MIN = 5

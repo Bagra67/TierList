@@ -202,6 +202,29 @@ export const fr = {
       copyFailed: 'Impossible de copier le lien : sélectionnez-le et copiez-le à la main.',
       participants: 'Participants ({{count}})',
       admin: 'room admin',
+      guest: 'invité',
+    },
+    join: {
+      title: 'Rejoindre la salle',
+      withAccount: 'Avec un compte',
+      withAccountHint:
+        'Gardez cette partie dans votre historique. Vous revenez dans cette salle après la connexion.',
+      signIn: 'Se connecter',
+      asGuest: 'En invité',
+      nickname: 'Pseudo',
+      asGuestHint:
+        "Pas d'historique. Ce navigateur se souvient de vous, et votre lien perso marche sur tout appareil.",
+      submit: 'Rejoindre en invité',
+      submitting: 'Arrivée…',
+    },
+    guestLink: {
+      title: 'Votre lien perso',
+      hint: "Gardez-le : il vous ramène à votre place depuis n'importe quel appareil, jusqu'au {{date, datetime(dateStyle: long)}}. Il ne pourra pas être retrouvé.",
+      label: 'Lien perso',
+      renew: 'Obtenir un nouveau lien perso',
+      renewHint:
+        "Vous avez perdu votre lien perso ? Un nouveau lien remplace l'ancien, qui cesse de marcher.",
+      renewing: 'Création du lien…',
     },
     settings: {
       title: 'Réglages',
@@ -266,6 +289,8 @@ export const fr = {
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: 'Seul le room admin peut faire cela.',
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
+      nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',
+      guest_link_invalid: 'Ce lien perso a expiré, ou la salle a été fermée.',
       tier_not_found: 'Ce tier est introuvable.',
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',

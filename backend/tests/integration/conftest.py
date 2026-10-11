@@ -190,9 +190,14 @@ def client(
 
 def http_test_settings() -> Settings:
     # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
-    # le cookie doit être non Secure et sur /auth pour que le client le renvoie.
+    # les cookies doivent être non Secure, et sur /auth (session) ou /rooms (invités), pour que le
+    # client les renvoie.
     return get_settings().model_copy(
-        update={"auth_cookie_secure": False, "auth_cookie_path": "/auth"}
+        update={
+            "auth_cookie_secure": False,
+            "auth_cookie_path": "/auth",
+            "room_cookie_path": "/rooms",
+        }
     )
 
 

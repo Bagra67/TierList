@@ -1,7 +1,13 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { roomQueryKey } from '../constants/rooms';
+import { aliceRoom } from '../test/rooms';
 import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
-import { deleteAccount, getCurrentUser, getMe, login, logout } from './auth';
+import { deleteAccount, getCurrentUser, getMe, login, logout, useLogin } from './auth';
+import { createQueryClient } from './queryClient';
 import { ApiError } from '../errors/apiError';
 import { setAccessToken } from './client';
 
@@ -116,5 +122,23 @@ describe('auth API', () => {
 
     const logoutRequest = fetchMock.mock.calls[0][0];
     expect(logoutRequest.headers.get('Authorization')).toBeNull();
+  });
+
+  it('forgets the rooms seen as a visitor after signing in', async () => {
+    stubBackend({ 'POST /auth/login': tokenResponse('alice-token') });
+    const queryClient = createQueryClient();
+    // Salle lue avant la connexion (vue d'invité) : elle ne doit pas s'afficher au compte
+    queryClient.setQueryData(roomQueryKey(aliceRoom.code), { ...aliceRoom, is_admin: false });
+    const { result } = renderHook(() => useLogin(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children),
+    });
+
+    await result.current.mutateAsync({
+      email: 'alice@example.com',
+      password: 'correct horse battery staple',
+    });
+
+    expect(queryClient.getQueryData(roomQueryKey(aliceRoom.code))).toBeUndefined();
   });
 });
