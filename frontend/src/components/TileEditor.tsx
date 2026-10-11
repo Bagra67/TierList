@@ -76,12 +76,13 @@ export function TileEditor({ template }: TileEditorProps) {
     updateMutation.mutate({ tileId: tile.id, changes: { position } });
   }
 
-  // Un texte vidé veut dire « plus de texte » : le backend refuse si la tuile n'a pas d'image
+  // Une tuile qui a une image peut perdre son texte : un texte vidé part en null. Sans image, le
+  // texte est envoyé tel quel : le backend le refuse, et l'erreur s'affiche sous le champ
   function saveTileText(tile: Tile, text: string) {
-    const trimmedText: string = text.trim();
+    const removesTheText: boolean = text.trim() === '' && tile.image_url !== null;
     updateMutation.mutate({
       tileId: tile.id,
-      changes: { text: trimmedText === '' ? null : text },
+      changes: { text: removesTheText ? null : text },
     });
   }
 
@@ -107,6 +108,12 @@ export function TileEditor({ template }: TileEditorProps) {
     setNewTileLocalError(null);
     addMutation.reset();
     newImageUpload.mutate(file, { onSuccess: setNewImage });
+  }
+
+  // Retire aussi l'erreur d'un envoi précédent : elle ne concerne plus l'image affichée
+  function removeNewImage() {
+    setNewImage(null);
+    newImageUpload.reset();
   }
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
@@ -247,7 +254,7 @@ export function TileEditor({ template }: TileEditorProps) {
           disabled={isFull}
           removeLabel={t('templates.editor.image.removeNew')}
           onSelect={chooseNewImage}
-          onRemove={() => setNewImage(null)}
+          onRemove={removeNewImage}
           onRefuse={() => setNewTileLocalError(unsupportedImageMessage)}
         />
         <div className="flex flex-1 flex-col gap-1">

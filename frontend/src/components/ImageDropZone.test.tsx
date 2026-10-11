@@ -103,6 +103,16 @@ describe('ImageDropZone', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('sends a file whose type the system does not know, for the backend to decide', () => {
+    const { onSelect, onRefuse }: Handlers = renderZone();
+    const untypedFile: File = new File(['webp'], 'photo.webp', { type: '' });
+
+    fireEvent.drop(zone(), { dataTransfer: fileDataTransfer(untypedFile) });
+
+    expect(onSelect).toHaveBeenCalledWith(untypedFile);
+    expect(onRefuse).not.toHaveBeenCalled();
+  });
+
   it('shows the chosen file at once while it is uploading', () => {
     const handlers: Handlers = { onSelect: vi.fn(), onRemove: vi.fn(), onRefuse: vi.fn() };
     const { rerender }: RenderResult = render(

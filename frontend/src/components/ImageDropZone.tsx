@@ -65,7 +65,9 @@ export function ImageDropZone({
 
   function handleFile(file: File | undefined) {
     if (file === undefined || disabled) return;
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    // Un type vide veut dire que le système ne le connaît pas (ex. .webp sur un Windows ancien) :
+    // le fichier part au backend, qui reconnaît le format d'après son contenu
+    if (file.type !== '' && !ACCEPTED_IMAGE_TYPES.includes(file.type)) {
       onRefuse();
       return;
     }

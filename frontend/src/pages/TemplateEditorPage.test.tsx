@@ -607,6 +607,37 @@ describe('TemplateEditorPage', () => {
       ).toBeInTheDocument();
     });
 
+    it('clears the upload error when the image of the new tile is removed', async () => {
+      let uploadCount: number = 0;
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
+        // Le premier envoi réussit, le remplacement est refusé
+        'POST /images': () => {
+          uploadCount += 1;
+          return uploadCount === 1
+            ? Response.json(uploadedImage, { status: 201 })
+            : errorResponse(413, 'image_too_large', { params: { max_bytes: 10485760 } });
+        },
+      });
+      renderEditor();
+      await screen.findByText('0 / 32 tuiles');
+      fireEvent.change(fileInputOf('Ajouter une image à la nouvelle tuile'), {
+        target: { files: [pngFile()] },
+      });
+      await screen.findByRole('button', { name: "Remplacer l'image de la nouvelle tuile" });
+      fireEvent.change(fileInputOf("Remplacer l'image de la nouvelle tuile"), {
+        target: { files: [pngFile('big.png')] },
+      });
+      await screen.findByRole('alert');
+
+      fireEvent.click(screen.getByRole('button', { name: "Retirer l'image de la nouvelle tuile" }));
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Ajouter une image à la nouvelle tuile' }),
+      ).toBeInTheDocument();
+    });
+
     it('refuses a file that is not a JPEG, PNG or WebP image without sending it', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
@@ -628,7 +659,7 @@ describe('TemplateEditorPage', () => {
 
   describe('editing safeguards', () => {
     it('shows a tile text error only under its field', async () => {
-      stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])),
         [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () =>
           errorResponse(422, 'validation_error', {
@@ -652,6 +683,8 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      // Une tuile sans image garde son texte : il est envoyé tel quel, pas retiré (null)
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: '   ' });
     });
 
     it('disables the drag and drop of tiles while a tile move is being saved', async () => {
