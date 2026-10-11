@@ -64,68 +64,74 @@ export function TierEditor({ template }: TierEditorProps) {
           onMove={moveTier}
           disabled={isChangingOrder}
           renderItem={(tier, { setNodeRef, style, handleProps }) => (
+            // Carte sur deux lignes : les commandes en haut, le nom dessous sur toute la largeur,
+            // pour qu'un long nom se lise en entier dans la colonne étroite des tiers
             <li
               ref={setNodeRef}
               style={style}
-              className="flex items-start gap-2 rounded-md border bg-card px-2 py-2"
+              className="flex flex-col gap-2 rounded-md border bg-card p-2"
             >
-              <button
-                type="button"
-                {...handleProps}
-                aria-label={t('templates.editor.dragHandle', { name: tier.name })}
-                className="mt-1 cursor-grab touch-none rounded px-1 text-muted-foreground"
-              >
-                <span aria-hidden="true">⋮⋮</span>
-              </button>
-              <ColorField
-                key={tier.color}
-                label={t('templates.editor.tierColor', { name: tier.name })}
-                value={tier.color}
-                onSave={(color) =>
-                  updateMutation.mutateAsync({ tierId: tier.id, changes: { color } })
-                }
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  {...handleProps}
+                  aria-label={t('templates.editor.dragHandle', { name: tier.name })}
+                  className="cursor-grab touch-none rounded px-1 text-muted-foreground"
+                >
+                  <span aria-hidden="true">⋮⋮</span>
+                </button>
+                <ColorField
+                  key={tier.color}
+                  label={t('templates.editor.tierColor', { name: tier.name })}
+                  value={tier.color}
+                  onSave={(color) =>
+                    updateMutation.mutateAsync({ tierId: tier.id, changes: { color } })
+                  }
+                />
+                <div className="ml-auto flex items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('templates.editor.moveUp', { name: tier.name })}
+                    disabled={isChangingOrder || tier.position === 0}
+                    onClick={() => moveTier(tier, tier.position - 1)}
+                  >
+                    <span aria-hidden="true">↑</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('templates.editor.moveDown', { name: tier.name })}
+                    disabled={isChangingOrder || tier.position === tiers.length - 1}
+                    onClick={() => moveTier(tier, tier.position + 1)}
+                  >
+                    <span aria-hidden="true">↓</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('templates.editor.deleteTier', { name: tier.name })}
+                    // Une tier list garde au moins un tier (le backend le refuse aussi)
+                    disabled={isChangingOrder || tiers.length === 1}
+                    onClick={() => deleteMutation.mutate(tier.id)}
+                  >
+                    <span aria-hidden="true">✕</span>
+                  </Button>
+                </div>
+              </div>
               <InlineEditField
                 key={tier.name}
                 label={t('templates.editor.tierName', { position: tier.position + 1 })}
                 hideLabel
                 value={tier.name}
                 maxLength={TIER_NAME_MAX_LENGTH}
+                multiline
                 error={failedTierId === tier.id ? nameError : undefined}
                 onSave={(name) => updateMutation.mutate({ tierId: tier.id, changes: { name } })}
-                className="flex-1"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t('templates.editor.moveUp', { name: tier.name })}
-                disabled={isChangingOrder || tier.position === 0}
-                onClick={() => moveTier(tier, tier.position - 1)}
-              >
-                <span aria-hidden="true">↑</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t('templates.editor.moveDown', { name: tier.name })}
-                disabled={isChangingOrder || tier.position === tiers.length - 1}
-                onClick={() => moveTier(tier, tier.position + 1)}
-              >
-                <span aria-hidden="true">↓</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t('templates.editor.deleteTier', { name: tier.name })}
-                // Une tier list garde au moins un tier (le backend le refuse aussi)
-                disabled={isChangingOrder || tiers.length === 1}
-                onClick={() => deleteMutation.mutate(tier.id)}
-              >
-                <span aria-hidden="true">✕</span>
-              </Button>
             </li>
           )}
         />

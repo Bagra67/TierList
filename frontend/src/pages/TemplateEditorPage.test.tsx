@@ -185,6 +185,46 @@ describe('TemplateEditorPage', () => {
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ name: 'Top' });
     });
 
+    it('shows a long tier name in a field that wraps, and saves it with Enter', async () => {
+      const longName: string = 'Je tuerai pour en remanger';
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([{ ...tierS, name: longName }, tierA, tierB])),
+      });
+      renderEditor();
+      const firstTierName: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du tier 1',
+      });
+
+      // Une zone de texte passe à la ligne au lieu de couper le nom
+      expect(firstTierName.tagName).toBe('TEXTAREA');
+      fireEvent.change(firstTierName, { target: { value: longName } });
+      // Entrée enregistre, sans ajouter de retour à la ligne
+      const enterKept: boolean = fireEvent.keyDown(firstTierName, { key: 'Enter' });
+
+      expect(enterKept).toBe(false);
+      await waitFor(() => expect(displayedTierNames()).toEqual([longName, 'A', 'B']));
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ name: longName });
+    });
+
+    it('turns a pasted line break of a tier name into a space', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([{ ...tierS, name: 'Très bon' }, tierA, tierB])),
+      });
+      renderEditor();
+      const firstTierName: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du tier 1',
+      });
+
+      fireEvent.change(firstTierName, { target: { value: 'Très\nbon' } });
+      fireEvent.blur(firstTierName);
+
+      await expect.poll(() => requestBody(fetchMock, 'PATCH')).toEqual({ name: 'Très bon' });
+    });
+
     it('moves a tier with the move down button', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),

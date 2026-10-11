@@ -201,6 +201,7 @@ export function TileEditor({ template }: TileEditorProps) {
                   value={tile.text ?? ''}
                   maxLength={TILE_TEXT_MAX_LENGTH}
                   required={tile.image_url === null}
+                  multiline
                   error={failedTileId === tile.id ? textError : undefined}
                   onSave={(text) => saveTileText(tile, text)}
                 />
