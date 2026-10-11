@@ -13,7 +13,6 @@ import type { components } from './schema';
 
 export type Room = components['schemas']['RoomResponse'];
 export type RoomSettings = components['schemas']['RoomSettingsResponse'];
-export type Participant = components['schemas']['ParticipantResponse'];
 export type ItemOrder = components['schemas']['ItemOrder'];
 export type AutoAdvance = components['schemas']['AutoAdvance'];
 type CreateRoomRequest = components['schemas']['CreateRoomRequest'];
