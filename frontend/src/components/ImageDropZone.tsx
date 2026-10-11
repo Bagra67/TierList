@@ -18,8 +18,9 @@ interface ImageDropZoneProps {
   imageUrl: string | null;
   isUploading: boolean;
   disabled?: boolean;
-  // large : formulaire d'ajout, avec une consigne ; small : vignette d'une tuile
-  size: 'large' | 'small';
+  // large : vignette du formulaire d'ajout ; fill : carré sur toute la largeur du parent (carte
+  // d'une tuile). Les deux affichent la consigne quand il n'y a pas d'image.
+  size: 'large' | 'fill';
   // Bouton pour retirer l'image, affiché seulement s'il y a une image et un libellé
   removeLabel?: string;
   onSelect: (file: File) => void;
@@ -113,7 +114,7 @@ export function ImageDropZone({
 
   return (
     <div
-      className={cn('relative shrink-0', size === 'large' ? 'size-24' : 'size-12')}
+      className={cn('relative shrink-0', size === 'large' ? 'size-24' : 'aspect-square w-full')}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -135,15 +136,14 @@ export function ImageDropZone({
         )}
       >
         {shownUrl !== null ? (
-          <img src={shownUrl} alt="" className="size-full object-cover" />
+          // contain : l'image entière est visible, sans recadrage, sur le fond de la vignette
+          <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
-            <ImageIcon className={size === 'large' ? 'size-7' : 'size-5'} />
-            {size === 'large' && (
-              <span className="text-[0.7rem] leading-tight">
-                {t('templates.editor.image.hint')}
-              </span>
-            )}
+            <ImageIcon className={size === 'large' ? 'size-7' : 'size-10'} />
+            <span className={cn('leading-tight', size === 'large' ? 'text-[0.7rem]' : 'text-xs')}>
+              {t('templates.editor.image.hint')}
+            </span>
           </span>
         )}
         {isDraggingOver && (
@@ -172,7 +172,14 @@ export function ImageDropZone({
           aria-label={removeLabel}
           onClick={onRemove}
           disabled={disabled}
-          className="absolute -top-1.5 -right-1.5 flex size-5 cursor-pointer items-center justify-center rounded-full border bg-background text-[0.65rem] text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring/50',
+            // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
+            // il est posé dans le coin de l'image, plus grand pour être facile à viser
+            size === 'large'
+              ? '-top-1.5 -right-1.5 size-5 text-[0.65rem]'
+              : 'top-1.5 right-1.5 size-7 text-xs',
+          )}
         >
           <span aria-hidden="true">✕</span>
         </button>

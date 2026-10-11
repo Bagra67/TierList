@@ -150,7 +150,7 @@ export function TileEditor({ template }: TileEditorProps) {
         </p>
       </div>
       {tiles.length > 0 && (
-        <ol className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+        <ol className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           <SortableList
             items={tiles}
             strategy={rectSortingStrategy}
@@ -158,21 +158,14 @@ export function TileEditor({ template }: TileEditorProps) {
             onMove={moveTile}
             disabled={isChangingOrder}
             renderItem={(tile, { setNodeRef, style, handleProps }) => (
+              // Carte : l'image sur toute la largeur, son texte dessous, puis les actions
               <li
                 ref={setNodeRef}
                 style={style}
-                className="flex items-center gap-2 rounded-md border bg-card px-2 py-2"
+                className="flex flex-col gap-2 rounded-md border bg-card p-2"
               >
-                <button
-                  type="button"
-                  {...handleProps}
-                  aria-label={t('templates.editor.dragHandle', { name: tileLabel(tile) })}
-                  className="cursor-grab touch-none rounded px-1 text-muted-foreground"
-                >
-                  <span aria-hidden="true">⋮⋮</span>
-                </button>
                 <ImageDropZone
-                  size="small"
+                  size="fill"
                   label={
                     tile.image_url === null
                       ? t('templates.editor.image.addTo', { name: tileLabel(tile) })
@@ -200,38 +193,49 @@ export function TileEditor({ template }: TileEditorProps) {
                   required={tile.image_url === null}
                   error={failedTileId === tile.id ? textError : undefined}
                   onSave={(text) => saveTileText(tile, text)}
-                  className="flex-1"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('templates.editor.moveBefore', { name: tileLabel(tile) })}
-                  disabled={isChangingOrder || tile.position === 0}
-                  onClick={() => moveTile(tile, tile.position - 1)}
-                >
-                  <span aria-hidden="true">←</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('templates.editor.moveAfter', { name: tileLabel(tile) })}
-                  disabled={isChangingOrder || tile.position === tiles.length - 1}
-                  onClick={() => moveTile(tile, tile.position + 1)}
-                >
-                  <span aria-hidden="true">→</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
-                  disabled={isChangingOrder}
-                  onClick={() => deleteMutation.mutate(tile.id)}
-                >
-                  <span aria-hidden="true">✕</span>
-                </Button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    {...handleProps}
+                    aria-label={t('templates.editor.dragHandle', { name: tileLabel(tile) })}
+                    className="cursor-grab touch-none rounded px-1 text-muted-foreground"
+                  >
+                    <span aria-hidden="true">⋮⋮</span>
+                  </button>
+                  <div className="flex items-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('templates.editor.moveBefore', { name: tileLabel(tile) })}
+                      disabled={isChangingOrder || tile.position === 0}
+                      onClick={() => moveTile(tile, tile.position - 1)}
+                    >
+                      <span aria-hidden="true">←</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('templates.editor.moveAfter', { name: tileLabel(tile) })}
+                      disabled={isChangingOrder || tile.position === tiles.length - 1}
+                      onClick={() => moveTile(tile, tile.position + 1)}
+                    >
+                      <span aria-hidden="true">→</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
+                      disabled={isChangingOrder}
+                      onClick={() => deleteMutation.mutate(tile.id)}
+                    >
+                      <span aria-hidden="true">✕</span>
+                    </Button>
+                  </div>
+                </div>
               </li>
             )}
           />

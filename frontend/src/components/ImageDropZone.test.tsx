@@ -153,6 +153,27 @@ describe('ImageDropZone', () => {
     expect(zone().querySelector('img')).toHaveAttribute('src', 'https://images.example.com/a.webp');
   });
 
+  it('fills the width of a tile card and shows the whole image', () => {
+    render(
+      <ImageDropZone
+        label="Remplacer l'image"
+        removeLabel="Retirer l'image"
+        size="fill"
+        imageUrl="https://images.example.com/a.webp"
+        isUploading={false}
+        onSelect={vi.fn()}
+        onRemove={vi.fn()}
+        onRefuse={vi.fn()}
+      />,
+    );
+    const fillZone: HTMLElement = screen.getByRole('button', { name: "Remplacer l'image" });
+
+    // Carré sur toute la largeur de la carte ; l'image entière, sans recadrage
+    expect(fillZone.parentElement).toHaveClass('aspect-square', 'w-full');
+    expect(fillZone.querySelector('img')).toHaveClass('object-contain');
+    expect(screen.getByRole('button', { name: "Retirer l'image" })).toBeInTheDocument();
+  });
+
   it('ignores drops and clicks when disabled', () => {
     const { onSelect }: Handlers = renderZone({ disabled: true });
 
