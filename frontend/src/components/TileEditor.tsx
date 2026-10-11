@@ -140,7 +140,7 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   return (
-    <section aria-labelledby={titleId} className="flex w-full flex-col gap-3">
+    <section aria-labelledby={titleId} className="flex w-full flex-col gap-3 lg:min-h-0">
       <div className="flex items-baseline justify-between gap-4">
         <h2 id={titleId} className="text-lg font-semibold">
           {t('templates.editor.tiles')}
@@ -150,7 +150,9 @@ export function TileEditor({ template }: TileEditorProps) {
         </p>
       </div>
       {tiles.length > 0 && (
-        <ol className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+        // Grand écran : seule la grille défile, le compteur et le formulaire d'ajout restent
+        // visibles. content-start : les rangées gardent leur hauteur au lieu de s'étirer
+        <ol className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-h-0 lg:flex-1 lg:content-start lg:overflow-y-auto lg:p-1 xl:grid-cols-4">
           <SortableList
             items={tiles}
             strategy={rectSortingStrategy}

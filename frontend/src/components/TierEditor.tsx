@@ -50,11 +50,13 @@ export function TierEditor({ template }: TierEditorProps) {
   }
 
   return (
-    <section aria-labelledby={titleId} className="flex w-full flex-col gap-3">
+    <section aria-labelledby={titleId} className="flex w-full flex-col gap-3 lg:min-h-0">
       <h2 id={titleId} className="text-lg font-semibold">
         {t('templates.editor.tiers')}
       </h2>
-      <ol className="flex w-full flex-col gap-2">
+      {/* Grand écran : seule la liste défile, le titre et le bouton d'ajout restent visibles. p-1 :
+          la marge garde visibles les anneaux de focus, que le défilement couperait sinon */}
+      <ol className="flex w-full flex-col gap-2 lg:min-h-0 lg:overflow-y-auto lg:p-1">
         <SortableList
           items={tiers}
           strategy={verticalListSortingStrategy}

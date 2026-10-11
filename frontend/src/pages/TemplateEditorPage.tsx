@@ -25,7 +25,9 @@ export function TemplateEditorPage() {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 py-10">
+    // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile
+    // pas, ce sont la colonne des tiers et la grille des tuiles qui défilent (chacune de son côté)
+    <main className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 py-10 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6">
       <Link to={ROUTES.TEMPLATES} className="text-sm underline underline-offset-4">
         {t('templates.editor.back')}
       </Link>
@@ -39,7 +41,7 @@ export function TemplateEditorPage() {
             <TemplateNameField template={template} />
           </div>
           {/* 22rem : la poignée, la pastille, le nom et les trois boutons d'un tier */}
-          <div className="grid w-full gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+          <div className="grid w-full gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
             <TierEditor template={template} />
             <TileEditor template={template} />
           </div>
