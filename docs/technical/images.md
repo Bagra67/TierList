@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-The images are not shown in games yet: the game screens and the snapshots come with their own issues. The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation features are separate issues (§2.9).
+The images are not shown in games yet: the game screens come with their own issues. The snapshots exist ([templates guide](templates.md), §2.4) and keep their images. The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation features are separate issues (§2.9).
 
 ## 2. Technical design
 
@@ -91,7 +91,7 @@ All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`,
 ### 2.5 Data model
 
 - A table **`images`**: `id`, storage key, width, height, size in bytes, author (`owner_id`), creation date, **SHA-256 of the received file**, moderation status (`visible`, `hidden`, `deleted`). Deleting the account sets `owner_id` to `NULL` (`ON DELETE SET NULL`) instead of deleting the row: the garbage collection still finds the file, and a past game can still show the image.
-- `tiles.image_id`: nullable foreign key to `images`. The tiles of a game snapshot will reference `image_id` the same way.
+- `tiles.image_id`: nullable foreign key to `images`. `snapshot_tiles.image_id`, the tiles of a game snapshot, references it the same way ([templates guide](templates.md), §2.4).
 - **Immutable images**: the storage key is random (`{uuid}.webp`). Replacing the image of a tile creates a **new** image; an existing file is never overwritten. A cached file is therefore never stale, and a snapshot always finds the image it was taken with.
 
 ### 2.6 API
@@ -137,7 +137,7 @@ cd backend
 uv run python scripts/purge_unused_images.py   # prints "Unused images purged: n"
 ```
 
-- It erases the **visible** images created more than `UNUSED_IMAGE_RETENTION_DAYS` days ago that no tile uses. The images hidden or deleted by the moderation keep their row (#124). Snapshots do not exist yet; when they do, the query must also keep the images they use.
+- It erases the **visible** images created more than `UNUSED_IMAGE_RETENTION_DAYS` days ago that no tile and no snapshot tile uses. The images hidden or deleted by the moderation keep their row (#124).
 - The rows are deleted first, in a single query, then the files: a tile can never point to an erased file. A tile that attaches one of these images at the same moment waits for the deletion, then fails on the foreign key. A file that cannot be erased (storage down) is logged with its key, to be erased by hand.
 - It can be run again safely: it only erases what has expired. It must be scheduled once a day on the server ([TODO](../../TODO.md)).
 
