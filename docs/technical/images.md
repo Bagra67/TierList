@@ -42,10 +42,11 @@ The images are not shown in games yet: the game screens and the snapshots come w
 Every accepted image goes through the same pipeline; the received file is **never stored**:
 
 1. open and verify the file (Pillow), refusing it if its decoded image would have too many pixels: only the header is read for that check;
-2. apply the EXIF orientation (`ImageOps.exif_transpose`), so that phone photos are upright;
-3. convert the color mode, **keeping transparency** (PNG, WebP);
-4. resize it so that its **longest side is 512 px**, keeping its proportions, with the **Lanczos** filter: a larger image is shrunk (4000 × 3000 gives 512 × 384), a smaller one is **enlarged** (200 × 100 gives 512 × 256), never cropped nor stretched;
-5. encode it in **WebP, quality 80**, without any metadata (EXIF, GPS position: privacy). Only the color profile (ICC) is kept, otherwise wide-gamut photos (Display P3) would look dull.
+2. decode it; a JPEG is decoded at a reduced scale (`draft`: down to 1/8, never under 512 px a side), so that a 40 Mpx photo does not take some 120 MB of memory per upload;
+3. apply the EXIF orientation (`ImageOps.exif_transpose`), so that phone photos are upright;
+4. convert the color mode, **keeping transparency** (PNG, WebP);
+5. resize it so that its **longest side is 512 px**, keeping its proportions, with the **Lanczos** filter: a larger image is shrunk (4000 × 3000 gives 512 × 384), a smaller one is **enlarged** (200 × 100 gives 512 × 256), never cropped nor stretched. The short side is at least 1 px: beyond a 1024:1 ratio it would round to 0, a size Pillow refuses (2000 × 1 gives 512 × 1);
+6. encode it in **WebP, quality 80**, without any metadata (EXIF, GPS position: privacy). Only the color profile (ICC) is kept, otherwise wide-gamut photos (Display P3) would look dull.
 
 Why 512 px: the largest display is about 150 CSS px, and a screen with a pixel ratio of 3 needs about 450 real pixels. A single size is stored: the small tiles use the same file (no thumbnails, YAGNI). WebP is read by every current browser and is much lighter than JPEG or PNG at equal quality.
 
@@ -57,12 +58,14 @@ Fixed values are constants in `app/constants/images.py` (`IMAGE_OUTPUT_MAX_SIDE_
 
 ### 2.4 Limits and settings
 
-| Variable                  | Description                                                                                                                                                | Default             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file, checked while reading it; keep it aligned with the reverse proxy limit.                                                 | `10485760` (10 MiB) |
-| `IMAGE_MAX_SOURCE_PIXELS` | Maximum number of pixels of the decoded image (Pillow `MAX_IMAGE_PIXELS`): protects against decompression bombs, small files that expand into huge images. | `40000000` (40 Mpx) |
+| Variable                  | Description                                                                                                                                                             | Default             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file; keep the reverse proxy body limit aligned with it.                                                                                   | `10485760` (10 MiB) |
+| `IMAGE_MAX_SOURCE_PIXELS` | Maximum number of pixels of the decoded image, checked from the header before decoding: protects against decompression bombs, small files that expand into huge images. | `40000000` (40 Mpx) |
 
 10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors.
+
+Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **reverse proxy limit** stops a huge body before it is received ([TODO](../../TODO.md)).
 
 Storage settings:
 
@@ -89,7 +92,7 @@ All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`,
 
 - A table **`images`**: `id`, storage key, width, height, size in bytes, author (`owner_id`), creation date, **SHA-256 of the received file**, moderation status (`visible`, `hidden`, `deleted`). Deleting the account sets `owner_id` to `NULL` (`ON DELETE SET NULL`) instead of deleting the row: the garbage collection still finds the file, and a past game can still show the image.
 - `tiles.image_id`: nullable foreign key to `images`. The tiles of a game snapshot will reference `image_id` the same way.
-- **Immutable images**: the storage key is random (`{uuid}.webp`). Replacing the image of a tile creates a **new** image; an existing file is never overwritten. Caches can keep a file forever, and a snapshot always finds the image it was taken with.
+- **Immutable images**: the storage key is random (`{uuid}.webp`). Replacing the image of a tile creates a **new** image; an existing file is never overwritten. A cached file is therefore never stale, and a snapshot always finds the image it was taken with.
 
 ### 2.6 API
 
@@ -122,7 +125,7 @@ SeaweedFS in development:
 - `seaweedfs/s3.json` gives two identities: the backend (`tierlist-dev` key, read, write and list on the bucket only) and `anonymous` (**read** only, so that the image URLs work without authentication; listing, writing and deleting are refused). `seaweedfs/security.toml` holds a filer signing key, development only: without it SeaweedFS refuses to load the identities.
 - Data is kept in the `seaweedfs-data` Docker volume.
 
-- Each object is written with `Content-Type: image/webp` and `Cache-Control: public, max-age=31536000, immutable` (the content of a key never changes).
+- Each object is written with `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`: **one day**. The content of a key never changes, so a year with `immutable` would be possible; one day is chosen (#81 review) so that an image hidden by the moderation or erased leaves the browser caches within 24 hours. The CDN cache, for its part, is purged at once (§2.9).
 - **Access model**: image URLs are public but **impossible to guess** (random UUID). Anyone holding a URL can see the image, which the public results link requires anyway: an image used in a game becomes public through it.
 
 ### 2.8 Cleanup
@@ -170,26 +173,26 @@ Added with #81:
 
 - No storage quota per account: 32 images per template, without limit on the number of templates.
 - The blind mode answer images and future profile pictures will reuse this pipeline; their sizes are decided with them.
-- Browsers that already displayed a hidden image may keep it in their cache; the CDN purge covers everyone else.
+- Browsers that already displayed a hidden image may keep it in their cache **for up to one day** (`max-age`); the CDN purge covers everyone else.
 
 ## 3. In the code
 
 Backend (tests: [testing guide](testing.md)):
 
-| File                               | Role                                                                                                                                                                                                                                                |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`), `422` and `429` (param `max_uploads`).                                                                                                                                      |
-| `app/services/images.py`           | `ImageService.upload`: checks the hourly limit, reads the file without going over the size limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails). `purge_unused`: the garbage collection of §2.8. |
-| `app/repositories/images.py`       | Image of an owner, number of recent uploads, deletion of the unused images.                                                                                                                                                                         |
-| `app/services/templates.py`        | Tiles with an image: `_check_owned_image`, rule "a text or an image" (`TileEmptyError`).                                                                                                                                                            |
-| `app/schemas/templates.py`         | `TileResponse.image_url`, built with the `ImageStorage.url` given in the validation context.                                                                                                                                                        |
-| `app/models/tile.py`               | `Tile.image_id` and `Tile.image`; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                |
-| `scripts/purge_unused_images.py`   | Command of the garbage collection.                                                                                                                                                                                                                  |
-| `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                                                                                                     |
-| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                                                                                                |
-| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                         |
-| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                                                                                              |
-| `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                          |
+| File                               | Role                                                                                                                                                                                                                                                                                                  |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`), `422` and `429` (param `max_uploads`).                                                                                                                                                                                        |
+| `app/services/images.py`           | `ImageService.upload`: checks the hourly limit, reads the file without going over the size limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails; a failure of that removal is logged with the key). `purge_unused`: the garbage collection of §2.8. |
+| `app/repositories/images.py`       | Image of an owner, number of recent uploads, deletion of the unused images.                                                                                                                                                                                                                           |
+| `app/services/templates.py`        | Tiles with an image: `_check_owned_image`, rule "a text or an image" (`TileEmptyError`).                                                                                                                                                                                                              |
+| `app/schemas/templates.py`         | `TileResponse.image_url`, built with the `ImageStorage.url` given in the validation context.                                                                                                                                                                                                          |
+| `app/models/tile.py`               | `Tile.image_id` and `Tile.image`; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                                                                  |
+| `scripts/purge_unused_images.py`   | Command of the garbage collection.                                                                                                                                                                                                                                                                    |
+| `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                                                                                                                                                       |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                                                                                                                                                  |
+| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                                                                           |
+| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                                                                                                                                                |
+| `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                                                                            |
 
 Development: `compose.yaml` and `seaweedfs/` (§2.7).
 

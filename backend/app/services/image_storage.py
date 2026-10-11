@@ -25,8 +25,8 @@ class ImageStorage:
         self._public_base_url = public_base_url.rstrip("/")
 
     def save(self, key: str, data: bytes) -> None:
-        """Écrit l'image sous cette clé. Une clé n'est jamais réécrite : son contenu peut rester
-        en cache sans limite de durée."""
+        """Écrit l'image sous cette clé, qui n'est jamais réécrite ; les caches la gardent un jour
+        (IMAGE_CACHE_CONTROL)."""
         self._client.put_object(
             Bucket=self._bucket,
             Key=key,

@@ -151,6 +151,20 @@ class FakeImageStorage(ImageStorage):
         self.stored.pop(key, None)
 
 
+class FailingImageStorage(FakeImageStorage):
+    """Stockage qui refuse d'effacer, comme un fournisseur S3 en panne : une seule clé si
+    failing_key est donnée, sinon toutes."""
+
+    def __init__(self, stored: dict[str, bytes], failing_key: str | None = None) -> None:
+        super().__init__(stored)
+        self.failing_key = failing_key
+
+    def delete(self, key: str) -> None:
+        if self.failing_key is None or key == self.failing_key:
+            raise ClientError({"Error": {"Code": "InternalError"}}, "DeleteObject")
+        super().delete(key)
+
+
 @pytest.fixture
 def stored_images() -> dict[str, bytes]:
     """Images « stockées » pendant le test, par clé de stockage."""
