@@ -51,7 +51,7 @@ L'API renvoie un **code** d'erreur ; le frontend le traduit (`errors.api.*` dans
 | Tuile inconnue dans ce template                                          | 404  | `tile_not_found`                         | `Cette tuile est introuvable.` / `This tile could not be found.`                                                        |
 | Trop de tuiles                                                           | 409  | `tile_limit_reached` (param `max_tiles`) | `Un template a au plus {{max_tiles}} tuiles.` / `A template has at most {{max_tiles}} tiles.`                           |
 | Tuile sans texte ni image                                                | 422  | `tile_empty`                             | `Une tuile a besoin d'un texte ou d'une image.` / `A tile needs a text or an image.`                                    |
-| Template sans tuile (pas encore renvoyé par une route ; #83, #90)        | —    | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
+| Template sans tuile (pas encore renvoyé par une route ; #83, #91)        | —    | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
 | Image inconnue ou d'un autre utilisateur                                 | 404  | `image_not_found`                        | `Cette image est introuvable.` / `This image could not be found.`                                                       |
 | Nom, couleur ou texte de tuile invalide (vide, trop long, pas `#RRGGBB`) | 422  | `validation_error`                       | `Certains champs sont invalides.` / `Some fields are invalid.`, plus l'erreur du champ                                  |
 | Access token absent ou invalide                                          | 401  | `not_authenticated`                      | Géré par le client API : rafraîchissement de la session, sinon retour à `/login`                                        |
@@ -124,7 +124,7 @@ Règles (`TemplateService.take_snapshot(owner, template_id)`) :
 - Un template **supprimé**, ou d'un autre utilisateur, lève `TemplateNotFoundError` (`template_not_found`) : aucune nouvelle partie ne peut démarrer avec. Une partie déjà démarrée garde son instantané et peut se terminer.
 - Un template **sans tuile** lève `TemplateHasNoTilesError` (`template_has_no_tiles`) : une partie n'aurait aucun item à classer.
 - Elle verrouille le template comme toute modification (`_get_for_change`) et fait seulement un **flush** : l'appelant valide l'instantané avec la partie, et le verrou tient jusque-là.
-- Aucun endpoint ne l'expose encore : le démarrage de la partie (#90) l'appellera.
+- Aucun endpoint ne l'expose encore : le démarrage de la partie (#91) l'appellera.
 
 ### 2.5 Réglages
 
@@ -156,7 +156,7 @@ Chaque route exige l'access token Bearer (`401` sinon).
 
 ### 2.7 Limites connues
 
-- `take_snapshot` n'a pas d'appelant avant le démarrage de la partie (#90).
+- `take_snapshot` n'a pas d'appelant avant le démarrage de la partie (#91).
 - Pas encore de pagination de la liste (#105).
 - Pas encore de vue super admin des templates supprimés (#104).
 
