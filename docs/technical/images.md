@@ -198,7 +198,7 @@ Development: `compose.yaml` and `seaweedfs/` (§2.7).
 
 Frontend (details in the [templates guide](templates.md#3-in-the-code)):
 
-- `components/ImageDropZone.tsx`: the image thumbnail of a tile. A click opens the file picker; a file can be dropped on it, with a highlight while dragging. The chosen image is shown at once with a spinner during the upload. A small button removes the image. Only JPEG, PNG and WebP are sent (`constants/images.ts`), as an immediate feedback: the backend stays the authority.
+- `components/ImageDropZone.tsx`: the image thumbnail of a tile. A click opens the file picker; a file can be dropped on it, with a highlight while dragging. The chosen image is shown at once with a spinner during the upload. A small button removes the image. A file of another known type than JPEG, PNG or WebP (`constants/images.ts`) is refused at once, without being sent; a file of unknown type is sent. The backend stays the authority.
 - `components/TileEditor.tsx`: the image of each tile can be replaced (click or drop) or removed; the new tile takes a text, an image or both. An image is uploaded as soon as it is chosen, then attached by `image_id`.
 - `api/images.ts`: `useUploadImage` (`POST /images`, `multipart/form-data`).
 - The error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.

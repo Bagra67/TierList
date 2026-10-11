@@ -198,7 +198,7 @@ Développement : `compose.yaml` et `seaweedfs/` (§2.7).
 
 Frontend (détails dans le [guide des templates](templates.fr.md#3-dans-le-code)) :
 
-- `components/ImageDropZone.tsx` : la vignette d'image d'une tuile. Un clic ouvre le sélecteur de fichier ; on peut y déposer un fichier, avec une mise en évidence pendant le glisser. L'image choisie s'affiche aussitôt, avec un indicateur pendant l'envoi. Un petit bouton retire l'image. Seuls le JPEG, le PNG et le WebP sont envoyés (`constants/images.ts`), pour un retour immédiat : le backend reste l'autorité.
+- `components/ImageDropZone.tsx` : la vignette d'image d'une tuile. Un clic ouvre le sélecteur de fichier ; on peut y déposer un fichier, avec une mise en évidence pendant le glisser. L'image choisie s'affiche aussitôt, avec un indicateur pendant l'envoi. Un petit bouton retire l'image. Un fichier d'un autre type connu que JPEG, PNG ou WebP (`constants/images.ts`) est refusé aussitôt, sans être envoyé ; un fichier de type inconnu est envoyé. Le backend reste l'autorité.
 - `components/TileEditor.tsx` : l'image de chaque tuile peut être remplacée (clic ou dépôt) ou retirée ; la nouvelle tuile prend un texte, une image ou les deux. Une image est envoyée dès qu'elle est choisie, puis rattachée par `image_id`.
 - `api/images.ts` : `useUploadImage` (`POST /images`, `multipart/form-data`).
 - Les codes d'erreur sont traduits dans `src/i18n/locales/`, et `src/i18n/index.ts` définit le formateur `megabytes`.
