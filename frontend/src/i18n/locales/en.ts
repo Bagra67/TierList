@@ -188,6 +188,7 @@ export const en: Translation = {
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
       invalid_token: 'This link is invalid or has expired.',
       template_not_found: 'This template could not be found.',
+      template_has_no_tiles: 'Add at least one tile to this template to play with it.',
       tier_not_found: 'This tier could not be found.',
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',
