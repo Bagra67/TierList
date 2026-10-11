@@ -82,7 +82,7 @@ Every message is a JSON object with the same envelope:
 A browser cannot send the `Authorization` header when it opens a WebSocket, and the refresh cookie (`Path=/api/auth`) never reaches `/api/rooms`. Hence:
 
 - **Account**: the socket opens unauthenticated; the first client message must be `{"type": "auth", "access_token": "…"}` within a few seconds, otherwise the server closes it. The server checks it with the existing `AuthService.authenticate_access_token`. The token is **never put in the URL**, which would end up in proxy and server logs. When the frontend refreshes the access token (single-flight refresh of `frontend/src/api/client.ts`), it does not need to reopen the socket: the token is only checked at connection.
-- **Guest**: the guest is recognised by an `HttpOnly` cookie scoped to `/api/rooms`, which the browser sends automatically with the handshake (same origin). The content and lifetime of that token belong to the _Guest links_ question of the [roadmap](../product/roadmap.md#technical-questions), not to this page.
+- **Guest**: the guest is recognised by an `HttpOnly` cookie scoped to `/api/rooms`, which the browser sends automatically with the handshake (same origin). The token, its cookie (`guest_token`, `Path=/api/rooms/<code>`) and its lifetime are described in the [rooms guide](rooms.md#24-guests).
 - **Origin check**: since a cookie authenticates guests, the handshake is refused when its `Origin` header is not the application's origin (protection against cross-site WebSocket hijacking).
 - **Authorization**: once authenticated, the server checks that the account or guest **holds a seat in this room** before registering the socket. Nothing is pushed before that.
 
