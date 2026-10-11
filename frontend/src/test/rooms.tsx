@@ -1,9 +1,17 @@
 import { screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
-import type { Room } from '../api/rooms';
+import type { GuestRoom, Room } from '../api/rooms';
 import { RoomPage } from '../pages/RoomPage';
+import { LocationHash } from './LocationHash';
 import { renderWithQueryClient } from './renderWithQueryClient';
+import { alice, type StubbedRoute, tokenResponse } from './stubBackend';
+
+// Session d'un compte connecté (Alice) : sans elle, la page de la salle voit un visiteur
+export const signedInSession: Record<string, StubbedRoute> = {
+  'POST /auth/refresh': tokenResponse('alice-token'),
+  'GET /auth/me': () => Response.json(alice),
+};
 
 // Salle d'Alice (room admin) avec Bob, telle que la renvoie GET /rooms/{code}
 export const aliceRoom: Room = {
@@ -36,12 +44,39 @@ export const aliceRoom: Room = {
   is_admin: true,
 };
 
-// Lobby de la salle, ouvert par son lien
-export function renderRoomPage(code: string = aliceRoom.code) {
+// Salle rejointe par Lou en invité, avec son lien perso, telle que la renvoie POST /guests
+export const lousRoom: GuestRoom = {
+  ...aliceRoom,
+  is_admin: false,
+  participants: [
+    ...aliceRoom.participants,
+    {
+      id: '9a1b2c3d-0000-4000-8000-000000000003',
+      display_name: 'Lou',
+      is_admin: false,
+      is_guest: true,
+    },
+  ],
+  guest_link: 'http://localhost:5173/r/K7P2QX#guest=lou-token',
+  guest_link_expires_at: '2026-11-10T12:00:00Z',
+};
+
+// Page de la salle ouverte par son lien (path peut porter un fragment, ex. le lien perso) ;
+// /login affiche un simple titre
+export function renderRoomPage(path: string = aliceRoom.code) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[`/r/${code}`]}>
+    <MemoryRouter initialEntries={[`/r/${path}`]}>
       <Routes>
-        <Route path="/r/:code" element={<RoomPage />} />
+        <Route
+          path="/r/:code"
+          element={
+            <>
+              <RoomPage />
+              <LocationHash />
+            </>
+          }
+        />
+        <Route path="/login" element={<h1>Connexion</h1>} />
       </Routes>
     </MemoryRouter>,
   );
