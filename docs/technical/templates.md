@@ -51,7 +51,7 @@ The API returns an error **code**; the frontend translates it (`errors.api.*` in
 | Tile unknown in this template                                     | 404  | `tile_not_found`                         | `Cette tuile est introuvable.` / `This tile could not be found.`                                                        |
 | Too many tiles                                                    | 409  | `tile_limit_reached` (param `max_tiles`) | `Un template a au plus {{max_tiles}} tuiles.` / `A template has at most {{max_tiles}} tiles.`                           |
 | Tile without text nor image                                       | 422  | `tile_empty`                             | `Une tuile a besoin d'un texte ou d'une image.` / `A tile needs a text or an image.`                                    |
-| Template without tiles (not returned by a route yet; #83, #90)    | —    | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
+| Template without tiles (not returned by a route yet; #83, #91)    | —    | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
 | Image unknown or of another user                                  | 404  | `image_not_found`                        | `Cette image est introuvable.` / `This image could not be found.`                                                       |
 | Invalid name, color or tile text (empty, too long, not `#RRGGBB`) | 422  | `validation_error`                       | `Certains champs sont invalides.` / `Some fields are invalid.`, plus the error of the field                             |
 | Missing or invalid access token                                   | 401  | `not_authenticated`                      | Handled by the API client: refresh of the session, otherwise back to `/login`                                           |
@@ -124,7 +124,7 @@ Rules (`TemplateService.take_snapshot(owner, template_id)`):
 - A **deleted** template, or one of another user, raises `TemplateNotFoundError` (`template_not_found`): no new game can start with it. A game already started keeps its snapshot and can finish.
 - A template **without tiles** raises `TemplateHasNoTilesError` (`template_has_no_tiles`): a game would have no item to rank.
 - It locks the template like any change (`_get_for_change`) and only **flushes**: the caller commits the snapshot together with the game, and the lock holds until then.
-- No endpoint exposes it yet: the game start (#90) will call it.
+- No endpoint exposes it yet: the game start (#91) will call it.
 
 ### 2.5 Settings
 
@@ -156,7 +156,7 @@ Every route requires the Bearer access token (`401` otherwise).
 
 ### 2.7 Known limitations
 
-- `take_snapshot` has no caller until the game start (#90).
+- `take_snapshot` has no caller until the game start (#91).
 - No pagination of the list yet (#105).
 - No super admin view of deleted templates yet (#104).
 
