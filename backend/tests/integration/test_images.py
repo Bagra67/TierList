@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import uuid
 from collections.abc import Callable
 from io import BytesIO
@@ -11,10 +12,12 @@ from PIL import Image as PillowImage
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_image_storage
 from app.constants.error_codes import ErrorCode
+from app.main import app
 from app.models.image import Image, ImageStatus
 from tests.image_files import make_image_file
-from tests.integration.conftest import FAKE_IMAGE_BASE_URL
+from tests.integration.conftest import FAKE_IMAGE_BASE_URL, FailingImageStorage
 
 pytestmark = pytest.mark.integration
 
@@ -103,6 +106,33 @@ def test_a_failed_database_save_leaves_no_file_in_the_storage(
 
     assert response.status_code == 500
     assert stored_images == {}
+
+
+def test_a_failed_cleanup_of_a_failed_upload_keeps_the_database_error_and_logs_the_key(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    def fail_commit() -> None:
+        raise OperationalError("COMMIT", {}, Exception("connection lost"))
+
+    monkeypatch.setattr(db_session, "commit", fail_commit)
+    failing_storage: FailingImageStorage = FailingImageStorage(stored_images)
+    # Remplace le faux stockage du client ; la fixture client retire la surcharge à la fin
+    app.dependency_overrides[get_image_storage] = lambda: failing_storage
+
+    with caplog.at_level(logging.ERROR):
+        response: Response = upload(auth_client, alice, make_image_file((100, 100), "PNG"))
+
+    assert response.status_code == 500
+    # Le fichier n'a pas pu être effacé : sa clé est journalisée pour l'effacer à la main
+    [orphan_key] = list(stored_images)
+    assert orphan_key in caplog.text
+    # L'erreur journalisée par le gestionnaire générique est bien celle de la base
+    assert "OperationalError" in caplog.text
 
 
 def test_deleting_the_account_keeps_its_images_for_the_garbage_collection(

@@ -9,6 +9,7 @@ import logging
 import uuid
 from typing import BinaryIO
 
+from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -54,7 +55,7 @@ class ImageService:
         except SQLAlchemyError:
             # Sans ligne en base, aucun nettoyage ne retrouverait le fichier : il est retiré ici
             self._session.rollback()
-            self._storage.delete(image.storage_key)
+            self._delete_orphan_file(image.storage_key)
             raise
         logger.info(
             "Image envoyée : image_id=%s owner_id=%s size_bytes=%d",
@@ -66,6 +67,15 @@ class ImageService:
 
     def url(self, image: Image) -> str:
         return self._storage.url(image.storage_key)
+
+    def _delete_orphan_file(self, storage_key: str) -> None:
+        """Retire le fichier d'un envoi dont la ligne n'a pas pu être enregistrée. Si le stockage
+        échoue aussi, la clé est journalisée pour un effacement à la main, et l'erreur de base de
+        données, la vraie cause, reste celle qui remonte."""
+        try:
+            self._storage.delete(storage_key)
+        except (BotoCoreError, ClientError):
+            logger.exception("Fichier d'image orphelin non effacé : storage_key=%s", storage_key)
 
     def _read_within_limit(self, file: BinaryIO) -> bytes:
         """Lit le fichier sans jamais dépasser la limite d'un octet : un fichier énorme n'est
