@@ -189,6 +189,9 @@ export const en: Translation = {
       invalid_token: 'This link is invalid or has expired.',
       template_not_found: 'This template could not be found.',
       template_has_no_tiles: 'Add at least one tile to this template to play with it.',
+      room_not_found: 'This room could not be found or has been closed.',
+      room_admin_required: 'Only the room admin can do this.',
+      room_settings_locked: 'During a game, only late arrivals can be changed.',
       tier_not_found: 'This tier could not be found.',
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',
@@ -208,6 +211,8 @@ export const en: Translation = {
       string_too_long: 'At most {{max_length}} characters.',
       value_error: 'Invalid value.',
       string_pattern_mismatch: 'Invalid format.',
+      greater_than_equal: 'At least {{ge}}.',
+      less_than_equal: 'At most {{le}}.',
       password_too_short: 'The password must be at least {{min_length}} characters long',
     },
     google: {
