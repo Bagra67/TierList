@@ -9,6 +9,11 @@ export const en: Translation = {
   },
   home: {
     title: 'Home',
+    joinRoom: {
+      title: 'Join a room',
+      code: 'Room code',
+      submit: 'Join',
+    },
   },
   nav: {
     label: 'Main navigation',

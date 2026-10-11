@@ -2,7 +2,10 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import { aliceRoom, renderRoomPage, settingsSummary } from '../test/rooms';
-import { errorResponse, stubBackend } from '../test/stubBackend';
+import type { Room } from '../api/rooms';
+import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+
+type BackendMock = ReturnType<typeof stubBackend>;
 
 // Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
@@ -65,10 +68,28 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('copiez-le à la main');
   });
 
+  it('joins the room as a player when the user has no seat yet', async () => {
+    const bobRoom: Room = { ...aliceRoom, is_admin: false };
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
+    });
+
+    // Code tapé en minuscules : la salle est lue et rejointe sous son code canonique
+    renderRoomPage('k7p2qx');
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toEqual(['GET /rooms/K7P2QX', 'POST /rooms/K7P2QX/join']);
+    expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+  });
+
   it('says the room cannot be found', async () => {
     // Le cache de requêtes journalise l'erreur attendue
     const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
-    stubBackend({ 'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found') });
+    stubBackend({
+      'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
+      'POST /rooms/ZZZZZZ/join': () => errorResponse(404, 'room_not_found'),
+    });
 
     renderRoomPage('ZZZZZZ');
 

@@ -9,6 +9,11 @@ export const fr = {
   },
   home: {
     title: 'Accueil',
+    joinRoom: {
+      title: 'Rejoindre une salle',
+      code: 'Code de la salle',
+      submit: 'Rejoindre',
+    },
   },
   nav: {
     label: 'Navigation principale',
