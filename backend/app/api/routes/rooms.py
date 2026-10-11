@@ -37,22 +37,24 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 def _room_response(room: Room, user: User, service: RoomService) -> RoomResponse:
     participants: list[ParticipantResponse] = []
     for participant in room.participants:
-        participants.append(
-            ParticipantResponse(
-                id=participant.id,
-                display_name=participant.user.display_name,
-                is_admin=participant.user_id == room.admin_id,
-            )
+        participant_response: ParticipantResponse = ParticipantResponse(
+            id=participant.id,
+            display_name=participant.user.display_name,
+            is_admin=participant.user_id == room.admin_id,
         )
-    template: RoomTemplateResponse | None = None
-    if room.template is not None:
-        template = RoomTemplateResponse.model_validate(room.template)
+        participants.append(participant_response)
+    # None une fois le template purgé
+    template: RoomTemplateResponse | None = (
+        RoomTemplateResponse.model_validate(room.template) if room.template is not None else None
+    )
+    settings: RoomSettingsResponse = RoomSettingsResponse.model_validate(room)
+    link: str = service.link(room)
     return RoomResponse(
         code=room.code,
-        link=service.link(room),
+        link=link,
         status=room.status,
         template=template,
-        settings=RoomSettingsResponse.model_validate(room),
+        settings=settings,
         participants=participants,
         is_admin=room.admin_id == user.id,
     )
