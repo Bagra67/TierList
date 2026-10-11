@@ -1,8 +1,9 @@
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import { useRegister } from '../api/auth';
+import { pathAfterSignIn } from '../auth/signInRedirect';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
@@ -15,6 +16,7 @@ import { Button } from '../components/ui/button';
 export function RegisterPage() {
   const registerMutation = useRegister();
   const navigate = useNavigate();
+  const location = useLocation();
   const fieldErrors = getFieldErrors(registerMutation.error);
   const { t } = useTranslation();
 
@@ -30,7 +32,8 @@ export function RegisterPage() {
     } catch {
       return; // l'erreur est affichée depuis registerMutation.error
     }
-    await navigate(ROUTES.HOME, { replace: true });
+    // Comme après une connexion : retour à la page privée demandée (ex. le lien d'une salle)
+    await navigate(pathAfterSignIn(location), { replace: true });
   }
 
   return (
@@ -39,7 +42,12 @@ export function RegisterPage() {
       footer={
         <p>
           {t('auth.register.hasAccount')}{' '}
-          <Link to={ROUTES.LOGIN} className="font-medium underline underline-offset-4">
+          {/* L'état garde la page demandée, pour y revenir après la connexion */}
+          <Link
+            to={ROUTES.LOGIN}
+            state={location.state}
+            className="font-medium underline underline-offset-4"
+          >
             {t('auth.register.loginLink')}
           </Link>
         </p>

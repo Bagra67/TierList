@@ -7,12 +7,14 @@ import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { RegisterPage } from './RegisterPage';
 
-function renderRegisterPage() {
+// from : la page privée demandée avant d'arriver sur l'inscription (cf. RequireAuth)
+function renderRegisterPage(from?: string) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={['/register']}>
+    <MemoryRouter initialEntries={[{ pathname: '/register', state: { from } }]}>
       <Routes>
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<h1>Accueil</h1>} />
+        <Route path="/r/K7P2QX" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -50,6 +52,18 @@ describe('RegisterPage', () => {
       // Langue de l'email de vérification : celle de l'interface
       language: 'fr',
     });
+  });
+
+  it('goes back to the requested page after the sign-up', async () => {
+    stubBackend({
+      'POST /auth/register': tokenResponse('new-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderRegisterPage('/r/K7P2QX');
+
+    fillAndSubmit();
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
   });
 
   it('shows the backend message when the email is already used', async () => {
