@@ -2,7 +2,9 @@
 # --autogenerate voie toutes les tables de Base.metadata.
 from app.models.image import Image
 from app.models.oauth_account import OAuthAccount
+from app.models.participant import Participant
 from app.models.refresh_token import RefreshToken
+from app.models.room import Room
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
@@ -14,7 +16,9 @@ from app.models.user import User
 __all__ = [
     "Image",
     "OAuthAccount",
+    "Participant",
     "RefreshToken",
+    "Room",
     "SnapshotTier",
     "SnapshotTile",
     "Template",

@@ -43,18 +43,18 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 
 The API returns an error **code**; the frontend translates it (`errors.api.*` in `frontend/src/i18n/locales/`).
 
-| Situation                                                         | HTTP | API code                                 | Translation (FR / EN)                                                                                                   |
-| ----------------------------------------------------------------- | ---- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Template unknown, deleted or of another user                      | 404  | `template_not_found`                     | `Ce template est introuvable.` / `This template could not be found.`                                                    |
-| Tier unknown in this template                                     | 404  | `tier_not_found`                         | `Ce tier est introuvable.` / `This tier could not be found.`                                                            |
-| Deleting the last tier                                            | 409  | `last_tier`                              | `Un template garde au moins un tier.` / `A template keeps at least one tier.`                                           |
-| Tile unknown in this template                                     | 404  | `tile_not_found`                         | `Cette tuile est introuvable.` / `This tile could not be found.`                                                        |
-| Too many tiles                                                    | 409  | `tile_limit_reached` (param `max_tiles`) | `Un template a au plus {{max_tiles}} tuiles.` / `A template has at most {{max_tiles}} tiles.`                           |
-| Tile without text nor image                                       | 422  | `tile_empty`                             | `Une tuile a besoin d'un texte ou d'une image.` / `A tile needs a text or an image.`                                    |
-| Template without tiles (not returned by a route yet; #83, #91)    | —    | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
-| Image unknown or of another user                                  | 404  | `image_not_found`                        | `Cette image est introuvable.` / `This image could not be found.`                                                       |
-| Invalid name, color or tile text (empty, too long, not `#RRGGBB`) | 422  | `validation_error`                       | `Certains champs sont invalides.` / `Some fields are invalid.`, plus the error of the field                             |
-| Missing or invalid access token                                   | 401  | `not_authenticated`                      | Handled by the API client: refresh of the session, otherwise back to `/login`                                           |
+| Situation                                                           | HTTP | API code                                 | Translation (FR / EN)                                                                                                   |
+| ------------------------------------------------------------------- | ---- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Template unknown, deleted or of another user                        | 404  | `template_not_found`                     | `Ce template est introuvable.` / `This template could not be found.`                                                    |
+| Tier unknown in this template                                       | 404  | `tier_not_found`                         | `Ce tier est introuvable.` / `This tier could not be found.`                                                            |
+| Deleting the last tier                                              | 409  | `last_tier`                              | `Un template garde au moins un tier.` / `A template keeps at least one tier.`                                           |
+| Tile unknown in this template                                       | 404  | `tile_not_found`                         | `Cette tuile est introuvable.` / `This tile could not be found.`                                                        |
+| Too many tiles                                                      | 409  | `tile_limit_reached` (param `max_tiles`) | `Un template a au plus {{max_tiles}} tuiles.` / `A template has at most {{max_tiles}} tiles.`                           |
+| Tile without text nor image                                         | 422  | `tile_empty`                             | `Une tuile a besoin d'un texte ou d'une image.` / `A tile needs a text or an image.`                                    |
+| Room creation on a template without tiles ([rooms guide](rooms.md)) | 409  | `template_has_no_tiles`                  | `Ajoutez au moins une tuile à ce template pour jouer avec.` / `Add at least one tile to this template to play with it.` |
+| Image unknown or of another user                                    | 404  | `image_not_found`                        | `Cette image est introuvable.` / `This image could not be found.`                                                       |
+| Invalid name, color or tile text (empty, too long, not `#RRGGBB`)   | 422  | `validation_error`                       | `Certains champs sont invalides.` / `Some fields are invalid.`, plus the error of the field                             |
+| Missing or invalid access token                                     | 401  | `not_authenticated`                      | Handled by the API client: refresh of the session, otherwise back to `/login`                                           |
 
 ## 2. Technical design
 

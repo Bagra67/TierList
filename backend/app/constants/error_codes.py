@@ -45,6 +45,14 @@ class ErrorCode(StrEnum):
     # Tuile sans texte ni image
     TILE_EMPTY = "tile_empty"
 
+    # --- Salles -----------------------------------------------------------------------------
+    # Inexistante, fermée, ou dont l'utilisateur n'est pas participant (indiscernables)
+    ROOM_NOT_FOUND = "room_not_found"
+    # Action réservée au room admin
+    ROOM_ADMIN_REQUIRED = "room_admin_required"
+    # Réglage modifié pendant une partie (seules les arrivées peuvent l'être)
+    ROOM_SETTINGS_LOCKED = "room_settings_locked"
+
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible
     IMAGE_UNSUPPORTED_FORMAT = "image_unsupported_format"

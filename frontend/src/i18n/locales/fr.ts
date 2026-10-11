@@ -195,6 +195,9 @@ export const fr = {
       invalid_token: 'Ce lien est invalide ou a expiré.',
       template_not_found: 'Ce template est introuvable.',
       template_has_no_tiles: 'Ajoutez au moins une tuile à ce template pour jouer avec.',
+      room_not_found: 'Cette salle est introuvable ou a été fermée.',
+      room_admin_required: 'Seul le room admin peut faire cela.',
+      room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
       tier_not_found: 'Ce tier est introuvable.',
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',
@@ -215,6 +218,8 @@ export const fr = {
       string_too_long: 'Au plus {{max_length}} caractères.',
       value_error: 'Valeur invalide.',
       string_pattern_mismatch: 'Format invalide.',
+      greater_than_equal: 'Au moins {{ge}}.',
+      less_than_equal: 'Au plus {{le}}.',
       password_too_short: 'Le mot de passe doit contenir au moins {{min_length}} caractères',
     },
     // Codes du retour de Google (backend : /auth/google/callback → /login?error=<code>)
