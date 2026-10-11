@@ -12,6 +12,7 @@ from app.constants.rooms import GUEST_COOKIE
 from app.core.config import get_settings
 from app.models.participant import Participant
 from app.models.room import Room
+from app.services.rooms import RoomService
 from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
@@ -126,6 +127,21 @@ def test_a_nickname_already_used_in_the_room_is_refused(
     auth_client.cookies.clear()
 
     response: Response = join_as_guest(auth_client, alice_room["code"], nickname)
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN
+
+
+def test_the_nickname_index_refusal_is_a_conflict_too(
+    auth_client: TestClient, alice_room: JsonObject, monkeypatch: pytest.MonkeyPatch
+):
+    # Le service ne voit aucun nom pris (comme quand lower() diffère entre Python et PostgreSQL) :
+    # c'est l'index unique de la base qui refuse le doublon
+    join_as_guest(auth_client, alice_room["code"], "Lou")
+    auth_client.cookies.clear()
+    monkeypatch.setattr(RoomService, "_taken_names", staticmethod(lambda room: set()))
+
+    response: Response = join_as_guest(auth_client, alice_room["code"], "lou")
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN

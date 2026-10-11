@@ -44,6 +44,15 @@ logger = logging.getLogger(__name__)
 
 # Contrainte d'unicité du code (convention de nommage de app/db/base.py)
 ROOM_CODE_CONSTRAINT = "uq_rooms_code"
+# Index unique du pseudo des invités dans une salle (app/models/participant.py)
+NICKNAME_INDEX = "uq_participants_room_id_lower_nickname"
+
+
+def _violates(exc: IntegrityError, constraint_name: str) -> bool:
+    """L'erreur d'intégrité vient-elle de cette contrainte d'unicité ?"""
+    return (
+        isinstance(exc.orig, UniqueViolation) and exc.orig.diag.constraint_name == constraint_name
+    )
 
 
 def generate_room_code() -> str:
@@ -169,10 +178,7 @@ class RoomService:
         # Supprimées tout de suite : au flush, SQLAlchemy passe les INSERT avant les DELETE, et
         # le nouvel invité buterait sur l'index unique du pseudo libéré
         self._session.flush()
-        taken_names: set[str] = {
-            participant.display_name.lower() for participant in room.participants
-        }
-        if nickname.lower() in taken_names:
+        if nickname.lower() in self._taken_names(room):
             raise NicknameTakenError
         token: str = generate_guest_token()
         guest: Participant = Participant(
@@ -181,7 +187,16 @@ class RoomService:
             guest_expires_at=now + timedelta(days=self._settings.guest_link_ttl_days),
         )
         room.participants.append(guest)
-        self._session.commit()
+        try:
+            self._session.commit()
+        except IntegrityError as exc:
+            # Dernier filet : lower() de PostgreSQL et str.lower() de Python peuvent différer sur
+            # quelques caractères Unicode ; l'index refuse alors un pseudo que le service a laissé
+            # passer. C'est le même refus, pas une erreur interne.
+            self._session.rollback()
+            if _violates(exc, NICKNAME_INDEX):
+                raise NicknameTakenError from exc
+            raise
         logger.info("Salle rejointe en invité : room_id=%s participant_id=%s", room.id, guest.id)
         return GuestSeat(room=room, participant=guest, token=token)
 
@@ -255,6 +270,12 @@ class RoomService:
         return any(participant.user_id == user.id for participant in room.participants)
 
     @staticmethod
+    def _taken_names(room: Room) -> set[str]:
+        """Noms affichés de la salle, en minuscules : ceux des comptes et les pseudos des
+        invités. Un nouvel invité ne peut prendre aucun d'eux."""
+        return {participant.display_name.lower() for participant in room.participants}
+
+    @staticmethod
     def _find_guest(room: Room, token: str) -> Participant | None:
         """Place d'invité de cette salle dont le jeton est celui-ci, si elle n'a pas expiré."""
         token_hash: str = hash_guest_token(token)
@@ -271,10 +292,7 @@ class RoomService:
             with self._session.begin_nested():
                 room_repository.add_room(self._session, room)
         except IntegrityError as exc:
-            if (
-                isinstance(exc.orig, UniqueViolation)
-                and exc.orig.diag.constraint_name == ROOM_CODE_CONSTRAINT
-            ):
+            if _violates(exc, ROOM_CODE_CONSTRAINT):
                 logger.info("Code de salle déjà pris, nouveau tirage : code=%s", room.code)
                 return False
             raise
