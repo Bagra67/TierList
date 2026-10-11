@@ -1,4 +1,5 @@
-# Services de développement : base PostgreSQL et Mailpit (boîte de réception locale).
+# Services de développement : base PostgreSQL, Mailpit (boîte de réception locale) et SeaweedFS
+# (stockage S3 des images).
 # Lancer : docker compose up -d --wait   |   Arrêter : docker compose down
 services:
   db:
@@ -28,5 +29,32 @@ services:
       - '127.0.0.1:8025:8025'
     restart: unless-stopped
 
+  # Stockage S3 des images des tuiles, à la place du fournisseur de production
+  # (docs/technical/images.md). Interface web du filer : http://localhost:8888
+  seaweedfs:
+    # Version exacte : la CI lance la même (.github/workflows/ci.yml)
+    image: chrislusf/seaweedfs:4.48
+    # mini : maître, volume, filer et S3 dans un seul conteneur. Crée le bucket au démarrage ;
+    # s3.json donne l'identité du backend et la lecture anonyme des images.
+    command: >-
+      mini -master.telemetry=false -webdav=false -bucket=tierlist-images
+      -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      # API S3 (IMAGE_S3_ENDPOINT_URL) et interface du filer, depuis cette machine seulement
+      - '127.0.0.1:8333:8333'
+      - '127.0.0.1:8888:8888'
+    volumes:
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - ./seaweedfs/security.toml:/etc/seaweedfs/security.toml:ro
+      - seaweedfs-data:/data
+    healthcheck:
+      # Prêt quand le bucket existe : il est créé juste après le démarrage de l'API S3
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8888/buckets/tierlist-images/']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
 volumes:
   postgres-data:
+  seaweedfs-data:

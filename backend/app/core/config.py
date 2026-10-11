@@ -47,6 +47,19 @@ class Settings(BaseSettings):
     image_upload_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     # Nombre maximal de pixels de l'image décodée : protège contre les bombes de décompression
     image_max_source_pixels: int = Field(default=40_000_000, gt=0)
+    # Stockage S3 des images. En développement, SeaweedFS (compose.yaml) : ses valeurs sont dans
+    # .env.example. Sans adresse, boto3 vise AWS S3 ; sans clés, il cherche ses identifiants
+    # habituels (variables AWS_*, rôle de la machine).
+    image_s3_endpoint_url: str | None = None
+    image_s3_bucket: str = "tierlist-images"
+    image_s3_region: str = "us-east-1"
+    image_s3_access_key_id: str | None = None
+    image_s3_secret_access_key: SecretStr | None = None
+    # Délai des appels au stockage (connexion, puis lecture de la réponse)
+    image_s3_timeout_seconds: int = Field(default=10, gt=0)
+    # Adresse publique des images (CDN ou bucket) : l'URL d'une image est cette adresse suivie
+    # de sa clé. 127.0.0.1 plutôt que localhost : le port de SeaweedFS n'est publié qu'en IPv4.
+    image_public_base_url: str = "http://127.0.0.1:8333/tierlist-images"
 
     # Connexion avec Google (client OAuth « Application Web » de la Google Cloud Console).
     # Sans identifiants, le bouton Google renvoie vers /login avec une erreur explicite.

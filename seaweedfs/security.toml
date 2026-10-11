@@ -1,0 +1,4 @@
+# SeaweedFS de développement et de CI uniquement (docs/technical/images.md).
+# Sans clé de signature, SeaweedFS refuse de charger les identités de s3.json.
+[jwt.filer_signing]
+key = "dev-only-filer-signing-key-not-a-secret"

@@ -14,6 +14,8 @@ from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
+from app.services.image_storage import ImageStorage, create_image_storage
+from app.services.images import ImageService
 from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -32,6 +34,19 @@ def get_template_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> TemplateService:
     return TemplateService(session, settings)
+
+
+def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:
+    # Remplacé par un faux dans les tests d'API : seuls les tests du stockage contactent S3
+    return create_image_storage(settings)
+
+
+def get_image_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    storage: Annotated[ImageStorage, Depends(get_image_storage)],
+) -> ImageService:
+    return ImageService(session, settings, storage)
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:

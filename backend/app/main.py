@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api.routes import auth, templates
+from app.api.routes import auth, images, templates
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.errors import ErrorResponse, register_error_handlers
@@ -28,6 +28,7 @@ app = FastAPI(
 register_error_handlers(app)
 app.include_router(auth.router)
 app.include_router(templates.router)
+app.include_router(images.router)
 
 
 class HealthResponse(BaseModel):

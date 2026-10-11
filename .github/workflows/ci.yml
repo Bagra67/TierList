@@ -44,8 +44,18 @@ jobs:
       POSTGRES_PORT: 5432
       # CI-only throwaway signing key, not a secret: it only signs tokens of the test database.
       JWT_SECRET_KEY: ci-only-jwt-signing-key-not-a-secret
+      # SeaweedFS started below; its development keys (seaweedfs/s3.json), not secrets.
+      IMAGE_S3_ENDPOINT_URL: http://127.0.0.1:8333
+      IMAGE_S3_ACCESS_KEY_ID: tierlist-dev
+      IMAGE_S3_SECRET_ACCESS_KEY: tierlist-dev-not-a-secret
     steps:
       - uses: actions/checkout@v7
+
+      # The same S3 storage as in development (compose.yaml), for the image storage tests. Not a
+      # service container: those cannot mount configuration files, which only exist after checkout.
+      - name: Start the S3 image storage (SeaweedFS)
+        working-directory: .
+        run: docker compose up -d --wait seaweedfs
 
       # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
       - uses: astral-sh/setup-uv@v10.2.0
@@ -67,7 +77,7 @@ jobs:
       - name: Type check (Pyright)
         run: uv run pyright
 
-      - name: Tests (unit + PostgreSQL integration) with coverage
+      - name: Tests (unit + PostgreSQL and S3 integration) with coverage
         run: >-
           uv run pytest --cov=app --cov-report=term --cov-report=xml
           --junitxml=reports/junit.xml

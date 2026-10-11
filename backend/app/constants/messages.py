@@ -31,6 +31,12 @@ TILE_NOT_FOUND = "Tile not found"
 # {max_tiles} est remplacé par la limite du plan
 TILE_LIMIT_REACHED = "A template has at most {max_tiles} tiles"
 
+# --- Images --------------------------------------------------------------------------------
+IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
+# {max_bytes} est remplacé par IMAGE_UPLOAD_MAX_BYTES
+IMAGE_TOO_LARGE = "The file is larger than {max_bytes} bytes"
+IMAGE_TOO_MANY_PIXELS = "The image has too many pixels"
+
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
 EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
@@ -41,3 +47,6 @@ TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION = "Template or tier not found"
 LAST_TIER_DESCRIPTION = "The last tier of a template cannot be deleted"
 TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION = "Template or tile not found"
 TILE_LIMIT_REACHED_DESCRIPTION = "Maximum number of tiles reached"
+IMAGE_UNSUPPORTED_FORMAT_DESCRIPTION = "Not a JPEG, PNG or WebP image"
+IMAGE_TOO_LARGE_DESCRIPTION = "File too large"
+IMAGE_TOO_MANY_PIXELS_DESCRIPTION = "Image with too many pixels"

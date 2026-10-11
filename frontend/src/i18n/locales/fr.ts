@@ -183,6 +183,9 @@ export const fr = {
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',
       tile_limit_reached: 'Un template a au plus {{max_tiles}} tuiles.',
+      image_unsupported_format: "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
+      image_too_large: "L'image est trop lourde : {{max_bytes, megabytes}} au maximum.",
+      image_too_many_pixels: "L'image est trop grande : réduisez sa définition puis réessayez.",
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

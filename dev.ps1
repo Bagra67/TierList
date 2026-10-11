@@ -3,7 +3,7 @@
 #
 # Usage : .\dev.ps1 [-NoDb] [-NoOpen]   (ou dev.cmd [-NoDb] [-NoOpen] si l'exécution de scripts
 # PowerShell est bloquée)
-#   -NoDb   : ne démarre pas la base PostgreSQL (Docker)
+#   -NoDb   : ne démarre pas les services Docker (PostgreSQL, Mailpit, SeaweedFS)
 #   -NoOpen : n'ouvre pas les liens de dev dans le navigateur
 
 param(
@@ -67,10 +67,10 @@ if (-not $NoDb) {
         Write-Host 'Docker ne répond pas : lancez Docker Desktop puis relancez (ou .\dev.ps1 -NoDb pour démarrer sans base).' -ForegroundColor Red
         exit 1
     }
-    Write-Host '[db] Démarrage de PostgreSQL (docker compose up -d --wait)...' -ForegroundColor Cyan
+    Write-Host '[db] Démarrage de PostgreSQL, Mailpit et SeaweedFS (docker compose up -d --wait)...' -ForegroundColor Cyan
     docker compose -f (Join-Path $root 'compose.yaml') up -d --wait
     if ($LASTEXITCODE -ne 0) {
-        Write-Host 'Échec du démarrage de la base : voir docker compose logs db.' -ForegroundColor Red
+        Write-Host 'Échec du démarrage des services Docker : voir docker compose logs.' -ForegroundColor Red
         exit 1
     }
 }
@@ -105,6 +105,8 @@ try {
             Start-Process 'http://127.0.0.1:8000/docs'
             if (-not $NoDb) {
                 Start-Process 'http://localhost:8025'
+                # Interface web du filer SeaweedFS, ouverte sur le bucket des images
+                Start-Process 'http://localhost:8888/buckets/tierlist-images/'
             }
         }
         elseif (-not ($processes | Where-Object HasExited)) {
