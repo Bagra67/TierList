@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
 from app.models.image import Image
 from app.models.template import Template
@@ -142,7 +142,9 @@ def test_the_snapshot_outlives_the_purge_of_its_template(
     service.delete(alice, template.id)
     template.deleted_at = datetime.now(UTC) - timedelta(days=31)
     db_session.flush()
-    purge_settings = get_settings().model_copy(update={"deleted_template_retention_days": 30})
+    purge_settings: Settings = get_settings().model_copy(
+        update={"deleted_template_retention_days": 30}
+    )
 
     purged_count: int = TemplateService(db_session, purge_settings).purge_deleted()
     db_session.refresh(snapshot)
