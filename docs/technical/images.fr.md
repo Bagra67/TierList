@@ -42,10 +42,11 @@ Une image envoyée n'est pas encore rattachée à une tuile : `image_id` sur les
 Chaque image acceptée suit le même traitement ; le fichier reçu n'est **jamais stocké** :
 
 1. ouvrir et vérifier le fichier (Pillow), en le refusant si son image décodée aurait trop de pixels : seul l'en-tête est lu pour ce contrôle ;
-2. appliquer l'orientation EXIF (`ImageOps.exif_transpose`), pour que les photos de téléphone soient droites ;
-3. convertir le mode de couleur, **en gardant la transparence** (PNG, WebP) ;
-4. la redimensionner pour que son **plus grand côté fasse 512 px**, en gardant ses proportions, avec le filtre **Lanczos** : une image plus grande est réduite (4000 × 3000 donne 512 × 384), une plus petite est **agrandie** (200 × 100 donne 512 × 256), jamais recadrée ni étirée ;
-5. l'encoder en **WebP, qualité 80**, sans aucune métadonnée (EXIF, position GPS : vie privée). Seul le profil de couleur (ICC) est gardé, sinon les photos en couleurs étendues (Display P3) paraîtraient ternes.
+2. la décoder ; un JPEG est décodé à échelle réduite (`draft` : jusqu'à 1/8, jamais sous 512 px de côté), pour qu'une photo de 40 Mpx n'occupe pas quelque 120 Mo de mémoire par envoi ;
+3. appliquer l'orientation EXIF (`ImageOps.exif_transpose`), pour que les photos de téléphone soient droites ;
+4. convertir le mode de couleur, **en gardant la transparence** (PNG, WebP) ;
+5. la redimensionner pour que son **plus grand côté fasse 512 px**, en gardant ses proportions, avec le filtre **Lanczos** : une image plus grande est réduite (4000 × 3000 donne 512 × 384), une plus petite est **agrandie** (200 × 100 donne 512 × 256), jamais recadrée ni étirée. Le petit côté fait au moins 1 px : au-delà d'un rapport de 1024:1, il s'arrondirait à 0, une taille que Pillow refuse (2000 × 1 donne 512 × 1) ;
+6. l'encoder en **WebP, qualité 80**, sans aucune métadonnée (EXIF, position GPS : vie privée). Seul le profil de couleur (ICC) est gardé, sinon les photos en couleurs étendues (Display P3) paraîtraient ternes.
 
 Pourquoi 512 px : le plus grand affichage fait environ 150 px CSS, et un écran de densité 3 a besoin d'environ 450 pixels réels. Une seule taille est stockée : les petites tuiles utilisent le même fichier (pas de miniatures, YAGNI). Le WebP est lu par tous les navigateurs actuels et est bien plus léger que le JPEG ou le PNG à qualité égale.
 
@@ -57,12 +58,14 @@ Les valeurs fixes sont des constantes dans `app/constants/images.py` (`IMAGE_OUT
 
 ### 2.4 Limites et réglages
 
-| Variable                  | Description                                                                                                                                                                         | Défaut              |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `IMAGE_UPLOAD_MAX_BYTES`  | Taille maximale du fichier reçu, vérifiée pendant sa lecture ; à garder alignée sur la limite du reverse proxy.                                                                     | `10485760` (10 Mio) |
-| `IMAGE_MAX_SOURCE_PIXELS` | Nombre maximal de pixels de l'image décodée (`MAX_IMAGE_PIXELS` de Pillow) : protège contre les bombes de décompression, de petits fichiers qui se décompressent en images énormes. | `40000000` (40 Mpx) |
+| Variable                  | Description                                                                                                                                                                                   | Défaut              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `IMAGE_UPLOAD_MAX_BYTES`  | Taille maximale du fichier reçu ; à garder alignée avec la limite de corps du reverse proxy.                                                                                                  | `10485760` (10 Mio) |
+| `IMAGE_MAX_SOURCE_PIXELS` | Nombre maximal de pixels de l'image décodée, vérifié sur l'en-tête avant le décodage : protège contre les bombes de décompression, de petits fichiers qui se décompressent en images énormes. | `40000000` (40 Mpx) |
 
 10 Mio acceptent une photo de téléphone ; 40 Mpx acceptent les plus grands capteurs de téléphones et d'appareils photo.
+
+Starlette reçoit tout le corps multipart, et l'écrit dans un fichier temporaire, **avant** que la route s'exécute : le backend refuse un fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` (il lit au plus un octet de plus, le fichier n'entre donc jamais en mémoire), mais seule la **limite du reverse proxy** arrête un corps énorme avant sa réception ([TODO](../../TODO.fr.md)).
 
 Réglages du stockage :
 
@@ -87,7 +90,7 @@ Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui 
 
 - Une table **`images`** : `id`, clé de stockage, largeur, hauteur, taille en octets, auteur (`owner_id`), date de création, **SHA-256 du fichier reçu**, statut de modération (`visible`, `hidden`, `deleted`). Supprimer le compte met `owner_id` à `NULL` (`ON DELETE SET NULL`) au lieu de supprimer la ligne : le ramasse-miettes retrouve encore le fichier, et une partie passée peut encore afficher l'image.
 - `tiles.image_id` : clé étrangère nullable vers `images`. Les tuiles d'un instantané de partie référenceront `image_id` de la même façon.
-- **Images immuables** : la clé de stockage est aléatoire (`{uuid}.webp`). Remplacer l'image d'une tuile crée une **nouvelle** image ; un fichier existant n'est jamais écrasé. Les caches peuvent garder un fichier indéfiniment, et un instantané retrouve toujours l'image avec laquelle il a été pris.
+- **Images immuables** : la clé de stockage est aléatoire (`{uuid}.webp`). Remplacer l'image d'une tuile crée une **nouvelle** image ; un fichier existant n'est jamais écrasé. Un fichier en cache n'est donc jamais périmé, et un instantané retrouve toujours l'image avec laquelle il a été pris.
 
 ### 2.6 API
 
@@ -118,7 +121,7 @@ SeaweedFS en développement :
 - `seaweedfs/s3.json` définit deux identités : le backend (clé `tierlist-dev`, lecture, écriture et liste sur le bucket seulement) et `anonymous` (**lecture** seule, pour que les URL des images marchent sans authentification ; lister, écrire et supprimer sont refusés). `seaweedfs/security.toml` contient une clé de signature du filer, réservée au développement : sans elle, SeaweedFS refuse de charger les identités.
 - Les données sont gardées dans le volume Docker `seaweedfs-data`.
 
-- Chaque objet est écrit avec `Content-Type: image/webp` et `Cache-Control: public, max-age=31536000, immutable` (le contenu d'une clé ne change jamais).
+- Chaque objet est écrit avec `Content-Type: image/webp` et `Cache-Control: public, max-age=86400` : **un jour**. Le contenu d'une clé ne change jamais, un an avec `immutable` serait donc possible ; un jour est choisi (review de #81) pour qu'une image masquée par la modération ou effacée quitte les caches des navigateurs en 24 heures au plus. Le cache du CDN, lui, est purgé tout de suite (§2.9).
 - **Modèle d'accès** : les URL des images sont publiques mais **impossibles à deviner** (UUID aléatoire). Quiconque a une URL peut voir l'image, ce que le lien public des résultats impose de toute façon : une image utilisée dans une partie devient publique par ce lien.
 
 ### 2.8 Nettoyage
@@ -157,20 +160,20 @@ Ajoutées avec #81 :
 
 - Pas de quota de stockage par compte : 32 images par template, sans limite sur le nombre de templates.
 - Les images de réponse du mode à l'aveugle et les futures photos de profil réutiliseront ce traitement ; leurs tailles seront décidées avec elles.
-- Les navigateurs qui ont déjà affiché une image masquée peuvent la garder dans leur cache ; la purge du CDN couvre tous les autres.
+- Les navigateurs qui ont déjà affiché une image masquée peuvent la garder dans leur cache **jusqu'à un jour** (`max-age`) ; la purge du CDN couvre tous les autres.
 
 ## 3. Dans le code
 
 Backend (tests : [guide des tests](testing.fr.md)) :
 
-| Fichier                            | Rôle                                                                                                                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/routes/images.py`         | `POST /images` : transforme les erreurs en `415`, `413` (param `max_bytes`) et `422`.                                                                                         |
-| `app/services/images.py`           | `ImageService.upload` : lit le fichier sans dépasser la limite, le compresse, l'écrit sous une nouvelle clé, puis enregistre la ligne (le fichier est retiré si cela échoue). |
-| `app/services/image_processing.py` | `compress_image` : le traitement Pillow du §2.3, une fonction pure.                                                                                                           |
-| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) sur un client boto3, partagé entre les requêtes.                                                                                     |
-| `app/models/image.py`              | Modèle `Image` et `ImageStatus` ; migration `ef5839ce8066_create_images.py`.                                                                                                  |
-| `app/constants/images.py`          | Formats, taille de sortie, qualité WebP, `Content-Type` et `Cache-Control` des objets.                                                                                        |
-| `app/core/config.py`               | Réglages `IMAGE_*` (§2.4).                                                                                                                                                    |
+| Fichier                            | Rôle                                                                                                                                                                                                                                     |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/routes/images.py`         | `POST /images` : transforme les erreurs en `415`, `413` (param `max_bytes`) et `422`.                                                                                                                                                    |
+| `app/services/images.py`           | `ImageService.upload` : lit le fichier sans dépasser la limite, le compresse, l'écrit sous une nouvelle clé, puis enregistre la ligne (le fichier est retiré si cela échoue ; un échec de cette suppression est journalisé avec la clé). |
+| `app/services/image_processing.py` | `compress_image` : le traitement Pillow du §2.3, une fonction pure.                                                                                                                                                                      |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) sur un client boto3, partagé entre les requêtes.                                                                                                                                                |
+| `app/models/image.py`              | Modèle `Image` et `ImageStatus` ; migration `ef5839ce8066_create_images.py`.                                                                                                                                                             |
+| `app/constants/images.py`          | Formats, taille de sortie, qualité WebP, `Content-Type` et `Cache-Control` des objets.                                                                                                                                                   |
+| `app/core/config.py`               | Réglages `IMAGE_*` (§2.4).                                                                                                                                                                                                               |
 
 Développement : `compose.yaml` et `seaweedfs/` (§2.7). Frontend : les codes d'erreur sont traduits dans `src/i18n/locales/`, et `src/i18n/index.ts` définit le formateur `megabytes`.
