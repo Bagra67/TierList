@@ -178,6 +178,69 @@ export const fr = {
       },
     },
   },
+  rooms: {
+    create: {
+      open: 'Créer une salle',
+      openLabel: 'Créer une salle avec {{name}}',
+      submitting: 'Création…',
+    },
+    lobby: {
+      title: 'Salle {{code}}',
+      template: 'Template : {{name}}',
+      templateDeleted:
+        'Le template de cette salle a été supprimé : aucune nouvelle partie ne peut y démarrer.',
+      playing: 'Partie en cours',
+      code: 'Code de la salle',
+      link: 'Lien de la salle',
+      copyLink: 'Copier le lien',
+      linkCopied: 'Lien copié',
+      copyFailed: 'Impossible de copier le lien : sélectionnez-le et copiez-le à la main.',
+      participants: 'Participants ({{count}})',
+      admin: 'room admin',
+    },
+    settings: {
+      title: 'Réglages',
+      edit: 'Modifier',
+      dialogTitle: 'Réglages de la salle',
+      itemOrder: {
+        label: 'Ordre des items',
+        template: 'Ordre du template',
+        random: 'Aléatoire',
+      },
+      autoAdvance: {
+        label: 'Item suivant',
+        none: 'Manuel uniquement',
+        timer: 'Timer par item',
+        everyone_placed: 'Quand tout le monde a placé',
+      },
+      timerSeconds: 'Durée du timer (secondes)',
+      manualNote: "Le room admin peut toujours passer à l'item suivant à la main.",
+      cooldownSeconds: 'Cooldown final (secondes)',
+      adminPlays: 'Je joue aussi',
+      lateArrivals: 'Autoriser les arrivées pendant la partie',
+      lockedNote: 'Une partie est en cours : seules les arrivées peuvent être modifiées.',
+      cancel: 'Annuler',
+      submit: 'Enregistrer',
+      submitting: 'Enregistrement…',
+      // Résumé affiché dans le lobby, à tous les participants
+      summary: {
+        itemOrder: {
+          template: 'Ordre du template',
+          random: 'Ordre aléatoire',
+        },
+        autoAdvance: {
+          none: 'Item suivant à la main',
+          timer: 'Timer de {{seconds}} s par item',
+          everyone_placed: 'Item suivant quand tout le monde a placé',
+        },
+        cooldown: 'Cooldown final de {{seconds}} s',
+        adminPlays: 'Le room admin joue',
+        adminDoesNotPlay: 'Le room admin ne joue pas',
+        lateArrivalsAllowed: 'Arrivées autorisées pendant la partie',
+        lateArrivalsLocked: 'Arrivées bloquées pendant la partie',
+      },
+    },
+  },
   errors: {
     unknown: 'Une erreur est survenue, veuillez réessayer.',
     // Une clé par code d'erreur de l'API (backend/app/constants/error_codes.py)
