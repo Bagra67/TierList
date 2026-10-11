@@ -8,6 +8,7 @@ from app.constants.auth import JWT_SECRET_KEY_MIN_LENGTH, PASSWORD_MAX_LENGTH
 from app.constants.rooms import (
     COOLDOWN_SECONDS_MAX,
     COOLDOWN_SECONDS_MIN,
+    GUEST_LINK_MAX_TTL_DAYS,
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
@@ -54,6 +55,11 @@ class Settings(BaseSettings):
     room_default_cooldown_seconds: int = Field(
         default=60, ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECONDS_MAX
     )
+    # Validité du lien perso d'un invité, comptée depuis son arrivée, sans prolongation
+    guest_link_ttl_days: int = Field(default=30, gt=0, le=GUEST_LINK_MAX_TTL_DAYS)
+    # Chemin des routes des salles vu par le navigateur (proxy /api) : le cookie d'un invité est
+    # posé sur ce chemin suivi du code de sa salle
+    room_cookie_path: str = "/api/rooms"
 
     # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
     # alignée sur la limite de corps du reverse proxy (10 Mio)
