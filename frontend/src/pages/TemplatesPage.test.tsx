@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Template, TemplateSummary } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
+import { aliceRoom } from '../test/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplatesPage } from './TemplatesPage';
 
@@ -33,13 +34,15 @@ const createdTemplate: Template = {
   max_tiles: 32,
 };
 
-// L'éditeur est remplacé par un simple titre : seule la navigation vers lui est vérifiée ici
+// L'éditeur et le lobby sont remplacés par un simple titre : seule la navigation vers eux est
+// vérifiée ici
 function renderTemplatesPage() {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={['/templates']}>
       <Routes>
         <Route path="/templates" element={<TemplatesPage />} />
         <Route path="/templates/:templateId" element={<h1>Éditeur</h1>} />
+        <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -192,5 +195,36 @@ describe('TemplatesPage', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'Ce template est introuvable.',
     );
+  });
+
+  describe('create a room', () => {
+    it('creates a room from a template and opens its lobby', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        'GET /templates': listOf([chips]),
+        'POST /rooms': () => Response.json(aliceRoom, { status: 201 }),
+      });
+      renderTemplatesPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
+
+      expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+      const post = fetchMock.mock.calls.find(([request]) => request.method === 'POST');
+      expect(await post?.[0].json()).toEqual({ template_id: chips.id });
+    });
+
+    it('says why a template without tiles cannot be played', async () => {
+      stubBackend({
+        'GET /templates': listOf([chips]),
+        'POST /rooms': () => errorResponse(409, 'template_has_no_tiles'),
+      });
+      renderTemplatesPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Ajoutez au moins une tuile à ce template pour jouer avec.',
+      );
+      expect(screen.queryByRole('heading', { name: 'Lobby' })).not.toBeInTheDocument();
+    });
   });
 });

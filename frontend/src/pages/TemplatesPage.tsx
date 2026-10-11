@@ -2,13 +2,15 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useTemplates } from '../api/templates';
+import { CreateRoomButton } from '../components/CreateRoomButton';
 import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
-// Templates de l'utilisateur (US-1.5) : création (US-1.1) et suppression (US-1.6)
+// Templates de l'utilisateur (US-1.5) : création (US-1.1), suppression (US-1.6) et création
+// d'une salle pour jouer avec (US-2.1)
 export function TemplatesPage() {
   const { data: templates, isPending, isError, error } = useTemplates();
   const { t } = useTranslation();
@@ -38,7 +40,10 @@ export function TemplatesPage() {
                   <span>{t('templates.updatedAt', { date: new Date(template.updated_at) })}</span>
                 </p>
               </div>
-              <DeleteTemplateDialog template={template} />
+              <div className="flex items-start gap-2">
+                <CreateRoomButton templateId={template.id} templateName={template.name} />
+                <DeleteTemplateDialog template={template} />
+              </div>
             </li>
           ))}
         </ul>

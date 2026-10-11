@@ -4,6 +4,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link, type Params, useParams } from 'react-router';
 
 import { type Template, useTemplate } from '../api/templates';
+import { CreateRoomButton } from '../components/CreateRoomButton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
@@ -53,7 +54,10 @@ export function TemplateEditorPage() {
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {template && (
         <>
-          <h1 className="text-2xl font-semibold">{template.name}</h1>
+          <div className="flex w-full flex-wrap items-start justify-between gap-4">
+            <h1 className="text-2xl font-semibold">{template.name}</h1>
+            <CreateRoomButton templateId={template.id} templateName={template.name} />
+          </div>
           {/* Un nom n'a pas besoin de toute la largeur de la page */}
           <div className="w-full max-w-xl">
             <TemplateNameField template={template} />
