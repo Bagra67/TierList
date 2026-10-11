@@ -215,6 +215,9 @@ export const en: Translation = {
       title: 'Your personal link',
       hint: 'Keep it: it brings you back to your seat from any device, until {{date, datetime(dateStyle: long)}}. It cannot be recovered.',
       label: 'Personal link',
+      renew: 'Get a new personal link',
+      renewHint: 'Lost your personal link? A new link replaces the old one, which stops working.',
+      renewing: 'Creating the link…',
     },
     settings: {
       title: 'Settings',

@@ -64,6 +64,13 @@ async function restoreGuestSession(
   );
 }
 
+// Invité qui a perdu son lien perso : un nouveau jeton remplace l'ancien (cookie compris)
+async function renewGuestLink(code: string): Promise<GuestRoom> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/guest-link', { params: { path: { code } } }),
+  );
+}
+
 // Ouvrir une salle avec son compte, c'est y entrer (US-2.4) : sans place (404), l'utilisateur la
 // rejoint comme joueur. Rejoindre est idempotent : une relecture ne crée pas de seconde place, et
 // un mauvais code donne toujours room_not_found.
@@ -140,6 +147,15 @@ export function useJoinAsGuest(
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: JoinAsGuestRequest) => joinAsGuest(canonicalCode(code), body),
+    onSuccess: (guestRoom: GuestRoom) => storeRoom(queryClient, guestRoom),
+  });
+}
+
+// Nouveau lien perso pour l'invité reconnu par son cookie ; l'ancien cesse de marcher
+export function useRenewGuestLink(code: string): UseMutationResult<GuestRoom, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => renewGuestLink(canonicalCode(code)),
     onSuccess: (guestRoom: GuestRoom) => storeRoom(queryClient, guestRoom),
   });
 }

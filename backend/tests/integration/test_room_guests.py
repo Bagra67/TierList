@@ -236,6 +236,44 @@ def test_an_expired_seat_is_lost_and_frees_its_nickname(
     assert len(db_session.scalars(select(Participant)).all()) == 2
 
 
+def test_a_guest_who_lost_the_link_gets_a_new_one(auth_client: TestClient, alice_room: JsonObject):
+    code: str = alice_room["code"]
+    joined: JsonObject = join_as_guest(auth_client, code, "Lou").json()
+
+    response: Response = auth_client.post(f"/rooms/{code}/guest-link")
+
+    assert response.status_code == 200
+    renewed: JsonObject = response.json()
+    assert renewed["guest_link"] != joined["guest_link"]
+    # La place n'est pas prolongée
+    assert renewed["guest_link_expires_at"] == joined["guest_link_expires_at"]
+    assert renewed["participants"] == joined["participants"]
+    # Le cookie porte le nouveau jeton : la salle reste lisible depuis ce navigateur
+    assert auth_client.get(f"/rooms/{code}").status_code == 200
+    auth_client.cookies.clear()
+    old_link: Response = auth_client.post(
+        f"/rooms/{code}/guest-session", json={"token": token_of(joined["guest_link"])}
+    )
+    new_link: Response = auth_client.post(
+        f"/rooms/{code}/guest-session", json={"token": token_of(renewed["guest_link"])}
+    )
+    assert old_link.json()["code"] == ErrorCode.GUEST_LINK_INVALID
+    assert new_link.status_code == 200
+
+
+def test_a_new_link_needs_a_guest_seat(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+):
+    without_cookie: Response = auth_client.post(f"/rooms/{alice_room['code']}/guest-link")
+    as_account: Response = auth_client.post(
+        f"/rooms/{alice_room['code']}/guest-link", headers=alice
+    )
+
+    assert without_cookie.status_code == 404
+    assert without_cookie.json()["code"] == ErrorCode.ROOM_NOT_FOUND
+    assert as_account.status_code == 404
+
+
 # --- Compte et invité -----------------------------------------------------------------------
 
 

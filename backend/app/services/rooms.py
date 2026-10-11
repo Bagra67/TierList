@@ -211,6 +211,24 @@ class RoomService:
             raise GuestLinkInvalidError
         return GuestSeat(room=room, participant=guest, token=token)
 
+    def renew_guest_link(self, viewer: RoomViewer, code: str) -> GuestSeat:
+        """Nouveau lien perso pour l'invité reconnu par son cookie, qui a perdu le sien : un
+        nouveau jeton remplace l'ancien, qui cesse de marcher (lien comme cookie). La date
+        d'expiration ne change pas : le renouvellement ne prolonge pas la place."""
+        room: Room | None = room_repository.get_room_by_code(
+            self._session, code.upper(), for_update=True
+        )
+        if room is None or viewer.user is not None or viewer.guest_token is None:
+            raise RoomNotFoundError
+        guest: Participant | None = self._find_guest(room, viewer.guest_token)
+        if guest is None:
+            raise RoomNotFoundError
+        token: str = generate_guest_token()
+        guest.guest_token_hash = hash_guest_token(token)
+        self._session.commit()
+        logger.info("Lien perso renouvelé : room_id=%s participant_id=%s", room.id, guest.id)
+        return GuestSeat(room=room, participant=guest, token=token)
+
     def get_for_viewer(self, viewer: RoomViewer, code: str) -> Room:
         """Salle dont le lecteur a une place : un compte participant, ou un invité dont le
         cookie porte un jeton valable pour cette salle."""

@@ -198,6 +198,23 @@ def restore_guest_session(
     return _guest_room_response(seat, service)
 
 
+@router.post("/{code}/guest-link", responses=ROOM_NOT_FOUND_RESPONSES)
+def renew_guest_link(
+    code: str,
+    viewer: RoomViewerDep,
+    response: Response,
+    service: RoomServiceDep,
+    settings: SettingsDep,
+) -> GuestRoomResponse:
+    # Invité reconnu par son cookie qui a perdu son lien perso : l'ancien cesse de marcher
+    try:
+        seat: GuestSeat = service.renew_guest_link(viewer, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    _set_guest_cookie(response, seat, settings)
+    return _guest_room_response(seat, service)
+
+
 def _guest_room_response(seat: GuestSeat, service: RoomService) -> GuestRoomResponse:
     room_response: RoomResponse = _room_response(seat.room, None, service)
     expires_at: datetime | None = seat.participant.guest_expires_at

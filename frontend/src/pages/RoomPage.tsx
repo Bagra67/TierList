@@ -13,7 +13,7 @@ import {
 import { useCurrentUser } from '../api/auth';
 import { type GuestRoom, type Room, type RoomViewer, useRoom } from '../api/rooms';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { GuestLinkNotice } from '../components/GuestLinkNotice';
+import { GuestLinkSection } from '../components/GuestLinkSection';
 import { JoinRoomScreen } from '../components/JoinRoomScreen';
 import { RoomLobby } from '../components/RoomLobby';
 import { GUEST_LINK_FRAGMENT } from '../constants/rooms';
@@ -47,7 +47,7 @@ export function RoomPage() {
     isSuccess,
     error,
   }: UseQueryResult<Room> = useRoom(code, viewer, guestToken);
-  // Lien perso de l'invité qui vient d'entrer : affiché une fois, il n'est pas relu ensuite
+  // Lien perso de l'invité qui vient d'entrer (ou de le renouveler) : il n'est pas relu ensuite
   const [guestRoom, setGuestRoom] = useState<GuestRoom | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -75,7 +75,9 @@ export function RoomPage() {
       )}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
-      {guestRoom !== null && room !== undefined && <GuestLinkNotice guestRoom={guestRoom} />}
+      {viewer === 'guest' && room !== undefined && (
+        <GuestLinkSection code={code} guestRoom={guestRoom} onRenewed={setGuestRoom} />
+      )}
       {room !== undefined && <RoomLobby room={room} />}
     </main>
   );

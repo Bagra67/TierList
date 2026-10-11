@@ -221,6 +221,10 @@ export const fr = {
       title: 'Votre lien perso',
       hint: "Gardez-le : il vous ramène à votre place depuis n'importe quel appareil, jusqu'au {{date, datetime(dateStyle: long)}}. Il ne pourra pas être retrouvé.",
       label: 'Lien perso',
+      renew: 'Obtenir un nouveau lien perso',
+      renewHint:
+        "Vous avez perdu votre lien perso ? Un nouveau lien remplace l'ancien, qui cesse de marcher.",
+      renewing: 'Création du lien…',
     },
     settings: {
       title: 'Réglages',

@@ -113,6 +113,26 @@ describe('JoinRoomScreen', () => {
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Votre lien perso' })).not.toBeInTheDocument();
+    // Le lien perso n'est plus affichable, mais l'invité peut en demander un nouveau
+    expect(
+      screen.getByRole('button', { name: 'Obtenir un nouveau lien perso' }),
+    ).toBeInTheDocument();
+  });
+
+  it('gives a new personal link to a guest who lost it', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, is_admin: false }),
+      'POST /rooms/K7P2QX/guest-link': () => Response.json(lousRoom),
+    });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Obtenir un nouveau lien perso' }));
+
+    expect(await screen.findByLabelText('Lien perso')).toHaveValue(lousRoom.guest_link);
+    expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/guest-link');
+    expect(
+      screen.queryByRole('button', { name: 'Obtenir un nouveau lien perso' }),
+    ).not.toBeInTheDocument();
   });
 
   it('restores the seat from the personal link and removes the token from the address', async () => {
