@@ -1,6 +1,5 @@
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,12 +12,9 @@ from app.constants.rooms import GUEST_COOKIE
 from app.core.config import get_settings
 from app.models.participant import Participant
 from app.models.room import Room
-from tests.integration.test_rooms import create_room, create_template, register
+from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
-
-# Objet JSON renvoyé par l'API : sa forme est vérifiée par les tests
-JsonObject = dict[str, Any]
 
 
 @pytest.fixture
