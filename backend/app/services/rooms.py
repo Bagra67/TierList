@@ -1,4 +1,4 @@
-"""Règles métier des salles : création à partir d'un template, lecture et réglages.
+"""Règles métier des salles : création à partir d'un template, jonction, lecture et réglages.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 Une salle n'est visible que de ses participants ; seul son room admin change les réglages.
@@ -103,6 +103,25 @@ class RoomService:
         casse (un code tapé en minuscules est le même)."""
         return self._get_as_participant(user, code, for_update=False)
 
+    def join(self, user: User, code: str) -> Room:
+        """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
+        retrouve au lieu d'en prendre une seconde. Le code suffit : qui l'a peut rejoindre."""
+        room: Room | None = room_repository.get_room_by_code(
+            self._session, code.upper(), for_update=True
+        )
+        if room is None:
+            raise RoomNotFoundError
+        if self._has_seat(room, user):
+            # Rien à écrire : le commit libère seulement le verrou
+            self._session.commit()
+            return room
+        # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
+        # contrainte (room_id, user_id) reste le dernier filet
+        room.participants.append(Participant(user_id=user.id))
+        self._session.commit()
+        logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
+        return room
+
     def update_settings(self, user: User, code: str, changes: RoomSettingsChanges) -> Room:
         """Change les réglages de la prochaine partie (room admin seulement). Pendant une partie,
         seules les arrivées peuvent changer."""
@@ -129,9 +148,13 @@ class RoomService:
         )
         if room is None:
             raise RoomNotFoundError
-        if not any(participant.user_id == user.id for participant in room.participants):
+        if not self._has_seat(room, user):
             raise RoomNotFoundError
         return room
+
+    @staticmethod
+    def _has_seat(room: Room, user: User) -> bool:
+        return any(participant.user_id == user.id for participant in room.participants)
 
     def _insert_unless_code_taken(self, room: Room) -> bool:
         """Insère la salle dans un savepoint ; False si son code est déjà pris (la transaction

@@ -270,6 +270,59 @@ def test_a_player_sees_the_room_without_being_its_admin(
     ]
 
 
+# --- Rejoindre -------------------------------------------------------------------------------
+
+
+def test_a_user_joins_a_room_as_a_player(
+    auth_client: TestClient, bob: dict[str, str], alice_room: JsonObject
+):
+    response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=bob)
+
+    assert response.status_code == 200
+    body: JsonObject = response.json()
+    assert body["is_admin"] is False
+    assert [(p["display_name"], p["is_admin"]) for p in body["participants"]] == [
+        ("alice", True),
+        ("bob", False),
+    ]
+    # Sa place lui donne ensuite accès à la salle
+    assert auth_client.get(f"/rooms/{alice_room['code']}", headers=bob).status_code == 200
+
+
+def test_joining_again_gives_back_the_same_seat(
+    auth_client: TestClient, db_session: Session, bob: dict[str, str], alice_room: JsonObject
+):
+    first: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=bob)
+    second: Response = auth_client.post(f"/rooms/{alice_room['code'].lower()}/join", headers=bob)
+
+    assert second.status_code == 200
+    assert second.json()["participants"] == first.json()["participants"]
+    assert len(db_session.scalars(select(Participant)).all()) == 2
+
+
+def test_the_admin_keeps_their_seat_when_joining(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+):
+    response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=alice)
+
+    assert response.status_code == 200
+    assert response.json() == alice_room
+
+
+def test_joining_an_unknown_code_is_not_found(auth_client: TestClient, bob: dict[str, str]):
+    response: Response = auth_client.post("/rooms/ZZZZZZ/join", headers=bob)
+
+    assert response.status_code == 404
+    assert response.json()["code"] == ErrorCode.ROOM_NOT_FOUND
+
+
+def test_joining_requires_authentication(auth_client: TestClient, alice_room: JsonObject):
+    response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join")
+
+    assert response.status_code == 401
+    assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
+
+
 # --- Réglages -------------------------------------------------------------------------------
 
 

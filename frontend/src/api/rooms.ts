@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 
 import { roomQueryKey } from '../constants/rooms';
+import { ApiError } from '../errors/apiError';
 import { apiClient, dataOrThrow } from './client';
 import type { components } from './schema';
 
@@ -23,8 +24,34 @@ async function createRoom(body: CreateRoomRequest): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms', { body }));
 }
 
+// Code tel que le backend l'enregistre : un code tapé en minuscules ouvre la même salle, sous la
+// même clé de cache
+function canonicalCode(code: string): string {
+  return code.trim().toUpperCase();
+}
+
 async function getRoom(code: string, signal?: AbortSignal): Promise<Room> {
   return dataOrThrow(await apiClient.GET('/rooms/{code}', { params: { path: { code } }, signal }));
+}
+
+async function joinRoom(code: string, signal?: AbortSignal): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/join', { params: { path: { code } }, signal }),
+  );
+}
+
+// Ouvrir une salle avec son compte, c'est y entrer (US-2.4) : sans place (404), l'utilisateur la
+// rejoint comme joueur. Rejoindre est idempotent : une relecture ne crée pas de seconde place, et
+// un mauvais code donne toujours room_not_found.
+async function enterRoom(code: string, signal?: AbortSignal): Promise<Room> {
+  try {
+    return await getRoom(code, signal);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'room_not_found') {
+      return joinRoom(code, signal);
+    }
+    throw error;
+  }
 }
 
 async function updateRoomSettings(code: string, changes: RoomSettingsChanges): Promise<Room> {
@@ -43,9 +70,10 @@ function storeRoom(queryClient: QueryClient, room: Room): void {
 }
 
 export function useRoom(code: string): UseQueryResult<Room> {
+  const roomCode: string = canonicalCode(code);
   return useQuery({
-    queryKey: roomQueryKey(code),
-    queryFn: ({ signal }) => getRoom(code, signal),
+    queryKey: roomQueryKey(roomCode),
+    queryFn: ({ signal }) => enterRoom(roomCode, signal),
   });
 }
 
@@ -64,7 +92,7 @@ export function useUpdateRoomSettings(
 ): UseMutationResult<Room, Error, RoomSettingsChanges> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
-    mutationFn: (changes: RoomSettingsChanges) => updateRoomSettings(code, changes),
+    mutationFn: (changes: RoomSettingsChanges) => updateRoomSettings(canonicalCode(code), changes),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

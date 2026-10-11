@@ -107,6 +107,16 @@ def get_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomRe
     return _room_response(room, user, service)
 
 
+@router.post("/{code}/join", responses=ROOM_NOT_FOUND_RESPONSES)
+def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomResponse:
+    # Rejoint comme joueur, ou retrouve sa place : appeler deux fois ne crée pas de seconde place
+    try:
+        room: Room = service.join(user, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    return _room_response(room, user, service)
+
+
 @router.patch(
     "/{code}/settings",
     responses={

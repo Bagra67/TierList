@@ -43,7 +43,12 @@ export function LoginPage() {
       footer={
         <p>
           {t('auth.login.noAccount')}{' '}
-          <Link to={ROUTES.REGISTER} className="font-medium underline underline-offset-4">
+          {/* L'état garde la page demandée, pour y revenir après l'inscription */}
+          <Link
+            to={ROUTES.REGISTER}
+            state={location.state}
+            className="font-medium underline underline-offset-4"
+          >
             {t('auth.login.registerLink')}
           </Link>
         </p>

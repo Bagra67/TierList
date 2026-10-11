@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useCurrentUser, useLogout } from '../api/auth';
 import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
+import { JoinRoomForm } from '../components/JoinRoomForm';
 import { Button } from '../components/ui/button';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
 import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
@@ -48,6 +49,7 @@ export function HomePage() {
       )}
       {user && <EmailVerificationBanner user={user} />}
       <h1 className="text-2xl font-semibold">{t('home.title')}</h1>
+      <JoinRoomForm />
       {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>
   );
