@@ -638,6 +638,36 @@ describe('TemplateEditorPage', () => {
       ).toBeInTheDocument();
     });
 
+    it('ignores a file dropped outside the image thumbnails', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza])) });
+      renderEditor();
+      const title: HTMLElement = await screen.findByRole('heading', { name: 'Tuiles' });
+      const dataTransfer: FileDataTransfer = fileDataTransfer(pngFile());
+
+      // fireEvent renvoie false quand l'action par défaut (le navigateur ouvre le fichier) est
+      // empêchée
+      expect(fireEvent.dragOver(title, { dataTransfer })).toBe(false);
+      expect(fireEvent.drop(title, { dataTransfer })).toBe(false);
+      expect(dataTransfer.dropEffect).toBe('none');
+    });
+
+    it('clears the refused file message at the next tile action', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => Response.json(withTiles([sushi, pizza])),
+      });
+      renderEditor();
+      await screen.findByRole('button', { name: 'Ajouter une image à Pizza' });
+      dropFile('Ajouter une image à Pizza', new File(['gif'], 'anim.gif', { type: 'image/gif' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Pizza après' }));
+
+      await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    });
+
     it('refuses a file that is not a JPEG, PNG or WebP image without sending it', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),

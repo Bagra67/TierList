@@ -43,7 +43,8 @@ export function TileEditor({ template }: TileEditorProps) {
   const [newImage, setNewImage] = useState<UploadedImage | null>(null);
   // Tuile dont l'image est en cours d'envoi puis d'enregistrement
   const [imageTileId, setImageTileId] = useState<string | null>(null);
-  // Erreurs vues avant tout envoi (fichier refusé, tuile vide), une par zone
+  // Erreurs vues avant tout envoi (fichier refusé, tuile vide), une par zone ; celle des tuiles
+  // disparaît à la prochaine action sur une tuile
   const [newTileLocalError, setNewTileLocalError] = useState<string | null>(null);
   const [tilesLocalError, setTilesLocalError] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -73,13 +74,20 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   function moveTile(tile: Tile, position: number) {
+    setTilesLocalError(null);
     updateMutation.mutate({ tileId: tile.id, changes: { position } });
+  }
+
+  function deleteTile(tile: Tile) {
+    setTilesLocalError(null);
+    deleteMutation.mutate(tile.id);
   }
 
   // Une tuile qui a une image peut perdre son texte : un texte vidé part en null. Sans image, le
   // texte est envoyé tel quel : le backend le refuse, et l'erreur s'affiche sous le champ
   function saveTileText(tile: Tile, text: string) {
     const removesTheText: boolean = text.trim() === '' && tile.image_url !== null;
+    setTilesLocalError(null);
     updateMutation.mutate({
       tileId: tile.id,
       changes: { text: removesTheText ? null : text },
@@ -232,7 +240,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       size="icon"
                       aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
                       disabled={isChangingOrder}
-                      onClick={() => deleteMutation.mutate(tile.id)}
+                      onClick={() => deleteTile(tile)}
                     >
                       <span aria-hidden="true">✕</span>
                     </Button>

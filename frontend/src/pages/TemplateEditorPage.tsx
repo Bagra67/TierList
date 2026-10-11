@@ -1,4 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link, type Params, useParams } from 'react-router';
 
@@ -23,6 +24,23 @@ export function TemplateEditorPage() {
     error,
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+
+  // Un fichier lâché à côté d'une vignette d'image serait ouvert par le navigateur, qui quitterait
+  // l'éditeur : hors des vignettes (qui gèrent elles-mêmes le dépôt), il est ignoré
+  useEffect(() => {
+    function ignoreFileDropOutsideDropZones(event: DragEvent) {
+      const carriesFiles: boolean = event.dataTransfer?.types.includes('Files') ?? false;
+      if (!carriesFiles || event.defaultPrevented) return;
+      event.preventDefault();
+      if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'none';
+    }
+    window.addEventListener('dragover', ignoreFileDropOutsideDropZones);
+    window.addEventListener('drop', ignoreFileDropOutsideDropZones);
+    return () => {
+      window.removeEventListener('dragover', ignoreFileDropOutsideDropZones);
+      window.removeEventListener('drop', ignoreFileDropOutsideDropZones);
+    };
+  }, []);
 
   return (
     // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile

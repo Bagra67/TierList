@@ -25,7 +25,8 @@ interface ImageDropZoneProps {
   removeLabel?: string;
   onSelect: (file: File) => void;
   onRemove?: () => void;
-  // Fichier qui n'est pas une image JPEG, PNG ou WebP : refusé sans être envoyé
+  // Fichier d'un type connu autre que JPEG, PNG ou WebP : refusé sans être envoyé (un type
+  // inconnu, vide, part au backend)
   onRefuse: () => void;
 }
 
