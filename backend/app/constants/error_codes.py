@@ -32,6 +32,8 @@ class ErrorCode(StrEnum):
     # --- Templates -------------------------------------------------------------------------
     # Inexistant, supprimé ou à un autre utilisateur (indiscernables)
     TEMPLATE_NOT_FOUND = "template_not_found"
+    # Template sans tuile : pas de partie possible avec
+    TEMPLATE_HAS_NO_TILES = "template_has_no_tiles"
     # Tier inexistant dans ce template
     TIER_NOT_FOUND = "tier_not_found"
     # Suppression du dernier tier refusée : une tier list a au moins un tier

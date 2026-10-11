@@ -25,7 +25,8 @@ class Tile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # None pour une tuile qui n'a qu'une image
     text: Mapped[str | None] = mapped_column(String(TILE_TEXT_MAX_LENGTH))
     # None pour une tuile qui n'a qu'un texte. Pas de ON DELETE : une image n'est effacée que
-    # par le ramasse-miettes, une fois qu'aucune tuile ne l'utilise (docs/technical/images.md)
+    # par le ramasse-miettes, une fois qu'aucune tuile, de template ou de snapshot, ne
+    # l'utilise (docs/technical/images.md)
     image_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("images.id"), index=True)
     # Ordre du template, 0 = première ; sans contrainte d'unicité, comme Tier.position
     position: Mapped[int]

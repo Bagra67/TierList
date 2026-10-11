@@ -1,7 +1,8 @@
 """Règles métier des templates : création avec les tiers par défaut, liste, renommage,
-configuration des tiers, tuiles, suppression logique et purge définitive.
+configuration des tiers, tuiles, snapshot, suppression logique et purge définitive.
 
-Le service possède les frontières de transaction : chaque opération se termine par un commit.
+Le service possède les frontières de transaction : chaque opération se termine par un commit,
+sauf take_snapshot, qui s'inscrit dans la transaction de démarrage de la partie.
 Un template n'est visible que de son propriétaire.
 """
 
@@ -19,6 +20,7 @@ from app.core.config import Settings
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     LastTierError,
+    TemplateHasNoTilesError,
     TemplateNotFoundError,
     TierNotFoundError,
     TileEmptyError,
@@ -26,7 +28,10 @@ from app.exceptions.templates import (
     TileNotFoundError,
 )
 from app.models.image import Image
+from app.models.snapshot_tier import SnapshotTier
+from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
+from app.models.template_snapshot import TemplateSnapshot
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
@@ -240,6 +245,36 @@ class TemplateService:
         _renumber(template.tiles)
         self._save_change(template)
         return template
+
+    def take_snapshot(self, owner: User, template_id: uuid.UUID) -> TemplateSnapshot:
+        """Copie figée des tiers et des tuiles du template, prise au démarrage d'une partie.
+
+        Un template supprimé ne permet plus de démarrer de partie : il est introuvable, comme
+        celui d'un autre utilisateur. Un template sans tuile est refusé. Les images ne sont pas
+        dupliquées : la snapshot désigne les mêmes, qui sont immuables.
+
+        Pas de commit : l'appelant valide la snapshot avec la partie qui l'utilise, dans la même
+        transaction. Le template reste verrouillé jusque-là, la copie ne peut donc pas croiser
+        une modification simultanée."""
+        template: Template = self._get_for_change(owner, template_id)
+        if not template.tiles:
+            raise TemplateHasNoTilesError
+        snapshot: TemplateSnapshot = TemplateSnapshot(
+            template_id=template.id,
+            name=template.name,
+            tiers=[
+                SnapshotTier(name=tier.name, color=tier.color, position=tier.position)
+                for tier in template.tiers
+            ],
+            tiles=[
+                SnapshotTile(text=tile.text, image_id=tile.image_id, position=tile.position)
+                for tile in template.tiles
+            ],
+        )
+        template_repository.add_snapshot(self._session, snapshot)
+        self._session.flush()
+        logger.info("Snapshot prise : snapshot_id=%s template_id=%s", snapshot.id, template.id)
+        return snapshot
 
     def _get_for_change(self, owner: User, template_id: uuid.UUID) -> Template:
         """Template à modifier, verrouillé jusqu'au commit : les règles « au moins un tier » et

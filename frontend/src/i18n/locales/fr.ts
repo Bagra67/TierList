@@ -194,6 +194,7 @@ export const fr = {
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
       invalid_token: 'Ce lien est invalide ou a expiré.',
       template_not_found: 'Ce template est introuvable.',
+      template_has_no_tiles: 'Ajoutez au moins une tuile à ce template pour jouer avec.',
       tier_not_found: 'Ce tier est introuvable.',
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',

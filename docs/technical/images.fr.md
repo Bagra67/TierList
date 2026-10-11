@@ -18,7 +18,7 @@ Comment les images des tuiles sont reçues, compressées, stockées, servies, ne
 
 ### Pas encore disponible
 
-Les images ne s'affichent pas encore dans les parties : les écrans de jeu et les instantanés arrivent avec leurs propres issues. Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les fonctionnalités de modération sont des issues à part (§2.9).
+Les images ne s'affichent pas encore dans les parties : les écrans de jeu arrivent avec leurs propres issues. Les instantanés existent ([guide des templates](templates.fr.md), §2.4) et gardent leurs images. Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les fonctionnalités de modération sont des issues à part (§2.9).
 
 ## 2. Conception technique
 
@@ -91,7 +91,7 @@ Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui 
 ### 2.5 Modèle de données
 
 - Une table **`images`** : `id`, clé de stockage, largeur, hauteur, taille en octets, auteur (`owner_id`), date de création, **SHA-256 du fichier reçu**, statut de modération (`visible`, `hidden`, `deleted`). Supprimer le compte met `owner_id` à `NULL` (`ON DELETE SET NULL`) au lieu de supprimer la ligne : le ramasse-miettes retrouve encore le fichier, et une partie passée peut encore afficher l'image.
-- `tiles.image_id` : clé étrangère nullable vers `images`. Les tuiles d'un instantané de partie référenceront `image_id` de la même façon.
+- `tiles.image_id` : clé étrangère nullable vers `images`. `snapshot_tiles.image_id`, les tuiles d'un instantané de partie, la référence de la même façon ([guide des templates](templates.fr.md), §2.4).
 - **Images immuables** : la clé de stockage est aléatoire (`{uuid}.webp`). Remplacer l'image d'une tuile crée une **nouvelle** image ; un fichier existant n'est jamais écrasé. Un fichier en cache n'est donc jamais périmé, et un instantané retrouve toujours l'image avec laquelle il a été pris.
 
 ### 2.6 API
@@ -137,7 +137,7 @@ cd backend
 uv run python scripts/purge_unused_images.py   # affiche "Unused images purged: n"
 ```
 
-- Elle efface les images **visibles** créées il y a plus de `UNUSED_IMAGE_RETENTION_DAYS` jours qu'aucune tuile n'utilise. Les images masquées ou supprimées par la modération gardent leur ligne (#124). Les instantanés n'existent pas encore ; quand ils existeront, la requête devra aussi garder les images qu'ils utilisent.
+- Elle efface les images **visibles** créées il y a plus de `UNUSED_IMAGE_RETENTION_DAYS` jours qu'aucune tuile ni aucune tuile d'instantané n'utilise. Les images masquées ou supprimées par la modération gardent leur ligne (#124).
 - Les lignes sont supprimées d'abord, en une seule requête, puis les fichiers : une tuile ne pointe jamais vers un fichier effacé. Une tuile qui rattache l'une de ces images au même moment attend la fin de la suppression, puis échoue sur la clé étrangère. Un fichier qu'on n'arrive pas à effacer (stockage en panne) est journalisé avec sa clé, pour l'effacer à la main.
 - La relancer ne pose aucun problème : elle n'efface que ce qui a expiré. Elle doit être planifiée une fois par jour sur le serveur ([TODO](../../TODO.fr.md)).
 

@@ -11,6 +11,7 @@ from app.constants.templates import FREE_PLAN_MAX_TILES
 from app.core.config import get_settings
 from app.exceptions.templates import LastTierError, TileLimitReachedError
 from app.models.template import Template
+from app.models.template_snapshot import TemplateSnapshot
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
@@ -139,3 +140,50 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
         )
     assert len(tile_texts) == FREE_PLAN_MAX_TILES
     assert "One too many" not in tile_texts
+
+
+def test_a_snapshot_waits_for_a_change_in_progress(
+    migrated_engine: Engine, committed_template: tuple[uuid.UUID, uuid.UUID]
+):
+    owner_id: uuid.UUID = committed_template[0]
+    template_id: uuid.UUID = committed_template[1]
+    snapshot_ids: list[uuid.UUID] = []
+
+    with Session(migrated_engine) as first_request:
+        # Première requête : supprime une tuile, sans avoir encore validé
+        template: Template | None = template_repository.get_owned_template(
+            first_request, template_id, owner_id, for_update=True
+        )
+        assert template is not None
+        first_request.delete(template.tiles[0])
+        first_request.flush()
+
+        # Seconde requête, en parallèle : démarre une partie (snapshot validée aussitôt)
+        def take_a_snapshot() -> None:
+            with Session(migrated_engine) as second_request:
+                owner: User | None = second_request.get(User, owner_id)
+                assert owner is not None
+                snapshot: TemplateSnapshot = TemplateService(
+                    second_request, get_settings()
+                ).take_snapshot(owner, template_id)
+                snapshot_ids.append(snapshot.id)
+                second_request.commit()
+
+        second_request_thread: threading.Thread = threading.Thread(target=take_a_snapshot)
+        second_request_thread.start()
+        time.sleep(SECOND_REQUEST_HEAD_START_SECONDS)
+        first_request.commit()
+        second_request_thread.join(timeout=10)
+
+    assert len(snapshot_ids) == 1
+    try:
+        # La snapshot a attendu la fin de la suppression : elle copie la version modifiée, pas
+        # celle d'avant (que lirait une copie sans verrou)
+        with Session(migrated_engine) as session:
+            snapshot_tile_count: int = len(session.get_one(TemplateSnapshot, snapshot_ids[0]).tiles)
+        assert snapshot_tile_count == FREE_PLAN_MAX_TILES - 2
+    finally:
+        # Une snapshot survit à la suppression du compte : la fixture ne l'efface pas
+        with Session(migrated_engine) as session:
+            session.execute(delete(TemplateSnapshot).where(TemplateSnapshot.id.in_(snapshot_ids)))
+            session.commit()

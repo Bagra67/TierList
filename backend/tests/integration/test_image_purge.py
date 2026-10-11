@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.models.image import Image, ImageStatus
+from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
+from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.images import ImageService
@@ -60,6 +62,14 @@ def use_in_a_tile(db_session: Session, owner: User, image: Image) -> None:
     db_session.flush()
 
 
+def use_in_a_snapshot(db_session: Session, image: Image) -> None:
+    """Snapshot dont le template n'existe plus (purgé) : seule la snapshot garde l'image."""
+    snapshot: TemplateSnapshot = TemplateSnapshot(template_id=None, name="Food")
+    snapshot.tiles.append(SnapshotTile(text=None, image_id=image.id, position=0))
+    db_session.add(snapshot)
+    db_session.flush()
+
+
 def stored_image_ids(db_session: Session) -> set[uuid.UUID]:
     return set(db_session.scalars(select(Image.id)).all())
 
@@ -85,6 +95,21 @@ def test_purge_erases_the_unused_images_older_than_the_retention(
     assert stored_image_ids(db_session) == kept_ids
     assert set(stored_images) == kept_keys
     assert purged_key not in stored_images
+
+
+def test_purge_keeps_the_images_used_only_by_a_snapshot(
+    db_session: Session, stored_images: dict[str, bytes], alice: User
+):
+    image: Image = create_image(db_session, stored_images, alice, created_days_ago=30)
+    use_in_a_snapshot(db_session, image)
+
+    purged_count: int = ImageService(
+        db_session, settings_with_retention(7), FakeImageStorage(stored_images)
+    ).purge_unused()
+
+    assert purged_count == 0
+    assert stored_image_ids(db_session) == {image.id}
+    assert image.storage_key in stored_images
 
 
 def test_purge_erases_the_images_of_a_deleted_account(
