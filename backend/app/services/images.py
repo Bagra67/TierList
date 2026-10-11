@@ -72,14 +72,14 @@ class ImageService:
         return self._storage.url(image.storage_key)
 
     def purge_unused(self) -> int:
-        """Ramasse-miettes : efface les images qu'aucune tuile n'utilise depuis plus que la durée
-        de conservation (envois abandonnés, tuiles modifiées ou supprimées, templates purgés,
-        comptes supprimés) ; renvoie leur nombre.
+        """Ramasse-miettes : efface les images qu'aucune tuile, de template ou de snapshot,
+        n'utilise depuis plus que la durée de conservation (envois abandonnés, tuiles modifiées
+        ou supprimées, templates purgés, comptes supprimés) ; renvoie leur nombre.
 
         Les lignes sont supprimées d'abord, puis les fichiers : un fichier qu'on n'arrive pas
         à effacer est seulement journalisé, aucune tuile ne pointe jamais vers un fichier
-        absent. Les instantanés de partie, quand ils existeront, devront aussi garder leurs
-        images (docs/technical/images.md, « Cleanup »)."""
+        absent. Une partie jouée garde ainsi ses images (docs/technical/images.md,
+        « Cleanup »)."""
         limit: datetime = datetime.now(UTC) - timedelta(
             days=self._settings.unused_image_retention_days
         )

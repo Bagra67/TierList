@@ -6,11 +6,16 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
 from app.models.template import Template
+from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
 
 
 def add_template(session: Session, template: Template) -> None:
     session.add(template)
+
+
+def add_snapshot(session: Session, snapshot: TemplateSnapshot) -> None:
+    session.add(snapshot)
 
 
 def get_owned_template(

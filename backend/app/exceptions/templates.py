@@ -3,6 +3,10 @@ class TemplateNotFoundError(Exception):
     indiscernables, pour ne pas révéler l'existence des templates des autres."""
 
 
+class TemplateHasNoTilesError(Exception):
+    """Template sans tuile : une partie jouée avec n'aurait aucun item à classer."""
+
+
 class TierNotFoundError(Exception):
     """Tier inexistant dans ce template (le template, lui, appartient bien à l'utilisateur)."""
 

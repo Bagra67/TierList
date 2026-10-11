@@ -7,6 +7,7 @@ from sqlalchemy.sql.dml import ReturningDelete
 from sqlalchemy.sql.expression import Exists
 
 from app.models.image import Image, ImageStatus
+from app.models.snapshot_tile import SnapshotTile
 from app.models.tile import Tile
 
 
@@ -34,19 +35,23 @@ def count_images_created_since(session: Session, owner_id: uuid.UUID, since: dat
 
 
 def delete_unused_images_created_before(session: Session, limit: datetime) -> list[str]:
-    """Supprime les images visibles créées avant limit qu'aucune tuile n'utilise, en une seule
-    requête ; renvoie leurs clés de stockage, pour effacer ensuite les fichiers.
+    """Supprime les images visibles créées avant limit qu'aucune tuile, de template ou de
+    snapshot, n'utilise, en une seule requête ; renvoie leurs clés de stockage, pour effacer
+    ensuite les fichiers.
 
     Une tuile qui rattacherait l'une de ces images au même moment attend la fin de la
     suppression, puis échoue sur la clé étrangère : aucune tuile ne pointe vers un fichier
     effacé. Les images masquées ou supprimées par la modération gardent leur ligne (#124)."""
     used_by_a_tile: Exists = exists().where(Tile.image_id == Image.id)
+    # Une partie jouée garde ses images, même quand le template ne les utilise plus
+    used_by_a_snapshot: Exists = exists().where(SnapshotTile.image_id == Image.id)
     statement: ReturningDelete[str] = (
         delete(Image)
         .where(
             Image.created_at < limit,
             Image.status == ImageStatus.VISIBLE,
             ~used_by_a_tile,
+            ~used_by_a_snapshot,
         )
         .returning(Image.storage_key)
     )
