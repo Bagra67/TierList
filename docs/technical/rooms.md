@@ -2,7 +2,7 @@
 
 English | [Français](rooms.fr.md)
 
-How rooms are created, read and configured through the API: data model, code and link, settings, endpoints, and where it lives in the code. **Built in #83** (§3). What a room is for the user: [user stories](../product/milestone-1/user-stories.md) US-2.1 and US-2.2, [lifecycles](../product/milestone-1/lifecycles.md).
+How rooms are created, read and configured through the API: data model, code and link, settings, endpoints, the lobby, and where it lives in the code. **Built in #83** (API) and **#84** (screens, §3). What a room is for the user: [user stories](../product/milestone-1/user-stories.md) US-2.1 and US-2.2, [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview
 
@@ -110,7 +110,7 @@ Every route requires the Bearer access token (`401` otherwise).
 ### 2.6 Known limitations
 
 - Only the room admin has a seat: joining with an account (#86) or as a guest (#87) comes later, as well as the participant limit (#88).
-- No live updates yet: the room channel and the presence come with #85.
+- No live updates yet: the room channel and the presence come with #85; until then the lobby is read again when the tab gets the focus back.
 - No game yet: the game start (#91) sets `playing` and freezes the template (`take_snapshot`, [templates guide](templates.md) §2.4).
 - Closing a room (#89) and closing it automatically when inactive (#90) come later.
 
@@ -133,8 +133,21 @@ Every route requires the Bearer access token (`401` otherwise).
 
 ### Frontend (`frontend/src/`)
 
-No screen yet (#84). `api/schema.d.ts` is regenerated from the contract, and `i18n/locales/fr.ts` / `en.ts` translate `errors.api.{room_not_found, room_admin_required, room_settings_locked}` and `errors.field.{greater_than_equal, less_than_equal}`.
+Built in #84.
+
+| Layer        | File                                        | Content                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API          | `api/rooms.ts`                              | `useCreateRoom` (`POST /rooms`), `useRoom` (`GET /rooms/{code}`), `useUpdateRoomSettings` (`PATCH /rooms/{code}/settings`). The room returned by a creation or a change replaces the cached one (`roomQueryKey(code)`), so the lobby shows it without a new request.                                                                                                               |
+| Constants    | `constants/rooms.ts`, `constants/routes.ts` | `ROOMS_QUERY_KEY`, `roomQueryKey`; `ROUTES.ROOM` (`/r/:code`, the format of the shared link, `FRONTEND_ROOM` on the backend) and `roomPath(code)`. The duration bounds are not copied: the form shows the `ge` / `le` params of the `422`.                                                                                                                                         |
+| Button       | `components/CreateRoomButton.tsx`           | "Create a room", on each row of _My templates_ and next to the title of the template editor. Creates the room with the default settings, then opens its lobby; shows the translated error (`template_has_no_tiles`, `template_not_found`).                                                                                                                                         |
+| Page         | `pages/RoomPage.tsx`                        | `/r/:code`, signed in only (`RequireAuth`): title, template name (or a notice when it was purged), "Game in progress" notice, `RoomInvite`, participants (the room admin marked), settings summary and, for the room admin, `RoomSettingsDialog`. Loading and error states (`room_not_found` for an unknown code or a user without a seat).                                        |
+| Components   | `components/RoomInvite.tsx`                 | The code in large type and the link in a read-only field; "Copy link" uses `navigator.clipboard` and announces "Link copied" in an `aria-live` area, or asks to copy by hand when the clipboard refuses.                                                                                                                                                                           |
+|              | `components/RoomSettingsSummary.tsx`        | The five settings in plain words, for every participant.                                                                                                                                                                                                                                                                                                                           |
+|              | `components/RoomSettingsDialog.tsx`         | Native `<dialog>` opened by "Edit": radios (item order, next item), number fields (timer, cooldown), checkboxes (admin plays, late arrivals). The timer duration is enabled and sent only with the timer. During a game, every field but late arrivals is disabled and only late arrivals are sent. The form is remounted at each opening, so it starts from the current settings. |
+| Translations | `i18n/locales/fr.ts`, `en.ts`               | `rooms.create.*`, `rooms.lobby.*`, `rooms.settings.*` (with `rooms.settings.summary.*`), `errors.api.{room_not_found, room_admin_required, room_settings_locked}` and `errors.field.{greater_than_equal, less_than_equal}`.                                                                                                                                                        |
+
+No live updates before #85: the lobby relies on the default refetch of TanStack Query (when the tab gets the focus back). Joining from the link when one has no seat is #86.
 
 ### Tests
 
-`backend/tests/integration/test_rooms.py` (endpoints, against a real PostgreSQL) and `backend/tests/test_room_codes.py` (code generator), described in the [testing guide](testing.md).
+`backend/tests/integration/test_rooms.py` (endpoints, against a real PostgreSQL) and `backend/tests/test_room_codes.py` (code generator); `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, and the room creation in `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx`. All are described in the [testing guide](testing.md).

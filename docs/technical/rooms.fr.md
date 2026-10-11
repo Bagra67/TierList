@@ -2,7 +2,7 @@
 
 [English](rooms.md) | Français
 
-Comment les salles sont créées, lues et configurées par l'API : modèle de données, code et lien, réglages, endpoints, et où cela se trouve dans le code. **Construit dans #83** (§3). Ce qu'est une salle pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-2.1 et US-2.2, [cycles de vie](../product/milestone-1/lifecycles.fr.md).
+Comment les salles sont créées, lues et configurées par l'API : modèle de données, code et lien, réglages, endpoints, le lobby, et où cela se trouve dans le code. **Construit dans #83** (API) et **#84** (écrans, §3). Ce qu'est une salle pour l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-2.1 et US-2.2, [cycles de vie](../product/milestone-1/lifecycles.fr.md).
 
 ## 1. Vue fonctionnelle
 
@@ -110,7 +110,7 @@ Chaque route exige l'access token Bearer (`401` sinon).
 ### 2.6 Limites connues
 
 - Seul le room admin a une place : rejoindre avec un compte (#86) ou en invité (#87) arrive plus tard, ainsi que la limite de participants (#88).
-- Pas encore de mises à jour en direct : le canal de la salle et la présence arrivent avec #85.
+- Pas encore de mises à jour en direct : le canal de la salle et la présence arrivent avec #85 ; d'ici là, le lobby est relu quand l'onglet reprend le focus.
 - Pas encore de partie : le démarrage (#91) pose `playing` et fige le template (`take_snapshot`, [guide des templates](templates.fr.md) §2.4).
 - La fermeture d'une salle (#89) et sa fermeture automatique en cas d'inactivité (#90) arrivent plus tard.
 
@@ -133,8 +133,21 @@ Chaque route exige l'access token Bearer (`401` sinon).
 
 ### Frontend (`frontend/src/`)
 
-Pas encore d'écran (#84). `api/schema.d.ts` est régénéré depuis le contrat, et `i18n/locales/fr.ts` / `en.ts` traduisent `errors.api.{room_not_found, room_admin_required, room_settings_locked}` et `errors.field.{greater_than_equal, less_than_equal}`.
+Construit dans #84.
+
+| Couche      | Fichier                                     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| API         | `api/rooms.ts`                              | `useCreateRoom` (`POST /rooms`), `useRoom` (`GET /rooms/{code}`), `useUpdateRoomSettings` (`PATCH /rooms/{code}/settings`). La salle renvoyée par une création ou une modification remplace celle du cache (`roomQueryKey(code)`) : le lobby l'affiche sans nouvelle requête.                                                                                                                                                  |
+| Constantes  | `constants/rooms.ts`, `constants/routes.ts` | `ROOMS_QUERY_KEY`, `roomQueryKey` ; `ROUTES.ROOM` (`/r/:code`, le format du lien partagé, `FRONTEND_ROOM` côté backend) et `roomPath(code)`. Les bornes des durées ne sont pas recopiées : le formulaire affiche les params `ge` / `le` de la `422`.                                                                                                                                                                           |
+| Bouton      | `components/CreateRoomButton.tsx`           | « Créer une salle », sur chaque ligne de _Mes templates_ et à côté du titre de l'éditeur de template. Crée la salle avec les réglages par défaut, puis ouvre son lobby ; affiche l'erreur traduite (`template_has_no_tiles`, `template_not_found`).                                                                                                                                                                            |
+| Page        | `pages/RoomPage.tsx`                        | `/r/:code`, réservée aux comptes connectés (`RequireAuth`) : titre, nom du template (ou un avertissement s'il a été purgé), mention « Partie en cours », `RoomInvite`, participants (le room admin signalé), résumé des réglages et, pour le room admin, `RoomSettingsDialog`. États de chargement et d'erreur (`room_not_found` pour un code inconnu ou un utilisateur sans place).                                           |
+| Composants  | `components/RoomInvite.tsx`                 | Le code en grand et le lien dans un champ en lecture seule ; « Copier le lien » utilise `navigator.clipboard` et annonce « Lien copié » dans une zone `aria-live`, ou demande de copier à la main si le presse-papiers refuse.                                                                                                                                                                                                 |
+|             | `components/RoomSettingsSummary.tsx`        | Les cinq réglages en clair, pour tous les participants.                                                                                                                                                                                                                                                                                                                                                                        |
+|             | `components/RoomSettingsDialog.tsx`         | `<dialog>` natif ouvert par « Modifier » : boutons radio (ordre des items, item suivant), champs numériques (timer, cooldown), cases à cocher (l'admin joue, arrivées). La durée du timer n'est active et envoyée qu'avec le timer. Pendant une partie, tous les champs sauf les arrivées sont désactivés et seules les arrivées sont envoyées. Le formulaire est remonté à chaque ouverture : il repart des réglages actuels. |
+| Traductions | `i18n/locales/fr.ts`, `en.ts`               | `rooms.create.*`, `rooms.lobby.*`, `rooms.settings.*` (avec `rooms.settings.summary.*`), `errors.api.{room_not_found, room_admin_required, room_settings_locked}` et `errors.field.{greater_than_equal, less_than_equal}`.                                                                                                                                                                                                     |
+
+Pas de mise à jour en direct avant #85 : le lobby s'appuie sur le rafraîchissement par défaut de TanStack Query (quand l'onglet reprend le focus). Rejoindre depuis le lien sans avoir de place relève de #86.
 
 ### Tests
 
-`backend/tests/integration/test_rooms.py` (endpoints, sur un vrai PostgreSQL) et `backend/tests/test_room_codes.py` (générateur de code), décrits dans le [guide des tests](testing.fr.md).
+`backend/tests/integration/test_rooms.py` (endpoints, sur un vrai PostgreSQL) et `backend/tests/test_room_codes.py` (générateur de code) ; `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, et la création d'une salle dans `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx`. Tous sont décrits dans le [guide des tests](testing.fr.md).

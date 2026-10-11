@@ -6,6 +6,7 @@ import type { UploadedImage } from '../api/images';
 import type { Template, Tier, Tile } from '../api/templates';
 import { type FileDataTransfer, fileDataTransfer } from '../test/fileDataTransfer';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
+import { aliceRoom } from '../test/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
 
@@ -42,6 +43,7 @@ function renderEditor() {
     <MemoryRouter initialEntries={[templateUrl]}>
       <Routes>
         <Route path="/templates/:templateId" element={<TemplateEditorPage />} />
+        <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -102,6 +104,19 @@ describe('TemplateEditorPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce template est introuvable.');
     consoleError.mockRestore();
+  });
+
+  it('creates a room from the open template and opens its lobby', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      [`GET ${templateUrl}`]: () => Response.json(chips),
+      'POST /rooms': () => Response.json(aliceRoom, { status: 201 }),
+    });
+    renderEditor();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+    expect(await requestBody(fetchMock, 'POST')).toEqual({ template_id: templateId });
   });
 
   describe('template name', () => {
