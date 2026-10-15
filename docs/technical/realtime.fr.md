@@ -2,7 +2,7 @@
 
 [English](realtime.md) | Français
 
-Comment les rooms envoient les tours, les placements, la présence et les timers à chaque participant : transport, format des messages, authentification du socket, reconnexion, timers côté serveur et montée en charge. **C'est une décision, pas encore implémentée** (spike #74) : les rooms, les participants et les invités n'existent pas dans le code ; le §3 sera complété quand ils seront construits. Ce qu'est une room pour l'utilisateur : [déroulé d'une partie](../product/milestone-1/game-flow.fr.md) et [cycles de vie](../product/milestone-1/lifecycles.fr.md).
+Comment les rooms envoient les tours, les placements, la présence et les timers à chaque participant : transport, format des messages, authentification du socket, reconnexion, timers côté serveur et montée en charge. Décidé dans le spike #74, **construit dans #85** (§3) pour le canal de la room et la présence ; les tours, les placements et les timers arrivent avec les issues du jeu. Ce qu'est une room pour l'utilisateur : [déroulé d'une partie](../product/milestone-1/game-flow.fr.md) et [cycles de vie](../product/milestone-1/lifecycles.fr.md).
 
 ## 1. Vue fonctionnelle
 
@@ -32,7 +32,7 @@ Timers : le **timer de tour** par item (réglage de la room), le **cooldown** (r
 
 ### Pas encore disponible
 
-Tout ce qui est sur cette page : aucune room, aucun participant ni invité n'existe encore dans le code. Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
+Les événements du jeu (tours, placements, cooldown) et les timers côté serveur (§2.8) arrivent avec les issues du jeu (#91 et suivantes). Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
 
 ## 2. Conception technique
 
@@ -153,9 +153,55 @@ Dans les deux cas, le load balancer doit accepter l'upgrade WebSocket, avec un d
 
 - **Un seul worker** au jalon 1 : lancer le backend avec plusieurs workers séparerait les rooms (l'étape 2 est nécessaire avant).
 - L'access token n'est vérifié qu'à l'ouverture du socket : une session révoquée pendant une partie continue de recevoir les événements de cette room jusqu'à la fermeture du socket (les commandes, en REST, sont refusées tout de suite). Acceptable puisque le socket ne transporte rien de privé au-delà de la room.
-- Les valeurs par défaut (intervalle du heartbeat, délai de grâce, délai d'inactivité) sont choisies à l'implémentation.
+- Le délai d'inactivité (fermeture automatique d'une room, #90) reste à choisir.
+- Le canal n'accepte que l'origine de `FRONTEND_BASE_URL` : ouvrir l'application par une autre adresse (par ex. `http://127.0.0.1:5173` au lieu de `http://localhost:5173`) fait refuser son canal.
 - Ce qui se passe quand l'**admin de la room** se déconnecte (personne ne peut cliquer sur « suivant » ni fermer) est une question produit non couverte par les [cycles de vie](../product/milestone-1/lifecycles.fr.md) ; les timers font tout de même avancer la partie.
 
 ## 3. Dans le code
 
-À venir avec l'implémentation des rooms : backend (`ConnectionRegistry`, `RoomEventPublisher`, route WebSocket, timers), frontend (`useRoomEvents`) et tests, documentés dans le [guide des tests](testing.fr.md).
+Construit dans #85. Ce qui existe aujourd'hui :
+
+- **Événements** (`app/schemas/room_events.py`), une union discriminée sur `type`, tous porteurs de `room_version` :
+
+  | `type`                  | `data`                        | Envoyé quand                                                                             | Frontend                    |
+  | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- | --------------------------- |
+  | `participant.joined`    | `{participant_id}`            | Un compte ou un invité rejoint (`POST /join`, `POST /guests`)                            | Relit la room               |
+  | `participant.presence`  | `{participant_id, connected}` | Premier socket d'un participant ouvert ; dernier fermé depuis plus que le délai de grâce | Met à jour la room en cache |
+  | `room.settings_updated` | `{}`                          | L'admin de la room change un réglage (une modification vide n'envoie rien)               | Relit la room               |
+
+  Messages du canal : `{"type": "ping"}` du serveur, `{"type": "pong"}` et `{"type": "auth", "access_token": …}` du client. `RoomServerMessage` et `RoomClientMessage` sont ajoutés aux composants OpenAPI (`_openapi_with_room_messages` dans `app/main.py`).
+
+- **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, réglages, présence), renvoyée en `version` par l'API des rooms.
+- **Authentification** : le premier message est toujours `auth`, dans le délai `ROOM_AUTH_TIMEOUT_SECONDS` : un compte envoie son access token, un invité envoie `null` et est reconnu par son cookie `guest_token` (`Path=/api/rooms/<code>`, [guide des salles](rooms.fr.md#24-invités)). Un compte passe d'abord, comme en REST.
+- **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4401` et `4404` :
+
+  | Code       | Raison              | Quand                                                                                |
+  | ---------- | ------------------- | ------------------------------------------------------------------------------------ |
+  | HTTP `403` | —                   | `Origin` n'est pas l'origine de `FRONTEND_BASE_URL` (refus avant la poignée de main) |
+  | `4400`     | `invalid_message`   | Un message qui n'est pas `auth` d'abord, puis pas `pong`                             |
+  | `4401`     | `not_authenticated` | Pas d'`auth` à temps, token invalide, ou ni token ni cookie d'invité                 |
+  | `4404`     | `room_not_found`    | Room inconnue, ou le lecteur n'y a pas de place                                      |
+  | `4408`     | `heartbeat_timeout` | Pas de `pong` dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` après un ping           |
+
+- **Réglages** (`app/core/config.py`, `.env.example`) :
+
+  | Variable                          | Rôle                                                                                                                  | Défaut |
+  | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------ |
+  | `ROOM_HEARTBEAT_INTERVAL_SECONDS` | Ping après ce silence du client                                                                                       | `20`   |
+  | `ROOM_HEARTBEAT_TIMEOUT_SECONDS`  | Socket fermé sans `pong` dans ce délai                                                                                | `10`   |
+  | `ROOM_PRESENCE_GRACE_SECONDS`     | Un participant devient déconnecté ce délai après la fermeture de son dernier socket (un rechargement ne clignote pas) | `15`   |
+  | `ROOM_AUTH_TIMEOUT_SECONDS`       | Délai du message `auth`                                                                                               | `5`    |
+
+- **Démarrage** : le lifespan (`app/main.py`) remet tous les participants à déconnecté, puisqu'un processus qui démarre n'a aucun socket ouvert.
+
+| Couche      | Fichier                                          | Contenu                                                                                                                                                                                                                                                                                                                |
+| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route       | `api/routes/room_channel.py`                     | `WS /rooms/{code}/ws` : contrôle de l'origine, `_receive_auth`, `_find_seat` (dans le threadpool), `_serve` (présence), `_heartbeat`.                                                                                                                                                                                  |
+| Registre    | `services/room_channel.py`                       | `RoomEventPublisher` (protocole) et `ConnectionRegistry` (`room_connections`) : sockets ouverts par room et leur participant, `publish` confié du threadpool REST à la boucle d'événements (`call_soon_threadsafe`), départs en attente (`schedule_disconnect`, `cancel_pending_disconnect`).                          |
+| Service     | `services/rooms.py`                              | Publie après le commit (`_publish_joined`, réglages) ; `seat_of`, `set_presence` (n'écrit et ne publie qu'au changement), `reset_presence`.                                                                                                                                                                            |
+| Dépendances | `api/dependencies.py`                            | `get_room_event_publisher`, `get_session_factory` (sessions courtes pour le canal, remplacée dans les tests).                                                                                                                                                                                                          |
+| Frontend    | `api/roomChannel.ts`                             | `useRoomEvents(code, viewer, enabled)` : ouvre `/api/rooms/<CODE>/ws`, envoie `auth` (`getAccessToken`, rafraîchi s'il manque), répond `pong`, applique les événements, relit la room après chaque (re)connexion et après un saut de version, se reconnecte avec un backoff exponentiel et de la gigue (0,5 s à 10 s). |
+| Frontend    | `components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Pastille de présence (pleine en ligne, creuse hors ligne) avec un texte « en ligne » / « hors ligne » pour les lecteurs d'écran ; le hook est actif une fois la room chargée.                                                                                                                                          |
+| Dev         | `frontend/vite.config.ts`                        | `ws: true` sur le proxy `/api`.                                                                                                                                                                                                                                                                                        |
+
+Tests : `backend/tests/integration/test_room_channel.py`, les tests de publication de `test_rooms.py` / `test_room_guests.py`, `frontend/src/api/roomChannel.test.ts` (faux `WebSocket`, `src/test/fakeWebSocket.ts`), décrits dans le [guide des tests](testing.fr.md).
