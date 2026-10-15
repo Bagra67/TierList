@@ -1,6 +1,7 @@
 import os
 import uuid
 from collections.abc import Callable, Iterator
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,7 +13,12 @@ from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_email_sender, get_image_storage, get_room_event_publisher
+from app.api.dependencies import (
+    get_email_sender,
+    get_image_storage,
+    get_room_event_publisher,
+    get_session_factory,
+)
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
@@ -182,12 +188,15 @@ def client(
     app.dependency_overrides[get_db_session] = lambda: db_session
     app.dependency_overrides[get_email_sender] = lambda: email_sender
     app.dependency_overrides[get_image_storage] = lambda: image_storage
+    # Le canal temps réel ouvre ses sessions lui-même : il réutilise celle du test (sans la fermer)
+    app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
         app.dependency_overrides.pop(get_email_sender, None)
         app.dependency_overrides.pop(get_image_storage, None)
+        app.dependency_overrides.pop(get_session_factory, None)
 
 
 def http_test_settings() -> Settings:

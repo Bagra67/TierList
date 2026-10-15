@@ -21,6 +21,14 @@ GUEST_LINK_FRAGMENT = "guest"
 # Durée maximale du lien perso, en jours (docs/product/game-rules.md : 30 jours au plus)
 GUEST_LINK_MAX_TTL_DAYS = 30
 
+# --- Canal temps réel (docs/technical/realtime.md) ------------------------------------------
+# Codes de fermeture du WebSocket (4000-4999), avec l'ErrorCode comme raison. Le client ne se
+# reconnecte pas après NOT_AUTHENTICATED ni ROOM_NOT_FOUND.
+CHANNEL_CLOSE_INVALID_MESSAGE = 4400
+CHANNEL_CLOSE_NOT_AUTHENTICATED = 4401
+CHANNEL_CLOSE_ROOM_NOT_FOUND = 4404
+CHANNEL_CLOSE_HEARTBEAT_TIMEOUT = 4408
+
 # --- Bornes des durées des réglages, en secondes -------------------------------------------
 # Les valeurs par défaut sont dans Settings (ROOM_DEFAULT_*), qui doivent rester entre ces bornes
 TIMER_SECONDS_MIN = 5

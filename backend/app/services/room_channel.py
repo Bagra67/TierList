@@ -8,6 +8,7 @@ jamais un socket : ils publient par RoomEventPublisher, la seule abstraction int
 import asyncio
 import logging
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Protocol
 
 from pydantic import TypeAdapter
@@ -36,6 +37,8 @@ class ConnectionRegistry:
     def __init__(self) -> None:
         self._sockets: dict[uuid.UUID, dict[WebSocket, uuid.UUID]] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
+        # Départs en attente de la fin du délai de grâce, par participant
+        self._pending_disconnects: dict[uuid.UUID, asyncio.Task[None]] = {}
 
     def add(self, room_id: uuid.UUID, participant_id: uuid.UUID, websocket: WebSocket) -> bool:
         """Enregistre le socket ; True si c'est le premier socket ouvert de ce participant."""
@@ -57,6 +60,33 @@ class ConnectionRegistry:
 
     def is_connected(self, room_id: uuid.UUID, participant_id: uuid.UUID) -> bool:
         return participant_id in self._sockets.get(room_id, {}).values()
+
+    def schedule_disconnect(
+        self,
+        room_id: uuid.UUID,
+        participant_id: uuid.UUID,
+        delay_seconds: float,
+        on_disconnect: Callable[[], Awaitable[None]],
+    ) -> None:
+        """Appelle on_disconnect après le délai si le participant n'a rouvert aucun socket."""
+
+        async def disconnect_after_delay() -> None:
+            try:
+                await asyncio.sleep(delay_seconds)
+                if not self.is_connected(room_id, participant_id):
+                    await on_disconnect()
+            finally:
+                # Une tâche annulée puis remplacée ne doit pas retirer sa remplaçante
+                if self._pending_disconnects.get(participant_id) is asyncio.current_task():
+                    self._pending_disconnects.pop(participant_id, None)
+
+        self.cancel_pending_disconnect(participant_id)
+        self._pending_disconnects[participant_id] = asyncio.create_task(disconnect_after_delay())
+
+    def cancel_pending_disconnect(self, participant_id: uuid.UUID) -> None:
+        pending: asyncio.Task[None] | None = self._pending_disconnects.pop(participant_id, None)
+        if pending is not None:
+            pending.cancel()
 
     def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
         if self._loop is None or self._loop.is_closed():

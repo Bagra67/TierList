@@ -1,3 +1,5 @@
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from typing import Annotated
 
 from fastapi import Cookie, Depends
@@ -8,7 +10,7 @@ from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings, get_settings
-from app.db.session import get_db_session
+from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
@@ -37,6 +39,16 @@ def get_template_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> TemplateService:
     return TemplateService(session, settings)
+
+
+# Ouvre une session courte : le canal temps réel vit longtemps, il ne garde pas de connexion à
+# la base entre deux accès
+SessionFactory = Callable[[], AbstractContextManager[Session]]
+
+
+def get_session_factory() -> SessionFactory:
+    # Remplacée dans les tests : les accès du canal y passent par la session du test
+    return lambda: Session(get_engine())
 
 
 def get_room_event_publisher() -> RoomEventPublisher:
