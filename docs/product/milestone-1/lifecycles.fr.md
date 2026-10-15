@@ -87,15 +87,15 @@ stateDiagram-v2
     [*] --> Connecte : rejoint la room
     Connecte --> Deconnecte : connexion perdue ou page fermée
     Deconnecte --> Connecte : revient (compte, même navigateur ou lien invité)
-    Connecte --> Parti : room fermée
-    Deconnecte --> Parti : room fermée ou lien invité expiré
+    Connecte --> Parti : room fermée, ou retiré ou banni par l'admin de la room
+    Deconnecte --> Parti : room fermée, lien invité expiré, ou retiré ou banni
     Parti --> [*]
 ```
 
-| État           | Sens                                                                                                                                                           |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Connecté**   | Présent dans la room ; participe au tour en cours.                                                                                                             |
-| **Déconnecté** | Garde sa place et son classement ; reçoit des placements absents pour les tours qui se terminent entre-temps ; n'est pas attendu par « tout le monde a fini ». |
-| **Parti**      | La place n'existe plus (room fermée, ou lien invité expiré). Les parties déjà clôturées restent dans l'historique des comptes.                                 |
+| État           | Sens                                                                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Connecté**   | Présent dans la room ; participe au tour en cours.                                                                                                                     |
+| **Déconnecté** | Garde sa place et son classement ; reçoit des placements absents pour les tours qui se terminent entre-temps ; n'est pas attendu par « tout le monde a fini ».         |
+| **Parti**      | La place n'existe plus (room fermée, lien invité expiré, ou retiré ou banni par l'admin de la room). Les parties déjà clôturées restent dans l'historique des comptes. |
 
 Un participant qui rejoint **pendant** une partie commence **Connecté** au tour en cours ; les tours passés sont des placements absents pour lui (US-4.5).

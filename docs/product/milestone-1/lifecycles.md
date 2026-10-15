@@ -78,15 +78,15 @@ stateDiagram-v2
     [*] --> Connected : joins the room
     Connected --> Disconnected : connection lost or page closed
     Disconnected --> Connected : comes back (account, same browser or guest link)
-    Connected --> Left : room closed
-    Disconnected --> Left : room closed or guest link expired
+    Connected --> Left : room closed, or removed or banned by the room admin
+    Disconnected --> Left : room closed, guest link expired, or removed or banned
     Left --> [*]
 ```
 
-| State            | Meaning                                                                                                                    |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Connected**    | Present in the room; takes part in the current round.                                                                      |
-| **Disconnected** | Keeps their seat and ranking; gets absent placements for the rounds that end meanwhile; not waited for by "everyone done". |
-| **Left**         | The seat is gone (room closed, or guest link expired). Games already closed stay in the history of accounts.               |
+| State            | Meaning                                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Connected**    | Present in the room; takes part in the current round.                                                                                             |
+| **Disconnected** | Keeps their seat and ranking; gets absent placements for the rounds that end meanwhile; not waited for by "everyone done".                        |
+| **Left**         | The seat is gone (room closed, guest link expired, or removed or banned by the room admin). Games already closed stay in the history of accounts. |
 
 A participant who joins **during** a game starts **Connected** at the current round; the past rounds are absent placements for them (US-4.5).

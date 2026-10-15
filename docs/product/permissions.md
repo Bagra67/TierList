@@ -39,6 +39,7 @@ A **private** template can only be used to start a room by its owner and by the 
 | Action                                                                  |         Room admin          | Player (account) | Guest                            |
 | ----------------------------------------------------------------------- | :-------------------------: | :--------------: | -------------------------------- |
 | Configure the room, start a game, move to the next item, close the room |             Yes             |        No        | No                               |
+| Remove a participant, ban or unban a participant                        |             Yes             |        No        | No                               |
 | See the answers in blind mode                                           |             Yes             |        No        | No                               |
 | Have the final say on a free-text guess                                 |             Yes             | Gives an opinion | Gives an opinion                 |
 | Place items                                                             |    If configured to play    |       Yes        | Yes                              |

@@ -50,6 +50,10 @@ classDiagram
         guest personal link
         connected
     }
+    class RoomBan {
+        account or guest browser
+        banned at
+    }
     class Game {
         status
         item order
@@ -76,6 +80,8 @@ classDiagram
     Room "0..*" --> "1" Template : plays
     Room "1" *-- "1" RoomSettings : configured by
     Room "0..1" o-- "0..10" Participant : gathers
+    Room "1" *-- "0..*" RoomBan : bans
+    RoomBan "0..*" --> "0..1" User : bans
     Participant "0..*" --> "0..1" User : is
     Room "0..1" o-- "0..*" Game : hosts
     Game "0..*" o-- "1..*" Participant : played by
@@ -99,6 +105,7 @@ classDiagram
 | **Room**             | The place where a group plays, reached by its link or code. Persists between games until closed; then it is **not kept**, only its games are.                                  |
 | **RoomSettings**     | The five settings of the milestone. Apply to the next game.                                                                                                                    |
 | **Participant**      | A seat in a room: a user (player) or a guest with a nickname and a personal link. Keeps their seat across disconnections.                                                      |
+| **RoomBan**          | A person the room admin banned from a room: an account, or a guest's browser (best effort, see US-2.12). Removed when unbanned or with the room.                               |
 | **Game**             | One play of a template snapshot in a room: the item order, the rounds, the placements and, once closed, the results and their public link.                                     |
 | **Round**            | The moment one tile is shown and placed by everyone. A game has one round per tile of its snapshot.                                                                            |
 | **Placement**        | Where a participant put a tile: a tier and a position in that tier, for a phase (**round** = "hot take", **final** = after the cooldown). A round placement can be **absent**. |
@@ -120,3 +127,4 @@ Rules the model always respects, whatever the screen or the action:
 9. Placements can change only **during their round** (round phase) or **during the cooldown** (final phase); once the game is closed, nothing changes.
 10. A guest participant is **never linked to a user**; a player is linked to exactly one user, and a user has **at most one seat** per room.
 11. Closing a room **removes it**, with its link, its code and the seats that took part in no game. Its **games are kept**, with their participants, placements, results and public links: a game **outlives** its room.
+12. A **banned account** never has a seat in that room.
