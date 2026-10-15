@@ -198,6 +198,7 @@ export const en: Translation = {
       admin: 'room admin',
       online: 'online',
       offline: 'offline',
+      liveUnavailable: 'Live updates are unavailable: reload the page.',
       guest: 'guest',
     },
     join: {

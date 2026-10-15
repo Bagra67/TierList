@@ -11,7 +11,7 @@ import {
 } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
-import { useRoomEvents } from '../api/roomChannel';
+import { type RoomEventsState, useRoomEvents } from '../api/roomChannel';
 import { type GuestRoom, type Room, type RoomViewer, useRoom } from '../api/rooms';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GuestLinkSection } from '../components/GuestLinkSection';
@@ -49,7 +49,7 @@ export function RoomPage() {
     error,
   }: UseQueryResult<Room> = useRoom(code, viewer, guestToken);
   // Ouvert dès que le lecteur a une place : la salle est chargée
-  useRoomEvents(code, viewer, room !== undefined);
+  const roomEvents: RoomEventsState = useRoomEvents(code, viewer, room !== undefined);
   // Lien perso de l'invité qui vient d'entrer (ou de le renouveler) : il n'est pas relu ensuite
   const [guestRoom, setGuestRoom] = useState<GuestRoom | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -80,6 +80,11 @@ export function RoomPage() {
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
       {viewer === 'guest' && room !== undefined && (
         <GuestLinkSection code={code} guestRoom={guestRoom} onRenewed={setGuestRoom} />
+      )}
+      {room !== undefined && roomEvents.unavailable && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {t('rooms.lobby.liveUnavailable')}
+        </p>
       )}
       {room !== undefined && <RoomLobby room={room} />}
     </main>

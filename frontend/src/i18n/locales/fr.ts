@@ -204,6 +204,7 @@ export const fr = {
       admin: 'room admin',
       online: 'en ligne',
       offline: 'hors ligne',
+      liveUnavailable: 'Mises à jour en direct indisponibles : rechargez la page.',
       guest: 'invité',
     },
     join: {

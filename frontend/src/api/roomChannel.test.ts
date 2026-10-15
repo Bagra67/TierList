@@ -1,11 +1,12 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { roomQueryKey } from '../constants/rooms';
 import { FakeWebSocket, latestSocket } from '../test/fakeWebSocket';
 import { aliceRoom } from '../test/rooms';
+import { stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { setAccessToken } from './client';
 import { createQueryClient } from './queryClient';
 import type { Room, RoomViewer } from './rooms';
@@ -44,6 +45,7 @@ describe('useRoomEvents', () => {
   afterEach(() => {
     setAccessToken(null);
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('opens the room channel and authenticates with the access token', async () => {
@@ -142,5 +144,70 @@ describe('useRoomEvents', () => {
 
     expect(socket.readyState).toBe(FakeWebSocket.CLOSED);
     expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it('retries once with a refreshed token when the session token has expired', async () => {
+    setAccessToken('expired-token');
+    stubBackend({ 'POST /auth/refresh': tokenResponse('fresh-token') });
+    followRoom('account');
+
+    latestSocket().closeFromServer(4401);
+
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2));
+    latestSocket().acceptConnection();
+    await waitFor(() =>
+      expect(latestSocket().sentMessages()).toEqual([
+        { type: 'auth', access_token: 'fresh-token' },
+      ]),
+    );
+    // Refusé une seconde fois d'affilée : la session est vraiment finie
+    latestSocket().closeFromServer(4401);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(FakeWebSocket.instances).toHaveLength(2);
+  });
+
+  it('stops when the session cannot be refreshed', async () => {
+    setAccessToken('expired-token');
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    followRoom('account');
+
+    latestSocket().closeFromServer(4401);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it('gives up and says so after several failed openings', () => {
+    vi.useFakeTimers();
+    const { result } = followRoom();
+
+    for (let failure = 1; failure < 5; failure += 1) {
+      act(() => {
+        latestSocket().closeFromServer(1006);
+        vi.advanceTimersByTime(10_000);
+      });
+    }
+    expect(result.current.unavailable).toBe(false);
+    act(() => {
+      latestSocket().closeFromServer(1006);
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(FakeWebSocket.instances).toHaveLength(5);
+    expect(result.current.unavailable).toBe(true);
+  });
+
+  it('keeps retrying after a connection that was open', () => {
+    vi.useFakeTimers();
+    // Invité : l'ouverture n'a pas besoin de rafraîchir un token
+    followRoom('guest');
+
+    for (let drop = 0; drop < 6; drop += 1) {
+      latestSocket().acceptConnection();
+      latestSocket().closeFromServer(1006);
+      vi.advanceTimersByTime(10_000);
+    }
+
+    expect(FakeWebSocket.instances).toHaveLength(7);
   });
 });
