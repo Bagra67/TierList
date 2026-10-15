@@ -2,7 +2,9 @@
 lecture et réglages.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
-Une salle n'est visible que de ses participants ; seul son room admin change les réglages.
+Chaque changement de la salle incrémente sa version et est publié aux sockets de la salle après le
+commit (docs/technical/realtime.md). Une salle n'est visible que de ses participants ; seul son
+room admin change les réglages.
 """
 
 import logging
@@ -39,6 +41,14 @@ from app.models.template import Template
 from app.models.user import User
 from app.repositories import rooms as room_repository
 from app.repositories import templates as template_repository
+from app.schemas.room_events import (
+    ParticipantJoinedData,
+    ParticipantJoinedEvent,
+    ParticipantPresenceData,
+    ParticipantPresenceEvent,
+    RoomSettingsUpdatedEvent,
+)
+from app.services.room_channel import RoomEventPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +107,10 @@ class GuestSeat:
 
 
 class RoomService:
-    def __init__(self, session: Session, settings: Settings) -> None:
+    def __init__(self, session: Session, settings: Settings, publisher: RoomEventPublisher) -> None:
         self._session = session
         self._settings = settings
+        self._publisher = publisher
 
     def create(self, owner: User, template_id: uuid.UUID) -> Room:
         """Crée une salle ouverte à partir d'un template du propriétaire qui a au moins une
@@ -156,10 +167,12 @@ class RoomService:
             return room
         # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
         # contrainte (room_id, user_id) reste le dernier filet
-        room.participants.append(Participant(user_id=user.id))
+        player: Participant = Participant(user_id=user.id)
+        room.participants.append(player)
         room.version += 1
         self._session.commit()
         logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
+        self._publish_joined(room, player)
         return room
 
     def join_as_guest(self, code: str, nickname: str) -> GuestSeat:
@@ -200,6 +213,7 @@ class RoomService:
                 raise NicknameTakenError from exc
             raise
         logger.info("Salle rejointe en invité : room_id=%s participant_id=%s", room.id, guest.id)
+        self._publish_joined(room, guest)
         return GuestSeat(room=room, participant=guest, token=token)
 
     def restore_guest(self, code: str, token: str) -> GuestSeat:
@@ -271,7 +285,53 @@ class RoomService:
             room.version += 1
         # Sans modification, le commit libère seulement le verrou
         self._session.commit()
+        if changes:
+            self._publisher.publish(room.id, RoomSettingsUpdatedEvent(room_version=room.version))
         return room
+
+    def seat_of(self, viewer: RoomViewer, code: str) -> Participant:
+        """Place du lecteur dans la salle (compte ou invité) : elle lui ouvre le canal temps réel.
+        Sans place, RoomNotFoundError, comme pour la lecture de la salle."""
+        room: Room = self.get_for_viewer(viewer, code)
+        for participant in self.seated_participants(room):
+            if viewer.user is not None and participant.user_id == viewer.user.id:
+                return participant
+        if viewer.user is None and viewer.guest_token is not None:
+            guest: Participant | None = self._find_guest(room, viewer.guest_token)
+            if guest is not None:
+                return guest
+        raise RoomNotFoundError
+
+    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
+        """Marque le participant connecté ou déconnecté. N'écrit et ne publie que si la présence
+        change ; une place disparue entre-temps (salle fermée) est ignorée."""
+        room: Room | None = room_repository.get_room_of_participant(
+            self._session, participant_id, for_update=True
+        )
+        participant: Participant | None = None
+        if room is not None:
+            participant = next((p for p in room.participants if p.id == participant_id), None)
+        if room is None or participant is None or participant.connected == connected:
+            # Rien à écrire : le commit libère seulement le verrou
+            self._session.commit()
+            return
+        participant.connected = connected
+        room.version += 1
+        self._session.commit()
+        self._publisher.publish(
+            room.id,
+            ParticipantPresenceEvent(
+                room_version=room.version,
+                data=ParticipantPresenceData(participant_id=participant_id, connected=connected),
+            ),
+        )
+
+    def reset_presence(self) -> int:
+        """Au démarrage du processus, plus aucun socket n'est ouvert : personne n'est connecté.
+        Renvoie le nombre de participants remis à déconnecté."""
+        reset_count: int = room_repository.disconnect_everyone(self._session)
+        self._session.commit()
+        return reset_count
 
     def link(self, room: Room) -> str:
         """Lien de la salle à partager, vers sa page du frontend."""
@@ -286,6 +346,15 @@ class RoomService:
         if not self._has_seat(room, user):
             raise RoomNotFoundError
         return room
+
+    def _publish_joined(self, room: Room, participant: Participant) -> None:
+        self._publisher.publish(
+            room.id,
+            ParticipantJoinedEvent(
+                room_version=room.version,
+                data=ParticipantJoinedData(participant_id=participant.id),
+            ),
+        )
 
     @staticmethod
     def _has_seat(room: Room, user: User) -> bool:

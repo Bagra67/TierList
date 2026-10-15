@@ -17,6 +17,7 @@ from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
+from app.services.room_channel import RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.templates import TemplateService
 
@@ -38,11 +39,17 @@ def get_template_service(
     return TemplateService(session, settings)
 
 
+def get_room_event_publisher() -> RoomEventPublisher:
+    # Les sockets ouverts de ce processus ; remplaçable dans les tests
+    return room_connections
+
+
 def get_room_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
-    return RoomService(session, settings)
+    return RoomService(session, settings, publisher)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:

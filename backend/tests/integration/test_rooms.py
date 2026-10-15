@@ -22,8 +22,10 @@ from app.models.participant import Participant
 from app.models.room import Room, RoomStatus
 from app.models.template import Template
 from app.models.user import User
+from app.schemas.room_events import ParticipantJoinedEvent, RoomEvent
 from app.services import rooms as room_service_module
 from app.services.rooms import RoomService
+from tests.integration.conftest import RecordingRoomEventPublisher
 from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
@@ -178,7 +180,7 @@ def test_creation_gives_up_when_no_code_is_free(
     template_id: str = create_template(auth_client, db_session, alice)
     forced_room_codes(monkeypatch, ["AAAAAA"] * (ROOM_CODE_MAX_ATTEMPTS + 1))
     create_room(auth_client, alice, template_id)
-    service: RoomService = RoomService(db_session, get_settings())
+    service: RoomService = RoomService(db_session, get_settings(), RecordingRoomEventPublisher())
 
     with pytest.raises(RuntimeError):
         service.create(user_with_email(db_session, "alice@example.com"), uuid.UUID(template_id))
@@ -284,6 +286,58 @@ def test_joining_requires_authentication(auth_client: TestClient, alice_room: Js
 
     assert response.status_code == 401
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
+
+
+# --- Événements temps réel ---------------------------------------------------------------
+
+
+def test_joining_publishes_the_new_participant_with_the_next_version(
+    auth_client: TestClient,
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=bob)
+
+    body: JsonObject = response.json()
+    assert body["version"] == alice_room["version"] + 1
+    bob_seat: JsonObject = body["participants"][1]
+    assert bob_seat["connected"] is False
+    assert room_events.types() == ["participant.joined"]
+    event: RoomEvent = room_events.events[0][1]
+    assert isinstance(event, ParticipantJoinedEvent)
+    assert event.room_version == body["version"]
+    assert str(event.data.participant_id) == bob_seat["id"]
+
+
+def test_joining_again_publishes_nothing(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=alice)
+
+    assert response.json()["version"] == alice_room["version"]
+    assert room_events.events == []
+
+
+def test_changing_the_settings_publishes_them(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    settings_url: str = f"/rooms/{alice_room['code']}/settings"
+
+    changed: Response = auth_client.patch(settings_url, json={"admin_plays": False}, headers=alice)
+    unchanged: Response = auth_client.patch(settings_url, json={}, headers=alice)
+
+    assert changed.json()["version"] == alice_room["version"] + 1
+    assert unchanged.json()["version"] == changed.json()["version"]
+    # Une modification vide ne publie rien
+    assert room_events.types() == ["room.settings_updated"]
+    assert room_events.events[0][1].room_version == changed.json()["version"]
 
 
 # --- Réglages -------------------------------------------------------------------------------
