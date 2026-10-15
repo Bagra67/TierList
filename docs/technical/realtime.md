@@ -164,17 +164,18 @@ Built in #85. What exists today:
 
 - **Events** (`app/schemas/room_events.py`), a discriminated union on `type`, all carrying `room_version`:
 
-  | `type`                  | `data`                        | Sent when                                                                             | Frontend                |
-  | ----------------------- | ----------------------------- | ------------------------------------------------------------------------------------- | ----------------------- |
-  | `participant.joined`    | `{participant_id}`            | An account or a guest joins (`POST /join`, `POST /guests`)                            | Reads the room again    |
-  | `participant.presence`  | `{participant_id, connected}` | First socket of a participant opened; last one closed for longer than the grace delay | Updates the cached room |
-  | `room.settings_updated` | `{}`                          | The room admin changes a setting (an empty change sends nothing)                      | Reads the room again    |
+  | `type`                  | `data`                        | Sent when                                                                                                        | Frontend                |
+  | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
+  | `participant.joined`    | `{participant_id}`            | An account or a guest joins (`POST /join`, `POST /guests`)                                                       | Reads the room again    |
+  | `participant.presence`  | `{participant_id, connected}` | First socket of a participant opened; last one closed for longer than the grace delay                            | Updates the cached room |
+  | `participant.removed`   | `{participant_id}`            | The room admin removes or bans a participant (#148); sent after closing their sockets, so they do not receive it | Updates the cached room |
+  | `room.settings_updated` | `{}`                          | The room admin changes a setting (an empty change sends nothing)                                                 | Reads the room again    |
 
   Channel messages: `{"type": "ping"}` from the server, `{"type": "pong"}` and `{"type": "auth", "access_token": …}` from the client. `RoomServerMessage` and `RoomClientMessage` are added to the OpenAPI components (`_openapi_with_room_messages` in `app/main.py`).
 
-- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, settings, presence), returned as `version` by the room API.
+- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), returned as `version` by the room API.
 - **Authentication**: the first message is always `auth`, within `ROOM_AUTH_TIMEOUT_SECONDS`: an account sends its access token, a guest sends `null` and is recognised by its `guest_token` cookie (`Path=/api/rooms/<code>`, [rooms guide](rooms.md#24-guests)). An account comes first, like in REST.
-- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401` and `4404`:
+- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401`, `4404`, `4410` and `4411`:
 
   | Code       | Reason              | When                                                                             |
   | ---------- | ------------------- | -------------------------------------------------------------------------------- |
@@ -183,6 +184,8 @@ Built in #85. What exists today:
   | `4401`     | `not_authenticated` | No `auth` in time, invalid token, or neither token nor guest cookie              |
   | `4404`     | `room_not_found`    | Unknown room, or the reader has no seat in it                                    |
   | `4408`     | `heartbeat_timeout` | No `pong` within `ROOM_HEARTBEAT_TIMEOUT_SECONDS` after a ping                   |
+  | `4410`     | `removed_from_room` | The room admin removed the participant (#148)                                    |
+  | `4411`     | `room_banned`       | The room admin banned the participant (#148)                                     |
 
 - **Settings** (`app/core/config.py`, `.env.example`):
 
@@ -211,4 +214,4 @@ Built in #85. What exists today:
 | Frontend     | `components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot (filled online, hollow offline) with an `online` / `offline` text for screen readers; the hook is active once the room is loaded.                                                                                                                                                                                                                                                                      |
 | Dev          | `frontend/vite.config.ts`                        | `ws: true` on the `/api` proxy.                                                                                                                                                                                                                                                                                                                                                                                     |
 
-Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`), described in the [testing guide](testing.md).
+Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`), described in the [testing guide](testing.md).

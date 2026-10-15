@@ -118,13 +118,14 @@ Every server event has the same envelope: `{"type": "…", "room_version": 12, "
 | `ping` / `pong`         | server → client / client → server | Heartbeat                                           |
 | `participant.joined`    | server → client                   | Reads the room again                                |
 | `participant.presence`  | server → client                   | Patches `connected` of one participant in the cache |
+| `participant.removed`   | server → client                   | Removes one participant from the cache              |
 | `room.settings_updated` | server → client                   | Reads the room again                                |
 
 The models live in `backend/app/schemas/room_events.py` and are added to the OpenAPI schema, so that `pnpm gen:api` generates their TypeScript types (`RoomServerMessage`, `RoomClientMessage` in `frontend/src/api/schema.d.ts`).
 
 ### 2.5 The room version
 
-`rooms.version` is an integer incremented **in the same transaction** as each change of the room (join, settings, presence). Each event carries it as `room_version`, and the REST room carries it as `version`. The client compares:
+`rooms.version` is an integer incremented **in the same transaction** as each change of the room (join, removal, settings, presence). Each event carries it as `room_version`, and the REST room carries it as `version`. The client compares:
 
 - `room_version == cached version + 1` → apply the event;
 - `room_version <= cached version` → already in the room read, ignore;
@@ -141,6 +142,8 @@ The server never replays past events: after any doubt, and after every (re)conne
 | `4401`     | `not_authenticated` | No `auth` in time, invalid token, or neither token nor guest cookie | an account retries **once** with a refreshed token, then stops         |
 | `4404`     | `room_not_found`    | Unknown room, or no seat in it                                      | stops                                                                  |
 | `4408`     | `heartbeat_timeout` | No `pong` within 5 s after a ping                                   | reconnects                                                             |
+| `4410`     | `removed_from_room` | The room admin removed the participant                              | stops; the page says so and offers to go back                          |
+| `4411`     | `room_banned`       | The room admin banned the participant                               | stops; the page says so                                                |
 
 ### 2.7 Presence
 
@@ -172,18 +175,19 @@ Two consequences:
 
 ### 2.9 The connection registry
 
-`ConnectionRegistry` (`backend/app/services/room_channel.py`) keeps, **in memory**, the open sockets of this process per room, with the participant of each socket. It knows whether a socket is the first or the last one of a participant, broadcasts the events of a room, and holds the pending disconnections (grace delay).
+`ConnectionRegistry` (`backend/app/services/room_channel.py`) keeps, **in memory**, the open sockets of this process per room, with the participant of each socket. It knows whether a socket is the first or the last one of a participant, broadcasts the events of a room, holds the pending disconnections (grace delay), and closes the sockets of a participant the room admin removed (`disconnect_participant`, called from the threadpool like `publish`). Those sockets leave the registry before being closed: their route then schedules no departure, and they receive no further event.
 
 Because it is in memory, **the backend must run with one worker**: with several processes, Alice's socket and Bob's REST request could land in different processes, and Alice would never hear about Bob. Sharing events between processes (PostgreSQL `LISTEN/NOTIFY`, then Redis) is described in the [real-time guide](realtime.md#29-scaling).
 
 ### 2.10 The frontend
 
-`useRoomEvents(code, viewer, enabled)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
+`useRoomEvents(code, viewer, enabled, onRemoved)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
 
 - opens `ws(s)://<page host>/api/rooms/<CODE>/ws` and sends `auth` (the in-memory access token, refreshed if missing; `null` for a guest);
 - answers `pong` to `ping`;
 - applies the events to the TanStack Query cache (§2.5);
 - reads the room again after each (re)connection;
+- after `4410` or `4411`, calls `onRemoved(banned)` and stops: `RoomPage` shows the message and stops reading the room;
 - reconnects with backoff and jitter (0.5 s to 10 s), not after `4404`; after `4401`, an account retries once with a refreshed token (the access token lasts 15 minutes);
 - gives up after 5 openings in a row that never opened, and returns `unavailable: true` (the lobby then shows "Live updates are unavailable: reload the page");
 - closes the socket (`1000`) when the page leaves the room.
@@ -195,18 +199,18 @@ In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite
 | File                                                          | What to look at                                                                                                                                                                                           |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/app/api/routes/room_channel.py`                      | The WebSocket route: origin check, `_receive_auth`, `_find_seat`, `_serve` (registration and presence), `_heartbeat`, `_receive_text` (rejects binary frames), `ChannelClosedError` (close code + reason) |
-| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`                                                                    |
-| `backend/app/services/rooms.py`                               | Changes of the room that publish after the commit (`join`, `join_as_guest`, `update_settings`), `seat_of`, `set_presence`, `reset_presence`                                                               |
+| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`, `disconnect_participant`                                          |
+| `backend/app/services/rooms.py`                               | Changes of the room that publish after the commit (`join`, `join_as_guest`, `update_settings`, `remove_participant`), `seat_of`, `set_presence`, `reset_presence`                                         |
 | `backend/app/schemas/room_events.py`                          | Event and message models                                                                                                                                                                                  |
 | `backend/app/constants/rooms.py`                              | Close codes (`CHANNEL_CLOSE_*`), guest cookie                                                                                                                                                             |
 | `backend/app/core/config.py`                                  | The four timings, `app_origin`                                                                                                                                                                            |
 | `backend/app/api/dependencies.py`                             | `get_connection_registry`, `get_room_event_publisher`, `get_session_factory`                                                                                                                              |
 | `backend/app/main.py`                                         | Lifespan (presence reset), message schemas added to OpenAPI                                                                                                                                               |
 | `frontend/src/api/roomChannel.ts`                             | `useRoomEvents`, `applyRoomEvent`                                                                                                                                                                         |
-| `frontend/src/components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot, "live updates unavailable" message                                                                                                                                                          |
+| `frontend/src/components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot, "live updates unavailable" message, removed or banned message                                                                                                                               |
 | `frontend/vite.config.ts`                                     | `ws: true`                                                                                                                                                                                                |
 
-Tests: `backend/tests/integration/test_room_channel.py` (route), `backend/tests/test_room_connections.py` (registry), publication tests in `test_rooms.py` / `test_room_guests.py`, `frontend/src/api/roomChannel.test.ts` with the fake socket `frontend/src/test/fakeWebSocket.ts`. All are described in the [testing guide](testing.md).
+Tests: `backend/tests/integration/test_room_channel.py` (route), `backend/tests/test_room_connections.py` (registry), publication tests in `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `frontend/src/api/roomChannel.test.ts` with the fake socket `frontend/src/test/fakeWebSocket.ts`. All are described in the [testing guide](testing.md).
 
 ## 4. Debugging and changing it
 
