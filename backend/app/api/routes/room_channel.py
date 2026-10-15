@@ -16,6 +16,7 @@ from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, 
 from pydantic import TypeAdapter, ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.types import Message
+from starlette.websockets import WebSocketState
 
 from app.api.dependencies import (
     SessionFactory,
@@ -206,6 +207,10 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
                 _receive_text(websocket), settings.room_heartbeat_interval_seconds
             )
         except TimeoutError:
+            # Fermé par le registre (participant retiré par le room admin) : la poignée de main de
+            # fermeture n'est pas finie, mais plus rien ne doit partir sur ce socket
+            if websocket.application_state == WebSocketState.DISCONNECTED:
+                return
             await websocket.send_text(_PING)
             try:
                 text = await asyncio.wait_for(

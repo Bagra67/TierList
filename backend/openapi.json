@@ -1921,6 +1921,22 @@
               "type": "string",
               "title": "Code"
             }
+          },
+          {
+            "name": "guest_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Guest Token"
+            }
           }
         ],
         "requestBody": {
@@ -1946,6 +1962,16 @@
           },
           "500": {
             "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Banned from the room",
             "content": {
               "application/json": {
                 "schema": {
@@ -2216,6 +2242,16 @@
               }
             }
           },
+          "403": {
+            "description": "Banned from the room",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2315,6 +2351,220 @@
           },
           "409": {
             "description": "Settings locked during a game, except late arrivals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/participants/{participant_id}": {
+      "delete": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Remove Participant",
+        "operationId": "remove_participant_rooms__code__participants__participant_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Participant Id"
+            }
+          },
+          {
+            "name": "ban",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Ban"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room or participant not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The room admin cannot be removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/bans/{ban_id}": {
+      "delete": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Unban",
+        "operationId": "unban_rooms__code__bans__ban_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "ban_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Ban Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room or ban not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2690,6 +2940,13 @@
             "type": "boolean",
             "title": "Is Admin"
           },
+          "bans": {
+            "items": {
+              "$ref": "#/components/schemas/RoomBanResponse"
+            },
+            "type": "array",
+            "title": "Bans"
+          },
           "guest_link": {
             "type": "string",
             "title": "Guest Link"
@@ -2710,6 +2967,7 @@
           "settings",
           "participants",
           "is_admin",
+          "bans",
           "guest_link",
           "guest_link_expires_at"
         ],
@@ -2935,6 +3193,30 @@
         ],
         "title": "RestoreGuestRequest"
       },
+      "RoomBanResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "is_guest": {
+            "type": "boolean",
+            "title": "Is Guest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name",
+          "is_guest"
+        ],
+        "title": "RoomBanResponse"
+      },
       "RoomResponse": {
         "properties": {
           "code": {
@@ -2975,6 +3257,13 @@
           "is_admin": {
             "type": "boolean",
             "title": "Is Admin"
+          },
+          "bans": {
+            "items": {
+              "$ref": "#/components/schemas/RoomBanResponse"
+            },
+            "type": "array",
+            "title": "Bans"
           }
         },
         "type": "object",
@@ -2986,7 +3275,8 @@
           "template",
           "settings",
           "participants",
-          "is_admin"
+          "is_admin",
+          "bans"
         ],
         "title": "RoomResponse"
       },
@@ -3584,6 +3874,44 @@
         "title": "ParticipantPresenceEvent",
         "type": "object"
       },
+      "ParticipantRemovedData": {
+        "properties": {
+          "participant_id": {
+            "format": "uuid",
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id"
+        ],
+        "title": "ParticipantRemovedData",
+        "type": "object"
+      },
+      "ParticipantRemovedEvent": {
+        "description": "Le room admin a retiré ou banni un participant : sa place n'existe plus.",
+        "properties": {
+          "type": {
+            "const": "participant.removed",
+            "default": "participant.removed",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ParticipantRemovedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "ParticipantRemovedEvent",
+        "type": "object"
+      },
       "PingMessage": {
         "description": "Battement de cœur du serveur : le client répond pong.",
         "properties": {
@@ -3630,6 +3958,7 @@
           "mapping": {
             "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
             "participant.presence": "#/components/schemas/ParticipantPresenceEvent",
+            "participant.removed": "#/components/schemas/ParticipantRemovedEvent",
             "ping": "#/components/schemas/PingMessage",
             "room.settings_updated": "#/components/schemas/RoomSettingsUpdatedEvent"
           },
@@ -3641,6 +3970,9 @@
           },
           {
             "$ref": "#/components/schemas/ParticipantPresenceEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ParticipantRemovedEvent"
           },
           {
             "$ref": "#/components/schemas/RoomSettingsUpdatedEvent"

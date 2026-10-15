@@ -459,6 +459,40 @@ export interface paths {
         patch: operations["update_room_settings_rooms__code__settings_patch"];
         trace?: never;
     };
+    "/rooms/{code}/participants/{participant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Participant */
+        delete: operations["remove_participant_rooms__code__participants__participant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/bans/{ban_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unban */
+        delete: operations["unban_rooms__code__bans__ban_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -601,6 +635,8 @@ export interface components {
             participants: components["schemas"]["ParticipantResponse"][];
             /** Is Admin */
             is_admin: boolean;
+            /** Bans */
+            bans: components["schemas"]["RoomBanResponse"][];
             /** Guest Link */
             guest_link: string;
             /**
@@ -705,6 +741,18 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** RoomBanResponse */
+        RoomBanResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Is Guest */
+            is_guest: boolean;
+        };
         /** RoomResponse */
         RoomResponse: {
             /** Code */
@@ -720,6 +768,8 @@ export interface components {
             participants: components["schemas"]["ParticipantResponse"][];
             /** Is Admin */
             is_admin: boolean;
+            /** Bans */
+            bans: components["schemas"]["RoomBanResponse"][];
         };
         /** RoomSettingsResponse */
         RoomSettingsResponse: {
@@ -956,6 +1006,28 @@ export interface components {
             room_version: number;
             data: components["schemas"]["ParticipantPresenceData"];
         };
+        /** ParticipantRemovedData */
+        ParticipantRemovedData: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+        };
+        /**
+         * ParticipantRemovedEvent
+         * @description Le room admin a retiré ou banni un participant : sa place n'existe plus.
+         */
+        ParticipantRemovedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "participant.removed";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["ParticipantRemovedData"];
+        };
         /**
          * PingMessage
          * @description Battement de cœur du serveur : le client répond pong.
@@ -983,7 +1055,7 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["PingMessage"];
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -2432,7 +2504,9 @@ export interface operations {
             path: {
                 code: string;
             };
-            cookie?: never;
+            cookie?: {
+                guest_token?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2447,6 +2521,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GuestRoomResponse"];
+                };
+            };
+            /** @description Banned from the room */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Room not found */
@@ -2629,6 +2712,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Banned from the room */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Room not found */
             404: {
                 headers: {
@@ -2711,6 +2803,153 @@ export interface operations {
             };
             /** @description Settings locked during a game, except late arrivals */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    remove_participant_rooms__code__participants__participant_id__delete: {
+        parameters: {
+            query?: {
+                ban?: boolean;
+            };
+            header?: never;
+            path: {
+                code: string;
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room or participant not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The room admin cannot be removed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unban_rooms__code__bans__ban_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                ban_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room or ban not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

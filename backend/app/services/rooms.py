@@ -1,10 +1,10 @@
 """Règles métier des salles : création à partir d'un template, jonction (compte ou invité),
-lecture et réglages.
+lecture, réglages, retrait et bannissement des participants.
 
 Le service possède les frontières de transaction : chaque opération se termine par un commit.
 Chaque changement de la salle incrémente sa version et est publié aux sockets de la salle après le
 commit (docs/technical/realtime.md). Une salle n'est visible que de ses participants ; seul son
-room admin change les réglages.
+room admin change les réglages, retire ou bannit un participant.
 """
 
 import logging
@@ -18,7 +18,10 @@ from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
+    CHANNEL_CLOSE_BANNED,
+    CHANNEL_CLOSE_REMOVED,
     FRONTEND_ROOM,
     GUEST_LINK_FRAGMENT,
     ROOM_CODE_ALPHABET,
@@ -28,15 +31,20 @@ from app.constants.rooms import (
 from app.core.config import Settings
 from app.core.security import generate_guest_token, hash_guest_token
 from app.exceptions.rooms import (
+    BanNotFoundError,
+    CannotRemoveRoomAdminError,
     GuestLinkInvalidError,
     NicknameTakenError,
+    ParticipantNotFoundError,
     RoomAdminRequiredError,
+    RoomBannedError,
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
 from app.models.participant import Participant
 from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
+from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
 from app.repositories import rooms as room_repository
@@ -46,6 +54,8 @@ from app.schemas.room_events import (
     ParticipantJoinedEvent,
     ParticipantPresenceData,
     ParticipantPresenceEvent,
+    ParticipantRemovedData,
+    ParticipantRemovedEvent,
     RoomSettingsUpdatedEvent,
 )
 from app.services.room_channel import RoomEventPublisher
@@ -155,12 +165,15 @@ class RoomService:
 
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
-        retrouve au lieu d'en prendre une seconde. Le code suffit : qui l'a peut rejoindre."""
+        retrouve au lieu d'en prendre une seconde. Le code suffit : qui l'a peut rejoindre, sauf
+        un compte banni de la salle (US-2.12)."""
         room: Room | None = room_repository.get_room_by_code(
             self._session, code.upper(), for_update=True
         )
         if room is None:
             raise RoomNotFoundError
+        if any(room_ban.user_id == user.id for room_ban in room.bans):
+            raise RoomBannedError
         if self._has_seat(room, user):
             # Rien à écrire : le commit libère seulement le verrou
             self._session.commit()
@@ -175,15 +188,21 @@ class RoomService:
         self._publish_joined(room, player)
         return room
 
-    def join_as_guest(self, code: str, nickname: str) -> GuestSeat:
+    def join_as_guest(self, code: str, nickname: str, guest_token: str | None) -> GuestSeat:
         """Donne une place d'invité (US-2.5) : un pseudo suffit, unique dans la salle sans tenir
         compte de la casse. L'invité reçoit un jeton valable guest_link_ttl_days, porté par son
-        cookie et son lien perso ; il n'est jamais lié à un compte."""
+        cookie et son lien perso ; il n'est jamais lié à un compte.
+
+        guest_token est le jeton du cookie que ce navigateur a déjà pour la salle : s'il est celui
+        d'un invité banni, la jonction est refusée. C'est au mieux (US-2.12) : un navigateur sans
+        ce cookie n'est pas reconnu."""
         room: Room | None = room_repository.get_room_by_code(
             self._session, code.upper(), for_update=True
         )
         if room is None:
             raise RoomNotFoundError
+        if guest_token is not None and self._is_banned_guest(room, guest_token):
+            raise RoomBannedError
         now: datetime = datetime.now(UTC)
         # Les invités dont le lien a expiré ont perdu leur place : elle libère leur pseudo
         for participant in list(room.participants):
@@ -289,6 +308,72 @@ class RoomService:
             self._publisher.publish(room.id, RoomSettingsUpdatedEvent(room_version=room.version))
         return room
 
+    def remove_participant(
+        self, user: User, code: str, participant_id: uuid.UUID, ban: bool
+    ) -> Room:
+        """Supprime la place d'un participant (room admin seulement, US-2.11), même pendant une
+        partie. Avec ban, la personne est aussi bannie (US-2.12) : son compte, ou pour un invité
+        l'empreinte du jeton de son cookie. Ses sockets sont fermés après le commit."""
+        room: Room = self._get_as_participant(user, code, for_update=True)
+        if room.admin_id != user.id:
+            raise RoomAdminRequiredError
+        target: Participant | None = next(
+            (
+                participant
+                for participant in self.seated_participants(room)
+                if participant.id == participant_id
+            ),
+            None,
+        )
+        if target is None:
+            raise ParticipantNotFoundError
+        if target.user_id == room.admin_id:
+            raise CannotRemoveRoomAdminError
+        if ban:
+            room_ban: RoomBan = RoomBan(
+                user_id=target.user_id,
+                guest_token_hash=target.guest_token_hash,
+                display_name=target.display_name,
+            )
+            room.bans.append(room_ban)
+        room.participants.remove(target)
+        room.version += 1
+        self._session.commit()
+        logger.info(
+            "Participant retiré : room_id=%s participant_id=%s banned=%s",
+            room.id,
+            participant_id,
+            ban,
+        )
+        # Ses sockets d'abord : il quitte la salle avant la diffusion, et ne reçoit pas l'événement
+        close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
+        reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
+        self._publisher.disconnect_participant(room.id, participant_id, close_code, reason)
+        self._publisher.publish(
+            room.id,
+            ParticipantRemovedEvent(
+                room_version=room.version,
+                data=ParticipantRemovedData(participant_id=participant_id),
+            ),
+        )
+        return room
+
+    def unban(self, user: User, code: str, ban_id: uuid.UUID) -> Room:
+        """Lève un bannissement (room admin seulement) : la personne peut rejoindre à nouveau.
+        Seul le room admin voit les bannissements : la version de la salle ne change pas."""
+        room: Room = self._get_as_participant(user, code, for_update=True)
+        if room.admin_id != user.id:
+            raise RoomAdminRequiredError
+        room_ban: RoomBan | None = next(
+            (room_ban for room_ban in room.bans if room_ban.id == ban_id), None
+        )
+        if room_ban is None:
+            raise BanNotFoundError
+        room.bans.remove(room_ban)
+        self._session.commit()
+        logger.info("Bannissement levé : room_id=%s ban_id=%s", room.id, ban_id)
+        return room
+
     def seat_of(self, viewer: RoomViewer, code: str) -> Participant:
         """Place du lecteur dans la salle (compte ou invité) : elle lui ouvre le canal temps réel.
         Sans place, RoomNotFoundError, comme pour la lecture de la salle."""
@@ -365,6 +450,11 @@ class RoomService:
         """Noms affichés de la salle, en minuscules : ceux des comptes et les pseudos des
         invités. Un nouvel invité ne peut prendre aucun d'eux."""
         return {participant.display_name.lower() for participant in room.participants}
+
+    @staticmethod
+    def _is_banned_guest(room: Room, token: str) -> bool:
+        token_hash: str = hash_guest_token(token)
+        return any(room_ban.guest_token_hash == token_hash for room_ban in room.bans)
 
     @staticmethod
     def _find_guest(room: Room, token: str) -> Participant | None:

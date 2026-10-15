@@ -19,6 +19,7 @@ from app.api.dependencies import (
     get_room_event_publisher,
     get_session_factory,
 )
+from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
@@ -242,9 +243,16 @@ class RecordingRoomEventPublisher:
 
     def __init__(self) -> None:
         self.events: list[tuple[uuid.UUID, RoomEvent]] = []
+        # Sockets à fermer : (participant, code de fermeture)
+        self.disconnections: list[tuple[uuid.UUID, int]] = []
 
     def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
         self.events.append((room_id, event))
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        self.disconnections.append((participant_id, close_code))
 
     def types(self) -> list[str]:
         return [event.type for _, event in self.events]

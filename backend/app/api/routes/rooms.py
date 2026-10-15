@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Response
 
 from app.api.dependencies import get_current_user, get_room_service, get_room_viewer
 from app.api.responses import UNAUTHORIZED_RESPONSE
@@ -13,9 +13,13 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse
 from app.exceptions.http import AppHTTPException
 from app.exceptions.rooms import (
+    BanNotFoundError,
+    CannotRemoveRoomAdminError,
     GuestLinkInvalidError,
     NicknameTakenError,
+    ParticipantNotFoundError,
     RoomAdminRequiredError,
+    RoomBannedError,
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
@@ -28,6 +32,7 @@ from app.schemas.rooms import (
     JoinAsGuestRequest,
     ParticipantResponse,
     RestoreGuestRequest,
+    RoomBanResponse,
     RoomResponse,
     RoomSettingsResponse,
     RoomTemplateResponse,
@@ -40,6 +45,12 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 ROOM_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.ROOM_NOT_FOUND_DESCRIPTION},
+}
+ROOM_ADMIN_REQUIRED_RESPONSE: dict[int | str, dict[str, Any]] = {
+    403: {"model": ErrorResponse, "description": messages.ROOM_ADMIN_REQUIRED_DESCRIPTION},
+}
+ROOM_BANNED_RESPONSE: dict[int | str, dict[str, Any]] = {
+    403: {"model": ErrorResponse, "description": messages.ROOM_BANNED_DESCRIPTION},
 }
 
 RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
@@ -66,6 +77,15 @@ def _room_response(room: Room, user: User | None, service: RoomService) -> RoomR
     )
     settings: RoomSettingsResponse = RoomSettingsResponse.model_validate(room)
     link: str = service.link(room)
+    is_admin: bool = user is not None and room.admin_id == user.id
+    # Les bannissements ne regardent que le room admin
+    bans: list[RoomBanResponse] = []
+    if is_admin:
+        for room_ban in room.bans:
+            ban_response: RoomBanResponse = RoomBanResponse(
+                id=room_ban.id, display_name=room_ban.display_name, is_guest=room_ban.is_guest
+            )
+            bans.append(ban_response)
     return RoomResponse(
         code=room.code,
         version=room.version,
@@ -74,7 +94,8 @@ def _room_response(room: Room, user: User | None, service: RoomService) -> RoomR
         template=template,
         settings=settings,
         participants=participants,
-        is_admin=user is not None and room.admin_id == user.id,
+        is_admin=is_admin,
+        bans=bans,
     )
 
 
@@ -101,6 +122,22 @@ def _room_not_found() -> AppHTTPException:
         status_code=404,
         code=ErrorCode.ROOM_NOT_FOUND,
         detail=messages.ROOM_NOT_FOUND,
+    )
+
+
+def _room_admin_required() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=403,
+        code=ErrorCode.ROOM_ADMIN_REQUIRED,
+        detail=messages.ROOM_ADMIN_REQUIRED,
+    )
+
+
+def _room_banned() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=403,
+        code=ErrorCode.ROOM_BANNED,
+        detail=messages.ROOM_BANNED,
     )
 
 
@@ -148,6 +185,7 @@ def get_room(code: str, viewer: RoomViewerDep, service: RoomServiceDep) -> RoomR
     "/{code}/guests",
     status_code=201,
     responses={
+        **ROOM_BANNED_RESPONSE,
         404: {"model": ErrorResponse, "description": messages.ROOM_NOT_FOUND_DESCRIPTION},
         409: {"model": ErrorResponse, "description": messages.NICKNAME_TAKEN_DESCRIPTION},
     },
@@ -158,12 +196,16 @@ def join_as_guest(
     response: Response,
     service: RoomServiceDep,
     settings: SettingsDep,
+    guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> GuestRoomResponse:
-    # Sans compte : un pseudo suffit (US-2.5)
+    # Sans compte : un pseudo suffit (US-2.5). Le cookie d'une place précédente fait reconnaître
+    # le navigateur d'un invité banni (US-2.12)
     try:
-        seat: GuestSeat = service.join_as_guest(code, payload.nickname)
+        seat: GuestSeat = service.join_as_guest(code, payload.nickname, guest_token)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
+    except RoomBannedError as exc:
+        raise _room_banned() from exc
     except NicknameTakenError as exc:
         raise AppHTTPException(
             status_code=409,
@@ -229,13 +271,15 @@ def _guest_room_response(seat: GuestSeat, service: RoomService) -> GuestRoomResp
     )
 
 
-@router.post("/{code}/join", responses=ROOM_NOT_FOUND_RESPONSES)
+@router.post("/{code}/join", responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_BANNED_RESPONSE})
 def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomResponse:
     # Rejoint comme joueur, ou retrouve sa place : appeler deux fois ne crée pas de seconde place
     try:
         room: Room = service.join(user, code)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
+    except RoomBannedError as exc:
+        raise _room_banned() from exc
     return _room_response(room, user, service)
 
 
@@ -243,7 +287,7 @@ def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomR
     "/{code}/settings",
     responses={
         **ROOM_NOT_FOUND_RESPONSES,
-        403: {"model": ErrorResponse, "description": messages.ROOM_ADMIN_REQUIRED_DESCRIPTION},
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
         409: {"model": ErrorResponse, "description": messages.ROOM_SETTINGS_LOCKED_DESCRIPTION},
     },
 )
@@ -260,15 +304,78 @@ def update_room_settings(
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
     except RoomAdminRequiredError as exc:
-        raise AppHTTPException(
-            status_code=403,
-            code=ErrorCode.ROOM_ADMIN_REQUIRED,
-            detail=messages.ROOM_ADMIN_REQUIRED,
-        ) from exc
+        raise _room_admin_required() from exc
     except RoomSettingsLockedError as exc:
         raise AppHTTPException(
             status_code=409,
             code=ErrorCode.ROOM_SETTINGS_LOCKED,
             detail=messages.ROOM_SETTINGS_LOCKED,
+        ) from exc
+    return _room_response(room, user, service)
+
+
+@router.delete(
+    "/{code}/participants/{participant_id}",
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
+        404: {
+            "model": ErrorResponse,
+            "description": messages.ROOM_OR_PARTICIPANT_NOT_FOUND_DESCRIPTION,
+        },
+        409: {"model": ErrorResponse, "description": messages.CANNOT_REMOVE_ROOM_ADMIN_DESCRIPTION},
+    },
+)
+def remove_participant(
+    code: str,
+    participant_id: uuid.UUID,
+    user: CurrentUserDep,
+    service: RoomServiceDep,
+    ban: bool = False,
+) -> RoomResponse:
+    # Supprime la place (US-2.11) ; avec ban=true, la personne ne peut plus revenir (US-2.12)
+    try:
+        room: Room = service.remove_participant(user, code, participant_id, ban)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+    except ParticipantNotFoundError as exc:
+        raise AppHTTPException(
+            status_code=404,
+            code=ErrorCode.PARTICIPANT_NOT_FOUND,
+            detail=messages.PARTICIPANT_NOT_FOUND,
+        ) from exc
+    except CannotRemoveRoomAdminError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
+            detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
+        ) from exc
+    return _room_response(room, user, service)
+
+
+@router.delete(
+    "/{code}/bans/{ban_id}",
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
+        404: {"model": ErrorResponse, "description": messages.ROOM_OR_BAN_NOT_FOUND_DESCRIPTION},
+    },
+)
+def unban(
+    code: str, ban_id: uuid.UUID, user: CurrentUserDep, service: RoomServiceDep
+) -> RoomResponse:
+    try:
+        room: Room = service.unban(user, code, ban_id)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+    except BanNotFoundError as exc:
+        raise AppHTTPException(
+            status_code=404,
+            code=ErrorCode.BAN_NOT_FOUND,
+            detail=messages.BAN_NOT_FOUND,
         ) from exc
     return _room_response(room, user, service)

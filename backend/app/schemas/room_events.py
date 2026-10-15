@@ -38,6 +38,18 @@ class ParticipantPresenceEvent(BaseModel):
     data: ParticipantPresenceData
 
 
+class ParticipantRemovedData(BaseModel):
+    participant_id: uuid.UUID
+
+
+class ParticipantRemovedEvent(BaseModel):
+    """Le room admin a retiré ou banni un participant : sa place n'existe plus."""
+
+    type: Literal["participant.removed"] = "participant.removed"
+    room_version: int
+    data: ParticipantRemovedData
+
+
 class RoomSettingsUpdatedData(BaseModel):
     pass
 
@@ -52,7 +64,10 @@ class RoomSettingsUpdatedEvent(BaseModel):
 
 # Union discriminée sur type : les événements qui changent la salle (et sa version)
 RoomEvent = Annotated[
-    ParticipantJoinedEvent | ParticipantPresenceEvent | RoomSettingsUpdatedEvent,
+    ParticipantJoinedEvent
+    | ParticipantPresenceEvent
+    | ParticipantRemovedEvent
+    | RoomSettingsUpdatedEvent,
     Field(discriminator="type"),
 ]
 
@@ -80,7 +95,11 @@ class AuthMessage(BaseModel):
 
 # Ce que le serveur envoie, et ce que le client peut envoyer
 RoomServerMessage = Annotated[
-    ParticipantJoinedEvent | ParticipantPresenceEvent | RoomSettingsUpdatedEvent | PingMessage,
+    ParticipantJoinedEvent
+    | ParticipantPresenceEvent
+    | ParticipantRemovedEvent
+    | RoomSettingsUpdatedEvent
+    | PingMessage,
     Field(discriminator="type"),
 ]
 RoomClientMessage = Annotated[AuthMessage | PongMessage, Field(discriminator="type")]
