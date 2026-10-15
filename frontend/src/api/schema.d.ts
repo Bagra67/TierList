@@ -590,6 +590,8 @@ export interface components {
         GuestRoomResponse: {
             /** Code */
             code: string;
+            /** Version */
+            version: number;
             /** Link */
             link: string;
             status: components["schemas"]["RoomStatus"];
@@ -665,6 +667,8 @@ export interface components {
             is_admin: boolean;
             /** Is Guest */
             is_guest: boolean;
+            /** Connected */
+            connected: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -705,6 +709,8 @@ export interface components {
         RoomResponse: {
             /** Code */
             code: string;
+            /** Version */
+            version: number;
             /** Link */
             link: string;
             status: components["schemas"]["RoomStatus"];
@@ -904,6 +910,106 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** ParticipantJoinedData */
+        ParticipantJoinedData: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+        };
+        /**
+         * ParticipantJoinedEvent
+         * @description Un compte ou un invité vient d'entrer : le client relit la salle.
+         */
+        ParticipantJoinedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "participant.joined";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["ParticipantJoinedData"];
+        };
+        /** ParticipantPresenceData */
+        ParticipantPresenceData: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** Connected */
+            connected: boolean;
+        };
+        /**
+         * ParticipantPresenceEvent
+         * @description Un participant vient de se connecter, ou de se déconnecter (délai de grâce écoulé).
+         */
+        ParticipantPresenceEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "participant.presence";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["ParticipantPresenceData"];
+        };
+        /**
+         * PingMessage
+         * @description Battement de cœur du serveur : le client répond pong.
+         */
+        PingMessage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ping";
+        };
+        /** RoomSettingsUpdatedData */
+        RoomSettingsUpdatedData: Record<string, never>;
+        /**
+         * RoomSettingsUpdatedEvent
+         * @description Le room admin a changé les réglages : le client relit la salle.
+         */
+        RoomSettingsUpdatedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "room.settings_updated";
+            /** Room Version */
+            room_version: number;
+            data?: components["schemas"]["RoomSettingsUpdatedData"];
+        };
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["PingMessage"];
+        /**
+         * AuthMessage
+         * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
+         *     son cookie). Le token ne passe jamais dans l'URL.
+         */
+        AuthMessage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "auth";
+            /**
+             * Access Token
+             * @default null
+             */
+            access_token: string | null;
+        };
+        /** PongMessage */
+        PongMessage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "pong";
+        };
+        RoomClientMessage: components["schemas"]["AuthMessage"] | components["schemas"]["PongMessage"];
     };
     responses: never;
     parameters: never;

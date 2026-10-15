@@ -202,6 +202,9 @@ export const fr = {
       copyFailed: 'Impossible de copier le lien : sélectionnez-le et copiez-le à la main.',
       participants: 'Participants ({{count}})',
       admin: 'room admin',
+      online: 'en ligne',
+      offline: 'hors ligne',
+      liveUnavailable: 'Mises à jour en direct indisponibles : rechargez la page.',
       guest: 'invité',
     },
     join: {
@@ -291,6 +294,8 @@ export const fr = {
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',
       guest_link_invalid: 'Ce lien perso a expiré, ou la salle a été fermée.',
+      invalid_message: 'Message inattendu sur le canal de la salle.',
+      heartbeat_timeout: 'La connexion à la salle ne répondait plus.',
       tier_not_found: 'Ce tier est introuvable.',
       last_tier: 'Un template garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',

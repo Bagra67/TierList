@@ -196,6 +196,9 @@ export const en: Translation = {
       copyFailed: 'The link could not be copied: select it and copy it by hand.',
       participants: 'Participants ({{count}})',
       admin: 'room admin',
+      online: 'online',
+      offline: 'offline',
+      liveUnavailable: 'Live updates are unavailable: reload the page.',
       guest: 'guest',
     },
     join: {
@@ -282,6 +285,8 @@ export const en: Translation = {
       room_settings_locked: 'During a game, only late arrivals can be changed.',
       nickname_taken: 'This nickname is already used in this room.',
       guest_link_invalid: 'This personal link has expired, or the room was closed.',
+      invalid_message: 'Unexpected message on the room channel.',
+      heartbeat_timeout: 'The connection to the room stopped answering.',
       tier_not_found: 'This tier could not be found.',
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',

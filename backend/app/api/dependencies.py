@@ -1,3 +1,5 @@
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from typing import Annotated
 
 from fastapi import Cookie, Depends
@@ -8,7 +10,7 @@ from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings, get_settings
-from app.db.session import get_db_session
+from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
@@ -17,6 +19,7 @@ from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
+from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.templates import TemplateService
 
@@ -38,11 +41,34 @@ def get_template_service(
     return TemplateService(session, settings)
 
 
+# Ouvre une session courte : le canal temps réel vit longtemps, il ne garde pas de connexion à
+# la base entre deux accès
+SessionFactory = Callable[[], AbstractContextManager[Session]]
+
+
+def get_session_factory() -> SessionFactory:
+    # Remplacée dans les tests : les accès du canal y passent par la session du test
+    return lambda: Session(get_engine())
+
+
+def get_connection_registry() -> ConnectionRegistry:
+    # Les sockets ouverts de ce processus
+    return room_connections
+
+
+def get_room_event_publisher(
+    registry: Annotated[ConnectionRegistry, Depends(get_connection_registry)],
+) -> RoomEventPublisher:
+    # Les services publient vers les sockets du registre ; remplaçable dans les tests
+    return registry
+
+
 def get_room_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
-    return RoomService(session, settings)
+    return RoomService(session, settings, publisher)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -60,6 +61,14 @@ class Settings(BaseSettings):
     # Chemin des routes des salles vu par le navigateur (proxy /api) : le cookie d'un invité est
     # posé sur ce chemin suivi du code de sa salle
     room_cookie_path: str = "/api/rooms"
+    # Canal temps réel (docs/technical/realtime.md) : ping sans message du client pendant cet
+    # intervalle, socket fermé faute de pong dans le délai, participant marqué déconnecté ce
+    # délai de grâce après la fermeture de son dernier onglet (un rechargement ne le fait pas
+    # clignoter « hors ligne »), et délai du message d'authentification. En secondes.
+    room_heartbeat_interval_seconds: float = Field(default=10, gt=0)
+    room_heartbeat_timeout_seconds: float = Field(default=5, gt=0)
+    room_presence_grace_seconds: float = Field(default=3, ge=0)
+    room_auth_timeout_seconds: float = Field(default=5, gt=0)
 
     # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
     # alignée sur la limite de corps du reverse proxy (10 Mio)
@@ -109,6 +118,13 @@ class Settings(BaseSettings):
     email_from: str = "TierList <no-reply@localhost>"
     # Adresse du frontend vue par l'utilisateur : base des liens envoyés par email
     frontend_base_url: str = "http://localhost:5173"
+
+    @property
+    def app_origin(self) -> str:
+        """Origine de l'application vue par le navigateur (schéma, hôte, port) : la seule
+        acceptée à l'ouverture du canal temps réel."""
+        parts = urlsplit(self.frontend_base_url)
+        return f"{parts.scheme}://{parts.netloc}"
 
     @property
     def database_url(self) -> URL:

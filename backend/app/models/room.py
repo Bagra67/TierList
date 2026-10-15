@@ -2,7 +2,7 @@ import uuid
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum, ForeignKey, String
+from sqlalchemy import Enum, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.constants.rooms import ROOM_CODE_LENGTH
@@ -90,6 +90,10 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     admin_plays: Mapped[bool] = mapped_column(default=True)
     # Seul réglage modifiable pendant une partie (#88)
     late_arrivals_allowed: Mapped[bool] = mapped_column(default=True)
+    # Incrémentée dans la même transaction à chaque changement de la salle (arrivée, réglages,
+    # présence) : le room_version des événements temps réel. Un client qui voit un saut sait
+    # qu'il a manqué un événement et relit la salle (docs/technical/realtime.md)
+    version: Mapped[int] = mapped_column(default=0, server_default=text("0"))
 
     template: Mapped["Template | None"] = relationship()
     participants: Mapped[list["Participant"]] = relationship(

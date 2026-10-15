@@ -56,6 +56,9 @@ class ErrorCode(StrEnum):
     NICKNAME_TAKEN = "nickname_taken"
     # Lien perso d'invité inconnu, expiré ou d'une salle fermée
     GUEST_LINK_INVALID = "guest_link_invalid"
+    # Canal temps réel : message inattendu du client, ou pong absent (raisons de fermeture)
+    INVALID_MESSAGE = "invalid_message"
+    HEARTBEAT_TIMEOUT = "heartbeat_timeout"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

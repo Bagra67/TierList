@@ -1,5 +1,7 @@
 import os
+import uuid
 from collections.abc import Callable, Iterator
+from contextlib import nullcontext
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,10 +13,16 @@ from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_email_sender, get_image_storage
+from app.api.dependencies import (
+    get_email_sender,
+    get_image_storage,
+    get_room_event_publisher,
+    get_session_factory,
+)
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
+from app.schemas.room_events import RoomEvent
 from app.services.email import Email, EmailSender
 from app.services.image_storage import ImageStorage, create_image_storage
 from tests.integration.helpers import alembic_config
@@ -180,12 +188,15 @@ def client(
     app.dependency_overrides[get_db_session] = lambda: db_session
     app.dependency_overrides[get_email_sender] = lambda: email_sender
     app.dependency_overrides[get_image_storage] = lambda: image_storage
+    # Le canal temps réel ouvre ses sessions lui-même : il réutilise celle du test (sans la fermer)
+    app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
         app.dependency_overrides.pop(get_email_sender, None)
         app.dependency_overrides.pop(get_image_storage, None)
+        app.dependency_overrides.pop(get_session_factory, None)
 
 
 def http_test_settings() -> Settings:
@@ -224,3 +235,27 @@ def override_settings(auth_client: TestClient) -> Callable[..., None]:
         )
 
     return apply
+
+
+class RecordingRoomEventPublisher:
+    """Publisher factice : garde les événements publiés par les services, sans socket."""
+
+    def __init__(self) -> None:
+        self.events: list[tuple[uuid.UUID, RoomEvent]] = []
+
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+        self.events.append((room_id, event))
+
+    def types(self) -> list[str]:
+        return [event.type for _, event in self.events]
+
+
+@pytest.fixture
+def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
+    """Événements publiés par les routes REST des salles pendant le test."""
+    publisher: RecordingRoomEventPublisher = RecordingRoomEventPublisher()
+    app.dependency_overrides[get_room_event_publisher] = lambda: publisher
+    try:
+        yield publisher
+    finally:
+        app.dependency_overrides.pop(get_room_event_publisher, None)

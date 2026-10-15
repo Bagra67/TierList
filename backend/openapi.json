@@ -2655,6 +2655,10 @@
             "type": "string",
             "title": "Code"
           },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
           "link": {
             "type": "string",
             "title": "Link"
@@ -2699,6 +2703,7 @@
         "type": "object",
         "required": [
           "code",
+          "version",
           "link",
           "status",
           "template",
@@ -2829,6 +2834,10 @@
           "is_guest": {
             "type": "boolean",
             "title": "Is Guest"
+          },
+          "connected": {
+            "type": "boolean",
+            "title": "Connected"
           }
         },
         "type": "object",
@@ -2836,7 +2845,8 @@
           "id",
           "display_name",
           "is_admin",
-          "is_guest"
+          "is_guest",
+          "connected"
         ],
         "title": "ParticipantResponse"
       },
@@ -2931,6 +2941,10 @@
             "type": "string",
             "title": "Code"
           },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
           "link": {
             "type": "string",
             "title": "Link"
@@ -2966,6 +2980,7 @@
         "type": "object",
         "required": [
           "code",
+          "version",
           "link",
           "status",
           "template",
@@ -3487,6 +3502,207 @@
           "token"
         ],
         "title": "VerifyEmailRequest"
+      },
+      "ParticipantJoinedData": {
+        "properties": {
+          "participant_id": {
+            "format": "uuid",
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id"
+        ],
+        "title": "ParticipantJoinedData",
+        "type": "object"
+      },
+      "ParticipantJoinedEvent": {
+        "description": "Un compte ou un invité vient d'entrer : le client relit la salle.",
+        "properties": {
+          "type": {
+            "const": "participant.joined",
+            "default": "participant.joined",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ParticipantJoinedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "ParticipantJoinedEvent",
+        "type": "object"
+      },
+      "ParticipantPresenceData": {
+        "properties": {
+          "participant_id": {
+            "format": "uuid",
+            "title": "Participant Id",
+            "type": "string"
+          },
+          "connected": {
+            "title": "Connected",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "participant_id",
+          "connected"
+        ],
+        "title": "ParticipantPresenceData",
+        "type": "object"
+      },
+      "ParticipantPresenceEvent": {
+        "description": "Un participant vient de se connecter, ou de se déconnecter (délai de grâce écoulé).",
+        "properties": {
+          "type": {
+            "const": "participant.presence",
+            "default": "participant.presence",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ParticipantPresenceData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "ParticipantPresenceEvent",
+        "type": "object"
+      },
+      "PingMessage": {
+        "description": "Battement de cœur du serveur : le client répond pong.",
+        "properties": {
+          "type": {
+            "const": "ping",
+            "default": "ping",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "title": "PingMessage",
+        "type": "object"
+      },
+      "RoomSettingsUpdatedData": {
+        "properties": {},
+        "title": "RoomSettingsUpdatedData",
+        "type": "object"
+      },
+      "RoomSettingsUpdatedEvent": {
+        "description": "Le room admin a changé les réglages : le client relit la salle.",
+        "properties": {
+          "type": {
+            "const": "room.settings_updated",
+            "default": "room.settings_updated",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RoomSettingsUpdatedData"
+          }
+        },
+        "required": [
+          "room_version"
+        ],
+        "title": "RoomSettingsUpdatedEvent",
+        "type": "object"
+      },
+      "RoomServerMessage": {
+        "discriminator": {
+          "mapping": {
+            "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
+            "participant.presence": "#/components/schemas/ParticipantPresenceEvent",
+            "ping": "#/components/schemas/PingMessage",
+            "room.settings_updated": "#/components/schemas/RoomSettingsUpdatedEvent"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ParticipantJoinedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ParticipantPresenceEvent"
+          },
+          {
+            "$ref": "#/components/schemas/RoomSettingsUpdatedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/PingMessage"
+          }
+        ]
+      },
+      "AuthMessage": {
+        "description": "Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par\nson cookie). Le token ne passe jamais dans l'URL.",
+        "properties": {
+          "type": {
+            "const": "auth",
+            "default": "auth",
+            "title": "Type",
+            "type": "string"
+          },
+          "access_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Access Token"
+          }
+        },
+        "title": "AuthMessage",
+        "type": "object"
+      },
+      "PongMessage": {
+        "properties": {
+          "type": {
+            "const": "pong",
+            "default": "pong",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "title": "PongMessage",
+        "type": "object"
+      },
+      "RoomClientMessage": {
+        "discriminator": {
+          "mapping": {
+            "auth": "#/components/schemas/AuthMessage",
+            "pong": "#/components/schemas/PongMessage"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthMessage"
+          },
+          {
+            "$ref": "#/components/schemas/PongMessage"
+          }
+        ]
       }
     },
     "securitySchemes": {

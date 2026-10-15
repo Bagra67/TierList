@@ -67,6 +67,9 @@ class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # Fin de validité du lien perso : la place est alors perdue (état « Left »)
     guest_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Présence : un onglet au moins a son canal temps réel ouvert. Écrit seulement quand il
+    # change (connexion, fin du délai de grâce), pas à chaque battement de cœur
+    connected: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
     room: Mapped["Room"] = relationship(back_populates="participants")
     user: Mapped["User | None"] = relationship()

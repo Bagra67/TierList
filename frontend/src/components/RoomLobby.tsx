@@ -37,6 +37,18 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         <ul className="flex w-full flex-col divide-y rounded-xl border">
           {room.participants.map((participant) => (
             <li key={participant.id} className="flex items-center gap-2 px-4 py-2">
+              {/* Pleine en ligne, creuse hors ligne : la forme suffit, sans compter sur la couleur */}
+              <span
+                aria-hidden="true"
+                className={
+                  participant.connected
+                    ? 'size-2.5 shrink-0 rounded-full bg-green-600'
+                    : 'size-2.5 shrink-0 rounded-full border-2 border-muted-foreground'
+                }
+              />
+              <span className="sr-only">
+                {participant.connected ? t('rooms.lobby.online') : t('rooms.lobby.offline')}
+              </span>
               <span className="font-medium">{participant.display_name}</span>
               {participant.is_admin && (
                 <span className="text-sm text-muted-foreground">({t('rooms.lobby.admin')})</span>

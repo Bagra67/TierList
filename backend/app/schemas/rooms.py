@@ -59,10 +59,14 @@ class ParticipantResponse(BaseModel):
     display_name: str
     is_admin: bool
     is_guest: bool
+    # Un onglet au moins a son canal temps réel ouvert (docs/technical/realtime.md)
+    connected: bool
 
 
 class RoomResponse(BaseModel):
     code: str
+    # Version de la salle, celle des événements temps réel (room_version)
+    version: int
     # Lien à partager, vers la page de la salle
     link: str
     status: RoomStatus

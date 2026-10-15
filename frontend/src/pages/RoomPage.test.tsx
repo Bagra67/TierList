@@ -1,8 +1,9 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
+import { latestSocket } from '../test/fakeWebSocket';
 import { aliceRoom, renderRoomPage, settingsSummary, signedInSession } from '../test/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
@@ -44,6 +45,35 @@ describe('RoomPage', () => {
       expect(within(summary).getByText(line)).toBeInTheDocument();
     }
     expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
+  });
+
+  it('shows who is online', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+
+    renderRoomPage();
+
+    expect(await screen.findByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Alice').closest('li')).toHaveTextContent('en ligne');
+    expect(screen.getByText('Bob').closest('li')).toHaveTextContent('hors ligne');
+  });
+
+  it('says when live updates are unavailable', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    await screen.findByText('Alice');
+
+    for (let failure = 0; failure < 5; failure += 1) {
+      act(() => {
+        latestSocket().closeFromServer(1006);
+        vi.advanceTimersByTime(10_000);
+      });
+    }
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Mises à jour en direct indisponibles',
+    );
+    vi.useRealTimers();
   });
 
   it('copies the link and announces it', async () => {

@@ -57,6 +57,7 @@ def _room_response(room: Room, user: User | None, service: RoomService) -> RoomR
             display_name=participant.display_name,
             is_admin=participant.user_id == room.admin_id,
             is_guest=participant.is_guest,
+            connected=participant.connected,
         )
         participants.append(participant_response)
     # None une fois le template purgé
@@ -67,6 +68,7 @@ def _room_response(room: Room, user: User | None, service: RoomService) -> RoomR
     link: str = service.link(room)
     return RoomResponse(
         code=room.code,
+        version=room.version,
         link=link,
         status=room.status,
         template=template,

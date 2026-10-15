@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.models.participant import Participant
 from app.models.room import Room
 from app.services.rooms import RoomService
+from tests.integration.conftest import RecordingRoomEventPublisher
 from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
@@ -70,6 +71,16 @@ def test_a_guest_joins_with_a_nickname_and_gets_a_cookie_and_a_personal_link(
     assert f"Path=/rooms/{code}" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=strict" in cookie
+
+
+def test_a_guest_joining_is_published(
+    auth_client: TestClient, alice_room: JsonObject, room_events: RecordingRoomEventPublisher
+):
+    response: Response = join_as_guest(auth_client, alice_room["code"], "Lou")
+
+    assert room_events.types() == ["participant.joined"]
+    assert room_events.events[0][1].room_version == response.json()["version"]
+    assert response.json()["version"] == alice_room["version"] + 1
 
 
 def test_the_cookie_gives_access_to_the_room(auth_client: TestClient, alice_room: JsonObject):
