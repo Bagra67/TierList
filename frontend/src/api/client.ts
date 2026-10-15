@@ -44,6 +44,11 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+// Token du canal temps réel, qui ne passe pas par ce client (premier message du WebSocket)
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function hasAccessToken(): boolean {
   return accessToken !== null;
 }

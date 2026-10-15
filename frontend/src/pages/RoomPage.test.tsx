@@ -46,6 +46,16 @@ describe('RoomPage', () => {
     expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
   });
 
+  it('shows who is online', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+
+    renderRoomPage();
+
+    expect(await screen.findByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('Alice').closest('li')).toHaveTextContent('en ligne');
+    expect(screen.getByText('Bob').closest('li')).toHaveTextContent('hors ligne');
+  });
+
   it('copies the link and announces it', async () => {
     const writeText: (text: string) => Promise<void> = vi.fn(async () => {});
     stubClipboard(writeText);

@@ -1,11 +1,12 @@
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach, beforeEach } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
 import { LANGUAGE_STORAGE_KEY } from '../constants/i18n';
 import { DARK_CLASS, THEME_STORAGE_KEY } from '../constants/theme';
 import i18n from '../i18n';
+import { FakeWebSocket } from './fakeWebSocket';
 import { installMatchMedia, resetSystemTheme } from './matchMedia';
 
 // Avant tout import de src/theme, qui appelle matchMedia dès son chargement
@@ -15,6 +16,9 @@ installMatchMedia();
 // la langue de jsdom, et sans choix de langue mémorisé par un test précédent.
 beforeEach(async () => {
   await i18n.changeLanguage('fr');
+  // Le lobby ouvre le canal temps réel : jamais de vrai WebSocket dans les tests
+  FakeWebSocket.instances = [];
+  vi.stubGlobal('WebSocket', FakeWebSocket);
 });
 
 // Sans `globals: true`, Testing Library ne démonte pas les composants automatiquement entre deux tests
