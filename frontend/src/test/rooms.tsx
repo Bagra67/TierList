@@ -16,6 +16,7 @@ export const signedInSession: Record<string, StubbedRoute> = {
 // Salle d'Alice (room admin) avec Bob, telle que la renvoie GET /rooms/{code}
 export const aliceRoom: Room = {
   code: 'K7P2QX',
+  version: 3,
   link: 'http://localhost:5173/r/K7P2QX',
   status: 'open',
   template: { id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', name: 'Chips' },
@@ -33,12 +34,14 @@ export const aliceRoom: Room = {
       display_name: 'Alice',
       is_admin: true,
       is_guest: false,
+      connected: true,
     },
     {
       id: '9a1b2c3d-0000-4000-8000-000000000002',
       display_name: 'Bob',
       is_admin: false,
       is_guest: false,
+      connected: false,
     },
   ],
   is_admin: true,
@@ -55,6 +58,7 @@ export const lousRoom: GuestRoom = {
       display_name: 'Lou',
       is_admin: false,
       is_guest: true,
+      connected: false,
     },
   ],
   guest_link: 'http://localhost:5173/r/K7P2QX#guest=lou-token',

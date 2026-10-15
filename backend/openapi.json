@@ -2655,6 +2655,10 @@
             "type": "string",
             "title": "Code"
           },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
           "link": {
             "type": "string",
             "title": "Link"
@@ -2699,6 +2703,7 @@
         "type": "object",
         "required": [
           "code",
+          "version",
           "link",
           "status",
           "template",
@@ -2829,6 +2834,10 @@
           "is_guest": {
             "type": "boolean",
             "title": "Is Guest"
+          },
+          "connected": {
+            "type": "boolean",
+            "title": "Connected"
           }
         },
         "type": "object",
@@ -2836,7 +2845,8 @@
           "id",
           "display_name",
           "is_admin",
-          "is_guest"
+          "is_guest",
+          "connected"
         ],
         "title": "ParticipantResponse"
       },
@@ -2931,6 +2941,10 @@
             "type": "string",
             "title": "Code"
           },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
           "link": {
             "type": "string",
             "title": "Link"
@@ -2966,6 +2980,7 @@
         "type": "object",
         "required": [
           "code",
+          "version",
           "link",
           "status",
           "template",

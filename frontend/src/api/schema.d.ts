@@ -590,6 +590,8 @@ export interface components {
         GuestRoomResponse: {
             /** Code */
             code: string;
+            /** Version */
+            version: number;
             /** Link */
             link: string;
             status: components["schemas"]["RoomStatus"];
@@ -665,6 +667,8 @@ export interface components {
             is_admin: boolean;
             /** Is Guest */
             is_guest: boolean;
+            /** Connected */
+            connected: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -705,6 +709,8 @@ export interface components {
         RoomResponse: {
             /** Code */
             code: string;
+            /** Version */
+            version: number;
             /** Link */
             link: string;
             status: components["schemas"]["RoomStatus"];

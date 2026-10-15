@@ -157,6 +157,7 @@ class RoomService:
         # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
         # contrainte (room_id, user_id) reste le dernier filet
         room.participants.append(Participant(user_id=user.id))
+        room.version += 1
         self._session.commit()
         logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
         return room
@@ -187,6 +188,7 @@ class RoomService:
             guest_expires_at=now + timedelta(days=self._settings.guest_link_ttl_days),
         )
         room.participants.append(guest)
+        room.version += 1
         try:
             self._session.commit()
         except IntegrityError as exc:
@@ -265,6 +267,8 @@ class RoomService:
             raise RoomSettingsLockedError
         for field_name, value in changes.items():
             setattr(room, field_name, value)
+        if changes:
+            room.version += 1
         # Sans modification, le commit libère seulement le verrou
         self._session.commit()
         return room
