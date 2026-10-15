@@ -2,7 +2,7 @@
 
 English | [Français](realtime.fr.md)
 
-How rooms push rounds, placements, presence and timers to every participant: transport, message format, authentication of the socket, reconnection, server-side timers and scaling. Decided in spike #74, **built in #85** (§3) for the room channel and the presence; rounds, placements and timers come with the game issues. What a room is for the user: [game flow](../product/milestone-1/game-flow.md) and [lifecycles](../product/milestone-1/lifecycles.md).
+How rooms push rounds, placements, presence and timers to every participant: transport, message format, authentication of the socket, reconnection, server-side timers and scaling. Decided in spike #74, **built in #85** (§3) for the room channel and the presence; rounds, placements and timers come with the game issues. To understand, debug or extend the channel, start with the [WebSocket guide](websocket.md). What a room is for the user: [game flow](../product/milestone-1/game-flow.md) and [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview
 

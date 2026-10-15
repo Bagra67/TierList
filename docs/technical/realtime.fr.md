@@ -2,7 +2,7 @@
 
 [English](realtime.md) | Français
 
-Comment les rooms envoient les tours, les placements, la présence et les timers à chaque participant : transport, format des messages, authentification du socket, reconnexion, timers côté serveur et montée en charge. Décidé dans le spike #74, **construit dans #85** (§3) pour le canal de la room et la présence ; les tours, les placements et les timers arrivent avec les issues du jeu. Ce qu'est une room pour l'utilisateur : [déroulé d'une partie](../product/milestone-1/game-flow.fr.md) et [cycles de vie](../product/milestone-1/lifecycles.fr.md).
+Comment les rooms envoient les tours, les placements, la présence et les timers à chaque participant : transport, format des messages, authentification du socket, reconnexion, timers côté serveur et montée en charge. Décidé dans le spike #74, **construit dans #85** (§3) pour le canal de la room et la présence ; les tours, les placements et les timers arrivent avec les issues du jeu. Pour comprendre, déboguer ou faire évoluer le canal, commencer par le [guide du WebSocket](websocket.fr.md). Ce qu'est une room pour l'utilisateur : [déroulé d'une partie](../product/milestone-1/game-flow.fr.md) et [cycles de vie](../product/milestone-1/lifecycles.fr.md).
 
 ## 1. Vue fonctionnelle
 
