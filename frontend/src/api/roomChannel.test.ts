@@ -14,15 +14,20 @@ import { useRoomEvents } from './roomChannel';
 
 const bobId: string = aliceRoom.participants[1].id;
 
-// Canal de la salle d'Alice (version 3 en cache), suivi par ce lecteur
+// Canal de la salle d'Alice (version 3 en cache), suivi par ce lecteur. onRemoved est créé une
+// seule fois : sa référence reste la même d'un rendu à l'autre, comme dans la page
 function followRoom(viewer: RoomViewer = 'account') {
   const queryClient = createQueryClient({ queries: { retry: false } });
   queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoom);
-  const hook = renderHook(() => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true), {
-    wrapper: ({ children }: { children: ReactNode }) =>
-      createElement(QueryClientProvider, { client: queryClient }, children),
-  });
-  return { queryClient, ...hook };
+  const onRemoved = vi.fn<(banned: boolean) => void>();
+  const hook = renderHook(
+    () => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true, onRemoved),
+    {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children),
+    },
+  );
+  return { queryClient, onRemoved, ...hook };
 }
 
 function cachedRoom(queryClient: ReturnType<typeof createQueryClient>): Room | undefined {
@@ -100,6 +105,35 @@ describe('useRoomEvents', () => {
     });
 
     expect(isInvalidated(queryClient)).toBe(true);
+  });
+
+  it('removes a participant from the cache without reading the room again', () => {
+    const { queryClient } = followRoom();
+
+    latestSocket().receive({
+      type: 'participant.removed',
+      room_version: 4,
+      data: { participant_id: bobId },
+    });
+
+    const room: Room | undefined = cachedRoom(queryClient);
+    expect(room?.version).toBe(4);
+    expect(room?.participants.map((participant) => participant.display_name)).toEqual(['Alice']);
+    expect(isInvalidated(queryClient)).toBe(false);
+  });
+
+  it.each([
+    [4410, false],
+    [4411, true],
+  ])('tells the page and stops after the close code %i', (closeCode, banned) => {
+    vi.useFakeTimers();
+    const { onRemoved } = followRoom();
+
+    latestSocket().closeFromServer(closeCode);
+    vi.advanceTimersByTime(10_000);
+
+    expect(onRemoved).toHaveBeenCalledExactlyOnceWith(banned);
+    expect(FakeWebSocket.instances).toHaveLength(1);
   });
 
   it('reads the room again after a missed event', () => {

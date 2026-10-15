@@ -2,6 +2,8 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
 import { ErrorMessage } from './ErrorMessage';
+import { RemoveParticipantDialog } from './RemoveParticipantDialog';
+import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
 import { RoomSettingsSummary } from './RoomSettingsSummary';
@@ -11,7 +13,8 @@ interface RoomLobbyProps {
 }
 
 // Lobby d'une salle (US-2.2, US-2.3) : code et lien à partager, participants (comptes et
-// invités), réglages ; seul le room admin peut les modifier
+// invités), réglages ; seul le room admin peut les modifier, et retirer ou bannir un participant
+// (US-2.11, US-2.12)
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -56,10 +59,15 @@ export function RoomLobby({ room }: RoomLobbyProps) {
               {participant.is_guest && (
                 <span className="text-sm text-muted-foreground">({t('rooms.lobby.guest')})</span>
               )}
+              {/* Le room admin ne peut pas se retirer lui-même */}
+              {room.is_admin && !participant.is_admin && (
+                <RemoveParticipantDialog code={room.code} participant={participant} />
+              )}
             </li>
           ))}
         </ul>
       </section>
+      {room.is_admin && <RoomBans room={room} />}
       <section className="flex w-full flex-col gap-2">
         <div className="flex w-full items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">{t('rooms.settings.title')}</h2>

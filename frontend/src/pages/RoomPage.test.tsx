@@ -76,6 +76,59 @@ describe('RoomPage', () => {
     vi.useRealTimers();
   });
 
+  it('tells a removed participant and stops reading the room until they come back', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+    });
+    renderRoomPage();
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+
+    act(() => latestSocket().closeFromServer(4410));
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Le room admin vous a retiré de cette salle.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Salle K7P2QX' })).not.toBeInTheDocument();
+    const reads: number = calledRoutes(fetchMock).filter(
+      (route) => route === 'GET /rooms/K7P2QX',
+    ).length;
+    // Une relecture ferait rejoindre à nouveau le compte : il revient seulement s'il le demande
+    act(() => window.dispatchEvent(new Event('focus')));
+    expect(calledRoutes(fetchMock).filter((route) => route === 'GET /rooms/K7P2QX')).toHaveLength(
+      reads,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir dans la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
+  });
+
+  it('tells a banned participant, who cannot come back from the page', async () => {
+    stubBackend({ ...signedInSession, 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+
+    act(() => latestSocket().closeFromServer(4411));
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Le room admin vous a banni de cette salle.',
+    );
+    expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
+  });
+
+  it('says a banned account cannot join the room again', async () => {
+    stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'POST /rooms/K7P2QX/join': () => errorResponse(403, 'room_banned'),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByText('Vous avez été banni de cette salle.')).toBeInTheDocument();
+  });
+
   it('copies the link and announces it', async () => {
     const writeText: (text: string) => Promise<void> = vi.fn(async () => {});
     stubClipboard(writeText);

@@ -12,8 +12,11 @@ type RoomClientMessage = components['schemas']['RoomClientMessage'];
 
 // Codes de fermeture du serveur (backend : app/constants/rooms.py). Après NOT_AUTHENTICATED, un
 // compte retente une fois avec un token rafraîchi (le sien a pu expirer pendant que le lobby était
-// ouvert) ; sinon, comme après ROOM_NOT_FOUND, se reconnecter ne servirait à rien.
+// ouvert) ; sinon, comme après ROOM_NOT_FOUND, se reconnecter ne servirait à rien. Retiré ou banni
+// par le room admin, le participant n'a plus de place : la page le lui dit.
 const CLOSE_NOT_AUTHENTICATED: number = 4401;
+const CLOSE_REMOVED: number = 4410;
+const CLOSE_BANNED: number = 4411;
 const NO_RETRY_CLOSE_CODES: ReadonlySet<number> = new Set([CLOSE_NOT_AUTHENTICATED, 4404]);
 // Ouvertures ratées d'affilée (canal jamais ouvert : serveur injoignable, origine refusée…)
 // avant d'abandonner et de prévenir l'utilisateur
@@ -43,8 +46,8 @@ async function channelAccessToken(viewer: RoomViewer): Promise<string | null> {
   return getAccessToken();
 }
 
-// Applique un événement à la salle en cache. La présence la modifie directement ; une arrivée ou
-// des réglages la font relire. Une version qui ne suit pas la précédente veut dire qu'un
+// Applique un événement à la salle en cache. La présence et un départ la modifient directement ;
+// une arrivée ou des réglages la font relire. Une version qui ne suit pas la précédente veut dire qu'un
 // événement a été manqué : la salle est relue (le serveur ne rejoue jamais le passé).
 function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomEvent): void {
   const queryKey = roomQueryKey(roomCode);
@@ -66,6 +69,16 @@ function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomE
     });
     return;
   }
+  if (event.type === 'participant.removed') {
+    queryClient.setQueryData<Room>(queryKey, {
+      ...room,
+      version: event.room_version,
+      participants: room.participants.filter(
+        (participant) => participant.id !== event.data.participant_id,
+      ),
+    });
+    return;
+  }
   void queryClient.invalidateQueries({ queryKey });
 }
 
@@ -78,10 +91,13 @@ export interface RoomEventsState {
 // Suit la salle en direct (docs/technical/realtime.md) : ouvre le canal, s'authentifie, répond au
 // battement de cœur, applique les événements, se reconnecte, et ferme le canal au démontage. Les
 // composants ne touchent jamais le socket. enabled : le lecteur a une place (salle chargée).
+// onRemoved : le room admin vient de retirer le lecteur (banned : il l'a aussi banni) ; il doit
+// garder la même identité d'un rendu à l'autre, sinon le canal serait rouvert.
 export function useRoomEvents(
   code: string,
   viewer: RoomViewer | undefined,
   enabled: boolean,
+  onRemoved: (banned: boolean) => void,
 ): RoomEventsState {
   const queryClient: QueryClient = useQueryClient();
   // Salle pour laquelle le suivi a été abandonné : en changer annule l'abandon
@@ -141,6 +157,10 @@ export function useRoomEvents(
           });
           return;
         }
+        if (event.code === CLOSE_REMOVED || event.code === CLOSE_BANNED) {
+          onRemoved(event.code === CLOSE_BANNED);
+          return;
+        }
         if (NO_RETRY_CLOSE_CODES.has(event.code)) return;
         if (!opened) {
           failedOpenings += 1;
@@ -160,7 +180,7 @@ export function useRoomEvents(
       clearTimeout(retryTimer);
       socket?.close(NORMAL_CLOSURE);
     };
-  }, [code, viewer, enabled, queryClient]);
+  }, [code, viewer, enabled, onRemoved, queryClient]);
 
   return { unavailable: enabled && abandonedRoom === canonicalRoomCode(code) };
 }
