@@ -65,9 +65,9 @@ class Settings(BaseSettings):
     # intervalle, socket fermé faute de pong dans le délai, participant marqué déconnecté ce
     # délai de grâce après la fermeture de son dernier onglet (un rechargement ne le fait pas
     # clignoter « hors ligne »), et délai du message d'authentification. En secondes.
-    room_heartbeat_interval_seconds: float = Field(default=20, gt=0)
-    room_heartbeat_timeout_seconds: float = Field(default=10, gt=0)
-    room_presence_grace_seconds: float = Field(default=15, ge=0)
+    room_heartbeat_interval_seconds: float = Field(default=10, gt=0)
+    room_heartbeat_timeout_seconds: float = Field(default=5, gt=0)
+    room_presence_grace_seconds: float = Field(default=3, ge=0)
     room_auth_timeout_seconds: float = Field(default=5, gt=0)
 
     # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder

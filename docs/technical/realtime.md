@@ -187,9 +187,9 @@ Built in #85. What exists today:
 
   | Variable                          | Purpose                                                                                               | Default |
   | --------------------------------- | ----------------------------------------------------------------------------------------------------- | ------- |
-  | `ROOM_HEARTBEAT_INTERVAL_SECONDS` | Ping after this silence of the client                                                                 | `20`    |
-  | `ROOM_HEARTBEAT_TIMEOUT_SECONDS`  | Socket closed without `pong` within this delay                                                        | `10`    |
-  | `ROOM_PRESENCE_GRACE_SECONDS`     | A participant becomes disconnected this long after their last socket closed (a reload does not blink) | `15`    |
+  | `ROOM_HEARTBEAT_INTERVAL_SECONDS` | Ping after this silence of the client                                                                 | `10`    |
+  | `ROOM_HEARTBEAT_TIMEOUT_SECONDS`  | Socket closed without `pong` within this delay                                                        | `5`     |
+  | `ROOM_PRESENCE_GRACE_SECONDS`     | A participant becomes disconnected this long after their last socket closed (a reload does not blink) | `3`     |
   | `ROOM_AUTH_TIMEOUT_SECONDS`       | Delay of the `auth` message                                                                           | `5`     |
 
 - **Startup**: the lifespan (`app/main.py`) sets every participant back to disconnected, since a starting process has no open socket.
