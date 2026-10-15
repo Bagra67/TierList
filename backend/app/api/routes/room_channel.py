@@ -15,8 +15,14 @@ from typing import Annotated
 from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, status
 from pydantic import TypeAdapter, ValidationError
 from starlette.concurrency import run_in_threadpool
+from starlette.types import Message
 
-from app.api.dependencies import SessionFactory, get_room_event_publisher, get_session_factory
+from app.api.dependencies import (
+    SessionFactory,
+    get_connection_registry,
+    get_room_event_publisher,
+    get_session_factory,
+)
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
     CHANNEL_CLOSE_HEARTBEAT_TIMEOUT,
@@ -31,7 +37,7 @@ from app.exceptions.rooms import RoomNotFoundError
 from app.models.participant import Participant
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
-from app.services.room_channel import RoomEventPublisher, room_connections
+from app.services.room_channel import ConnectionRegistry, RoomEventPublisher
 from app.services.rooms import RoomService, RoomViewer
 
 logger = logging.getLogger(__name__)
@@ -41,6 +47,7 @@ router = APIRouter(prefix="/rooms", tags=["rooms"])
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
 PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
+RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
 
 _CLIENT_MESSAGE_ADAPTER: TypeAdapter[RoomClientMessage] = TypeAdapter(RoomClientMessage)
 _PING: str = PingMessage().model_dump_json()
@@ -70,6 +77,7 @@ async def room_channel(
     settings: SettingsDep,
     session_factory: SessionFactoryDep,
     publisher: PublisherDep,
+    registry: RegistryDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> None:
     # Le cookie d'un invité part avec toute poignée de main vers ce chemin, même lancée par un
@@ -84,7 +92,7 @@ async def room_channel(
         seat: ChannelSeat = await run_in_threadpool(
             _find_seat, session_factory, settings, publisher, code, access_token, guest_token
         )
-        await _serve(websocket, seat, settings, session_factory, publisher)
+        await _serve(websocket, seat, settings, session_factory, publisher, registry)
     except ChannelClosedError as exc:
         await websocket.close(code=exc.close_code, reason=exc.reason)
     except WebSocketDisconnect:
@@ -98,7 +106,7 @@ async def _receive_auth(
     son cookie. Le token ne passe jamais dans l'URL (journaux, historique)."""
     try:
         text: str = await asyncio.wait_for(
-            websocket.receive_text(), settings.room_auth_timeout_seconds
+            _receive_text(websocket), settings.room_auth_timeout_seconds
         )
     except TimeoutError as exc:
         raise ChannelClosedError(
@@ -152,6 +160,7 @@ async def _serve(
     settings: Settings,
     session_factory: SessionFactory,
     publisher: RoomEventPublisher,
+    registry: ConnectionRegistry,
 ) -> None:
     """Socket enregistré dans la salle : présence, puis battements de cœur jusqu'à la fermeture."""
 
@@ -160,20 +169,20 @@ async def _serve(
             _set_presence, session_factory, settings, publisher, seat.participant_id, connected
         )
 
-    first_socket: bool = room_connections.add(seat.room_id, seat.participant_id, websocket)
+    first_socket: bool = registry.add(seat.room_id, seat.participant_id, websocket)
     # Revenu avant la fin du délai de grâce (rechargement de la page) : il reste connecté
-    room_connections.cancel_pending_disconnect(seat.participant_id)
+    registry.cancel_pending_disconnect(seat.participant_id)
     try:
         if first_socket:
             await set_presence(True)
         await _heartbeat(websocket, settings)
     finally:
-        if room_connections.remove(seat.room_id, websocket):
-            room_connections.schedule_disconnect(
+        if registry.remove(seat.room_id, websocket):
+            registry.schedule_disconnect(
                 seat.room_id,
                 seat.participant_id,
                 settings.room_presence_grace_seconds,
-                lambda: set_presence(False),
+                set_presence,
             )
 
 
@@ -194,13 +203,13 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
     while True:
         try:
             text: str = await asyncio.wait_for(
-                websocket.receive_text(), settings.room_heartbeat_interval_seconds
+                _receive_text(websocket), settings.room_heartbeat_interval_seconds
             )
         except TimeoutError:
             await websocket.send_text(_PING)
             try:
                 text = await asyncio.wait_for(
-                    websocket.receive_text(), settings.room_heartbeat_timeout_seconds
+                    _receive_text(websocket), settings.room_heartbeat_timeout_seconds
                 )
             except TimeoutError as exc:
                 raise ChannelClosedError(
@@ -209,6 +218,18 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
         # Après l'authentification, le client ne dit plus que pong
         if not isinstance(_parse_client_message(text), PongMessage):
             raise ChannelClosedError(CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
+
+
+async def _receive_text(websocket: WebSocket) -> str:
+    """Prochain message texte du client. Une trame binaire n'a pas de sens ici : message
+    invalide (receive_text() lèverait une KeyError, soit une erreur interne)."""
+    message: Message = await websocket.receive()
+    if message["type"] == "websocket.disconnect":
+        raise WebSocketDisconnect(message.get("code", status.WS_1000_NORMAL_CLOSURE))
+    text: str | None = message.get("text")
+    if text is None:
+        raise ChannelClosedError(CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
+    return text
 
 
 def _parse_client_message(text: str) -> RoomClientMessage:

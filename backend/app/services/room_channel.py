@@ -66,15 +66,20 @@ class ConnectionRegistry:
         room_id: uuid.UUID,
         participant_id: uuid.UUID,
         delay_seconds: float,
-        on_disconnect: Callable[[], Awaitable[None]],
+        set_presence: Callable[[bool], Awaitable[None]],
     ) -> None:
-        """Appelle on_disconnect après le délai si le participant n'a rouvert aucun socket."""
+        """Marque le participant déconnecté après le délai s'il n'a rouvert aucun socket."""
 
         async def disconnect_after_delay() -> None:
             try:
                 await asyncio.sleep(delay_seconds)
-                if not self.is_connected(room_id, participant_id):
-                    await on_disconnect()
+                if self.is_connected(room_id, participant_id):
+                    return
+                await set_presence(False)
+                # Revenu pendant cette écriture (l'annulation ne peut pas arrêter le thread qui
+                # écrit) : son « connecté » a pu passer avant ce « déconnecté », on le rétablit
+                if self.is_connected(room_id, participant_id):
+                    await set_presence(True)
             finally:
                 # Une tâche annulée puis remplacée ne doit pas retirer sa remplaçante
                 if self._pending_disconnects.get(participant_id) is asyncio.current_task():

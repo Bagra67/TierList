@@ -19,7 +19,7 @@ from app.services.email import EmailSender
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
-from app.services.room_channel import RoomEventPublisher, room_connections
+from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.templates import TemplateService
 
@@ -51,9 +51,16 @@ def get_session_factory() -> SessionFactory:
     return lambda: Session(get_engine())
 
 
-def get_room_event_publisher() -> RoomEventPublisher:
-    # Les sockets ouverts de ce processus ; remplaçable dans les tests
+def get_connection_registry() -> ConnectionRegistry:
+    # Les sockets ouverts de ce processus
     return room_connections
+
+
+def get_room_event_publisher(
+    registry: Annotated[ConnectionRegistry, Depends(get_connection_registry)],
+) -> RoomEventPublisher:
+    # Les services publient vers les sockets du registre ; remplaçable dans les tests
+    return registry
 
 
 def get_room_service(

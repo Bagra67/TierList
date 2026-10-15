@@ -265,6 +265,18 @@ def test_an_unexpected_message_closes_the_channel(
         assert_closed_with(socket, CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
 
 
+def test_a_binary_frame_closes_the_channel(
+    channel_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+):
+    with channel(channel_client, alice_room["code"]) as socket:
+        authenticate(socket, alice)
+        next_event(socket)
+
+        socket.send_bytes(b"\x00\x01")
+
+        assert_closed_with(socket, CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
+
+
 def test_the_server_pings_and_closes_a_silent_client(
     channel_client: TestClient,
     alice: dict[str, str],
