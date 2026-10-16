@@ -39,6 +39,7 @@ Un template **privé** ne peut servir à lancer une room que par son propriétai
 | Action                                                                         |       Admin de la room        | Joueur (compte) | Invité                                |
 | ------------------------------------------------------------------------------ | :---------------------------: | :-------------: | ------------------------------------- |
 | Configurer la room, lancer une partie, passer à l'item suivant, fermer la room |              Oui              |       Non       | Non                                   |
+| Retirer un participant, bannir ou débannir un participant                      |              Oui              |       Non       | Non                                   |
 | Voir les réponses en mode à l'aveugle                                          |              Oui              |       Non       | Non                                   |
 | Avoir le dernier mot sur une réponse libre                                     |              Oui              | Donne son avis  | Donne son avis                        |
 | Placer les items                                                               |    Si configuré pour jouer    |       Oui       | Oui                                   |

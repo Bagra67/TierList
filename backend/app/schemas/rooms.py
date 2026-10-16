@@ -63,6 +63,13 @@ class ParticipantResponse(BaseModel):
     connected: bool
 
 
+class RoomBanResponse(BaseModel):
+    id: uuid.UUID
+    # Nom au moment du bannissement
+    display_name: str
+    is_guest: bool
+
+
 class RoomResponse(BaseModel):
     code: str
     # Version de la salle, celle des événements temps réel (room_version)
@@ -77,6 +84,8 @@ class RoomResponse(BaseModel):
     participants: list[ParticipantResponse]
     # L'utilisateur qui fait la requête est-il le room admin (il peut changer les réglages)
     is_admin: bool
+    # Personnes bannies de la salle, du plus ancien au plus récent : vide sauf pour le room admin
+    bans: list[RoomBanResponse]
 
 
 # Mêmes règles que le nom affiché d'un compte : espaces de début et de fin retirés, 1 à 50

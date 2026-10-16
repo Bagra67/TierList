@@ -148,6 +148,25 @@ As a **room admin**, I want to allow or block new arrivals during a game, so tha
 - _Given_ arrivals are locked, _when_ someone new tries to join, _then_ a message says a game is in progress and the room is locked.
 - _Given_ I change it during the game, _then_ the change is kept as the room setting for the next games.
 
+### US-2.11 Remove a participant — Must
+
+As a **room admin**, I want to remove someone from my room, so that the room only gathers the people I want.
+
+- _Given_ my room, _when_ I remove a participant (account or guest) after confirming, _then_ their seat is **deleted**: they disappear from the participants of everyone, at once.
+- _Given_ I am removed, _then_ I leave the room and a message says the room admin removed me; I can **join again** with the link or the code (unless arrivals are locked, US-2.10).
+- _Given_ a removed guest, _then_ their personal link no longer works.
+- _Given_ I am the room admin, _then_ I cannot remove myself.
+- _Given_ a game in progress, _then_ I can remove a participant too (what happens to their placements is decided with the game).
+
+### US-2.12 Ban a participant — Must
+
+As a **room admin**, I want to ban someone, so that they cannot come back to my room.
+
+- _Given_ my room, _when_ I remove a participant and choose to **ban** them, _then_ they leave like in US-2.11 and see that they are banned.
+- _Given_ a banned **account**, _when_ it tries to join the room again (link or code), _then_ it is refused with a message.
+- _Given_ a banned **guest**, _when_ they try to join again **from the same browser**, _then_ it is refused. A guest has no account and the app never uses the IP address: a private window or cleared browser data get around the ban, and I am **warned** of it when I ban a guest; locking arrivals (US-2.10) stops them for real.
+- _Given_ the list of the participants I banned, _when_ I unban one, _then_ they can join again.
+
 ## E3 — Game
 
 ### US-3.1 Start the game — Must

@@ -164,17 +164,18 @@ Construit dans #85. Ce qui existe aujourd'hui :
 
 - **Événements** (`app/schemas/room_events.py`), une union discriminée sur `type`, tous porteurs de `room_version` :
 
-  | `type`                  | `data`                        | Envoyé quand                                                                             | Frontend                    |
-  | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------- | --------------------------- |
-  | `participant.joined`    | `{participant_id}`            | Un compte ou un invité rejoint (`POST /join`, `POST /guests`)                            | Relit la room               |
-  | `participant.presence`  | `{participant_id, connected}` | Premier socket d'un participant ouvert ; dernier fermé depuis plus que le délai de grâce | Met à jour la room en cache |
-  | `room.settings_updated` | `{}`                          | L'admin de la room change un réglage (une modification vide n'envoie rien)               | Relit la room               |
+  | `type`                  | `data`                        | Envoyé quand                                                                                                                   | Frontend                    |
+  | ----------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+  | `participant.joined`    | `{participant_id}`            | Un compte ou un invité rejoint (`POST /join`, `POST /guests`)                                                                  | Relit la room               |
+  | `participant.presence`  | `{participant_id, connected}` | Premier socket d'un participant ouvert ; dernier fermé depuis plus que le délai de grâce                                       | Met à jour la room en cache |
+  | `participant.removed`   | `{participant_id}`            | L'admin de la room retire ou bannit un participant (#148) ; envoyé après la fermeture de ses sockets, il ne le reçoit donc pas | Met à jour la room en cache |
+  | `room.settings_updated` | `{}`                          | L'admin de la room change un réglage (une modification vide n'envoie rien)                                                     | Relit la room               |
 
   Messages du canal : `{"type": "ping"}` du serveur, `{"type": "pong"}` et `{"type": "auth", "access_token": …}` du client. `RoomServerMessage` et `RoomClientMessage` sont ajoutés aux composants OpenAPI (`_openapi_with_room_messages` dans `app/main.py`).
 
-- **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, réglages, présence), renvoyée en `version` par l'API des rooms.
+- **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, retrait, réglages, présence), renvoyée en `version` par l'API des rooms.
 - **Authentification** : le premier message est toujours `auth`, dans le délai `ROOM_AUTH_TIMEOUT_SECONDS` : un compte envoie son access token, un invité envoie `null` et est reconnu par son cookie `guest_token` (`Path=/api/rooms/<code>`, [guide des salles](rooms.fr.md#24-invités)). Un compte passe d'abord, comme en REST.
-- **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4401` et `4404` :
+- **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4401`, `4404`, `4410` et `4411` :
 
   | Code       | Raison              | Quand                                                                                |
   | ---------- | ------------------- | ------------------------------------------------------------------------------------ |
@@ -183,6 +184,8 @@ Construit dans #85. Ce qui existe aujourd'hui :
   | `4401`     | `not_authenticated` | Pas d'`auth` à temps, token invalide, ou ni token ni cookie d'invité                 |
   | `4404`     | `room_not_found`    | Room inconnue, ou le lecteur n'y a pas de place                                      |
   | `4408`     | `heartbeat_timeout` | Pas de `pong` dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` après un ping           |
+  | `4410`     | `removed_from_room` | L'admin de la room a retiré le participant (#148)                                    |
+  | `4411`     | `room_banned`       | L'admin de la room a banni le participant (#148)                                     |
 
 - **Réglages** (`app/core/config.py`, `.env.example`) :
 
@@ -211,4 +214,4 @@ Construit dans #85. Ce qui existe aujourd'hui :
 | Frontend    | `components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Pastille de présence (pleine en ligne, creuse hors ligne) avec un texte « en ligne » / « hors ligne » pour les lecteurs d'écran ; le hook est actif une fois la room chargée.                                                                                                                                                                                                                                                               |
 | Dev         | `frontend/vite.config.ts`                        | `ws: true` sur le proxy `/api`.                                                                                                                                                                                                                                                                                                                                                                                                             |
 
-Tests : `backend/tests/integration/test_room_channel.py`, les tests de publication de `test_rooms.py` / `test_room_guests.py`, `backend/tests/test_room_connections.py` (registre), `frontend/src/api/roomChannel.test.ts` (faux `WebSocket`, `src/test/fakeWebSocket.ts`), décrits dans le [guide des tests](testing.fr.md).
+Tests : `backend/tests/integration/test_room_channel.py`, les tests de publication de `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registre), `frontend/src/api/roomChannel.test.ts` (faux `WebSocket`, `src/test/fakeWebSocket.ts`), décrits dans le [guide des tests](testing.fr.md).

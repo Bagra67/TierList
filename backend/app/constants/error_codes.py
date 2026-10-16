@@ -56,9 +56,19 @@ class ErrorCode(StrEnum):
     NICKNAME_TAKEN = "nickname_taken"
     # Lien perso d'invité inconnu, expiré ou d'une salle fermée
     GUEST_LINK_INVALID = "guest_link_invalid"
-    # Canal temps réel : message inattendu du client, ou pong absent (raisons de fermeture)
+    # Participant inexistant dans cette salle (ou invité dont le lien a expiré)
+    PARTICIPANT_NOT_FOUND = "participant_not_found"
+    # Le room admin ne peut pas se retirer de sa salle
+    CANNOT_REMOVE_ROOM_ADMIN = "cannot_remove_room_admin"
+    # Compte ou navigateur d'invité banni de la salle ; aussi la raison de fermeture du canal
+    ROOM_BANNED = "room_banned"
+    # Bannissement inexistant dans cette salle
+    BAN_NOT_FOUND = "ban_not_found"
+    # Canal temps réel : message inattendu du client, pong absent, ou participant retiré par le
+    # room admin (raisons de fermeture)
     INVALID_MESSAGE = "invalid_message"
     HEARTBEAT_TIMEOUT = "heartbeat_timeout"
+    REMOVED_FROM_ROOM = "removed_from_room"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

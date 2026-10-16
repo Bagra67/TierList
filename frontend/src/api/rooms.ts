@@ -13,6 +13,8 @@ import { apiClient, dataOrThrow } from './client';
 import type { components } from './schema';
 
 export type Room = components['schemas']['RoomResponse'];
+export type Participant = components['schemas']['ParticipantResponse'];
+export type RoomBan = components['schemas']['RoomBanResponse'];
 // Salle rejointe en invité, avec son lien perso (donné une seule fois)
 export type GuestRoom = components['schemas']['GuestRoomResponse'];
 export type RoomSettings = components['schemas']['RoomSettingsResponse'];
@@ -84,6 +86,23 @@ async function updateRoomSettings(code: string, changes: RoomSettingsChanges): P
     await apiClient.PATCH('/rooms/{code}/settings', {
       params: { path: { code } },
       body: changes,
+    }),
+  );
+}
+
+// Supprime la place d'un participant (US-2.11) ; avec ban, il ne peut plus revenir (US-2.12)
+async function removeParticipant(code: string, participantId: string, ban: boolean): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.DELETE('/rooms/{code}/participants/{participant_id}', {
+      params: { path: { code, participant_id: participantId }, query: { ban } },
+    }),
+  );
+}
+
+async function unban(code: string, banId: string): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.DELETE('/rooms/{code}/bans/{ban_id}', {
+      params: { path: { code, ban_id: banId } },
     }),
   );
 }
@@ -162,6 +181,32 @@ export function useUpdateRoomSettings(
   return useMutation({
     mutationFn: (changes: RoomSettingsChanges) =>
       updateRoomSettings(canonicalRoomCode(code), changes),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+export interface RemoveParticipantRequest {
+  participantId: string;
+  ban: boolean;
+}
+
+// Retire (ou bannit) un participant, réservé au room admin
+export function useRemoveParticipant(
+  code: string,
+): UseMutationResult<Room, Error, RemoveParticipantRequest> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ participantId, ban }: RemoveParticipantRequest) =>
+      removeParticipant(canonicalRoomCode(code), participantId, ban),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Lève un bannissement, réservé au room admin : la personne peut rejoindre à nouveau
+export function useUnban(code: string): UseMutationResult<Room, Error, string> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (banId: string) => unban(canonicalRoomCode(code), banId),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

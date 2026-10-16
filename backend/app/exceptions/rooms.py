@@ -18,3 +18,20 @@ class NicknameTakenError(Exception):
 
 class GuestLinkInvalidError(Exception):
     """Lien perso inconnu, expiré ou d'une salle fermée : la place de l'invité est perdue."""
+
+
+class ParticipantNotFoundError(Exception):
+    """Aucune place de ce participant dans la salle (inconnu, déjà retiré, ou invité dont le
+    lien a expiré)."""
+
+
+class CannotRemoveRoomAdminError(Exception):
+    """Le room admin a visé sa propre place : il ne peut pas se retirer de sa salle."""
+
+
+class RoomBannedError(Exception):
+    """Le compte, ou le navigateur de l'invité, est banni de la salle (US-2.12)."""
+
+
+class BanNotFoundError(Exception):
+    """Aucun bannissement de cet identifiant dans la salle."""

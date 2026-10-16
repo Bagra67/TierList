@@ -11,6 +11,7 @@ from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.models.participant import Participant
+    from app.models.room_ban import RoomBan
     from app.models.template import Template
 
 
@@ -90,12 +91,16 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     admin_plays: Mapped[bool] = mapped_column(default=True)
     # Seul réglage modifiable pendant une partie (#88)
     late_arrivals_allowed: Mapped[bool] = mapped_column(default=True)
-    # Incrémentée dans la même transaction à chaque changement de la salle (arrivée, réglages,
-    # présence) : le room_version des événements temps réel. Un client qui voit un saut sait
-    # qu'il a manqué un événement et relit la salle (docs/technical/realtime.md)
+    # Incrémentée dans la même transaction à chaque changement de la salle (arrivée, départ,
+    # réglages, présence) : le room_version des événements temps réel. Un client qui voit un saut
+    # sait qu'il a manqué un événement et relit la salle (docs/technical/realtime.md)
     version: Mapped[int] = mapped_column(default=0, server_default=text("0"))
 
     template: Mapped["Template | None"] = relationship()
     participants: Mapped[list["Participant"]] = relationship(
         back_populates="room", cascade="all, delete-orphan", order_by="Participant.created_at"
+    )
+    # Visibles du room admin seulement (US-2.12)
+    bans: Mapped[list["RoomBan"]] = relationship(
+        cascade="all, delete-orphan", order_by="RoomBan.created_at"
     )

@@ -148,6 +148,25 @@ En tant qu'**admin de la room**, je veux accepter ou bloquer les nouvelles arriv
 - _Étant donné_ que les arrivées sont verrouillées, _quand_ quelqu'un de nouveau essaie de rejoindre, _alors_ un message indique qu'une partie est en cours et que la room est verrouillée.
 - _Étant donné_ que je le change pendant la partie, _alors_ le changement est gardé comme réglage de la room pour les parties suivantes.
 
+### US-2.11 Retirer un participant — Must
+
+En tant qu'**admin de la room**, je veux retirer quelqu'un de ma room, afin que la room ne réunisse que les personnes que je veux.
+
+- _Étant donné_ ma room, _quand_ je retire un participant (compte ou invité) après confirmation, _alors_ sa place est **supprimée** : il disparaît aussitôt des participants de tout le monde.
+- _Étant donné_ que je suis retiré, _alors_ je quitte la room et un message indique que l'admin de la room m'a retiré ; je peux **rejoindre à nouveau** avec le lien ou le code (sauf si les arrivées sont verrouillées, US-2.10).
+- _Étant donné_ un invité retiré, _alors_ son lien perso ne marche plus.
+- _Étant donné_ que je suis l'admin de la room, _alors_ je ne peux pas me retirer moi-même.
+- _Étant donné_ une partie en cours, _alors_ je peux aussi retirer un participant (ce que deviennent ses placements est décidé avec le jeu).
+
+### US-2.12 Bannir un participant — Must
+
+En tant qu'**admin de la room**, je veux bannir quelqu'un, afin qu'il ne puisse plus revenir dans ma room.
+
+- _Étant donné_ ma room, _quand_ je retire un participant en choisissant de le **bannir**, _alors_ il part comme dans US-2.11 et voit qu'il est banni.
+- _Étant donné_ un **compte** banni, _quand_ il essaie de rejoindre la room (lien ou code), _alors_ c'est refusé avec un message.
+- _Étant donné_ un **invité** banni, _quand_ il essaie de rejoindre **depuis le même navigateur**, _alors_ c'est refusé. Un invité n'a pas de compte et l'application n'utilise jamais l'adresse IP : une fenêtre privée ou des données de navigation effacées contournent le bannissement, et j'en suis **prévenu** quand je bannis un invité ; verrouiller les arrivées (US-2.10) l'arrête vraiment.
+- _Étant donné_ la liste des participants que j'ai bannis, _quand_ j'en débannis un, _alors_ il peut rejoindre à nouveau.
+
 ## E3 — Partie
 
 ### US-3.1 Lancer la partie — Must

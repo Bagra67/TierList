@@ -14,6 +14,7 @@ from typing import Protocol
 from pydantic import TypeAdapter
 from starlette.websockets import WebSocket
 
+from app.constants.error_codes import ErrorCode
 from app.schemas.room_events import RoomEvent
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,13 @@ _ROOM_EVENT_ADAPTER: TypeAdapter[RoomEvent] = TypeAdapter(RoomEvent)
 class RoomEventPublisher(Protocol):
     def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
         """Envoie l'événement à tous les sockets ouverts de la salle. Appelé après le commit."""
+        ...
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        """Ferme les sockets du participant dans la salle, avec ce code et cette raison : sa place
+        vient d'être supprimée. Appelé après le commit."""
         ...
 
 
@@ -99,6 +107,38 @@ class ConnectionRegistry:
             return
         message: str = _ROOM_EVENT_ADAPTER.dump_json(event).decode()
         self._loop.call_soon_threadsafe(self._schedule_broadcast, room_id, message)
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        if self._loop is None or self._loop.is_closed():
+            return
+        self._loop.call_soon_threadsafe(
+            self._schedule_close, room_id, participant_id, close_code, reason
+        )
+
+    def _schedule_close(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        asyncio.create_task(self._close_participant(room_id, participant_id, close_code, reason))
+
+    async def _close_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        # Sa place n'existe plus : aucun départ à enregistrer après le délai de grâce
+        self.cancel_pending_disconnect(participant_id)
+        room_sockets: dict[WebSocket, uuid.UUID] = self._sockets.get(room_id, {})
+        participant_sockets: list[WebSocket] = [
+            websocket for websocket, owner_id in room_sockets.items() if owner_id == participant_id
+        ]
+        for websocket in participant_sockets:
+            # Retiré du registre avant la fermeture : sa route ne programmera pas de départ, et il
+            # ne reçoit plus les événements de la salle
+            self.remove(room_id, websocket)
+            try:
+                await websocket.close(code=close_code, reason=reason)
+            except (RuntimeError, OSError):
+                logger.debug("Fermeture impossible d'un socket déjà fermé : room_id=%s", room_id)
 
     def _schedule_broadcast(self, room_id: uuid.UUID, message: str) -> None:
         asyncio.create_task(self._broadcast(room_id, message))

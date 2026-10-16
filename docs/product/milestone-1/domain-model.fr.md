@@ -52,6 +52,10 @@ classDiagram
         lien perso d'invité
         connecté
     }
+    class RoomBan {
+        compte ou navigateur invité
+        banni le
+    }
     class Game {
         statut
         ordre des items
@@ -78,6 +82,8 @@ classDiagram
     Room "0..*" --> "1" Template : joue
     Room "1" *-- "1" RoomSettings : réglée par
     Room "0..1" o-- "0..10" Participant : réunit
+    Room "1" *-- "0..*" RoomBan : bannit
+    RoomBan "0..*" --> "0..1" User : bannit
     Participant "0..*" --> "0..1" User : est
     Room "0..1" o-- "0..*" Game : accueille
     Game "0..*" o-- "1..*" Participant : jouée par
@@ -101,6 +107,7 @@ classDiagram
 | **Room**                               | L'endroit où un groupe joue, rejoint par son lien ou son code. Persiste entre les parties jusqu'à sa fermeture ; ensuite elle **n'est pas gardée**, seules ses parties le sont.              |
 | **RoomSettings** (réglages de la room) | Les cinq réglages du jalon. S'appliquent à la prochaine partie.                                                                                                                              |
 | **Participant**                        | Une place dans une room : un utilisateur (joueur) ou un invité avec un pseudo et un lien perso. Garde sa place malgré les déconnexions.                                                      |
+| **RoomBan** (bannissement)             | Une personne que l'admin de la room a bannie d'une room : un compte, ou le navigateur d'un invité (au mieux, voir US-2.12). Supprimé au débannissement ou avec la room.                      |
 | **Game** (partie)                      | Une partie d'une version figée dans une room : l'ordre des items, les tours, les placements et, une fois clôturée, les résultats et leur lien public.                                        |
 | **Round** (tour)                       | Le moment où une tuile est affichée et placée par tous. Une partie a un tour par tuile de sa version figée.                                                                                  |
 | **Placement**                          | Où un participant a mis une tuile : un tier et une position dans ce tier, pour une phase (**tour** = « à chaud », **final** = après le cooldown). Un placement du tour peut être **absent**. |
@@ -122,3 +129,4 @@ Règles que le modèle respecte toujours, quel que soit l'écran ou l'action :
 9. Les placements ne changent que **pendant leur tour** (phase tour) ou **pendant le cooldown** (phase finale) ; une fois la partie clôturée, plus rien ne change.
 10. Un participant invité n'est **jamais relié à un utilisateur** ; un joueur est relié à exactement un utilisateur, et un utilisateur a **au plus une place** par room.
 11. Fermer une room **la supprime**, avec son lien, son code et les places qui n'ont joué aucune partie. Ses **parties sont gardées**, avec leurs participants, placements, résultats et liens publics : une partie **survit** à sa room.
+12. Un **compte banni** n'a jamais de place dans cette room.

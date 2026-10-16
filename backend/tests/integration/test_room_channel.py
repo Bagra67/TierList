@@ -10,9 +10,11 @@ from starlette.testclient import WebSocketTestSession
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
+    CHANNEL_CLOSE_BANNED,
     CHANNEL_CLOSE_HEARTBEAT_TIMEOUT,
     CHANNEL_CLOSE_INVALID_MESSAGE,
     CHANNEL_CLOSE_NOT_AUTHENTICATED,
+    CHANNEL_CLOSE_REMOVED,
     CHANNEL_CLOSE_ROOM_NOT_FOUND,
 )
 from tests.integration.helpers import JsonObject, create_room, create_template, register
@@ -208,6 +210,52 @@ def test_coming_back_within_the_grace_delay_keeps_the_participant_connected(
             assert next_event(alice_socket)["type"] == "room.settings_updated"
             room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
             assert participant(room, "bob")["connected"] is True
+
+
+# --- Retrait par le room admin ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("ban", "close_code", "reason"),
+    [
+        (False, CHANNEL_CLOSE_REMOVED, ErrorCode.REMOVED_FROM_ROOM),
+        (True, CHANNEL_CLOSE_BANNED, ErrorCode.ROOM_BANNED),
+    ],
+)
+def test_a_removed_participant_is_disconnected_and_the_room_is_told(
+    channel_client: TestClient,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    ban: bool,
+    close_code: int,
+    reason: str,
+):
+    code: str = alice_room["code"]
+    bob: dict[str, str] = register(channel_client, "bob@example.com")
+    bob_id: str = participant(
+        channel_client.post(f"/rooms/{code}/join", headers=bob).json(), "bob"
+    )["id"]
+    with channel(channel_client, code) as alice_socket:
+        authenticate(alice_socket, alice)
+        next_event(alice_socket)
+        with channel(channel_client, code) as bob_socket:
+            authenticate(bob_socket, bob)
+            next_event(alice_socket)
+            next_event(bob_socket)
+
+            removed: JsonObject = channel_client.delete(
+                f"/rooms/{code}/participants/{bob_id}",
+                params={"ban": str(ban).lower()},
+                headers=alice,
+            ).json()
+
+            # Son socket est fermé avant la diffusion : il ne reçoit pas l'événement
+            assert_closed_with(bob_socket, close_code, reason)
+        assert next_event(alice_socket) == {
+            "type": "participant.removed",
+            "room_version": removed["version"],
+            "data": {"participant_id": bob_id},
+        }
 
 
 # --- Refus et fermetures ------------------------------------------------------------------
