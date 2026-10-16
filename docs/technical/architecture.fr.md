@@ -93,6 +93,6 @@ Chaque nouveau modèle s'accompagne d'une migration Alembic (`uv run alembic rev
 
 Volontairement repoussées (YAGNI), à trancher quand une fonctionnalité en aura besoin :
 
-- **Images Docker de production et déploiement** : une fois la cible d'hébergement choisie.
+- Aucune pour l'instant.
 
-Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le temps réel des rooms (push WebSocket + commandes REST, voir le [guide du temps réel](realtime.fr.md)), les images des tuiles (compression WebP, stockage S3, voir le [guide des images](images.fr.md)), les salles (réglages en colonnes, code court aléatoire, voir le [guide des salles](rooms.fr.md)), le calcul des résultats (médiane des scores fins, voir le [guide des résultats](results.fr.md)), le routage front (react-router) et la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui).
+Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le temps réel des rooms (push WebSocket + commandes REST, voir le [guide du temps réel](realtime.fr.md)), les images des tuiles (compression WebP, stockage S3, voir le [guide des images](images.fr.md)), les salles (réglages en colonnes, code court aléatoire, voir le [guide des salles](rooms.fr.md)), le calcul des résultats (médiane des scores fins, voir le [guide des résultats](results.fr.md)), le routage front (react-router), la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui), et l'hébergement et le déploiement (deux VPS, Docker Compose et Caddy, déploiement continu vers le staging et la production, voir le [guide du déploiement](deployment.fr.md) ; pas encore construit).

@@ -6,7 +6,8 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 1. Before the first deployment
 
-- [ ] Choose a hosting target, then write the production Docker images and the deployment (open decision, see [architecture](docs/technical/architecture.md#open-decisions)).
+- [x] Choose a hosting target: decided in the [deployment guide](docs/technical/deployment.md) (#155).
+- [ ] Write the production Docker images and the continuous deployment (implementation issues listed in the [deployment guide](docs/technical/deployment.md#5-implementation-issues)).
 - [ ] Production settings (`backend/.env` or the host's variables):
   - a `JWT_SECRET_KEY` different from development;
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
