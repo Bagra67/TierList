@@ -119,7 +119,8 @@ As a **guest**, I want to join a room without an account, so that I can play rig
 As the **application**, I want to cap rooms at the free plan size, so that the plans can be enforced later.
 
 - _Given_ a room with **10 participants**, _when_ someone else tries to join, _then_ it is refused with a message stating the limit.
-- _Given_ the room admin does not play, _then_ they still count in the 10 (to be confirmed at implementation).
+- _Given_ the room admin does not play, _then_ they still count in the 10.
+- _Given_ I already have a seat, _then_ I can always come back, even when the room is full.
 
 ### US-2.7 Close the room — Must
 

@@ -119,7 +119,8 @@ En tant qu'**invité**, je veux rejoindre une room sans compte, afin de jouer to
 En tant qu'**application**, je veux limiter les rooms à la taille de l'offre gratuite, afin de pouvoir appliquer les offres plus tard.
 
 - _Étant donné_ une room avec **10 participants**, _quand_ quelqu'un d'autre essaie de la rejoindre, _alors_ c'est refusé avec un message qui indique la limite.
-- _Étant donné_ que l'admin de la room ne joue pas, _alors_ il compte quand même dans les 10 (à confirmer à l'implémentation).
+- _Étant donné_ que l'admin de la room ne joue pas, _alors_ il compte quand même dans les 10.
+- _Étant donné_ que j'ai déjà une place, _alors_ je peux toujours revenir, même quand la room est pleine.
 
 ### US-2.7 Fermer la room — Must
 
