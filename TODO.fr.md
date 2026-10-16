@@ -6,7 +6,8 @@
 
 ## 1. Avant le premier déploiement
 
-- [ ] Choisir un hébergement, puis écrire les images Docker de production et le déploiement (décision ouverte, voir l'[architecture](docs/technical/architecture.fr.md#décisions-en-attente)).
+- [x] Choisir un hébergement : décidé dans le [guide du déploiement](docs/technical/deployment.fr.md) (#155).
+- [ ] Écrire les images Docker de production et le déploiement continu (issues d'implémentation listées dans le [guide du déploiement](docs/technical/deployment.fr.md#5-issues-dimplémentation)).
 - [ ] Réglages de production (`backend/.env` ou variables de l'hébergeur) :
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
