@@ -7,6 +7,7 @@ import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
 import { RoomSettingsSummary } from './RoomSettingsSummary';
+import { StartGameButton } from './StartGameButton';
 
 interface RoomLobbyProps {
   room: Room;
@@ -29,9 +30,29 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
-      {room.status === 'playing' && (
-        <p className="rounded-lg bg-muted px-3 py-2 font-medium">{t('rooms.lobby.playing')}</p>
+      {room.game !== null && (
+        <section className="flex w-full flex-col gap-2 rounded-lg bg-muted px-3 py-2">
+          <p className="font-medium">{t('rooms.lobby.playing')}</p>
+          {/* Écran de jeu provisoire : le vrai arrive avec #94 */}
+          <p className="text-sm text-muted-foreground">
+            {t('rooms.lobby.currentItem', {
+              number: room.game.round_number,
+              total: room.game.round_count,
+            })}
+          </p>
+          {room.game.current_item.image_url !== null && (
+            <img
+              src={room.game.current_item.image_url}
+              alt={room.game.current_item.text ?? t('rooms.lobby.currentItemImage')}
+              className="size-32 rounded-md object-cover"
+            />
+          )}
+          {room.game.current_item.text !== null && (
+            <p className="text-lg font-semibold">{room.game.current_item.text}</p>
+          )}
+        </section>
       )}
+      {room.is_admin && room.game === null && <StartGameButton code={room.code} />}
       <RoomInvite room={room} />
       <section className="flex w-full flex-col gap-2">
         <h2 className="text-lg font-semibold">
