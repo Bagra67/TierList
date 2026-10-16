@@ -9,7 +9,7 @@ header = """
 English | [Français](CHANGELOG.fr.md)
 
 All notable changes to this project are documented in this file.
-Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
+Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
 """
 # Les groupes portent un préfixe <!-- N --> pour fixer leur ordre ; striptags le retire à l'affichage

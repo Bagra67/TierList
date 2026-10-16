@@ -66,6 +66,21 @@ describe('translateError', () => {
     expect(translateError(i18n.t, error)).toBe('Incorrect email or password');
   });
 
+  it('shows a size sent in bytes in megabytes, in the interface language', async () => {
+    const error: ApiError = new ApiError(413, {
+      detail: 'The file is larger than 10485760 bytes',
+      code: 'image_too_large',
+      params: { max_bytes: 10485760 },
+    });
+
+    // Intl sépare le nombre et l'unité par une espace insécable, selon la langue
+    expect(translateError(i18n.t, error)).toMatch(
+      /^L'image est trop lourde : 10\sMo au maximum\.$/,
+    );
+    await i18n.changeLanguage('en');
+    expect(translateError(i18n.t, error)).toMatch(/^The image is too heavy: 10\sMB at most\.$/);
+  });
+
   it('falls back to a generic message for an unknown code', () => {
     const error = new ApiError(418, { detail: "I'm a teapot", code: 'teapot' });
 

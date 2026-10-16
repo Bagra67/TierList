@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+<title>Éditeur de template</title>
+<rect width="960" height="640" fill="#ffffff"/>
+<rect x="0" y="0" width="960" height="52" rx="0" fill="#f4f4f5" stroke="#f4f4f5" stroke-width="1"/>
+<line x1="0" y1="52" x2="960" y2="52" stroke="#a1a1aa" stroke-width="1"/>
+<text x="24" y="33" font-size="18" fill="#18181b" font-weight="bold" text-anchor="start">TierList</text>
+<circle cx="928" cy="26" r="13" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="906" y="31" font-size="14" fill="#71717a" font-weight="normal" text-anchor="end">Alex</text>
+<text x="24" y="84" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">Nom</text>
+<rect x="24" y="92" width="420" height="36" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="34" y="115.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Tier list des chips</text>
+<rect x="820" y="92" width="116" height="36" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="878.0" y="115.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="middle">Enregistrer</text>
+<text x="24" y="162" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Tiers</text>
+<text x="80" y="162" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Nom, couleur, ordre, suppression</text>
+<rect x="24" y="176" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="197" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="182" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="203" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">S</text>
+<rect x="100" y="184" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="202" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">S</text>
+<rect x="292" y="185" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="203" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="226" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="247" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="232" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="253" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">A</text>
+<rect x="100" y="234" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="252" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">A</text>
+<rect x="292" y="235" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="253" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="276" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="297" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="282" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="303" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">B</text>
+<rect x="100" y="284" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="302" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">B</text>
+<rect x="292" y="285" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="303" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="326" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="347" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="332" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="353" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">C</text>
+<rect x="100" y="334" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="352" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">C</text>
+<rect x="292" y="335" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="353" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="376" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="397" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="382" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="403" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">D</text>
+<rect x="100" y="384" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="402" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">D</text>
+<rect x="292" y="385" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="403" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="426" width="360" height="42" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="36" y="447" font-size="14" fill="#71717a" font-weight="normal" text-anchor="start">⋮⋮</text>
+<rect x="58" y="432" width="30" height="30" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="73" y="453" font-size="15" fill="#18181b" font-weight="bold" text-anchor="middle">E</text>
+<rect x="100" y="434" width="180" height="26" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="108" y="452" font-size="13" fill="#18181b" font-weight="normal" text-anchor="start">E</text>
+<rect x="292" y="435" width="24" height="24" rx="12" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<text x="352" y="453" font-size="14" fill="#71717a" font-weight="normal" text-anchor="middle">✕</text>
+<rect x="24" y="482" width="160" height="36" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="104.0" y="505.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="middle">+ Ajouter un tier</text>
+<text x="420" y="162" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Tuiles</text>
+<text x="936" y="162" font-size="13" fill="#71717a" font-weight="normal" text-anchor="end">12 / 32 tuiles</text>
+<rect x="420" y="176" width="516" height="340" rx="6" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="436" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="442" y="198" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="442" y1="198" x2="504" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="504" y1="198" x2="442" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<text x="473.0" y="259" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Nature</text>
+<rect x="518" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="524" y="198" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="524" y1="198" x2="586" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="586" y1="198" x2="524" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<text x="555.0" y="259" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Paprika</text>
+<rect x="600" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="606" y="198" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="606" y1="198" x2="668" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="668" y1="198" x2="606" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<text x="637.0" y="259" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Poulet</text>
+<rect x="682" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="719.0" y="233.0" font-size="11" fill="#18181b" font-weight="normal" text-anchor="middle">Oignon</text>
+<rect x="764" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="770" y="198" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="770" y1="198" x2="832" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="832" y1="198" x2="770" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<text x="801.0" y="259" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Vinaigre</text>
+<rect x="846" y="192" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="852" y="198" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="852" y1="198" x2="914" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="914" y1="198" x2="852" y2="246" stroke="#d4d4d8" stroke-width="1"/>
+<text x="883.0" y="259" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Fromage</text>
+<rect x="436" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="442" y="294" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="442" y1="294" x2="504" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="504" y1="294" x2="442" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<text x="473.0" y="355" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Piment</text>
+<rect x="518" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="555.0" y="329.0" font-size="11" fill="#18181b" font-weight="normal" text-anchor="middle">Tomate</text>
+<rect x="600" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="606" y="294" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="606" y1="294" x2="668" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="668" y1="294" x2="606" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<text x="637.0" y="355" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Curry</text>
+<rect x="682" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="688" y="294" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="688" y1="294" x2="750" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="750" y1="294" x2="688" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<text x="719.0" y="355" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Bacon</text>
+<rect x="764" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="770" y="294" width="62" height="48" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="770" y1="294" x2="832" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="832" y1="294" x2="770" y2="342" stroke="#d4d4d8" stroke-width="1"/>
+<text x="801.0" y="355" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Moutarde</text>
+<rect x="846" y="288" width="74" height="74" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="883.0" y="329.0" font-size="11" fill="#18181b" font-weight="normal" text-anchor="middle">Barbecue</text>
+<rect x="436" y="384" width="74" height="74" rx="4" fill="#ffffff" stroke="#52525b" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="473" y="426" font-size="12" fill="#18181b" font-weight="normal" text-anchor="middle">+ Tuile</text>
+<text x="420" y="540" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Glisser les tuiles et les tiers pour les réordonner.</text>
+<rect x="776" y="580" width="160" height="36" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="856.0" y="603.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Créer une room</text>
+</svg>

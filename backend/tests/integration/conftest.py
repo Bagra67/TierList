@@ -1,24 +1,37 @@
 import os
+import uuid
 from collections.abc import Callable, Iterator
+from contextlib import nullcontext
+from unittest.mock import MagicMock
 
 import pytest
 from alembic import command
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import URL, Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_email_sender
+from app.api.dependencies import (
+    get_email_sender,
+    get_image_storage,
+    get_room_event_publisher,
+    get_session_factory,
+)
+from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
 from app.main import app
+from app.schemas.room_events import RoomEvent
 from app.services.email import Email, EmailSender
+from app.services.image_storage import ImageStorage, create_image_storage
 from tests.integration.helpers import alembic_config
 
 
-def _database_unavailable(reason: str) -> None:
-    # En CI, une base injoignable est une erreur : on ne masque jamais un test d'intégration.
+def _service_unavailable(reason: str) -> None:
+    # En CI, un service injoignable (base, stockage S3) est une erreur : on ne masque jamais un
+    # test d'intégration.
     if os.environ.get("CI") == "true":
         pytest.fail(reason)
     pytest.skip(reason)
@@ -29,7 +42,7 @@ def _test_database_url(suffix: str) -> URL:
     try:
         settings = get_settings()
     except ValidationError:
-        _database_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
+        _service_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
         raise
 
     test_database = f"{settings.postgres_db}{suffix}"
@@ -48,7 +61,7 @@ def _test_database_url(suffix: str) -> URL:
                 quoted_name = connection.dialect.identifier_preparer.quote(test_database)
                 connection.execute(text(f"CREATE DATABASE {quoted_name}"))
     except OperationalError:
-        _database_unavailable(
+        _service_unavailable(
             "PostgreSQL is not reachable: start it with `docker compose up -d --wait`"
         )
         raise
@@ -95,6 +108,24 @@ def db_session(migrated_engine: Engine) -> Iterator[Session]:
             transaction.rollback()
 
 
+@pytest.fixture(scope="session")
+def s3_image_storage() -> ImageStorage:
+    """Vrai stockage des images, configuré par les réglages IMAGE_S3_* (SeaweedFS en local et en
+    CI) : seuls les tests du stockage l'utilisent, les tests d'API ont FakeImageStorage."""
+    settings: Settings = get_settings()
+    storage: ImageStorage = create_image_storage(settings)
+    try:
+        # Supprimer une clé absente ne fait rien, mais vérifie l'adresse, les clés et le bucket
+        storage.delete("connectivity-check")
+    except (BotoCoreError, ClientError):
+        _service_unavailable(
+            "S3 image storage is not reachable: start it with `docker compose up -d --wait` "
+            "and set the IMAGE_S3_* settings (backend/.env.example)"
+        )
+        raise
+    return storage
+
+
 class FakeEmailSender(EmailSender):
     """Garde les emails au lieu de les envoyer : aucun test ne contacte un serveur SMTP."""
 
@@ -111,23 +142,74 @@ def sent_emails() -> list[Email]:
     return []
 
 
+FAKE_IMAGE_BASE_URL = "https://images.example.com"
+
+
+class FakeImageStorage(ImageStorage):
+    """Garde les images en mémoire : les tests d'API ne contactent pas le stockage S3 (le vrai
+    stockage est testé par test_image_storage.py)."""
+
+    def __init__(self, stored: dict[str, bytes]) -> None:
+        super().__init__(client=MagicMock(), bucket="fake", public_base_url=FAKE_IMAGE_BASE_URL)
+        self.stored = stored
+
+    def save(self, key: str, data: bytes) -> None:
+        self.stored[key] = data
+
+    def delete(self, key: str) -> None:
+        self.stored.pop(key, None)
+
+
+class FailingImageStorage(FakeImageStorage):
+    """Stockage qui refuse d'effacer, comme un fournisseur S3 en panne : une seule clé si
+    failing_key est donnée, sinon toutes."""
+
+    def __init__(self, stored: dict[str, bytes], failing_key: str | None = None) -> None:
+        super().__init__(stored)
+        self.failing_key = failing_key
+
+    def delete(self, key: str) -> None:
+        if self.failing_key is None or key == self.failing_key:
+            raise ClientError({"Error": {"Code": "InternalError"}}, "DeleteObject")
+        super().delete(key)
+
+
 @pytest.fixture
-def client(db_session: Session, sent_emails: list[Email]) -> Iterator[TestClient]:
+def stored_images() -> dict[str, bytes]:
+    """Images « stockées » pendant le test, par clé de stockage."""
+    return {}
+
+
+@pytest.fixture
+def client(
+    db_session: Session, sent_emails: list[Email], stored_images: dict[str, bytes]
+) -> Iterator[TestClient]:
     email_sender = FakeEmailSender(sent_emails)
+    image_storage: FakeImageStorage = FakeImageStorage(stored_images)
     app.dependency_overrides[get_db_session] = lambda: db_session
     app.dependency_overrides[get_email_sender] = lambda: email_sender
+    app.dependency_overrides[get_image_storage] = lambda: image_storage
+    # Le canal temps réel ouvre ses sessions lui-même : il réutilise celle du test (sans la fermer)
+    app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db_session, None)
         app.dependency_overrides.pop(get_email_sender, None)
+        app.dependency_overrides.pop(get_image_storage, None)
+        app.dependency_overrides.pop(get_session_factory, None)
 
 
 def http_test_settings() -> Settings:
     # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
-    # le cookie doit être non Secure et sur /auth pour que le client le renvoie.
+    # les cookies doivent être non Secure, et sur /auth (session) ou /rooms (invités), pour que le
+    # client les renvoie.
     return get_settings().model_copy(
-        update={"auth_cookie_secure": False, "auth_cookie_path": "/auth"}
+        update={
+            "auth_cookie_secure": False,
+            "auth_cookie_path": "/auth",
+            "room_cookie_path": "/rooms",
+        }
     )
 
 
@@ -154,3 +236,34 @@ def override_settings(auth_client: TestClient) -> Callable[..., None]:
         )
 
     return apply
+
+
+class RecordingRoomEventPublisher:
+    """Publisher factice : garde les événements publiés par les services, sans socket."""
+
+    def __init__(self) -> None:
+        self.events: list[tuple[uuid.UUID, RoomEvent]] = []
+        # Sockets à fermer : (participant, code de fermeture)
+        self.disconnections: list[tuple[uuid.UUID, int]] = []
+
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+        self.events.append((room_id, event))
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        self.disconnections.append((participant_id, close_code))
+
+    def types(self) -> list[str]:
+        return [event.type for _, event in self.events]
+
+
+@pytest.fixture
+def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
+    """Événements publiés par les routes REST des salles pendant le test."""
+    publisher: RecordingRoomEventPublisher = RecordingRoomEventPublisher()
+    app.dependency_overrides[get_room_event_publisher] = lambda: publisher
+    try:
+        yield publisher
+    finally:
+        app.dependency_overrides.pop(get_room_event_publisher, None)

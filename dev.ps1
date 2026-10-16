@@ -1,11 +1,14 @@
 ﻿# Lance le backend FastAPI et le frontend Vite en mode dev dans le même terminal.
 # Ctrl+C arrête les deux serveurs.
 #
-# Usage : .\dev.ps1 [-NoDb]   (ou dev.cmd [-NoDb] si l'exécution de scripts PowerShell est bloquée)
-#   -NoDb : ne démarre pas la base PostgreSQL (Docker)
+# Usage : .\dev.ps1 [-NoDb] [-NoOpen]   (ou dev.cmd [-NoDb] [-NoOpen] si l'exécution de scripts
+# PowerShell est bloquée)
+#   -NoDb   : ne démarre pas les services Docker (PostgreSQL, Mailpit, SeaweedFS)
+#   -NoOpen : n'ouvre pas les liens de dev dans le navigateur
 
 param(
-    [switch]$NoDb
+    [switch]$NoDb,
+    [switch]$NoOpen
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +16,24 @@ $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $backendDir = Join-Path $root 'backend'
 $frontendDir = Join-Path $root 'frontend'
+
+# Délai maximal d'attente des serveurs avant d'ouvrir le navigateur (premier lancement de Vite compris)
+$openBrowserTimeoutSeconds = 60
+
+# Vrai dès qu'un serveur accepte les connexions sur ce port de 127.0.0.1
+function Test-PortAcceptsConnections([int]$port) {
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $client.Connect('127.0.0.1', $port)
+        return $true
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Dispose()
+    }
+}
 
 # Un venv activé ailleurs (ex : terminal VS Code) ferait ignorer backend/.venv par uv
 Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue
@@ -46,10 +67,10 @@ if (-not $NoDb) {
         Write-Host 'Docker ne répond pas : lancez Docker Desktop puis relancez (ou .\dev.ps1 -NoDb pour démarrer sans base).' -ForegroundColor Red
         exit 1
     }
-    Write-Host '[db] Démarrage de PostgreSQL (docker compose up -d --wait)...' -ForegroundColor Cyan
+    Write-Host '[db] Démarrage de PostgreSQL, Mailpit et SeaweedFS (docker compose up -d --wait)...' -ForegroundColor Cyan
     docker compose -f (Join-Path $root 'compose.yaml') up -d --wait
     if ($LASTEXITCODE -ne 0) {
-        Write-Host 'Échec du démarrage de la base : voir docker compose logs db.' -ForegroundColor Red
+        Write-Host 'Échec du démarrage des services Docker : voir docker compose logs.' -ForegroundColor Red
         exit 1
     }
 }
@@ -69,6 +90,30 @@ $processes = @(
 )
 
 try {
+    if (-not $NoOpen) {
+        # Attend que le backend et le frontend répondent (ou qu'un serveur s'arrête), puis ouvre les liens
+        $deadline = (Get-Date).AddSeconds($openBrowserTimeoutSeconds)
+        while (-not ((Test-PortAcceptsConnections 8000) -and (Test-PortAcceptsConnections 5173))) {
+            if (($processes | Where-Object HasExited) -or (Get-Date) -gt $deadline) {
+                break
+            }
+            Start-Sleep -Seconds 1
+        }
+        if ((Test-PortAcceptsConnections 8000) -and (Test-PortAcceptsConnections 5173)) {
+            # localhost et non 127.0.0.1 : même origine que FRONTEND_BASE_URL et l'URI de redirection Google
+            Start-Process 'http://localhost:5173'
+            Start-Process 'http://127.0.0.1:8000/docs'
+            if (-not $NoDb) {
+                Start-Process 'http://localhost:8025'
+                # Interface web du filer SeaweedFS, ouverte sur le bucket des images
+                Start-Process 'http://localhost:8888/buckets/tierlist-images/'
+            }
+        }
+        elseif (-not ($processes | Where-Object HasExited)) {
+            Write-Host "Serveurs pas prêts après $openBrowserTimeoutSeconds s : liens non ouverts dans le navigateur." -ForegroundColor Yellow
+        }
+    }
+
     # Si l'un des deux serveurs s'arrête (erreur, port occupé...), on arrête l'autre
     while (-not ($processes | Where-Object HasExited)) {
         Start-Sleep -Milliseconds 500

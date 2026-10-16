@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.user import OAuthAccount, User
+from app.models.oauth_account import OAuthAccount
+from app.models.user import User
 
 
 def get_user_by_oauth_account(

@@ -1,6 +1,6 @@
 import logging
 from datetime import timedelta
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, Query, Response
 from fastapi.responses import RedirectResponse
@@ -12,6 +12,7 @@ from app.api.dependencies import (
     get_email_sender,
     get_google_oauth_client,
 )
+from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.auth import (
     CONFIRM_PARAM,
@@ -62,10 +63,6 @@ from app.services.google_oauth import GoogleLoginAttempt, GoogleOAuthClient
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-UNAUTHORIZED_RESPONSE: dict[int | str, dict[str, Any]] = {
-    401: {"model": ErrorResponse, "description": messages.UNAUTHORIZED_DESCRIPTION}
-}
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]

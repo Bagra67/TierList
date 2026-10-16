@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="564" viewBox="0 0 960 564" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+<title>Final cooldown</title>
+<rect width="960" height="564" fill="#ffffff"/>
+<rect x="0" y="0" width="960" height="52" rx="0" fill="#f4f4f5" stroke="#f4f4f5" stroke-width="1"/>
+<line x1="0" y1="52" x2="960" y2="52" stroke="#a1a1aa" stroke-width="1"/>
+<text x="24" y="33" font-size="18" fill="#18181b" font-weight="bold" text-anchor="start">TierList</text>
+<circle cx="928" cy="26" r="13" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="906" y="31" font-size="14" fill="#71717a" font-weight="normal" text-anchor="end">Lou</text>
+<rect x="24" y="68" width="912" height="52" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="48" y="102" font-size="20" fill="#ffffff" font-weight="bold" text-anchor="start">Final cooldown  0:42</text>
+<rect x="560" y="88" width="352" height="12" rx="6" fill="#3f3f46" stroke="#3f3f46" stroke-width="1"/>
+<rect x="560" y="88" width="120" height="12" rx="6" fill="#ffffff" stroke="#ffffff" stroke-width="1"/>
+<text x="24" y="146" font-size="12" fill="#71717a" font-weight="normal" text-anchor="start">Move any tile. Place your missed items before the end.</text>
+<rect x="24" y="162" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="198.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">S</text>
+<rect x="84" y="162" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="90" y="166" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="96" y="172" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="96" y1="172" x2="136" y2="198" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="136" y1="172" x2="96" y2="198" stroke="#d4d4d8" stroke-width="1"/>
+<text x="116.0" y="211" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Paprika</text>
+<rect x="148" y="166" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="154" y="172" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="154" y1="172" x2="194" y2="198" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="194" y1="172" x2="154" y2="198" stroke="#d4d4d8" stroke-width="1"/>
+<text x="174.0" y="211" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Fromage</text>
+<rect x="24" y="226" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="262.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">A</text>
+<rect x="84" y="226" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="90" y="230" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="96" y="236" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="96" y1="236" x2="136" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="136" y1="236" x2="96" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<text x="116.0" y="275" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Nature</text>
+<rect x="148" y="230" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="154" y="236" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="154" y1="236" x2="194" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="194" y1="236" x2="154" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<text x="174.0" y="275" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Bacon</text>
+<rect x="206" y="230" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="212" y="236" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="212" y1="236" x2="252" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="252" y1="236" x2="212" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<text x="232.0" y="275" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Poulet</text>
+<rect x="24" y="290" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="326.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">B</text>
+<rect x="84" y="290" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="90" y="294" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="96" y="300" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="96" y1="300" x2="136" y2="326" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="136" y1="300" x2="96" y2="326" stroke="#d4d4d8" stroke-width="1"/>
+<text x="116.0" y="339" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Oignon</text>
+<rect x="148" y="294" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="154" y="300" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="154" y1="300" x2="194" y2="326" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="194" y1="300" x2="154" y2="326" stroke="#d4d4d8" stroke-width="1"/>
+<text x="174.0" y="339" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Curry</text>
+<rect x="24" y="354" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="390.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">C</text>
+<rect x="84" y="354" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="90" y="358" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="96" y="364" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="96" y1="364" x2="136" y2="390" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="136" y1="364" x2="96" y2="390" stroke="#d4d4d8" stroke-width="1"/>
+<text x="116.0" y="403" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Piment</text>
+<rect x="148" y="358" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="154" y="364" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="154" y1="364" x2="194" y2="390" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="194" y1="364" x2="154" y2="390" stroke="#d4d4d8" stroke-width="1"/>
+<text x="174.0" y="403" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Tomate</text>
+<rect x="24" y="418" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="454.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">D</text>
+<rect x="84" y="418" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="90" y="422" width="52" height="52" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="96" y="428" width="40" height="26" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="96" y1="428" x2="136" y2="454" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="136" y1="428" x2="96" y2="454" stroke="#d4d4d8" stroke-width="1"/>
+<text x="116.0" y="467" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Moutarde</text>
+<rect x="24" y="482" width="56" height="60" rx="4" fill="#d4d4d8" stroke="#a1a1aa" stroke-width="1"/>
+<text x="52.0" y="518.0" font-size="20" fill="#18181b" font-weight="bold" text-anchor="middle">E</text>
+<rect x="84" y="482" width="620" height="60" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="724" y="162" width="212" height="380" rx="6" fill="#ffffff" stroke="#52525b" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="740" y="192" font-size="15" fill="#18181b" font-weight="bold" text-anchor="start">Missed items</text>
+<rect x="740" y="210" width="72" height="72" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="746" y="216" width="60" height="46" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="746" y1="216" x2="806" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="806" y1="216" x2="746" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<text x="776.0" y="275" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Vinaigre</text>
+<rect x="742" y="212" width="44" height="14" rx="3" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="764" y="222" font-size="9" fill="#ffffff" font-weight="bold" text-anchor="middle">ABSENT</text>
+<rect x="824" y="210" width="72" height="72" rx="4" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<rect x="830" y="216" width="60" height="46" rx="4" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="1"/>
+<line x1="830" y1="216" x2="890" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<line x1="890" y1="216" x2="830" y2="262" stroke="#d4d4d8" stroke-width="1"/>
+<text x="860.0" y="275" font-size="10" fill="#18181b" font-weight="normal" text-anchor="middle">Barbecue</text>
+<rect x="826" y="212" width="44" height="14" rx="3" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="848" y="222" font-size="9" fill="#ffffff" font-weight="bold" text-anchor="middle">ABSENT</text>
+</svg>

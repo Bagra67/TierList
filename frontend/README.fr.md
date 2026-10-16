@@ -13,7 +13,7 @@ Frontend **React 19 + TypeScript**, construit avec **Vite**, l'interface web de 
 
 ## 1. Prérequis
 
-- **Node.js 24 LTS** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
+- **Node.js 26** (version épinglée dans `.nvmrc` à la racine du dépôt) : `node --version`
 - **pnpm** : `npm install -g pnpm`, puis `pnpm --version`. La version exacte est épinglée dans le champ `packageManager` de `package.json` et verrouillée dans `pnpm-lock.yaml`.
 
 ---
@@ -43,7 +43,7 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
 Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
 
-Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/testing.fr.md).
+Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/technical/testing.fr.md).
 
 ---
 
@@ -106,17 +106,18 @@ frontend/
 │   │   ├── client.ts       # Client HTTP commun (openapi-fetch), access token + middleware de rafraîchissement
 │   │   ├── queryClient.ts  # Configuration TanStack Query (nouvel essai, log des erreurs)
 │   │   ├── auth.ts         # Appels /auth + hooks useCurrentUser, useLogin, useRegister, useLogout
+│   │   ├── templates.ts    # Appels /templates + hooks useTemplates, useTemplate, useCreateTemplate, useDeleteTemplate
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
-│   │   └── ui/             # Composants shadcn/ui (button, input, label, card), modifiables
-│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList)
+│   │   └── ui/             # Composants shadcn/ui (button, input, label, card, popover), modifiables
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
 │   ├── lib/utils.ts        # cn() : fusionne les classes Tailwind (utilisé par shadcn/ui)
 │   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
-│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage) + tests
+│   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
 │   │   ├── renderWithQueryClient.tsx # render() dans un QueryClient neuf
@@ -188,7 +189,7 @@ Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/
 
 ### Requêtes authentifiées
 
-`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/authentication.fr.md).
+`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/technical/authentication.fr.md).
 
 ---
 
@@ -204,7 +205,7 @@ return <h1>{t('auth.login.title')}</h1>;
 - Les textes sont dans `src/i18n/locales/fr.ts` (référence) et `en.ts` ; une clé absente ou en trop dans `en.ts` est une erreur de `pnpm typecheck`, et les clés de `t('…')` sont vérifiées au typage elles aussi.
 - Les erreurs de l'API sont traduites à partir de leur code : `translateError(t, error)` et `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
-Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/i18n.fr.md).
+Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/technical/i18n.fr.md).
 
 ---
 
@@ -228,6 +229,8 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - ESLint : `react-refresh/only-export-components` est désactivée pour `src/components/ui/` (`eslint.config.js`), car les composants shadcn exportent aussi leurs variantes (ex. `buttonVariants`) ; cela les garde proches de la version générée.
 - Aucun texte n'est écrit dans un composant de `ui/` : il les reçoit en props ou en enfants, traduits avec `t()`.
 - Le dialogue de suppression du compte garde le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind.
+- Le glisser-déposer (éditeur de template) utilise **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), enveloppé dans `SortableList` : ni Radix ni shadcn/ui ne proposent de liste réordonnable, et dnd-kit gère la souris, le toucher et le clavier (Espace, flèches, Échap) avec des annonces pour les lecteurs d'écran, traduites via `templates.editor.dnd.*`.
+- Le sélecteur de couleur des tiers (`ColorField`) utilise **react-colorful** (`HexColorPicker`, `HexColorInput`) dans un `popover` shadcn : une petite bibliothèque sans dépendance, dont les curseurs fonctionnent au clavier. Ses libellés d'accessibilité sont écrits en anglais dans la bibliothèque : `ColorField` les remplace par les traductions (`templates.editor.color.*`) après chaque rendu.
 
 ### Mode sombre
 

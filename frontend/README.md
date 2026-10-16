@@ -13,7 +13,7 @@ English | [Français](README.fr.md)
 
 ## 1. Prerequisites
 
-- **Node.js 24 LTS** (version pinned in `.nvmrc` at the repository root): `node --version`
+- **Node.js 26** (version pinned in `.nvmrc` at the repository root): `node --version`
 - **pnpm**: `npm install -g pnpm`, then `pnpm --version`. The exact version is pinned in the `packageManager` field of `package.json` and locked in `pnpm-lock.yaml`.
 
 ---
@@ -43,7 +43,7 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
 Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
 
-Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/testing.md).
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/technical/testing.md).
 
 ---
 
@@ -106,17 +106,18 @@ frontend/
 │   │   ├── client.ts       # Shared HTTP client (openapi-fetch), access token + refresh middleware
 │   │   ├── queryClient.ts  # TanStack Query setup (retry, error logging)
 │   │   ├── auth.ts         # /auth calls + useCurrentUser, useLogin, useRegister, useLogout hooks
+│   │   ├── templates.ts    # /templates calls + useTemplates, useTemplate, useCreateTemplate, useDeleteTemplate hooks
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/               # Route guards: RequireAuth (private pages → /login), RedirectIfSignedIn (/login, /register → back where the user was going)
-│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner)
-│   │   └── ui/             # shadcn/ui components (button, input, label, card), editable
-│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, theme.ts
+│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList)
+│   │   └── ui/             # shadcn/ui components (button, input, label, card, popover), editable
+│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
 │   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
-│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage) + tests
+│   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
 │   │   ├── renderWithQueryClient.tsx # render() inside a fresh QueryClient
@@ -188,7 +189,7 @@ In tests, render components with `renderWithQueryClient` (`src/test/`) and stub 
 
 ### Authenticated requests
 
-`apiClient` adds the access token (kept in memory) to every request. When a request gets a `401`, it refreshes the token once through `POST /auth/refresh` (refresh cookie) and retries the request; concurrent requests share the same refresh. Nothing to do in a new `api/<resource>.ts`. The current user is read with `useCurrentUser()`, and private pages are placed under the `RequireAuth` route in `App.tsx`. Details: [authentication guide](../docs/authentication.md).
+`apiClient` adds the access token (kept in memory) to every request. When a request gets a `401`, it refreshes the token once through `POST /auth/refresh` (refresh cookie) and retries the request; concurrent requests share the same refresh. Nothing to do in a new `api/<resource>.ts`. The current user is read with `useCurrentUser()`, and private pages are placed under the `RequireAuth` route in `App.tsx`. Details: [authentication guide](../docs/technical/authentication.md).
 
 ---
 
@@ -204,7 +205,7 @@ return <h1>{t('auth.login.title')}</h1>;
 - Texts live in `src/i18n/locales/fr.ts` (reference) and `en.ts`; a missing or extra key in `en.ts` is a `pnpm typecheck` error, and `t('…')` keys are type-checked too.
 - API errors are translated from their code: `translateError(t, error)` and `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
-How it works and how to add a text, an error code or a language: [i18n guide](../docs/i18n.md).
+How it works and how to add a text, an error code or a language: [i18n guide](../docs/technical/i18n.md).
 
 ---
 
@@ -228,6 +229,8 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - ESLint: `react-refresh/only-export-components` is off for `src/components/ui/` (`eslint.config.js`), since shadcn components also export their variants (e.g. `buttonVariants`); this keeps them close to the generated version.
 - Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
 - The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.
+- Drag and drop (template editor) uses **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), wrapped in `SortableList`: neither Radix nor shadcn/ui offers a sortable list, and dnd-kit handles the mouse, touch and the keyboard (Space, arrows, Escape) with screen reader announcements, translated through `templates.editor.dnd.*`.
+- The tier color picker (`ColorField`) uses **react-colorful** (`HexColorPicker`, `HexColorInput`) in a shadcn `popover`: a small library without dependencies, whose sliders work with the keyboard. Its accessibility labels are written in English in the library: `ColorField` replaces them with the translations (`templates.editor.color.*`) after each render.
 
 ### Dark mode
 

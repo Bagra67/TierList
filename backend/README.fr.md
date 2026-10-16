@@ -129,7 +129,7 @@ uv run pytest
 
 Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
 
-Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/testing.fr.md).
+Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/technical/testing.fr.md).
 
 ### Tests d'intégration (vrai PostgreSQL)
 
@@ -193,7 +193,7 @@ backend/
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, HTTPException, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
-│   ├── models/user.py     # User, RefreshToken et OAuthAccount (SQLAlchemy)
+│   ├── models/            # Modèles SQLAlchemy, un par fichier : user.py, refresh_token.py, oauth_account.py…
 │   ├── repositories/      # Requêtes en base (users, refresh_tokens, oauth_accounts)
 │   ├── schemas/auth.py    # Modèles Pydantic de requête / réponse de /auth
 │   ├── services/          # Règles métier (auth.py : AuthService) et client Google (google_oauth.py)
@@ -257,13 +257,24 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `EMAIL_COOLDOWN_SECONDS`                | Délai minimal entre deux emails du même type pour un compte (évite d'inonder une boîte)                                                                                                    | `60`                                             |
 | `AUTH_COOKIE_SECURE`                    | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP)                                                                                                                     | `true`                                           |
 | `AUTH_COOKIE_PATH`                      | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`)                                                                                                              | `/api/auth`                                      |
+| `DELETED_TEMPLATE_RETENTION_DAYS`       | Jours pendant lesquels un template supprimé reste en base avant d'être purgé définitivement                                                                                                | `30`                                             |
+| `ROOM_DEFAULT_TIMER_SECONDS`            | Timer par item d'une nouvelle salle, en secondes (5 à 300)                                                                                                                                 | `30`                                             |
+| `ROOM_DEFAULT_COOLDOWN_SECONDS`         | Cooldown final d'une nouvelle salle, en secondes (10 à 600)                                                                                                                                | `60`                                             |
+| `GUEST_LINK_TTL_DAYS`                   | Validité du lien perso d'un invité, en jours (30 au plus)                                                                                                                                  | `30`                                             |
+| `ROOM_COOKIE_PATH`                      | Chemin des routes des salles vu par le navigateur, base du cookie des invités                                                                                                              | `/api/rooms`                                     |
+| `ROOM_HEARTBEAT_INTERVAL_SECONDS`       | Canal temps réel : ping après ce silence du client, en secondes                                                                                                                            | `10`                                             |
+| `ROOM_HEARTBEAT_TIMEOUT_SECONDS`        | Canal temps réel : socket fermé sans pong dans ce délai, en secondes                                                                                                                       | `5`                                              |
+| `ROOM_PRESENCE_GRACE_SECONDS`           | Un participant devient déconnecté ce délai après la fermeture de son dernier socket, en secondes                                                                                           | `3`                                              |
+| `ROOM_AUTH_TIMEOUT_SECONDS`             | Canal temps réel : délai du message d'authentification, en secondes                                                                                                                        | `5`                                              |
+| `IMAGE_UPLOAD_MAX_BYTES`                | Taille maximale d'une image de tuile envoyée, en octets ; à aligner sur la limite de corps du reverse proxy                                                                                | `10485760` (10 Mio)                              |
+| `IMAGE_MAX_SOURCE_PIXELS`               | Nombre maximal de pixels de l'image décodée (protection contre les bombes de décompression)                                                                                                | `40000000`                                       |
 | `GOOGLE_CLIENT_ID`                      | ID client OAuth de la Google Cloud Console (Application Web) ; sans lui, la connexion Google est désactivée                                                                                | — (facultatif)                                   |
 | `GOOGLE_CLIENT_SECRET`                  | Secret de ce client                                                                                                                                                                        | — (facultatif)                                   |
 | `GOOGLE_REDIRECT_URI`                   | URL de retour, identique à un URI de redirection autorisé du client                                                                                                                        | `http://localhost:5173/api/auth/google/callback` |
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Temps laissé sur la page de Google avant que la tentative expire                                                                                                                           | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Délai des appels vers Google (échange du code, clés publiques)                                                                                                                             | `10`                                             |
 
-Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/authentication.fr.md). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
+Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.fr.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.fr.md#3-dans-le-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
@@ -347,19 +358,26 @@ Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/co
 
 Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 
-| Code                        | Statut      | Signification                                                                            |
-| --------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
-| `internal_error`            | 500         | Erreur imprévue                                                                          |
-| `validation_error`          | 422         | Requête invalide (voir `errors`)                                                         |
-| `http_error`                | tous        | `HTTPException` sans code dédié                                                          |
-| `database_unavailable`      | 503         | `GET /health/db` : la base ne répond pas                                                 |
-| `not_authenticated`         | 401         | Access token absent ou invalide                                                          |
-| `email_already_registered`  | 409         | Inscription avec un email déjà utilisé                                                   |
-| `invalid_credentials`       | 401         | Email ou mot de passe incorrect                                                          |
-| `session_expired`           | 401         | Refresh token absent, expiré ou révoqué                                                  |
-| `incorrect_password`        | 403         | Mot de passe faux à la suppression du compte                                             |
-| `reauthentication_required` | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
-| `invalid_token`             | 400         | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                 |
-| `password_too_short`        | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
+| Code                         | Statut      | Signification                                                                            |
+| ---------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| `internal_error`             | 500         | Erreur imprévue                                                                          |
+| `validation_error`           | 422         | Requête invalide (voir `errors`)                                                         |
+| `http_error`                 | tous        | `HTTPException` sans code dédié                                                          |
+| `database_unavailable`       | 503         | `GET /health/db` : la base ne répond pas                                                 |
+| `not_authenticated`          | 401         | Access token absent ou invalide                                                          |
+| `email_already_registered`   | 409         | Inscription avec un email déjà utilisé                                                   |
+| `invalid_credentials`        | 401         | Email ou mot de passe incorrect                                                          |
+| `session_expired`            | 401         | Refresh token absent, expiré ou révoqué                                                  |
+| `incorrect_password`         | 403         | Mot de passe faux à la suppression du compte                                             |
+| `reauthentication_required`  | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
+| `invalid_token`              | 400         | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                 |
+| `password_too_short`         | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
+| `template_not_found`         | 404         | Template inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables)        |
+| `image_unsupported_format`   | 415         | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                           |
+| `image_too_large`            | 413         | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`        |
+| `image_too_many_pixels`      | 422         | `POST /images` : image décodée au-delà de `IMAGE_MAX_SOURCE_PIXELS`                      |
+| `image_upload_limit_reached` | 429         | `POST /images` : `IMAGE_UPLOADS_PER_HOUR_MAX` atteint ; `params.max_uploads`             |
+| `image_not_found`            | 404         | `image_id` d'une tuile inconnue ou d'un autre utilisateur                                |
+| `tile_empty`                 | 422         | Tuile sans texte ni image                                                                |
 
 Pour les erreurs prévues (introuvable, conflit…), levez une `AppHTTPException` avec un `ErrorCode` et un `detail` en anglais (`app/constants/messages.py`), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. **Tout nouveau code d'erreur doit être traduit dans chaque langue du frontend.** Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

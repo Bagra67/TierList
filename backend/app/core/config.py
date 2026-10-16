@@ -1,10 +1,18 @@
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 from app.constants.auth import JWT_SECRET_KEY_MIN_LENGTH, PASSWORD_MAX_LENGTH
+from app.constants.rooms import (
+    COOLDOWN_SECONDS_MAX,
+    COOLDOWN_SECONDS_MIN,
+    GUEST_LINK_MAX_TTL_DAYS,
+    TIMER_SECONDS_MAX,
+    TIMER_SECONDS_MIN,
+)
 
 
 class Settings(BaseSettings):
@@ -20,7 +28,7 @@ class Settings(BaseSettings):
     # Sans délai, une connexion vers une base arrêtée peut bloquer la requête très longtemps
     database_connect_timeout_seconds: int = Field(default=3, gt=0)
 
-    # Authentification (docs/authentication.md)
+    # Authentification (docs/technical/authentication.md)
     jwt_secret_key: SecretStr = Field(min_length=JWT_SECRET_KEY_MIN_LENGTH)
     access_token_ttl_minutes: int = Field(default=15, gt=0)
     refresh_token_ttl_days: int = Field(default=30, gt=0)
@@ -38,6 +46,54 @@ class Settings(BaseSettings):
     # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)
     auth_cookie_path: str = "/api/auth"
 
+    # Templates (docs/technical/templates.md) : durée pendant laquelle un template supprimé
+    # reste en base avant d'être purgé définitivement
+    deleted_template_retention_days: int = Field(default=30, gt=0)
+
+    # Salles (docs/technical/rooms.md) : durées données à une nouvelle salle, que le room admin
+    # change ensuite dans ses réglages, entre les mêmes bornes
+    room_default_timer_seconds: int = Field(default=30, ge=TIMER_SECONDS_MIN, le=TIMER_SECONDS_MAX)
+    room_default_cooldown_seconds: int = Field(
+        default=60, ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECONDS_MAX
+    )
+    # Validité du lien perso d'un invité, comptée depuis son arrivée, sans prolongation
+    guest_link_ttl_days: int = Field(default=30, gt=0, le=GUEST_LINK_MAX_TTL_DAYS)
+    # Chemin des routes des salles vu par le navigateur (proxy /api) : le cookie d'un invité est
+    # posé sur ce chemin suivi du code de sa salle
+    room_cookie_path: str = "/api/rooms"
+    # Canal temps réel (docs/technical/realtime.md) : ping sans message du client pendant cet
+    # intervalle, socket fermé faute de pong dans le délai, participant marqué déconnecté ce
+    # délai de grâce après la fermeture de son dernier onglet (un rechargement ne le fait pas
+    # clignoter « hors ligne »), et délai du message d'authentification. En secondes.
+    room_heartbeat_interval_seconds: float = Field(default=10, gt=0)
+    room_heartbeat_timeout_seconds: float = Field(default=5, gt=0)
+    room_presence_grace_seconds: float = Field(default=3, ge=0)
+    room_auth_timeout_seconds: float = Field(default=5, gt=0)
+
+    # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
+    # alignée sur la limite de corps du reverse proxy (10 Mio)
+    image_upload_max_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    # Nombre maximal de pixels de l'image décodée : protège contre les bombes de décompression
+    image_max_source_pixels: int = Field(default=40_000_000, gt=0)
+    # Nombre maximal d'images envoyées par un compte sur une heure glissante (contre les abus)
+    image_uploads_per_hour_max: int = Field(default=120, gt=0)
+    # Jours pendant lesquels une image qu'aucune tuile n'utilise est gardée avant d'être effacée
+    # par le ramasse-miettes (scripts/purge_unused_images.py)
+    unused_image_retention_days: int = Field(default=7, gt=0)
+    # Stockage S3 des images. En développement, SeaweedFS (compose.yaml) : ses valeurs sont dans
+    # .env.example. Sans adresse, boto3 vise AWS S3 ; sans clés, il cherche ses identifiants
+    # habituels (variables AWS_*, rôle de la machine).
+    image_s3_endpoint_url: str | None = None
+    image_s3_bucket: str = "tierlist-images"
+    image_s3_region: str = "us-east-1"
+    image_s3_access_key_id: str | None = None
+    image_s3_secret_access_key: SecretStr | None = None
+    # Délai des appels au stockage (connexion, puis lecture de la réponse)
+    image_s3_timeout_seconds: int = Field(default=10, gt=0)
+    # Adresse publique des images (CDN ou bucket) : l'URL d'une image est cette adresse suivie
+    # de sa clé. 127.0.0.1 plutôt que localhost : le port de SeaweedFS n'est publié qu'en IPv4.
+    image_public_base_url: str = "http://127.0.0.1:8333/tierlist-images"
+
     # Connexion avec Google (client OAuth « Application Web » de la Google Cloud Console).
     # Sans identifiants, le bouton Google renvoie vers /login avec une erreur explicite.
     google_client_id: str | None = None
@@ -49,7 +105,7 @@ class Settings(BaseSettings):
     # Délai des appels vers Google (échange du code, clés publiques)
     google_http_timeout_seconds: int = Field(default=10, gt=0)
 
-    # Envoi des emails (docs/emails.md). Sans SMTP_HOST, aucun email ne part : l'envoi est
+    # Envoi des emails (docs/technical/emails.md). Sans SMTP_HOST, aucun email ne part : l'envoi est
     # seulement journalisé. En développement, Mailpit (compose.yaml) les reçoit sur le port 1025.
     smtp_host: str | None = None
     smtp_port: int = Field(default=587, gt=0)
@@ -62,6 +118,13 @@ class Settings(BaseSettings):
     email_from: str = "TierList <no-reply@localhost>"
     # Adresse du frontend vue par l'utilisateur : base des liens envoyés par email
     frontend_base_url: str = "http://localhost:5173"
+
+    @property
+    def app_origin(self) -> str:
+        """Origine de l'application vue par le navigateur (schéma, hôte, port) : la seule
+        acceptée à l'ouverture du canal temps réel."""
+        parts = urlsplit(self.frontend_base_url)
+        return f"{parts.scheme}://{parts.netloc}"
 
     @property
     def database_url(self) -> URL:

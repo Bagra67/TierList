@@ -47,7 +47,9 @@ from app.exceptions.auth import (
     InvalidRefreshTokenError,
     ReauthenticationRequiredError,
 )
-from app.models.user import OAuthAccount, RefreshToken, User
+from app.models.oauth_account import OAuthAccount
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import refresh_tokens as refresh_token_repository
 from app.repositories import users as user_repository

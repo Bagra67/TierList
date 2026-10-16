@@ -10,6 +10,9 @@ import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { RoomPage } from './pages/RoomPage';
+import { TemplateEditorPage } from './pages/TemplateEditorPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 export default function App() {
@@ -25,7 +28,11 @@ export default function App() {
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
         <Route element={<RequireAuth />}>
           <Route path={ROUTES.HOME} element={<HomePage />} />
+          <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
+          <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
         </Route>
+        {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}
+        <Route path={ROUTES.ROOM} element={<RoomPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

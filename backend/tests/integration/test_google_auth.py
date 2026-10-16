@@ -14,7 +14,8 @@ from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
 from app.main import app
-from app.models.user import OAuthAccount, User
+from app.models.oauth_account import OAuthAccount
+from app.models.user import User
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import users as user_repository
 from app.services.email import Email

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="536" viewBox="0 0 960 536" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif">
+<title>Lobby</title>
+<rect width="960" height="536" fill="#ffffff"/>
+<rect x="0" y="0" width="960" height="52" rx="0" fill="#f4f4f5" stroke="#f4f4f5" stroke-width="1"/>
+<line x1="0" y1="52" x2="960" y2="52" stroke="#a1a1aa" stroke-width="1"/>
+<text x="24" y="33" font-size="18" fill="#18181b" font-weight="bold" text-anchor="start">TierList</text>
+<circle cx="928" cy="26" r="13" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="906" y="31" font-size="14" fill="#71717a" font-weight="normal" text-anchor="end">Alex</text>
+<rect x="24" y="76" width="440" height="160" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="48" y="110" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">Room code</text>
+<text x="48" y="160" font-size="44" fill="#18181b" font-weight="bold" text-anchor="start">K7P2QX</text>
+<rect x="48" y="184" width="250" height="32" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<text x="58" y="205" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">tierlist.app/r/K7P2QX</text>
+<rect x="310" y="182" width="130" height="36" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="375.0" y="205.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="middle">Copy link</text>
+<rect x="24" y="252" width="440" height="260" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="48" y="286" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Participants  3 / 10</text>
+<circle cx="66" cy="318" r="16" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="94" y="323" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Alex (room admin)</text>
+<circle cx="436" cy="318" r="5" fill="#52525b"/>
+<circle cx="66" cy="366" r="16" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="94" y="371" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Sam</text>
+<circle cx="436" cy="366" r="5" fill="#52525b"/>
+<circle cx="66" cy="414" r="16" fill="#d4d4d8" stroke="#a1a1aa"/>
+<text x="94" y="419" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Lou (guest)</text>
+<circle cx="436" cy="414" r="5" fill="#52525b"/>
+<circle cx="66" cy="462" r="16" fill="#ffffff" stroke="#a1a1aa" stroke-dasharray="4 3"/>
+<rect x="496" y="76" width="440" height="260" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="520" y="110" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Settings</text>
+<text x="916" y="110" font-size="14" fill="#52525b" font-weight="normal" text-anchor="end">Edit</text>
+<text x="520" y="136" font-size="13" fill="#71717a" font-weight="normal" text-anchor="start">Chips tier list</text>
+<text x="540" y="174" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">•  Random order</text>
+<text x="540" y="202" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">•  Timer 30 s per item</text>
+<text x="540" y="230" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">•  Cooldown 60 s</text>
+<text x="540" y="258" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">•  Room admin plays</text>
+<rect x="520" y="288" width="200" height="36" rx="6" fill="#52525b" stroke="#52525b" stroke-width="1"/>
+<text x="620.0" y="311.0" font-size="14" fill="#ffffff" font-weight="bold" text-anchor="middle">Start the game</text>
+<rect x="736" y="288" width="176" height="36" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="824.0" y="311.0" font-size="14" fill="#18181b" font-weight="normal" text-anchor="middle">Close the room</text>
+<rect x="496" y="352" width="440" height="160" rx="6" fill="#ffffff" stroke="#a1a1aa" stroke-width="1"/>
+<text x="520" y="386" font-size="16" fill="#18181b" font-weight="bold" text-anchor="start">Past games</text>
+<rect x="520" y="404" width="392" height="40" rx="4" fill="#f4f4f5" stroke="#a1a1aa" stroke-width="1"/>
+<text x="536" y="429" font-size="14" fill="#18181b" font-weight="normal" text-anchor="start">Game 1  ·  results</text>
+</svg>

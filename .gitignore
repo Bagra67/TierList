@@ -15,6 +15,9 @@ desktop.ini
 # Claude Code : settings.json est partagé, settings.local.json reste personnel
 .claude/settings.local.json
 
+# Cache Python des scripts de CI (.github/scripts/)
+__pycache__/
+
 # Variables d'environnement
 .env
 .env.*

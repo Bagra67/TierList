@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -89,6 +89,29 @@ describe('App', () => {
 
     // ?confirm=delete-account rouvre le dialogue de suppression sur la page d'accueil
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
+  });
+
+  it('shows the navigation once signed in and opens my templates', async () => {
+    stubBackend({ ...loggedInBackend, 'GET /templates': () => Response.json({ items: [] }) });
+    renderAppAt('/');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    fireEvent.click(within(nav).getByRole('link', { name: 'Mes templates' }));
+
+    expect(await screen.findByRole('heading', { name: 'Mes templates' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Mes templates' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('hides the navigation and protects my templates without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+
+    renderAppAt('/templates');
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
   it('shows a not found page for unknown urls, with or without a session', async () => {

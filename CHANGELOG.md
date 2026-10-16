@@ -3,7 +3,61 @@
 English | [Français](CHANGELOG.fr.md)
 
 All notable changes to this project are documented in this file.
-Versions follow [Semantic Versioning](https://semver.org/): see [docs/releasing.md](docs/releasing.md).
+Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
+
+## [0.5.0] - 2026-10-16
+
+### Features
+
+- backend: add template crud api with default tiers (#107)
+- frontend: add the my templates page with creation and deletion (#117)
+- configure the tiers of a template (#118)
+- edit the text tiles of a template (#119)
+- decide and compute the game results (median ranking, absent votes) (#132)
+- images: upload and compress tile images to s3 storage (#134)
+- templates: attach images to tiles with an upload limit and cleanup (#135)
+- frontend: upload and show tile images in the template editor (#137)
+- templates: freeze a template snapshot when a game starts (#140)
+- rooms: create rooms and configure their settings (#142)
+- frontend: create a room and show its lobby (#143)
+- rooms: join a room with an account (#144)
+- rooms: join a room as a guest (#145)
+- rooms: follow a room live with a websocket channel and presence (#147)
+- rooms: remove or ban a participant from the room (#149)
+
+### Bug fixes
+
+- ci: stop label events from cancelling the docs check (#116)
+
+### Refactoring
+
+- backend: split user models and adopt model mixins (#115)
+
+### Build & CI
+
+- check bilingual docs and the testing guide stay in sync (#68)
+- note that the release workflow is read from develop (#108)
+
+### Documentation
+
+- describe the product, game rules, permissions and roadmap (#69)
+- split docs into product and technical folders (#70)
+- product: design milestone 1 (stories, domain, lifecycles, flow, wireframes) (#73)
+- decide the real-time transport for rooms (#122)
+- decide the tile image upload, compression and storage (#129)
+- point the game start to #91 instead of #90 (#141)
+
+### Chores
+
+- deps: bump sqlalchemy from 2.1.2 to 2.1.3 in /backend (#110)
+- deps: bump the frontend-minor-patch group in /frontend with 7 updates (#111)
+- deps-dev: bump @types/node from 24.19.0 to 26.6.4 in /frontend (#112)
+- switch the node runtime to node 26 (#113)
+- frontend: serve the vite dev server on 127.0.0.1 (#121)
+- open the dev links in the browser when dev.sh starts (#131)
+- deps: bump astral-sh/setup-uv from 10.2.0 to 10.3.0 (#150)
+- deps: bump the backend-minor-patch group in /backend with 3 updates (#151)
+- deps: bump the frontend-minor-patch group in /frontend with 12 updates (#152)
 
 ## [0.4.0] - 2026-10-04
 

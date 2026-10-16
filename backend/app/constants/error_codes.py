@@ -28,3 +28,56 @@ class ErrorCode(StrEnum):
     INVALID_TOKEN = "invalid_token"
     # Code d'erreur de champ (FieldError) de la 422, avec le param min_length
     PASSWORD_TOO_SHORT = "password_too_short"
+
+    # --- Templates -------------------------------------------------------------------------
+    # Inexistant, supprimé ou à un autre utilisateur (indiscernables)
+    TEMPLATE_NOT_FOUND = "template_not_found"
+    # Template sans tuile : pas de partie possible avec
+    TEMPLATE_HAS_NO_TILES = "template_has_no_tiles"
+    # Tier inexistant dans ce template
+    TIER_NOT_FOUND = "tier_not_found"
+    # Suppression du dernier tier refusée : une tier list a au moins un tier
+    LAST_TIER = "last_tier"
+    # Tuile inexistante dans ce template
+    TILE_NOT_FOUND = "tile_not_found"
+    # Nombre maximal de tuiles atteint, avec le param max_tiles
+    TILE_LIMIT_REACHED = "tile_limit_reached"
+    # Tuile sans texte ni image
+    TILE_EMPTY = "tile_empty"
+
+    # --- Salles -----------------------------------------------------------------------------
+    # Inexistante, fermée, ou dont l'utilisateur n'est pas participant (indiscernables)
+    ROOM_NOT_FOUND = "room_not_found"
+    # Action réservée au room admin
+    ROOM_ADMIN_REQUIRED = "room_admin_required"
+    # Réglage modifié pendant une partie (seules les arrivées peuvent l'être)
+    ROOM_SETTINGS_LOCKED = "room_settings_locked"
+    # Pseudo d'invité déjà porté dans la salle (sans tenir compte de la casse)
+    NICKNAME_TAKEN = "nickname_taken"
+    # Lien perso d'invité inconnu, expiré ou d'une salle fermée
+    GUEST_LINK_INVALID = "guest_link_invalid"
+    # Participant inexistant dans cette salle (ou invité dont le lien a expiré)
+    PARTICIPANT_NOT_FOUND = "participant_not_found"
+    # Le room admin ne peut pas se retirer de sa salle
+    CANNOT_REMOVE_ROOM_ADMIN = "cannot_remove_room_admin"
+    # Compte ou navigateur d'invité banni de la salle ; aussi la raison de fermeture du canal
+    ROOM_BANNED = "room_banned"
+    # Bannissement inexistant dans cette salle
+    BAN_NOT_FOUND = "ban_not_found"
+    # Canal temps réel : message inattendu du client, pong absent, ou participant retiré par le
+    # room admin (raisons de fermeture)
+    INVALID_MESSAGE = "invalid_message"
+    HEARTBEAT_TIMEOUT = "heartbeat_timeout"
+    REMOVED_FROM_ROOM = "removed_from_room"
+
+    # --- Images ----------------------------------------------------------------------------
+    # Pas une image JPEG, PNG ou WebP, ou fichier illisible
+    IMAGE_UNSUPPORTED_FORMAT = "image_unsupported_format"
+    # Fichier trop lourd, avec le param max_bytes
+    IMAGE_TOO_LARGE = "image_too_large"
+    # Image décodée trop grande (bombe de décompression)
+    IMAGE_TOO_MANY_PIXELS = "image_too_many_pixels"
+    # Trop d'envois sur l'heure écoulée, avec le param max_uploads
+    IMAGE_UPLOAD_LIMIT_REACHED = "image_upload_limit_reached"
+    # Image inexistante ou d'un autre utilisateur (indiscernables)
+    IMAGE_NOT_FOUND = "image_not_found"
