@@ -2,7 +2,7 @@
 
 English | [Français](deployment.fr.md)
 
-Where TierList runs and how it is deployed automatically, with a **staging** and a **production** environment. Decided in spike #155; **not built yet**: the implementation issues are listed in §5.
+Where TierList runs and how it is deployed automatically, with a **staging** and a **production** environment. Decided in spike #155; **not built yet**: the implementation issues are listed in §5 (milestone Infrastructure).
 
 ## 1. Needs and constraints
 
@@ -101,20 +101,20 @@ Production deployments are never concurrent (`concurrency` per environment).
 
 ## 5. Implementation issues
 
-To create once this decision is merged (to validate first):
+Milestone **Infrastructure**:
 
-1. **Production images and Compose file**: backend `Dockerfile`, Caddy image with the frontend build and its `Caddyfile`, `deploy/compose.yaml`, health checks.
-2. **Server provisioning**: a documented, repeatable script (users, SSH, firewall, automatic updates, Docker), applied to the staging and production servers.
-3. **Staging deployment workflow**: GHCR, SSH, migrations, health checks, `staging` environment.
-4. **Production deployment workflow**: triggered by the release tag, manual approval, rollback by `workflow_dispatch`.
-5. **Database backups**: nightly `pg_dump` to object storage, retention, documented restore.
-6. **Production configuration**: domain and DNS, SMTP (SPF, DKIM, DMARC), Google OAuth redirect URI and consent screen, the remaining points of `TODO.md`.
+1. **Production images and Compose file** (#158): backend `Dockerfile`, Caddy image with the frontend build and its `Caddyfile`, `deploy/compose.yaml`, health checks.
+2. **Server provisioning** (#159): a documented, repeatable script (users, SSH, firewall, automatic updates, Docker), applied to the staging and production servers.
+3. **Staging deployment workflow** (#160): GHCR, SSH, migrations, health checks, `staging` environment.
+4. **Production deployment workflow** (#161): triggered by the release tag, manual approval, rollback by `workflow_dispatch`.
+5. **Database backups** (#162): nightly `pg_dump` to object storage, retention, documented restore.
+6. **Production configuration** (#163): domain and DNS, SMTP (SPF, DKIM, DMARC), Google OAuth redirect URI and consent screen, the remaining points of `TODO.md`.
 
 ## 6. Open questions
 
 - **Domain name**: which one, and where it is registered.
 - **OVHcloud commitment**: monthly (flexible) or 6 to 12 months (cheaper), once the setup is stable.
-- **Monitoring**: an external uptime check is enough at first; to add with issue 3 or 4 if wanted.
+- **Monitoring**: an external uptime check is enough at first; to add with #160 or #161 if wanted.
 
 ## Sources
 

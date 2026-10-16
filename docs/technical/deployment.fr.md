@@ -2,7 +2,7 @@
 
 [English](deployment.md) | Français
 
-Où TierList tourne et comment il se déploie automatiquement, avec un environnement de **staging** et un de **production**. Décidé dans le spike #155 ; **pas encore construit** : les issues d'implémentation sont listées au §5.
+Où TierList tourne et comment il se déploie automatiquement, avec un environnement de **staging** et un de **production**. Décidé dans le spike #155 ; **pas encore construit** : les issues d'implémentation sont listées au §5 (milestone Infrastructure).
 
 ## 1. Besoins et contraintes
 
@@ -101,20 +101,20 @@ Deux déploiements de production ne tournent jamais en même temps (`concurrency
 
 ## 5. Issues d'implémentation
 
-À créer une fois cette décision mergée (à valider d'abord) :
+Milestone **Infrastructure** :
 
-1. **Images de production et fichier Compose** : `Dockerfile` du backend, image Caddy avec le build du frontend et son `Caddyfile`, `deploy/compose.yaml`, health checks.
-2. **Provisionnement des serveurs** : un script documenté et rejouable (utilisateurs, SSH, pare-feu, mises à jour automatiques, Docker), appliqué aux serveurs de staging et de production.
-3. **Workflow de déploiement du staging** : GHCR, SSH, migrations, health checks, environment `staging`.
-4. **Workflow de déploiement de la production** : déclenché par le tag de release, approbation manuelle, retour en arrière par `workflow_dispatch`.
-5. **Sauvegardes de la base** : `pg_dump` chaque nuit vers le stockage objet, rétention, restauration documentée.
-6. **Configuration de production** : domaine et DNS, SMTP (SPF, DKIM, DMARC), URI de redirection et écran de consentement Google OAuth, les points restants de `TODO.md`.
+1. **Images de production et fichier Compose** (#158) : `Dockerfile` du backend, image Caddy avec le build du frontend et son `Caddyfile`, `deploy/compose.yaml`, health checks.
+2. **Provisionnement des serveurs** (#159) : un script documenté et rejouable (utilisateurs, SSH, pare-feu, mises à jour automatiques, Docker), appliqué aux serveurs de staging et de production.
+3. **Workflow de déploiement du staging** (#160) : GHCR, SSH, migrations, health checks, environment `staging`.
+4. **Workflow de déploiement de la production** (#161) : déclenché par le tag de release, approbation manuelle, retour en arrière par `workflow_dispatch`.
+5. **Sauvegardes de la base** (#162) : `pg_dump` chaque nuit vers le stockage objet, rétention, restauration documentée.
+6. **Configuration de production** (#163) : domaine et DNS, SMTP (SPF, DKIM, DMARC), URI de redirection et écran de consentement Google OAuth, les points restants de `TODO.md`.
 
 ## 6. Questions ouvertes
 
 - **Nom de domaine** : lequel, et chez quel registrar.
 - **Engagement OVHcloud** : au mois (souple) ou sur 6 à 12 mois (moins cher), une fois l'installation stable.
-- **Supervision** : un contrôle de disponibilité externe suffit au début ; à ajouter avec l'issue 3 ou 4 si on le souhaite.
+- **Supervision** : un contrôle de disponibilité externe suffit au début ; à ajouter avec #160 ou #161 si on le souhaite.
 
 ## Sources
 
