@@ -89,7 +89,7 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     cooldown_seconds: Mapped[int]
     # False : le room admin a seulement les commandes, sans tier list ni place dans les résultats
     admin_plays: Mapped[bool] = mapped_column(default=True)
-    # Seul réglage modifiable pendant une partie (#88)
+    # Seul réglage modifiable pendant une partie ; faux, il verrouille les arrivées (US-2.10)
     late_arrivals_allowed: Mapped[bool] = mapped_column(default=True)
     # Incrémentée dans la même transaction à chaque changement de la salle (arrivée, départ,
     # réglages, présence) : le room_version des événements temps réel. Un client qui voit un saut

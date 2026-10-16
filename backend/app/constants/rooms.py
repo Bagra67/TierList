@@ -6,6 +6,9 @@ ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 # déjà rare
 ROOM_CODE_MAX_ATTEMPTS = 5
 
+# Places d'une salle dans le plan gratuit, room admin compris même s'il ne joue pas (US-2.6)
+FREE_PLAN_MAX_PARTICIPANTS = 10
+
 # Page de la salle côté frontend : le lien d'une salle est cette page suivie de son code (#84)
 FRONTEND_ROOM = "/r"
 

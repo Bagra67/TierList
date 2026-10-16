@@ -189,6 +189,24 @@ describe('RoomPage', () => {
     consoleError.mockRestore();
   });
 
+  it('says the room is full, with the limit sent by the backend', async () => {
+    // Le cache de requêtes journalise l'erreur attendue
+    const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'POST /rooms/K7P2QX/join': () =>
+        errorResponse(409, 'room_full', { params: { max_participants: 10 } }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cette salle est pleine : 10 participants au plus.',
+    );
+    consoleError.mockRestore();
+  });
+
   it('warns when the template of the room was deleted', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, template: null }) });
 

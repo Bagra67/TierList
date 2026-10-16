@@ -22,6 +22,7 @@ from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
     CHANNEL_CLOSE_BANNED,
     CHANNEL_CLOSE_REMOVED,
+    FREE_PLAN_MAX_PARTICIPANTS,
     FRONTEND_ROOM,
     GUEST_LINK_FRAGMENT,
     ROOM_CODE_ALPHABET,
@@ -38,6 +39,8 @@ from app.exceptions.rooms import (
     ParticipantNotFoundError,
     RoomAdminRequiredError,
     RoomBannedError,
+    RoomFullError,
+    RoomLockedError,
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
@@ -93,7 +96,7 @@ class RoomSettingsChanges(TypedDict, total=False):
     late_arrivals_allowed: bool
 
 
-# Seul réglage modifiable pendant une partie (US-2.10, #88)
+# Seul réglage modifiable pendant une partie (US-2.10)
 SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
 
 
@@ -165,8 +168,9 @@ class RoomService:
 
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
-        retrouve au lieu d'en prendre une seconde. Le code suffit : qui l'a peut rejoindre, sauf
-        un compte banni de la salle (US-2.12)."""
+        retrouve au lieu d'en prendre une seconde, même si la salle est pleine ou verrouillée.
+        Le code suffit : qui l'a peut rejoindre, sauf un compte banni de la salle (US-2.12), ou un
+        nouveau venu quand la salle est pleine (US-2.6) ou verrouillée (US-2.10)."""
         room: Room | None = room_repository.get_room_by_code(
             self._session, code.upper(), for_update=True
         )
@@ -178,6 +182,7 @@ class RoomService:
             # Rien à écrire : le commit libère seulement le verrou
             self._session.commit()
             return room
+        self._ensure_can_arrive(room)
         # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
         # contrainte (room_id, user_id) reste le dernier filet
         player: Participant = Participant(user_id=user.id)
@@ -211,6 +216,7 @@ class RoomService:
         # Supprimées tout de suite : au flush, SQLAlchemy passe les INSERT avant les DELETE, et
         # le nouvel invité buterait sur l'index unique du pseudo libéré
         self._session.flush()
+        self._ensure_can_arrive(room)
         if nickname.lower() in self._taken_names(room):
             raise NicknameTakenError
         token: str = generate_guest_token()
@@ -431,6 +437,15 @@ class RoomService:
         if not self._has_seat(room, user):
             raise RoomNotFoundError
         return room
+
+    def _ensure_can_arrive(self, room: Room) -> None:
+        """Un nouveau venu peut-il prendre une place ? Pas pendant une partie aux arrivées
+        verrouillées, ni dans une salle pleine. Appelé sous le verrou de la salle : deux jonctions
+        simultanées ne dépassent pas la limite."""
+        if room.status == RoomStatus.PLAYING and not room.late_arrivals_allowed:
+            raise RoomLockedError
+        if len(self.seated_participants(room)) >= FREE_PLAN_MAX_PARTICIPANTS:
+            raise RoomFullError(FREE_PLAN_MAX_PARTICIPANTS)
 
     def _publish_joined(self, room: Room, participant: Participant) -> None:
         self._publisher.publish(

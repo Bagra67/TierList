@@ -305,6 +305,8 @@ export const en: Translation = {
       room_not_found: 'This room could not be found or has been closed.',
       room_admin_required: 'Only the room admin can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
+      room_full: 'This room is full: {{max_participants}} participants at most.',
+      room_locked: 'A game is in progress and the room is locked.',
       nickname_taken: 'This nickname is already used in this room.',
       guest_link_invalid: 'This personal link has expired, or the room was closed.',
       participant_not_found: 'This participant is no longer in the room.',

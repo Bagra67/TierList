@@ -82,6 +82,22 @@ describe('JoinRoomScreen', () => {
     );
   });
 
+  it.each([
+    ['room_full', { max_participants: 10 }, 'Cette salle est pleine : 10 participants au plus.'],
+    ['room_locked', undefined, 'Une partie est en cours et la salle est verrouillée.'],
+  ])('says why a guest cannot join: %s', async (code, params, message) => {
+    stubBackend({
+      ...visitorWithoutSeat,
+      'POST /rooms/K7P2QX/guests': () => errorResponse(409, code, params ? { params } : {}),
+    });
+    renderRoomPage();
+
+    fireEvent.change(await screen.findByLabelText('Pseudo'), { target: { value: 'Lou' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rejoindre en invité' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+  });
+
   it('shows the error of the nickname field', async () => {
     stubBackend({
       ...visitorWithoutSeat,
