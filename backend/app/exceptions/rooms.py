@@ -16,6 +16,18 @@ class NicknameTakenError(Exception):
     casse), par un invité ou par un compte."""
 
 
+class RoomFullError(Exception):
+    """La salle a déjà le nombre maximal de places de son plan (US-2.6)."""
+
+    def __init__(self, max_participants: int) -> None:
+        super().__init__(max_participants)
+        self.max_participants = max_participants
+
+
+class RoomLockedError(Exception):
+    """Une partie est en cours et le room admin a verrouillé les arrivées (US-2.10)."""
+
+
 class GuestLinkInvalidError(Exception):
     """Lien perso inconnu, expiré ou d'une salle fermée : la place de l'invité est perdue."""
 

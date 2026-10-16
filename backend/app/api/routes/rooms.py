@@ -20,6 +20,8 @@ from app.exceptions.rooms import (
     ParticipantNotFoundError,
     RoomAdminRequiredError,
     RoomBannedError,
+    RoomFullError,
+    RoomLockedError,
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
@@ -141,6 +143,23 @@ def _room_banned() -> AppHTTPException:
     )
 
 
+def _room_full(exc: RoomFullError) -> AppHTTPException:
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.ROOM_FULL,
+        detail=messages.ROOM_FULL.format(max_participants=exc.max_participants),
+        params={"max_participants": exc.max_participants},
+    )
+
+
+def _room_locked() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.ROOM_LOCKED,
+        detail=messages.ROOM_LOCKED,
+    )
+
+
 @router.post(
     "",
     status_code=201,
@@ -187,7 +206,10 @@ def get_room(code: str, viewer: RoomViewerDep, service: RoomServiceDep) -> RoomR
     responses={
         **ROOM_BANNED_RESPONSE,
         404: {"model": ErrorResponse, "description": messages.ROOM_NOT_FOUND_DESCRIPTION},
-        409: {"model": ErrorResponse, "description": messages.NICKNAME_TAKEN_DESCRIPTION},
+        409: {
+            "model": ErrorResponse,
+            "description": messages.NICKNAME_TAKEN_OR_ROOM_FULL_OR_LOCKED_DESCRIPTION,
+        },
     },
 )
 def join_as_guest(
@@ -206,6 +228,10 @@ def join_as_guest(
         raise _room_not_found() from exc
     except RoomBannedError as exc:
         raise _room_banned() from exc
+    except RoomLockedError as exc:
+        raise _room_locked() from exc
+    except RoomFullError as exc:
+        raise _room_full(exc) from exc
     except NicknameTakenError as exc:
         raise AppHTTPException(
             status_code=409,
@@ -271,7 +297,14 @@ def _guest_room_response(seat: GuestSeat, service: RoomService) -> GuestRoomResp
     )
 
 
-@router.post("/{code}/join", responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_BANNED_RESPONSE})
+@router.post(
+    "/{code}/join",
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        **ROOM_BANNED_RESPONSE,
+        409: {"model": ErrorResponse, "description": messages.ROOM_FULL_OR_LOCKED_DESCRIPTION},
+    },
+)
 def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomResponse:
     # Rejoint comme joueur, ou retrouve sa place : appeler deux fois ne crée pas de seconde place
     try:
@@ -280,6 +313,10 @@ def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomR
         raise _room_not_found() from exc
     except RoomBannedError as exc:
         raise _room_banned() from exc
+    except RoomLockedError as exc:
+        raise _room_locked() from exc
+    except RoomFullError as exc:
+        raise _room_full(exc) from exc
     return _room_response(room, user, service)
 
 

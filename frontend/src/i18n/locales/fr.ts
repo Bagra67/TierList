@@ -314,6 +314,8 @@ export const fr = {
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: 'Seul le room admin peut faire cela.',
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
+      room_full: 'Cette salle est pleine : {{max_participants}} participants au plus.',
+      room_locked: 'Une partie est en cours et la salle est verrouillée.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',
       guest_link_invalid: 'Ce lien perso a expiré, ou la salle a été fermée.',
       participant_not_found: "Ce participant n'est plus dans la salle.",

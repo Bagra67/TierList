@@ -1991,7 +1991,7 @@
             }
           },
           "409": {
-            "description": "Nickname already used in the room",
+            "description": "Nickname already used, room full, or room locked during a game",
             "content": {
               "application/json": {
                 "schema": {
@@ -2244,6 +2244,16 @@
           },
           "403": {
             "description": "Banned from the room",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Room full, or locked during a game",
             "content": {
               "application/json": {
                 "schema": {

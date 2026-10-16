@@ -2541,7 +2541,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Nickname already used in the room */
+            /** @description Nickname already used, room full, or room locked during a game */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2723,6 +2723,15 @@ export interface operations {
             };
             /** @description Room not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room full, or locked during a game */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
