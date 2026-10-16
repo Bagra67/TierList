@@ -32,7 +32,7 @@ Timers: the per-item **round timer** (room setting), the **cooldown** (room sett
 
 ### Not available yet
 
-The game events (rounds, placements, cooldown) and the server-side timers (§2.8) come with the game issues (#91 and next). Holograms, public rooms and chat (later milestones) will reuse the same channel.
+The game start (`game.started`) is built (#91, [games guide](games.md)); the other game events (rounds, placements, cooldown) and the server-side timers (§2.8) come with the next game issues (#92 and next). Holograms, public rooms and chat (later milestones) will reuse the same channel.
 
 ## 2. Technical design
 
@@ -164,12 +164,13 @@ Built in #85. What exists today:
 
 - **Events** (`app/schemas/room_events.py`), a discriminated union on `type`, all carrying `room_version`:
 
-  | `type`                  | `data`                        | Sent when                                                                                                        | Frontend                |
-  | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
-  | `participant.joined`    | `{participant_id}`            | An account or a guest joins (`POST /join`, `POST /guests`)                                                       | Reads the room again    |
-  | `participant.presence`  | `{participant_id, connected}` | First socket of a participant opened; last one closed for longer than the grace delay                            | Updates the cached room |
-  | `participant.removed`   | `{participant_id}`            | The room admin removes or bans a participant (#148); sent after closing their sockets, so they do not receive it | Updates the cached room |
-  | `room.settings_updated` | `{}`                          | The room admin changes a setting (an empty change sends nothing)                                                 | Reads the room again    |
+  | `type`                  | `data`                                 | Sent when                                                                                                        | Frontend                |
+  | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
+  | `participant.joined`    | `{participant_id}`                     | An account or a guest joins (`POST /join`, `POST /guests`)                                                       | Reads the room again    |
+  | `participant.presence`  | `{participant_id, connected}`          | First socket of a participant opened; last one closed for longer than the grace delay                            | Updates the cached room |
+  | `participant.removed`   | `{participant_id}`                     | The room admin removes or bans a participant (#148); sent after closing their sockets, so they do not receive it | Updates the cached room |
+  | `room.settings_updated` | `{}`                                   | The room admin changes a setting (an empty change sends nothing)                                                 | Reads the room again    |
+  | `game.started`          | `{round_number, round_count, ends_at}` | The room admin starts a game (#91)                                                                               | Reads the room again    |
 
   Channel messages: `{"type": "ping"}` from the server, `{"type": "pong"}` and `{"type": "auth", "access_token": …}` from the client. `RoomServerMessage` and `RoomClientMessage` are added to the OpenAPI components (`_openapi_with_room_messages` in `app/main.py`).
 

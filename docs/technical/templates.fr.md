@@ -124,7 +124,7 @@ Règles (`TemplateService.take_snapshot(owner, template_id)`) :
 - Un template **supprimé**, ou d'un autre utilisateur, lève `TemplateNotFoundError` (`template_not_found`) : aucune nouvelle partie ne peut démarrer avec. Une partie déjà démarrée garde son instantané et peut se terminer.
 - Un template **sans tuile** lève `TemplateHasNoTilesError` (`template_has_no_tiles`) : une partie n'aurait aucun item à classer.
 - Elle verrouille le template comme toute modification (`_get_for_change`) et fait seulement un **flush** : l'appelant valide l'instantané avec la partie, et le verrou tient jusque-là.
-- Aucun endpoint ne l'expose encore : le démarrage de la partie (#91) l'appellera.
+- Le démarrage d'une partie l'appelle (`GameService.start`, [guide des parties](games.fr.md)).
 
 ### 2.5 Réglages
 
@@ -156,7 +156,6 @@ Chaque route exige l'access token Bearer (`401` sinon).
 
 ### 2.7 Limites connues
 
-- `take_snapshot` n'a pas d'appelant avant le démarrage de la partie (#91).
 - Pas encore de pagination de la liste (#105).
 - Pas encore de vue super admin des templates supprimés (#104).
 
