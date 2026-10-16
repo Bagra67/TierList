@@ -58,7 +58,7 @@ jobs:
         run: docker compose up -d --wait seaweedfs
 
       # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
           working-directory: backend
           enable-cache: true
