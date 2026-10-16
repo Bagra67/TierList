@@ -55,7 +55,7 @@ app = FastAPI(
     lifespan=lifespan,
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
-    version="0.4.0",
+    version="0.5.0",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )

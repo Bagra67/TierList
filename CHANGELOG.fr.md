@@ -5,6 +5,60 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [0.5.0] - 2026-10-16
+
+### Fonctionnalités
+
+- backend : API CRUD des templates avec des tiers par défaut (#107)
+- frontend : page « Mes templates » avec création et suppression (#117)
+- configuration des tiers d'un template (#118)
+- modification des tuiles texte d'un template (#119)
+- décision et calcul des résultats d'une partie (classement médian, votes absents) (#132)
+- images : envoi et compression des images des tuiles vers un stockage S3 (#134)
+- templates : images rattachées aux tuiles, avec une limite d'envoi et un nettoyage (#135)
+- frontend : envoi et affichage des images des tuiles dans l'éditeur de template (#137)
+- templates : version figée du template au démarrage d'une partie (#140)
+- salles : création des salles et configuration de leurs réglages (#142)
+- frontend : création d'une salle et affichage de son lobby (#143)
+- salles : rejoindre une salle avec un compte (#144)
+- salles : rejoindre une salle en invité (#145)
+- salles : suivi en direct d'une salle par un canal WebSocket, avec la présence (#147)
+- salles : retrait ou bannissement d'un participant (#149)
+
+### Corrections
+
+- ci : les événements de labels n'annulent plus la vérification des docs (#116)
+
+### Refactorisation
+
+- backend : modèles des utilisateurs séparés et mixins de modèles adoptés (#115)
+
+### Build & CI
+
+- vérification que les docs bilingues et le guide des tests restent synchronisés (#68)
+- précision : le workflow de release est lu depuis develop (#108)
+
+### Documentation
+
+- description du produit, des règles du jeu, des permissions et de la roadmap (#69)
+- docs séparées en dossiers produit et technique (#70)
+- produit : conception du milestone 1 (user stories, domaine, cycles de vie, déroulé, maquettes) (#73)
+- décision du transport temps réel des salles (#122)
+- décision de l'envoi, de la compression et du stockage des images des tuiles (#129)
+- le démarrage d'une partie renvoie à #91 au lieu de #90 (#141)
+
+### Maintenance
+
+- deps : sqlalchemy passe de 2.1.2 à 2.1.3 dans /backend (#110)
+- deps : 7 mises à jour du groupe frontend-minor-patch dans /frontend (#111)
+- deps-dev : @types/node passe de 24.19.0 à 26.6.4 dans /frontend (#112)
+- passage du runtime à Node 26 (#113)
+- frontend : serveur de dev Vite servi sur 127.0.0.1 (#121)
+- ouverture des liens de dev dans le navigateur au lancement de dev.sh (#131)
+- deps : astral-sh/setup-uv passe de 10.2.0 à 10.3.0 (#150)
+- deps : 3 mises à jour du groupe backend-minor-patch dans /backend (#151)
+- deps : 12 mises à jour du groupe frontend-minor-patch dans /frontend (#152)
+
 ## [0.4.0] - 2026-10-04
 
 ### Fonctionnalités
