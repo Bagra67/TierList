@@ -63,6 +63,23 @@ class ParticipantResponse(BaseModel):
     connected: bool
 
 
+class CurrentItemResponse(BaseModel):
+    """L'item du tour en cours, montré à tous : une tuile de la version figée."""
+
+    id: uuid.UUID
+    text: str | None
+    image_url: str | None
+
+
+class CurrentGameResponse(BaseModel):
+    # Numéro du tour en cours (à partir de 1) et nombre de tours, un par tuile
+    round_number: int
+    round_count: int
+    current_item: CurrentItemResponse
+    # Fin du timer du tour, si la salle en a un ; le client affiche le compte à rebours
+    ends_at: datetime | None
+
+
 class RoomBanResponse(BaseModel):
     id: uuid.UUID
     # Nom au moment du bannissement
@@ -86,6 +103,8 @@ class RoomResponse(BaseModel):
     is_admin: bool
     # Personnes bannies de la salle, du plus ancien au plus récent : vide sauf pour le room admin
     bans: list[RoomBanResponse]
+    # La partie en cours, None hors partie
+    game: CurrentGameResponse | None
 
 
 # Mêmes règles que le nom affiché d'un compte : espaces de début et de fin retirés, 1 à 50

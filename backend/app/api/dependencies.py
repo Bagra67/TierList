@@ -16,6 +16,7 @@ from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
+from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
@@ -69,6 +70,14 @@ def get_room_service(
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
     return RoomService(session, settings, publisher)
+
+
+def get_game_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
+) -> GameService:
+    return GameService(session, settings, publisher)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:

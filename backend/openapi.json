@@ -2596,6 +2596,103 @@
         }
       }
     },
+    "/rooms/{code}/game": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Start Game",
+        "operationId": "start_game_rooms__code__game_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Game already in progress, no participant who places, or template deleted or without tiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -2748,6 +2845,80 @@
         },
         "type": "object",
         "title": "CreateTileRequest"
+      },
+      "CurrentGameResponse": {
+        "properties": {
+          "round_number": {
+            "type": "integer",
+            "title": "Round Number"
+          },
+          "round_count": {
+            "type": "integer",
+            "title": "Round Count"
+          },
+          "current_item": {
+            "$ref": "#/components/schemas/CurrentItemResponse"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "round_number",
+          "round_count",
+          "current_item",
+          "ends_at"
+        ],
+        "title": "CurrentGameResponse"
+      },
+      "CurrentItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "image_url"
+        ],
+        "title": "CurrentItemResponse",
+        "description": "L'item du tour en cours, montré à tous : une tuile de la version figée."
       },
       "DeleteAccountRequest": {
         "properties": {
@@ -2957,6 +3128,16 @@
             "type": "array",
             "title": "Bans"
           },
+          "game": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentGameResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "guest_link": {
             "type": "string",
             "title": "Guest Link"
@@ -2978,6 +3159,7 @@
           "participants",
           "is_admin",
           "bans",
+          "game",
           "guest_link",
           "guest_link_expires_at"
         ],
@@ -3274,6 +3456,16 @@
             },
             "type": "array",
             "title": "Bans"
+          },
+          "game": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentGameResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3286,7 +3478,8 @@
           "settings",
           "participants",
           "is_admin",
-          "bans"
+          "bans",
+          "game"
         ],
         "title": "RoomResponse"
       },
@@ -3803,6 +3996,61 @@
         ],
         "title": "VerifyEmailRequest"
       },
+      "GameStartedData": {
+        "properties": {
+          "round_number": {
+            "title": "Round Number",
+            "type": "integer"
+          },
+          "round_count": {
+            "title": "Round Count",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          }
+        },
+        "required": [
+          "round_number",
+          "round_count",
+          "ends_at"
+        ],
+        "title": "GameStartedData",
+        "type": "object"
+      },
+      "GameStartedEvent": {
+        "description": "Le room admin a lancé une partie : le premier item est montré à tous.",
+        "properties": {
+          "type": {
+            "const": "game.started",
+            "default": "game.started",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GameStartedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "GameStartedEvent",
+        "type": "object"
+      },
       "ParticipantJoinedData": {
         "properties": {
           "participant_id": {
@@ -3966,6 +4214,7 @@
       "RoomServerMessage": {
         "discriminator": {
           "mapping": {
+            "game.started": "#/components/schemas/GameStartedEvent",
             "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
             "participant.presence": "#/components/schemas/ParticipantPresenceEvent",
             "participant.removed": "#/components/schemas/ParticipantRemovedEvent",
@@ -3986,6 +4235,9 @@
           },
           {
             "$ref": "#/components/schemas/RoomSettingsUpdatedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/GameStartedEvent"
           },
           {
             "$ref": "#/components/schemas/PingMessage"

@@ -10,6 +10,7 @@ from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.game import Game
     from app.models.participant import Participant
     from app.models.room_ban import RoomBan
     from app.models.template import Template
@@ -42,7 +43,7 @@ class AutoAdvance(StrEnum):
     EVERYONE_PLACED = "everyone_placed"
 
 
-def _text_enum(enum_class: type[StrEnum], name: str) -> Enum:
+def text_enum(enum_class: type[StrEnum], name: str) -> Enum:
     """Colonne texte avec une contrainte CHECK plutôt qu'un type ENUM PostgreSQL : ajouter une
     valeur ne demande pas d'ALTER TYPE (même choix que Image.status)."""
     return Enum(
@@ -73,15 +74,15 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("templates.id", ondelete="SET NULL"), index=True
     )
     status: Mapped[RoomStatus] = mapped_column(
-        _text_enum(RoomStatus, "room_status"), default=RoomStatus.OPEN
+        text_enum(RoomStatus, "room_status"), default=RoomStatus.OPEN
     )
 
     # --- Réglages ------------------------------------------------------------------------------
     item_order: Mapped[ItemOrder] = mapped_column(
-        _text_enum(ItemOrder, "item_order"), default=ItemOrder.TEMPLATE
+        text_enum(ItemOrder, "item_order"), default=ItemOrder.TEMPLATE
     )
     auto_advance: Mapped[AutoAdvance] = mapped_column(
-        _text_enum(AutoAdvance, "auto_advance"), default=AutoAdvance.NONE
+        text_enum(AutoAdvance, "auto_advance"), default=AutoAdvance.NONE
     )
     # Gardé même sans timer : la durée choisie est retrouvée si le timer est remis
     timer_seconds: Mapped[int]
@@ -103,4 +104,12 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Visibles du room admin seulement (US-2.12)
     bans: Mapped[list["RoomBan"]] = relationship(
         cascade="all, delete-orphan", order_by="RoomBan.created_at"
+    )
+    # La partie en cours, s'il y en a une (au plus une, invariant 3). Lecture seule : une partie
+    # se crée par le service des parties, et la base la détache (SET NULL) quand la salle est
+    # supprimée
+    current_game: Mapped["Game | None"] = relationship(
+        primaryjoin="and_(Game.room_id == Room.id, Game.status != 'closed')",
+        viewonly=True,
+        uselist=False,
     )

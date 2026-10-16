@@ -46,6 +46,7 @@ export const aliceRoom: Room = {
   ],
   is_admin: true,
   bans: [],
+  game: null,
 };
 
 // Salle rejointe par Lou en invité, avec son lien perso, telle que la renvoie POST /guests

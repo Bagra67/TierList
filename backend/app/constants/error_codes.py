@@ -74,6 +74,12 @@ class ErrorCode(StrEnum):
     HEARTBEAT_TIMEOUT = "heartbeat_timeout"
     REMOVED_FROM_ROOM = "removed_from_room"
 
+    # --- Parties ---------------------------------------------------------------------------
+    # La salle a déjà une partie en cours
+    GAME_IN_PROGRESS = "game_in_progress"
+    # Aucun participant ne placerait les items (room admin seul, qui ne joue pas)
+    NO_PLACING_PARTICIPANT = "no_placing_participant"
+
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible
     IMAGE_UNSUPPORTED_FORMAT = "image_unsupported_format"

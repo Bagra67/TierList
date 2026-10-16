@@ -166,6 +166,11 @@ class RoomService:
         casse (un code tapé en minuscules est le même)."""
         return self._get_as_participant(user, code, for_update=False)
 
+    def get_for_change(self, user: User, code: str) -> Room:
+        """Salle dont l'utilisateur est participant, verrouillée jusqu'au commit : pour un
+        changement fait par un autre service (le démarrage d'une partie)."""
+        return self._get_as_participant(user, code, for_update=True)
+
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
         retrouve au lieu d'en prendre une seconde, même si la salle est pleine ou verrouillée.
