@@ -41,9 +41,11 @@ export function RoomLobby({ room }: RoomLobbyProps) {
             })}
           </p>
           {room.game.current_item.image_url !== null && (
+            // Avec un texte, il est affiché juste en dessous : l'image est illustrative (alt vide),
+            // sinon le lecteur d'écran le lirait deux fois
             <img
               src={room.game.current_item.image_url}
-              alt={room.game.current_item.text ?? t('rooms.lobby.currentItemImage')}
+              alt={room.game.current_item.text === null ? t('rooms.lobby.currentItemImage') : ''}
               className="size-32 rounded-md object-cover"
             />
           )}
@@ -52,7 +54,10 @@ export function RoomLobby({ room }: RoomLobbyProps) {
           )}
         </section>
       )}
-      {room.is_admin && room.game === null && <StartGameButton code={room.code} />}
+      {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
+      {room.is_admin && room.game === null && room.template !== null && (
+        <StartGameButton code={room.code} />
+      )}
       <RoomInvite room={room} />
       <section className="flex w-full flex-col gap-2">
         <h2 className="text-lg font-semibold">

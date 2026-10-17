@@ -47,6 +47,14 @@ describe('StartGameButton', () => {
     expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
   });
 
+  it('is not offered when the template of the room was purged', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, template: null }) });
+    renderRoomPage();
+
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+    expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
+  });
+
   it('is not offered during a game', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();

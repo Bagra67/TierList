@@ -70,7 +70,6 @@ def round_texts(game: Game) -> list[str | None]:
 
 def test_the_admin_starts_a_game_on_the_first_item(
     auth_client: TestClient,
-    db_session: Session,
     alice: dict[str, str],
     alice_room: JsonObject,
     room_events: RecordingRoomEventPublisher,

@@ -242,7 +242,28 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Partie en cours')).toBeInTheDocument();
     expect(screen.getByText('Item 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Paprika' })).toHaveAttribute(
+    // Le texte est affiché : l'image n'est pas relue par les lecteurs d'écran
+    expect(screen.getByRole('presentation')).toHaveAttribute(
+      'src',
+      'https://images.example.com/paprika.webp',
+    );
+  });
+
+  it('names the image of an item without text', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoomInGame,
+          game: {
+            ...aliceRoomInGame.game,
+            current_item: { ...aliceRoomInGame.game?.current_item, text: null },
+          },
+        }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('img', { name: "Image de l'item en cours" })).toHaveAttribute(
       'src',
       'https://images.example.com/paprika.webp',
     );
