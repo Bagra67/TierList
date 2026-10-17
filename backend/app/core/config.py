@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     room_heartbeat_timeout_seconds: float = Field(default=5, gt=0)
     room_presence_grace_seconds: float = Field(default=3, ge=0)
     room_auth_timeout_seconds: float = Field(default=5, gt=0)
+    # Fermeture automatique (US-2.8) : une salle ouverte où personne n'est connecté et qui n'a
+    # pas changé depuis ce délai est fermée, par un balayage lancé à cet intervalle
+    room_inactivity_hours: float = Field(default=24, gt=0)
+    room_inactivity_sweep_minutes: float = Field(default=15, gt=0)
 
     # Images des tuiles (docs/technical/images.md) : taille maximale du fichier envoyé, à garder
     # alignée sur la limite de corps du reverse proxy (10 Mio)

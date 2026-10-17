@@ -3,7 +3,7 @@ import logging
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI
@@ -25,6 +25,7 @@ from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
 from app.services.games import GameService
 from app.services.room_channel import room_connections
+from app.services.room_sweeper import room_sweeper
 from app.services.rooms import RoomService
 from app.services.round_timers import round_timers
 
@@ -65,6 +66,14 @@ def _end_cooldown_on_timer(session_factory: SessionFactory, game_id: uuid.UUID) 
         _game_service(session).end_cooldown_on_timer(game_id)
 
 
+def _close_inactive_rooms(session_factory: SessionFactory) -> None:
+    inactive_for: timedelta = timedelta(hours=get_settings().room_inactivity_hours)
+    with session_factory() as session:
+        closed_count: int = _game_service(session).close_inactive_rooms(inactive_for)
+    if closed_count:
+        logger.info("Salles inactives fermées : %d", closed_count)
+
+
 def _reschedule_rounds(session_factory: SessionFactory) -> None:
     """Un processus qui démarre n'a aucun timer : les échéances des tours en cours et des
     cooldowns sont relues en base et reprogrammées (une échéance passée pendant l'arrêt se
@@ -103,9 +112,14 @@ async def lifespan(started_app: FastAPI) -> AsyncIterator[None]:
     async def on_cooldown_deadline(game_id: uuid.UUID) -> None:
         await run_in_threadpool(_end_cooldown_on_timer, session_factory, game_id)
 
+    async def sweep_inactive_rooms() -> None:
+        await run_in_threadpool(_close_inactive_rooms, session_factory)
+
     round_timers.start(asyncio.get_running_loop(), on_deadline, on_cooldown_deadline)
     await run_in_threadpool(_reschedule_rounds, session_factory)
+    room_sweeper.start(get_settings().room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
     yield
+    await room_sweeper.stop()
     await round_timers.stop()
 
 

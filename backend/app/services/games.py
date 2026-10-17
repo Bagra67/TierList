@@ -114,6 +114,16 @@ def _freeze_players(game: Game) -> None:
         placement.participant = None
 
 
+def _is_inactive(room: Room, cutoff: datetime) -> bool:
+    """Fermeture automatique (US-2.8) : salle ouverte (jamais pendant une partie), sans
+    changement depuis cutoff, et où personne n'est connecté."""
+    return (
+        room.status == RoomStatus.OPEN
+        and room.updated_at < cutoff
+        and not any(participant.connected for participant in room.participants)
+    )
+
+
 def _ensure_tier_in_game(game: Game, tier_id: uuid.UUID) -> None:
     if not any(tier.id == tier_id for tier in game.snapshot.tiers):
         raise TierNotFoundError
@@ -418,6 +428,28 @@ class GameService:
             self._close_room_locked(room, reason="account_deleted")
             self._session.commit()
             self._publisher.close_room(room_id)
+
+    def close_inactive_rooms(self, inactive_for: timedelta) -> int:
+        """Ferme les salles inactives depuis inactive_for (US-2.8), comme leur room admin : une
+        salle ouverte, sans changement depuis ce délai, où personne n'est connecté. Chaque salle
+        est revérifiée sous son verrou, quelqu'un a pu revenir entre-temps ; une salle par
+        transaction. Renvoie le nombre de salles fermées."""
+        cutoff: datetime = datetime.now(UTC) - inactive_for
+        room_ids: list[uuid.UUID] = room_repository.list_inactive_room_ids(self._session, cutoff)
+        closed_count: int = 0
+        for room_id in room_ids:
+            room: Room | None = room_repository.get_room_by_id(
+                self._session, room_id, for_update=True
+            )
+            if room is None or not _is_inactive(room, cutoff):
+                # Le commit libère seulement le verrou
+                self._session.commit()
+                continue
+            self._close_room_locked(room, reason="inactive")
+            self._session.commit()
+            self._publisher.close_room(room_id)
+            closed_count += 1
+        return closed_count
 
     def pending_round_deadlines(self) -> list[tuple[uuid.UUID, int, datetime]]:
         """Échéances des tours en cours, à reprogrammer au démarrage du processus."""

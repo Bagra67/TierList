@@ -1,10 +1,12 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Select, select, update
+from sqlalchemy import Exists, Select, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql.dml import ReturningUpdate
 
+from app.models.enums import RoomStatus
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
@@ -79,6 +81,20 @@ def get_room_of_participant(
 def list_room_ids_of_admin(session: Session, admin_id: uuid.UUID) -> list[uuid.UUID]:
     """Identifiants des salles dont ce compte est le room admin."""
     return list(session.scalars(select(Room.id).where(Room.admin_id == admin_id)).all())
+
+
+def list_inactive_room_ids(session: Session, cutoff: datetime) -> list[uuid.UUID]:
+    """Identifiants des salles inactives (US-2.8) : ouvertes, sans changement depuis cutoff
+    (rooms.updated_at suit chaque version), et où personne n'est connecté."""
+    someone_connected: Exists = (
+        select(Participant.id)
+        .where(Participant.room_id == Room.id, Participant.connected.is_(True))
+        .exists()
+    )
+    statement: Select[uuid.UUID] = select(Room.id).where(
+        Room.status == RoomStatus.OPEN, Room.updated_at < cutoff, ~someone_connected
+    )
+    return list(session.scalars(statement).all())
 
 
 def delete_room(session: Session, room: Room) -> None:
