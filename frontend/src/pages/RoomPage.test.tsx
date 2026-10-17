@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
 import { latestSocket } from '../test/fakeWebSocket';
+import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
 import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
 import {
@@ -291,6 +292,27 @@ describe('RoomPage', () => {
     ]);
     expect(within(section).getByText('3 joueurs')).toBeInTheDocument();
     expect(within(section).getByText('1 joueur')).toBeInTheDocument();
+  });
+
+  it('opens the results of a past game, which link back to the room', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoom,
+          past_games: [
+            { public_token: RESULTS_TOKEN, closed_at: '2026-10-17T18:30:00Z', player_count: 2 },
+          ],
+        }),
+      [`GET /results/${RESULTS_TOKEN}`]: () => Response.json(closedGameResults),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Voir les résultats de la partie du/ }),
+    );
+    fireEvent.click(await screen.findByRole('link', { name: 'Retour à la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
   });
 
   it('shows no past games section before the first game ends', async () => {

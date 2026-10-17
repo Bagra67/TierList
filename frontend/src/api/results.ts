@@ -1,4 +1,4 @@
-import { type UseQueryResult, useQuery } from '@tanstack/react-query';
+import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient, dataOrThrow } from './client';
 import { retryUnlessClientError } from './queryClient';
@@ -31,17 +31,33 @@ async function getGameResults(
   );
 }
 
-export function useGameResults(
-  token: string,
-  includeAbsentVotes: boolean,
-): UseQueryResult<GameResults> {
-  return useQuery({
+export interface GameResultsState {
+  // Les résultats avec la case choisie ; undefined pendant leur lecture ou après un échec
+  results: GameResults | undefined;
+  // Ce qui ne dépend pas de la case (template, date, tiers, items) : ces résultats, ou ceux de
+  // l'autre variante déjà lus. La page garde ainsi sa case et ses onglets pendant une lecture ou
+  // après un échec, sans montrer des statistiques qui ne correspondent pas à la case
+  anyVariant: GameResults | undefined;
+  isPending: boolean;
+  error: Error | null;
+}
+
+export function useGameResults(token: string, includeAbsentVotes: boolean): GameResultsState {
+  const queryClient: QueryClient = useQueryClient();
+  const query = useQuery({
     queryKey: resultsQueryKey(token, includeAbsentVotes),
     queryFn: ({ signal }) => getGameResults(token, includeAbsentVotes, signal),
     retry: retryUnlessClientError,
     // Les résultats d'une partie close ne changent plus (invariant 9)
     staleTime: Infinity,
-    // La case cochée ou décochée garde l'affichage précédent pendant la lecture
-    placeholderData: (previous) => previous,
   });
+  const otherVariant: GameResults | undefined = queryClient.getQueryData<GameResults>(
+    resultsQueryKey(token, !includeAbsentVotes),
+  );
+  return {
+    results: query.data,
+    anyVariant: query.data ?? otherVariant,
+    isPending: query.isPending,
+    error: query.error,
+  };
 }

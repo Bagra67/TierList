@@ -113,13 +113,14 @@ Built in #99.
 Built in #100.
 
 - **Route**: `/results/:token` (`ROUTES.RESULTS`, `resultsPath`), outside `RequireAuth`: the link is enough, with or without an account.
-- **Reaching it**: the lobby lists the closed games of the room (`PastGames`, from `RoomResponse.past_games`), newest first, each with "See the results". The game closing does not open the page by itself: everyone opens it when they want, and the room stays ready for the next game.
-- **Checkbox** "Include absent votes", checked by default: it is part of the query key (`useGameResults(token, includeAbsentVotes)`), so toggling reads the results once, then each variant stays in cache (`staleTime: Infinity`: a closed game no longer changes). The previous answer stays shown during the reading (`placeholderData`). A `4xx` is not retried (`retryUnlessClientError`).
-- **Views**, in ARIA tabs (`ResultsTabs`: a single tab in the tab order, the arrows, Home and End move between tabs and activate them):
-  - **Median**: `ResultsTierList`, read-only, with the "Unranked" row under the tiers;
+- **Reaching it**: the lobby lists the closed games of the room (`PastGames`, from `RoomResponse.past_games`), newest first, each with "See the results". The game closing does not open the page by itself: everyone opens it when they want, and the room stays ready for the next game. The link carries the room in its navigation state (`ResultsLinkState`), so the page offers "Back to the room"; a visitor arriving by the public link has no such state, hence no link.
+- **Checkbox** "Include absent votes", checked by default: it is part of the query key (`useGameResults(token, includeAbsentVotes)`), so toggling reads the results once, then each variant stays in cache (`staleTime: Infinity`: a closed game no longer changes). A `4xx` is not retried (`retryUnlessClientError`). The title, the date, the box and the tabs come from either variant already read (`anyVariant`); the statistics shown always match the box: while the other variant is read, or after a failure, the panel shows the loading state or the error instead (`aria-busy`), and checking back shows the cached variant at once.
+- **Views**, in ARIA tabs (`ResultsTabs`: a single tab in the tab order, the arrows, Home and End move between tabs and activate them; the panel is focusable, since most views have no interactive element):
+  - **Median**: `ResultsTierList`, read-only, with the "Unranked" row under the tiers; each row is a group named by its tier;
   - **Overall**: `ResultsDistributionTable`, a real `<table>` (caption for screen readers, a row header per item), one column per tier and the "Absent" column when the absent votes are included; the table scrolls on its own on a small screen, not the page;
   - **Per player**: a player `<select>`, their `ResultsTierList` and the "Never placed" row.
 - **States**: loading, and the translated error (`results_not_found` for an unknown link).
+- **Items without text**: their image is named by their number in the template order ("Image of item 3", `ResultItem.imageLabel`), so two images never share a name in the table or the lists.
 
 ### 2.8 Known limitations
 

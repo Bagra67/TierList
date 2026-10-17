@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { type InitialEntry, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -7,15 +7,19 @@ import {
   closedGameResultsWithoutAbsents,
   RESULTS_TOKEN,
 } from '../test/fixtures/results';
+import type { GameResults } from '../api/results';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { errorResponse, stubBackend } from '../test/stubBackend';
 import { ResultsPage } from './ResultsPage';
 
-function renderResultsPage() {
+// La page ouverte par son lien ; state : l'état de navigation posé par le lobby
+function renderResultsPage(state?: unknown) {
+  const entry: InitialEntry = { pathname: `/results/${RESULTS_TOKEN}`, state };
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[`/results/${RESULTS_TOKEN}`]}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/results/:token" element={<ResultsPage />} />
+        <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -38,11 +42,10 @@ function stubResults(): { includeAbsentVotes: string[] } {
   return { includeAbsentVotes: received };
 }
 
-// Le texte des items de la ligne d'un tier (ou de « Non classés », « Jamais placés »)
+// Le texte des items de la ligne d'un tier (ou de « Non classés », « Jamais placés ») : chaque
+// ligne est un groupe nommé par son tier
 function rowItems(label: string): string[] {
-  const row: HTMLElement | null = screen.getByText(label, { selector: 'span' }).closest('div');
-  if (row === null) throw new Error(`No row ${label}`);
-  return within(row)
+  return within(screen.getByRole('group', { name: label }))
     .queryAllByRole('listitem')
     .map((item: HTMLElement) => item.textContent ?? '');
 }
@@ -125,9 +128,77 @@ describe('ResultsPage', () => {
     const overall: HTMLElement = screen.getByRole('tab', { name: 'Global' });
     expect(overall).toHaveAttribute('aria-selected', 'true');
     expect(overall).toHaveFocus();
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', overall.id);
+    const panel: HTMLElement = screen.getByRole('tabpanel');
+    expect(panel).toHaveAttribute('aria-labelledby', overall.id);
+    // Focalisable : la vue n'a pas toujours d'élément interactif
+    expect(panel).toHaveAttribute('tabindex', '0');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
+  });
+
+  it('names each item without text by its number, so two images never share a name', async () => {
+    const imagesOnly: GameResults = {
+      ...closedGameResults,
+      items: closedGameResults.items.map((item, index: number) => ({
+        ...item,
+        text: null,
+        image_url: `https://images.example.com/${index}.webp`,
+      })),
+    };
+    stubBackend({ [resultsRoute]: () => Response.json(imagesOnly) });
+    renderResultsPage();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Global' }));
+
+    expect(
+      screen
+        .getAllByRole('rowheader')
+        .map((header: HTMLElement) => within(header).getByRole('img').getAttribute('alt')),
+    ).toEqual(["Image de l'item 1", "Image de l'item 2", "Image de l'item 3"]);
+  });
+
+  it('keeps the box and says so when reading the other variant fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubBackend({
+      [resultsRoute]: (request: Request) =>
+        new URL(request.url).searchParams.get('include_absent_votes') === 'false'
+          ? errorResponse(500, 'internal_error')
+          : Response.json(closedGameResults),
+    });
+    renderResultsPage();
+    const box: HTMLElement = await screen.findByRole('checkbox', {
+      name: 'Inclure les votes absents',
+    });
+
+    fireEvent.click(box);
+
+    // L'erreur prend la place des statistiques, jamais celles de l'autre variante ; une erreur
+    // serveur est réessayée une fois avant d'être montrée
+    expect(
+      await within(screen.getByRole('tabpanel')).findByRole('alert', {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'A' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
+    // Recocher remontre tout de suite la variante déjà lue
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+    expect(rowItems('A')).toEqual(['Paprika', 'Chorizo']);
+  });
+
+  it('links back to the room when opened from its lobby', async () => {
+    stubResults();
+    renderResultsPage({ roomCode: 'K7P2QX' });
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Retour à la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+  });
+
+  it('offers no way back to a room when opened by the public link', async () => {
+    stubResults();
+    renderResultsPage();
+
+    await screen.findByRole('heading', { name: 'Résultats : Épices' });
+    expect(screen.queryByRole('link', { name: 'Retour à la salle' })).not.toBeInTheDocument();
   });
 
   it('says when the results link is unknown', async () => {

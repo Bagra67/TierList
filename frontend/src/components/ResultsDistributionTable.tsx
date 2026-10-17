@@ -1,12 +1,13 @@
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { ItemDistribution } from '../api/results';
-import type { GameItem, GameTier } from '../api/rooms';
+import type { GameTier } from '../api/rooms';
 import { GameItemView } from './GameItemView';
+import type { ResultItem, ResultItems } from './resultsViews';
 
 interface ResultsDistributionTableProps {
   tiers: GameTier[];
-  items: GameItem[];
+  items: ResultItems;
   distribution: ItemDistribution[];
   includeAbsentVotes: boolean;
 }
@@ -20,9 +21,6 @@ export function ResultsDistributionTable({
   includeAbsentVotes,
 }: ResultsDistributionTableProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const itemsById: ReadonlyMap<string, GameItem> = new Map(
-    items.map((item: GameItem) => [item.id, item]),
-  );
 
   return (
     <div className="w-full overflow-x-auto rounded-xl border">
@@ -47,12 +45,16 @@ export function ResultsDistributionTable({
         </thead>
         <tbody>
           {distribution.map((entry: ItemDistribution) => {
-            const item: GameItem | undefined = itemsById.get(entry.item_id);
-            if (item === undefined) return null;
+            const resultItem: ResultItem | undefined = items.get(entry.item_id);
+            if (resultItem === undefined) return null;
             return (
               <tr key={entry.item_id} className="border-b last:border-0">
                 <th scope="row" className="px-3 py-2 text-left font-normal">
-                  <GameItemView item={item} imageLabel={t('results.itemImage')} size="small" />
+                  <GameItemView
+                    item={resultItem.item}
+                    imageLabel={resultItem.imageLabel}
+                    size="small"
+                  />
                 </th>
                 {entry.votes_per_tier.map((votes: number, index: number) => (
                   <td

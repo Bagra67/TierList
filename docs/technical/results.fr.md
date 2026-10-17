@@ -113,13 +113,14 @@ Construite dans #99.
 Construite dans #100.
 
 - **Route** : `/results/:token` (`ROUTES.RESULTS`, `resultsPath`), hors de `RequireAuth` : le lien suffit, avec ou sans compte.
-- **Y arriver** : le lobby liste les parties closes de la salle (`PastGames`, à partir de `RoomResponse.past_games`), de la plus récente à la plus ancienne, chacune avec « Voir les résultats ». La clôture n'ouvre pas la page d'elle-même : chacun l'ouvre quand il veut, et la salle reste prête pour la partie suivante.
-- **Case** « Inclure les votes absents », cochée par défaut : elle fait partie de la clé de requête (`useGameResults(token, includeAbsentVotes)`), basculer lit donc les résultats une fois, puis chaque variante reste en cache (`staleTime: Infinity` : une partie close ne change plus). La réponse précédente reste affichée pendant la lecture (`placeholderData`). Un `4xx` n'est pas réessayé (`retryUnlessClientError`).
-- **Vues**, en onglets ARIA (`ResultsTabs` : un seul onglet dans l'ordre de tabulation, les flèches, Début et Fin passent d'un onglet à l'autre et l'activent) :
-  - **Médian** : `ResultsTierList`, en lecture seule, avec la ligne « Non classés » sous les tiers ;
+- **Y arriver** : le lobby liste les parties closes de la salle (`PastGames`, à partir de `RoomResponse.past_games`), de la plus récente à la plus ancienne, chacune avec « Voir les résultats ». La clôture n'ouvre pas la page d'elle-même : chacun l'ouvre quand il veut, et la salle reste prête pour la partie suivante. Le lien porte la salle dans son état de navigation (`ResultsLinkState`) : la page propose alors « Retour à la salle » ; un visiteur arrivé par le lien public n'a pas cet état, donc pas ce lien.
+- **Case** « Inclure les votes absents », cochée par défaut : elle fait partie de la clé de requête (`useGameResults(token, includeAbsentVotes)`), basculer lit donc les résultats une fois, puis chaque variante reste en cache (`staleTime: Infinity` : une partie close ne change plus). Un `4xx` n'est pas réessayé (`retryUnlessClientError`). Le titre, la date, la case et les onglets viennent de l'une ou l'autre variante déjà lue (`anyVariant`) ; les statistiques affichées correspondent toujours à la case : pendant la lecture de l'autre variante, ou après un échec, le panneau montre à la place le chargement ou l'erreur (`aria-busy`), et recocher remontre tout de suite la variante en cache.
+- **Vues**, en onglets ARIA (`ResultsTabs` : un seul onglet dans l'ordre de tabulation, les flèches, Début et Fin passent d'un onglet à l'autre et l'activent ; le panneau est focalisable, la plupart des vues n'ayant aucun élément interactif) :
+  - **Médian** : `ResultsTierList`, en lecture seule, avec la ligne « Non classés » sous les tiers ; chaque ligne est un groupe nommé par son tier ;
   - **Global** : `ResultsDistributionTable`, un vrai `<table>` (légende pour les lecteurs d'écran, un en-tête de ligne par item), une colonne par tier et la colonne « Absents » quand les votes absents sont inclus ; le tableau défile seul sur un petit écran, pas la page ;
   - **Par joueur** : un `<select>` du joueur, son `ResultsTierList` et la ligne « Jamais placés ».
 - **États** : chargement, et l'erreur traduite (`results_not_found` pour un lien inconnu).
+- **Items sans texte** : leur image est nommée par leur numéro dans l'ordre du template (« Image de l'item 3 », `ResultItem.imageLabel`) : deux images ne portent jamais le même nom dans le tableau ou les listes.
 
 ### 2.8 Limites connues
 

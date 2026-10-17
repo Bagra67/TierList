@@ -2,18 +2,19 @@ import { type ChangeEvent, useId, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { PlayerResults } from '../api/results';
-import type { GameItem, GameTier } from '../api/rooms';
+import type { GameTier } from '../api/rooms';
 import { ResultsTierList } from './ResultsTierList';
+import type { ResultItems } from './resultsViews';
 
 interface ResultsPlayerViewProps {
   tiers: GameTier[];
   players: PlayerResults[];
-  itemsById: ReadonlyMap<string, GameItem>;
+  items: ResultItems;
 }
 
 // Vue « par joueur » (US-5.2) : le classement final du joueur choisi, avec les items qu'il n'a
 // jamais placés
-export function ResultsPlayerView({ tiers, players, itemsById }: ResultsPlayerViewProps) {
+export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const selectId: string = useId();
   const [playerIndex, setPlayerIndex] = useState<number>(0);
@@ -48,7 +49,7 @@ export function ResultsPlayerView({ tiers, players, itemsById }: ResultsPlayerVi
       <ResultsTierList
         tiers={tiers}
         rows={player.tiers}
-        itemsById={itemsById}
+        items={items}
         extraRow={{ label: t('results.players.unplaced'), itemIds: player.unplaced_item_ids }}
       />
     </div>

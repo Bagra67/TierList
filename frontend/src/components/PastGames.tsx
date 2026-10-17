@@ -2,7 +2,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { PastGame, Room } from '../api/rooms';
-import { resultsPath } from '../constants/routes';
+import { type ResultsLinkState, resultsPath } from '../constants/routes';
 
 interface PastGamesProps {
   room: Room;
@@ -31,6 +31,8 @@ export function PastGames({ room }: PastGamesProps) {
               </span>
               <Link
                 to={resultsPath(pastGame.public_token)}
+                // La page des résultats propose alors de revenir à cette salle
+                state={{ roomCode: room.code } satisfies ResultsLinkState}
                 aria-label={t('rooms.lobby.pastGames.openLabel', { date: closedAt })}
                 className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
               >
