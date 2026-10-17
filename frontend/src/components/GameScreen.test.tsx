@@ -2,12 +2,12 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
-import { aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
+import { aliceRoom, aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage } from '../test/renderRoomPage';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
 const game: CurrentGame = aliceRoomInGame.game as CurrentGame;
-const [tierS]: CurrentGame['tiers'] = game.tiers;
+const [tierS, tierA]: CurrentGame['tiers'] = game.tiers;
 const bobId: string = aliceRoomInGame.participants[1].id;
 
 // La salle d'Alice pendant la partie, avec ces changements de la partie
@@ -201,18 +201,151 @@ describe('GameScreen', () => {
     expect(calledRoutes(fetchMock)).not.toContain('GET /rooms/K7P2QX');
   });
 
-  it('shows the final cooldown after the last item', async () => {
-    const cooldownEndsAt: string = new Date(Date.now() + 60_000).toISOString();
-    stubBackend({
-      'GET /rooms/K7P2QX': () =>
-        Response.json(inGame({ status: 'cooldown', cooldown_ends_at: cooldownEndsAt })),
-    });
-    renderRoomPage();
+  describe('during the final cooldown', () => {
+    const barbecue = {
+      id: '7c1d2e3f-0000-4000-8000-000000000002',
+      text: 'Barbecue',
+      image_url: null,
+    };
+    const paprikaPut = `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`;
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Le dernier item est passé : le cooldown final est en cours.',
-    );
-    expect(screen.getByRole('timer', { name: 'Fin du cooldown' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
+    // Alice a placé Paprika puis Chorizo en S, et a manqué Barbecue
+    function inCooldown(roomChanges: Partial<Room> = {}): Room {
+      return inGame(
+        {
+          status: 'cooldown',
+          cooldown_ends_at: new Date(Date.now() + 60_000).toISOString(),
+          own_placements: [paprikaInS, chorizoInS],
+          missed_items: [barbecue],
+        },
+        roomChanges,
+      );
+    }
+
+    it('shows the banner, the final board and the missed items', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+
+      expect(await screen.findByRole('heading', { name: 'Cooldown final' })).toBeInTheDocument();
+      expect(screen.getByRole('timer', { name: 'Fin du cooldown' })).toBeInTheDocument();
+      // Le glisser-déposer a sa propre zone d'annonces (status) : le texte du bandeau suffit
+      expect(
+        screen.getByText("Déplacez n'importe quelle tuile. Placez vos items manqués avant la fin."),
+      ).toBeInTheDocument();
+      const tierRow: HTMLElement = screen.getByRole('list', { name: 'S' });
+      expect(within(tierRow).getByText('Paprika')).toBeInTheDocument();
+      expect(within(tierRow).getByText('Chorizo')).toBeInTheDocument();
+      const missed: HTMLElement | null = screen
+        .getByRole('heading', { name: 'Items manqués' })
+        .closest('section');
+      if (missed === null) throw new Error('No missed items');
+      expect(within(missed).getByText('Barbecue')).toBeInTheDocument();
+      expect(within(missed).getByText('Absent')).toBeInTheDocument();
+    });
+
+    it('moves any tile with the arrow buttons', async () => {
+      const bodies: unknown[] = [];
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        [paprikaPut]: async (request) => {
+          bodies.push(await request.json());
+          return Response.json(inCooldown());
+        },
+      });
+      renderRoomPage();
+
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Descendre Paprika au tier du dessous' }),
+      );
+      await vi.waitFor(() => expect(bodies).toHaveLength(1));
+      fireEvent.click(screen.getByRole('button', { name: 'Reculer Paprika dans son tier' }));
+
+      await vi.waitFor(() =>
+        expect(bodies).toEqual([
+          { tier_id: tierA.id, position: 0 },
+          { tier_id: tierS.id, position: 1 },
+        ]),
+      );
+      // S est le premier tier : rien au-dessus
+      expect(
+        screen.getByRole('button', { name: 'Monter Paprika au tier du dessus' }),
+      ).toBeDisabled();
+    });
+
+    it('places a missed item at the end of the chosen tier', async () => {
+      let body: unknown;
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        [`PUT /rooms/K7P2QX/game/placements/${barbecue.id}`]: async (request) => {
+          body = await request.json();
+          return Response.json(inCooldown());
+        },
+      });
+      renderRoomPage();
+
+      fireEvent.change(await screen.findByLabelText('Tier où placer Barbecue'), {
+        target: { value: tierA.id },
+      });
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Placer Barbecue à la fin du tier choisi' }),
+      );
+
+      await vi.waitFor(() => expect(body).toEqual({ tier_id: tierA.id, position: 0 }));
+    });
+
+    it('lets the room admin end the cooldown after confirming', async () => {
+      const fetchMock = stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        'POST /rooms/K7P2QX/game/end': () => Response.json(aliceRoom),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Terminer maintenant' }));
+      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer le cooldown ?' });
+      expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/K7P2QX/game/end');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Terminer' }));
+
+      await vi.waitFor(() =>
+        expect(screen.queryByRole('heading', { name: 'Cooldown final' })).not.toBeInTheDocument(),
+      );
+      expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/end');
+    });
+
+    it('gives a player the final board without the end button', async () => {
+      stubBackend({
+        'GET /rooms/K7P2QX': () =>
+          Response.json(
+            inCooldown({
+              is_admin: false,
+              participants: aliceRoomInGame.participants.map((participant) => ({
+                ...participant,
+                is_you: !participant.is_admin,
+              })),
+            }),
+          ),
+      });
+      renderRoomPage();
+
+      expect(await screen.findByRole('heading', { name: 'Mon classement' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Terminer maintenant' })).not.toBeInTheDocument();
+    });
+
+    it('gives the room admin who does not play only the end button', async () => {
+      stubBackend({
+        'GET /rooms/K7P2QX': () =>
+          Response.json(
+            inCooldown({ settings: { ...aliceRoomInGame.settings, admin_plays: false } }),
+          ),
+      });
+      renderRoomPage();
+
+      expect(
+        await screen.findByRole('button', { name: 'Terminer maintenant' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Les participants finalisent leur classement.',
+      );
+      expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
+    });
   });
 });

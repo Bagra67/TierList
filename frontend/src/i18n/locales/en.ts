@@ -255,8 +255,27 @@ export const en: Translation = {
         everyone_placed: 'Automatic next: when everyone has placed',
       },
       lateArrivals: 'Arrivals open',
-      cooldown: 'The last item is over: the final cooldown is in progress.',
-      cooldownLeft: 'Cooldown end',
+      cooldown: {
+        title: 'Final cooldown',
+        timeLeft: 'Cooldown end',
+        hint: 'Move any tile. Place your missed items before the end.',
+        waiting: 'The participants are finalising their ranking.',
+        missed: 'Missed items',
+        absent: 'Absent',
+        placeInLabel: 'Tier to place {{item}} in',
+        place: 'Place',
+        placeLabel: 'Place {{item}} at the end of the chosen tier',
+        moveUp: 'Move {{item}} to the tier above',
+        moveDown: 'Move {{item}} to the tier below',
+        end: {
+          open: 'End now',
+          title: 'End the cooldown?',
+          warning: "Every participant's ranking becomes final and the game is closed.",
+          cancel: 'Cancel',
+          submit: 'End',
+          submitting: 'Ending…',
+        },
+      },
       // Screen reader announcements during a drag and drop
       dnd: {
         instructions:

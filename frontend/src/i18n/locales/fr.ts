@@ -261,8 +261,28 @@ export const fr = {
         everyone_placed: 'Passage automatique : quand tout le monde a placé',
       },
       lateArrivals: 'Arrivées ouvertes',
-      cooldown: 'Le dernier item est passé : le cooldown final est en cours.',
-      cooldownLeft: 'Fin du cooldown',
+      cooldown: {
+        title: 'Cooldown final',
+        timeLeft: 'Fin du cooldown',
+        hint: "Déplacez n'importe quelle tuile. Placez vos items manqués avant la fin.",
+        waiting: 'Les participants finalisent leur classement.',
+        missed: 'Items manqués',
+        absent: 'Absent',
+        placeInLabel: 'Tier où placer {{item}}',
+        place: 'Placer',
+        placeLabel: 'Placer {{item}} à la fin du tier choisi',
+        moveUp: 'Monter {{item}} au tier du dessus',
+        moveDown: 'Descendre {{item}} au tier du dessous',
+        end: {
+          open: 'Terminer maintenant',
+          title: 'Terminer le cooldown ?',
+          warning:
+            'Les classements de tous les participants deviennent définitifs et la partie est close.',
+          cancel: 'Annuler',
+          submit: 'Terminer',
+          submitting: 'Fin…',
+        },
+      },
       // Annonces des lecteurs d'écran pendant un glisser-déposer
       dnd: {
         instructions:
