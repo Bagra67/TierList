@@ -33,6 +33,11 @@ export function MainNav() {
             {t('nav.templates')}
           </NavLink>
         </li>
+        <li>
+          <NavLink to={ROUTES.HISTORY} className={linkClassName}>
+            {t('nav.history')}
+          </NavLink>
+        </li>
       </ul>
     </nav>
   );

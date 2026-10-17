@@ -130,9 +130,12 @@ class RoomBanResponse(BaseModel):
 
 
 class PastGameResponse(BaseModel):
-    """Une partie close de la salle : son lien de résultats (/results/<public_token>)."""
+    """Une partie close (parties passées d'une salle, historique d'un compte) : son lien de
+    résultats (/results/<public_token>)."""
 
     public_token: str
+    # Nom du template au démarrage de la partie (sa version figée)
+    template_name: str
     closed_at: datetime
     # Joueurs figés, sans le room admin qui ne joue pas
     player_count: int

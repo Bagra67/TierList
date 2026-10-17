@@ -43,6 +43,12 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     room_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("rooms.id", ondelete="SET NULL"))
     # La version figée du template, jamais modifiée ensuite (invariant 4)
     snapshot_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("template_snapshots.id"), index=True)
+    # Le room admin au démarrage, gardé avec la partie : il la retrouve dans son historique même
+    # sans jouer (pas de joueur figé), et même une fois la salle fermée (US-5.5, permissions.md).
+    # SET NULL : supprimer son compte garde la partie pour les joueurs
+    admin_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
     status: Mapped[GameStatus] = mapped_column(
         text_enum(GameStatus, "game_status"), default=GameStatus.IN_ROUND
     )

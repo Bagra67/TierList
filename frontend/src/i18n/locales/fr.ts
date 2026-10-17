@@ -19,6 +19,17 @@ export const fr = {
     label: 'Navigation principale',
     home: 'Accueil',
     templates: 'Mes templates',
+    history: 'Historique',
+  },
+  history: {
+    title: 'Historique',
+    empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",
+    closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+    players_one: '{{count}} joueur',
+    players_other: '{{count}} joueurs',
+    open: 'Voir les résultats',
+    openLabel: 'Voir les résultats de la partie {{name}}',
+    more: 'Voir plus',
   },
   renderError: {
     title: 'Une erreur est survenue',

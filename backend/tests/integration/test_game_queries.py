@@ -1,18 +1,14 @@
 """Nombre de requêtes SQL d'une partie et de ses résultats : constant, quel que soit le nombre
 d'items (pas de N+1)."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
-from typing import Any
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import Connection, event
 from sqlalchemy.orm import Session
 
 from tests.integration.helpers import (
     JsonObject,
+    counted_queries,
     create_room,
     create_template,
     next_item,
@@ -23,22 +19,6 @@ from tests.integration.helpers import (
 )
 
 pytestmark = pytest.mark.integration
-
-
-@contextmanager
-def counted_queries(db_session: Session) -> Iterator[list[str]]:
-    """Les requêtes SQL envoyées par la session du test pendant le bloc."""
-    statements: list[str] = []
-    connection: Connection = db_session.connection()
-
-    def record(*args: Any) -> None:
-        statements.append(args[2])
-
-    event.listen(connection, "before_cursor_execute", record)
-    try:
-        yield statements
-    finally:
-        event.remove(connection, "before_cursor_execute", record)
 
 
 def played_room(client: TestClient, db_session: Session, email: str, tile_count: int) -> JsonObject:

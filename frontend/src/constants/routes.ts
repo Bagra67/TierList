@@ -13,6 +13,8 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
+  // Parties closes du compte (US-5.5)
+  HISTORY: '/history',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
   // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)

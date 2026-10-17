@@ -1,19 +1,19 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Exists, Select, func, select, update
+from sqlalchemy import Exists, Select, select, update
 from sqlalchemy.orm import Session, selectinload, with_expression
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql.dml import ReturningUpdate
 
 from app.models.enums import RoomStatus
 from app.models.game import Game
-from app.models.game_player import GamePlayer
 from app.models.participant import Participant
 from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
 from app.models.template_snapshot import TemplateSnapshot
+from app.repositories import games as game_repository
 
 
 def add_room(session: Session, room: Room) -> None:
@@ -23,7 +23,7 @@ def add_room(session: Session, room: Room) -> None:
 def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room]:
     """Charge avec la salle son template, ses participants (et leur utilisateur), ses
     bannissements, sa partie en cours (ses tours et leur tuile, ses tiers, ses placements) et
-    ses parties closes (leur nombre de joueurs).
+    ses parties closes (leur nom de template et leur nombre de joueurs).
 
     for_update verrouille la ligne de la salle jusqu'à la fin de la transaction : deux
     modifications de la même salle passent l'une après l'autre (docs/technical/realtime.md)."""
@@ -36,14 +36,10 @@ def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room
         .selectinload(Game.snapshot)
         .selectinload(TemplateSnapshot.tiers),
         selectinload(Room.current_game).selectinload(Game.placements).selectinload(Placement.tile),
-        # Le nombre de joueurs de chaque partie passée, sans charger les joueurs
+        # Le nom du template et le nombre de joueurs de chaque partie passée, sans ses joueurs
         selectinload(Room.closed_games).options(
-            with_expression(
-                Game.player_count,
-                select(func.count(GamePlayer.id))
-                .where(GamePlayer.game_id == Game.id)
-                .scalar_subquery(),
-            )
+            selectinload(Game.snapshot),
+            with_expression(Game.player_count, game_repository.player_count_expression()),
         ),
     )
     if for_update:

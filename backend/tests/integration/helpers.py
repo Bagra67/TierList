@@ -2,6 +2,8 @@
 
 import re
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -9,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import URL
+from sqlalchemy import URL, Connection, event
 from sqlalchemy.orm import Session
 
 from app.models.tile import Tile
@@ -138,3 +140,22 @@ def play_and_close(client: TestClient, code: str, admin: dict[str, str]) -> Json
     response: Response = client.post(f"/rooms/{code}/game/end", headers=admin)
     assert response.status_code == 200
     return response.json()
+
+
+# --- Nombre de requêtes (test_game_queries.py, test_history.py) -----------------------------
+
+
+@contextmanager
+def counted_queries(db_session: Session) -> Iterator[list[str]]:
+    """Les requêtes SQL envoyées par la session du test pendant le bloc."""
+    statements: list[str] = []
+    connection: Connection = db_session.connection()
+
+    def record(*args: Any) -> None:
+        statements.append(args[2])
+
+    event.listen(connection, "before_cursor_execute", record)
+    try:
+        yield statements
+    finally:
+        event.remove(connection, "before_cursor_execute", record)
