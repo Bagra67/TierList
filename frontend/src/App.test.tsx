@@ -56,16 +56,44 @@ describe('App', () => {
     consoleError.mockRestore();
   });
 
-  it('logs out and goes back to the login page', async () => {
+  it('logs out from the header and goes back to the login page', async () => {
     stubBackend({
       ...signedInSession,
+      'GET /templates': () => Response.json({ items: [] }),
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     });
-    renderAppAt('/');
+    // Depuis une autre page que l'accueil : le bouton est dans l'en-tête de toutes les pages
+    renderAppAt('/templates');
+    await screen.findByRole('heading', { name: 'Mes templates' });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(
+      within(screen.getByRole('banner')).getByRole('button', { name: 'Se déconnecter' }),
+    );
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
+  });
+
+  it('goes back to the signed-out state when the session ends elsewhere', async () => {
+    // La session est restaurée au chargement, puis se termine ailleurs (autre onglet, refresh
+    // token expiré) : le rafraîchissement suivant répond 401
+    let sessionOpen: boolean = true;
+    stubBackend({
+      'POST /auth/refresh': () => (sessionOpen ? tokenResponse('alice-token')() : unauthorized()),
+      'GET /auth/me': () => Response.json(alice),
+      'GET /templates': () => (sessionOpen ? Response.json({ items: [] }) : unauthorized()),
+      'GET /history': () => unauthorized(),
+    });
+    renderAppAt('/templates');
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    sessionOpen = false;
+
+    fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
   it('sends a signed-in user away from the login page', async () => {
@@ -147,6 +175,9 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument();
+    // Sans compte, l'en-tête n'a ni les liens privés ni « Se déconnecter »
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
   it('shows a not found page for unknown urls, with or without a session', async () => {
