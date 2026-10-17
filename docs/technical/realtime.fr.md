@@ -116,7 +116,7 @@ REST GET /rooms/{code} ──▶ cache TanStack Query ──▶ composants
 - Le serveur est la seule horloge. Un tour avec timer et le cooldown stockent leur **heure de fin** (`ends_at`, UTC) en base ; les événements l'envoient, les clients en déduisent le compte à rebours.
 - Dans le processus, une tâche `asyncio` par partie attend l'échéance et appelle la transition du service ; une échéance plus récente de la partie (tour suivant, fin du cooldown) la remplace, une plus ancienne est ignorée ; une phase finie plus tôt laisse sa tâche, dont la transition ne fait alors rien ; une transition qui échoue est réessayée après 1, 5 puis 30 s. Au démarrage, les échéances en cours sont relues en base et reprogrammées : un redémarrage ne perd aucun timer.
 - **Courses** (timer, « suivant » et « tout le monde a fini » en même temps) : chaque transition s'exécute dans une transaction qui verrouille la ligne de la room et vérifie l'état attendu (le tour est toujours en cours) ; la seconde trouve le tour déjà terminé et ne fait rien. Les transitions sont donc **idempotentes**.
-- Le **délai d'inactivité** d'une room est géré par un balayage périodique qui ferme les rooms inactives depuis trop longtemps.
+- Le **délai d'inactivité** d'une room est géré par un balayage périodique qui ferme les rooms inactives depuis trop longtemps (`room_sweeper`, [guide des salles](rooms.fr.md#26-fermer-une-salle)).
 - SQLAlchemy est synchrone : depuis le code async (le socket, les timers), les appels à la base passent par le threadpool (`run_in_threadpool`) et ne bloquent jamais la boucle d'événements.
 
 ### 2.9 Montée en charge
@@ -155,7 +155,6 @@ Dans les deux cas, le load balancer doit accepter l'upgrade WebSocket, avec un d
 
 - **Un seul worker** au jalon 1 : lancer le backend avec plusieurs workers séparerait les rooms (l'étape 2 est nécessaire avant).
 - L'access token n'est vérifié qu'à l'ouverture du socket : une session révoquée pendant une partie continue de recevoir les événements de cette room jusqu'à la fermeture du socket (les commandes, en REST, sont refusées tout de suite). Acceptable puisque le socket ne transporte rien de privé au-delà de la room.
-- Le délai d'inactivité (fermeture automatique d'une room, #90) reste à choisir.
 - Un socket d'invité déjà ouvert le reste quand la place de l'invité expire, jusqu'à sa fermeture (comme une session révoquée).
 - Le canal n'accepte que l'origine de `FRONTEND_BASE_URL` : ouvrir l'application par une autre adresse (par ex. `http://127.0.0.1:5173` au lieu de `http://localhost:5173`) fait refuser son canal.
 - Ce qui se passe quand l'**admin de la room** se déconnecte (personne ne peut cliquer sur « suivant » ni fermer) est une question produit non couverte par les [cycles de vie](../product/milestone-1/lifecycles.fr.md) ; les timers font tout de même avancer la partie.

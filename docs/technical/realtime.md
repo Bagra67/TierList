@@ -116,7 +116,7 @@ WS events ──▶ useRoomEvents(roomCode) ──┘ (setQueryData / invalidate
 - The server is the only clock. A round with a timer and the cooldown store their **end time** (`ends_at`, UTC) in the database; the events send it, the clients display the countdown from it.
 - In the process, an `asyncio` task per game waits for the deadline and calls the service transition; a newer deadline of the game (next round, cooldown end) replaces it, an older one is ignored; a phase ended earlier leaves its task, whose transition then does nothing; a failed transition is tried again after 1, 5 then 30 s. At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
 - **Races** (timer, "next" and "everyone done" at the same time): each transition runs in a transaction that locks the room row and checks the expected state (the round is still in progress); the second one finds the round already ended and does nothing. Transitions are therefore **idempotent**.
-- The **inactivity delay** of a room is handled by a periodic sweep that closes the rooms inactive for too long.
+- The **inactivity delay** of a room is handled by a periodic sweep that closes the rooms inactive for too long (`room_sweeper`, [rooms guide](rooms.md#26-closing-a-room)).
 - SQLAlchemy is synchronous: from async code (the socket, the timers), the database calls go through the threadpool (`run_in_threadpool`) and never block the event loop.
 
 ### 2.9 Scaling
@@ -155,7 +155,6 @@ In both cases the load balancer must accept the WebSocket upgrade, with an idle 
 
 - **One worker** in milestone 1: starting the backend with several workers would split the rooms (stage 2 needed first).
 - The access token is checked only when the socket opens: a session revoked during a game keeps receiving the events of that room until the socket closes (the commands, on REST, are refused at once). Acceptable since the socket carries nothing private beyond the room.
-- The inactivity delay (automatic closing of a room, #90) is still to be chosen.
 - A guest socket already open stays open when the guest seat expires, until it closes (like a revoked session).
 - The channel only accepts the origin of `FRONTEND_BASE_URL`: opening the app through another address (e.g. `http://127.0.0.1:5173` instead of `http://localhost:5173`) has its channel refused.
 - What happens when the **room admin** disconnects (nobody can click "next" or close) is a product question not covered by the [lifecycles](../product/milestone-1/lifecycles.md); the timers still make the game move on.
