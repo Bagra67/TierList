@@ -510,6 +510,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/game/placements/{tile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Place Item */
+        put: operations["place_item_rooms__code__game_placements__tile_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -588,6 +605,12 @@ export interface components {
             current_item: components["schemas"]["CurrentItemResponse"];
             /** Ends At */
             ends_at: string | null;
+            /** Tiers */
+            tiers: components["schemas"]["GameTierResponse"][];
+            /** Placed Participant Ids */
+            placed_participant_ids: string[];
+            /** Own Placements */
+            own_placements: components["schemas"]["OwnPlacementResponse"][];
         };
         /**
          * CurrentItemResponse
@@ -657,6 +680,21 @@ export interface components {
              * @enum {string}
              */
             language: "fr" | "en";
+        };
+        /**
+         * GameTierResponse
+         * @description Un tier de la version figée de la partie, où placer les items.
+         */
+        GameTierResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Color */
+            color: string;
         };
         /**
          * GuestRoomResponse
@@ -733,6 +771,20 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * OwnPlacementResponse
+         * @description Un item que le lecteur a placé pendant son tour : son tier et sa position (0 = premier).
+         */
+        OwnPlacementResponse: {
+            item: components["schemas"]["CurrentItemResponse"];
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Position */
+            position: number;
+        };
         /** ParticipantResponse */
         ParticipantResponse: {
             /**
@@ -748,6 +800,16 @@ export interface components {
             is_guest: boolean;
             /** Connected */
             connected: boolean;
+        };
+        /** PlaceItemRequest */
+        PlaceItemRequest: {
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Position */
+            position: number;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -1049,6 +1111,30 @@ export interface components {
             room_version: number;
             data: components["schemas"]["ParticipantJoinedData"];
         };
+        /** ParticipantPlacedData */
+        ParticipantPlacedData: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** Round Number */
+            round_number: number;
+        };
+        /**
+         * ParticipantPlacedEvent
+         * @description Un participant a placé l'item en cours pour la première fois de ce tour.
+         */
+        ParticipantPlacedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "participant.placed";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["ParticipantPlacedData"];
+        };
         /** ParticipantPresenceData */
         ParticipantPresenceData: {
             /**
@@ -1122,7 +1208,7 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["PingMessage"];
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -3101,6 +3187,89 @@ export interface operations {
                 };
             };
             /** @description Game already in progress, no participant who places, or template deleted or without tiles */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    place_item_rooms__code__game_placements__tile_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                tile_id: string;
+            };
+            cookie?: {
+                guest_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The room admin does not play */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found, or tier not in the game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No round in progress, or the tile is not the current item */
             409: {
                 headers: {
                     [name: string]: unknown;

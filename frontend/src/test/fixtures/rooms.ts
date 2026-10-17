@@ -50,6 +50,12 @@ export const aliceRoomInGame: Room = {
       image_url: 'https://images.example.com/paprika.webp',
     },
     ends_at: null,
+    tiers: [
+      { id: '8e2f3a4b-0000-4000-8000-000000000001', name: 'S', color: '#FF7F7F' },
+      { id: '8e2f3a4b-0000-4000-8000-000000000002', name: 'A', color: '#FFBF7F' },
+    ],
+    placed_participant_ids: [],
+    own_placements: [],
   },
 };
 

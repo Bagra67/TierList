@@ -19,7 +19,13 @@ from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
-from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
+from app.exceptions.games import (
+    GameInProgressError,
+    ItemNotCurrentError,
+    NoPlacingParticipantError,
+    NotAPlacingParticipantError,
+    RoundNotInProgressError,
+)
 from app.exceptions.http import AppHTTPException
 from app.exceptions.rooms import (
     BanNotFoundError,
@@ -34,12 +40,18 @@ from app.exceptions.rooms import (
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
-from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.exceptions.templates import (
+    TemplateHasNoTilesError,
+    TemplateNotFoundError,
+    TierNotFoundError,
+)
+from app.models.participant import Participant
 from app.models.room import Room
 from app.schemas.rooms import (
     CreateRoomRequest,
     GuestRoomResponse,
     JoinAsGuestRequest,
+    PlaceItemRequest,
     RestoreGuestRequest,
     RoomResponse,
     UpdateRoomSettingsRequest,
@@ -146,7 +158,7 @@ def create_room(
             code=ErrorCode.TEMPLATE_HAS_NO_TILES,
             detail=messages.TEMPLATE_HAS_NO_TILES,
         ) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
 
 
 # Compte (access token) ou invité (cookie de sa salle) ; sans place, 404 comme un code inconnu
@@ -155,10 +167,10 @@ def get_room(
     code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
     try:
-        room: Room = service.get_for_viewer(viewer, code)
+        seat: Participant = service.seat_of(viewer, code)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
-    return room_response(room, viewer.user, service, storage)
+    return room_response(seat.room, seat, service, storage)
 
 
 @router.post(
@@ -271,7 +283,7 @@ def join_room(
         raise _room_locked() from exc
     except RoomFullError as exc:
         raise _room_full(exc) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
 
 
 @router.patch(
@@ -303,7 +315,7 @@ def update_room_settings(
             code=ErrorCode.ROOM_SETTINGS_LOCKED,
             detail=messages.ROOM_SETTINGS_LOCKED,
         ) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
 
 
 @router.delete(
@@ -345,7 +357,7 @@ def remove_participant(
             code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
             detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
         ) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
 
 
 @router.delete(
@@ -375,7 +387,7 @@ def unban(
             code=ErrorCode.BAN_NOT_FOUND,
             detail=messages.BAN_NOT_FOUND,
         ) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
 
 
 @router.post(
@@ -425,4 +437,57 @@ def start_game(
             code=ErrorCode.TEMPLATE_HAS_NO_TILES,
             detail=messages.TEMPLATE_HAS_NO_TILES,
         ) from exc
-    return room_response(room, user, service, storage)
+    return room_response(room, service.seat_in(room, user), service, storage)
+
+
+@router.put(
+    "/{code}/game/placements/{tile_id}",
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        403: {
+            "model": ErrorResponse,
+            "description": messages.NOT_A_PLACING_PARTICIPANT_DESCRIPTION,
+        },
+        404: {"model": ErrorResponse, "description": messages.ROOM_OR_TIER_NOT_FOUND_DESCRIPTION},
+        409: {"model": ErrorResponse, "description": messages.CANNOT_PLACE_DESCRIPTION},
+    },
+)
+def place_item(
+    code: str,
+    tile_id: uuid.UUID,
+    payload: PlaceItemRequest,
+    viewer: RoomViewerDep,
+    games: GameServiceDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
+) -> RoomResponse:
+    # Compte ou invité : place l'item en cours dans son propre plateau (US-3.3)
+    try:
+        seat: Participant = games.place(viewer, code, tile_id, payload.tier_id, payload.position)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except TierNotFoundError as exc:
+        raise AppHTTPException(
+            status_code=404,
+            code=ErrorCode.TIER_NOT_FOUND,
+            detail=messages.TIER_NOT_FOUND,
+        ) from exc
+    except NotAPlacingParticipantError as exc:
+        raise AppHTTPException(
+            status_code=403,
+            code=ErrorCode.NOT_A_PLACING_PARTICIPANT,
+            detail=messages.NOT_A_PLACING_PARTICIPANT,
+        ) from exc
+    except RoundNotInProgressError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.ROUND_NOT_IN_PROGRESS,
+            detail=messages.ROUND_NOT_IN_PROGRESS,
+        ) from exc
+    except ItemNotCurrentError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.ITEM_NOT_CURRENT,
+            detail=messages.ITEM_NOT_CURRENT,
+        ) from exc
+    return room_response(seat.room, seat, service, storage)

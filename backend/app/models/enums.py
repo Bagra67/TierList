@@ -41,3 +41,12 @@ class AutoAdvance(StrEnum):
     TIMER = "timer"
     # Quand tous les joueurs ont placé l'item
     EVERYONE_PLACED = "everyone_placed"
+
+
+class PlacementPhase(StrEnum):
+    """Moment où un placement est fait (docs/product/milestone-1/domain-model.md)."""
+
+    # Pendant le tour de l'item : le « hot take », peut être absent
+    ROUND = "round"
+    # Pendant le cooldown final (#96) : jamais absent, sert aux résultats
+    FINAL = "final"

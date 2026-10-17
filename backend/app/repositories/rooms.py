@@ -6,8 +6,10 @@ from sqlalchemy.sql.dml import ReturningUpdate
 
 from app.models.game import Game
 from app.models.participant import Participant
+from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
+from app.models.template_snapshot import TemplateSnapshot
 
 
 def add_room(session: Session, room: Room) -> None:
@@ -16,7 +18,7 @@ def add_room(session: Session, room: Room) -> None:
 
 def get_room_by_code(session: Session, code: str, for_update: bool = False) -> Room | None:
     """Salle de ce code, avec son template, ses participants (et leur utilisateur), ses
-    bannissements et sa partie en cours (ses tours et leur tuile).
+    bannissements et sa partie en cours (ses tours et leur tuile, ses tiers, ses placements).
 
     for_update verrouille la ligne de la salle jusqu'à la fin de la transaction : deux
     modifications de la même salle passent l'une après l'autre (docs/technical/realtime.md)."""
@@ -28,6 +30,12 @@ def get_room_by_code(session: Session, code: str, for_update: bool = False) -> R
             selectinload(Room.participants).selectinload(Participant.user),
             selectinload(Room.bans),
             selectinload(Room.current_game).selectinload(Game.rounds).selectinload(Round.tile),
+            selectinload(Room.current_game)
+            .selectinload(Game.snapshot)
+            .selectinload(TemplateSnapshot.tiers),
+            selectinload(Room.current_game)
+            .selectinload(Game.placements)
+            .selectinload(Placement.tile),
         )
     )
     if for_update:

@@ -2693,6 +2693,139 @@
         }
       }
     },
+    "/rooms/{code}/game/placements/{tile_id}": {
+      "put": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Place Item",
+        "operationId": "place_item_rooms__code__game_placements__tile_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "tile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tile Id"
+            }
+          },
+          {
+            "name": "guest_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Guest Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceItemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found, or tier not in the game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The room admin does not play",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No round in progress, or the tile is not the current item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -2870,6 +3003,28 @@
               }
             ],
             "title": "Ends At"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/GameTierResponse"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "placed_participant_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Placed Participant Ids"
+          },
+          "own_placements": {
+            "items": {
+              "$ref": "#/components/schemas/OwnPlacementResponse"
+            },
+            "type": "array",
+            "title": "Own Placements"
           }
         },
         "type": "object",
@@ -2877,7 +3032,10 @@
           "round_number",
           "round_count",
           "current_item",
-          "ends_at"
+          "ends_at",
+          "tiers",
+          "placed_participant_ids",
+          "own_placements"
         ],
         "title": "CurrentGameResponse"
       },
@@ -3080,6 +3238,31 @@
         ],
         "title": "ForgotPasswordRequest"
       },
+      "GameTierResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "color"
+        ],
+        "title": "GameTierResponse",
+        "description": "Un tier de la version figée de la partie, où placer les items."
+      },
       "GuestRoomResponse": {
         "properties": {
           "code": {
@@ -3266,6 +3449,30 @@
         ],
         "title": "LoginRequest"
       },
+      "OwnPlacementResponse": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/CurrentItemResponse"
+          },
+          "tier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tier Id"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "tier_id",
+          "position"
+        ],
+        "title": "OwnPlacementResponse",
+        "description": "Un item que le lecteur a placé pendant son tour : son tier et sa position (0 = premier)."
+      },
       "ParticipantResponse": {
         "properties": {
           "id": {
@@ -3299,6 +3506,26 @@
           "connected"
         ],
         "title": "ParticipantResponse"
+      },
+      "PlaceItemRequest": {
+        "properties": {
+          "tier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tier Id"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tier_id",
+          "position"
+        ],
+        "title": "PlaceItemRequest"
       },
       "RegisterRequest": {
         "properties": {
@@ -4089,6 +4316,49 @@
         "title": "ParticipantJoinedEvent",
         "type": "object"
       },
+      "ParticipantPlacedData": {
+        "properties": {
+          "participant_id": {
+            "format": "uuid",
+            "title": "Participant Id",
+            "type": "string"
+          },
+          "round_number": {
+            "title": "Round Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "participant_id",
+          "round_number"
+        ],
+        "title": "ParticipantPlacedData",
+        "type": "object"
+      },
+      "ParticipantPlacedEvent": {
+        "description": "Un participant a placé l'item en cours pour la première fois de ce tour.",
+        "properties": {
+          "type": {
+            "const": "participant.placed",
+            "default": "participant.placed",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ParticipantPlacedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "ParticipantPlacedEvent",
+        "type": "object"
+      },
       "ParticipantPresenceData": {
         "properties": {
           "participant_id": {
@@ -4216,6 +4486,7 @@
           "mapping": {
             "game.started": "#/components/schemas/GameStartedEvent",
             "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
+            "participant.placed": "#/components/schemas/ParticipantPlacedEvent",
             "participant.presence": "#/components/schemas/ParticipantPresenceEvent",
             "participant.removed": "#/components/schemas/ParticipantRemovedEvent",
             "ping": "#/components/schemas/PingMessage",
@@ -4238,6 +4509,9 @@
           },
           {
             "$ref": "#/components/schemas/GameStartedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ParticipantPlacedEvent"
           },
           {
             "$ref": "#/components/schemas/PingMessage"

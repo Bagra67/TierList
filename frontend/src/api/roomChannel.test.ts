@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { roomQueryKey } from '../constants/rooms';
 import { FakeWebSocket, latestSocket } from '../test/fakeWebSocket';
-import { aliceRoom } from '../test/fixtures/rooms';
+import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
 import { stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { setAccessToken } from './client';
 import { createQueryClient } from './queryClient';
@@ -92,6 +92,22 @@ describe('useRoomEvents', () => {
     const room: Room | undefined = cachedRoom(queryClient);
     expect(room?.version).toBe(4);
     expect(room?.participants[1].connected).toBe(true);
+    expect(isInvalidated(queryClient)).toBe(false);
+  });
+
+  it('adds who placed the current item to the cache without reading the room again', () => {
+    const { queryClient } = followRoom();
+    queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoomInGame);
+
+    latestSocket().receive({
+      type: 'participant.placed',
+      room_version: aliceRoomInGame.version + 1,
+      data: { participant_id: bobId, round_number: 1 },
+    });
+
+    const room: Room | undefined = cachedRoom(queryClient);
+    expect(room?.version).toBe(aliceRoomInGame.version + 1);
+    expect(room?.game?.placed_participant_ids).toEqual([bobId]);
     expect(isInvalidated(queryClient)).toBe(false);
   });
 

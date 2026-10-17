@@ -50,6 +50,9 @@ BAN_NOT_FOUND = "Ban not found in this room"
 # --- Parties -------------------------------------------------------------------------------
 GAME_IN_PROGRESS = "A game is already in progress in this room"
 NO_PLACING_PARTICIPANT = "A game needs at least one participant who places the items"
+ROUND_NOT_IN_PROGRESS = "No round is in progress in this room"
+NOT_A_PLACING_PARTICIPANT = "The room admin does not play: they do not place the items"
+ITEM_NOT_CURRENT = "This tile is not the item of the current round"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
@@ -83,6 +86,9 @@ ROOM_ADMIN_REQUIRED_DESCRIPTION = "Not the room admin"
 ROOM_SETTINGS_LOCKED_DESCRIPTION = "Settings locked during a game, except late arrivals"
 NICKNAME_TAKEN_DESCRIPTION = "Nickname already used in the room"
 ROOM_FULL_OR_LOCKED_DESCRIPTION = "Room full, or locked during a game"
+NOT_A_PLACING_PARTICIPANT_DESCRIPTION = "The room admin does not play"
+ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier not in the game"
+CANNOT_PLACE_DESCRIPTION = "No round in progress, or the tile is not the current item"
 GAME_CANNOT_START_DESCRIPTION = (
     "Game already in progress, no participant who places, or template deleted or without tiles"
 )

@@ -67,6 +67,20 @@ class GameStartedEvent(BaseModel):
     data: GameStartedData
 
 
+class ParticipantPlacedData(BaseModel):
+    participant_id: uuid.UUID
+    # Le tour de l'item placé ; jamais le tier ni la position (plateau privé)
+    round_number: int
+
+
+class ParticipantPlacedEvent(BaseModel):
+    """Un participant a placé l'item en cours pour la première fois de ce tour."""
+
+    type: Literal["participant.placed"] = "participant.placed"
+    room_version: int
+    data: ParticipantPlacedData
+
+
 class RoomSettingsUpdatedData(BaseModel):
     pass
 
@@ -85,7 +99,8 @@ RoomEvent = Annotated[
     | ParticipantPresenceEvent
     | ParticipantRemovedEvent
     | RoomSettingsUpdatedEvent
-    | GameStartedEvent,
+    | GameStartedEvent
+    | ParticipantPlacedEvent,
     Field(discriminator="type"),
 ]
 
@@ -118,6 +133,7 @@ RoomServerMessage = Annotated[
     | ParticipantRemovedEvent
     | RoomSettingsUpdatedEvent
     | GameStartedEvent
+    | ParticipantPlacedEvent
     | PingMessage,
     Field(discriminator="type"),
 ]

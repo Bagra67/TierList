@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.constants.templates import DEFAULT_TIERS
 from app.models.enums import GameStatus
 from app.models.game import Game
 from app.models.image import Image
@@ -90,7 +91,13 @@ def test_the_admin_starts_a_game_on_the_first_item(
             "image_url": None,
         },
         "ends_at": None,
+        "tiers": body["game"]["tiers"],
+        # Personne n'a encore placé l'item
+        "placed_participant_ids": [],
+        "own_placements": [],
     }
+    # Les tiers de la version figée : ceux du template, de haut en bas
+    assert [tier["name"] for tier in body["game"]["tiers"]] == [name for name, _ in DEFAULT_TIERS]
     started: object = room_events.events[-1][1]
     assert isinstance(started, GameStartedEvent)
     assert started.room_version == body["version"]

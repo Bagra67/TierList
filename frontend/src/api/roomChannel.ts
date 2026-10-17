@@ -46,8 +46,8 @@ async function channelAccessToken(viewer: RoomViewer): Promise<string | null> {
   return getAccessToken();
 }
 
-// Applique un événement à la salle en cache. La présence et un départ la modifient directement ;
-// une arrivée ou des réglages la font relire. Une version qui ne suit pas la précédente veut dire qu'un
+// Applique un événement à la salle en cache. La présence, un départ et « a placé » la modifient
+// directement ; une arrivée ou des réglages la font relire. Une version qui ne suit pas la précédente veut dire qu'un
 // événement a été manqué : la salle est relue (le serveur ne rejoue jamais le passé).
 function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomEvent): void {
   const queryKey = roomQueryKey(roomCode);
@@ -76,6 +76,18 @@ function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomE
       participants: room.participants.filter(
         (participant) => participant.id !== event.data.participant_id,
       ),
+    });
+    return;
+  }
+  if (event.type === 'participant.placed' && room.game !== null) {
+    // Qui a placé l'item en cours, jamais où (plateau privé)
+    queryClient.setQueryData<Room>(queryKey, {
+      ...room,
+      version: event.room_version,
+      game: {
+        ...room.game,
+        placed_participant_ids: [...room.game.placed_participant_ids, event.data.participant_id],
+      },
     });
     return;
   }
