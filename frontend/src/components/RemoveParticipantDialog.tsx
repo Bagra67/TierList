@@ -1,9 +1,10 @@
-import { type FormEvent, useId, useRef, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type Participant, useRemoveParticipant } from '../api/rooms';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
+import { DialogActions, ModalDialog } from './ModalDialog';
 import { Button } from './ui/button';
 
 interface RemoveParticipantDialogProps {
@@ -15,7 +16,6 @@ interface RemoveParticipantDialogProps {
 // <dialog> natif (focus piégé, fermeture avec Échap). Réservé au room admin.
 export function RemoveParticipantDialog({ code, participant }: RemoveParticipantDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
   const removeMutation = useRemoveParticipant(code);
   const [ban, setBan] = useState<boolean>(false);
   const { t } = useTranslation();
@@ -49,16 +49,12 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
       >
         {t('rooms.lobby.remove.open')}
       </Button>
-      <dialog
-        ref={dialogRef}
-        aria-labelledby={titleId}
+      <ModalDialog
+        dialogRef={dialogRef}
+        title={t('rooms.lobby.remove.title', { name })}
+        description={t('rooms.lobby.remove.warning')}
         onClose={handleClose}
-        className="m-auto w-full max-w-md rounded-xl bg-card p-6 text-sm text-card-foreground shadow-lg ring-1 ring-foreground/10 backdrop:bg-black/50"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('rooms.lobby.remove.title', { name })}
-        </h2>
-        <p className="mt-2 text-muted-foreground">{t('rooms.lobby.remove.warning')}</p>
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           <label className="flex items-center gap-2">
             <input
@@ -75,20 +71,21 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
           {removeMutation.isError && (
             <ErrorMessage>{translateError(t, removeMutation.error)}</ErrorMessage>
           )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => dialogRef.current?.close()}>
-              {t('rooms.lobby.remove.cancel')}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={removeMutation.isPending}>
-              {removeMutation.isPending
+          <DialogActions
+            cancelLabel={t('rooms.lobby.remove.cancel')}
+            onCancel={() => dialogRef.current?.close()}
+            submitLabel={
+              removeMutation.isPending
                 ? t('rooms.lobby.remove.submitting')
                 : ban
                   ? t('rooms.lobby.remove.submitBan')
-                  : t('rooms.lobby.remove.submit')}
-            </Button>
-          </div>
+                  : t('rooms.lobby.remove.submit')
+            }
+            submitVariant="destructive"
+            submitDisabled={removeMutation.isPending}
+          />
         </form>
-      </dialog>
+      </ModalDialog>
     </>
   );
 }
