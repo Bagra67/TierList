@@ -12,7 +12,7 @@ Browser
   ▼
 React component ──► useX() hook ──► getX() ──► apiClient ──► /api/...   (frontend, Vite)
                     TanStack Query              openapi-fetch       │
-                                                                    │ Vite proxy (dev): /api/x → :8000/x
+                                                                    │ same origin: FastAPI serves /api (Vite proxy in dev)
                                                                     ▼
 FastAPI route ──► service ──► repository ──► SQLAlchemy session ──► PostgreSQL   (backend)
  (HTTP only)     (business)   (queries)       (app/db/session.py)     (Docker)
@@ -96,4 +96,4 @@ Deliberately postponed (YAGNI), to decide when a feature needs them:
 
 - None for now.
 
-Decided since: authentication (JWT access token + rotating refresh token, see the [authentication guide](authentication.md)), real time for rooms (WebSocket push + REST commands, see the [real-time guide](realtime.md)), tile images (WebP compression, S3 storage, see the [images guide](images.md)), the rooms (settings as columns, short random code, see the [rooms guide](rooms.md)), the results computation (median of fine scores, see the [results guide](results.md)), frontend routing (react-router), the UI library (Tailwind CSS v4 + shadcn/ui), and the hosting and deployment (two VPS, Docker Compose and Caddy, continuous deployment to staging and production, see the [deployment guide](deployment.md); not built yet).
+Decided since: authentication (JWT access token + rotating refresh token, see the [authentication guide](authentication.md)), real time for rooms (WebSocket push + REST commands, see the [real-time guide](realtime.md)), tile images (WebP compression, S3 storage, see the [images guide](images.md)), the rooms (settings as columns, short random code, see the [rooms guide](rooms.md)), the results computation (median of fine scores, see the [results guide](results.md)), frontend routing (react-router), the UI library (Tailwind CSS v4 + shadcn/ui), and the hosting and deployment (MineStrator pods behind a Cloudflare Tunnel, FastAPI serving the frontend and the API under `/api`, continuous deployment to staging and production, see the [deployment guide](deployment.md)).

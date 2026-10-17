@@ -49,7 +49,7 @@ The game start (`game.started`, #91), the placements (`participant.placed`, #92)
 
 ### 2.2 Transport
 
-- One endpoint per room: `WS /rooms/{room_code}/ws` (FastAPI `WebSocket`), reached as `/api/rooms/{room_code}/ws` through the Vite proxy, which then needs `ws: true` in `frontend/vite.config.ts`.
+- One endpoint per room: `WS /rooms/{room_code}/ws` (FastAPI `WebSocket`), served under `/api` (`/api/rooms/{room_code}/ws`); in development, the Vite proxy forwards it (`ws: true` in `frontend/vite.config.ts`).
 - **Server → client**: the events of §2.3. **Client → server**: only the authentication message (§2.4) and the heartbeat reply; any other message closes the socket.
 - A command is a normal REST call: the route calls the service, the service commits, **then** publishes the event to the room (§2.8). The participant who sent the command gets the HTTP response; everyone (sender included) gets the event.
 - No new dependency: `fastapi[standard]` already ships uvicorn with `websockets`, `uvloop` and `httptools` (present in `backend/uv.lock`).

@@ -3910,11 +3910,16 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "release": {
+            "type": "string",
+            "title": "Release"
           }
         },
         "type": "object",
         "required": [
-          "status"
+          "status",
+          "release"
         ],
         "title": "HealthResponse"
       },

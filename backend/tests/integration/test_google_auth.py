@@ -13,7 +13,7 @@ from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
-from app.main import app
+from app.main import api_app
 from app.models.oauth_account import OAuthAccount
 from app.models.user import User
 from app.repositories import oauth_accounts as oauth_account_repository
@@ -63,11 +63,11 @@ def google() -> FakeGoogleOAuthClient:
 
 @pytest.fixture
 def google_client(auth_client: TestClient, google: FakeGoogleOAuthClient) -> Iterator[TestClient]:
-    app.dependency_overrides[get_google_oauth_client] = lambda: google
+    api_app.dependency_overrides[get_google_oauth_client] = lambda: google
     try:
         yield auth_client
     finally:
-        app.dependency_overrides.pop(get_google_oauth_client, None)
+        api_app.dependency_overrides.pop(get_google_oauth_client, None)
 
 
 def start_google_login(client: TestClient, query: str = "") -> str:
@@ -100,7 +100,7 @@ def test_login_redirects_to_google_with_a_signed_attempt_cookie(google_client: T
     assert response.status_code == 302
     assert response.headers["location"].startswith("https://accounts.google.com/")
     set_cookie = response.headers["set-cookie"]
-    expected = ("google_login=", "HttpOnly", "SameSite=lax", "Path=/auth/google", "Max-Age=600")
+    expected = ("google_login=", "HttpOnly", "SameSite=lax", "Path=/api/auth/google", "Max-Age=600")
     for attribute in expected:
         assert attribute in set_cookie
 
@@ -309,12 +309,12 @@ def test_error_returned_by_google_is_reported(
 
 
 def test_google_sign_in_is_unavailable_when_not_configured(auth_client: TestClient):
-    app.dependency_overrides[get_google_oauth_client] = lambda: None
+    api_app.dependency_overrides[get_google_oauth_client] = lambda: None
     try:
         login = auth_client.get("/auth/google/login", follow_redirects=False)
         callback = google_callback(auth_client, "code=auth-code&state=some-state")
     finally:
-        app.dependency_overrides.pop(get_google_oauth_client, None)
+        api_app.dependency_overrides.pop(get_google_oauth_client, None)
 
     assert login.headers["location"] == "/login?error=google_unavailable"
     assert callback.headers["location"] == "/login?error=google_unavailable"

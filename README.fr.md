@@ -78,7 +78,7 @@ Docker Desktop doit être lancé. Depuis la racine `TierList/` :
 | Arrêter (les données sont conservées)          | `docker compose down`                                                                                                                                |
 | Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                                                                                             |
 
-La base reste lancée en arrière-plan entre deux sessions de dev : pas besoin de la redémarrer à chaque fois. Vérifier que le backend y accède : http://127.0.0.1:8000/health/db → `{"status":"ok"}`.
+La base reste lancée en arrière-plan entre deux sessions de dev : pas besoin de la redémarrer à chaque fois. Vérifier que le backend y accède : http://127.0.0.1:8000/api/health/db → `{"status":"ok"}`.
 
 ### En une commande (recommandé)
 
@@ -93,7 +93,7 @@ Lance le backend (http://127.0.0.1:8000) et le frontend (http://localhost:5173) 
 
 - Au premier lancement, le script installe automatiquement les dépendances si besoin (`uv sync`, `pnpm install`).
 - Il démarre d'abord les services Docker, PostgreSQL, Mailpit et SeaweedFS (`docker compose up -d --wait`), et attend qu'ils soient prêts. Si Docker Desktop n'est pas lancé, il s'arrête avec un message clair. Pour démarrer sans eux : `./dev.sh --no-db` ou `.\dev.cmd -NoDb`.
-- Dès que le backend et le frontend répondent, il ouvre le frontend, la doc de l'API (http://127.0.0.1:8000/docs), Mailpit (http://localhost:8025) et le filer SeaweedFS sur le bucket des images (http://localhost:8888, ces deux-là pas avec `--no-db`) dans le navigateur par défaut. Pour ne pas les ouvrir : `./dev.sh --no-open` ou `.\dev.cmd -NoOpen`.
+- Dès que le backend et le frontend répondent, il ouvre le frontend, la doc de l'API (http://127.0.0.1:8000/api/docs), Mailpit (http://localhost:8025) et le filer SeaweedFS sur le bucket des images (http://localhost:8888, ces deux-là pas avec `--no-db`) dans le navigateur par défaut. Pour ne pas les ouvrir : `./dev.sh --no-open` ou `.\dev.cmd -NoOpen`.
 - Si l'un des deux serveurs s'arrête (erreur, crash…), l'autre est arrêté aussi.
 - Si le port 8000 ou 5173 est déjà occupé, `dev.sh` refuse de démarrer et vous l'indique.
 - Dans `dev.sh`, les logs sont préfixés `[backend]` / `[frontend]`.
@@ -103,7 +103,7 @@ Lance le backend (http://127.0.0.1:8000) et le frontend (http://localhost:5173) 
 
 ### Séparément, dans deux terminaux
 
-**Terminal 1 — backend** (http://127.0.0.1:8000, docs sur `/docs`)
+**Terminal 1 — backend** (http://127.0.0.1:8000, docs sur `/api/docs`)
 
 ```bash
 cd backend
@@ -117,7 +117,7 @@ cd frontend
 pnpm dev
 ```
 
-Le frontend appelle le backend via `/api/...` (proxy Vite → port 8000) : pas besoin de configurer CORS en développement.
+Le frontend appelle le backend via `/api/...` (proxy Vite → port 8000, qui sert son API sous `/api` comme en production) : pas besoin de configurer CORS. Déploiement : [guide du déploiement](docs/technical/deployment.fr.md).
 
 ---
 

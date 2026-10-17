@@ -22,9 +22,9 @@ if str(BACKEND_DIR) not in sys.path:
 
 def render_openapi() -> str:
     """Schéma OpenAPI sérialisé de façon déterministe (identique sous Windows et Linux)."""
-    from app.main import app
+    from app.main import api_app
 
-    return json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n"
+    return json.dumps(api_app.openapi(), indent=2, ensure_ascii=False) + "\n"
 
 
 def main() -> None:

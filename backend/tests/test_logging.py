@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 
 from app.core.logging import LoggingSettings, configure_logging
 from app.db.session import get_db_session
-from app.main import app
+from app.main import api_app
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def no_env_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.Monke
 def restore_default_logging() -> Iterator[None]:
     yield
     configure_logging("INFO")
-    app.dependency_overrides.clear()
+    api_app.dependency_overrides.clear()
 
 
 def test_log_level_defaults_to_info(no_env_file: pytest.MonkeyPatch):
@@ -62,9 +62,9 @@ class UnreachableDatabaseSession:
 
 def test_database_failure_is_logged_with_traceback(capsys: pytest.CaptureFixture[str]):
     configure_logging("INFO")
-    app.dependency_overrides[get_db_session] = UnreachableDatabaseSession
+    api_app.dependency_overrides[get_db_session] = UnreachableDatabaseSession
 
-    response = TestClient(app).get("/health/db")
+    response = TestClient(api_app).get("/health/db")
 
     assert response.status_code == 503
     stderr = capsys.readouterr().err

@@ -41,7 +41,7 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 | Tests with coverage           | `pnpm test:coverage`               |
 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
-Calls to `/api/...` are forwarded to `http://127.0.0.1:8000/...` by the proxy configured in `vite.config.ts`.
+Calls to `/api/...` are forwarded unchanged to `http://127.0.0.1:8000/api/...` by the proxy configured in `vite.config.ts`: the backend serves its API under `/api`, as in production, where FastAPI also serves the build ([deployment guide](../docs/technical/deployment.md)).
 
 Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/technical/testing.md).
 

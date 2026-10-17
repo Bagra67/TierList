@@ -1,0 +1,59 @@
+name: Bundle
+
+# Builds the deployment bundle tierlist-<version>.tar.gz (deploy/build_bundle.sh): the backend,
+# the Vite build in frontend_dist/ and start.sh. Called by the Deploy workflow; uploaded as the
+# artifact "tierlist-bundle". See docs/technical/deployment.md.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit, branch or tag to build
+        required: true
+        type: string
+      version:
+        description: Release name (APP_RELEASE), e.g. v1.2.0 or develop-1a2b3c4
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    name: Build the bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Check the pod scripts (ShellCheck)
+        run: shellcheck deploy/*.sh .github/scripts/*.sh
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build the frontend
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Assemble the bundle
+        env:
+          VERSION: ${{ inputs.version }}
+        run: bash deploy/build_bundle.sh "$VERSION" bundle
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tierlist-bundle
+          path: bundle/tierlist-${{ inputs.version }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30

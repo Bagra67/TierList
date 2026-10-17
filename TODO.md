@@ -6,17 +6,19 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 1. Before the first deployment
 
-- [x] Choose a hosting target: decided in the [deployment guide](docs/technical/deployment.md) (#155).
-- [ ] Write the production Docker images and the continuous deployment (implementation issues listed in the [deployment guide](docs/technical/deployment.md#5-implementation-issues)).
-- [ ] Production settings (`backend/.env` or the host's variables):
+- [x] Choose a hosting target: MineStrator pods behind a Cloudflare Tunnel ([deployment guide](docs/technical/deployment.md)).
+- [x] Release bundle, pod start script and continuous deployment (#158, #160, #161).
+- [ ] Create the pods, the tunnel and the GitHub environments, then deploy staging: [first deployment](docs/technical/deployment.md#5-first-deployment-step-by-step) (#159, #163).
+- [ ] Production settings (GitHub environments, [deployment guide](docs/technical/deployment.md#4-github-environments-secrets-and-variables)):
   - a `JWT_SECRET_KEY` different from development;
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
   - a strong `POSTGRES_PASSWORD`.
 - [ ] Emails in production ([emails guide](docs/technical/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`.
-- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (proxy, Cloudflare…), and configure the trusted proxy headers (`X-Forwarded-For`, `--forwarded-allow-ips`) so the backend sees the real IP.
+- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (Cloudflare rate limiting rules). The trusted proxy headers are set (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
-- [ ] Schedule the purge of deleted templates once a day: `uv run python scripts/purge_deleted_templates.py` in `backend/` (cron or the host's scheduled task). Without it, deleted templates stay in the database; the retention is `DELETED_TEMPLATE_RETENTION_DAYS` (default 30).
-- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: choose an S3-compatible provider and a CDN able to **purge one URL** (needed to hide an image), create the bucket with public read, set the `IMAGE_*` settings, set the reverse proxy body limit to at least `IMAGE_UPLOAD_MAX_BYTES`, and schedule the image garbage collection (`scripts/purge_unused_images.py`, once a day) next to the template purge.
+- [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
+- [ ] Database backups: configure the `backup-*` environments and try a restore on staging (#162).
+- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: Scaleway Object Storage, one bucket per environment with public read, the `IMAGE_*` settings in the GitHub environments; later, a CDN able to **purge one URL** (needed to hide an image).
 
 ## 2. Decisions to take
 

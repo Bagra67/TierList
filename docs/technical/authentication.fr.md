@@ -129,9 +129,9 @@ Toutes les durées et règles qui peuvent changer selon l'environnement sont lue
 - `HttpOnly` : invisible pour JavaScript.
 - `Secure` : HTTPS uniquement. Désactivé en local avec `AUTH_COOKIE_SECURE=false`, car le serveur de développement est en HTTP.
 - `SameSite=Strict` : jamais envoyé par une requête venant d'un autre site, ce qui protège les routes à cookie contre le CSRF.
-- `Path=/api/auth` : envoyé uniquement aux routes d'authentification, pas au reste de l'API. C'est le chemin **vu par le navigateur** : le proxy Vite transmet `/api/auth/...` au `/auth/...` du backend (`AUTH_COOKIE_PATH`).
+- `Path=/api/auth` : envoyé uniquement aux routes d'authentification, pas au reste de l'API. L'API est servie sous `/api` (`AUTH_COOKIE_PATH`).
 
-Frontend et backend sont servis depuis la même origine (proxy Vite en développement) : aucune configuration CORS n'est nécessaire.
+Frontend et backend sont servis depuis la même origine (FastAPI sert le frontend en production, le proxy Vite transmet `/api` en développement) : aucune configuration CORS n'est nécessaire.
 
 ### Confirmation de l'email
 
@@ -201,7 +201,7 @@ Deux **premières connexions simultanées** (double clic, deux onglets) peuvent 
 
 1. Configurer l'écran de consentement OAuth (nom de l'application, email d'assistance ; scopes `openid`, `email`, `profile`).
 2. Créer un **ID client OAuth** de type **Application Web**.
-3. Ajouter l'**URI de redirection autorisé** exactement égal à `GOOGLE_REDIRECT_URI` : `http://localhost:5173/api/auth/google/callback` en développement, l'URL HTTPS en production.
+3. Ajouter l'**URI de redirection autorisé** exactement égal à `GOOGLE_REDIRECT_URI` : `http://localhost:5173/api/auth/google/callback` en développement, `https://<domaine>/api/auth/google/callback` en production.
 4. Copier l'ID client et le secret dans `backend/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), puis redémarrer le backend.
 
 Sans ces deux variables, le lien « Continuer avec Google » ramène sur `/login` avec « La connexion avec Google n'est pas disponible pour le moment. »

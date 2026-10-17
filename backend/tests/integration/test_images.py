@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_image_storage
 from app.constants.error_codes import ErrorCode
-from app.main import app
+from app.main import api_app
 from app.models.image import Image, ImageStatus
 from tests.image_files import make_image_file
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL, FailingImageStorage
@@ -129,7 +129,7 @@ def test_a_failed_cleanup_of_a_failed_upload_keeps_the_database_error_and_logs_t
     monkeypatch.setattr(db_session, "commit", fail_commit)
     failing_storage: FailingImageStorage = FailingImageStorage(stored_images)
     # Remplace le faux stockage du client ; la fixture client retire la surcharge à la fin
-    app.dependency_overrides[get_image_storage] = lambda: failing_storage
+    api_app.dependency_overrides[get_image_storage] = lambda: failing_storage
 
     with caplog.at_level(logging.ERROR):
         response: Response = upload(auth_client, alice, make_image_file((100, 100), "PNG"))

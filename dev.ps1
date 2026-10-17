@@ -55,7 +55,7 @@ if (-not (Test-Path (Join-Path $frontendDir 'node_modules'))) {
     pnpm --dir $frontendDir install
 }
 
-# La base doit être prête avant le backend : sinon il démarre, mais /health/db échoue
+# La base doit être prête avant le backend : sinon il démarre, mais /api/health/db échoue
 if (-not $NoDb) {
     if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
         Write-Host "'docker' est introuvable dans le PATH. Voir README.md > Prérequis, ou relancez avec -NoDb." -ForegroundColor Red
@@ -76,7 +76,7 @@ if (-not $NoDb) {
 }
 
 Write-Host ''
-Write-Host '  Backend  : http://127.0.0.1:8000  (docs : http://127.0.0.1:8000/docs)' -ForegroundColor Green
+Write-Host '  Backend  : http://127.0.0.1:8000  (docs : http://127.0.0.1:8000/api/docs)' -ForegroundColor Green
 Write-Host '  Frontend : http://localhost:5173' -ForegroundColor Green
 Write-Host '  Ctrl+C pour tout arrêter' -ForegroundColor Yellow
 Write-Host ''
@@ -102,7 +102,7 @@ try {
         if ((Test-PortAcceptsConnections 8000) -and (Test-PortAcceptsConnections 5173)) {
             # localhost et non 127.0.0.1 : même origine que FRONTEND_BASE_URL et l'URI de redirection Google
             Start-Process 'http://localhost:5173'
-            Start-Process 'http://127.0.0.1:8000/docs'
+            Start-Process 'http://127.0.0.1:8000/api/docs'
             if (-not $NoDb) {
                 Start-Process 'http://localhost:8025'
                 # Interface web du filer SeaweedFS, ouverte sur le bucket des images

@@ -12,18 +12,29 @@ from pydantic import BaseModel, TypeAdapter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.dependencies import SessionFactory, build_game_service, get_session_factory
+from app.api.dependencies import (
+    SessionFactory,
+    SettingsDep,
+    build_game_service,
+    get_session_factory,
+)
 from app.api.routes import auth, history, images, results, room_channel, rooms, templates
 from app.constants import messages
+from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
-from app.core.config import get_settings
-from app.core.errors import ErrorResponse, register_error_handlers
+from app.core.config import Settings, get_settings
+from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
+from app.core.frontend import mount_frontend
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
 from app.services.games import GameService
+from app.services.image_storage import create_image_storage
+from app.services.maintenance import purge_deleted_templates, purge_unused_images
+from app.services.nightly_scheduler import nightly_scheduler
 from app.services.room_channel import room_connections
 from app.services.room_sweeper import room_sweeper
 from app.services.rooms import RoomService
@@ -98,11 +109,12 @@ def _reschedule_rounds(session_factory: SessionFactory) -> None:
 
 
 @asynccontextmanager
-async def lifespan(started_app: FastAPI) -> AsyncIterator[None]:
-    # Les dépendances ne sont pas injectées ici : la fabrique remplacée par les tests, s'il y en
-    # a une, est reprise pour ne jamais toucher une autre base que la leur
-    get_factory = started_app.dependency_overrides.get(get_session_factory, get_session_factory)
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Les dépendances ne sont pas injectées ici : la fabrique remplacée par les tests (sur l'API
+    # montée sous /api), s'il y en a une, est reprise pour ne jamais toucher une autre base
+    get_factory = api_app.dependency_overrides.get(get_session_factory, get_session_factory)
     session_factory: SessionFactory = get_factory()
+    settings: Settings = get_settings()
     await run_in_threadpool(_reset_presence, session_factory)
 
     async def on_deadline(game_id: uuid.UUID, round_number: int) -> None:
@@ -115,42 +127,58 @@ async def lifespan(started_app: FastAPI) -> AsyncIterator[None]:
     async def sweep_inactive_rooms() -> None:
         await run_in_threadpool(_close_inactive_rooms, session_factory)
 
+    async def purge_templates() -> int:
+        return await run_in_threadpool(purge_deleted_templates, session_factory, settings)
+
+    async def purge_images() -> int:
+        return await run_in_threadpool(
+            purge_unused_images, session_factory, settings, create_image_storage(settings)
+        )
+
     round_timers.start(asyncio.get_running_loop(), on_deadline, on_cooldown_deadline)
     await run_in_threadpool(_reschedule_rounds, session_factory)
-    room_sweeper.start(get_settings().room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
+    room_sweeper.start(settings.room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
+    if settings.maintenance_enabled:
+        nightly_scheduler.start(
+            settings.maintenance_hour_utc,
+            {"purge_deleted_templates": purge_templates, "purge_unused_images": purge_images},
+        )
     yield
+    await nightly_scheduler.stop()
     await room_sweeper.stop()
     await round_timers.stop()
 
 
-app = FastAPI(
-    lifespan=lifespan,
+# L'API : toutes ses routes, REST et canal temps réel, sont servies sous /api par l'application
+# racine ci-dessous. Montée comme sous-application, elle garde des chemins sans /api dans son
+# contrat (openapi.json, types du frontend) et dans les tests, qui l'appellent directement.
+api_app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
     version="0.5.0",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
-register_error_handlers(app)
-app.include_router(auth.router)
-app.include_router(templates.router)
-app.include_router(images.router)
-app.include_router(rooms.router)
-app.include_router(room_channel.router)
-app.include_router(results.router)
-app.include_router(history.router)
+register_error_handlers(api_app)
+api_app.include_router(auth.router)
+api_app.include_router(templates.router)
+api_app.include_router(images.router)
+api_app.include_router(rooms.router)
+api_app.include_router(room_channel.router)
+api_app.include_router(results.router)
+api_app.include_router(history.router)
 
 
 def _openapi_with_room_messages() -> dict[str, Any]:
     """Contrat de l'API, augmenté des messages du canal temps réel : ils ne passent par aucune
     route REST, mais le frontend en génère les types (pnpm gen:api)."""
-    if app.openapi_schema:
-        return app.openapi_schema
+    if api_app.openapi_schema:
+        return api_app.openapi_schema
     schema: dict[str, Any] = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
+        title=api_app.title,
+        version=api_app.version,
+        description=api_app.description,
+        routes=api_app.routes,
     )
     components: dict[str, Any] = schema.setdefault("components", {}).setdefault("schemas", {})
     for name, message_type in (
@@ -162,29 +190,33 @@ def _openapi_with_room_messages() -> dict[str, Any]:
         )
         components.update(message_schema.pop("$defs", {}))
         components[name] = message_schema
-    app.openapi_schema = schema
+    api_app.openapi_schema = schema
     return schema
 
 
-app.openapi = _openapi_with_room_messages  # type: ignore[method-assign]
+api_app.openapi = _openapi_with_room_messages  # type: ignore[method-assign]
 
 
 class HealthResponse(BaseModel):
     status: str
+    # Version qui tourne (APP_RELEASE) : le déploiement vérifie que c'est bien la nouvelle
+    release: str
 
 
-# Sonde de vie : ne dépend de rien, pour qu'une panne de la base ne fasse pas
-# redémarrer en boucle une application qui fonctionne (Docker, hébergeur).
-@app.get("/health")
-def health() -> HealthResponse:
-    return HealthResponse(status="ok")
+# Sonde de vie : ne dépend pas de la base, pour qu'une panne de la base ne fasse pas
+# redémarrer en boucle une application qui fonctionne (hébergeur).
+@api_app.get("/health")
+def health(settings: SettingsDep) -> HealthResponse:
+    return HealthResponse(status="ok", release=settings.app_release)
 
 
-@app.get(
+@api_app.get(
     "/health/db",
     responses={503: {"model": ErrorResponse, "description": messages.DATABASE_UNAVAILABLE}},
 )
-def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthResponse:
+def health_db(
+    session: Annotated[Session, Depends(get_db_session)], settings: SettingsDep
+) -> HealthResponse:
     try:
         ping_database(session)
     except SQLAlchemyError as exc:
@@ -194,4 +226,17 @@ def health_db(session: Annotated[Session, Depends(get_db_session)]) -> HealthRes
             code=ErrorCode.DATABASE_UNAVAILABLE,
             detail=messages.DATABASE_UNAVAILABLE,
         ) from exc
-    return HealthResponse(status="ok")
+    return HealthResponse(status="ok", release=settings.app_release)
+
+
+# Application racine, lancée par uvicorn (app.main:app) : l'API sous /api et, en production, le
+# build du frontend sur la même origine (docs/technical/deployment.md)
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+# Erreurs HTTP au format de l'API (404 hors du build, /api seul) ; pas de second middleware
+# d'erreurs : celui de api_app suffit, et chaque couche de middleware HTTP exécute la suite de la
+# requête dans une tâche à part, ce qui décale la fin des requêtes de l'API
+app.add_exception_handler(StarletteHTTPException, handle_http_exception)
+app.mount(API_PREFIX, api_app)
+_settings: Settings = get_settings()
+if _settings.frontend_dist.is_dir():
+    mount_frontend(app, _settings.frontend_dist)

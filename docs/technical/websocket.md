@@ -198,7 +198,7 @@ Because it is in memory, **the backend must run with one worker**: with several 
 - gives up after 5 openings in a row that never opened, and returns `unavailable: true` (the lobby then shows "Live updates are unavailable: reload the page");
 - closes the socket (`1000`) when the page leaves the room.
 
-In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite.config.ts`): the browser opens `/api/rooms/…/ws` on port 5173, Vite forwards it to `/rooms/…/ws` on port 8000.
+In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite.config.ts`): the browser opens `/api/rooms/…/ws` on port 5173, Vite forwards it unchanged to port 8000. In production, FastAPI serves it on the same origin as the page, behind the Cloudflare Tunnel ([deployment guide](deployment.md)).
 
 ## 3. In the code
 

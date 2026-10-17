@@ -198,7 +198,7 @@ Comme il est en mémoire, **le backend doit tourner avec un seul worker** : avec
 - abandonne après 5 ouvertures d'affilée qui n'ont jamais abouti, et renvoie `unavailable: true` (le lobby affiche alors « Mises à jour en direct indisponibles : rechargez la page ») ;
 - ferme le socket (`1000`) quand la page quitte la salle.
 
-En développement, le proxy Vite transmet le socket (`ws: true` dans `frontend/vite.config.ts`) : le navigateur ouvre `/api/rooms/…/ws` sur le port 5173, Vite le transmet à `/rooms/…/ws` sur le port 8000.
+En développement, le proxy Vite transmet le socket (`ws: true` dans `frontend/vite.config.ts`) : le navigateur ouvre `/api/rooms/…/ws` sur le port 5173, Vite le transmet tel quel au port 8000. En production, FastAPI le sert sur la même origine que la page, derrière le Cloudflare Tunnel ([guide du déploiement](deployment.fr.md)).
 
 ## 3. Dans le code
 
