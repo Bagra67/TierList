@@ -122,6 +122,47 @@ describe('RoomPage', () => {
     expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
   });
 
+  it('tells the participants that the room was closed, with a way back home', async () => {
+    stubBackend({ ...signedInSession, 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+
+    act(() => latestSocket().closeFromServer(4412));
+
+    expect(screen.getByRole('status')).toHaveTextContent('Le room admin a fermé cette salle.');
+    expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: "Retour à l'accueil" }));
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+  });
+
+  it('lets the room admin close the room after confirming, then goes home', async () => {
+    const fetchMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+      'DELETE /rooms/K7P2QX': () => new Response(null, { status: 204 }),
+    });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fermer la salle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Fermer la salle ?' });
+    expect(dialog).toHaveTextContent('La salle est supprimée avec son lien et son code');
+    expect(calledRoutes(fetchMock)).not.toContain('DELETE /rooms/K7P2QX');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Fermer la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('DELETE /rooms/K7P2QX');
+  });
+
+  it('warns the room admin that closing ends the game in progress', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fermer la salle' }));
+
+    expect(screen.getByRole('dialog', { name: 'Fermer la salle ?' })).toHaveTextContent(
+      'Une partie est en cours : elle est close d’abord',
+    );
+  });
+
   it('says a banned account cannot join the room again', async () => {
     stubBackend({
       ...signedInSession,
@@ -231,6 +272,7 @@ describe('RoomPage', () => {
     await screen.findByRole('heading', { name: 'Réglages' });
     expect(within(settingsSummary()).getByText('Ordre du template')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fermer la salle' })).not.toBeInTheDocument();
   });
 
   it('shows the game in progress with its current item', async () => {

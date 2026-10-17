@@ -13,10 +13,18 @@ type RoomClientMessage = components['schemas']['RoomClientMessage'];
 // Codes de fermeture du serveur (backend : app/constants/rooms.py). Après NOT_AUTHENTICATED, un
 // compte retente une fois avec un token rafraîchi (le sien a pu expirer pendant que le lobby était
 // ouvert) ; sinon, comme après ROOM_NOT_FOUND, se reconnecter ne servirait à rien. Retiré ou banni
-// par le room admin, le participant n'a plus de place : la page le lui dit.
+// par le room admin, ou salle fermée, le participant n'a plus de place : la page le lui dit.
 const CLOSE_NOT_AUTHENTICATED: number = 4401;
 const CLOSE_REMOVED: number = 4410;
 const CLOSE_BANNED: number = 4411;
+const CLOSE_ROOM_CLOSED: number = 4412;
+// Pourquoi le lecteur n'a plus de place dans la salle
+export type RemovalReason = 'removed' | 'banned' | 'closed';
+const REMOVAL_REASONS: ReadonlyMap<number, RemovalReason> = new Map([
+  [CLOSE_REMOVED, 'removed'],
+  [CLOSE_BANNED, 'banned'],
+  [CLOSE_ROOM_CLOSED, 'closed'],
+]);
 const NO_RETRY_CLOSE_CODES: ReadonlySet<number> = new Set([CLOSE_NOT_AUTHENTICATED, 4404]);
 // Ouvertures ratées d'affilée (canal jamais ouvert : serveur injoignable, origine refusée…)
 // avant d'abandonner et de prévenir l'utilisateur
@@ -103,13 +111,13 @@ export interface RoomEventsState {
 // Suit la salle en direct (docs/technical/realtime.md) : ouvre le canal, s'authentifie, répond au
 // battement de cœur, applique les événements, se reconnecte, et ferme le canal au démontage. Les
 // composants ne touchent jamais le socket. enabled : le lecteur a une place (salle chargée).
-// onRemoved : le room admin vient de retirer le lecteur (banned : il l'a aussi banni) ; il doit
-// garder la même identité d'un rendu à l'autre, sinon le canal serait rouvert.
+// onRemoved : le lecteur n'a plus de place (retiré, banni, ou salle fermée) ; il doit garder la
+// même identité d'un rendu à l'autre, sinon le canal serait rouvert.
 export function useRoomEvents(
   code: string,
   viewer: RoomViewer | undefined,
   enabled: boolean,
-  onRemoved: (banned: boolean) => void,
+  onRemoved: (reason: RemovalReason) => void,
 ): RoomEventsState {
   const queryClient: QueryClient = useQueryClient();
   // Salle pour laquelle le suivi a été abandonné : en changer annule l'abandon
@@ -169,8 +177,9 @@ export function useRoomEvents(
           });
           return;
         }
-        if (event.code === CLOSE_REMOVED || event.code === CLOSE_BANNED) {
-          onRemoved(event.code === CLOSE_BANNED);
+        const removalReason: RemovalReason | undefined = REMOVAL_REASONS.get(event.code);
+        if (removalReason !== undefined) {
+          onRemoved(removalReason);
           return;
         }
         if (NO_RETRY_CLOSE_CODES.has(event.code)) return;

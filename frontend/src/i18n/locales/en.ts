@@ -202,6 +202,19 @@ export const en: Translation = {
       removed: 'The room admin removed you from this room.',
       banned: 'The room admin banned you from this room.',
       comeBack: 'Go back to the room',
+      closed: 'The room admin closed this room.',
+      backHome: 'Back to home',
+      close: {
+        open: 'Close the room',
+        title: 'Close the room?',
+        warning:
+          'The room is deleted with its link and code; guest personal links stop working. Its finished games stay in the histories.',
+        gameWarning:
+          'A game is in progress: it is closed first, with the current rankings, then the room is deleted with its link and code.',
+        cancel: 'Cancel',
+        submit: 'Close the room',
+        submitting: 'Closing…',
+      },
       remove: {
         open: 'Remove',
         openLabel: 'Remove {{name}}',
@@ -391,6 +404,7 @@ export const en: Translation = {
       room_banned: 'You were banned from this room.',
       ban_not_found: 'This ban no longer exists.',
       removed_from_room: 'The room admin removed you from this room.',
+      room_closed: 'This room has been closed.',
       invalid_message: 'Unexpected message on the room channel.',
       heartbeat_timeout: 'The connection to the room stopped answering.',
       tier_not_found: 'This tier could not be found.',

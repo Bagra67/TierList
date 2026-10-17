@@ -76,6 +76,17 @@ def get_room_of_participant(
     return session.scalars(statement).one_or_none()
 
 
+def list_room_ids_of_admin(session: Session, admin_id: uuid.UUID) -> list[uuid.UUID]:
+    """Identifiants des salles dont ce compte est le room admin."""
+    return list(session.scalars(select(Room.id).where(Room.admin_id == admin_id)).all())
+
+
+def delete_room(session: Session, room: Room) -> None:
+    """Supprime la salle avec ses places et ses bannissements ; la base détache ses parties
+    (games.room_id SET NULL), qui lui survivent (invariant 11)."""
+    session.delete(room)
+
+
 def disconnect_everyone(session: Session) -> int:
     """Remet tous les participants à déconnecté ; renvoie leur nombre."""
     statement: ReturningUpdate[uuid.UUID] = (

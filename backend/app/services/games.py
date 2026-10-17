@@ -395,6 +395,30 @@ class GameService:
         self._session.commit()
         self._publisher.publish(room.id, closed)
 
+    def close_room(self, user: User, code: str) -> None:
+        """Ferme la salle (room admin seulement, US-2.7) : la partie en cours est close d'abord,
+        puis la salle est supprimée avec ses places. Ses sockets sont fermés après le commit."""
+        room: Room = self._rooms.get_for_admin_change(user, code)
+        room_id: uuid.UUID = room.id
+        self._close_room_locked(room, reason="admin")
+        self._session.commit()
+        self._publisher.close_room(room_id)
+
+    def close_rooms_of_admin(self, user: User) -> None:
+        """Avant la suppression du compte : ses salles sont fermées comme par lui (US-2.7), au
+        lieu d'être emportées par la base avec leur partie en cours. Une salle par transaction."""
+        room_ids: list[uuid.UUID] = room_repository.list_room_ids_of_admin(self._session, user.id)
+        for room_id in room_ids:
+            room: Room | None = room_repository.get_room_by_id(
+                self._session, room_id, for_update=True
+            )
+            if room is None:
+                self._session.commit()
+                continue
+            self._close_room_locked(room, reason="account_deleted")
+            self._session.commit()
+            self._publisher.close_room(room_id)
+
     def pending_round_deadlines(self) -> list[tuple[uuid.UUID, int, datetime]]:
         """Échéances des tours en cours, à reprogrammer au démarrage du processus."""
         return game_repository.list_pending_round_deadlines(self._session)
@@ -547,6 +571,22 @@ class GameService:
         room.version += 1
         logger.info("Partie close : room_id=%s game_id=%s", room.id, game.id)
         return GameClosedEvent(room_version=room.version, data=GameClosedData(game_id=game.id))
+
+    def _close_room_locked(self, room: Room, reason: str) -> None:
+        """Ferme la salle, sous son verrou, sans commit (US-2.7, invariant 11). La partie en cours
+        est close d'abord : ses joueurs figés, ses placements ne dépendent plus des places que la
+        suppression emporte. Pendant un tour, les classements du moment deviennent les plateaux
+        finaux ; l'item interrompu n'a pas fini d'être montré, il ne donne pas de vote absent."""
+        game: Game | None = room.current_game
+        if game is not None:
+            if game.status == GameStatus.IN_ROUND:
+                game.current_round.ended_at = datetime.now(UTC)
+                _start_final_boards(game)
+            self._close_game(room, game)
+            # Les placements passent au joueur figé avant que la suppression n'emporte les places
+            self._session.flush()
+        room_repository.delete_room(self._session, room)
+        logger.info("Salle fermée : room_id=%s reason=%s", room.id, reason)
 
     def _announce_round_end(
         self, room: Room, game: Game, round_end: RoundStartedEvent | CooldownStartedEvent

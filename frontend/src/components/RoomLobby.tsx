@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
+import { CloseRoomDialog } from './CloseRoomDialog';
 import { ErrorMessage } from './ErrorMessage';
 import { GameScreen } from './GameScreen';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
@@ -17,7 +18,7 @@ interface RoomLobbyProps {
 
 // Lobby d'une salle (US-2.2, US-2.3) : code et lien à partager, participants (comptes et
 // invités), réglages ; seul le room admin peut les modifier, et retirer ou bannir un participant
-// (US-2.11, US-2.12). Pendant une partie, l'écran de jeu passe en tête
+// (US-2.11, US-2.12), et fermer la salle (US-2.7). Pendant une partie, l'écran de jeu passe en tête
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   // Reçoit le focus quand l'écran de jeu disparaît sous le clavier (fin du cooldown)
@@ -86,6 +87,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         </div>
         <RoomSettingsSummary settings={room.settings} />
       </section>
+      {room.is_admin && <CloseRoomDialog code={room.code} gameInProgress={room.game !== null} />}
     </>
   );
 }

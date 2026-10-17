@@ -9,7 +9,7 @@ import {
 
 import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
-import { apiClient, dataOrThrow } from './client';
+import { apiClient, dataOrThrow, throwIfError } from './client';
 import type { components } from './schema';
 
 export type Room = components['schemas']['RoomResponse'];
@@ -110,6 +110,11 @@ async function unban(code: string, banId: string): Promise<Room> {
       params: { path: { code, ban_id: banId } },
     }),
   );
+}
+
+// Le room admin ferme la salle (US-2.7) : elle est supprimée, sa partie en cours close d'abord
+async function closeRoom(code: string): Promise<void> {
+  throwIfError(await apiClient.DELETE('/rooms/{code}', { params: { path: { code } } }));
 }
 
 // Le room admin lance une partie (US-3.1) : la salle renvoyée porte la partie et son premier item
@@ -298,6 +303,11 @@ export function useNextRound(code: string): UseMutationResult<Room, Error, void>
     mutationFn: () => nextRound(canonicalRoomCode(code)),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
+}
+
+// Ferme la salle, réservé au room admin (US-2.7)
+export function useCloseRoom(code: string): UseMutationResult<void, Error, void> {
+  return useMutation({ mutationFn: () => closeRoom(canonicalRoomCode(code)) });
 }
 
 // Termine le cooldown final, réservé au room admin (US-4.1)

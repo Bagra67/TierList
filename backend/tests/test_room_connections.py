@@ -223,3 +223,29 @@ def test_a_socket_already_closed_does_not_stop_the_disconnection():
         assert open_tab.closed_with == (4410, "removed_from_room")
 
     run(scenario)
+
+
+def test_closing_a_room_closes_every_socket_of_that_room_only():
+    async def scenario() -> None:
+        registry: ConnectionRegistry = ConnectionRegistry()
+        alice_tab: FakeSocket = FakeSocket()
+        bob_tab: FakeSocket = FakeSocket()
+        other_room: FakeSocket = FakeSocket()
+        registry.add(ROOM, ALICE, as_websocket(alice_tab))
+        registry.add(ROOM, BOB, as_websocket(bob_tab))
+        registry.add(OTHER_ROOM, ALICE, as_websocket(other_room))
+
+        # Comme une route REST synchrone, depuis le threadpool
+        closing: threading.Thread = threading.Thread(target=registry.close_room, args=(ROOM,))
+        closing.start()
+        closing.join()
+        await asyncio.sleep(0.05)
+
+        assert alice_tab.closed_with == (4412, "room_closed")
+        assert bob_tab.closed_with == (4412, "room_closed")
+        assert other_room.closed_with is None
+        assert not registry.is_connected(ROOM, ALICE)
+        assert not registry.is_connected(ROOM, BOB)
+        assert registry.is_connected(OTHER_ROOM, ALICE)
+
+    run(scenario)

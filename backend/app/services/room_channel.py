@@ -15,6 +15,7 @@ from pydantic import TypeAdapter
 from starlette.websockets import WebSocket
 
 from app.constants.error_codes import ErrorCode
+from app.constants.rooms import CHANNEL_CLOSE_ROOM_CLOSED
 from app.schemas.room_events import RoomEvent
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,11 @@ class RoomEventPublisher(Protocol):
     ) -> None:
         """Ferme les sockets du participant dans la salle, avec ce code et cette raison : sa place
         vient d'être supprimée. Appelé après le commit."""
+        ...
+
+    def close_room(self, room_id: uuid.UUID) -> None:
+        """Ferme tous les sockets de la salle (CHANNEL_CLOSE_ROOM_CLOSED) : elle vient d'être
+        fermée, donc supprimée. Appelé après le commit."""
         ...
 
 
@@ -116,6 +122,18 @@ class ConnectionRegistry:
         self._loop.call_soon_threadsafe(
             self._schedule_close, room_id, participant_id, close_code, reason
         )
+
+    def close_room(self, room_id: uuid.UUID) -> None:
+        if self._loop is None or self._loop.is_closed():
+            return
+        self._loop.call_soon_threadsafe(self._schedule_room_close, room_id)
+
+    def _schedule_room_close(self, room_id: uuid.UUID) -> None:
+        participant_ids: set[uuid.UUID] = set(self._sockets.get(room_id, {}).values())
+        for participant_id in participant_ids:
+            self._schedule_close(
+                room_id, participant_id, CHANNEL_CLOSE_ROOM_CLOSED, ErrorCode.ROOM_CLOSED
+            )
 
     def _schedule_close(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
