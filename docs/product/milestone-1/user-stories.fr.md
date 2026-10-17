@@ -157,7 +157,7 @@ En tant qu'**admin de la room**, je veux retirer quelqu'un de ma room, afin que 
 - _Étant donné_ que je suis retiré, _alors_ je quitte la room et un message indique que l'admin de la room m'a retiré ; je peux **rejoindre à nouveau** avec le lien ou le code (sauf si les arrivées sont verrouillées, US-2.10).
 - _Étant donné_ un invité retiré, _alors_ son lien perso ne marche plus.
 - _Étant donné_ que je suis l'admin de la room, _alors_ je ne peux pas me retirer moi-même.
-- _Étant donné_ une partie en cours, _alors_ je peux aussi retirer un participant (ce que deviennent ses placements est décidé avec le jeu).
+- _Étant donné_ une partie en cours, _alors_ je peux aussi retirer un participant (ses placements sont supprimés avec sa place ; une fois une partie close, ses classements sont gardés).
 
 ### US-2.12 Bannir un participant — Must
 

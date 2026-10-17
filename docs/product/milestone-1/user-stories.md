@@ -157,7 +157,7 @@ As a **room admin**, I want to remove someone from my room, so that the room onl
 - _Given_ I am removed, _then_ I leave the room and a message says the room admin removed me; I can **join again** with the link or the code (unless arrivals are locked, US-2.10).
 - _Given_ a removed guest, _then_ their personal link no longer works.
 - _Given_ I am the room admin, _then_ I cannot remove myself.
-- _Given_ a game in progress, _then_ I can remove a participant too (what happens to their placements is decided with the game).
+- _Given_ a game in progress, _then_ I can remove a participant too (their placements are deleted with their seat; once a game is closed, its rankings are kept).
 
 ### US-2.12 Ban a participant — Must
 

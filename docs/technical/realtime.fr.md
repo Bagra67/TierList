@@ -10,17 +10,17 @@ Comment les rooms envoient les tours, les placements, la présence et les timers
 
 Une room a **au plus 10 participants** (admin de la room compris) et une partie **au plus 32 tours**. Chaque participant doit voir, sans recharger la page :
 
-| Moment                                                    | Événement envoyé à la room                                                          |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Quelqu'un rejoint, quitte, se connecte ou se déconnecte   | Le lobby / la liste des participants change (`3 participants sur 10`)               |
-| L'admin modifie les réglages ou verrouille les arrivées   | Les nouveaux réglages, « arrivées ouvertes / verrouillées »                         |
-| L'admin lance la partie                                   | La partie démarre avec son premier tour                                             |
-| Un tour commence                                          | `Item n sur N`, et son heure de fin quand la room utilise un timer                  |
-| Un participant place ou déplace l'item courant            | **Qui** a placé, jamais **où** (les classements restent privés jusqu'aux résultats) |
-| Un tour se termine (« suivant » de l'admin, timer, tous)  | Le tour est fini ; les placements absents sont enregistrés par le serveur           |
-| Le dernier tour se termine                                | Le cooldown commence, avec son heure de fin                                         |
-| Le cooldown se termine (timer ou « Terminer » de l'admin) | La partie est close : résultats disponibles, room de retour à _Ouverte_             |
-| L'admin ferme la room, ou elle est inactive               | La room est fermée ; tous les participants la quittent                              |
+| Moment                                                    | Événement envoyé à la room                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Quelqu'un rejoint, quitte, se connecte ou se déconnecte   | Le lobby / la liste des participants change (`3 participants sur 10`)                         |
+| L'admin modifie les réglages ou verrouille les arrivées   | Les nouveaux réglages, « arrivées ouvertes / verrouillées »                                   |
+| L'admin lance la partie                                   | La partie démarre avec son premier tour                                                       |
+| Un tour commence                                          | `Item n sur N`, et son heure de fin quand la room utilise un timer                            |
+| Un participant place ou déplace l'item courant            | **Qui** a placé, jamais **où** (les classements restent privés jusqu'aux résultats)           |
+| Un tour se termine (« suivant » de l'admin, timer, tous)  | Le tour est fini ; les placements absents sont enregistrés par le serveur                     |
+| Le dernier tour se termine                                | Le cooldown commence, avec son heure de fin                                                   |
+| Le cooldown se termine (timer ou « Terminer » de l'admin) | La partie est close : classements définitifs (résultats avec #99), room de retour à _Ouverte_ |
+| L'admin ferme la room, ou elle est inactive               | La room est fermée ; tous les participants la quittent                                        |
 
 Timers : le **timer de tour** par item (réglage de la room), le **cooldown** (réglage de la room), le **délai d'inactivité** d'une room (réglage de l'application). Un participant **déconnecté** garde sa place et son classement, reçoit des placements absents pour les tours qui se terminent entre-temps, et n'est pas attendu par « tout le monde a fini ».
 
@@ -32,7 +32,7 @@ Timers : le **timer de tour** par item (réglage de la room), le **cooldown** (r
 
 ### Pas encore disponible
 
-Le démarrage d'une partie (`game.started`, #91), les placements (`participant.placed`, #92), l'enchaînement des tours (`round.started`, `cooldown.started`) et les timers des tours (§2.8, #93) sont construits ([guide des parties](games.fr.md)) ; le cooldown final, son timer et sa fin (`game.closed`, #96) aussi ; la sauvegarde de la partie close arrive avec #98. Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
+Le démarrage d'une partie (`game.started`, #91), les placements (`participant.placed`, #92), l'enchaînement des tours (`round.started`, `cooldown.started`) et les timers des tours (§2.8, #93) sont construits ([guide des parties](games.fr.md)) ; le cooldown final, son timer et sa fin (`game.closed`, #96) aussi ; ainsi que la sauvegarde de la partie close (`game_players`, #98) ; les résultats arrivent avec #99. Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
 
 ## 2. Conception technique
 
@@ -114,7 +114,7 @@ REST GET /rooms/{code} ──▶ cache TanStack Query ──▶ composants
 **Construit pour les tours dans #93** (`services/round_timers.py`, [guide des parties](games.fr.md#25-enchaînement-des-tours)) ; le timer du cooldown depuis #96 (`schedule_cooldown_end`, une échéance par partie). Un tour fini plus tôt garde sa tâche : la transition trouve le tour fini et ne fait rien, ce qui est plus simple que de l'annuler.
 
 - Le serveur est la seule horloge. Un tour avec timer et le cooldown stockent leur **heure de fin** (`ends_at`, UTC) en base ; les événements l'envoient, les clients en déduisent le compte à rebours.
-- Dans le processus, une tâche `asyncio` attend chaque échéance et appelle la transition du service ; elle est annulée quand le tour se termine plus tôt (« suivant » de l'admin, tout le monde a fini). Au démarrage, les échéances en cours sont relues en base et reprogrammées : un redémarrage ne perd aucun timer.
+- Dans le processus, une tâche `asyncio` par partie attend l'échéance et appelle la transition du service ; une échéance plus récente de la partie (tour suivant, fin du cooldown) la remplace, une plus ancienne est ignorée ; une phase finie plus tôt laisse sa tâche, dont la transition ne fait alors rien ; une transition qui échoue est réessayée après 1, 5 puis 30 s. Au démarrage, les échéances en cours sont relues en base et reprogrammées : un redémarrage ne perd aucun timer.
 - **Courses** (timer, « suivant » et « tout le monde a fini » en même temps) : chaque transition s'exécute dans une transaction qui verrouille la ligne de la room et vérifie l'état attendu (le tour est toujours en cours) ; la seconde trouve le tour déjà terminé et ne fait rien. Les transitions sont donc **idempotentes**.
 - Le **délai d'inactivité** d'une room est géré par un balayage périodique qui ferme les rooms inactives depuis trop longtemps.
 - SQLAlchemy est synchrone : depuis le code async (le socket, les timers), les appels à la base passent par le threadpool (`run_in_threadpool`) et ne bloquent jamais la boucle d'événements.
@@ -180,7 +180,7 @@ Construit dans #85. Ce qui existe aujourd'hui :
 
   Messages du canal : `{"type": "ping"}` du serveur, `{"type": "pong"}` et `{"type": "auth", "access_token": …}` du client. `RoomServerMessage` et `RoomClientMessage` sont ajoutés aux composants OpenAPI (`_openapi_with_room_messages` dans `app/main.py`).
 
-- **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, retrait, réglages, présence), renvoyée en `version` par l'API des rooms.
+- **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, retrait, réglages, présence), et par `GameService` (démarrage, premier placement d'un tour, fin d'un tour, fin du cooldown) ; renvoyée en `version` par l'API des rooms.
 - **Authentification** : le premier message est toujours `auth`, dans le délai `ROOM_AUTH_TIMEOUT_SECONDS` : un compte envoie son access token, un invité envoie `null` et est reconnu par son cookie `guest_token` (`Path=/api/rooms/<code>`, [guide des salles](rooms.fr.md#24-invités)). Un compte passe d'abord, comme en REST.
 - **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4401`, `4404`, `4410` et `4411` :
 
