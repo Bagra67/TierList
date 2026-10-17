@@ -10,6 +10,7 @@ from app.api.dependencies import (
     CurrentSessionDep,
     CurrentUserDep,
     EmailSenderDep,
+    GameServiceDep,
     GoogleClientDep,
     SettingsDep,
 )
@@ -233,10 +234,13 @@ def delete_me(
     response: Response,
     session: CurrentSessionDep,
     service: AuthServiceDep,
+    games: GameServiceDep,
     settings: SettingsDep,
 ) -> None:
     try:
-        service.delete_account(session, payload.password)
+        # Ses salles sont fermées comme par lui (US-2.7) : la base les emporterait sinon avec
+        # leur partie en cours, sans prévenir personne
+        service.delete_account(session, payload.password, before_delete=games.close_rooms_of_admin)
     except IncorrectPasswordError as exc:
         raise AppHTTPException(
             status_code=403,

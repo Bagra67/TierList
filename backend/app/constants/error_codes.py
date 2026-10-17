@@ -73,6 +73,8 @@ class ErrorCode(StrEnum):
     INVALID_MESSAGE = "invalid_message"
     HEARTBEAT_TIMEOUT = "heartbeat_timeout"
     REMOVED_FROM_ROOM = "removed_from_room"
+    # Canal temps réel : la salle vient d'être fermée (raison de fermeture)
+    ROOM_CLOSED = "room_closed"
 
     # --- Parties ---------------------------------------------------------------------------
     # La salle a déjà une partie en cours

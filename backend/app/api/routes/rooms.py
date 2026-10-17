@@ -322,6 +322,21 @@ def update_room_settings(
 
 
 @router.delete(
+    "/{code}",
+    status_code=204,
+    responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_ADMIN_REQUIRED_RESPONSE},
+)
+def close_room(code: str, user: CurrentUserDep, games: GameServiceDep) -> None:
+    # Ferme la salle (US-2.7) : la partie en cours est close d'abord, ses parties lui survivent
+    try:
+        games.close_room(user, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+
+
+@router.delete(
     "/{code}/participants/{participant_id}",
     responses={
         **UNAUTHORIZED_RESPONSE,

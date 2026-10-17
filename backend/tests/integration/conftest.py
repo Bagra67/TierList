@@ -247,6 +247,8 @@ class RecordingRoomEventPublisher:
         self.events: list[tuple[uuid.UUID, RoomEvent]] = []
         # Sockets à fermer : (participant, code de fermeture)
         self.disconnections: list[tuple[uuid.UUID, int]] = []
+        # Salles fermées, dont tous les sockets sont à fermer
+        self.closed_rooms: list[uuid.UUID] = []
 
     def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
         self.events.append((room_id, event))
@@ -255,6 +257,9 @@ class RecordingRoomEventPublisher:
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
     ) -> None:
         self.disconnections.append((participant_id, close_code))
+
+    def close_room(self, room_id: uuid.UUID) -> None:
+        self.closed_rooms.append(room_id)
 
     def types(self) -> list[str]:
         return [event.type for _, event in self.events]

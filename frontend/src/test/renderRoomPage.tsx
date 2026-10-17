@@ -7,7 +7,7 @@ import { LocationHash } from './LocationHash';
 import { renderWithQueryClient } from './renderWithQueryClient';
 
 // Page de la salle ouverte par son lien (path peut porter un fragment, ex. le lien perso) ;
-// /login affiche un simple titre
+// /login et l'accueil affichent un simple titre
 export function renderRoomPage(path: string = aliceRoom.code) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[`/r/${path}`]}>
@@ -22,6 +22,7 @@ export function renderRoomPage(path: string = aliceRoom.code) {
           }
         />
         <Route path="/login" element={<h1>Connexion</h1>} />
+        <Route path="/" element={<h1>Accueil</h1>} />
       </Routes>
     </MemoryRouter>,
   );

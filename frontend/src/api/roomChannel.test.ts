@@ -10,7 +10,7 @@ import { stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { setAccessToken } from './client';
 import { createQueryClient } from './queryClient';
 import type { Room, RoomViewer } from './rooms';
-import { useRoomEvents } from './roomChannel';
+import { type RemovalReason, useRoomEvents } from './roomChannel';
 
 const bobId: string = aliceRoom.participants[1].id;
 
@@ -19,7 +19,7 @@ const bobId: string = aliceRoom.participants[1].id;
 function followRoom(viewer: RoomViewer = 'account') {
   const queryClient = createQueryClient({ queries: { retry: false } });
   queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoom);
-  const onRemoved = vi.fn<(banned: boolean) => void>();
+  const onRemoved = vi.fn<(reason: RemovalReason) => void>();
   const hook = renderHook(
     () => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true, onRemoved),
     {
@@ -149,17 +149,18 @@ describe('useRoomEvents', () => {
     expect(isInvalidated(queryClient)).toBe(false);
   });
 
-  it.each([
-    [4410, false],
-    [4411, true],
-  ])('tells the page and stops after the close code %i', (closeCode, banned) => {
+  it.each<[number, RemovalReason]>([
+    [4410, 'removed'],
+    [4411, 'banned'],
+    [4412, 'closed'],
+  ])('tells the page and stops after the close code %i', (closeCode, reason) => {
     vi.useFakeTimers();
     const { onRemoved } = followRoom();
 
     latestSocket().closeFromServer(closeCode);
     vi.advanceTimersByTime(10_000);
 
-    expect(onRemoved).toHaveBeenCalledExactlyOnceWith(banned);
+    expect(onRemoved).toHaveBeenCalledExactlyOnceWith(reason);
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 

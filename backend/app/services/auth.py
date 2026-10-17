@@ -6,6 +6,7 @@ Le service possède les frontières de transaction : chaque opération se termin
 
 import logging
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
@@ -356,12 +357,18 @@ class AuthService:
         self._session.commit()
         logger.info("Mot de passe réinitialisé, sessions fermées : user_id=%s", user.id)
 
-    def delete_account(self, session: AuthenticatedSession, password: str | None) -> None:
+    def delete_account(
+        self,
+        session: AuthenticatedSession,
+        password: str | None,
+        before_delete: Callable[[User], None] | None = None,
+    ) -> None:
         """Supprime définitivement le compte et ses sessions, une fois l'utilisateur confirmé.
 
         Confirmation : le mot de passe pour un compte qui en a un, sinon une connexion récente
         (moins de RECENT_AUTHENTICATION_MAX_AGE_MINUTES) : un compte Google n'a pas de mot de
-        passe à redemander.
+        passe à redemander. before_delete s'exécute une fois confirmé, avant la suppression
+        (fermeture de ses salles, US-2.7).
         """
         user = session.user
         max_age = timedelta(minutes=self._settings.recent_authentication_max_age_minutes)
@@ -370,6 +377,8 @@ class AuthService:
                 raise IncorrectPasswordError
         elif datetime.now(UTC) - session.auth_time > max_age:
             raise ReauthenticationRequiredError
+        if before_delete is not None:
+            before_delete(user)
         user_id = user.id
         user_repository.delete_user(self._session, user)
         self._session.commit()

@@ -4,14 +4,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import get_settings
 from app.models.participant import Participant
-from app.models.room import Room
 from app.services.rooms import RoomService
 from tests.integration.conftest import RecordingRoomEventPublisher
 from tests.integration.helpers import JsonObject, create_room, create_template, register
@@ -210,11 +209,10 @@ def test_an_unknown_personal_link_is_invalid(auth_client: TestClient, alice_room
 
 
 def test_the_personal_link_dies_with_its_room(
-    auth_client: TestClient, db_session: Session, alice_room: JsonObject
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
     guest_link: str = join_as_guest(auth_client, alice_room["code"], "Lou").json()["guest_link"]
-    # Ce que fera la fermeture de la salle (#89)
-    db_session.execute(delete(Room).where(Room.code == alice_room["code"]))
+    assert auth_client.delete(f"/rooms/{alice_room['code']}", headers=alice).status_code == 204
 
     response: Response = auth_client.post(
         f"/rooms/{alice_room['code']}/guest-session", json={"token": token_of(guest_link)}

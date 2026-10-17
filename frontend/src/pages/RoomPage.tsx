@@ -7,11 +7,12 @@ import {
   type Params,
   useLocation,
   useNavigate,
+  Link,
   useParams,
 } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
-import { type RoomEventsState, useRoomEvents } from '../api/roomChannel';
+import { type RemovalReason, type RoomEventsState, useRoomEvents } from '../api/roomChannel';
 import { type GuestRoom, type Room, type RoomViewer, useRoom } from '../api/rooms';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GuestLinkSection } from '../components/GuestLinkSection';
@@ -19,6 +20,7 @@ import { JoinRoomScreen } from '../components/JoinRoomScreen';
 import { RoomLobby } from '../components/RoomLobby';
 import { Button } from '../components/ui/button';
 import { canonicalRoomCode, GUEST_LINK_FRAGMENT, roomQueryKey } from '../constants/rooms';
+import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
 
 // Jeton du lien perso d'un invité (#guest=<jeton>), absent d'un lien ordinaire
@@ -27,18 +29,24 @@ function guestTokenFrom(hash: string): string | null {
   return token === '' ? null : token;
 }
 
-// Le room admin a retiré le lecteur de cette salle (banned : il l'a aussi banni)
+// Le lecteur n'a plus de place dans cette salle : retiré ou banni par le room admin, ou salle fermée
 interface Removal {
   roomCode: string;
-  banned: boolean;
+  reason: RemovalReason;
 }
+
+const REMOVAL_MESSAGES = {
+  removed: 'rooms.lobby.removed',
+  banned: 'rooms.lobby.banned',
+  closed: 'rooms.lobby.closed',
+} as const satisfies Record<RemovalReason, string>;
 
 // Page d'une salle, ouverte par son lien ou son code. Un compte connecté y entre comme joueur
 // (US-2.4). Sans compte, le navigateur d'un invité est reconnu par son cookie, ou par son lien
 // perso (US-5.4) ; un nouveau venu choisit de se connecter ou d'entrer en invité (US-2.5). Une fois
 // la salle chargée, son canal temps réel la tient à jour (arrivées, départs, réglages, présence).
-// Retiré par le room admin (US-2.11), le lecteur en est prévenu et la salle n'est plus lue : une
-// relecture ferait rejoindre à nouveau un compte sans qu'il l'ait demandé.
+// Retiré par le room admin (US-2.11), ou la salle fermée (US-2.7), le lecteur en est prévenu et la
+// salle n'est plus lue : une relecture ferait rejoindre à nouveau un compte sans qu'il l'ait demandé.
 export function RoomPage() {
   // Toujours présent : la route ROOM déclare ce paramètre
   const { code = '' }: Readonly<Params> = useParams();
@@ -65,9 +73,9 @@ export function RoomPage() {
     error,
   }: UseQueryResult<Room> = useRoom(code, viewer, guestToken);
   const handleRemoved = useCallback(
-    (banned: boolean) => {
+    (reason: RemovalReason) => {
       const roomCode: string = canonicalRoomCode(code);
-      setLastRemoval({ roomCode, banned });
+      setLastRemoval({ roomCode, reason });
       // Sa place n'existe plus : la salle en cache ne le concerne plus
       queryClient.removeQueries({ queryKey: roomQueryKey(roomCode) });
     },
@@ -105,12 +113,16 @@ export function RoomPage() {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
         <p role="status" className="font-medium">
-          {removal.banned ? t('rooms.lobby.banned') : t('rooms.lobby.removed')}
+          {t(REMOVAL_MESSAGES[removal.reason])}
         </p>
-        {/* Un banni serait refusé : seul un participant retiré peut revenir */}
-        {!removal.banned && (
+        {/* Un banni serait refusé, une salle fermée n'existe plus : seul un retiré peut revenir */}
+        {removal.reason === 'removed' ? (
           <Button type="button" onClick={() => setLastRemoval(null)}>
             {t('rooms.lobby.comeBack')}
+          </Button>
+        ) : (
+          <Button asChild variant="outline">
+            <Link to={ROUTES.HOME}>{t('rooms.lobby.backHome')}</Link>
           </Button>
         )}
       </main>

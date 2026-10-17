@@ -140,15 +140,16 @@ The server never replays past events: after any doubt, and after every (re)conne
 
 ### 2.6 Close codes of TierList
 
-| Code       | Reason              | When                                                                | The client…                                                            |
-| ---------- | ------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| HTTP `403` | —                   | `Origin` is not the origin of `FRONTEND_BASE_URL`                   | sees `1006`; after 5 failures in a row it gives up and shows a message |
-| `4400`     | `invalid_message`   | Not `auth` first, then not `pong`; or a binary frame                | reconnects                                                             |
-| `4401`     | `not_authenticated` | No `auth` in time, invalid token, or neither token nor guest cookie | an account retries **once** with a refreshed token, then stops         |
-| `4404`     | `room_not_found`    | Unknown room, or no seat in it                                      | stops                                                                  |
-| `4408`     | `heartbeat_timeout` | No `pong` within 5 s after a ping                                   | reconnects                                                             |
-| `4410`     | `removed_from_room` | The room admin removed the participant                              | stops; the page says so and offers to go back                          |
-| `4411`     | `room_banned`       | The room admin banned the participant                               | stops; the page says so                                                |
+| Code       | Reason              | When                                                                             | The client…                                                            |
+| ---------- | ------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| HTTP `403` | —                   | `Origin` is not the origin of `FRONTEND_BASE_URL`                                | sees `1006`; after 5 failures in a row it gives up and shows a message |
+| `4400`     | `invalid_message`   | Not `auth` first, then not `pong`; or a binary frame                             | reconnects                                                             |
+| `4401`     | `not_authenticated` | No `auth` in time, invalid token, or neither token nor guest cookie              | an account retries **once** with a refreshed token, then stops         |
+| `4404`     | `room_not_found`    | Unknown room, or no seat in it                                                   | stops                                                                  |
+| `4408`     | `heartbeat_timeout` | No `pong` within 5 s after a ping                                                | reconnects                                                             |
+| `4410`     | `removed_from_room` | The room admin removed the participant                                           | stops; the page says so and offers to go back                          |
+| `4411`     | `room_banned`       | The room admin banned the participant                                            | stops; the page says so                                                |
+| `4412`     | `room_closed`       | The room was closed (by its room admin, or when its admin deleted their account) | stops; the page says so and offers to go home                          |
 
 ### 2.7 Presence
 
@@ -180,7 +181,7 @@ Two consequences:
 
 ### 2.9 The connection registry
 
-`ConnectionRegistry` (`backend/app/services/room_channel.py`) keeps, **in memory**, the open sockets of this process per room, with the participant of each socket. It knows whether a socket is the first or the last one of a participant, broadcasts the events of a room, holds the pending disconnections (grace delay), and closes the sockets of a participant the room admin removed (`disconnect_participant`, called from the threadpool like `publish`). Those sockets leave the registry before being closed: their route then schedules no departure, and they receive no further event.
+`ConnectionRegistry` (`backend/app/services/room_channel.py`) keeps, **in memory**, the open sockets of this process per room, with the participant of each socket. It knows whether a socket is the first or the last one of a participant, broadcasts the events of a room, holds the pending disconnections (grace delay), and closes the sockets of a participant the room admin removed (`disconnect_participant`, called from the threadpool like `publish`), or every socket of a closed room (`close_room`, `4412`). Those sockets leave the registry before being closed: their route then schedules no departure, and they receive no further event.
 
 Because it is in memory, **the backend must run with one worker**: with several processes, Alice's socket and Bob's REST request could land in different processes, and Alice would never hear about Bob. Sharing events between processes (PostgreSQL `LISTEN/NOTIFY`, then Redis) is described in the [real-time guide](realtime.md#29-scaling).
 
@@ -192,7 +193,7 @@ Because it is in memory, **the backend must run with one worker**: with several 
 - answers `pong` to `ping`;
 - applies the events to the TanStack Query cache (§2.5);
 - reads the room again after each (re)connection;
-- after `4410` or `4411`, calls `onRemoved(banned)` and stops: `RoomPage` shows the message and stops reading the room;
+- after `4410`, `4411` or `4412`, calls `onRemoved(reason)` (`removed`, `banned` or `closed`) and stops: `RoomPage` shows the message and stops reading the room;
 - reconnects with backoff and jitter (0.5 s to 10 s), not after `4404`; after `4401`, an account retries once with a refreshed token (the access token lasts 15 minutes);
 - gives up after 5 openings in a row that never opened, and returns `unavailable: true` (the lobby then shows "Live updates are unavailable: reload the page");
 - closes the socket (`1000`) when the page leaves the room.
@@ -204,7 +205,7 @@ In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite
 | File                                                          | What to look at                                                                                                                                                                                                                         |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/app/api/routes/room_channel.py`                      | The WebSocket route: origin check, `_receive_auth`, `_find_seat`, `_serve` (registration and presence), `_heartbeat`, `_receive_text` (rejects binary frames); raises `ChannelClosedError` (`exceptions/rooms.py`: close code + reason) |
-| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`, `disconnect_participant`                                                                        |
+| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`, `disconnect_participant`, `close_room`                                                          |
 | `backend/app/services/rooms.py`                               | Changes of the room that publish after the commit (`join`, `join_as_guest`, `update_settings`, `remove_participant`), `seat_of`, `set_presence`, `reset_presence`                                                                       |
 | `backend/app/schemas/room_events.py`                          | Event and message models                                                                                                                                                                                                                |
 | `backend/app/constants/rooms.py`                              | Close codes (`CHANNEL_CLOSE_*`), guest cookie                                                                                                                                                                                           |

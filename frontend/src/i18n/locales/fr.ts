@@ -208,6 +208,19 @@ export const fr = {
       removed: 'Le room admin vous a retiré de cette salle.',
       banned: 'Le room admin vous a banni de cette salle.',
       comeBack: 'Revenir dans la salle',
+      closed: 'Le room admin a fermé cette salle.',
+      backHome: "Retour à l'accueil",
+      close: {
+        open: 'Fermer la salle',
+        title: 'Fermer la salle ?',
+        warning:
+          'La salle est supprimée avec son lien et son code ; les liens perso des invités ne marchent plus. Ses parties terminées restent dans les historiques.',
+        gameWarning:
+          'Une partie est en cours : elle est close d’abord, avec les classements du moment, puis la salle est supprimée avec son lien et son code.',
+        cancel: 'Annuler',
+        submit: 'Fermer la salle',
+        submitting: 'Fermeture…',
+      },
       remove: {
         open: 'Retirer',
         openLabel: 'Retirer {{name}}',
@@ -402,6 +415,7 @@ export const fr = {
       room_banned: 'Vous avez été banni de cette salle.',
       ban_not_found: "Ce bannissement n'existe plus.",
       removed_from_room: 'Le room admin vous a retiré de cette salle.',
+      room_closed: 'Cette salle a été fermée.',
       invalid_message: 'Message inattendu sur le canal de la salle.',
       heartbeat_timeout: 'La connexion à la salle ne répondait plus.',
       tier_not_found: 'Ce tier est introuvable.',
