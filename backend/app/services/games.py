@@ -1,30 +1,44 @@
-"""Règles métier des parties : démarrage (docs/technical/games.md).
+"""Règles métier des parties : démarrage et placements (docs/technical/games.md).
 
 Le service possède la frontière de transaction : le démarrage fige le template, crée la partie et
-ses tours et passe la salle en partie dans un seul commit, puis publie l'événement aux sockets de
-la salle. Les placements, l'enchaînement des tours et le cooldown viennent avec #92, #93 et #96.
+ses tours et passe la salle en partie dans un seul commit ; un placement est enregistré sous le
+verrou de la salle. Les événements sont publiés aux sockets de la salle après le commit.
+L'enchaînement des tours et le cooldown viennent avec #93 et #96.
 """
 
 import logging
 import random
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
-from app.exceptions.templates import TemplateNotFoundError
-from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
+from app.exceptions.games import (
+    GameInProgressError,
+    ItemNotCurrentError,
+    NoPlacingParticipantError,
+    NotAPlacingParticipantError,
+    RoundNotInProgressError,
+)
+from app.exceptions.templates import TemplateNotFoundError, TierNotFoundError
+from app.models.enums import AutoAdvance, GameStatus, ItemOrder, PlacementPhase, RoomStatus
 from app.models.game import Game
 from app.models.participant import Participant
+from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
-from app.schemas.room_events import GameStartedData, GameStartedEvent
+from app.schemas.room_events import (
+    GameStartedData,
+    GameStartedEvent,
+    ParticipantPlacedData,
+    ParticipantPlacedEvent,
+)
 from app.services.room_channel import RoomEventPublisher
-from app.services.rooms import RoomService
+from app.services.rooms import RoomService, RoomViewer
 from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
@@ -35,6 +49,37 @@ def shuffle_items(tiles: Sequence[SnapshotTile]) -> list[SnapshotTile]:
     shuffled: list[SnapshotTile] = list(tiles)
     random.SystemRandom().shuffle(shuffled)
     return shuffled
+
+
+def _in_tier(board: list[Placement], tier_id: uuid.UUID, excluded: Placement) -> list[Placement]:
+    """Placements du plateau dans ce tier, dans l'ordre de leurs positions, sans excluded."""
+    in_tier: list[Placement] = [
+        placement
+        for placement in board
+        if placement.snapshot_tier_id == tier_id and placement is not excluded
+    ]
+    return sorted(in_tier, key=lambda placement: placement.position or 0)
+
+
+def _renumber(placements: list[Placement]) -> None:
+    """Positions continues 0..n-1 dans l'ordre de la liste."""
+    for position, placement in enumerate(placements):
+        placement.position = position
+
+
+def _place_in_tier(
+    board: list[Placement], placement: Placement, tier_id: uuid.UUID, position: int
+) -> None:
+    """Met le placement à cette position du tier (au-delà de la fin, en dernier) et décale les
+    suivants ; son ancien tier se referme. Les positions restent continues dans chaque tier, et
+    l'ordre des autres items ne change pas (docs/technical/games.md)."""
+    old_tier_id: uuid.UUID | None = placement.snapshot_tier_id
+    if old_tier_id is not None and old_tier_id != tier_id:
+        _renumber(_in_tier(board, old_tier_id, excluded=placement))
+    target: list[Placement] = _in_tier(board, tier_id, excluded=placement)
+    target.insert(min(position, len(target)), placement)
+    placement.snapshot_tier_id = tier_id
+    _renumber(target)
 
 
 class GameService:
@@ -119,3 +164,62 @@ class GameService:
             for participant in self._rooms.seated_participants(room)
             if room.admin_plays or participant.user_id != room.admin_id
         ]
+
+    def place(
+        self, viewer: RoomViewer, code: str, tile_id: uuid.UUID, tier_id: uuid.UUID, position: int
+    ) -> Participant:
+        """Place l'item en cours dans un tier, à une position (US-3.3) ; le replacer pendant le
+        même tour remplace le placement. Renvoie la place du lecteur (sa salle : seat.room).
+        Seul le premier placement du tour est diffusé, sans tier ni position (plateau privé)."""
+        seat: Participant = self._rooms.seat_of(viewer, code, for_update=True)
+        room: Room = seat.room
+        game: Game | None = room.current_game
+        if game is None or game.status != GameStatus.IN_ROUND:
+            raise RoundNotInProgressError
+        if seat not in self.placing_participants(room):
+            raise NotAPlacingParticipantError
+        current_round: Round = game.current_round
+        # Un item passé ne bouge pas avant le cooldown, un item futur n'est pas encore montré
+        if tile_id != current_round.snapshot_tile_id:
+            raise ItemNotCurrentError
+        if not any(tier.id == tier_id for tier in game.snapshot.tiers):
+            raise TierNotFoundError
+
+        # Le plateau du lecteur pour cette phase : ses placements de tour dans cette partie
+        board: list[Placement] = [
+            placement
+            for placement in game.placements
+            if placement.participant_id == seat.id and placement.phase == PlacementPhase.ROUND
+        ]
+        placement: Placement | None = next(
+            (placement for placement in board if placement.snapshot_tile_id == tile_id), None
+        )
+        first_placement: bool = placement is None
+        if placement is None:
+            placement = Placement(
+                participant_id=seat.id, snapshot_tile_id=tile_id, phase=PlacementPhase.ROUND
+            )
+            game.placements.append(placement)
+        _place_in_tier(board, placement, tier_id, position)
+        # Un déplacement ne change rien pour les autres : ni version, ni événement
+        if first_placement:
+            room.version += 1
+        self._session.commit()
+        logger.info(
+            "Item placé : room_id=%s round=%d participant_id=%s first=%s",
+            room.id,
+            current_round.number,
+            seat.id,
+            first_placement,
+        )
+        if first_placement:
+            self._publisher.publish(
+                room.id,
+                ParticipantPlacedEvent(
+                    room_version=room.version,
+                    data=ParticipantPlacedData(
+                        participant_id=seat.id, round_number=current_round.number
+                    ),
+                ),
+            )
+        return seat

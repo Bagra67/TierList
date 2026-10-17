@@ -55,7 +55,7 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # Les placements de tous les participants : jamais envoyés tels quels (plateau privé)
     placements: Mapped[list["Placement"]] = relationship(
-        back_populates="game", cascade="all, delete-orphan"
+        back_populates="game", cascade="all, delete-orphan", order_by="Placement.created_at"
     )
 
     @property

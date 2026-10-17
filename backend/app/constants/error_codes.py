@@ -79,6 +79,12 @@ class ErrorCode(StrEnum):
     GAME_IN_PROGRESS = "game_in_progress"
     # Aucun participant ne placerait les items (room admin seul, qui ne joue pas)
     NO_PLACING_PARTICIPANT = "no_placing_participant"
+    # Aucun tour en cours : pas de partie, ou plus de tour à placer
+    ROUND_NOT_IN_PROGRESS = "round_not_in_progress"
+    # Le room admin qui ne joue pas ne place pas les items
+    NOT_A_PLACING_PARTICIPANT = "not_a_placing_participant"
+    # La tuile n'est pas l'item du tour en cours
+    ITEM_NOT_CURRENT = "item_not_current"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

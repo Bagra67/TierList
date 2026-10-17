@@ -71,6 +71,23 @@ class CurrentItemResponse(BaseModel):
     image_url: str | None
 
 
+class GameTierResponse(BaseModel):
+    """Un tier de la version figée de la partie, où placer les items."""
+
+    id: uuid.UUID
+    name: str
+    # Format #RRGGBB
+    color: str
+
+
+class OwnPlacementResponse(BaseModel):
+    """Un item que le lecteur a placé pendant son tour : son tier et sa position (0 = premier)."""
+
+    item: CurrentItemResponse
+    tier_id: uuid.UUID
+    position: int
+
+
 class CurrentGameResponse(BaseModel):
     # Numéro du tour en cours (à partir de 1) et nombre de tours, un par tuile
     round_number: int
@@ -78,6 +95,19 @@ class CurrentGameResponse(BaseModel):
     current_item: CurrentItemResponse
     # Fin du timer du tour, si la salle en a un ; le client affiche le compte à rebours
     ends_at: datetime | None
+    # Tiers de la version figée, de haut en bas
+    tiers: list[GameTierResponse]
+    # Qui a placé l'item en cours, jamais où (plateau privé)
+    placed_participant_ids: list[uuid.UUID]
+    # Placements du lecteur seulement, par tier puis position ; jamais ceux des autres
+    own_placements: list[OwnPlacementResponse]
+
+
+class PlaceItemRequest(BaseModel):
+    # Un tier de la version figée de la partie
+    tier_id: uuid.UUID
+    # Rang voulu dans le tier, 0 = premier ; au-delà de la fin, l'item va en dernier
+    position: Annotated[int, Field(ge=0)]
 
 
 class RoomBanResponse(BaseModel):

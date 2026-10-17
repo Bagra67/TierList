@@ -161,11 +161,6 @@ class RoomService:
         logger.error("Aucun code de salle libre après %d tirages", ROOM_CODE_MAX_ATTEMPTS)
         raise RuntimeError("No free room code")
 
-    def get(self, user: User, code: str) -> Room:
-        """Salle dont l'utilisateur est participant ; le code est lu sans tenir compte de la
-        casse (un code tapé en minuscules est le même)."""
-        return self._get_as_participant(user, code, for_update=False)
-
     def get_for_admin_change(self, user: User, code: str) -> Room:
         """Salle dont l'utilisateur est le room admin, verrouillée jusqu'au commit : pour tout
         changement réservé au room admin, ici ou dans un autre service (démarrer une partie).
@@ -279,18 +274,6 @@ class RoomService:
         logger.info("Lien perso renouvelé : room_id=%s participant_id=%s", room.id, guest.id)
         return GuestSeat(room=room, participant=guest, token=token)
 
-    def get_for_viewer(self, viewer: RoomViewer, code: str) -> Room:
-        """Salle dont le lecteur a une place : un compte participant, ou un invité dont le
-        cookie porte un jeton valable pour cette salle."""
-        if viewer.user is not None:
-            return self.get(viewer.user, code)
-        room: Room | None = room_repository.get_room_by_code(self._session, code.upper())
-        if room is None or viewer.guest_token is None:
-            raise RoomNotFoundError
-        if self._find_guest(room, viewer.guest_token) is None:
-            raise RoomNotFoundError
-        return room
-
     def seated_participants(self, room: Room) -> list[Participant]:
         """Participants qui ont encore leur place : sans les invités dont le lien a expiré."""
         now: datetime = datetime.now(UTC)
@@ -383,17 +366,30 @@ class RoomService:
         logger.info("Bannissement levé : room_id=%s ban_id=%s", room.id, ban_id)
         return room
 
-    def seat_of(self, viewer: RoomViewer, code: str) -> Participant:
-        """Place du lecteur dans la salle (compte ou invité) : elle lui ouvre le canal temps réel.
-        Sans place, RoomNotFoundError, comme pour la lecture de la salle."""
-        room: Room = self.get_for_viewer(viewer, code)
-        for participant in self.seated_participants(room):
-            if viewer.user is not None and participant.user_id == viewer.user.id:
-                return participant
-        if viewer.user is None and viewer.guest_token is not None:
+    def seat_of(self, viewer: RoomViewer, code: str, for_update: bool = False) -> Participant:
+        """Place du lecteur dans la salle : un compte participant, ou un invité dont le cookie
+        porte un jeton valable pour cette salle. La salle est participant.room ; for_update la
+        verrouille jusqu'au commit (placer un item). Sans place, RoomNotFoundError, comme pour
+        un code inconnu."""
+        room: Room | None = room_repository.get_room_by_code(
+            self._session, code.upper(), for_update=for_update
+        )
+        if room is None:
+            raise RoomNotFoundError
+        if viewer.user is not None:
+            return self.seat_in(room, viewer.user)
+        if viewer.guest_token is not None:
             guest: Participant | None = self._find_guest(room, viewer.guest_token)
             if guest is not None:
                 return guest
+        raise RoomNotFoundError
+
+    @staticmethod
+    def seat_in(room: Room, user: User) -> Participant:
+        """Place du compte dans une salle déjà lue ; sans place, RoomNotFoundError."""
+        for participant in room.participants:
+            if participant.user_id == user.id:
+                return participant
         raise RoomNotFoundError
 
     def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
