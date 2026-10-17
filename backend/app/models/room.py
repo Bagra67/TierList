@@ -1,5 +1,4 @@
 import uuid
-from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String, text
@@ -9,22 +8,13 @@ from app.constants.rooms import ROOM_CODE_LENGTH
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
-from app.models.enums import AutoAdvance, ItemOrder
+from app.models.enums import AutoAdvance, GameStatus, ItemOrder, RoomStatus
 
 if TYPE_CHECKING:
     from app.models.game import Game
     from app.models.participant import Participant
     from app.models.room_ban import RoomBan
     from app.models.template import Template
-
-
-class RoomStatus(StrEnum):
-    """Une salle fermée n'est pas gardée (docs/product/milestone-1/lifecycles.md) : elle est
-    supprimée, il n'y a donc pas de statut « fermée »."""
-
-    OPEN = "open"
-    # Une partie est en cours : les réglages sont bloqués, sauf les arrivées
-    PLAYING = "playing"
 
 
 class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -81,7 +71,7 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # se crée par le service des parties, et la base la détache (SET NULL) quand la salle est
     # supprimée
     current_game: Mapped["Game | None"] = relationship(
-        primaryjoin="and_(Game.room_id == Room.id, Game.status != 'closed')",
+        primaryjoin=f"and_(Game.room_id == Room.id, Game.status != '{GameStatus.CLOSED}')",
         viewonly=True,
         uselist=False,
     )

@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index, text
@@ -9,22 +8,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
-from app.models.enums import ItemOrder
+from app.models.enums import GameStatus, ItemOrder
 
 if TYPE_CHECKING:
     from app.models.round import Round
     from app.models.template_snapshot import TemplateSnapshot
-
-
-class GameStatus(StrEnum):
-    """Cycle de vie d'une partie (docs/product/milestone-1/lifecycles.md)."""
-
-    # Un item est montré, les participants le placent
-    IN_ROUND = "in_round"
-    # Après le dernier tour : chacun peut tout déplacer à nouveau (#96)
-    COOLDOWN = "cooldown"
-    # Finale : plus rien ne change (#98)
-    CLOSED = "closed"
 
 
 class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -38,7 +26,7 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "uq_games_room_id_in_progress",
             "room_id",
             unique=True,
-            postgresql_where=text("status <> 'closed'"),
+            postgresql_where=text(f"status <> '{GameStatus.CLOSED}'"),
         ),
     )
 

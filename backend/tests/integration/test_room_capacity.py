@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import FREE_PLAN_MAX_PARTICIPANTS
+from app.models.enums import RoomStatus
 from app.models.participant import Participant
-from app.models.room import Room, RoomStatus
+from app.models.room import Room
 from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration

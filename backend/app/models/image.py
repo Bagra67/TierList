@@ -1,12 +1,13 @@
 import uuid
 from enum import StrEnum
 
-from sqlalchemy import Enum, ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.images import IMAGE_SHA256_LENGTH, IMAGE_STORAGE_KEY_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+from app.db.types import text_enum
 
 
 class ImageStatus(StrEnum):
@@ -43,14 +44,5 @@ class Image(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Empreinte du fichier reçu : permettra de refuser le renvoi d'un fichier banni (#124)
     sha256: Mapped[str] = mapped_column(String(IMAGE_SHA256_LENGTH), index=True)
     status: Mapped[ImageStatus] = mapped_column(
-        Enum(
-            ImageStatus,
-            name="image_status",
-            # Colonne texte avec une contrainte CHECK plutôt qu'un type ENUM PostgreSQL : ajouter
-            # un statut ne demande pas d'ALTER TYPE
-            native_enum=False,
-            create_constraint=True,
-            values_callable=lambda statuses: [status.value for status in statuses],
-        ),
-        default=ImageStatus.VISIBLE,
+        text_enum(ImageStatus, "image_status"), default=ImageStatus.VISIBLE
     )

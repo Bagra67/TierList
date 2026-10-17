@@ -7,7 +7,7 @@ from sqlalchemy import Enum
 
 def text_enum(enum_class: type[StrEnum], name: str) -> Enum:
     """Colonne texte avec une contrainte CHECK plutôt qu'un type ENUM PostgreSQL : ajouter une
-    valeur ne demande pas d'ALTER TYPE (même choix que Image.status)."""
+    valeur ne demande pas d'ALTER TYPE."""
     return Enum(
         enum_class,
         name=name,

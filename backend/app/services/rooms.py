@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
-from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -25,12 +24,15 @@ from app.constants.rooms import (
     FREE_PLAN_MAX_PARTICIPANTS,
     FRONTEND_ROOM,
     GUEST_LINK_FRAGMENT,
+    NICKNAME_INDEX,
     ROOM_CODE_ALPHABET,
+    ROOM_CODE_CONSTRAINT,
     ROOM_CODE_LENGTH,
     ROOM_CODE_MAX_ATTEMPTS,
 )
 from app.core.config import Settings
 from app.core.security import generate_guest_token, hash_guest_token
+from app.db.errors import violates_unique
 from app.exceptions.rooms import (
     BanNotFoundError,
     CannotRemoveRoomAdminError,
@@ -45,9 +47,9 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
-from app.models.enums import AutoAdvance, ItemOrder
+from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
 from app.models.participant import Participant
-from app.models.room import Room, RoomStatus
+from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
@@ -65,18 +67,6 @@ from app.schemas.room_events import (
 from app.services.room_channel import RoomEventPublisher
 
 logger = logging.getLogger(__name__)
-
-# Contrainte d'unicité du code (convention de nommage de app/db/base.py)
-ROOM_CODE_CONSTRAINT = "uq_rooms_code"
-# Index unique du pseudo des invités dans une salle (app/models/participant.py)
-NICKNAME_INDEX = "uq_participants_room_id_lower_nickname"
-
-
-def _violates(exc: IntegrityError, constraint_name: str) -> bool:
-    """L'erreur d'intégrité vient-elle de cette contrainte d'unicité ?"""
-    return (
-        isinstance(exc.orig, UniqueViolation) and exc.orig.diag.constraint_name == constraint_name
-    )
 
 
 def generate_room_code() -> str:
@@ -167,10 +157,14 @@ class RoomService:
         casse (un code tapé en minuscules est le même)."""
         return self._get_as_participant(user, code, for_update=False)
 
-    def get_for_change(self, user: User, code: str) -> Room:
-        """Salle dont l'utilisateur est participant, verrouillée jusqu'au commit : pour un
-        changement fait par un autre service (le démarrage d'une partie)."""
-        return self._get_as_participant(user, code, for_update=True)
+    def get_for_admin_change(self, user: User, code: str) -> Room:
+        """Salle dont l'utilisateur est le room admin, verrouillée jusqu'au commit : pour tout
+        changement réservé au room admin, ici ou dans un autre service (démarrer une partie).
+        Participant sans être room admin : RoomAdminRequiredError."""
+        room: Room = self._get_as_participant(user, code, for_update=True)
+        if room.admin_id != user.id:
+            raise RoomAdminRequiredError
+        return room
 
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
@@ -240,7 +234,7 @@ class RoomService:
             # quelques caractères Unicode ; l'index refuse alors un pseudo que le service a laissé
             # passer. C'est le même refus, pas une erreur interne.
             self._session.rollback()
-            if _violates(exc, NICKNAME_INDEX):
+            if violates_unique(exc, NICKNAME_INDEX):
                 raise NicknameTakenError from exc
             raise
         logger.info("Salle rejointe en invité : room_id=%s participant_id=%s", room.id, guest.id)
@@ -303,9 +297,7 @@ class RoomService:
     def update_settings(self, user: User, code: str, changes: RoomSettingsChanges) -> Room:
         """Change les réglages de la prochaine partie (room admin seulement). Pendant une partie,
         seules les arrivées peuvent changer."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         if room.status == RoomStatus.PLAYING and not (
             changes.keys() <= SETTINGS_CHANGEABLE_DURING_A_GAME
         ):
@@ -326,9 +318,7 @@ class RoomService:
         """Supprime la place d'un participant (room admin seulement, US-2.11), même pendant une
         partie. Avec ban, la personne est aussi bannie (US-2.12) : son compte, ou pour un invité
         l'empreinte du jeton de son cookie. Ses sockets sont fermés après le commit."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         target: Participant | None = next(
             (
                 participant
@@ -373,9 +363,7 @@ class RoomService:
     def unban(self, user: User, code: str, ban_id: uuid.UUID) -> Room:
         """Lève un bannissement (room admin seulement) : la personne peut rejoindre à nouveau.
         Seul le room admin voit les bannissements : la version de la salle ne change pas."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         room_ban: RoomBan | None = next(
             (room_ban for room_ban in room.bans if room_ban.id == ban_id), None
         )
@@ -494,7 +482,7 @@ class RoomService:
             with self._session.begin_nested():
                 room_repository.add_room(self._session, room)
         except IntegrityError as exc:
-            if _violates(exc, ROOM_CODE_CONSTRAINT):
+            if violates_unique(exc, ROOM_CODE_CONSTRAINT):
                 logger.info("Code de salle déjà pris, nouveau tirage : code=%s", room.code)
                 return False
             raise

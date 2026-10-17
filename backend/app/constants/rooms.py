@@ -6,6 +6,12 @@ ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 # déjà rare
 ROOM_CODE_MAX_ATTEMPTS = 5
 
+# Contrainte d'unicité du code (convention de nommage de app/db/base.py) : un tirage qui la
+# viole est retenté
+ROOM_CODE_CONSTRAINT = "uq_rooms_code"
+# Index unique du pseudo des invités dans une salle, sans tenir compte de la casse
+NICKNAME_INDEX = "uq_participants_room_id_lower_nickname"
+
 # Places d'une salle dans le plan gratuit, room admin compris même s'il ne joue pas (US-2.6)
 FREE_PLAN_MAX_PARTICIPANTS = 10
 

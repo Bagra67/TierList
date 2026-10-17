@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import CHANNEL_CLOSE_BANNED, CHANNEL_CLOSE_REMOVED
-from app.models.room import Room, RoomStatus
+from app.models.enums import RoomStatus
+from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.schemas.room_events import ParticipantRemovedEvent
 from tests.integration.conftest import RecordingRoomEventPublisher

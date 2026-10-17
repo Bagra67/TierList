@@ -74,10 +74,12 @@ def get_room_service(
 
 def get_game_service(
     session: Annotated[Session, Depends(get_db_session)],
-    settings: Annotated[Settings, Depends(get_settings)],
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
+    rooms: Annotated[RoomService, Depends(get_room_service)],
+    templates: Annotated[TemplateService, Depends(get_template_service)],
 ) -> GameService:
-    return GameService(session, settings, publisher)
+    # FastAPI met la session en cache par requête : les trois services partagent la même
+    return GameService(session, publisher, rooms, templates)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:
