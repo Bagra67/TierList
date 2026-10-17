@@ -124,7 +124,15 @@ Built in #100.
 - **Lifetime**: the link never expires and cannot be revoked. It keeps working after the room is closed (the game survives its room, `games.room_id` set to `NULL`) and after a player deletes their account (the frozen player stays, without account).
 - **Items without text**: their image is named by their number in the template order ("Image of item 3", `ResultItem.imageLabel`), so two images never share a name in the table or the lists.
 
-### 2.8 Known limitations
+### 2.8 History
+
+Built in #103 (US-5.5).
+
+- **Whose games**: `GET /history` (an account is required, `401` otherwise; a guest has no history) lists the closed games where the account is a frozen player (`game_players.user_id`) **or** was the room admin (`games.admin_id`), even without playing ([permissions](../product/permissions.md): the room admin keeps the game in their history). `games.admin_id` is set by `start` from the room and survives the room; it is `SET NULL` when the account is deleted. The games closed before #103 got it from their room when it still existed; the others stay in the history of their players only.
+- **Order and pages**: newest first (`closed_at`, then `id` so that a page never skips a game), `limit` from 1 to `HISTORY_PAGE_SIZE_MAX` (50, `20` by default) and `offset`; the service reads one game more to answer `has_more`. The answer is `HistoryResponse {games: [PastGameResponse], has_more}`, the same entries as the lobby's past games (`public_token`, `template_name` from the snapshot, `closed_at`, `player_count`), built by the same presenter (`presenters/games.py`). The number of queries does not grow with the games (`Game.player_count` through `with_expression`, the snapshots in one `selectinload`).
+- **Page**: `/history` (`ROUTES.HISTORY`, under `RequireAuth`, "History" in the main navigation). `useHistory` (`useInfiniteQuery`) reads the first page, then "See more" reads the next one from the number of games already shown, without copying the backend page size. Each row shows the template name, the date and the players, with "See the results" (`/results/<token>`, no room state). States: loading, translated error, and an empty state.
+
+### 2.9 Known limitations
 
 - The open mode (later) has live statistics; whether to recompute them fully or incrementally is still open ([roadmap](../product/roadmap.md#technical-questions)). This function covers room games.
 - Comparing round and final placements ("changes of mind") is a later statistic; it is not computed here.
@@ -199,3 +207,6 @@ If Alice ranks S: X, Y and Bob S: Y, X, both items have median 3/4 and mean 1/2:
 | Frontend | `components/ResultsTabs.tsx`, `resultsViews.ts`, `ResultsTierList.tsx`, `ResultsDistributionTable.tsx`, `ResultsPlayerView.tsx`, `PastGames.tsx` | The views, and the past games of the lobby.                                                               |
 | Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                   |
 | Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | The page and the past games ([testing guide](testing.md)).                                                |
+| Backend  | `backend/app/services/history.py`, `api/routes/history.py`, `schemas/history.py`, `presenters/games.py`                                          | `GET /history` and its answer.                                                                            |
+| Frontend | `frontend/src/pages/HistoryPage.tsx`, `api/history.ts`                                                                                           | The history page, `useHistory`.                                                                           |
+| Tests    | `backend/tests/integration/test_history.py`, `frontend/src/pages/HistoryPage.test.tsx`                                                           | The history ([testing guide](testing.md)).                                                                |
