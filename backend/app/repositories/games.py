@@ -37,3 +37,17 @@ def list_pending_round_deadlines(session: Session) -> list[tuple[uuid.UUID, int,
         if ends_at is not None:
             deadlines.append((game_id, round_number, ends_at))
     return deadlines
+
+
+def list_pending_cooldown_ends(session: Session) -> list[tuple[uuid.UUID, datetime]]:
+    """(partie, fin du cooldown) des parties dans leur cooldown final : à reprogrammer au
+    démarrage du processus."""
+    statement: Select[uuid.UUID, datetime | None] = select(Game.id, Game.cooldown_ends_at).where(
+        Game.status == GameStatus.COOLDOWN, Game.cooldown_ends_at.is_not(None)
+    )
+    cooldown_ends: list[tuple[uuid.UUID, datetime]] = []
+    for game_id, cooldown_ends_at in session.execute(statement):
+        # Toujours renseignée (filtre ci-dessus) ; le test la redit pour le typage
+        if cooldown_ends_at is not None:
+            cooldown_ends.append((game_id, cooldown_ends_at))
+    return cooldown_ends

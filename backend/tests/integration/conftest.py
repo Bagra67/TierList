@@ -273,14 +273,20 @@ def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
 
 class RecordingRoundScheduler:
     """Timers factices : gardent les échéances programmées, sans tâche asyncio. Le test appelle
-    lui-même la transition (GameService.end_round_on_timer) pour simuler la fin du timer."""
+    lui-même la transition (GameService.end_round_on_timer, end_cooldown_on_timer) pour simuler
+    la fin du timer."""
 
     def __init__(self) -> None:
         # (partie, numéro du tour, fin du timer)
         self.deadlines: list[tuple[uuid.UUID, int, datetime]] = []
+        # (partie, fin du cooldown)
+        self.cooldown_ends: list[tuple[uuid.UUID, datetime]] = []
 
     def schedule(self, game_id: uuid.UUID, round_number: int, ends_at: datetime) -> None:
         self.deadlines.append((game_id, round_number, ends_at))
+
+    def schedule_cooldown_end(self, game_id: uuid.UUID, ends_at: datetime) -> None:
+        self.cooldown_ends.append((game_id, ends_at))
 
 
 @pytest.fixture

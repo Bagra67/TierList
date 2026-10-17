@@ -2784,7 +2784,7 @@
             }
           },
           "404": {
-            "description": "Room not found, or tier not in the game",
+            "description": "Room not found, or tier or tile not in the game",
             "content": {
               "application/json": {
                 "schema": {
@@ -2804,7 +2804,7 @@
             }
           },
           "409": {
-            "description": "No round in progress, or the tile is not the current item",
+            "description": "No round nor cooldown in progress, or during a round the tile is not the current item",
             "content": {
               "application/json": {
                 "schema": {
@@ -2902,6 +2902,103 @@
           },
           "409": {
             "description": "No round in progress (no game, or the cooldown has begun)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/{code}/game/end": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "End Cooldown",
+        "operationId": "end_cooldown_rooms__code__game_end_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No final cooldown in progress",
             "content": {
               "application/json": {
                 "schema": {
@@ -3137,6 +3234,13 @@
               }
             ],
             "title": "Cooldown Ends At"
+          },
+          "missed_items": {
+            "items": {
+              "$ref": "#/components/schemas/CurrentItemResponse"
+            },
+            "type": "array",
+            "title": "Missed Items"
           }
         },
         "type": "object",
@@ -3149,7 +3253,8 @@
           "tiers",
           "placed_participant_ids",
           "own_placements",
-          "cooldown_ends_at"
+          "cooldown_ends_at",
+          "missed_items"
         ],
         "title": "CurrentGameResponse"
       },
@@ -4390,6 +4495,44 @@
         "title": "CooldownStartedEvent",
         "type": "object"
       },
+      "GameClosedData": {
+        "properties": {
+          "game_id": {
+            "format": "uuid",
+            "title": "Game Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "game_id"
+        ],
+        "title": "GameClosedData",
+        "type": "object"
+      },
+      "GameClosedEvent": {
+        "description": "Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la\nsalle redevient ouverte.",
+        "properties": {
+          "type": {
+            "const": "game.closed",
+            "default": "game.closed",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/GameClosedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "GameClosedEvent",
+        "type": "object"
+      },
       "GameStartedData": {
         "properties": {
           "round_number": {
@@ -4707,6 +4850,7 @@
         "discriminator": {
           "mapping": {
             "cooldown.started": "#/components/schemas/CooldownStartedEvent",
+            "game.closed": "#/components/schemas/GameClosedEvent",
             "game.started": "#/components/schemas/GameStartedEvent",
             "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
             "participant.placed": "#/components/schemas/ParticipantPlacedEvent",
@@ -4742,6 +4886,9 @@
           },
           {
             "$ref": "#/components/schemas/CooldownStartedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/GameClosedEvent"
           },
           {
             "$ref": "#/components/schemas/PingMessage"

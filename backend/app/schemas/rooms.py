@@ -103,10 +103,14 @@ class CurrentGameResponse(BaseModel):
     tiers: list[GameTierResponse]
     # Qui a placé l'item en cours, jamais où (plateau privé)
     placed_participant_ids: list[uuid.UUID]
-    # Placements du lecteur seulement, par tier puis position ; jamais ceux des autres
+    # Placements du lecteur seulement, par tier puis position ; jamais ceux des autres. Pendant
+    # les tours ses placements de tour, pendant le cooldown ses placements finaux
     own_placements: list[OwnPlacementResponse]
     # Fin du cooldown final, une fois le dernier tour fini
     cooldown_ends_at: datetime | None
+    # Pendant le cooldown : les items que le lecteur n'a pas encore placés (votes absents, ou
+    # arrivé en retard), dans l'ordre des tours ; vide pendant les tours
+    missed_items: list[CurrentItemResponse]
 
 
 class PlaceItemRequest(BaseModel):

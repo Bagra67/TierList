@@ -32,7 +32,7 @@ Timers: the per-item **round timer** (room setting), the **cooldown** (room sett
 
 ### Not available yet
 
-The game start (`game.started`, #91), the placements (`participant.placed`, #92), the round progression (`round.started`, `cooldown.started`) and the round timers (§2.8, #93) are built ([games guide](games.md)); the cooldown timer and the closing come with #96 and #98. Holograms, public rooms and chat (later milestones) will reuse the same channel.
+The game start (`game.started`, #91), the placements (`participant.placed`, #92), the round progression (`round.started`, `cooldown.started`) and the round timers (§2.8, #93) are built ([games guide](games.md)); so are the final cooldown, its timer and its end (`game.closed`, #96); saving the closed game comes with #98. Holograms, public rooms and chat (later milestones) will reuse the same channel.
 
 ## 2. Technical design
 
@@ -111,7 +111,7 @@ WS events ──▶ useRoomEvents(roomCode) ──┘ (setQueryData / invalidate
 
 ### 2.8 Server-side timers
 
-**Built for the rounds in #93** (`services/round_timers.py`, [games guide](games.md#25-round-progression)); the cooldown timer comes with #96. A round ended early keeps its task: the transition finds the round over and does nothing, which is simpler than cancelling it.
+**Built for the rounds in #93** (`services/round_timers.py`, [games guide](games.md#25-round-progression)); the cooldown timer since #96 (`schedule_cooldown_end`, one deadline per game). A round ended early keeps its task: the transition finds the round over and does nothing, which is simpler than cancelling it.
 
 - The server is the only clock. A round with a timer and the cooldown store their **end time** (`ends_at`, UTC) in the database; the events send it, the clients display the countdown from it.
 - In the process, an `asyncio` task waits for each deadline and calls the service transition; it is cancelled when the round ends earlier (admin "next", everyone done). At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
@@ -176,6 +176,7 @@ Built in #85. What exists today:
   | `participant.placed`    | `{participant_id, round_number}`       | A participant places the current item for the first time in the round (#92); a move sends nothing. Never the tier nor the position | Updates the cached room |
   | `round.started`         | `{round_number, round_count, ends_at}` | A round ends ("next", timer, everyone placed) and the next one starts (#93); the absent votes are recorded                         | Reads the room again    |
   | `cooldown.started`      | `{ends_at}`                            | The last round ends: the final cooldown starts (#93)                                                                               | Reads the room again    |
+  | `game.closed`           | `{game_id}`                            | The cooldown ends (timer or "End now"): the game is closed and the room open again (#96)                                           | Reads the room again    |
 
   Channel messages: `{"type": "ping"}` from the server, `{"type": "pong"}` and `{"type": "auth", "access_token": …}` from the client. `RoomServerMessage` and `RoomClientMessage` are added to the OpenAPI components (`_openapi_with_room_messages` in `app/main.py`).
 

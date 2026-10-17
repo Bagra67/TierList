@@ -97,6 +97,7 @@ def test_the_admin_starts_a_game_on_the_first_item(
         "placed_participant_ids": [],
         "own_placements": [],
         "cooldown_ends_at": None,
+        "missed_items": [],
     }
     # Les tiers de la version figée : ceux du template, de haut en bas
     assert [tier["name"] for tier in body["game"]["tiers"]] == [name for name, _ in DEFAULT_TIERS]
