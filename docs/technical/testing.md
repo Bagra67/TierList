@@ -861,10 +861,9 @@ Tests of `RoomSweeper` (`app/services/room_sweeper.py`) with a recording sweep a
 
 The home page with a restored session.
 
-| Test                                                  | What it does                                     | Purpose                                                              | Expected result                                                                                           |
-| ----------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `shows the page title and the connected user`         | Opens `/` with a session.                        | Checks the page content.                                             | The `Accueil` heading and `Connecté en tant que Alice`. No `Se déconnecter` button (it is in the header). |
-| `reopens the account deletion after a Google sign-in` | Opens `/?confirm=delete-account` with a session. | Back from the re-authentication, the user goes on with the deletion. | The dialog `Supprimer mon compte` is visible.                                                             |
+| Test                                          | What it does              | Purpose                  | Expected result                                                                                           |
+| --------------------------------------------- | ------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `shows the page title and the connected user` | Opens `/` with a session. | Checks the page content. | The `Accueil` heading and `Connecté en tant que Alice`. No `Se déconnecter` button (it is in the header). |
 
 ### 2.5 Tests: `src/pages/LoginPage.test.tsx` and `src/pages/RegisterPage.test.tsx`
 
@@ -1331,6 +1330,18 @@ The history page ([results guide](results.md#28-history)) on `/history`, `/resul
 | `reads the next page after the games already shown`                          | Clicks `Voir plus`.       | Pagination.          | Fruits added (3 rows); offsets `0` then `2`; no more `Voir plus`.                          |
 | `says when there is no game yet`                                             | The history is empty.     | Empty state.         | The empty message, no list.                                                                |
 | `says why the history cannot be read`                                        | The API answers `500`.    | Error state.         | An `alert`.                                                                                |
+
+### 2.35 Tests: `src/components/SettingsPanel.test.tsx`
+
+`App` is rendered at a given path: the panel lives in the header of `Layout`, on every page. jsdom does not trap the focus nor handle Escape in a `<dialog>` (the browser does): those are checked by hand.
+
+| Test                                                                   | What it does                                                                     | Purpose                                                                                           | Expected result                                                  |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `opens from the gear button and closes with its close button`          | No session; clicks `Paramètres`, then `Fermer`.                                  | #139: the panel opens and closes.                                                                 | The dialog `Paramètres` is visible, then gone.                   |
+| `changes the theme and the language from the panel`                    | Chooses `dark` and `en` in the panel.                                            | The theme and the language moved from the header to the panel.                                    | The `dark` class on `<html>`; the panel is now named `Settings`. |
+| `hides the account section when signed out`                            | No session; opens the panel.                                                     | Theme and language stay available signed out; the account is not.                                 | No `Compte` heading nor `Supprimer mon compte` button.           |
+| `deletes the account from the panel, then closes it on the login page` | Signed in; deletes the account from the panel (`DELETE /auth/me` answers `204`). | Account deletion moved from the home page to the panel; the panel closes when another page shows. | The `Connexion` heading; no `Paramètres` dialog left open.       |
+| `reopens the account deletion in the panel after a Google sign-in`     | Opens `/?confirm=delete-account` with a session.                                 | Back from the re-authentication, the user goes on with the deletion.                              | The dialogs `Supprimer mon compte` and `Paramètres` are visible. |
 
 ---
 

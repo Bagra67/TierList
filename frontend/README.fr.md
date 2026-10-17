@@ -110,7 +110,7 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card, popover), modifiables
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
@@ -194,7 +194,7 @@ Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/
 
 ## 9. Traductions
 
-Tout texte affiché passe par `t()` de `react-i18next`, et l'interface existe en français et en anglais (sélecteur de langue dans l'en-tête de chaque page) :
+Tout texte affiché passe par `t()` de `react-i18next`, et l'interface existe en français et en anglais (sélecteur de langue dans le panneau de paramètres, ouvert par l'engrenage de l'en-tête sur chaque page) :
 
 ```tsx
 const { t } = useTranslation();
@@ -233,7 +233,7 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 
 ### Mode sombre
 
-- Trois préférences, choisies avec le sélecteur de thème de l'en-tête : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.
+- Trois préférences, choisies avec le sélecteur de thème du panneau de paramètres (engrenage de l'en-tête) : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.
 - `src/theme/index.ts` pose la classe `dark` sur `<html>` (ou la retire). Les couleurs viennent alors du bloc `.dark` de `src/index.css` : les composants qui utilisent les jetons du thème (`bg-background`, `text-muted-foreground`, `border-input`…) n'ont rien à faire de plus. Pour un cas particulier, la variante `dark:` de Tailwind s'applique (ex. `dark:bg-input/30`).
 - Un petit script inline dans `index.html` applique le thème avant le chargement de l'application, pour éviter un flash clair en mode sombre. Il reprend la clé de stockage : la garder égale à `THEME_STORAGE_KEY` (`src/constants/theme.ts`). Un petit `<style>` inline donne tout de suite à `html.dark` son fond sombre, car en développement Vite injecte `index.css` par JavaScript, après le premier affichage : garder sa couleur égale à `--background` du bloc `.dark`.
 - `color-scheme: dark` passe aussi les éléments natifs (barres de défilement, `<select>`, autocomplétion) en sombre.
