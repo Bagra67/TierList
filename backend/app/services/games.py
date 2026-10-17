@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.security import generate_public_results_token
 from app.exceptions.games import (
     CooldownNotInProgressError,
     CooldownOverError,
@@ -593,11 +594,13 @@ class GameService:
 
     def _close_game(self, room: Room, game: Game) -> GameClosedEvent:
         """Termine le cooldown, sous le verrou de la salle, sans commit : les classements sont
-        finaux et la partie close, ses joueurs figés (US-4.1, US-5.1). La salle redevient ouverte
+        finaux et la partie close, ses joueurs figés (US-4.1, US-5.1), son lien de résultats tiré
+        (US-5.3, docs/technical/results.md). La salle redevient ouverte
         dans la même transaction : « une partie en cours » vit dans les deux tables
         (docs/technical/games.md)."""
         game.status = GameStatus.CLOSED
         game.closed_at = datetime.now(UTC)
+        game.public_token = generate_public_results_token()
         _freeze_players(game)
         room.status = RoomStatus.OPEN
         room.version += 1

@@ -164,7 +164,7 @@ Three triggers end a round, and all of them run the same transition, `GameServic
 
 `RoundTimers` keeps a single deadline per game: `schedule_cooldown_end` replaces the deadline of the last round. A late round timer calls `end_round_on_timer`, which does nothing in cooldown, so it can never close the game. At startup, `pending_cooldown_ends` schedules the cooldowns in progress again.
 
-**Saving the closed game** (US-5.1): `_close_game` also calls `_freeze_players`. Each seat with placements in the game (players and late arrivals, never the room admin who does not play) becomes a `GamePlayer` (`game_players`: the game, the account, the name at closing time), and all its placements move from `participant_id` to `player_id`. Closing the room ([rooms guide](rooms.md#26-closing-a-room)), removing the seat or deleting the account (`user_id` set to `NULL`) no longer touches the closed game. The game in progress keeps reading `participant_id`: the frozen rows of past games are never among its placements. The results (#99) and the history (#103) will read `game_players`.
+**Saving the closed game** (US-5.1): `_close_game` also calls `_freeze_players`. Each seat with placements in the game (players and late arrivals, never the room admin who does not play) becomes a `GamePlayer` (`game_players`: the game, the account, the name at closing time), and all its placements move from `participant_id` to `player_id`. Closing the room ([rooms guide](rooms.md#26-closing-a-room)), removing the seat or deleting the account (`user_id` set to `NULL`) no longer touches the closed game. The game in progress keeps reading `participant_id`: the frozen rows of past games are never among its placements. `_close_game` also draws the game's results link (`public_token`, [results guide](results.md#26-results-api)). The results read `game_players`, and so will the history (#103).
 
 ### 2.7 Reading the room
 
@@ -223,6 +223,6 @@ The frontend ignores an answer older than the room it already has (`storeRoom`):
 
 - Drag and drop with a pointer is not covered by the automated tests (jsdom has no layout): they place with the buttons, and `boardPositions.test.ts` covers the position computations.
 - "Who places" is computed by the backend (`placing_participants`) and again by the screen (`GameScreen`, from `admin_plays` and `is_admin`) to show the board and the counter.
-- The closed game has no API yet: its results come with #99, the history of the accounts with #103.
+- The history of the accounts comes with #103.
 - Closing a room during a game closes the game first ([rooms guide](rooms.md#26-closing-a-room)); during a round, the current rankings become the final boards. Games left without a room by an older version (before #89) are skipped at startup.
 - "A game is in progress" lives in two places: `rooms.status = playing` and a `games` row not `closed`. The start writes both in one transaction, under the room lock; the end of the cooldown sets the room back to `open` in the same transaction as the game.

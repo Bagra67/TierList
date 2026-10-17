@@ -3098,6 +3098,79 @@
         }
       }
     },
+    "/results/{public_token}": {
+      "get": {
+        "tags": [
+          "results"
+        ],
+        "summary": "Get Game Results",
+        "operationId": "get_game_results_results__public_token__get",
+        "parameters": [
+          {
+            "name": "public_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "title": "Public Token"
+            }
+          },
+          {
+            "name": "include_absent_votes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Include Absent Votes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResultsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown results link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -3535,6 +3608,80 @@
         ],
         "title": "ForgotPasswordRequest"
       },
+      "GameResultsResponse": {
+        "properties": {
+          "template_name": {
+            "type": "string",
+            "title": "Template Name"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          },
+          "include_absent_votes": {
+            "type": "boolean",
+            "title": "Include Absent Votes"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/GameTierResponse"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CurrentItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "median_ranking": {
+            "items": {
+              "$ref": "#/components/schemas/TierItemsResponse"
+            },
+            "type": "array",
+            "title": "Median Ranking"
+          },
+          "unranked_item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Unranked Item Ids"
+          },
+          "distribution": {
+            "items": {
+              "$ref": "#/components/schemas/ItemDistributionResponse"
+            },
+            "type": "array",
+            "title": "Distribution"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerResultsResponse"
+            },
+            "type": "array",
+            "title": "Players"
+          }
+        },
+        "type": "object",
+        "required": [
+          "template_name",
+          "closed_at",
+          "include_absent_votes",
+          "tiers",
+          "items",
+          "median_ranking",
+          "unranked_item_ids",
+          "distribution",
+          "players"
+        ],
+        "title": "GameResultsResponse",
+        "description": "Résultats d'une partie close (US-5.2), lus par son lien (US-5.3)."
+      },
       "GameStatus": {
         "type": "string",
         "enum": [
@@ -3628,6 +3775,13 @@
               }
             ]
           },
+          "past_games": {
+            "items": {
+              "$ref": "#/components/schemas/PastGameResponse"
+            },
+            "type": "array",
+            "title": "Past Games"
+          },
           "guest_link": {
             "type": "string",
             "title": "Guest Link"
@@ -3650,6 +3804,7 @@
           "is_admin",
           "bans",
           "game",
+          "past_games",
           "guest_link",
           "guest_link_expires_at"
         ],
@@ -3710,6 +3865,47 @@
           "height"
         ],
         "title": "ImageUploadResponse"
+      },
+      "ItemDistributionResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "votes_per_tier": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Votes Per Tier"
+          },
+          "absent_count": {
+            "type": "integer",
+            "title": "Absent Count"
+          },
+          "median_tier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Tier Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "votes_per_tier",
+          "absent_count",
+          "median_tier_id"
+        ],
+        "title": "ItemDistributionResponse",
+        "description": "Vue globale d'un item : combien de joueurs l'ont mis dans chaque tier, et d'absents."
       },
       "ItemOrder": {
         "type": "string",
@@ -3819,6 +4015,31 @@
         ],
         "title": "ParticipantResponse"
       },
+      "PastGameResponse": {
+        "properties": {
+          "public_token": {
+            "type": "string",
+            "title": "Public Token"
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Closed At"
+          },
+          "player_count": {
+            "type": "integer",
+            "title": "Player Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_token",
+          "closed_at",
+          "player_count"
+        ],
+        "title": "PastGameResponse",
+        "description": "Une partie close de la salle : son lien de résultats (/results/<public_token>)."
+      },
       "PlaceItemRequest": {
         "properties": {
           "tier_id": {
@@ -3838,6 +4059,37 @@
           "position"
         ],
         "title": "PlaceItemRequest"
+      },
+      "PlayerResultsResponse": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/TierItemsResponse"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "unplaced_item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Unplaced Item Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "tiers",
+          "unplaced_item_ids"
+        ],
+        "title": "PlayerResultsResponse",
+        "description": "Le classement final d'un joueur."
       },
       "RegisterRequest": {
         "properties": {
@@ -4005,6 +4257,13 @@
                 "type": "null"
               }
             ]
+          },
+          "past_games": {
+            "items": {
+              "$ref": "#/components/schemas/PastGameResponse"
+            },
+            "type": "array",
+            "title": "Past Games"
           }
         },
         "type": "object",
@@ -4018,7 +4277,8 @@
           "participants",
           "is_admin",
           "bans",
-          "game"
+          "game",
+          "past_games"
         ],
         "title": "RoomResponse"
       },
@@ -4183,6 +4443,30 @@
           "updated_at"
         ],
         "title": "TemplateSummaryResponse"
+      },
+      "TierItemsResponse": {
+        "properties": {
+          "tier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tier Id"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Item Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tier_id",
+          "item_ids"
+        ],
+        "title": "TierItemsResponse",
+        "description": "Les items d'un tier, dans l'ordre."
       },
       "TierResponse": {
         "properties": {

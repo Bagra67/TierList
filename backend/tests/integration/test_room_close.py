@@ -22,7 +22,7 @@ from tests.integration.helpers import (
     create_room,
     create_template,
     next_item,
-    place,
+    place_current_in_first_tier,
     register,
     start_game,
 )
@@ -60,16 +60,6 @@ def alice_room(
 
 def close(client: TestClient, code: str, headers: dict[str, str]) -> Response:
     return client.delete(f"/rooms/{code}", headers=headers)
-
-
-def place_current_in_first_tier(
-    client: TestClient, room: JsonObject, headers: dict[str, str]
-) -> None:
-    game: JsonObject = room["game"]
-    response: Response = place(
-        client, room["code"], game["current_item"]["id"], game["tiers"][0]["id"], 0, headers
-    )
-    assert response.status_code == 200
 
 
 def room_id(db_session: Session) -> uuid.UUID:

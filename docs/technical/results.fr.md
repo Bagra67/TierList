@@ -2,7 +2,7 @@
 
 [English](results.md) | Français
 
-Comment les résultats d'une partie close sont calculés : répartition des votes, votes absents, classement médian. Décidé dans le spike #76 ; le calcul existe sous forme de fonction pure (§4), que l'API des résultats (#99) et la page (#100) utiliseront. Ce que les résultats montrent à l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-5.2.
+Comment les résultats d'une partie close sont calculés : répartition des votes, votes absents, classement médian. Décidé dans le spike #76 ; le calcul est une fonction pure, servie par l'API des résultats (#99, §2.6) ; la page arrive avec #100. Ce que les résultats montrent à l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-5.2.
 
 **En résumé** : pour chaque item, les placements de tous les joueurs sont convertis en **scores fins** (tier + position dans le tier), et l'item garde le **score médian**. Puis on construit la tier list médiane de tous les items : chaque item va dans le tier de son score médian, et dans un tier les items sont triés par score médian.
 
@@ -83,9 +83,32 @@ Un score est calculé sur le **classement complet du joueur**, quelle que soit l
 
 La sortie, `GameResults`, contient pour chaque item un `ItemResults` (`votes_per_tier`, `absent_count`, `median_score`, `mean_score`, `median_tier_index`, les trois derniers à `None` quand l'item n'est pas classé), le `median_ranking` (un tuple de tuiles par tier, de haut en bas) et les `unranked_tile_ids`.
 
-La fonction est pure (sans base de données) : l'API des résultats (#99) charge l'instantané et les placements, exclut l'admin qui ne joue pas, et transforme la sortie en son schéma de réponse. Au plus 10 joueurs et 32 items : le calcul est instantané, l'API peut le refaire à chaque requête, case comprise.
+La fonction est pure (sans base de données) : l'API des résultats (§2.6) charge l'instantané et les placements, exclut l'admin qui ne joue pas, et transforme la sortie en son schéma de réponse. Au plus 10 joueurs et 32 items : le calcul est instantané, l'API peut le refaire à chaque requête, case comprise.
 
-### 2.6 Limites connues
+### 2.6 API des résultats
+
+Construite dans #99.
+
+- **Lien** : chaque partie close a un `games.public_token`, tiré par `_close_game` (`generate_public_results_token`, `secrets.token_urlsafe`, 128 bits) ; les parties closes avant #99 en ont reçu un dans la migration (`gen_random_uuid`, 122 bits). Une partie close en a toujours un (`ck_games_closed_has_public_token`). Le jeton est gardé en clair : le lobby le remontre, et il ne donne que la lecture des résultats.
+- **Qui lit** : `GET /results/{public_token}` ne demande **aucun compte** : le lien est la seule protection, impossible à deviner. Après la clôture, plus rien ne relie un invité à la partie (ni place, ni `user_id`) : le lien est la seule identité qui reste. Seules les places de la salle le reçoivent, par `RoomResponse.past_games` ([guide des salles](rooms.fr.md)) ; l'historique des comptes (#103) le donnera aussi. Un lien inconnu, ou une partie pas encore close, répond `404` `results_not_found` ; un lien plus long que la colonne (32 caractères) est refusé tout de suite en `422`.
+- **Case** : `include_absent_votes` (`true` par défaut, comme la case) ; le calcul est refait à chaque requête.
+- **Lecture** : `GameResultsService` (`app/services/game_results.py`) lit la partie avec `get_closed_game_by_token` (tiers, tuiles et leurs images, placements, joueurs figés, une requête par table : le nombre ne grandit pas avec les items). Pour chaque joueur figé, les placements `FINAL` donnent les `FinalPlacement` et les placements `ROUND` absents les `absent_tile_ids`. Le room admin qui ne joue pas n'a aucun placement, donc aucun joueur figé : il est laissé de côté.
+- **Réponse** `GameResultsResponse` :
+
+  | Champ                        | Contenu                                                                                                                                                                                                                        |
+  | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `template_name`, `closed_at` | Nom du template figé, heure de clôture.                                                                                                                                                                                        |
+  | `include_absent_votes`       | La case utilisée.                                                                                                                                                                                                              |
+  | `tiers`                      | `{id, name, color}`, de haut en bas.                                                                                                                                                                                           |
+  | `items`                      | `{id, text, image_url}`, dans l'ordre du template.                                                                                                                                                                             |
+  | `median_ranking`             | `[{tier_id, item_ids}]`, un par tier, de haut en bas.                                                                                                                                                                          |
+  | `unranked_item_ids`          | Items sans aucun vote compté, dans l'ordre du template.                                                                                                                                                                        |
+  | `distribution`               | `[{item_id, votes_per_tier, absent_count, median_tier_id}]`, dans l'ordre du template ; `votes_per_tier` suit `tiers` ; `absent_count` vaut `0` sans les votes absents ; `median_tier_id` vaut `null` pour un item non classé. |
+  | `players`                    | `[{display_name, tiers: [{tier_id, item_ids}], unplaced_item_ids}]` : le classement final de chaque joueur (il ne dépend pas de la case) et les items qu'il n'a jamais placés.                                                 |
+
+  Les scores fins (fractions) ne sont pas envoyés.
+
+### 2.7 Limites connues
 
 - Le mode ouvert (plus tard) a des statistiques en direct ; les recalculer entièrement ou de façon incrémentale reste à décider ([roadmap](../product/roadmap.fr.md#questions-techniques)). Cette fonction couvre les parties en room.
 - Comparer les placements de tour et finaux (« changements d'avis ») est une statistique pour plus tard ; elle n'est pas calculée ici.
@@ -149,9 +172,12 @@ Si Alice classe S : X, Y et Bob S : Y, X, les deux items ont la médiane 3/4 et 
 
 ## 4. Dans le code
 
-| Partie  | Fichier                           | Contenu                                                                                                        |
-| ------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Backend | `backend/app/services/results.py` | `compute_results` et ses classes de données (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
-| Tests   | `backend/tests/test_results.py`   | Les exemples du §3 ([guide des tests](testing.fr.md)).                                                         |
+| Partie  | Fichier                                                                            | Contenu                                                                                                        |
+| ------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Backend | `backend/app/services/results.py`                                                  | `compute_results` et ses classes de données (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
+| Tests   | `backend/tests/test_results.py`                                                    | Les exemples du §3 ([guide des tests](testing.fr.md)).                                                         |
+| Backend | `backend/app/services/game_results.py`, `app/repositories/games.py`                | `GameResultsService`, `get_closed_game_by_token`.                                                              |
+| Backend | `backend/app/api/routes/results.py`, `presenters/results.py`, `schemas/results.py` | `GET /results/{public_token}` et sa réponse.                                                                   |
+| Tests   | `backend/tests/integration/test_game_results.py`, `test_game_queries.py`           | L'API contre un vrai PostgreSQL ([guide des tests](testing.fr.md)).                                            |
 
-L'API (#99) et la page des résultats avec la case (#100) viennent ensuite.
+La page des résultats avec la case (#100) vient ensuite.

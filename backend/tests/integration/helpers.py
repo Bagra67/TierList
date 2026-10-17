@@ -77,7 +77,7 @@ def create_room(client: TestClient, headers: dict[str, str], template_id: str) -
     return response.json()
 
 
-# --- Parties (test_game_reconnection.py, test_game_cooldown.py, test_game_close.py) ----------
+# --- Parties (test_game_*.py, test_room_close.py) -------------------------------------------
 
 
 def start_game(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
@@ -116,3 +116,25 @@ def board(room: JsonObject) -> list[tuple[str, str | None, int]]:
         (tier_names[placement["tier_id"]], placement["item"]["text"], placement["position"])
         for placement in room["game"]["own_placements"]
     ]
+
+
+def place_current_in_first_tier(
+    client: TestClient, room: JsonObject, headers: dict[str, str] | None = None
+) -> None:
+    """Place l'item en cours en tête du premier tier ; sans headers, le cookie invité du client
+    identifie le lecteur."""
+    game: JsonObject = room["game"]
+    response: Response = place(
+        client, room["code"], game["current_item"]["id"], game["tiers"][0]["id"], 0, headers
+    )
+    assert response.status_code == 200
+
+
+def play_and_close(client: TestClient, code: str, admin: dict[str, str]) -> JsonObject:
+    """Le room admin termine les tours restants, puis le cooldown (« Terminer maintenant »)."""
+    room: JsonObject = client.get(f"/rooms/{code}", headers=admin).json()
+    while room["game"]["status"] == "in_round":
+        room = next_item(client, code, admin)
+    response: Response = client.post(f"/rooms/{code}/game/end", headers=admin)
+    assert response.status_code == 200
+    return response.json()

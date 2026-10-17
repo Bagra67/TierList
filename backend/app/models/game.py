@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, text
+from sqlalchemy.orm import Mapped, mapped_column, query_expression, relationship
 
+from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
@@ -30,6 +31,11 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             unique=True,
             postgresql_where=text(f"status <> '{GameStatus.CLOSED}'"),
         ),
+        # Une partie close a toujours son lien de résultats (US-5.3)
+        CheckConstraint(
+            f"status <> '{GameStatus.CLOSED}' OR public_token IS NOT NULL",
+            name="closed_has_public_token",
+        ),
     )
 
     # SET NULL et non CASCADE : une partie survit à sa salle (invariant 11). Sans index propre :
@@ -52,6 +58,11 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     cooldown_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Rempli à la clôture, à la fin du cooldown
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Jeton du lien des résultats (/results/<jeton>, US-5.3), posé à la clôture. Gardé en clair :
+    # le lien est remontré (lobby, historique) ; il donne seulement la lecture des résultats
+    public_token: Mapped[str | None] = mapped_column(
+        String(PUBLIC_RESULTS_TOKEN_MAX_LENGTH), unique=True
+    )
 
     snapshot: Mapped["TemplateSnapshot"] = relationship()
     rounds: Mapped[list["Round"]] = relationship(
@@ -63,8 +74,11 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     # Les joueurs figés à la clôture ; vide tant que la partie est en cours
     players: Mapped[list["GamePlayer"]] = relationship(
-        back_populates="game", cascade="all, delete-orphan"
+        back_populates="game", cascade="all, delete-orphan", order_by="GamePlayer.created_at"
     )
+    # Nombre de joueurs figés, calculé par la requête qui le demande (with_expression) : le lobby
+    # liste les parties passées sans charger leurs joueurs. None si la requête ne l'a pas calculé
+    player_count: Mapped[int | None] = query_expression()
 
     @property
     def current_round(self) -> "Round":

@@ -3,14 +3,13 @@ un invité, room admin ou non (docs/technical/rooms.md)."""
 
 import uuid
 
-from app.api.presenters.images import optional_image_url
+from app.api.presenters.items import item_response, tier_response
 from app.models.enums import GameStatus, PlacementPhase
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
-from app.models.snapshot_tile import SnapshotTile
 from app.schemas.rooms import (
     CurrentGameResponse,
     CurrentItemResponse,
@@ -18,6 +17,7 @@ from app.schemas.rooms import (
     GuestRoomResponse,
     OwnPlacementResponse,
     ParticipantResponse,
+    PastGameResponse,
     RoomBanResponse,
     RoomResponse,
     RoomSettingsResponse,
@@ -68,7 +68,26 @@ def room_response(
         is_admin=is_admin,
         bans=bans,
         game=current_game_response(room.current_game, seat, storage),
+        past_games=_past_games_response(room.closed_games),
     )
+
+
+def _past_games_response(games: list[Game]) -> list[PastGameResponse]:
+    """Les parties closes de la salle, avec leur lien de résultats. Une partie close a toujours
+    son lien et sa date (ck_games_closed_has_public_token) : une ligne qui ne les aurait pas est
+    écartée plutôt que montrée avec un lien cassé."""
+    past_games: list[PastGameResponse] = []
+    for game in games:
+        if game.public_token is None or game.closed_at is None:
+            continue
+        past_games.append(
+            PastGameResponse(
+                public_token=game.public_token,
+                closed_at=game.closed_at,
+                player_count=game.player_count or 0,
+            )
+        )
+    return past_games
 
 
 def current_game_response(
@@ -80,10 +99,7 @@ def current_game_response(
     if game is None:
         return None
     current_round: Round = game.current_round
-    tiers: list[GameTierResponse] = [
-        GameTierResponse(id=tier.id, name=tier.name, color=tier.color)
-        for tier in game.snapshot.tiers
-    ]
+    tiers: list[GameTierResponse] = [tier_response(tier) for tier in game.snapshot.tiers]
     round_placements: list[Placement] = [
         placement
         for placement in game.placements
@@ -117,7 +133,7 @@ def current_game_response(
         if placement.snapshot_tier_id is None or placement.position is None:
             continue
         own_placement: OwnPlacementResponse = OwnPlacementResponse(
-            item=_item_response(placement.tile, storage),
+            item=item_response(placement.tile, storage),
             tier_id=placement.snapshot_tier_id,
             position=placement.position,
         )
@@ -128,7 +144,7 @@ def current_game_response(
     if game.status == GameStatus.COOLDOWN and seat_places:
         placed_tile_ids: set[uuid.UUID] = {placement.snapshot_tile_id for placement in board}
         missed_items = [
-            _item_response(game_round.tile, storage)
+            item_response(game_round.tile, storage)
             for game_round in game.rounds
             if game_round.snapshot_tile_id not in placed_tile_ids
         ]
@@ -136,20 +152,13 @@ def current_game_response(
         status=game.status,
         round_number=current_round.number,
         round_count=len(game.rounds),
-        current_item=_item_response(current_round.tile, storage),
+        current_item=item_response(current_round.tile, storage),
         ends_at=current_round.ends_at,
         tiers=tiers,
         placed_participant_ids=placed_participant_ids,
         own_placements=own_placements,
         cooldown_ends_at=game.cooldown_ends_at,
         missed_items=missed_items,
-    )
-
-
-def _item_response(tile: SnapshotTile, storage: ImageStorage) -> CurrentItemResponse:
-    """Un item de la partie : une tuile de la version figée, son texte et son image."""
-    return CurrentItemResponse(
-        id=tile.id, text=tile.text, image_url=optional_image_url(storage, tile.image)
     )
 
 

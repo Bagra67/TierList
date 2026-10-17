@@ -36,6 +36,7 @@ export const aliceRoom: Room = {
   is_admin: true,
   bans: [],
   game: null,
+  past_games: [],
 };
 
 // La même salle pendant une partie : tour 1 sur 3, telle que la renvoie POST /rooms/{code}/game
