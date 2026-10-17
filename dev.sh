@@ -86,7 +86,7 @@ open_dev_links_when_ready() {
   done
   # localhost et non 127.0.0.1 : même origine que FRONTEND_BASE_URL et l'URI de redirection Google
   open_url "http://localhost:$FRONTEND_PORT"
-  open_url "http://127.0.0.1:$BACKEND_PORT/docs"
+  open_url "http://127.0.0.1:$BACKEND_PORT/api/docs"
   if $start_db; then
     open_url "http://localhost:$MAILPIT_PORT"
     open_url "$SEAWEEDFS_FILER_URL"
@@ -128,7 +128,7 @@ if [[ ! -d frontend/node_modules ]]; then
   (cd frontend && pnpm install)
 fi
 
-# La base doit être prête avant le backend : sinon il démarre, mais /health/db échoue
+# La base doit être prête avant le backend : sinon il démarre, mais /api/health/db échoue
 if $start_db; then
   if ! command -v docker > /dev/null 2>&1; then
     echo "'docker' est introuvable dans le PATH. Voir README.md > Prérequis, ou relancez avec --no-db." >&2
@@ -184,7 +184,7 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 echo
-echo "  Backend  : http://127.0.0.1:$BACKEND_PORT  (docs : http://127.0.0.1:$BACKEND_PORT/docs)"
+echo "  Backend  : http://127.0.0.1:$BACKEND_PORT  (docs : http://127.0.0.1:$BACKEND_PORT/api/docs)"
 echo "  Frontend : http://localhost:$FRONTEND_PORT"
 echo "  Ctrl+C pour tout arrêter"
 echo
