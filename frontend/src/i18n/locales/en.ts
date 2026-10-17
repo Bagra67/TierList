@@ -182,6 +182,7 @@ export const en: Translation = {
     title: 'Results: {{name}}',
     closedAt: 'Game finished on {{date, datetime(dateStyle: long; timeStyle: short)}}',
     includeAbsentVotes: 'Include absent votes',
+    publicLink: 'Public results link',
     tabsLabel: 'Results views',
     tabs: {
       median: 'Median',

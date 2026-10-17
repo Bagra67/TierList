@@ -4,17 +4,20 @@ import { type Params, useParams } from 'react-router';
 
 import { type GameResults, useGameResults } from '../api/results';
 import type { GameItem } from '../api/rooms';
+import { CopyLinkField } from '../components/CopyLinkField';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { ResultsDistributionTable } from '../components/ResultsDistributionTable';
 import { ResultsPlayerView } from '../components/ResultsPlayerView';
 import { ResultsTabs } from '../components/ResultsTabs';
 import { ResultsTierList } from '../components/ResultsTierList';
 import { type ResultsView, resultsPanelId, resultsTabId } from '../components/resultsViews';
+import { resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
 // Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
-// classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents.
-// Lecture seule : la partie close ne change plus
+// classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
+// et le lien public à copier. Lecture seule : la partie close ne change plus, et la page n'offre
+// aucune action de salle
 export function ResultsPage() {
   // Toujours présent : la route RESULTS déclare ce paramètre
   const { token = '' }: Readonly<Params> = useParams();
@@ -31,6 +34,7 @@ export function ResultsPage() {
       )}
       {results !== undefined && (
         <ResultsContent
+          token={token}
           results={results}
           view={view}
           onViewChange={setView}
@@ -43,6 +47,7 @@ export function ResultsPage() {
 }
 
 interface ResultsContentProps {
+  token: string;
   results: GameResults;
   view: ResultsView;
   onViewChange: (view: ResultsView) => void;
@@ -51,6 +56,7 @@ interface ResultsContentProps {
 }
 
 function ResultsContent({
+  token,
   results,
   view,
   onViewChange,
@@ -72,6 +78,12 @@ function ResultsContent({
           {t('results.closedAt', { date: new Date(results.closed_at) })}
         </p>
       </div>
+      {/* Le lien de cette page, sur l'adresse de l'application : il marche sans compte, et après
+          la fermeture de la salle (US-5.3) */}
+      <CopyLinkField
+        label={t('results.publicLink')}
+        link={`${window.location.origin}${resultsPath(token)}`}
+      />
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
