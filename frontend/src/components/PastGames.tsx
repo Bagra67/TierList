@@ -31,8 +31,9 @@ export function PastGames({ room }: PastGamesProps) {
               </span>
               <Link
                 to={resultsPath(pastGame.public_token)}
-                // La page des résultats propose alors de revenir à cette salle
-                state={{ roomCode: room.code } satisfies ResultsLinkState}
+                // La page des résultats propose alors de revenir à cette salle, et au room admin
+                // de rejouer
+                state={{ roomCode: room.code, isAdmin: room.is_admin } satisfies ResultsLinkState}
                 aria-label={t('rooms.lobby.pastGames.openLabel', { date: closedAt })}
                 className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
               >

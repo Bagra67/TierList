@@ -197,6 +197,8 @@ export const fr = {
     emptyTier: 'Aucun item',
     itemImage: "Image de l'item {{number}}",
     backToRoom: 'Retour à la salle',
+    playAgain: 'Rejouer',
+    playAgainSubmitting: 'Lancement…',
     median: {
       unranked: 'Non classés',
     },
@@ -274,6 +276,7 @@ export const fr = {
       },
       start: {
         submit: 'Lancer la partie',
+        replay: 'Rejouer',
         submitting: 'Lancement…',
       },
       bans: {

@@ -1,6 +1,6 @@
 import { type ChangeEvent, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
-import { type Location, type Params, Link, useLocation, useParams } from 'react-router';
+import { type Location, type Params, useLocation, useParams } from 'react-router';
 
 import { type GameResults, type GameResultsState, useGameResults } from '../api/results';
 import type { GameItem } from '../api/rooms';
@@ -8,6 +8,7 @@ import { CopyLinkField } from '../components/CopyLinkField';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { ResultsDistributionTable } from '../components/ResultsDistributionTable';
 import { ResultsPlayerView } from '../components/ResultsPlayerView';
+import { ResultsRoomActions } from '../components/ResultsRoomActions';
 import { ResultsTabs } from '../components/ResultsTabs';
 import { ResultsTierList } from '../components/ResultsTierList';
 import {
@@ -17,13 +18,14 @@ import {
   resultsPanelId,
   resultsTabId,
 } from '../components/resultsViews';
-import { isResultsLinkState, resultsPath, roomPath } from '../constants/routes';
+import { isResultsLinkState, type ResultsLinkState, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
 // Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
 // classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
 // et le lien public à copier. Lecture seule : la partie close ne change plus, et la page n'offre
-// aucune action de salle (seulement le retour à la salle quand on vient de son lobby)
+// aucune action de salle (seulement le retour à la salle, et rejouer pour le room admin, quand on
+// vient de son lobby)
 export function ResultsPage() {
   // Toujours présent : la route RESULTS déclare ce paramètre
   const { token = '' }: Readonly<Params> = useParams();
@@ -32,9 +34,9 @@ export function ResultsPage() {
   const [view, setView] = useState<ResultsView>('median');
   const state: GameResultsState = useGameResults(token, includeAbsentVotes);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Venu du lobby d'une salle : un lien y ramène
-  const roomCode: string | null = isResultsLinkState(location.state)
-    ? location.state.roomCode
+  // Venu du lobby d'une salle : un lien y ramène, et le room admin peut rejouer
+  const fromRoom: ResultsLinkState | null = isResultsLinkState(location.state)
+    ? location.state
     : null;
 
   // Rien de lu encore : chargement, ou échec de la première lecture
@@ -60,14 +62,7 @@ export function ResultsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-6 px-4 py-10">
-      {roomCode !== null && (
-        <Link
-          to={roomPath(roomCode)}
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
-          {t('results.backToRoom')}
-        </Link>
-      )}
+      {fromRoom !== null && <ResultsRoomActions fromRoom={fromRoom} />}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">
           {t('results.title', { name: known.template_name })}

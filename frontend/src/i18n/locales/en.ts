@@ -192,6 +192,8 @@ export const en: Translation = {
     emptyTier: 'No item',
     itemImage: 'Image of item {{number}}',
     backToRoom: 'Back to the room',
+    playAgain: 'Play again',
+    playAgainSubmitting: 'Starting…',
     median: {
       unranked: 'Unranked',
     },
@@ -268,6 +270,7 @@ export const en: Translation = {
       },
       start: {
         submit: 'Start the game',
+        replay: 'Play again',
         submitting: 'Starting…',
       },
       bans: {

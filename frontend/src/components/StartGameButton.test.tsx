@@ -26,6 +26,26 @@ describe('StartGameButton', () => {
     expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game');
   });
 
+  it('says play again once the room has a past game, and starts the next game', async () => {
+    const fetchMock = stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoom,
+          past_games: [
+            { public_token: 'past-token', closed_at: '2026-10-17T18:30:00Z', player_count: 2 },
+          ],
+        }),
+      'POST /rooms/K7P2QX/game': () => Response.json(aliceRoomInGame, { status: 201 }),
+    });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rejouer' }));
+
+    expect(await screen.findByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game');
+  });
+
   it('says why the game cannot start', async () => {
     stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(aliceRoom),

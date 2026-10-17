@@ -9,7 +9,8 @@ import {
 } from '../test/fixtures/results';
 import type { GameResults } from '../api/results';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { errorResponse, stubBackend } from '../test/stubBackend';
+import { aliceRoomInGame } from '../test/fixtures/rooms';
+import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { ResultsPage } from './ResultsPage';
 
 // La page ouverte par son lien ; state : l'état de navigation posé par le lobby
@@ -220,11 +221,46 @@ describe('ResultsPage', () => {
 
   it('links back to the room when opened from its lobby', async () => {
     stubResults();
-    renderResultsPage({ roomCode: 'K7P2QX' });
+    renderResultsPage({ roomCode: 'K7P2QX', isAdmin: false });
 
     fireEvent.click(await screen.findByRole('link', { name: 'Retour à la salle' }));
 
     expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+  });
+
+  it('lets the room admin play again from the results, then opens the room', async () => {
+    const fetchMock = stubBackend({
+      [resultsRoute]: () => Response.json(closedGameResults),
+      'POST /rooms/K7P2QX/game': () => Response.json(aliceRoomInGame, { status: 201 }),
+    });
+    renderResultsPage({ roomCode: 'K7P2QX', isAdmin: true });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rejouer' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game');
+  });
+
+  it('says why playing again failed, and stays on the results', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubBackend({
+      [resultsRoute]: () => Response.json(closedGameResults),
+      'POST /rooms/K7P2QX/game': () => errorResponse(409, 'game_in_progress'),
+    });
+    renderResultsPage({ roomCode: 'K7P2QX', isAdmin: true });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rejouer' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/partie est déjà en cours/i);
+    expect(screen.getByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
+  });
+
+  it('does not offer to play again to a participant who is not the room admin', async () => {
+    stubResults();
+    renderResultsPage({ roomCode: 'K7P2QX', isAdmin: false });
+
+    await screen.findByRole('link', { name: 'Retour à la salle' });
+    expect(screen.queryByRole('button', { name: 'Rejouer' })).not.toBeInTheDocument();
   });
 
   it('offers no room action: the page is read-only', async () => {
