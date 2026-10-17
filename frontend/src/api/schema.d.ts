@@ -544,6 +544,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/game/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End Cooldown */
+        post: operations["end_cooldown_rooms__code__game_end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -631,6 +648,8 @@ export interface components {
             own_placements: components["schemas"]["OwnPlacementResponse"][];
             /** Cooldown Ends At */
             cooldown_ends_at: string | null;
+            /** Missed Items */
+            missed_items: components["schemas"]["CurrentItemResponse"][];
         };
         /**
          * CurrentItemResponse
@@ -1116,6 +1135,29 @@ export interface components {
             room_version: number;
             data: components["schemas"]["CooldownStartedData"];
         };
+        /** GameClosedData */
+        GameClosedData: {
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+        };
+        /**
+         * GameClosedEvent
+         * @description Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la
+         *     salle redevient ouverte.
+         */
+        GameClosedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "game.closed";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["GameClosedData"];
+        };
         /** GameStartedData */
         GameStartedData: {
             /** Round Number */
@@ -1282,7 +1324,7 @@ export interface components {
             room_version: number;
             data: components["schemas"]["RoundStartedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["RoundStartedEvent"] | components["schemas"]["CooldownStartedEvent"] | components["schemas"]["PingMessage"];
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["RoundStartedEvent"] | components["schemas"]["CooldownStartedEvent"] | components["schemas"]["GameClosedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -3334,7 +3376,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Room not found, or tier not in the game */
+            /** @description Room not found, or tier or tile not in the game */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3343,7 +3385,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description No round in progress, or the tile is not the current item */
+            /** @description No round nor cooldown in progress, or during a round the tile is not the current item */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3420,6 +3462,82 @@ export interface operations {
                 };
             };
             /** @description No round in progress (no game, or the cooldown has begun) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    end_cooldown_rooms__code__game_end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No final cooldown in progress */
             409: {
                 headers: {
                     [name: string]: unknown;

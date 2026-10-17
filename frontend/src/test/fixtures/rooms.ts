@@ -60,6 +60,7 @@ export const aliceRoomInGame: Room = {
     placed_participant_ids: [],
     own_placements: [],
     cooldown_ends_at: null,
+    missed_items: [],
   },
 };
 
