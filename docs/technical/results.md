@@ -2,7 +2,7 @@
 
 English | [Français](results.fr.md)
 
-How the results of a closed game are computed: distribution of the votes, absent votes, median ranking. Decided in spike #76; the computation exists as a pure function (§4), and the results API (#99) and page (#100) will use it. What the results show to the user: [user stories](../product/milestone-1/user-stories.md) US-5.2.
+How the results of a closed game are computed: distribution of the votes, absent votes, median ranking. Decided in spike #76; the computation is a pure function, served by the results API (#99, §2.6); the page comes with #100. What the results show to the user: [user stories](../product/milestone-1/user-stories.md) US-5.2.
 
 **In short**: for each item, the placements of all the players are turned into **fine scores** (tier + position in the tier), and the item keeps the **median score**. Then the median tier list of all the items is built: each item goes into the tier of its median score, and inside a tier the items are sorted by median score.
 
@@ -83,9 +83,32 @@ A score is computed on the **player's whole ranking**, whatever the checkbox: un
 
 The output, `GameResults`, holds for each item an `ItemResults` (`votes_per_tier`, `absent_count`, `median_score`, `mean_score`, `median_tier_index`, the last three `None` when unranked), the `median_ranking` (one tuple of tiles per tier, top to bottom) and the `unranked_tile_ids`.
 
-The function is pure (no database): the results API (#99) loads the snapshot and the placements, excludes the admin who does not play, and turns the output into its response schema. At most 10 players and 32 items: the computation is instant, the API can recompute it at each request, toggle included.
+The function is pure (no database): the results API (§2.6) loads the snapshot and the placements, excludes the admin who does not play, and turns the output into its response schema. At most 10 players and 32 items: the computation is instant, the API can recompute it at each request, toggle included.
 
-### 2.6 Known limitations
+### 2.6 Results API
+
+Built in #99.
+
+- **Link**: each closed game has a `games.public_token`, drawn by `_close_game` (`generate_public_results_token`, `secrets.token_urlsafe`, 128 bits); the games closed before #99 got one in the migration (`gen_random_uuid`, 122 bits). A closed game always has one (`ck_games_closed_has_public_token`). The token is kept in clear: the lobby shows it again, and it only gives read access to the results.
+- **Who reads**: `GET /results/{public_token}` needs **no account**: the link is the only protection, impossible to guess. After the closing, nothing links a guest to the game any more (no seat, no `user_id`), so the link is the only identity left. Only the seats of the room get it, through `RoomResponse.past_games` ([rooms guide](rooms.md)); the history of the accounts (#103) will give it too. An unknown link, or a game not closed, answers `404` `results_not_found`.
+- **Checkbox**: `include_absent_votes` (`true` by default, like the checkbox); the computation is redone at each request.
+- **Reading**: `GameResultsService` (`app/services/game_results.py`) reads the game with `get_closed_game_by_token` (tiers, tiles and their images, placements, frozen players, one query per table: the count does not grow with the items). For each frozen player, the `FINAL` placements give the `FinalPlacement`s and the absent `ROUND` placements the `absent_tile_ids`. The room admin who does not play has no placement, hence no frozen player: they are left out.
+- **Response** `GameResultsResponse`:
+
+  | Field                        | Content                                                                                                                                                                                                            |
+  | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `template_name`, `closed_at` | Name of the frozen template, closing time.                                                                                                                                                                         |
+  | `include_absent_votes`       | The checkbox used.                                                                                                                                                                                                 |
+  | `tiers`                      | `{id, name, color}`, top to bottom.                                                                                                                                                                                |
+  | `items`                      | `{id, text, image_url}`, in template order.                                                                                                                                                                        |
+  | `median_ranking`             | `[{tier_id, item_ids}]`, one per tier, top to bottom.                                                                                                                                                              |
+  | `unranked_item_ids`          | Items without any vote counted, in template order.                                                                                                                                                                 |
+  | `distribution`               | `[{item_id, votes_per_tier, absent_count, median_tier_id}]`, in template order; `votes_per_tier` follows `tiers`; `absent_count` is `0` without the absent votes; `median_tier_id` is `null` for an unranked item. |
+  | `players`                    | `[{display_name, tiers: [{tier_id, item_ids}], unplaced_item_ids}]`: each player's final ranking (it does not depend on the checkbox) and the items they never placed.                                             |
+
+  The fine scores (fractions) are not sent.
+
+### 2.7 Known limitations
 
 - The open mode (later) has live statistics; whether to recompute them fully or incrementally is still open ([roadmap](../product/roadmap.md#technical-questions)). This function covers room games.
 - Comparing round and final placements ("changes of mind") is a later statistic; it is not computed here.
@@ -149,9 +172,12 @@ If Alice ranks S: X, Y and Bob S: Y, X, both items have median 3/4 and mean 1/2:
 
 ## 4. In the code
 
-| Part    | File                              | Content                                                                                                   |
-| ------- | --------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Backend | `backend/app/services/results.py` | `compute_results` and its data classes (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
-| Tests   | `backend/tests/test_results.py`   | The examples of §3 ([testing guide](testing.md)).                                                         |
+| Part    | File                                                                               | Content                                                                                                   |
+| ------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Backend | `backend/app/services/results.py`                                                  | `compute_results` and its data classes (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
+| Tests   | `backend/tests/test_results.py`                                                    | The examples of §3 ([testing guide](testing.md)).                                                         |
+| Backend | `backend/app/services/game_results.py`, `app/repositories/games.py`                | `GameResultsService`, `get_closed_game_by_token`.                                                         |
+| Backend | `backend/app/api/routes/results.py`, `presenters/results.py`, `schemas/results.py` | `GET /results/{public_token}` and its response.                                                           |
+| Tests   | `backend/tests/integration/test_game_results.py`, `test_game_queries.py`           | The API against a real PostgreSQL ([testing guide](testing.md)).                                          |
 
-The API (#99) and the results page with the checkbox (#100) come next.
+The results page with the checkbox (#100) comes next.
