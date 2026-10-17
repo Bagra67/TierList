@@ -19,6 +19,7 @@ from app.services.email import EmailSender
 from app.services.game_results import GameResultsService
 from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
+from app.services.history import HistoryService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
@@ -77,6 +78,10 @@ def get_room_service(
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
     return RoomService(session, settings, publisher)
+
+
+def get_history_service(session: Annotated[Session, Depends(get_db_session)]) -> HistoryService:
+    return HistoryService(session)
 
 
 def get_game_results_service(
@@ -191,6 +196,7 @@ TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
 RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]
+HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
 # Donne l'adresse publique des images (api/presenters/images.py)
 ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]

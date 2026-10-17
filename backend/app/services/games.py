@@ -204,6 +204,7 @@ class GameService:
         first_round.ends_at = self._round_ends_at(room, now)
         game: Game = Game(
             room_id=room.id,
+            admin_id=room.admin_id,
             snapshot=snapshot,
             item_order=room.item_order,
             admin_plays=room.admin_plays,

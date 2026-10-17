@@ -1,11 +1,12 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Select, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import Exists, ScalarSelect, Select, func, or_, select
+from sqlalchemy.orm import Session, selectinload, with_expression
 
 from app.models.enums import GameStatus
 from app.models.game import Game
+from app.models.game_player import GamePlayer
 from app.models.round import Round
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template_snapshot import TemplateSnapshot
@@ -13,6 +14,36 @@ from app.models.template_snapshot import TemplateSnapshot
 
 def add_game(session: Session, game: Game) -> None:
     session.add(game)
+
+
+def player_count_expression() -> ScalarSelect[int]:
+    """Nombre de joueurs figés de la partie, pour Game.player_count (with_expression) : les listes
+    de parties passées (lobby, historique) le montrent sans charger les joueurs."""
+    return select(func.count(GamePlayer.id)).where(GamePlayer.game_id == Game.id).scalar_subquery()
+
+
+def list_history(session: Session, user_id: uuid.UUID, limit: int, offset: int) -> list[Game]:
+    """Parties closes de ce compte (US-5.5), de la plus récente à la plus ancienne : celles où il
+    est un joueur figé, et celles dont il était le room admin, même sans jouer. Avec leur version
+    figée (nom du template) et leur nombre de joueurs."""
+    is_player: Exists = (
+        select(GamePlayer.id)
+        .where(GamePlayer.game_id == Game.id, GamePlayer.user_id == user_id)
+        .exists()
+    )
+    statement: Select[Game] = (
+        select(Game)
+        .where(Game.status == GameStatus.CLOSED, or_(Game.admin_id == user_id, is_player))
+        # L'identifiant départage deux parties closes au même instant : une page ne saute rien
+        .order_by(Game.closed_at.desc(), Game.id)
+        .limit(limit)
+        .offset(offset)
+        .options(
+            selectinload(Game.snapshot),
+            with_expression(Game.player_count, player_count_expression()),
+        )
+    )
+    return list(session.scalars(statement).all())
 
 
 def get_closed_game_by_token(session: Session, public_token: str) -> Game | None:

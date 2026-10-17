@@ -124,7 +124,15 @@ Construite dans #100.
 - **Durée de vie** : le lien n'expire jamais et ne se révoque pas. Il marche encore après la fermeture de la salle (la partie survit à sa salle, `games.room_id` remis à `NULL`) et après la suppression du compte d'un joueur (le joueur figé reste, sans compte).
 - **Items sans texte** : leur image est nommée par leur numéro dans l'ordre du template (« Image de l'item 3 », `ResultItem.imageLabel`) : deux images ne portent jamais le même nom dans le tableau ou les listes.
 
-### 2.8 Limites connues
+### 2.8 Historique
+
+Construit dans #103 (US-5.5).
+
+- **Les parties de qui** : `GET /history` (un compte est requis, `401` sinon ; un invité n'a pas d'historique) liste les parties closes où le compte est un joueur figé (`game_players.user_id`) **ou** était le room admin (`games.admin_id`), même sans jouer ([permissions](../product/permissions.fr.md) : le room admin garde la partie dans son historique). `games.admin_id` est posé par `start` depuis la salle et survit à la salle ; il passe à `NULL` à la suppression du compte. Les parties closes avant #103 l'ont reçu de leur salle quand elle existait encore ; les autres ne restent que dans l'historique de leurs joueurs.
+- **Ordre et pages** : de la plus récente à la plus ancienne (`closed_at`, puis `id` pour qu'une page ne saute jamais de partie), `limit` de 1 à `HISTORY_PAGE_SIZE_MAX` (50, `20` par défaut) et `offset` ; le service lit une partie de plus pour répondre `has_more`. La réponse est `HistoryResponse {games: [PastGameResponse], has_more}`, les mêmes entrées que les parties passées du lobby (`public_token`, `template_name` tiré de l'instantané, `closed_at`, `player_count`), construites par le même présenteur (`presenters/games.py`). Le nombre de requêtes ne grandit pas avec les parties (`Game.player_count` par `with_expression`, les instantanés en un `selectinload`).
+- **Page** : `/history` (`ROUTES.HISTORY`, sous `RequireAuth`, « Historique » dans la navigation principale). `useHistory` (`useInfiniteQuery`) lit la première page, puis « Voir plus » lit la suivante à partir du nombre de parties déjà affichées, sans recopier la taille de page du backend. Chaque ligne montre le nom du template, la date et les joueurs, avec « Voir les résultats » (`/results/<jeton>`, sans état de salle). États : chargement, erreur traduite, et un état vide.
+
+### 2.9 Limites connues
 
 - Le mode ouvert (plus tard) a des statistiques en direct ; les recalculer entièrement ou de façon incrémentale reste à décider ([roadmap](../product/roadmap.fr.md#questions-techniques)). Cette fonction couvre les parties en room.
 - Comparer les placements de tour et finaux (« changements d'avis ») est une statistique pour plus tard ; elle n'est pas calculée ici.
@@ -199,3 +207,6 @@ Si Alice classe S : X, Y et Bob S : Y, X, les deux items ont la médiane 3/4 et 
 | Frontend | `components/ResultsTabs.tsx`, `resultsViews.ts`, `ResultsTierList.tsx`, `ResultsDistributionTable.tsx`, `ResultsPlayerView.tsx`, `PastGames.tsx` | Les vues, et les parties passées du lobby.                                                                     |
 | Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                        |
 | Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | La page et les parties passées ([guide des tests](testing.fr.md)).                                             |
+| Backend  | `backend/app/services/history.py`, `api/routes/history.py`, `schemas/history.py`, `presenters/games.py`                                          | `GET /history` et sa réponse.                                                                                  |
+| Frontend | `frontend/src/pages/HistoryPage.tsx`, `api/history.ts`                                                                                           | La page de l'historique, `useHistory`.                                                                         |
+| Tests    | `backend/tests/integration/test_history.py`, `frontend/src/pages/HistoryPage.test.tsx`                                                           | L'historique ([guide des tests](testing.fr.md)).                                                               |

@@ -11,3 +11,8 @@ PUBLIC_RESULTS_TOKEN_BYTES = 16
 # Longueur de la colonne : les jetons posés par la migration (32 caractères hexadécimaux) y
 # tiennent aussi
 PUBLIC_RESULTS_TOKEN_MAX_LENGTH = 32
+
+# --- Historique d'un compte (US-5.5) --------------------------------------------------------
+# Parties par page : la première page par défaut, et la plus grande qu'un client peut demander
+HISTORY_PAGE_SIZE_DEFAULT = 20
+HISTORY_PAGE_SIZE_MAX = 50

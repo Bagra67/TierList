@@ -3171,6 +3171,87 @@
         }
       }
     },
+    "/history": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Get History",
+        "operationId": "get_history_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -3837,6 +3918,28 @@
         ],
         "title": "HealthResponse"
       },
+      "HistoryResponse": {
+        "properties": {
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/PastGameResponse"
+            },
+            "type": "array",
+            "title": "Games"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "games",
+          "has_more"
+        ],
+        "title": "HistoryResponse",
+        "description": "Une page de l'historique d'un compte (US-5.5)."
+      },
       "ImageUploadResponse": {
         "properties": {
           "id": {
@@ -4021,6 +4124,10 @@
             "type": "string",
             "title": "Public Token"
           },
+          "template_name": {
+            "type": "string",
+            "title": "Template Name"
+          },
           "closed_at": {
             "type": "string",
             "format": "date-time",
@@ -4034,11 +4141,12 @@
         "type": "object",
         "required": [
           "public_token",
+          "template_name",
           "closed_at",
           "player_count"
         ],
         "title": "PastGameResponse",
-        "description": "Une partie close de la salle : son lien de résultats (/results/<public_token>)."
+        "description": "Une partie close (parties passées d'une salle, historique d'un compte) : son lien de\nrésultats (/results/<public_token>)."
       },
       "PlaceItemRequest": {
         "properties": {

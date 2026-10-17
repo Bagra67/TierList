@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import SessionFactory, build_game_service, get_session_factory
-from app.api.routes import auth, images, results, room_channel, rooms, templates
+from app.api.routes import auth, history, images, results, room_channel, rooms, templates
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
@@ -138,6 +138,7 @@ app.include_router(images.router)
 app.include_router(rooms.router)
 app.include_router(room_channel.router)
 app.include_router(results.router)
+app.include_router(history.router)
 
 
 def _openapi_with_room_messages() -> dict[str, Any]:

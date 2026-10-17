@@ -107,6 +107,27 @@ describe('App', () => {
     );
   });
 
+  it('opens my history from the navigation', async () => {
+    stubBackend({
+      ...signedInSession,
+      'GET /history': () => Response.json({ games: [], has_more: false }),
+    });
+    renderAppAt('/');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
+
+    expect(await screen.findByRole('heading', { name: 'Historique' })).toBeInTheDocument();
+  });
+
+  it('protects my history without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+
+    renderAppAt('/history');
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+  });
+
   it('hides the navigation and protects my templates without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 

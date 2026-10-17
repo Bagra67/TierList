@@ -19,6 +19,17 @@ export const en: Translation = {
     label: 'Main navigation',
     home: 'Home',
     templates: 'My templates',
+    history: 'History',
+  },
+  history: {
+    title: 'History',
+    empty: 'No finished game yet. Your games will show here once closed.',
+    closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+    players_one: '{{count}} player',
+    players_other: '{{count}} players',
+    open: 'See the results',
+    openLabel: 'See the results of the {{name}} game',
+    more: 'See more',
   },
   renderError: {
     title: 'Something went wrong',
