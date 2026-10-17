@@ -28,6 +28,8 @@ describe('HomePage', () => {
 
     expect(screen.getByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
     expect(await screen.findByText(/Connecté en tant que Alice/)).toBeInTheDocument();
+    // « Se déconnecter » est dans l'en-tête de toutes les pages (LogoutButton), plus ici
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
   it('reopens the account deletion after a Google sign-in', async () => {

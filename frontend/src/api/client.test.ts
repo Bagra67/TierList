@@ -10,7 +10,7 @@ import {
 } from '../test/stubBackend';
 import { getMe, login } from './auth';
 import { ApiError } from '../errors/apiError';
-import { setAccessToken } from './client';
+import { onSessionEnded, refreshAccessToken, setAccessToken } from './client';
 
 // Réponse de GET /auth/me qui n'accepte que l'access token donné
 const meAcceptingOnly = (accessToken: string) => (request: Request) =>
@@ -76,5 +76,46 @@ describe('apiClient authentication middleware', () => {
       expect.objectContaining({ status: 401, code: 'invalid_credentials' }),
     );
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/login']);
+  });
+});
+
+describe('onSessionEnded', () => {
+  afterEach(() => {
+    setAccessToken(null);
+    vi.unstubAllGlobals();
+  });
+
+  it('tells the listeners when an open session cannot be refreshed any more', async () => {
+    stubBackend({ 'GET /auth/me': unauthorized, 'POST /auth/refresh': unauthorized });
+    setAccessToken('expired-token');
+    const listener = vi.fn();
+    const unsubscribe: () => void = onSessionEnded(listener);
+
+    await getMe().catch(() => undefined);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
+  });
+
+  it('tells no one when there was no session, as on page load', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    const listener = vi.fn();
+    const unsubscribe: () => void = onSessionEnded(listener);
+
+    await expect(refreshAccessToken()).resolves.toBe(false);
+
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('stops telling a listener once it has unsubscribed', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    setAccessToken('expired-token');
+    const listener = vi.fn();
+    onSessionEnded(listener)();
+
+    await refreshAccessToken();
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

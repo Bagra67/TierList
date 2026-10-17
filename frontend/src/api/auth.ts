@@ -1,4 +1,11 @@
-import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  hashKey,
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import {
   CURRENT_USER_QUERY_KEY,
@@ -13,6 +20,7 @@ import {
   apiClient,
   dataOrThrow,
   hasAccessToken,
+  onSessionEnded,
   refreshAccessToken,
   setAccessToken,
   throwIfError,
@@ -151,10 +159,23 @@ export function useRequestEmailVerification() {
   return useMutation({ mutationFn: requestEmailVerification });
 }
 
-// Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache
+// Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache.
+// L'utilisateur courant est mis à null dans sa requête existante, sans la retirer : les
+// composants qui restent affichés (l'en-tête de Layout, RequireAuth) l'observent, et une requête
+// retirée du cache ne les préviendrait plus. Ils garderaient alors l'ancien utilisateur.
 function forgetSession(queryClient: QueryClient): void {
-  queryClient.clear();
+  const currentUserHash: string = hashKey(CURRENT_USER_QUERY_KEY);
   queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
+  queryClient.removeQueries({ predicate: (query) => query.queryHash !== currentUserHash });
+  queryClient.getMutationCache().clear();
+}
+
+// Une session terminée sans « Se déconnecter » remet l'interface en mode déconnecté : sans cela,
+// l'utilisateur en cache (staleTime: Infinity) garderait les liens privés affichés. Monté une
+// seule fois, par Layout.
+export function useForgetEndedSession(): void {
+  const queryClient: QueryClient = useQueryClient();
+  useEffect(() => onSessionEnded(() => forgetSession(queryClient)), [queryClient]);
 }
 
 export function useLogout() {
