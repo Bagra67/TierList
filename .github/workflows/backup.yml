@@ -1,0 +1,83 @@
+name: Backup
+
+# Nightly PostgreSQL backup of staging and production (docs/technical/deployment.md): the pods
+# have neither pg_dump nor cron. pg_dump (PostgreSQL 17 client, the version of the database pod)
+# runs here against the database pod, then the dump goes to a private Scaleway Object Storage
+# bucket; dumps older than BACKUP_RETENTION_DAYS are deleted.
+# Dedicated environments backup-staging / backup-production: no required reviewer (the production
+# one would make every nightly run wait for an approval). Until BACKUP_POSTGRES_HOST is set, the
+# environment is skipped.
+on:
+  schedule:
+    # 02:30 UTC, before the nightly purges of the app (MAINTENANCE_HOUR_UTC, 03:00 by default)
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Back up ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [staging, production]
+    environment: backup-${{ matrix.target }}
+    concurrency:
+      group: backup-${{ matrix.target }}
+      cancel-in-progress: false
+    env:
+      TARGET: ${{ matrix.target }}
+      POSTGRES_HOST: ${{ vars.BACKUP_POSTGRES_HOST }}
+      POSTGRES_PORT: ${{ vars.BACKUP_POSTGRES_PORT }}
+      POSTGRES_DB: ${{ vars.BACKUP_POSTGRES_DB }}
+      POSTGRES_USER: ${{ vars.BACKUP_POSTGRES_USER }}
+      PGPASSWORD: ${{ secrets.BACKUP_POSTGRES_PASSWORD }}
+      S3_ENDPOINT_URL: ${{ vars.BACKUP_S3_ENDPOINT_URL }}
+      S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+      AWS_DEFAULT_REGION: ${{ vars.BACKUP_S3_REGION }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS }}
+    steps:
+      - name: Check the configuration
+        id: config
+        run: |
+          if [ -z "$POSTGRES_HOST" ]; then
+            echo "::notice::backup-$TARGET is not configured yet (BACKUP_POSTGRES_HOST): skipped."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dump the database
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          dump="tierlist-$TARGET-$(date -u +%Y%m%dT%H%M%SZ).dump"
+          echo "DUMP=$dump" >> "$GITHUB_ENV"
+          # Custom format (-Fc): compressed, restored with pg_restore
+          docker run --rm -e PGPASSWORD postgres:17-alpine \
+            pg_dump -Fc -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            > "$RUNNER_TEMP/$dump"
+          echo "Dump: $dump ($(du -h "$RUNNER_TEMP/$dump" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload to the backup bucket
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          aws s3 cp --endpoint-url "$S3_ENDPOINT_URL" --only-show-errors \
+            "$RUNNER_TEMP/$DUMP" "s3://$S3_BUCKET/$TARGET/$DUMP"
+
+      - name: Delete the expired backups
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          cutoff=$(date -u -d "${RETENTION_DAYS:?BACKUP_RETENTION_DAYS is not set} days ago" +%Y-%m-%d)
+          # Lines: "2026-10-17 02:30:12  123456 tierlist-staging-20261017T023012Z.dump"
+          aws s3 ls --endpoint-url "$S3_ENDPOINT_URL" "s3://$S3_BUCKET/$TARGET/" |
+            while read -r day _ _ key; do
+              if [ -n "$key" ] && [[ "$day" < "$cutoff" ]]; then
+                echo "Deleting $key"
+                aws s3 rm --endpoint-url "$S3_ENDPOINT_URL" --only-show-errors "s3://$S3_BUCKET/$TARGET/$key"
+              fi
+            done
