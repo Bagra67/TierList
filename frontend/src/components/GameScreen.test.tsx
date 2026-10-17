@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
-import { aliceRoomInGame } from '../test/fixtures/rooms';
+import { aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage } from '../test/renderRoomPage';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
@@ -181,6 +181,24 @@ describe('GameScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Mon classement' })).toBeInTheDocument();
     expect(screen.getByText('Bob (vous)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Item suivant' })).not.toBeInTheDocument();
+  });
+
+  it('brings a guest back to their board from the personal link during a game', async () => {
+    const fetchMock = stubBackend({
+      'POST /rooms/K7P2QX/guest-session': () =>
+        Response.json({
+          ...lousRoom,
+          status: 'playing',
+          game: { ...game, own_placements: [paprikaInS] },
+        }),
+    });
+    renderRoomPage('K7P2QX#guest=lou-token');
+
+    const tierRow: HTMLElement = await screen.findByRole('list', { name: 'S' });
+    expect(within(tierRow).getByText('Paprika')).toBeInTheDocument();
+    expect(screen.getByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(within(placedList()).getByText('Lou (vous)')).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).not.toContain('GET /rooms/K7P2QX');
   });
 
   it('shows the final cooldown after the last item', async () => {
