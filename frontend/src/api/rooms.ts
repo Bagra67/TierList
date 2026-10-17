@@ -135,6 +135,13 @@ async function nextRound(code: string): Promise<Room> {
   );
 }
 
+// Le room admin termine le cooldown final : la salle renvoyée n'a plus de partie
+async function endCooldown(code: string): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/game/end', { params: { path: { code } } }),
+  );
+}
+
 // La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
 // l'affiche sans nouvelle lecture
 function storeRoom(queryClient: QueryClient, room: Room): void {
@@ -254,7 +261,8 @@ export interface PlaceItemRequest {
   position: number;
 }
 
-// Place ou déplace l'item en cours dans le plateau du lecteur (US-3.3)
+// Place ou déplace une tuile dans le plateau du lecteur : l'item en cours pendant un tour (US-3.3),
+// n'importe quel item pendant le cooldown (US-4.1, US-4.6)
 export function usePlaceItem(code: string): UseMutationResult<Room, Error, PlaceItemRequest> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -268,6 +276,15 @@ export function useNextRound(code: string): UseMutationResult<Room, Error, void>
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: () => nextRound(canonicalRoomCode(code)),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Termine le cooldown final, réservé au room admin (US-4.1)
+export function useEndCooldown(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => endCooldown(canonicalRoomCode(code)),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

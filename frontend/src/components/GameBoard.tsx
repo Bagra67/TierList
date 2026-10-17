@@ -3,7 +3,6 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
-  useDraggable,
   useDroppable,
   useSensor,
   useSensors,
@@ -12,9 +11,8 @@ import {
   type SensorDescriptor,
   type SensorOptions,
 } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { cn } from 'cn';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -27,6 +25,7 @@ import {
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
+import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
@@ -121,9 +120,13 @@ export function GameBoard({ room, game }: GameBoardProps) {
           <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
             <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
             {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
-            <DraggableCurrentItem label={itemLabel} disabled={placeMutation.isPending}>
+            <DraggableItem
+              id={CURRENT_ITEM_ID}
+              label={itemLabel}
+              disabled={placeMutation.isPending}
+            >
               {t('rooms.game.dragHandle')}
-            </DraggableCurrentItem>
+            </DraggableItem>
           </div>
         )}
         <ol className="flex w-full flex-col gap-2">
@@ -176,9 +179,9 @@ function TierRow({
 
   const currentChip = (
     <li className="flex items-center gap-1">
-      <DraggableCurrentItem label={itemLabel} disabled={pending}>
+      <DraggableItem id={CURRENT_ITEM_ID} label={itemLabel} disabled={pending}>
         <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
-      </DraggableCurrentItem>
+      </DraggableItem>
       <Button
         type="button"
         variant="ghost"
@@ -204,15 +207,7 @@ function TierRow({
 
   return (
     <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
-      <span className="flex min-w-16 items-center gap-2 font-semibold">
-        {/* La couleur accompagne le nom, qui suffit à lui seul */}
-        <span
-          aria-hidden="true"
-          className="size-4 shrink-0 rounded-sm"
-          style={{ backgroundColor: tier.color }}
-        />
-        {tier.name}
-      </span>
+      <TierLabel tier={tier} />
       <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
         {others.map((placement, index) => (
           <PlacedItemSlot
@@ -223,7 +218,7 @@ function TierRow({
           />
         ))}
         {currentRank !== undefined && currentRank >= others.length && currentChip}
-        <EndSlot target={{ tierId: tier.id, position: others.length }} />
+        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, position: others.length }} />
       </ol>
       <Button
         type="button"
@@ -271,62 +266,5 @@ function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
         />
       </li>
     </>
-  );
-}
-
-// Fin d'un tier : déposer l'item en cours ici le place en dernier
-function EndSlot({ target }: { target: DropTarget }) {
-  const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({
-    id: `${target.tierId}:end`,
-    data: target,
-  });
-  return (
-    <li
-      ref={setNodeRef}
-      aria-hidden="true"
-      className={cn(
-        'h-10 w-12 rounded-md border-2 border-dashed border-muted-foreground/30',
-        isOver && 'border-primary',
-      )}
-    />
-  );
-}
-
-interface DraggableCurrentItemProps {
-  label: string;
-  disabled: boolean;
-  children: ReactNode;
-}
-
-// L'item en cours, à glisser vers un tier ; le seul élément mobile du plateau
-function DraggableCurrentItem({ label, disabled, children }: DraggableCurrentItemProps) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  }: ReturnType<typeof useDraggable> = useDraggable({
-    id: CURRENT_ITEM_ID,
-    disabled,
-  });
-  const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 1 : undefined,
-    position: 'relative',
-  };
-  return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      style={style}
-      {...attributes}
-      {...listeners}
-      aria-label={t('rooms.game.dragLabel', { item: label })}
-      className="cursor-grab touch-none rounded-md bg-primary/10 px-2 py-1 ring-2 ring-primary"
-    >
-      {children}
-    </button>
   );
 }
