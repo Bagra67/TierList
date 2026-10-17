@@ -75,3 +75,44 @@ def create_room(client: TestClient, headers: dict[str, str], template_id: str) -
     response: Response = client.post("/rooms", json={"template_id": template_id}, headers=headers)
     assert response.status_code == 201
     return response.json()
+
+
+# --- Parties (test_game_reconnection.py, test_game_cooldown.py, test_game_close.py) ----------
+
+
+def start_game(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
+    response: Response = client.post(f"/rooms/{code}/game", headers=headers)
+    assert response.status_code == 201
+    return response.json()
+
+
+def next_item(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
+    """Le room admin termine le tour en cours (« Item suivant »)."""
+    response: Response = client.post(f"/rooms/{code}/game/next", headers=headers)
+    assert response.status_code == 200
+    return response.json()
+
+
+def place(
+    client: TestClient,
+    code: str,
+    tile_id: str,
+    tier_id: str,
+    position: int,
+    headers: dict[str, str] | None = None,
+) -> Response:
+    """Place une tuile ; sans headers, le cookie invité du client identifie le lecteur."""
+    return client.put(
+        f"/rooms/{code}/game/placements/{tile_id}",
+        json={"tier_id": tier_id, "position": position},
+        headers=headers,
+    )
+
+
+def board(room: JsonObject) -> list[tuple[str, str | None, int]]:
+    """Plateau du lecteur : (nom du tier, texte de l'item, position), dans l'ordre renvoyé."""
+    tier_names: dict[str, str] = {tier["id"]: tier["name"] for tier in room["game"]["tiers"]}
+    return [
+        (tier_names[placement["tier_id"]], placement["item"]["text"], placement["position"])
+        for placement in room["game"]["own_placements"]
+    ]
