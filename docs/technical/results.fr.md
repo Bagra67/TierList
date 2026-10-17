@@ -2,7 +2,7 @@
 
 [English](results.md) | Français
 
-Comment les résultats d'une partie close sont calculés : répartition des votes, votes absents, classement médian. Décidé dans le spike #76 ; le calcul est une fonction pure, servie par l'API des résultats (#99, §2.6) ; la page arrive avec #100. Ce que les résultats montrent à l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-5.2.
+Comment les résultats d'une partie close sont calculés : répartition des votes, votes absents, classement médian. Décidé dans le spike #76 ; le calcul est une fonction pure, servie par l'API des résultats (#99, §2.6) et montrée par la page des résultats (#100, §2.7). Ce que les résultats montrent à l'utilisateur : [user stories](../product/milestone-1/user-stories.fr.md) US-5.2.
 
 **En résumé** : pour chaque item, les placements de tous les joueurs sont convertis en **scores fins** (tier + position dans le tier), et l'item garde le **score médian**. Puis on construit la tier list médiane de tous les items : chaque item va dans le tier de son score médian, et dans un tier les items sont triés par score médian.
 
@@ -108,7 +108,20 @@ Construite dans #99.
 
   Les scores fins (fractions) ne sont pas envoyés.
 
-### 2.7 Limites connues
+### 2.7 Page des résultats
+
+Construite dans #100.
+
+- **Route** : `/results/:token` (`ROUTES.RESULTS`, `resultsPath`), hors de `RequireAuth` : le lien suffit, avec ou sans compte.
+- **Y arriver** : le lobby liste les parties closes de la salle (`PastGames`, à partir de `RoomResponse.past_games`), de la plus récente à la plus ancienne, chacune avec « Voir les résultats ». La clôture n'ouvre pas la page d'elle-même : chacun l'ouvre quand il veut, et la salle reste prête pour la partie suivante.
+- **Case** « Inclure les votes absents », cochée par défaut : elle fait partie de la clé de requête (`useGameResults(token, includeAbsentVotes)`), basculer lit donc les résultats une fois, puis chaque variante reste en cache (`staleTime: Infinity` : une partie close ne change plus). La réponse précédente reste affichée pendant la lecture (`placeholderData`). Un `4xx` n'est pas réessayé (`retryUnlessClientError`).
+- **Vues**, en onglets ARIA (`ResultsTabs` : un seul onglet dans l'ordre de tabulation, les flèches, Début et Fin passent d'un onglet à l'autre et l'activent) :
+  - **Médian** : `ResultsTierList`, en lecture seule, avec la ligne « Non classés » sous les tiers ;
+  - **Global** : `ResultsDistributionTable`, un vrai `<table>` (légende pour les lecteurs d'écran, un en-tête de ligne par item), une colonne par tier et la colonne « Absents » quand les votes absents sont inclus ; le tableau défile seul sur un petit écran, pas la page ;
+  - **Par joueur** : un `<select>` du joueur, son `ResultsTierList` et la ligne « Jamais placés ».
+- **États** : chargement, et l'erreur traduite (`results_not_found` pour un lien inconnu).
+
+### 2.8 Limites connues
 
 - Le mode ouvert (plus tard) a des statistiques en direct ; les recalculer entièrement ou de façon incrémentale reste à décider ([roadmap](../product/roadmap.fr.md#questions-techniques)). Cette fonction couvre les parties en room.
 - Comparer les placements de tour et finaux (« changements d'avis ») est une statistique pour plus tard ; elle n'est pas calculée ici.
@@ -172,12 +185,16 @@ Si Alice classe S : X, Y et Bob S : Y, X, les deux items ont la médiane 3/4 et 
 
 ## 4. Dans le code
 
-| Partie  | Fichier                                                                            | Contenu                                                                                                        |
-| ------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Backend | `backend/app/services/results.py`                                                  | `compute_results` et ses classes de données (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
-| Tests   | `backend/tests/test_results.py`                                                    | Les exemples du §3 ([guide des tests](testing.fr.md)).                                                         |
-| Backend | `backend/app/services/game_results.py`, `app/repositories/games.py`                | `GameResultsService`, `get_closed_game_by_token`.                                                              |
-| Backend | `backend/app/api/routes/results.py`, `presenters/results.py`, `schemas/results.py` | `GET /results/{public_token}` et sa réponse.                                                                   |
-| Tests   | `backend/tests/integration/test_game_results.py`, `test_game_queries.py`           | L'API contre un vrai PostgreSQL ([guide des tests](testing.fr.md)).                                            |
+| Partie   | Fichier                                                                                                                                          | Contenu                                                                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Backend  | `backend/app/services/results.py`                                                                                                                | `compute_results` et ses classes de données (`FinalPlacement`, `PlayerRanking`, `ItemResults`, `GameResults`). |
+| Tests    | `backend/tests/test_results.py`                                                                                                                  | Les exemples du §3 ([guide des tests](testing.fr.md)).                                                         |
+| Backend  | `backend/app/services/game_results.py`, `app/repositories/games.py`                                                                              | `GameResultsService`, `get_closed_game_by_token`.                                                              |
+| Backend  | `backend/app/api/routes/results.py`, `presenters/results.py`, `schemas/results.py`                                                               | `GET /results/{public_token}` et sa réponse.                                                                   |
+| Tests    | `backend/tests/integration/test_game_results.py`, `test_game_queries.py`                                                                         | L'API contre un vrai PostgreSQL ([guide des tests](testing.fr.md)).                                            |
+| Frontend | `frontend/src/pages/ResultsPage.tsx`, `api/results.ts`                                                                                           | La page, `useGameResults`.                                                                                     |
+| Frontend | `components/ResultsTabs.tsx`, `resultsViews.ts`, `ResultsTierList.tsx`, `ResultsDistributionTable.tsx`, `ResultsPlayerView.tsx`, `PastGames.tsx` | Les vues, et les parties passées du lobby.                                                                     |
+| Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                        |
+| Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | La page et les parties passées ([guide des tests](testing.fr.md)).                                             |
 
-La page des résultats avec la case (#100) vient ensuite.
+Le lien public (#101) vient ensuite.
