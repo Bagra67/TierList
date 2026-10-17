@@ -21,6 +21,7 @@ from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.exceptions.games import (
     CooldownNotInProgressError,
+    CooldownOverError,
     GameInProgressError,
     ItemNotCurrentError,
     ItemNotInGameError,
@@ -492,6 +493,12 @@ def place_item(
             status_code=409,
             code=ErrorCode.ITEM_NOT_CURRENT,
             detail=messages.ITEM_NOT_CURRENT,
+        ) from exc
+    except CooldownOverError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.COOLDOWN_OVER,
+            detail=messages.COOLDOWN_OVER,
         ) from exc
     except ItemNotInGameError as exc:
         raise AppHTTPException(

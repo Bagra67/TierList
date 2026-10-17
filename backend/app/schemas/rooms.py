@@ -66,7 +66,8 @@ class ParticipantResponse(BaseModel):
 
 
 class CurrentItemResponse(BaseModel):
-    """L'item du tour en cours, montré à tous : une tuile de la version figée."""
+    """Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
+    tous), un item placé par le lecteur, ou un item qu'il a manqué."""
 
     id: uuid.UUID
     text: str | None
@@ -83,7 +84,8 @@ class GameTierResponse(BaseModel):
 
 
 class OwnPlacementResponse(BaseModel):
-    """Un item que le lecteur a placé pendant son tour : son tier et sa position (0 = premier)."""
+    """Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
+    pendant les tours, placement final pendant le cooldown."""
 
     item: CurrentItemResponse
     tier_id: uuid.UUID

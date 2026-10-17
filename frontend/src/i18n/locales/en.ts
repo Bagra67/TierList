@@ -376,6 +376,7 @@ export const en: Translation = {
       item_not_current: 'This item is no longer the current one: the round has moved on.',
       item_not_in_game: 'This item is not part of the game.',
       cooldown_not_in_progress: 'The final cooldown is not in progress.',
+      cooldown_over: 'The final cooldown is over: nothing can be placed any more.',
       room_full: 'This room is full: {{max_participants}} participants at most.',
       room_locked: 'A game is in progress and the room is locked.',
       nickname_taken: 'This nickname is already used in this room.',

@@ -387,6 +387,7 @@ export const fr = {
       item_not_current: "Cet item n'est plus l'item en cours : le tour est passé.",
       item_not_in_game: 'Cet item ne fait pas partie de la partie.',
       cooldown_not_in_progress: "Le cooldown final n'est pas en cours.",
+      cooldown_over: 'Le cooldown final est terminé : plus rien ne peut être placé.',
       room_full: 'Cette salle est pleine : {{max_participants}} participants au plus.',
       room_locked: 'Une partie est en cours et la salle est verrouillée.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',

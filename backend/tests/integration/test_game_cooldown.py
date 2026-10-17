@@ -255,7 +255,10 @@ def test_the_admin_who_does_not_play_cannot_place_in_the_cooldown(
     auth_client.post(f"/rooms/{code}/join", headers=bob)
     auth_client.patch(f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice)
     start_game(auth_client, code, alice)
-    to_cooldown(auth_client, code, alice)
+    cooldown: JsonObject = to_cooldown(auth_client, code, alice)
+    # Ni plateau ni item manqué pour elle : elle ne place pas les items
+    assert cooldown["game"]["own_placements"] == []
+    assert missed(cooldown) == []
 
     response: Response = place(
         auth_client, code, tile_id(db_session, "Tile 0"), tier_id(db_session, "S"), 0, alice
@@ -287,7 +290,7 @@ def test_placing_after_the_end_of_the_cooldown_is_refused(
     )
 
     assert response.status_code == 409
-    assert response.json()["code"] == ErrorCode.ROUND_NOT_IN_PROGRESS
+    assert response.json()["code"] == ErrorCode.COOLDOWN_OVER
 
 
 # --- Fin du cooldown ------------------------------------------------------------------------------

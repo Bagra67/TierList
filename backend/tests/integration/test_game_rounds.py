@@ -262,6 +262,25 @@ def test_the_timer_ends_its_round_only_once(
     assert room_events.types()[-1] == "round.started"
 
 
+def test_placing_after_the_end_of_the_round_timer_is_refused(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
+    start(auth_client, code, alice)
+    # La fin du tour est passée, son timer pas encore (threadpool chargé, redémarrage)
+    stored_game(db_session).current_round.ends_at = datetime.now(UTC) - timedelta(seconds=1)
+    db_session.flush()
+
+    response: Response = place_current(auth_client, db_session, code, alice)
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.ROUND_NOT_IN_PROGRESS
+
+
 def test_pending_deadlines_are_scheduled_again_at_startup(
     auth_client: TestClient,
     db_session: Session,

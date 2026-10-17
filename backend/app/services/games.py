@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.games import (
     CooldownNotInProgressError,
+    CooldownOverError,
     GameInProgressError,
     ItemNotCurrentError,
     ItemNotInGameError,
@@ -251,6 +252,10 @@ class GameService:
             self._place_final(seat, game, tile_id, tier_id, position)
             return seat
         current_round: Round = game.current_round
+        # Le timer n'est peut-être pas encore passé (threadpool chargé, redémarrage) : la fin du
+        # tour compte déjà, un placement en retard ne peut plus le terminer
+        if current_round.ends_at is not None and datetime.now(UTC) >= current_round.ends_at:
+            raise RoundNotInProgressError
         # Un item passé ne bouge pas avant le cooldown, un item futur n'est pas encore montré
         if tile_id != current_round.snapshot_tile_id:
             raise ItemNotCurrentError
@@ -405,7 +410,7 @@ class GameService:
         est privé : ni version, ni événement."""
         # Le timer n'est peut-être pas encore passé : la fin du cooldown compte déjà
         if game.cooldown_ends_at is not None and datetime.now(UTC) >= game.cooldown_ends_at:
-            raise RoundNotInProgressError
+            raise CooldownOverError
         if not any(game_round.snapshot_tile_id == tile_id for game_round in game.rounds):
             raise ItemNotInGameError
         _ensure_tier_in_game(game, tier_id)

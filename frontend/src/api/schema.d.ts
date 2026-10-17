@@ -653,7 +653,8 @@ export interface components {
         };
         /**
          * CurrentItemResponse
-         * @description L'item du tour en cours, montré à tous : une tuile de la version figée.
+         * @description Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
+         *     tous), un item placé par le lecteur, ou un item qu'il a manqué.
          */
         CurrentItemResponse: {
             /**
@@ -818,7 +819,8 @@ export interface components {
         };
         /**
          * OwnPlacementResponse
-         * @description Un item que le lecteur a placé pendant son tour : son tier et sa position (0 = premier).
+         * @description Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
+         *     pendant les tours, placement final pendant le cooldown.
          */
         OwnPlacementResponse: {
             item: components["schemas"]["CurrentItemResponse"];
@@ -3385,7 +3387,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description No round nor cooldown in progress, or during a round the tile is not the current item */
+            /** @description No round nor cooldown in progress, the round or the cooldown is over, or during a round the tile is not the current item */
             409: {
                 headers: {
                     [name: string]: unknown;

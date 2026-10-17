@@ -24,5 +24,10 @@ class ItemNotInGameError(Exception):
     """Pendant le cooldown : la tuile n'est pas un item de la partie."""
 
 
+class CooldownOverError(Exception):
+    """Le cooldown final est fini (sa fin est passée, son timer va clore la partie) : plus rien
+    ne se place."""
+
+
 class CooldownNotInProgressError(Exception):
     """La partie de la salle n'est pas dans son cooldown final : rien à terminer."""
