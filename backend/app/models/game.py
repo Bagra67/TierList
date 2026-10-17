@@ -11,6 +11,7 @@ from app.db.types import text_enum
 from app.models.enums import GameStatus, ItemOrder
 
 if TYPE_CHECKING:
+    from app.models.game_player import GamePlayer
     from app.models.placement import Placement
     from app.models.round import Round
     from app.models.template_snapshot import TemplateSnapshot
@@ -49,7 +50,7 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Fin du cooldown final, fixée quand le dernier tour se termine (#93) ; le serveur seul la
     # décide, les clients en affichent le compte à rebours
     cooldown_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    # Rempli à la clôture (#98)
+    # Rempli à la clôture, à la fin du cooldown
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     snapshot: Mapped["TemplateSnapshot"] = relationship()
@@ -59,6 +60,10 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Les placements de tous les participants : jamais envoyés tels quels (plateau privé)
     placements: Mapped[list["Placement"]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="Placement.created_at"
+    )
+    # Les joueurs figés à la clôture ; vide tant que la partie est en cours
+    players: Mapped[list["GamePlayer"]] = relationship(
+        back_populates="game", cascade="all, delete-orphan"
     )
 
     @property
