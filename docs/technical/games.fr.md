@@ -2,7 +2,7 @@
 
 [English](games.md) | Français
 
-Comment une partie se joue dans une salle : son démarrage, ses tours, ses placements, le passage au tour suivant et, plus tard, son cooldown et sa clôture. **Construit dans #91** pour le démarrage, **#92** pour les placements et **#93** pour l'enchaînement des tours (suivant, timer, tout le monde a placé, votes absents) et **#94** pour l'écran de jeu ; la reconnexion (#95), le cooldown avec les placements finaux (#96) et la clôture (#98) suivent.
+Comment une partie se joue dans une salle : son démarrage, ses tours, ses placements, le passage au tour suivant et, plus tard, son cooldown et sa clôture. **Construit dans #91** pour le démarrage, **#92** pour les placements et **#93** pour l'enchaînement des tours (suivant, timer, tout le monde a placé, votes absents) **#94** pour l'écran de jeu et **#95** pour le retour à sa place et l'arrivée en cours de partie ; le cooldown avec les placements finaux (#96) et la clôture (#98) suivent.
 
 ## 1. Vue fonctionnelle
 
@@ -34,6 +34,7 @@ Le room admin lance une partie depuis le lobby (US-3.1). La partie est figée su
 - **Tout le monde a placé** (`auto_advance = everyone_placed`) : le tour se termine quand chaque participant **connecté** qui place a placé l'item en cours. Un déconnecté n'est pas attendu ; il faut au moins un participant connecté qui place (personne de connecté ne termine jamais le tour). C'est vérifié après un premier placement, un départ (fin du délai de grâce) et un retrait.
 - **Votes absents** (US-4.3) : à la fin d'un tour, chaque participant qui place sans placement de tour pour l'item reçoit un vote absent (sans tier ni position), connecté ou non.
 - **Arrivée en cours de partie** (US-4.5) : un participant qui rejoint pendant une partie reçoit un vote absent pour chaque tour déjà fini, et place à partir du tour en cours.
+- **Retour à sa place** (US-4.4) : un participant qui perd la connexion garde sa place et son plateau ; les tours qui se terminent entre-temps lui donnent des votes absents. Il revient par `POST /join` (compte), le cookie de la salle (invité, même navigateur) ou le lien perso (invité, tout appareil), même quand les arrivées sont verrouillées ou la salle pleine. La salle qu'il reçoit contient son plateau (`own_placements`) et le tour en cours, et le canal temps réel se reconnecte puis relit la salle ([guide du temps réel](realtime.fr.md)).
 - **Dernier tour** : à sa fin, la partie passe en `cooldown` ; sa fin (`cooldown_ends_at`) vaut maintenant + `cooldown_seconds`. Ce qui se passe pendant et après le cooldown arrive avec #96.
 
 ### Messages
@@ -173,12 +174,12 @@ Trois déclencheurs terminent un tour, et tous passent par la même transition, 
 
 ### Tests
 
-`backend/tests/integration/test_game_start.py` et `test_game_placements.py`, `test_game_rounds.py`, `backend/tests/test_round_timers.py` ; `frontend/src/api/roomChannel.test.ts` (`participant.placed`) ; `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` et la partie en cours dans `pages/RoomPage.test.tsx`. Tous sont décrits dans le [guide des tests](testing.fr.md).
+`backend/tests/integration/test_game_start.py` et `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `backend/tests/test_round_timers.py` ; `frontend/src/api/roomChannel.test.ts` (`participant.placed`) ; `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` et la partie en cours dans `pages/RoomPage.test.tsx`. Tous sont décrits dans le [guide des tests](testing.fr.md).
 
 ## 4. Limites connues
 
 - Le cooldown ne se termine pas encore : pas de timer à `cooldown_ends_at`, pas de « Terminer maintenant », pas de placement final (#96).
-- Le glisser-déposer au pointeur n'est pas couvert par les tests automatiques (jsdom n'a pas de mise en page) : ils placent avec les boutons. Un participant qui recharge retrouve son plateau (`own_placements`), mais la reconnexion proprement dite arrive avec #95.
+- Le glisser-déposer au pointeur n'est pas couvert par les tests automatiques (jsdom n'a pas de mise en page) : ils placent avec les boutons.
 - Les placements finaux (cooldown) ne sont pas construits : `phase = final` est prête dans la table (#96).
 - Fermer une salle pendant une partie (#89) devra d'abord clôturer la partie (#98).
 - « Une partie est en cours » vit à deux endroits : `rooms.status = playing` et une ligne `games` qui n'est pas `closed`. Le démarrage écrit les deux dans une seule transaction, sous le verrou de la salle ; la clôture (#98) devra repasser la salle en `open` dans la même transaction que la partie.

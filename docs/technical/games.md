@@ -2,7 +2,7 @@
 
 English | [Français](games.fr.md)
 
-How a game is played in a room: its start, its rounds, its placements, the move to the next round and, later, its cooldown and its closing. **Built in #91** for the start, **#92** for the placements and **#93** for the round progression (next, timer, everyone placed, absent votes) and **#94** for the game screen; reconnection (#95), the cooldown with the final placements (#96) and the closing (#98) come next.
+How a game is played in a room: its start, its rounds, its placements, the move to the next round and, later, its cooldown and its closing. **Built in #91** for the start, **#92** for the placements and **#93** for the round progression (next, timer, everyone placed, absent votes) **#94** for the game screen and **#95** for coming back to one's seat and joining during a game; the cooldown with the final placements (#96) and the closing (#98) come next.
 
 ## 1. Functional overview
 
@@ -34,6 +34,7 @@ The room admin starts a game from the lobby (US-3.1). The game is frozen on the 
 - **Everyone placed** (`auto_advance = everyone_placed`): the round ends when every **connected** placing participant has placed the current item. A disconnected participant is not waited for; at least one placing participant must be connected (nobody connected never ends the round). It is checked after a first placement, a departure (end of the grace delay) and a removal.
 - **Absent votes** (US-4.3): when a round ends, every placing participant without a round placement for the item gets an absent vote (no tier, no position), connected or not.
 - **Late arrival** (US-4.5): a participant who joins during a game gets an absent vote for every round already over, and places from the current round.
+- **Coming back** (US-4.4): a participant who loses the connection keeps their seat and their board; the rounds that end meanwhile give them absent votes. They come back through `POST /join` (account), the room cookie (guest, same browser) or the personal link (guest, any device), even when arrivals are locked or the room is full. The room they get holds their board (`own_placements`) and the current round, and the real-time channel reconnects then reads the room again ([real-time guide](realtime.md)).
 - **Last round**: when it ends, the game moves to `cooldown`; its end (`cooldown_ends_at`) is now + `cooldown_seconds`. What happens during and after the cooldown comes with #96.
 
 ### Messages
@@ -173,12 +174,12 @@ Three triggers end a round, and all of them run the same transition, `GameServic
 
 ### Tests
 
-`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`. All are described in the [testing guide](testing.md).
 
 ## 4. Known limitations
 
 - The cooldown does not end yet: no timer at `cooldown_ends_at`, no "End now", no final placement (#96).
-- Drag and drop with a pointer is not covered by the automated tests (jsdom has no layout): they place with the buttons. A participant who reloads finds their board (`own_placements`), but reconnection as such comes with #95.
+- Drag and drop with a pointer is not covered by the automated tests (jsdom has no layout): they place with the buttons.
 - Final placements (cooldown) are not built: `phase = final` is ready in the table (#96).
 - Closing a room during a game (#89) will have to close the game first (#98).
 - "A game is in progress" lives in two places: `rooms.status = playing` and a `games` row not `closed`. The start writes both in one transaction, under the room lock; the closing (#98) must set the room back to `open` in the same transaction as the game.

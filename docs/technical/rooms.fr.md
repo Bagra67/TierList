@@ -163,7 +163,7 @@ Chaque route exige l'access token Bearer (`401` sinon), sauf les routes des invi
 
 ### 2.8 Limites connues
 
-- Parties : le démarrage (#91) pose `playing` et fige le template ([guide des parties](games.fr.md)) ; les tours n'avancent pas encore (#93).
+- Parties : le démarrage (#91) pose `playing` et fige le template ([guide des parties](games.fr.md)) ; les tours, les placements et le retour pendant une partie y sont décrits.
 - La fermeture d'une salle (#89) et sa fermeture automatique en cas d'inactivité (#90) arrivent plus tard.
 
 ## 3. Dans le code

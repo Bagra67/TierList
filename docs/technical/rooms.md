@@ -163,7 +163,7 @@ Every route requires the Bearer access token (`401` otherwise), except the guest
 
 ### 2.8 Known limitations
 
-- Games: the start (#91) sets `playing` and freezes the template ([games guide](games.md)); the rounds do not move on yet (#93).
+- Games: the start (#91) sets `playing` and freezes the template ([games guide](games.md)); the rounds, the placements and coming back during a game are described there.
 - Closing a room (#89) and closing it automatically when inactive (#90) come later.
 
 ## 3. In the code
