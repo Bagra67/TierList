@@ -61,6 +61,8 @@ class ParticipantResponse(BaseModel):
     is_guest: bool
     # Un onglet au moins a son canal temps réel ouvert (docs/technical/realtime.md)
     connected: bool
+    # La place du lecteur lui-même (« vous »)
+    is_you: bool
 
 
 class CurrentItemResponse(BaseModel):

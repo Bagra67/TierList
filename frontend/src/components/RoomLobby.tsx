@@ -2,6 +2,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
 import { ErrorMessage } from './ErrorMessage';
+import { GameScreen } from './GameScreen';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
 import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
@@ -15,7 +16,7 @@ interface RoomLobbyProps {
 
 // Lobby d'une salle (US-2.2, US-2.3) : code et lien à partager, participants (comptes et
 // invités), réglages ; seul le room admin peut les modifier, et retirer ou bannir un participant
-// (US-2.11, US-2.12)
+// (US-2.11, US-2.12). Pendant une partie, l'écran de jeu passe en tête
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -30,30 +31,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
-      {room.game !== null && (
-        <section className="flex w-full flex-col gap-2 rounded-lg bg-muted px-3 py-2">
-          <p className="font-medium">{t('rooms.lobby.playing')}</p>
-          {/* Écran de jeu provisoire : le vrai arrive avec #94 */}
-          <p className="text-sm text-muted-foreground">
-            {t('rooms.lobby.currentItem', {
-              number: room.game.round_number,
-              total: room.game.round_count,
-            })}
-          </p>
-          {room.game.current_item.image_url !== null && (
-            // Avec un texte, il est affiché juste en dessous : l'image est illustrative (alt vide),
-            // sinon le lecteur d'écran le lirait deux fois
-            <img
-              src={room.game.current_item.image_url}
-              alt={room.game.current_item.text === null ? t('rooms.lobby.currentItemImage') : ''}
-              className="size-32 rounded-md object-cover"
-            />
-          )}
-          {room.game.current_item.text !== null && (
-            <p className="text-lg font-semibold">{room.game.current_item.text}</p>
-          )}
-        </section>
-      )}
+      {room.game !== null && <GameScreen room={room} game={room.game} />}
       {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
       {room.is_admin && room.game === null && room.template !== null && (
         <StartGameButton code={room.code} />

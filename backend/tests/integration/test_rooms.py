@@ -236,6 +236,25 @@ def test_a_player_sees_the_room_without_being_its_admin(
     ]
 
 
+def test_each_reader_sees_their_own_seat_marked_as_you(
+    auth_client: TestClient, bob: dict[str, str], alice: dict[str, str], alice_room: JsonObject
+):
+    code: str = alice_room["code"]
+    auth_client.post(f"/rooms/{code}/join", headers=bob)
+
+    seen_by_alice: JsonObject = auth_client.get(f"/rooms/{code}", headers=alice).json()
+    seen_by_bob: JsonObject = auth_client.get(f"/rooms/{code}", headers=bob).json()
+
+    assert [(p["display_name"], p["is_you"]) for p in seen_by_alice["participants"]] == [
+        ("alice", True),
+        ("bob", False),
+    ]
+    assert [(p["display_name"], p["is_you"]) for p in seen_by_bob["participants"]] == [
+        ("alice", False),
+        ("bob", True),
+    ]
+
+
 # --- Rejoindre -------------------------------------------------------------------------------
 
 

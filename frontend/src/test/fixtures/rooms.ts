@@ -22,6 +22,7 @@ export const aliceRoom: Room = {
       is_admin: true,
       is_guest: false,
       connected: true,
+      is_you: true,
     },
     {
       id: '9a1b2c3d-0000-4000-8000-000000000002',
@@ -29,6 +30,7 @@ export const aliceRoom: Room = {
       is_admin: false,
       is_guest: false,
       connected: false,
+      is_you: false,
     },
   ],
   is_admin: true,
@@ -65,14 +67,16 @@ export const aliceRoomInGame: Room = {
 export const lousRoom: GuestRoom = {
   ...aliceRoom,
   is_admin: false,
+  // Vue de Lou : sa place est la sienne, plus celle d'Alice
   participants: [
-    ...aliceRoom.participants,
+    ...aliceRoom.participants.map((participant) => ({ ...participant, is_you: false })),
     {
       id: '9a1b2c3d-0000-4000-8000-000000000003',
       display_name: 'Lou',
       is_admin: false,
       is_guest: true,
       connected: false,
+      is_you: true,
     },
   ],
   guest_link: 'http://localhost:5173/r/K7P2QX#guest=lou-token',

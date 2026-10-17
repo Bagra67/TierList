@@ -39,6 +39,7 @@ def room_response(
             is_admin=participant.user_id == room.admin_id,
             is_guest=participant.is_guest,
             connected=participant.connected,
+            is_you=participant.id == seat.id,
         )
         participants.append(participant_response)
     # None une fois le template purgé
