@@ -134,7 +134,7 @@ Created by hand in the repository settings (Settings → Environments). Nothing 
 | `production`                          | **required reviewer**            | same as `staging`                                                                                                                                                                                                                                        | same as `staging`                                                                                                                                                                                                                                                                                                                                                                               |
 | `backup-staging`, `backup-production` | none (a nightly run cannot wait) | `BACKUP_POSTGRES_PASSWORD`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`                                                                                                                                                                     | `BACKUP_POSTGRES_HOST`, `BACKUP_POSTGRES_PORT`, `BACKUP_POSTGRES_DB`, `BACKUP_POSTGRES_USER`, `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_RETENTION_DAYS` (`14` production, `3` staging)                                                                                                                                                                          |
 
-\* Optional. `SFTP_KNOWN_HOSTS`: the line(s) of `ssh-keyscan -p <port> <host>`, checked against the fingerprint shown by the panel; the deployment refuses any other host key. `PANEL_URL` / `PANEL_SERVER_ID` / `PANEL_API_KEY`: a client API key of the panel, if MineStrator offers one (§6); without them, the pod is restarted by hand.
+\* Optional. `SFTP_KNOWN_HOSTS`: the line(s) of `ssh-keyscan -p <port> <host>`, checked against the fingerprint shown by the panel; the deployment refuses any other host key. `PANEL_SERVER_ID` / `PANEL_API_KEY`: the pod identifier and an API key of the MineStrator panel, to restart the pod after an upload (§6); `PANEL_URL` defaults to `https://mine.sttr.io`. Without the identifier or the key, the pod is restarted by hand.
 
 ## 5. First deployment, step by step
 
@@ -163,7 +163,7 @@ Steps of `deploy.yml`:
 1. **Plan**: environment, commit and version.
 2. **Bundle** (`bundle.yml`): ShellCheck on the scripts, `pnpm build`, `deploy/build_bundle.sh`, artifact `tierlist-bundle`.
 3. **Upload** over SFTP (password through `sshpass`, pinned host key): `releases/tierlist-<version>.tar.gz`, the launcher as `start.sh`, `.env`, then `CURRENT` last. A failed upload leaves the running version in place.
-4. **Restart** (`restart_pod.sh`): through the panel client API (`POST /api/client/servers/<id>/power`, Pterodactyl) when `PANEL_URL`, `PANEL_SERVER_ID` and `PANEL_API_KEY` are set; otherwise the job summary asks to restart the pod in the panel. Whether MineStrator gives such a key is still to check (#159).
+4. **Restart** (`restart_pod.sh`): through the MineStrator panel API (its own, not the Pterodactyl client API) when `PANEL_SERVER_ID` and `PANEL_API_KEY` are set: `PUT $PANEL_URL/server/<id>/poweraction` with `Authorization: Bearer <key>` and `{"poweraction":"restart"}` (`PANEL_URL` defaults to `https://mine.sttr.io`). `200` means the restart is requested; `400` (wrong pod identifier), `401` (wrong key) or any other answer fails the step with the reason in the job summary; `429` (too many requests) is tried again once after 30 s. Without the identifier or the key, the job summary asks to restart the pod in the panel.
 5. **Health** (`wait_healthy.sh`): `/api/health` must report the new version, then `/api/health/db` must answer `200`; 30 tries 5 s apart (120 when the restart is manual). Otherwise the job fails.
 
 One deployment at a time per environment (`concurrency`, a pending one waits).
@@ -198,7 +198,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 
 - Creating the pods, the tunnel, the DNS records and the Scaleway resources (#159, #163).
 - The GitHub environments, secrets and variables (§4), and the `production` reviewer.
-- The pod restart, as long as no panel API key is configured.
+- The pod restart, as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it.
 - Approving each production deployment.
 - Testing a restore (#162), then after each major PostgreSQL upgrade.
 
