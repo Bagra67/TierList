@@ -139,15 +139,106 @@ Created by hand in the repository settings (Settings → Environments). Nothing 
 
 ## 5. First deployment, step by step
 
-1. **Pods** (#159), per environment: a TierList pod ("python generic", Python 3.13, start command `bash start.sh`) and a PostgreSQL 17 pod (strong password; note its IP and port).
-2. **Cloudflare Tunnel**: a `cloudflared` pod; public hostnames `tierlist-staging.ladwein.dev` and `tierlist.ladwein.dev` to `http://<TierList pod IP>:<SERVER_PORT>`, WebSocket on. Note the address the tunnel reaches the pod from: it goes in `TRUSTED_PROXY_IPS`.
-3. **Scaleway** (#163): image bucket per environment (public read) and its key; private backup bucket and its key; Transactional Email with the domain authorised (SPF, DKIM, DMARC).
-4. **Google OAuth** (optional): authorised redirect URI `https://<domain>/api/auth/google/callback`, consent screen published.
-5. **SFTP**: host, port, user and password of each TierList pod (panel); `ssh-keyscan -p <port> <host>` for `SFTP_KNOWN_HOSTS`.
-6. **GitHub**: the environments, secrets and variables of §4.
-7. **Staging**: merge a PR into `develop` (or wait for the next one). The Deploy workflow uploads the version; restart the pod in the panel if the job summary asks for it; the job turns green once `https://tierlist-staging.ladwein.dev/api/health` reports the new version and `/api/health/db` answers.
-8. **Production**: make a release ([releasing guide](releasing.md)); the Deploy workflow waits for the approval of the `production` environment.
-9. **Backups**: run the Backup workflow by hand once, then try a restore on staging (§8, #162).
+How staging was set up (October 2026). Repeat it for production with the values of §5.9. The concrete values (IP addresses, ports, identifiers, accounts) are not in this public repository: keep them in a private place, with the secrets in a password manager.
+
+### 5.1 MineStrator pods (#159)
+
+In the MineStrator panel, MyBox → **Créer un serveur**, location **Toulouse** for every pod (the only one in Europe; the app and its database must be close):
+
+| Pod                                     | Catalog type                    | Allocation        | Start command                                                                        |
+| --------------------------------------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| TierList (one per environment)          | `python generic`, Python 3.13   | 1 core, 2 GB      | `bash start.sh` (Paramètres → Paramètres de démarrage du serveur)                    |
+| PostgreSQL (one for both environments)  | `PostgreSQL 17` (experimental)  | 1 core, 2 to 4 GB | given by the type                                                                    |
+| cloudflared (one for both environments) | `golang generic` (experimental) | 1 core, 2 GB      | `chmod +x ./cloudflared && ./cloudflared tunnel --no-autoupdate run --token <token>` |
+
+- 2 GB is the smallest allocation the panel offers ("Minimum").
+- Leave the Git fields of the `python generic` pod empty: the deployment uploads the bundle over SFTP (§6).
+- The pods of one MyBox get **different public IP addresses**: the app reaches PostgreSQL over the public network.
+- **"Démarrage" forever**: the panel shows a pod as online only once its console prints the line its type waits for. Both generic types wait for the placeholder `change this part`, which neither uvicorn nor cloudflared prints. The pods work anyway (check `/api/health`), but the panel keeps them "starting". Workaround: print that line in the start command, e.g. `… && echo "change this part" && ./cloudflared …` for the tunnel.
+
+### 5.2 PostgreSQL
+
+1. In the PostgreSQL pod settings, set a long random **Superuser Password** (keep it for administration only, never in GitHub), then start the pod.
+2. Its console opens a `psql` session as superuser. One role and one database per environment:
+
+   ```sql
+   CREATE ROLE tierlist_staging LOGIN PASSWORD '<long random>';
+   CREATE DATABASE tierlist_staging OWNER tierlist_staging;
+   REVOKE CONNECT ON DATABASE tierlist_staging FROM PUBLIC;
+   ```
+
+   `POSTGRES_PASSWORD` and `BACKUP_POSTGRES_PASSWORD` are the password of this role, not the superuser's.
+
+3. **Exposure**: the pod listens on a public `IP:port`, and the type adds `host all all 0.0.0.0/0 md5` at the end of `postgres_db/pg_hba.conf` (Fichiers). The backups run from GitHub runners (§8), whose addresses change: the database must stay reachable from the Internet. Harden it instead: long passwords, `scram-sha-256` instead of `md5`, and no remote access for the superuser (a `host all postgres 0.0.0.0/0 reject` line before the last one), then `SELECT pg_reload_conf();`.
+
+### 5.3 Domain and Cloudflare
+
+1. The domain `ladwein.dev` is registered at **Cloudflare Registrar** (DNS at Cloudflare, required by the tunnel). Turn on its automatic renewal (Domains → Registrations).
+2. **Networking → Tunnels → Create Tunnel** (type cloudflared). Copy the token from the `cloudflared tunnel run --token …` line: it is a secret (it goes only in the start command of the cloudflared pod).
+3. Download `cloudflared-linux-amd64` from the [cloudflared releases](https://github.com/cloudflare/cloudflared/releases), rename it `cloudflared` and drop it in the files of the cloudflared pod. Building it through the `GO_PACKAGE` field of the type produced no binary.
+4. Once the pod runs, the tunnel shows **Healthy**; its **Origin IP** (Overview → Replicas) is the address it reaches the pods from: `TRUSTED_PROXY_IPS`.
+5. **Add route → Published application**: hostname → `http://<TierList pod IP>:<SERVER_PORT>` (main port shown in the panel, Accès). The DNS record is created automatically, WebSocket included.
+6. **One level of subdomain only**: the free certificate covers `*.ladwein.dev`, not `*.*.ladwein.dev` (that needs Advanced Certificate Manager). Hence `tierlist-staging.ladwein.dev`, not `staging.tierlist.ladwein.dev`.
+
+### 5.4 Scaleway (#163)
+
+One organization, project **TierList**, region **Paris** (`fr-par`). A payment method is required before ordering anything.
+
+1. **Object Storage**: bucket names are unique across all Scaleway customers, hence a prefix: `ladwein-tierlist-images-<environment>` (one per environment) and `ladwein-tierlist-backups` (shared: each environment writes and prunes under its own prefix, §8). Leave the 90-day trial off.
+2. **Public read of the images**: objects are private by default, even in a public bucket, and the console offers no bucket policy. `IMAGE_PUBLIC_BASE_URL` (`https://<bucket>.s3.fr-par.scw.cloud`) only works if each image is uploaded with the `public-read` ACL, or if a bucket policy is set through the API. **Open point**: `image_storage.py` sends no ACL today.
+3. **IAM → Applications**: one application per environment (`tierlist-staging`), with a policy limited to the TierList project: `ObjectStorageFullAccess` and `TransactionalEmailFullAccess`. Then **API keys → Generate**: the secret key is shown once.
+4. **Transactional Email**: plan **Essential** (pay as you go, 300 emails included), domain `ladwein.dev`. Add its DNS records in Cloudflare (all "DNS only"): TXT SPF on `@`, TXT DKIM on `<project id>._domainkey`, TXT DMARC `v=DMARC1; p=none` on `_dmarc`, MX `10 blackhole.tem.scaleway.com` on `@`. The status turns **Verified** within minutes to hours. The MX makes `@ladwein.dev` unable to receive mail; replace it if an inbox is ever needed.
+5. SMTP: `smtp.tem.scaleway.com`, port `587`; `SMTP_USERNAME` = the project identifier, `SMTP_PASSWORD` = the secret key of the IAM application.
+
+### 5.5 Google OAuth
+
+In a Google Cloud project dedicated to TierList: one **OAuth client** (web application) per environment, redirect URI `https://<domain>/api/auth/google/callback`. The secret is shown only at creation. On the consent screen, the app name is what users see; in "Testing" mode only the listed test users can sign in: publish it before opening production.
+
+### 5.6 SFTP and panel API
+
+- SFTP (panel → pod → Accès): `SFTP_HOST` and `SFTP_PORT` **without** `sftp://` (`ssh-keyscan` fails with "Name or service not known" otherwise). `SFTP_KNOWN_HOSTS` = the output of `ssh-keyscan -p <port> <host>`.
+- `PANEL_SERVER_ID`: the number in the pod URL (`minestrator.com/my/server/<id>`). `PANEL_API_KEY`: a key created in **Mon compte → Clés API du compte**, used only by the deployment (not a personal key, not the one of another tool): it can then be revoked alone.
+
+### 5.7 GitHub
+
+Settings → Environments: the environments, secrets and variables of §4. The `staging` environment may already exist (created by a first workflow run): fill it in.
+
+### 5.8 First deployment and checks
+
+1. Merge a PR into `develop`: CI, then Deploy (§6). Or re-run the last Deploy run (Actions → Deploy → run → **Re-run all jobs**): a re-run reads the **current** secrets and variables. Running Deploy by hand only accepts a `vX.Y.Z` tag, not `develop`.
+2. After changing a secret or a variable, redeploy: the pod `.env` is only written by the deployment.
+3. Checks: `/api/health` reports the deployed version; `/api/health/db` answers; the home page shows the sign-in screen; "Continuer avec Google" opens the Google account chooser; sign-up sends the verification email (Scaleway: Email activity); an image upload shows the image; a game between two browsers (WebSocket).
+4. The panel console can stop refreshing after "Creating virtual environment": trust `/api/health`, not the console.
+
+### 5.9 Production
+
+Same steps, with:
+
+| Item                    | Staging                                      | Production                                                |
+| ----------------------- | -------------------------------------------- | --------------------------------------------------------- |
+| TierList pod            | its own                                      | a new `python generic` pod                                |
+| Database                | `tierlist_staging` (role and database)       | `tierlist_prod`, same PostgreSQL pod                      |
+| Tunnel route            | `tierlist-staging.ladwein.dev` → staging pod | `tierlist.ladwein.dev` → production pod, **same tunnel**  |
+| Image bucket            | `ladwein-tierlist-images-staging`            | `ladwein-tierlist-images-production`                      |
+| Scaleway application    | `tierlist-staging`                           | `tierlist-production` (its own key)                       |
+| Google OAuth client     | staging client                               | production client, consent screen published               |
+| GitHub environments     | `staging`, `backup-staging`                  | `production` (**required reviewer**), `backup-production` |
+| `BACKUP_RETENTION_DAYS` | `3`                                          | `14`                                                      |
+| Secrets                 | —                                            | all different: `JWT_SECRET_KEY`, passwords, keys          |
+
+`TRUSTED_PROXY_IPS` stays the address of the cloudflared pod. Then make a release ([releasing guide](releasing.md)) and approve the deployment.
+
+### 5.10 Backups
+
+Run the Backup workflow by hand once, then try a restore on staging (§8, #162).
+
+### 5.11 Consoles
+
+- MineStrator: [panel](https://minestrator.com/my), [API documentation](https://api.minestrator.com) (base `https://mine.sttr.io`)
+- Cloudflare: [dashboard](https://dash.cloudflare.com) (Domains, Networking → Tunnels, DNS)
+- Scaleway: [console](https://console.scaleway.com) (Object Storage, IAM, Transactional Email), [storage pricing](https://www.scaleway.com/en/pricing/storage/)
+- Google: [Cloud console, credentials](https://console.cloud.google.com/apis/credentials)
+- GitHub: repository Settings → Environments, Actions → Deploy / Backup
 
 ## 6. Deploying
 
@@ -199,7 +290,8 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 
 - Creating the pods, the tunnel, the DNS records and the Scaleway resources (#159, #163).
 - The GitHub environments, secrets and variables (§4), and the `production` reviewer.
-- The pod restart, as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it.
+- The pod restart, as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it (set up on staging: the restart is automatic there).
+- Redeploying after a change of a secret or a variable (§5.8).
 - Approving each production deployment.
 - Testing a restore (#162), then after each major PostgreSQL upgrade.
 

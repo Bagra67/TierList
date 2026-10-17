@@ -8,17 +8,20 @@
 
 - [x] Choisir un hébergement : pods MineStrator derrière un Cloudflare Tunnel ([guide du déploiement](docs/technical/deployment.fr.md)).
 - [x] Bundle de release, script de démarrage du pod et déploiement continu (#158, #160, #161).
-- [ ] Créer les pods, le tunnel et les environnements GitHub, puis déployer le staging : [premier déploiement](docs/technical/deployment.fr.md#5-premier-déploiement-pas-à-pas) (#159, #163).
+- [x] Créer les pods, le tunnel et les environnements GitHub, puis déployer le staging : [premier déploiement](docs/technical/deployment.fr.md#5-premier-déploiement-pas-à-pas) (#159, #163).
+- [ ] Pareil pour la production ([production](docs/technical/deployment.fr.md#59-production)) : pod de production, base `tierlist_prod`, route `tierlist.ladwein.dev`, environnements `production` et `backup-production`.
+- [ ] Afficher les pods en ligne dans le panel MineStrator : écrire `change this part` une fois que l'application répond (`deploy/start.sh`) et dans la commande de démarrage du tunnel ([pods](docs/technical/deployment.fr.md#51-pods-minestrator-159)).
+- [ ] Durcir PostgreSQL : `scram-sha-256`, pas de superutilisateur à distance ([PostgreSQL](docs/technical/deployment.fr.md#52-postgresql)).
 - [ ] Réglages de production (environnements GitHub, [guide du déploiement](docs/technical/deployment.fr.md#4-environnements-secrets-et-variables-github)) :
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
-- [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`.
+- [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Fait sur le staging : Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
 - [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (règles de limitation de Cloudflare). Les en-têtes de proxy de confiance sont réglés (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
 - [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
 - [ ] Sauvegardes de la base : configurer les environnements `backup-*` et essayer une restauration sur le staging (#162).
-- [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub ; plus tard, un CDN capable de **purger une URL** (nécessaire pour masquer une image).
+- [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub (fait sur le staging ; **les envois ne posent pas encore l'ACL `public-read`**, [Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)) ; plus tard, un CDN capable de **purger une URL** (nécessaire pour masquer une image).
 
 ## 2. Décisions à prendre
 
