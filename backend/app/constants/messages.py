@@ -56,6 +56,7 @@ ITEM_NOT_CURRENT = "This tile is not the item of the current round"
 ITEM_NOT_IN_GAME = "This tile is not an item of the game"
 COOLDOWN_NOT_IN_PROGRESS = "The final cooldown is not in progress in this room"
 COOLDOWN_OVER = "The final cooldown is over: nothing can be placed any more"
+RESULTS_NOT_FOUND = "No closed game has this results link"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
@@ -97,6 +98,7 @@ CANNOT_PLACE_DESCRIPTION = (
     " or during a round the tile is not the current item"
 )
 COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
+RESULTS_NOT_FOUND_DESCRIPTION = "Unknown results link"
 GAME_CANNOT_START_DESCRIPTION = (
     "Game already in progress, no participant who places, or template deleted or without tiles"
 )

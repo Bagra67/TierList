@@ -21,8 +21,9 @@ from tests.integration.helpers import (
     JsonObject,
     create_room,
     create_template,
-    next_item,
     place,
+    place_current_in_first_tier,
+    play_and_close,
     register,
     start_game,
 )
@@ -46,26 +47,6 @@ def bob(auth_client: TestClient) -> dict[str, str]:
 def alice_room(auth_client: TestClient, db_session: Session, alice: dict[str, str]) -> JsonObject:
     template_id: str = create_template(auth_client, db_session, alice, tile_count=TILE_COUNT)
     return create_room(auth_client, alice, template_id)
-
-
-def place_current_in_first_tier(
-    client: TestClient, room: JsonObject, headers: dict[str, str] | None = None
-) -> None:
-    game: JsonObject = room["game"]
-    response: Response = place(
-        client, room["code"], game["current_item"]["id"], game["tiers"][0]["id"], 0, headers
-    )
-    assert response.status_code == 200
-
-
-def play_and_close(client: TestClient, code: str, alice: dict[str, str]) -> JsonObject:
-    """Termine les tours restants, puis le cooldown (« Terminer maintenant »)."""
-    room: JsonObject = client.get(f"/rooms/{code}", headers=alice).json()
-    while room["game"]["status"] == "in_round":
-        room = next_item(client, code, alice)
-    response: Response = client.post(f"/rooms/{code}/game/end", headers=alice)
-    assert response.status_code == 200
-    return response.json()
 
 
 def stored_game(db_session: Session) -> Game:

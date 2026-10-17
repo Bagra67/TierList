@@ -21,7 +21,8 @@ def add_room(session: Session, room: Room) -> None:
 
 def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room]:
     """Charge avec la salle son template, ses participants (et leur utilisateur), ses
-    bannissements et sa partie en cours (ses tours et leur tuile, ses tiers, ses placements).
+    bannissements, sa partie en cours (ses tours et leur tuile, ses tiers, ses placements) et
+    ses parties closes (leurs joueurs).
 
     for_update verrouille la ligne de la salle jusqu'à la fin de la transaction : deux
     modifications de la même salle passent l'une après l'autre (docs/technical/realtime.md)."""
@@ -34,6 +35,7 @@ def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room
         .selectinload(Game.snapshot)
         .selectinload(TemplateSnapshot.tiers),
         selectinload(Room.current_game).selectinload(Game.placements).selectinload(Placement.tile),
+        selectinload(Room.closed_games).selectinload(Game.players),
     )
     if for_update:
         statement = statement.with_for_update(of=Room)

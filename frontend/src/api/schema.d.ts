@@ -562,6 +562,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/results/{public_token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Game Results */
+        get: operations["get_game_results_results__public_token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -723,6 +740,33 @@ export interface components {
             language: "fr" | "en";
         };
         /**
+         * GameResultsResponse
+         * @description Résultats d'une partie close (US-5.2), lus par son lien (US-5.3).
+         */
+        GameResultsResponse: {
+            /** Template Name */
+            template_name: string;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Include Absent Votes */
+            include_absent_votes: boolean;
+            /** Tiers */
+            tiers: components["schemas"]["GameTierResponse"][];
+            /** Items */
+            items: components["schemas"]["CurrentItemResponse"][];
+            /** Median Ranking */
+            median_ranking: components["schemas"]["TierItemsResponse"][];
+            /** Unranked Item Ids */
+            unranked_item_ids: string[];
+            /** Distribution */
+            distribution: components["schemas"]["ItemDistributionResponse"][];
+            /** Players */
+            players: components["schemas"]["PlayerResultsResponse"][];
+        };
+        /**
          * GameStatus
          * @description Cycle de vie d'une partie (docs/product/milestone-1/lifecycles.md).
          * @enum {string}
@@ -765,6 +809,8 @@ export interface components {
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
             game: components["schemas"]["CurrentGameResponse"] | null;
+            /** Past Games */
+            past_games: components["schemas"]["PastGameResponse"][];
             /** Guest Link */
             guest_link: string;
             /**
@@ -796,6 +842,23 @@ export interface components {
             width: number;
             /** Height */
             height: number;
+        };
+        /**
+         * ItemDistributionResponse
+         * @description Vue globale d'un item : combien de joueurs l'ont mis dans chaque tier, et d'absents.
+         */
+        ItemDistributionResponse: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Votes Per Tier */
+            votes_per_tier: number[];
+            /** Absent Count */
+            absent_count: number;
+            /** Median Tier Id */
+            median_tier_id: string | null;
         };
         /**
          * ItemOrder
@@ -851,6 +914,21 @@ export interface components {
             /** Is You */
             is_you: boolean;
         };
+        /**
+         * PastGameResponse
+         * @description Une partie close de la salle : son lien de résultats (/results/<public_token>).
+         */
+        PastGameResponse: {
+            /** Public Token */
+            public_token: string;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Player Count */
+            player_count: number;
+        };
         /** PlaceItemRequest */
         PlaceItemRequest: {
             /**
@@ -860,6 +938,18 @@ export interface components {
             tier_id: string;
             /** Position */
             position: number;
+        };
+        /**
+         * PlayerResultsResponse
+         * @description Le classement final d'un joueur.
+         */
+        PlayerResultsResponse: {
+            /** Display Name */
+            display_name: string;
+            /** Tiers */
+            tiers: components["schemas"]["TierItemsResponse"][];
+            /** Unplaced Item Ids */
+            unplaced_item_ids: string[];
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -926,6 +1016,8 @@ export interface components {
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
             game: components["schemas"]["CurrentGameResponse"] | null;
+            /** Past Games */
+            past_games: components["schemas"]["PastGameResponse"][];
         };
         /** RoomSettingsResponse */
         RoomSettingsResponse: {
@@ -1004,6 +1096,19 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * TierItemsResponse
+         * @description Les items d'un tier, dans l'ordre.
+         */
+        TierItemsResponse: {
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Item Ids */
+            item_ids: string[];
         };
         /** TierResponse */
         TierResponse: {
@@ -3607,6 +3712,57 @@ export interface operations {
             };
             /** @description No final cooldown in progress */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_game_results_results__public_token__get: {
+        parameters: {
+            query?: {
+                include_absent_votes?: boolean;
+            };
+            header?: never;
+            path: {
+                public_token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameResultsResponse"];
+                };
+            };
+            /** @description Unknown results link */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

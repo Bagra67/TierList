@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.security import generate_public_results_token
 from app.exceptions.games import (
     CooldownNotInProgressError,
     CooldownOverError,
@@ -598,6 +599,7 @@ class GameService:
         (docs/technical/games.md)."""
         game.status = GameStatus.CLOSED
         game.closed_at = datetime.now(UTC)
+        game.public_token = generate_public_results_token()
         _freeze_players(game)
         room.status = RoomStatus.OPEN
         room.version += 1

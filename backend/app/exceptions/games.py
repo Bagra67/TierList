@@ -31,3 +31,7 @@ class CooldownOverError(Exception):
 
 class CooldownNotInProgressError(Exception):
     """La partie de la salle n'est pas dans son cooldown final : rien à terminer."""
+
+
+class GameResultsNotFoundError(Exception):
+    """Aucune partie close n'a ce lien de résultats (US-5.3)."""

@@ -2,15 +2,36 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Select, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.enums import GameStatus
 from app.models.game import Game
 from app.models.round import Round
+from app.models.snapshot_tile import SnapshotTile
+from app.models.template_snapshot import TemplateSnapshot
 
 
 def add_game(session: Session, game: Game) -> None:
     session.add(game)
+
+
+def get_closed_game_by_token(session: Session, public_token: str) -> Game | None:
+    """Partie close de ce lien de résultats, avec tout ce que ses résultats montrent : tiers et
+    tuiles de la version figée (et leur image), placements et joueurs figés, chargés en une
+    requête par table (le nombre de requêtes ne dépend pas du nombre d'items)."""
+    statement: Select[Game] = (
+        select(Game)
+        .where(Game.public_token == public_token, Game.status == GameStatus.CLOSED)
+        .options(
+            selectinload(Game.snapshot).selectinload(TemplateSnapshot.tiers),
+            selectinload(Game.snapshot)
+            .selectinload(TemplateSnapshot.tiles)
+            .selectinload(SnapshotTile.image),
+            selectinload(Game.placements),
+            selectinload(Game.players),
+        )
+    )
+    return session.scalars(statement).one_or_none()
 
 
 def get_room_id_of_game(session: Session, game_id: uuid.UUID) -> uuid.UUID | None:

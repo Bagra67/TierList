@@ -93,6 +93,8 @@ class ErrorCode(StrEnum):
     COOLDOWN_NOT_IN_PROGRESS = "cooldown_not_in_progress"
     # Le cooldown final est fini : plus rien ne se place
     COOLDOWN_OVER = "cooldown_over"
+    # Lien de résultats inconnu, ou partie pas encore close
+    RESULTS_NOT_FOUND = "results_not_found"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

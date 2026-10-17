@@ -129,6 +129,15 @@ class RoomBanResponse(BaseModel):
     is_guest: bool
 
 
+class PastGameResponse(BaseModel):
+    """Une partie close de la salle : son lien de résultats (/results/<public_token>)."""
+
+    public_token: str
+    closed_at: datetime
+    # Joueurs figés, sans le room admin qui ne joue pas
+    player_count: int
+
+
 class RoomResponse(BaseModel):
     code: str
     # Version de la salle, celle des événements temps réel (room_version)
@@ -147,6 +156,8 @@ class RoomResponse(BaseModel):
     bans: list[RoomBanResponse]
     # La partie en cours, None hors partie
     game: CurrentGameResponse | None
+    # Parties closes de la salle, de la plus récente à la plus ancienne
+    past_games: list[PastGameResponse]
 
 
 class JoinAsGuestRequest(BaseModel):
