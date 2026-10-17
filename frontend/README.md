@@ -110,12 +110,11 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/               # Route guards: RequireAuth (private pages → /login), RedirectIfSignedIn (/login, /register → back where the user was going)
-│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList)
+│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card, popover), editable
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
-│   ├── lib/utils.ts        # cn(): merges Tailwind classes (used by shadcn/ui)
 │   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
@@ -228,7 +227,7 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - `--overwrite` replaces the file entirely: local changes to a `ui/` component are lost unless put back from the git diff. Keep such changes small.
 - ESLint: `react-refresh/only-export-components` is off for `src/components/ui/` (`eslint.config.js`), since shadcn components also export their variants (e.g. `buttonVariants`); this keeps them close to the generated version.
 - Texts are never written in a `ui/` component: they receive them as props or children, translated with `t()`.
-- The account deletion dialog keeps the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind.
+- The dialogs keep the native `<dialog>` (focus trap and Escape handled by the browser), styled with Tailwind; `ModalDialog` holds the shell (title, styling) and `DialogActions` the Cancel / submit footer, shared by every dialog. `cn()` comes straight from the `cn` package, like in the shadcn/ui components.
 - Drag and drop (template editor) uses **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), wrapped in `SortableList`: neither Radix nor shadcn/ui offers a sortable list, and dnd-kit handles the mouse, touch and the keyboard (Space, arrows, Escape) with screen reader announcements, translated through `templates.editor.dnd.*`.
 - The tier color picker (`ColorField`) uses **react-colorful** (`HexColorPicker`, `HexColorInput`) in a shadcn `popover`: a small library without dependencies, whose sliders work with the keyboard. Its accessibility labels are written in English in the library: `ColorField` replaces them with the translations (`templates.editor.color.*`) after each render.
 
