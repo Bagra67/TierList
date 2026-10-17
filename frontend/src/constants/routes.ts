@@ -31,6 +31,21 @@ export function resultsPath(token: string): string {
   return generatePath(ROUTES.RESULTS, { token });
 }
 
+// État de navigation posé par le lobby en ouvrant des résultats : la salle d'où l'on vient. Un
+// visiteur arrivé par le lien public n'en a pas
+export interface ResultsLinkState {
+  roomCode: string;
+}
+
+export function isResultsLinkState(state: unknown): state is ResultsLinkState {
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    'roomCode' in state &&
+    typeof state.roomCode === 'string'
+  );
+}
+
 // Token du lien reçu par email (backend : TOKEN_PARAM)
 export const TOKEN_PARAM = 'token';
 

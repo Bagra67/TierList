@@ -1,9 +1,12 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Path
 
 from app.api.dependencies import GameResultsServiceDep, ImageStorageDep
 from app.api.presenters.results import game_results_response
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.core.errors import ErrorResponse
 from app.exceptions.games import GameResultsNotFoundError
 from app.exceptions.http import AppHTTPException
@@ -20,7 +23,8 @@ router = APIRouter(prefix="/results", tags=["results"])
     },
 )
 def get_game_results(
-    public_token: str,
+    # Un jeton plus long que la colonne ne peut correspondre à aucune partie : refusé tout de suite
+    public_token: Annotated[str, Path(max_length=PUBLIC_RESULTS_TOKEN_MAX_LENGTH)],
     service: GameResultsServiceDep,
     storage: ImageStorageDep,
     include_absent_votes: bool = True,

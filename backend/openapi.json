@@ -3112,6 +3112,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "maxLength": 32,
               "title": "Public Token"
             }
           },

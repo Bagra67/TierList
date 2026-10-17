@@ -190,7 +190,8 @@ export const en: Translation = {
       players: 'Per player',
     },
     emptyTier: 'No item',
-    itemImage: 'Image of the item',
+    itemImage: 'Image of item {{number}}',
+    backToRoom: 'Back to the room',
     median: {
       unranked: 'Unranked',
     },

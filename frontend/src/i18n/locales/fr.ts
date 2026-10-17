@@ -195,7 +195,8 @@ export const fr = {
       players: 'Par joueur',
     },
     emptyTier: 'Aucun item',
-    itemImage: "Image de l'item",
+    itemImage: "Image de l'item {{number}}",
+    backToRoom: 'Retour à la salle',
     median: {
       unranked: 'Non classés',
     },
