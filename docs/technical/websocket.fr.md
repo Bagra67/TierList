@@ -112,15 +112,16 @@ Le **premier message** doit être `auth`, dans les 5 s (`ROOM_AUTH_TIMEOUT_SECON
 
 Chaque événement du serveur a la même enveloppe : `{"type": "…", "room_version": 12, "data": {…}}`.
 
-| Message                 | Sens                                | Effet côté client                                  |
-| ----------------------- | ----------------------------------- | -------------------------------------------------- |
-| `auth`                  | client → serveur                    | Premier message (§2.3)                             |
-| `ping` / `pong`         | serveur → client / client → serveur | Battement de cœur                                  |
-| `participant.joined`    | serveur → client                    | Relit la salle                                     |
-| `participant.presence`  | serveur → client                    | Modifie `connected` d'un participant dans le cache |
-| `participant.removed`   | serveur → client                    | Retire un participant du cache                     |
-| `room.settings_updated` | serveur → client                    | Relit la salle                                     |
-| `game.started`          | serveur → client                    | Relit la salle (tour 1, item en cours)             |
+| Message                 | Sens                                | Effet côté client                                                   |
+| ----------------------- | ----------------------------------- | ------------------------------------------------------------------- |
+| `auth`                  | client → serveur                    | Premier message (§2.3)                                              |
+| `ping` / `pong`         | serveur → client / client → serveur | Battement de cœur                                                   |
+| `participant.joined`    | serveur → client                    | Relit la salle                                                      |
+| `participant.presence`  | serveur → client                    | Modifie `connected` d'un participant dans le cache                  |
+| `participant.removed`   | serveur → client                    | Retire un participant du cache                                      |
+| `room.settings_updated` | serveur → client                    | Relit la salle                                                      |
+| `game.started`          | serveur → client                    | Relit la salle (tour 1, item en cours)                              |
+| `participant.placed`    | serveur → client                    | Ajoute le participant à `game.placed_participant_ids` dans le cache |
 
 Les modèles sont dans `backend/app/schemas/room_events.py` et sont ajoutés au schéma OpenAPI, pour que `pnpm gen:api` génère leurs types TypeScript (`RoomServerMessage`, `RoomClientMessage` dans `frontend/src/api/schema.d.ts`).
 

@@ -32,7 +32,7 @@ Timers : le **timer de tour** par item (réglage de la room), le **cooldown** (r
 
 ### Pas encore disponible
 
-Le démarrage d'une partie (`game.started`) est construit (#91, [guide des parties](games.fr.md)) ; les autres événements du jeu (tours, placements, cooldown) et les timers côté serveur (§2.8) arrivent avec les issues suivantes du jeu (#92 et suivantes). Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
+Le démarrage d'une partie (`game.started`, #91) et les placements (`participant.placed`, #92) sont construits ([guide des parties](games.fr.md)) ; les autres événements du jeu (tours, cooldown) et les timers côté serveur (§2.8) arrivent avec les issues suivantes du jeu (#93 et suivantes). Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
 
 ## 2. Conception technique
 
@@ -164,13 +164,14 @@ Construit dans #85. Ce qui existe aujourd'hui :
 
 - **Événements** (`app/schemas/room_events.py`), une union discriminée sur `type`, tous porteurs de `room_version` :
 
-  | `type`                  | `data`                                 | Envoyé quand                                                                                                                   | Frontend                    |
-  | ----------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-  | `participant.joined`    | `{participant_id}`                     | Un compte ou un invité rejoint (`POST /join`, `POST /guests`)                                                                  | Relit la room               |
-  | `participant.presence`  | `{participant_id, connected}`          | Premier socket d'un participant ouvert ; dernier fermé depuis plus que le délai de grâce                                       | Met à jour la room en cache |
-  | `participant.removed`   | `{participant_id}`                     | L'admin de la room retire ou bannit un participant (#148) ; envoyé après la fermeture de ses sockets, il ne le reçoit donc pas | Met à jour la room en cache |
-  | `room.settings_updated` | `{}`                                   | L'admin de la room change un réglage (une modification vide n'envoie rien)                                                     | Relit la room               |
-  | `game.started`          | `{round_number, round_count, ends_at}` | L'admin de la room lance une partie (#91)                                                                                      | Relit la room               |
+  | `type`                  | `data`                                 | Envoyé quand                                                                                                                           | Frontend                    |
+  | ----------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+  | `participant.joined`    | `{participant_id}`                     | Un compte ou un invité rejoint (`POST /join`, `POST /guests`)                                                                          | Relit la room               |
+  | `participant.presence`  | `{participant_id, connected}`          | Premier socket d'un participant ouvert ; dernier fermé depuis plus que le délai de grâce                                               | Met à jour la room en cache |
+  | `participant.removed`   | `{participant_id}`                     | L'admin de la room retire ou bannit un participant (#148) ; envoyé après la fermeture de ses sockets, il ne le reçoit donc pas         | Met à jour la room en cache |
+  | `room.settings_updated` | `{}`                                   | L'admin de la room change un réglage (une modification vide n'envoie rien)                                                             | Relit la room               |
+  | `game.started`          | `{round_number, round_count, ends_at}` | L'admin de la room lance une partie (#91)                                                                                              | Relit la room               |
+  | `participant.placed`    | `{participant_id, round_number}`       | Un participant place l'item en cours pour la première fois du tour (#92) ; un déplacement n'envoie rien. Jamais le tier ni la position | Met à jour la room en cache |
 
   Messages du canal : `{"type": "ping"}` du serveur, `{"type": "pong"}` et `{"type": "auth", "access_token": …}` du client. `RoomServerMessage` et `RoomClientMessage` sont ajoutés aux composants OpenAPI (`_openapi_with_room_messages` dans `app/main.py`).
 
