@@ -81,7 +81,43 @@ log "Installation des dépendances"
 "$UV" sync --frozen --no-dev --python python3
 log "Migrations de la base de données"
 "$UV" run --no-sync alembic upgrade head
+# Le panel MineStrator (egg Pterodactyl « python generic ») considère le pod démarré quand la
+# console affiche exactement cette ligne
+READY_LINE="change this part"
+# Délai maximal d'attente de /api/health, en secondes : au-delà, la ligne n'est pas affichée,
+# sans arrêter l'application (le panel montre alors le pod « en démarrage »)
+READY_TIMEOUT_SECONDS=300
+
+# Attend que l'application réponde, puis affiche READY_LINE une seule fois. Python plutôt que
+# curl, absent de certaines images.
+announce_ready() {
+    if python3 - "$SERVER_PORT" "$READY_TIMEOUT_SECONDS" <<'PY'; then
+import sys
+import time
+import urllib.request
+
+port, timeout_seconds = sys.argv[1], float(sys.argv[2])
+deadline = time.monotonic() + timeout_seconds
+while time.monotonic() < deadline:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=2) as response:
+            if response.status == 200:
+                sys.exit(0)
+    except OSError:
+        pass
+    time.sleep(1)
+sys.exit(1)
+PY
+        printf '%s\n' "$READY_LINE"
+    else
+        log "/api/health ne répond pas après ${READY_TIMEOUT_SECONDS} s : le panel n'est pas prévenu"
+    fi
+}
+
 log "Démarrage d'uvicorn sur le port $SERVER_PORT (version ${APP_RELEASE:-inconnue})"
+# En arrière-plan (double fork, détaché de ce shell) : uvicorn le remplace aussitôt avec exec et
+# démarre pendant que la boucle attend ; son code de sortie n'arrête jamais le démarrage
+(announce_ready &)
 exec "$UV" run --no-sync uvicorn app.main:app \
     --host 0.0.0.0 \
     --port "$SERVER_PORT" \
