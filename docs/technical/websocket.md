@@ -124,6 +124,7 @@ Every server event has the same envelope: `{"type": "…", "room_version": 12, "
 | `participant.placed`    | server → client                   | Adds the participant to `game.placed_participant_ids` in the cache |
 | `round.started`         | server → client                   | Reads the room again (next item, timer end)                        |
 | `cooldown.started`      | server → client                   | Reads the room again (cooldown and its end)                        |
+| `game.closed`           | server → client                   | Reads the room again (game closed, room open)                      |
 
 The models live in `backend/app/schemas/room_events.py` and are added to the OpenAPI schema, so that `pnpm gen:api` generates their TypeScript types (`RoomServerMessage`, `RoomClientMessage` in `frontend/src/api/schema.d.ts`).
 
