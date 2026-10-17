@@ -34,7 +34,7 @@ from app.constants.rooms import (
 )
 from app.core.config import Settings, get_settings
 from app.exceptions.auth import InvalidAccessTokenError
-from app.exceptions.rooms import RoomNotFoundError
+from app.exceptions.rooms import ChannelClosedError, RoomNotFoundError
 from app.models.participant import Participant
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
@@ -60,15 +60,6 @@ class ChannelSeat:
 
     room_id: uuid.UUID
     participant_id: uuid.UUID
-
-
-class ChannelClosedError(Exception):
-    """Le canal doit être fermé avec ce code (4000-4999) et ce code d'erreur comme raison."""
-
-    def __init__(self, close_code: int, reason: ErrorCode) -> None:
-        super().__init__(close_code, reason)
-        self.close_code = close_code
-        self.reason = reason
 
 
 @router.websocket("/{code}/ws")

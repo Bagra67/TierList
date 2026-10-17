@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.constants.auth import DISPLAY_NAME_MAX_LENGTH
-from app.constants.rooms import GUEST_TOKEN_HASH_LENGTH
+from app.constants.rooms import GUEST_TOKEN_HASH_LENGTH, NICKNAME_INDEX
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -44,7 +44,7 @@ class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         # Un pseudo d'invité est unique dans la salle, sans tenir compte de la casse. Le service
         # vérifie aussi les noms des comptes ; cet index est le dernier filet entre invités.
         Index(
-            "uq_participants_room_id_lower_nickname",
+            NICKNAME_INDEX,
             "room_id",
             func.lower(text("nickname")),
             unique=True,

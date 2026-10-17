@@ -12,14 +12,12 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
 from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
-from app.exceptions.rooms import RoomAdminRequiredError
 from app.exceptions.templates import TemplateNotFoundError
-from app.models.enums import AutoAdvance, ItemOrder
+from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
 from app.models.game import Game
 from app.models.participant import Participant
-from app.models.room import Room, RoomStatus
+from app.models.room import Room
 from app.models.round import Round
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template_snapshot import TemplateSnapshot
@@ -40,18 +38,23 @@ def shuffle_items(tiles: Sequence[SnapshotTile]) -> list[SnapshotTile]:
 
 
 class GameService:
-    def __init__(self, session: Session, settings: Settings, publisher: RoomEventPublisher) -> None:
+    def __init__(
+        self,
+        session: Session,
+        publisher: RoomEventPublisher,
+        rooms: RoomService,
+        templates: TemplateService,
+    ) -> None:
+        # rooms et templates partagent cette session : tout tient dans la même transaction
         self._session = session
-        self._settings = settings
         self._publisher = publisher
-        self._rooms = RoomService(session, settings, publisher)
+        self._rooms = rooms
+        self._templates = templates
 
     def start(self, user: User, code: str) -> Room:
         """Lance une partie (room admin seulement, US-3.1) : fige la version courante du template,
         fixe l'ordre des items, crée un tour par tuile et montre le premier item à tous."""
-        room: Room = self._rooms.get_for_change(user, code)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self._rooms.get_for_admin_change(user, code)
         if room.status == RoomStatus.PLAYING:
             raise GameInProgressError
         # Template purgé : aucune nouvelle partie ne peut démarrer dans la salle
@@ -61,9 +64,7 @@ class GameService:
             raise NoPlacingParticipantError
 
         # Le template de la salle est celui de son room admin ; il reste verrouillé jusqu'au commit
-        snapshot: TemplateSnapshot = TemplateService(self._session, self._settings).take_snapshot(
-            user, room.template_id
-        )
+        snapshot: TemplateSnapshot = self._templates.take_snapshot(user, room.template_id)
         tiles: list[SnapshotTile] = list(snapshot.tiles)
         if room.item_order == ItemOrder.RANDOM:
             tiles = shuffle_items(tiles)

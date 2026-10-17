@@ -8,7 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
-from app.models.game import Game, GameStatus
+from app.models.enums import GameStatus
+from app.models.game import Game
 from app.models.image import Image
 from app.models.room import Room
 from app.models.round import Round

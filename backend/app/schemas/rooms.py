@@ -2,17 +2,16 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.constants.auth import DISPLAY_NAME_MAX_LENGTH
 from app.constants.rooms import (
     COOLDOWN_SECONDS_MAX,
     COOLDOWN_SECONDS_MIN,
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
-from app.models.enums import AutoAdvance, ItemOrder
-from app.models.room import RoomStatus
+from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
+from app.schemas.common import DisplayName
 
 
 class CreateRoomRequest(BaseModel):
@@ -108,16 +107,10 @@ class RoomResponse(BaseModel):
     game: CurrentGameResponse | None
 
 
-# Mêmes règles que le nom affiché d'un compte : espaces de début et de fin retirés, 1 à 50
-# caractères ; l'unicité dans la salle est vérifiée par le service
-Nickname = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=DISPLAY_NAME_MAX_LENGTH),
-]
-
-
 class JoinAsGuestRequest(BaseModel):
-    nickname: Nickname
+    # Mêmes règles que le nom affiché d'un compte ; l'unicité dans la salle est vérifiée par le
+    # service
+    nickname: DisplayName
 
 
 class RestoreGuestRequest(BaseModel):

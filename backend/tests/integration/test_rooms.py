@@ -18,8 +18,9 @@ from app.constants.rooms import (
     TIMER_SECONDS_MIN,
 )
 from app.core.config import get_settings
+from app.models.enums import RoomStatus
 from app.models.participant import Participant
-from app.models.room import Room, RoomStatus
+from app.models.room import Room
 from app.models.template import Template
 from app.models.user import User
 from app.schemas.room_events import ParticipantJoinedEvent, RoomEvent
