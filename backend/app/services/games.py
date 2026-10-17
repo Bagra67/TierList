@@ -220,7 +220,7 @@ class GameService:
                 ),
             ),
         )
-        self._schedule_current_round(game)
+        self._schedule_first_round(game)
         return room
 
     def placing_participants(self, room: Room) -> list[Participant]:
@@ -527,17 +527,17 @@ class GameService:
     def _announce_round_end(
         self, room: Room, game: Game, round_end: RoundStartedEvent | CooldownStartedEvent
     ) -> None:
-        """Après le commit : publie la fin du tour et programme l'échéance qui suit."""
+        """Après le commit : programme l'échéance qui suit, puis publie la fin du tour.
+        L'échéance vient de l'événement, figé sous le verrou : relire la partie ici pourrait voir
+        la transition suivante d'un autre thread."""
+        if isinstance(round_end, CooldownStartedEvent):
+            self._scheduler.schedule_cooldown_end(game.id, round_end.data.ends_at)
+        elif round_end.data.ends_at is not None:
+            self._scheduler.schedule(game.id, round_end.data.round_number, round_end.data.ends_at)
         self._publisher.publish(room.id, round_end)
-        self._schedule_current_round(game)
 
-    def _schedule_current_round(self, game: Game) -> None:
-        """Programme l'échéance de la phase en cours : le timer du tour, ou la fin du cooldown."""
-        if game.status == GameStatus.COOLDOWN and game.cooldown_ends_at is not None:
-            self._scheduler.schedule_cooldown_end(game.id, game.cooldown_ends_at)
-            return
-        if game.status != GameStatus.IN_ROUND:
-            return
-        current_round: Round = game.current_round
-        if current_round.ends_at is not None:
-            self._scheduler.schedule(game.id, current_round.number, current_round.ends_at)
+    def _schedule_first_round(self, game: Game) -> None:
+        """Après le démarrage : le timer du premier tour, si la salle en a un."""
+        first_round: Round = game.current_round
+        if first_round.ends_at is not None:
+            self._scheduler.schedule(game.id, first_round.number, first_round.ends_at)

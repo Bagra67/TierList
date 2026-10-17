@@ -283,6 +283,27 @@ def test_pending_deadlines_are_scheduled_again_at_startup(
     assert recorded.deadlines == [(game.id, 2, game.rounds[1].ends_at)]
 
 
+def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    code: str = alice_room["code"]
+    settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
+    start(auth_client, code, alice)
+    # La salle a été supprimée (compte du room admin supprimé) : la partie reste, sans salle
+    stored_game(db_session).room_id = None
+    db_session.flush()
+    recorded: RecordingRoundScheduler = RecordingRoundScheduler()
+    monkeypatch.setattr(main_module, "round_timers", recorded)
+
+    main_module._reschedule_rounds(lambda: nullcontext(db_session))
+
+    assert recorded.deadlines == []
+
+
 # --- « Tout le monde a placé » ------------------------------------------------------------------
 
 
