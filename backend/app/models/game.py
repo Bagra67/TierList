@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, query_expression, relationship
 
 from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.db.base import Base
@@ -76,6 +76,9 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     players: Mapped[list["GamePlayer"]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="GamePlayer.created_at"
     )
+    # Nombre de joueurs figés, calculé par la requête qui le demande (with_expression) : le lobby
+    # liste les parties passées sans charger leurs joueurs. None si la requête ne l'a pas calculé
+    player_count: Mapped[int | None] = query_expression()
 
     @property
     def current_round(self) -> "Round":

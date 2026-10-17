@@ -68,17 +68,26 @@ def room_response(
         is_admin=is_admin,
         bans=bans,
         game=current_game_response(room.current_game, seat, storage),
-        past_games=[_past_game_response(game) for game in room.closed_games],
+        past_games=_past_games_response(room.closed_games),
     )
 
 
-def _past_game_response(game: Game) -> PastGameResponse:
-    # Une partie close a toujours son lien et sa date (ck_games_closed_has_public_token)
-    return PastGameResponse(
-        public_token=game.public_token or "",
-        closed_at=game.closed_at or game.started_at,
-        player_count=len(game.players),
-    )
+def _past_games_response(games: list[Game]) -> list[PastGameResponse]:
+    """Les parties closes de la salle, avec leur lien de résultats. Une partie close a toujours
+    son lien et sa date (ck_games_closed_has_public_token) : une ligne qui ne les aurait pas est
+    écartée plutôt que montrée avec un lien cassé."""
+    past_games: list[PastGameResponse] = []
+    for game in games:
+        if game.public_token is None or game.closed_at is None:
+            continue
+        past_games.append(
+            PastGameResponse(
+                public_token=game.public_token,
+                closed_at=game.closed_at,
+                player_count=game.player_count or 0,
+            )
+        )
+    return past_games
 
 
 def current_game_response(
