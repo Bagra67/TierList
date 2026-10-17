@@ -44,6 +44,8 @@ The highest change since the last release wins: one `feat` and three `fix` give 
 
    The workflow is triggered by `workflow_run`, so GitHub runs the version of `release.yml` found on the **default branch**, `develop`: a change to this file applies as soon as it is merged into `develop`, before the next release.
 
+4. **Deployment**: once the tag exists, the `Deploy` workflow deploys the release to production after the approval of the `production` environment ([deployment guide](deployment.md)). To roll back, run Deploy by hand with the previous tag. Migrations must therefore stay compatible with the previous version: add a column (nullable or with a default) in one release, and remove the old one in a later release, so that a rollback never needs a downgrade.
+
 ## How the version is computed
 
 Tags are on the merge commits of `main`, which `develop` does not contain. The script therefore takes the highest `vX.Y.Z` tag of the repository and analyses the commits of `vX.Y.Z..HEAD`: this range excludes everything already released.

@@ -60,12 +60,12 @@ Fixed values are constants in `app/constants/images.py` (`IMAGE_OUTPUT_MAX_SIDE_
 
 | Variable                  | Description                                                                                                                                                             | Default             |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file; keep the reverse proxy body limit aligned with it.                                                                                   | `10485760` (10 MiB) |
+| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file; Cloudflare accepts bodies up to 100 MB ([deployment guide](deployment.md)).                                                          | `10485760` (10 MiB) |
 | `IMAGE_MAX_SOURCE_PIXELS` | Maximum number of pixels of the decoded image, checked from the header before decoding: protects against decompression bombs, small files that expand into huge images. | `40000000` (40 Mpx) |
 
 10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors.
 
-Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **reverse proxy limit** stops a huge body before it is received ([TODO](../../TODO.md)).
+Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **proxy limit** stops a huge body before it is received: Cloudflare refuses bodies over 100 MB ([deployment guide](deployment.md)).
 
 Storage settings:
 
@@ -116,7 +116,7 @@ The **S3 API is used everywhere**, through a single `ImageStorage` service (`sav
 | Environment        | S3 service                                                                                                                                                                                                                                         |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Development and CI | **SeaweedFS** container (`weed mini`: master, volume, filer and S3 in one process), the way Mailpit stands in for an SMTP provider. Same service in `compose.yaml` and in the backend CI job (`docker compose up -d --wait seaweedfs`). See below. |
-| Production         | An S3-compatible provider, chosen with the hosting ([TODO](../../TODO.md)). Public read through a CDN, or the bucket URL.                                                                                                                          |
+| Production         | **Scaleway Object Storage**, one public bucket per environment ([deployment guide](deployment.md)). Public read through the bucket URL (`IMAGE_PUBLIC_BASE_URL`), or a CDN later.                                                                  |
 
 SeaweedFS in development:
 

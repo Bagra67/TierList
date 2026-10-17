@@ -44,6 +44,8 @@ Le changement le plus fort depuis la dernière release l'emporte : un `feat` et 
 
    Le workflow est déclenché par `workflow_run` : GitHub exécute donc la version de `release.yml` présente sur la **branche par défaut**, `develop`. Une modification de ce fichier s'applique dès son merge dans `develop`, avant la release suivante.
 
+4. **Déploiement** : une fois le tag créé, le workflow `Deploy` déploie la release en production après l'approbation de l'environnement `production` ([guide du déploiement](deployment.fr.md)). Pour revenir en arrière, lancer Deploy à la main avec le tag précédent. Les migrations doivent donc rester compatibles avec la version précédente : ajouter une colonne (nullable ou avec une valeur par défaut) dans une release, retirer l'ancienne dans une release suivante, pour qu'un retour arrière n'ait jamais besoin d'un downgrade.
+
 ## Calcul de la version
 
 Les tags sont sur les merge commits de `main`, que `develop` ne contient pas. Le script prend donc le plus grand tag `vX.Y.Z` du dépôt et analyse les commits de `vX.Y.Z..HEAD` : cette plage exclut tout ce qui a déjà été publié.

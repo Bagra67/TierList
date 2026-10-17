@@ -12,7 +12,7 @@ Navigateur
   ▼
 Composant React ──► hook useX() ──► getX() ──► apiClient ──► /api/...   (frontend, Vite)
                     TanStack Query              openapi-fetch       │
-                                                                    │ proxy Vite (dev) : /api/x → :8000/x
+                                                                    │ même origine : FastAPI sert /api (proxy Vite en dev)
                                                                     ▼
 Route FastAPI ──► service ──► repository ──► session SQLAlchemy ──► PostgreSQL   (backend)
  (HTTP seul)     (métier)     (requêtes)      (app/db/session.py)     (Docker)
@@ -96,4 +96,4 @@ Volontairement repoussées (YAGNI), à trancher quand une fonctionnalité en aur
 
 - Aucune pour l'instant.
 
-Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le temps réel des rooms (push WebSocket + commandes REST, voir le [guide du temps réel](realtime.fr.md)), les images des tuiles (compression WebP, stockage S3, voir le [guide des images](images.fr.md)), les salles (réglages en colonnes, code court aléatoire, voir le [guide des salles](rooms.fr.md)), le calcul des résultats (médiane des scores fins, voir le [guide des résultats](results.fr.md)), le routage front (react-router), la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui), et l'hébergement et le déploiement (deux VPS, Docker Compose et Caddy, déploiement continu vers le staging et la production, voir le [guide du déploiement](deployment.fr.md) ; pas encore construit).
+Décidés depuis : l'authentification (access token JWT + refresh token rotatif, voir le [guide de l'authentification](authentication.fr.md)), le temps réel des rooms (push WebSocket + commandes REST, voir le [guide du temps réel](realtime.fr.md)), les images des tuiles (compression WebP, stockage S3, voir le [guide des images](images.fr.md)), les salles (réglages en colonnes, code court aléatoire, voir le [guide des salles](rooms.fr.md)), le calcul des résultats (médiane des scores fins, voir le [guide des résultats](results.fr.md)), le routage front (react-router), la bibliothèque d'interface (Tailwind CSS v4 + shadcn/ui), et l'hébergement et le déploiement (pods MineStrator derrière un Cloudflare Tunnel, FastAPI qui sert le frontend et l'API sous `/api`, déploiement continu vers le staging et la production, voir le [guide du déploiement](deployment.fr.md)).

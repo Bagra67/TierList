@@ -2,129 +2,215 @@
 
 [English](deployment.md) | Français
 
-Où TierList tourne et comment il se déploie automatiquement, avec un environnement de **staging** et un de **production**. Décidé dans le spike #155 ; **pas encore construit** : les issues d'implémentation sont listées au §5 (milestone Infrastructure).
+Où tourne TierList et comment il est déployé, avec un environnement de **staging** et un de **production**. TierList tourne sur des pods **MineStrator** (panel de type Pterodactyl) derrière un **Cloudflare Tunnel**. Milestone Infrastructure : #158 à #163 et #192.
 
-## 1. Besoins et contraintes
-
-| Besoin                | Détail                                                                                                                                                                                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Backend               | FastAPI avec **un seul worker** : le registre temps réel est en mémoire ([guide du temps réel](realtime.fr.md#29-montée-en-charge)). Un processus qui tourne en continu, pas du serverless.                                    |
-| WebSocket             | Derrière TLS (`wss://`), avec un délai d'inactivité plus long que le battement de cœur de 10 s. Un redéploiement ferme les sockets ; les clients se reconnectent et relisent la salle ([guide du WebSocket](websocket.fr.md)). |
-| Données               | PostgreSQL avec les migrations Alembic ; un stockage compatible S3 pour les images des tuiles ([guide des images](images.fr.md)).                                                                                              |
-| Emails                | SMTP pour les emails de vérification et de réinitialisation du mot de passe ([guide des emails](emails.fr.md#4-en-production)), avec SPF, DKIM et DMARC.                                                                       |
-| Frontend              | Build Vite statique, sur la même origine que l'API (`/api`), comme en développement.                                                                                                                                           |
-| Budget et hébergement | Un **VPS** de préférence ; environ **20 €/mois** pour le staging et la production ensemble, stockage et emails compris (product owner, #155).                                                                                  |
-
-La charge est faible pour l'instant : des salles de 10 participants au plus, quelques salles à la fois.
-
-## 2. Options considérées
-
-Prix vérifiés le **16/10/2026**. Les deux fournisseurs ont augmenté leurs prix en 2026 : à revérifier au moment de commander. HT = hors taxes.
-
-### 2.1 Serveurs
-
-| Fournisseur   | Offre                  | Taille                                  | Prix par mois                                         | Sauvegardes              | Remarques                                                                                                                                  |
-| ------------- | ---------------------- | --------------------------------------- | ----------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **OVHcloud**  | VPS-1 (gamme VPS 2026) | 4 vCore, 8 Go de RAM, 75 Go, 400 Mbit/s | 7,79 € sans engagement (depuis le 1er avril 2026) [1] | Incluses [2]             | Entreprise française, centres de données dans l'UE, trafic illimité. Moins cher avec un engagement de 6 ou 12 mois.                        |
-| Hetzner Cloud | CX23                   | 2 vCPU, 4 Go de RAM, 40 Go, 20 To       | 5,49 € HT + 0,50 € d'IPv4 [3]                         | +20 % du prix du serveur | Facturation à l'heure, bonne API. Au moment de la rédaction, les pages officielles affichaient les offres partagées **indisponibles** [4]. |
-| Hetzner Cloud | CX33                   | 4 vCPU, 8 Go de RAM, 80 Go, 20 To       | 8,49 € HT + 0,50 € d'IPv4 [3]                         | +20 %                    | Même réserve sur la disponibilité.                                                                                                         |
-| Scaleway      | DEV1-S                 | 2 vCPU, 2 Go de RAM                     | environ 6,55 € HT, stockage et IPv4 en plus [5]       | Snapshots en plus        | 2 Go, c'est juste pour PostgreSQL + backend + proxy.                                                                                       |
-
-Un **PostgreSQL managé** est écarté : à lui seul, il prendrait l'essentiel du budget. PostgreSQL tourne dans un conteneur sur le serveur, avec des sauvegardes hors du serveur (§3.4).
-
-### 2.2 Stockage et emails
-
-| Besoin                         | Option                           | Prix                                                                  | Remarques                                                                                                                 |
-| ------------------------------ | -------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Images, sauvegardes de la base | **Scaleway Object Storage**      | 0,01606 €/Go/mois HT (multi-AZ), 75 Go de sortie offerts par mois [6] | API S3, Paris. Les images sont de petits fichiers WebP : quelques centimes par mois. Hors des serveurs.                   |
-| Images                         | SeaweedFS sur le serveur         | Disque du serveur                                                     | Déjà utilisé en développement, mais les images partagent alors le sort du serveur et demandent leurs propres sauvegardes. |
-| Emails                         | **Scaleway Transactional Email** | 300 emails offerts par mois, puis 0,25 € HT les 1 000 [7]             | Sans abonnement, UE. Même compte que le stockage.                                                                         |
-| Emails                         | Brevo                            | Offre gratuite : 300 emails par jour, relais SMTP [8]                 | Mention Brevo dans les emails de l'offre gratuite ; à garder en tête si le volume grandit.                                |
-
-## 3. Décision
-
-### 3.1 Hébergement
-
-- **Deux VPS-1 OVHcloud**, un pour le **staging** et un pour la **production**. Des machines séparées : un déploiement ou un test sur le staging ne peut jamais ralentir ni casser la production. Avec les sauvegardes incluses et 8 Go de RAM, c'est l'offre qui colle le mieux au budget.
-- **Alternative** : deux serveurs Hetzner CX23, si OVHcloud devient indisponible ou trop cher. L'installation ci-dessous reste la même : seules les machines changent.
-- **Scaleway Object Storage** : un bucket par environnement pour les images (lecture publique), et un bucket privé pour les sauvegardes de la base.
-- **Scaleway Transactional Email** pour les emails, avec le domaine autorisé (SPF, DKIM, DMARC).
-- **Un nom de domaine** est nécessaire : `tierlist.<domaine>` pour la production, `staging.tierlist.<domaine>` pour le staging. Reste à choisir (§6).
-
-Coût estimé : environ **16 €/mois** pour les deux serveurs, plus moins de 1 € de stockage et d'emails au volume actuel. Le domaine s'ajoute, à l'année.
-
-### 3.2 Sur chaque serveur
+## 1. Architecture
 
 ```
-Internet ──443──> Caddy ──┬── /api/*  ──> backend (uvicorn, 1 worker) ──> PostgreSQL
-                          └── /*      ──> frontend (fichiers statiques)
-                                           backend ──> Scaleway S3, Scaleway TEM
+Navigateur ──https──> Cloudflare (TLS) ──tunnel──> pod cloudflared ──http──> pod TierList :SERVER_PORT
+                                                                             uvicorn, 1 worker
+                                                                             ├── /api/*  API et WebSocket
+                                                                             └── /*      build du frontend
+Pod TierList ──> pod PostgreSQL 17 (IP:port publique)
+             ──> Scaleway Object Storage (images des tuiles), Scaleway Transactional Email (SMTP)
+GitHub Actions ──SFTP──> pod TierList          GitHub Actions ──pg_dump──> pod PostgreSQL ──> Scaleway (sauvegardes)
 ```
 
-- **Docker Compose** avec trois services : `caddy`, `backend`, `postgres`.
-- **Caddy** : certificats TLS automatiques (Let's Encrypt), proxy WebSocket sans configuration supplémentaire, sert le build du frontend (copié dans l'image Caddy), retire `/api` avant le backend comme le fait le proxy Vite en développement.
-- **Backend** : uvicorn avec **un seul worker** ; les migrations Alembic passent avant son démarrage (§4).
-- **PostgreSQL** : image officielle, données sur un volume Docker, pas exposé hors du serveur.
-- **Durcissement du serveur** : clés SSH seulement, pare-feu ouvert sur 22, 80 et 443, mises à jour de sécurité automatiques.
+| Composant      | Ce que c'est                                                                                                                                                                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pod TierList   | Pod « python generic », Python 3.13, 1 cœur / 2 Go, dossier de travail `/home/container`. Il lance **une seule commande** (`bash start.sh`). Pas de Docker, pas de shell SSH, pas de root, pas de cron : les fichiers s'échangent par **SFTP**. |
+| Pod PostgreSQL | PostgreSQL 17, sur une autre IP, joint par le réseau public (`POSTGRES_HOST`, `POSTGRES_PORT`).                                                                                                                                                 |
+| Cloudflare     | Le tunnel (pod `cloudflared`) termine le TLS et transmet HTTP et WebSocket à `<IP du pod>:<SERVER_PORT>`. Domaines : `staging.tierlist.ladwein.dev` et `tierlist.ladwein.dev`.                                                                  |
+| Scaleway       | Object Storage : un bucket public d'images par environnement ([guide des images](images.fr.md)) et un bucket privé de sauvegardes. Transactional Email pour les emails ([guide des emails](emails.fr.md)).                                      |
+| GitHub Actions | Construit le bundle, l'envoie dans le pod, vérifie la santé ; sauvegarde la base chaque nuit.                                                                                                                                                   |
 
-### 3.3 Configuration et secrets
+Contraintes :
 
-- Un **environment GitHub** par cible : `staging` et `production`. Chacun porte l'adresse du serveur, la clé SSH de déploiement et les secrets de l'application (`JWT_SECRET_KEY`, mot de passe de la base, clés S3, SMTP, Google OAuth).
-- Le déploiement écrit le `.env` du serveur à partir de ces secrets : GitHub est le seul endroit où ils vivent, et un serveur peut être reconstruit de zéro.
-- Par environnement : `FRONTEND_BASE_URL`, `GOOGLE_REDIRECT_URI` (HTTPS), `IMAGE_PUBLIC_BASE_URL` (le bucket public), `AUTH_COOKIE_SECURE=true`, une `JWT_SECRET_KEY` différente.
-- `production` exige une **approbation manuelle** (relecteur requis) avant chaque déploiement.
+- **Un seul worker** : le registre temps réel est en mémoire ([guide du temps réel](realtime.fr.md#29-montée-en-charge)).
+- **Le port du pod est aussi joignable directement**, sans le tunnel : seul le tunnel peut annoncer le vrai client et le schéma (`TRUSTED_PROXY_IPS`, §2.2).
+- **WebSocket** : Cloudflare le transmet ; le battement de cœur de 10 s garde la connexion ouverte. Un redémarrage ferme les sockets ; les clients se reconnectent et relisent la salle ([guide du WebSocket](websocket.fr.md)).
+- **Envois de fichiers** : Cloudflare accepte des corps jusqu'à 100 Mo, bien au-dessus de `IMAGE_UPLOAD_MAX_BYTES` (10 Mio).
 
-### 3.4 Sauvegardes
+## 2. Dans le code
 
-- **Base** : un `pg_dump` chaque nuit, compressé, envoyé dans le bucket privé des sauvegardes. Gardé 14 jours en production, 3 jours en staging. Une restauration est testée une fois avant les premiers vrais utilisateurs, puis après toute mise à jour majeure de PostgreSQL.
-- **Serveur** : la sauvegarde quotidienne d'OVHcloud (incluse) permet de restaurer une machine entière.
-- **Images** : elles vivent dans le stockage objet, hors des serveurs.
+| Fichier                                                             | Rôle                                                                                                                                                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `backend/app/main.py`                                               | `app`, l'application racine lancée par uvicorn : monte l'API (`api_app`) sous `/api`, sert le frontend, lance le lifespan (timers, balayage des salles, tâches de nuit). |
+| `backend/app/core/frontend.py`                                      | `mount_frontend` : sert le build Vite (§2.1).                                                                                                                            |
+| `backend/app/services/nightly_scheduler.py`, `maintenance.py`       | Tâches de nuit dans le processus (§2.3).                                                                                                                                 |
+| `deploy/build_bundle.sh`                                            | Construit `tierlist-<version>.tar.gz` (§2.4).                                                                                                                            |
+| `deploy/start.sh`                                                   | Démarrage d'une version, à la racine du bundle (§2.4).                                                                                                                   |
+| `deploy/launcher.sh`                                                | Commande de démarrage du pod, envoyée comme `/home/container/start.sh` (§2.4).                                                                                           |
+| `.github/workflows/bundle.yml`, `deploy.yml`, `backup.yml`          | Bundle, déploiement (§6, §7) et sauvegardes (§8).                                                                                                                        |
+| `.github/scripts/write_env.py`, `restart_pod.sh`, `wait_healthy.sh` | `.env` du pod depuis l'environnement GitHub, redémarrage du pod, vérification de santé du déploiement.                                                                   |
 
-## 4. Déploiement continu
+### 2.1 Une seule origine, l'API sous `/api`
 
-| Événement                                                                 | Cible          | Approbation |
-| ------------------------------------------------------------------------- | -------------- | ----------- |
-| CI verte sur un push dans `develop` (une PR mergée)                       | **staging**    | aucune      |
-| Tag `vX.Y.Z` créé par le workflow `Release` ([releases](releasing.fr.md)) | **production** | manuelle    |
+FastAPI sert tout sur une seule origine : pas de CORS, et les cookies restent `SameSite=Strict`.
 
-Étapes d'un workflow de déploiement (`.github/workflows/deploy.yml`) :
+- L'API est une sous-application **montée sous `/api`** (REST et WebSocket). Son contrat (`openapi.json`, `frontend/src/api/schema.d.ts`) garde des chemins sans `/api` : le client du frontend l'ajoute (`baseUrl` = origine + `/api`). La doc de l'API est sur `/api/docs`.
+- Une route `/api/...` inconnue répond le 404 JSON de l'API, jamais `index.html`.
+- Le build Vite est servi depuis `FRONTEND_DIST` (par défaut `frontend_dist/` à côté de `backend/`, comme dans le bundle) :
+  - `/assets/*` : fichiers hashés, `Cache-Control: public, max-age=31536000, immutable` ;
+  - un fichier de la racine du build (favicon…) est servi s'il existe ; le chemin résolu doit rester dans le build (pas de `../`) ;
+  - tout autre chemin répond `index.html` avec `Cache-Control: no-cache` : le routeur du frontend affiche la page.
+- Sans ce dossier (développement, tests), l'application démarre et ne sert que l'API.
+- En développement, le proxy Vite transmet `/api` tel quel au port 8000 (`frontend/vite.config.ts`) : les mêmes chemins qu'en production.
 
-1. **Construire** les images (`backend`, et `caddy` avec le build du frontend), les pousser sur le GitHub Container Registry (GHCR) avec le SHA du commit comme tag, plus `vX.Y.Z` pour une release.
-2. **Se connecter** au serveur en SSH (clé de déploiement, clé d'hôte épinglée), écrire le `.env`, `docker compose pull`.
-3. **Migrer** : `docker compose run --rm backend alembic upgrade head`. En cas d'échec, le déploiement s'arrête et la version en place continue de tourner.
-4. **Redémarrer** : `docker compose up -d`. Les sockets ouverts sont fermés ; les clients se reconnectent seuls.
-5. **Vérifier** : `GET /api/health` et `/api/health/db` doivent répondre `200` en moins d'une minute ; sinon le workflow échoue.
+L'adresse publique est `FRONTEND_BASE_URL` (`https://<domaine>`) : base des liens envoyés par email, et seule origine acceptée par le canal temps réel. Rien n'utilise l'hôte de la requête.
 
-**Retour en arrière** : lancer le workflow à la main (`workflow_dispatch`) avec le tag précédent. Les migrations doivent rester compatibles avec la version précédente (ajouter une colonne d'abord, la retirer dans une release suivante) : un retour en arrière ne demande jamais de downgrade.
+### 2.2 Derrière le tunnel
 
-Deux déploiements de production ne tournent jamais en même temps (`concurrency` par environnement).
+uvicorn est lancé avec `--proxy-headers --forwarded-allow-ips "$TRUSTED_PROXY_IPS"` : seules ces adresses (le tunnel) peuvent poser `X-Forwarded-For` et `X-Forwarded-Proto`. **Jamais `*`** : le port est joignable directement, n'importe qui pourrait alors se faire passer pour n'importe quelle adresse. `start.sh` refuse de démarrer sans la variable, ou avec `*`.
 
-## 5. Issues d'implémentation
+Le schéma vu par l'application ne pilote rien de sensible : les cookies sont `Secure` grâce à `AUTH_COOKIE_SECURE=true`, les redirections après la connexion Google sont relatives, et l'origine du canal vient de `FRONTEND_BASE_URL`. Les en-têtes du proxy gardent justes les journaux et `request.url`.
 
-Milestone **Infrastructure** :
+`/api/health` (sans dépendance) répond `{"status": "ok", "release": "<APP_RELEASE>"}` ; `/api/health/db` lance en plus `SELECT 1` (`503` si la base ne répond pas).
 
-1. **Images de production et fichier Compose** (#158) : `Dockerfile` du backend, image Caddy avec le build du frontend et son `Caddyfile`, `deploy/compose.yaml`, health checks.
-2. **Provisionnement des serveurs** (#159) : un script documenté et rejouable (utilisateurs, SSH, pare-feu, mises à jour automatiques, Docker), appliqué aux serveurs de staging et de production.
-3. **Workflow de déploiement du staging** (#160) : GHCR, SSH, migrations, health checks, environment `staging`.
-4. **Workflow de déploiement de la production** (#161) : déclenché par le tag de release, approbation manuelle, retour en arrière par `workflow_dispatch`.
-5. **Sauvegardes de la base** (#162) : `pg_dump` chaque nuit vers le stockage objet, rétention, restauration documentée.
-6. **Configuration de production** (#163) : domaine et DNS, SMTP (SPF, DKIM, DMARC), URI de redirection et écran de consentement Google OAuth, les points restants de `TODO.md`.
+### 2.3 Tâches de nuit
 
-## 6. Questions ouvertes
+Il n'y a pas de cron dans les pods. Le lifespan lance un petit planificateur à côté du balayage des salles inactives (`nightly_scheduler.py`, même style : une tâche asyncio, sans bibliothèque de planification pour une exécution par jour) :
 
-- **Nom de domaine** : lequel, et chez quel registrar.
-- **Engagement OVHcloud** : au mois (souple) ou sur 6 à 12 mois (moins cher), une fois l'installation stable.
-- **Supervision** : un contrôle de disponibilité externe suffit au début ; à ajouter avec #160 ou #161 si on le souhaite.
+- chaque nuit à `MAINTENANCE_HOUR_UTC` (UTC), il purge les templates supprimés, puis les images inutilisées (`maintenance.py`, appelé aussi par `scripts/purge_*.py` en ligne de commande) ;
+- chaque tâche journalise son résultat ; une exception est journalisée sans arrêter les tâches suivantes, les nuits suivantes ni l'application ;
+- les purges ne suppriment que ce qui a expiré : les lancer deux fois ne pose aucun problème ;
+- `MAINTENANCE_ENABLED=false` le désactive.
 
-## Sources
+### 2.4 Bundle et organisation du pod
 
-Vérifiées le 16/10/2026.
+`tierlist-<version>.tar.gz` contient `backend/` (code, migrations Alembic, `alembic.ini`, `pyproject.toml`, `uv.lock`, scripts de purge), `frontend_dist/` (build Vite) et `start.sh`. Ni tests, ni `node_modules`, ni `.env`.
 
-1. Next.ink, [OVHcloud augmente fortement le prix de ses VPS 2026 et IPv4](https://next.ink/225720/ovhcloud-augmente-fortement-le-prix-de-ses-vps-2026-et-ipv4/) (VPS-1 : 5,39 € → 7,79 € le 1er avril 2026, caractéristiques).
-2. VPSBenchmarks, [VPS-1 2026 by OVHcloud](https://www.vpsbenchmarks.com/hosters/ovhcloud/plans/vps-1) (sauvegardes incluses dans la gamme VPS 2026). À confirmer sur [ovhcloud.com](https://www.ovhcloud.com/fr/vps/) au moment de commander.
-3. CostGoat, [Hetzner pricing](https://costgoat.com/pricing/hetzner) (mis à jour le 5 septembre 2026 ; IPv4 +0,50 €, sauvegardes +20 %).
-4. Hetzner, offres [Cost-Optimized](https://www.hetzner.com/cloud/cost-optimized/) et [Regular Performance](https://www.hetzner.com/cloud/regular-performance/).
-5. Scaleway, [prix des Virtual Instances](https://www.scaleway.com/en/pricing/virtual-instances/).
-6. Scaleway, [prix du stockage](https://www.scaleway.com/en/pricing/storage/).
-7. Scaleway, [prix des services managés](https://www.scaleway.com/en/pricing/managed-services/) (Transactional Email).
-8. Brevo, [tarifs](https://www.brevo.com/pricing/) (limites de l'offre gratuite d'après des avis tiers).
+```
+/home/container/
+├── start.sh     lanceur (deploy/launcher.sh), lancé par le pod : bash start.sh
+├── CURRENT      nom de la version à lancer, écrit en dernier par le déploiement
+├── .env         réglages, écrits par le déploiement
+├── releases/    tierlist-<version>.tar.gz et leurs dossiers extraits (les 3 dernières)
+├── bin/uv       installé par start.sh
+├── .venv/       environnement Python, partagé par les versions
+└── .cache/uv/
+```
+
+SFTP ne sait ni extraire une archive ni toujours créer un lien symbolique : d'où `CURRENT` et le lanceur. À chaque démarrage :
+
+1. le lanceur lit `CURRENT`, extrait `releases/tierlist-<version>.tar.gz` si besoin (dans un dossier temporaire, puis renommé), supprime les versions plus anciennes que les 3 dernières, puis lance le `start.sh` du bundle ;
+2. `start.sh` installe `uv` dans `bin/` s'il manque (installeur officiel, ou PyPI sans `curl`), charge `.env`, puis lance `uv sync --frozen --no-dev` avec le Python du pod ;
+3. `alembic upgrade head` : **en cas d'échec, le script s'arrête et uvicorn ne démarre pas** ;
+4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` vient du panel ; 8000 sinon).
+
+Un redémarrage réutilise `uv`, l'environnement et la version extraite : il est rapide et idempotent.
+
+## 3. Variables d'environnement (`.env` du pod)
+
+Écrites par le déploiement depuis l'environnement GitHub (`write_env.py`) : entre apostrophes, pour qu'aucun caractère d'un secret ne soit interprété par le shell ; une valeur obligatoire absente arrête le déploiement. Les autres réglages gardent leur valeur par défaut ([README du backend](../../backend/README.fr.md)).
+
+| Variable                                                         | GitHub   | Valeur                                                                             |
+| ---------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `APP_RELEASE`                                                    | —        | Écrite par le déploiement : `vX.Y.Z` (production) ou `develop-<commit>` (staging). |
+| `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` | variable | Le pod PostgreSQL.                                                                 |
+| `POSTGRES_PASSWORD`                                              | secret   | Robuste, différent par environnement.                                              |
+| `JWT_SECRET_KEY`                                                 | secret   | Au moins 32 caractères, différente par environnement (`openssl rand -base64 48`).  |
+| `FRONTEND_BASE_URL`                                              | variable | `https://staging.tierlist.ladwein.dev` ou `https://tierlist.ladwein.dev`.          |
+| `TRUSTED_PROXY_IPS`                                              | variable | Adresse(s) d'où se connecte le tunnel, séparées par des virgules. Jamais `*`.      |
+| `IMAGE_S3_ENDPOINT_URL`, `IMAGE_S3_BUCKET`, `IMAGE_S3_REGION`    | variable | ex. `https://s3.fr-par.scw.cloud`, le bucket d'images, `fr-par`.                   |
+| `IMAGE_S3_ACCESS_KEY_ID`, `IMAGE_S3_SECRET_ACCESS_KEY`           | secret   | Clé d'API Scaleway autorisée sur le bucket d'images.                               |
+| `IMAGE_PUBLIC_BASE_URL`                                          | variable | URL publique du bucket d'images.                                                   |
+| `SMTP_HOST`, `SMTP_PORT`, `EMAIL_FROM`                           | variable | Scaleway TEM (`smtp.tem.scaleway.com`, `587`), une adresse du domaine autorisé.    |
+| `SMTP_USERNAME`, `SMTP_PASSWORD`                                 | secret   | Identifiants SMTP de TEM.                                                          |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_REDIRECT_URI`                        | variable | Facultatifs. `https://<domaine>/api/auth/google/callback`.                         |
+| `GOOGLE_CLIENT_SECRET`                                           | secret   | Facultatif.                                                                        |
+| `LOG_LEVEL`, `MAINTENANCE_ENABLED`, `MAINTENANCE_HOUR_UTC`       | variable | Facultatifs (`INFO`, `true`, `3`).                                                 |
+| `AUTH_COOKIE_SECURE`                                             | —        | Toujours `true` (HTTPS).                                                           |
+
+Absents du `.env` : `SERVER_PORT` (donné par le panel) ; `FRONTEND_DIST` garde sa valeur par défaut (`frontend_dist/` du bundle).
+
+## 4. Environnements, secrets et variables GitHub
+
+Créés à la main dans les réglages du dépôt (Settings → Environments). Rien de tout cela n'est dans le dépôt.
+
+| Environnement                         | Protection                                          | Secrets                                                                                                                                                                                                                                                  | Variables                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `staging`                             | aucune                                              | `SFTP_HOST`, `SFTP_PORT`, `SFTP_USER`, `SFTP_PASSWORD`, `SFTP_KNOWN_HOSTS`, `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, `IMAGE_S3_ACCESS_KEY_ID`, `IMAGE_S3_SECRET_ACCESS_KEY`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `GOOGLE_CLIENT_SECRET`\*, `PANEL_API_KEY`\* | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `FRONTEND_BASE_URL`, `TRUSTED_PROXY_IPS`, `IMAGE_S3_ENDPOINT_URL`, `IMAGE_S3_BUCKET`, `IMAGE_S3_REGION`, `IMAGE_PUBLIC_BASE_URL`, `SMTP_HOST`, `SMTP_PORT`, `EMAIL_FROM`, `GOOGLE_CLIENT_ID`\*, `GOOGLE_REDIRECT_URI`\*, `LOG_LEVEL`\*, `MAINTENANCE_ENABLED`\*, `MAINTENANCE_HOUR_UTC`\*, `PANEL_URL`\*, `PANEL_SERVER_ID`\* |
+| `production`                          | **relecteur obligatoire**                           | comme `staging`                                                                                                                                                                                                                                          | comme `staging`                                                                                                                                                                                                                                                                                                                                                                                 |
+| `backup-staging`, `backup-production` | aucune (une exécution de nuit ne peut pas attendre) | `BACKUP_POSTGRES_PASSWORD`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`                                                                                                                                                                     | `BACKUP_POSTGRES_HOST`, `BACKUP_POSTGRES_PORT`, `BACKUP_POSTGRES_DB`, `BACKUP_POSTGRES_USER`, `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_RETENTION_DAYS` (`14` en production, `3` en staging)                                                                                                                                                                    |
+
+\* Facultatif. `SFTP_KNOWN_HOSTS` : la ou les lignes de `ssh-keyscan -p <port> <hôte>`, vérifiées avec l'empreinte affichée par le panel ; le déploiement refuse toute autre clé d'hôte. `PANEL_URL` / `PANEL_SERVER_ID` / `PANEL_API_KEY` : une clé d'API client du panel, si MineStrator en propose une (§6) ; sans elles, le pod est redémarré à la main.
+
+## 5. Premier déploiement, pas à pas
+
+1. **Pods** (#159), par environnement : un pod TierList (« python generic », Python 3.13, commande de démarrage `bash start.sh`) et un pod PostgreSQL 17 (mot de passe robuste ; noter son IP et son port).
+2. **Cloudflare Tunnel** : un pod `cloudflared` ; noms d'hôte publics `staging.tierlist.ladwein.dev` et `tierlist.ladwein.dev` vers `http://<IP du pod TierList>:<SERVER_PORT>`, WebSocket activé. Noter l'adresse depuis laquelle le tunnel joint le pod : elle va dans `TRUSTED_PROXY_IPS`.
+3. **Scaleway** (#163) : bucket d'images par environnement (lecture publique) et sa clé ; bucket privé de sauvegardes et sa clé ; Transactional Email avec le domaine autorisé (SPF, DKIM, DMARC).
+4. **Google OAuth** (facultatif) : URI de redirection autorisé `https://<domaine>/api/auth/google/callback`, écran de consentement publié.
+5. **SFTP** : hôte, port, utilisateur et mot de passe de chaque pod TierList (panel) ; `ssh-keyscan -p <port> <hôte>` pour `SFTP_KNOWN_HOSTS`.
+6. **GitHub** : les environnements, secrets et variables du §4.
+7. **Staging** : merger une PR dans `develop` (ou attendre la prochaine). Le workflow Deploy envoie la version ; redémarrer le pod dans le panel si le résumé du job le demande ; le job passe au vert dès que `https://staging.tierlist.ladwein.dev/api/health` annonce la nouvelle version et que `/api/health/db` répond.
+8. **Production** : faire une release ([guide des releases](releasing.fr.md)) ; le workflow Deploy attend l'approbation de l'environnement `production`.
+9. **Sauvegardes** : lancer une fois le workflow Backup à la main, puis essayer une restauration sur le staging (§8, #162).
+
+## 6. Déployer
+
+| Événement                                                          | Cible          | Version (`APP_RELEASE`) | Approbation           |
+| ------------------------------------------------------------------ | -------------- | ----------------------- | --------------------- |
+| CI verte sur un push dans `develop` (une PR mergée)                | **staging**    | `develop-<commit>`      | aucune                |
+| Workflow `Release` terminé : tag `vX.Y.Z` sur `main`               | **production** | `vX.Y.Z`                | obligatoire           |
+| Lancé à la main (`workflow_dispatch`) : un tag et un environnement | au choix       | le tag                  | selon l'environnement |
+
+La production suit le workflow `Release` (`workflow_run`), pas `on: push: tags` : Release crée le tag avec `GITHUB_TOKEN`, et GitHub ne lance aucun workflow pour un événement fait avec ce jeton. `workflow_run` et `workflow_dispatch` utilisent le `deploy.yml` de la branche par défaut (`develop`).
+
+Étapes de `deploy.yml` :
+
+1. **Planifier** : environnement, commit et version.
+2. **Bundle** (`bundle.yml`) : ShellCheck sur les scripts, `pnpm build`, `deploy/build_bundle.sh`, artefact `tierlist-bundle`.
+3. **Envoi** par SFTP (mot de passe via `sshpass`, clé d'hôte épinglée) : `releases/tierlist-<version>.tar.gz`, le lanceur sous le nom `start.sh`, `.env`, puis `CURRENT` en dernier. Un envoi raté laisse la version en cours en place.
+4. **Redémarrage** (`restart_pod.sh`) : par l'API client du panel (`POST /api/client/servers/<id>/power`, Pterodactyl) quand `PANEL_URL`, `PANEL_SERVER_ID` et `PANEL_API_KEY` sont définis ; sinon le résumé du job demande de redémarrer le pod dans le panel. Reste à vérifier si MineStrator fournit une telle clé (#159).
+5. **Santé** (`wait_healthy.sh`) : `/api/health` doit annoncer la nouvelle version, puis `/api/health/db` répondre `200` ; 30 essais espacés de 5 s (120 si le redémarrage est manuel). Sinon le job échoue.
+
+Un seul déploiement à la fois par environnement (`concurrency`, un déploiement en attente patiente).
+
+## 7. Retour arrière
+
+Lancer le workflow Deploy à la main avec le tag précédent et l'environnement. Le bundle est reconstruit depuis ce tag ; la production demande toujours son approbation.
+
+Les migrations doivent rester compatibles avec la version précédente (ajouter une colonne dans une release, s'en servir, retirer l'ancienne dans une release suivante) : un retour arrière ne lance jamais de downgrade ([guide des releases](releasing.fr.md)).
+
+Sans GitHub : si l'archive précédente est encore dans `releases/` (les 3 dernières sont gardées), écrire sa version dans `CURRENT` par SFTP, puis redémarrer le pod. `.env` garde le `APP_RELEASE` plus récent jusqu'au prochain déploiement.
+
+## 8. Sauvegardes
+
+`backup.yml` tourne chaque nuit à 02:30 UTC (et à la main), pour `staging` et `production` :
+
+1. `pg_dump -Fc` avec le client PostgreSQL 17 (image `postgres:17-alpine` sur le runner) contre le pod de base de données ;
+2. envoi vers `s3://<bucket>/<environnement>/tierlist-<environnement>-<date>.dump` (Scaleway, `aws s3` avec `--endpoint-url`) ;
+3. suppression des dumps plus vieux que `BACKUP_RETENTION_DAYS` (14 jours en production, 3 en staging).
+
+Un environnement sans `BACKUP_POSTGRES_HOST` est sauté. Limites : la base doit être joignable depuis GitHub (mot de passe robuste, TLS si le pod le propose), une exécution planifiée peut démarrer en retard, et les identifiants de la base sont stockés dans GitHub.
+
+Restauration (d'abord sur le staging) :
+
+```bash
+aws s3 cp --endpoint-url https://s3.fr-par.scw.cloud s3://<bucket>/staging/<dump> backup.dump
+docker run --rm -i -e PGPASSWORD postgres:17-alpine \
+  pg_restore --clean --if-exists --no-owner -h <hôte> -p <port> -U <utilisateur> -d <base> < backup.dump
+```
+
+## 9. Ce qui reste manuel
+
+- Créer les pods, le tunnel, les enregistrements DNS et les ressources Scaleway (#159, #163).
+- Les environnements, secrets et variables GitHub (§4), et le relecteur de `production`.
+- Le redémarrage du pod, tant qu'aucune clé d'API du panel n'est configurée.
+- Approuver chaque déploiement en production.
+- Tester une restauration (#162), puis après chaque montée de version majeure de PostgreSQL.
+
+## 10. Essayer l'organisation de production en local
+
+```bash
+cd frontend && pnpm build && cd ..
+bash deploy/build_bundle.sh local bundle     # bundle/tierlist-local.tar.gz
+```
+
+L'extraire, ajouter un `.env` (avec `TRUSTED_PROXY_IPS=127.0.0.1`), puis `bash start.sh` dans le dossier extrait : le frontend, l'API et le WebSocket répondent sur le port 8000. Ou, depuis `backend/`, copier `frontend/dist` vers `frontend_dist/` à la racine du dépôt et lancer `uv run uvicorn app.main:app`.
+
+## 11. Historique
+
+Le spike #155 avait choisi deux VPS avec Docker Compose et Caddy (TLS, `/api` retiré avant le backend). Ce design a été remplacé par les pods MineStrator avant d'être construit : les issues #158 à #163 ont été réécrites en conséquence.

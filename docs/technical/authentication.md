@@ -129,9 +129,9 @@ Every duration and rule that may change per environment is read from `backend/.e
 - `HttpOnly`: invisible to JavaScript.
 - `Secure`: HTTPS only. Disabled locally with `AUTH_COOKIE_SECURE=false`, since the development server uses HTTP.
 - `SameSite=Strict`: never sent by a request coming from another site, which protects the cookie routes against CSRF.
-- `Path=/api/auth`: sent only to the authentication routes, not to the rest of the API. It is the path **seen by the browser**: the Vite proxy forwards `/api/auth/...` to the backend's `/auth/...` (`AUTH_COOKIE_PATH`).
+- `Path=/api/auth`: sent only to the authentication routes, not to the rest of the API. The API is served under `/api` (`AUTH_COOKIE_PATH`).
 
-Frontend and backend are served from the same origin (Vite proxy in development), so no CORS configuration is needed.
+Frontend and backend are served from the same origin (FastAPI serves the frontend in production, the Vite proxy forwards `/api` in development), so no CORS configuration is needed.
 
 ### Email confirmation
 
@@ -201,7 +201,7 @@ Two **simultaneous first sign-ins** (double click, two tabs) can both reach case
 
 1. Configure the OAuth consent screen (application name, support email; scopes `openid`, `email`, `profile`).
 2. Create an **OAuth client ID** of type **Web application**.
-3. Add the **authorized redirect URI** exactly as `GOOGLE_REDIRECT_URI`: `http://localhost:5173/api/auth/google/callback` in development, the HTTPS URL in production.
+3. Add the **authorized redirect URI** exactly as `GOOGLE_REDIRECT_URI`: `http://localhost:5173/api/auth/google/callback` in development, `https://<domain>/api/auth/google/callback` in production.
 4. Copy the client ID and secret into `backend/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`), then restart the backend.
 
 Without these two variables, the "Continuer avec Google" link leads back to `/login` with "La connexion avec Google n'est pas disponible pour le moment."

@@ -60,12 +60,12 @@ Les valeurs fixes sont des constantes dans `app/constants/images.py` (`IMAGE_OUT
 
 | Variable                  | Description                                                                                                                                                                                   | Défaut              |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `IMAGE_UPLOAD_MAX_BYTES`  | Taille maximale du fichier reçu ; à garder alignée avec la limite de corps du reverse proxy.                                                                                                  | `10485760` (10 Mio) |
+| `IMAGE_UPLOAD_MAX_BYTES`  | Taille maximale du fichier reçu ; Cloudflare accepte des corps jusqu'à 100 Mo ([guide du déploiement](deployment.fr.md)).                                                                     | `10485760` (10 Mio) |
 | `IMAGE_MAX_SOURCE_PIXELS` | Nombre maximal de pixels de l'image décodée, vérifié sur l'en-tête avant le décodage : protège contre les bombes de décompression, de petits fichiers qui se décompressent en images énormes. | `40000000` (40 Mpx) |
 
 10 Mio acceptent une photo de téléphone ; 40 Mpx acceptent les plus grands capteurs de téléphones et d'appareils photo.
 
-Starlette reçoit tout le corps multipart, et l'écrit dans un fichier temporaire, **avant** que la route s'exécute : le backend refuse un fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` (il lit au plus un octet de plus, le fichier n'entre donc jamais en mémoire), mais seule la **limite du reverse proxy** arrête un corps énorme avant sa réception ([TODO](../../TODO.fr.md)).
+Starlette reçoit tout le corps multipart, et l'écrit dans un fichier temporaire, **avant** que la route s'exécute : le backend refuse un fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` (il lit au plus un octet de plus, le fichier n'entre donc jamais en mémoire), mais seule la **limite du proxy** arrête un corps énorme avant sa réception : Cloudflare refuse les corps de plus de 100 Mo ([guide du déploiement](deployment.fr.md)).
 
 Réglages du stockage :
 
@@ -116,7 +116,7 @@ L'**API S3 est utilisée partout**, via un seul service `ImageStorage` (`save`, 
 | Environnement       | Service S3                                                                                                                                                                                                                                                           |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Développement et CI | Conteneur **SeaweedFS** (`weed mini` : maître, volume, filer et S3 dans un seul processus), comme Mailpit remplace un fournisseur SMTP. Même service dans `compose.yaml` et dans le job backend de la CI (`docker compose up -d --wait seaweedfs`). Voir ci-dessous. |
-| Production          | Un fournisseur compatible S3, choisi avec l'hébergement ([TODO](../../TODO.fr.md)). Lecture publique via un CDN, ou l'URL du bucket.                                                                                                                                 |
+| Production          | **Scaleway Object Storage**, un bucket public par environnement ([guide du déploiement](deployment.fr.md)). Lecture publique par l'URL du bucket (`IMAGE_PUBLIC_BASE_URL`), ou un CDN plus tard.                                                                     |
 
 SeaweedFS en développement :
 

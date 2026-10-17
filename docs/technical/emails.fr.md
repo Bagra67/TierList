@@ -41,9 +41,9 @@ Le backend envoie des emails transactionnels (vérification de l'adresse email, 
 
 ## 4. En production
 
-1. **Choisir un fournisseur** qui propose le SMTP (Brevo, Resend, Postmark, Amazon SES, Mailgun…) et créer des identifiants SMTP (souvent une clé d'API utilisée comme mot de passe).
+1. **Fournisseur** : Scaleway Transactional Email ([guide du déploiement](deployment.fr.md)) ; tout fournisseur SMTP convient (Brevo, Resend, Postmark, Amazon SES, Mailgun…). Créer des identifiants SMTP (souvent une clé d'API utilisée comme mot de passe).
 2. **Autoriser votre domaine** chez le fournisseur : enregistrements DNS SPF, DKIM et DMARC. Sans eux, les emails finissent en spam ou sont refusés.
-3. Renseigner `SMTP_HOST`, `SMTP_PORT` (en général `587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` (une adresse du domaine autorisé) et `FRONTEND_BASE_URL` (l'adresse HTTPS du site). Garder `SMTP_STARTTLS=true`.
+3. Renseigner `SMTP_HOST`, `SMTP_PORT` (en général `587`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `EMAIL_FROM` (une adresse du domaine autorisé) et `FRONTEND_BASE_URL` (l'adresse HTTPS du site). Garder `SMTP_STARTTLS=true`. Dans les environnements déployés, ces valeurs viennent de l'environnement GitHub ([guide du déploiement](deployment.fr.md#3-variables-denvironnement-env-du-pod)).
 
 Le port 465 (TLS implicite, sans STARTTLS) n'est pas géré : tous les fournisseurs ci-dessus proposent aussi le 587.
 

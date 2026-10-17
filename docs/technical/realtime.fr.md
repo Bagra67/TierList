@@ -49,7 +49,7 @@ Le démarrage d'une partie (`game.started`, #91), les placements (`participant.p
 
 ### 2.2 Transport
 
-- Un endpoint par room : `WS /rooms/{room_code}/ws` (`WebSocket` FastAPI), atteint en `/api/rooms/{room_code}/ws` via le proxy Vite, qui aura alors besoin de `ws: true` dans `frontend/vite.config.ts`.
+- Un endpoint par room : `WS /rooms/{room_code}/ws` (`WebSocket` FastAPI), servi sous `/api` (`/api/rooms/{room_code}/ws`) ; en développement, le proxy Vite le transmet (`ws: true` dans `frontend/vite.config.ts`).
 - **Serveur → client** : les événements du §2.3. **Client → serveur** : uniquement le message d'authentification (§2.4) et la réponse au heartbeat ; tout autre message ferme le socket.
 - Une commande est un appel REST normal : la route appelle le service, le service commit, **puis** publie l'événement dans la room (§2.8). Le participant qui a envoyé la commande reçoit la réponse HTTP ; tout le monde (lui compris) reçoit l'événement.
 - Aucune nouvelle dépendance : `fastapi[standard]` fournit déjà uvicorn avec `websockets`, `uvloop` et `httptools` (présents dans `backend/uv.lock`).

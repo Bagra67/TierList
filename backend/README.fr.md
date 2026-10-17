@@ -87,11 +87,11 @@ uv run fastapi dev app/main.py --port 8080 --host 0.0.0.0
 
 Une fois lancé :
 
-- API : http://127.0.0.1:8000
-- Documentation interactive (Swagger) : http://127.0.0.1:8000/docs
-- Documentation ReDoc : http://127.0.0.1:8000/redoc
+- API : http://127.0.0.1:8000/api
+- Documentation interactive (Swagger) : http://127.0.0.1:8000/api/docs
+- Documentation ReDoc : http://127.0.0.1:8000/api/redoc
 
-Le frontend appelle le backend via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est redirigée vers `http://127.0.0.1:8000/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+L'API est servie sous `/api` (`app.main:app` la monte ; [guide du déploiement](../docs/technical/deployment.fr.md)). Le frontend l'appelle via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est transmise telle quelle à `http://127.0.0.1:8000/api/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
 
 ---
 
@@ -182,7 +182,7 @@ Configuré dans `pyproject.toml` (`[tool.pyright]`, mode `standard`, sur `app/`,
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # Point d'entrée FastAPI (GET /health, GET /health/db, routers)
+│   ├── main.py            # Point d'entrée FastAPI : API sous /api (santé, routers), build du frontend, lifespan
 │   ├── api/
 │   │   ├── dependencies.py # Dépendances communes (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # Routes /auth : register, login, refresh, logout, me
@@ -256,23 +256,27 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `PASSWORD_RESET_TTL_MINUTES`            | Validité du lien de réinitialisation du mot de passe, en minutes                                                                                                                           | `30`                                             |
 | `EMAIL_COOLDOWN_SECONDS`                | Délai minimal entre deux emails du même type pour un compte (évite d'inonder une boîte)                                                                                                    | `60`                                             |
 | `AUTH_COOKIE_SECURE`                    | Cookie de refresh envoyé en HTTPS uniquement ; `false` en local (HTTP)                                                                                                                     | `true`                                           |
-| `AUTH_COOKIE_PATH`                      | Chemin du cookie de refresh, vu par le navigateur (à travers le proxy `/api`)                                                                                                              | `/api/auth`                                      |
+| `AUTH_COOKIE_PATH`                      | Chemin du cookie de refresh : les routes d'authentification, sous `/api`                                                                                                                   | `/api/auth`                                      |
 | `DELETED_TEMPLATE_RETENTION_DAYS`       | Jours pendant lesquels un template supprimé reste en base avant d'être purgé définitivement                                                                                                | `30`                                             |
 | `ROOM_DEFAULT_TIMER_SECONDS`            | Timer par item d'une nouvelle salle, en secondes (5 à 300)                                                                                                                                 | `30`                                             |
 | `ROOM_DEFAULT_COOLDOWN_SECONDS`         | Cooldown final d'une nouvelle salle, en secondes (10 à 600)                                                                                                                                | `60`                                             |
 | `GUEST_LINK_TTL_DAYS`                   | Validité du lien perso d'un invité, en jours (30 au plus)                                                                                                                                  | `30`                                             |
-| `ROOM_COOKIE_PATH`                      | Chemin des routes des salles vu par le navigateur, base du cookie des invités                                                                                                              | `/api/rooms`                                     |
+| `ROOM_COOKIE_PATH`                      | Chemin des routes des salles (sous `/api`), base du cookie des invités                                                                                                                     | `/api/rooms`                                     |
 | `ROOM_HEARTBEAT_INTERVAL_SECONDS`       | Canal temps réel : ping après ce silence du client, en secondes                                                                                                                            | `10`                                             |
 | `ROOM_HEARTBEAT_TIMEOUT_SECONDS`        | Canal temps réel : socket fermé sans pong dans ce délai, en secondes                                                                                                                       | `5`                                              |
 | `ROOM_PRESENCE_GRACE_SECONDS`           | Un participant devient déconnecté ce délai après la fermeture de son dernier socket, en secondes                                                                                           | `3`                                              |
 | `ROOM_AUTH_TIMEOUT_SECONDS`             | Canal temps réel : délai du message d'authentification, en secondes                                                                                                                        | `5`                                              |
-| `IMAGE_UPLOAD_MAX_BYTES`                | Taille maximale d'une image de tuile envoyée, en octets ; à aligner sur la limite de corps du reverse proxy                                                                                | `10485760` (10 Mio)                              |
+| `IMAGE_UPLOAD_MAX_BYTES`                | Taille maximale d'une image de tuile envoyée, en octets ; Cloudflare accepte des corps jusqu'à 100 Mo                                                                                      | `10485760` (10 Mio)                              |
 | `IMAGE_MAX_SOURCE_PIXELS`               | Nombre maximal de pixels de l'image décodée (protection contre les bombes de décompression)                                                                                                | `40000000`                                       |
 | `GOOGLE_CLIENT_ID`                      | ID client OAuth de la Google Cloud Console (Application Web) ; sans lui, la connexion Google est désactivée                                                                                | — (facultatif)                                   |
 | `GOOGLE_CLIENT_SECRET`                  | Secret de ce client                                                                                                                                                                        | — (facultatif)                                   |
 | `GOOGLE_REDIRECT_URI`                   | URL de retour, identique à un URI de redirection autorisé du client                                                                                                                        | `http://localhost:5173/api/auth/google/callback` |
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Temps laissé sur la page de Google avant que la tentative expire                                                                                                                           | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Délai des appels vers Google (échange du code, clés publiques)                                                                                                                             | `10`                                             |
+| `FRONTEND_DIST`                         | Build Vite servi par FastAPI ; absent en développement (Vite sert le frontend)                                                                                                             | `frontend_dist/` à côté de `backend/`            |
+| `APP_RELEASE`                           | Version qui tourne, renvoyée par `/api/health` ; écrite par le déploiement                                                                                                                 | `dev`                                            |
+| `MAINTENANCE_ENABLED`                   | Purges de nuit (templates supprimés, images inutilisées) dans le processus                                                                                                                 | `true`                                           |
+| `MAINTENANCE_HOUR_UTC`                  | Heure des purges de nuit, en UTC (0 à 23)                                                                                                                                                  | `3`                                              |
 
 Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.fr.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.fr.md#3-dans-le-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
@@ -280,9 +284,9 @@ Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **
 
 ### Sondes de santé
 
-`GET /health` indique seulement que l'application tourne (`200 {"status": "ok"}`), sans toucher à la base : c'est la sonde de vie à donner à Docker ou à un hébergeur, pour qu'une panne de la base ne leur fasse pas redémarrer une application qui fonctionne.
+`GET /api/health` indique seulement que l'application tourne (`200 {"status": "ok", "release": "<APP_RELEASE>"}`), sans toucher à la base : c'est la sonde de vie à donner à l'hébergeur, pour qu'une panne de la base ne leur fasse pas redémarrer une application qui fonctionne.
 
-`GET /health/db` exécute `SELECT 1` : `200 {"status": "ok"}` si la base répond, sinon `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (l'erreur détaillée est dans les logs du backend).
+`GET /api/health/db` exécute `SELECT 1` : `200 {"status": "ok", "release": …}` si la base répond, sinon `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (l'erreur détaillée est dans les logs du backend).
 
 ### Migrations (Alembic)
 
