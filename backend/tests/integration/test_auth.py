@@ -10,7 +10,7 @@ from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import hash_refresh_token
-from app.main import app
+from app.main import api_app
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 
@@ -203,13 +203,13 @@ def test_replaying_a_rotated_refresh_token_revokes_the_whole_family(auth_client:
     assert auth_client.post("/auth/refresh").status_code == 200
     legitimate_refresh_token = auth_client.cookies["refresh_token"]
 
-    auth_client.cookies.set("refresh_token", stolen_refresh_token, path="/auth")
+    auth_client.cookies.set("refresh_token", stolen_refresh_token, path="/api/auth")
     replay = auth_client.post("/auth/refresh")
 
     assert replay.status_code == 401
     assert replay.json() == {"detail": messages.SESSION_EXPIRED, "code": ErrorCode.SESSION_EXPIRED}
     # Le token le plus récent, même légitime, est révoqué lui aussi
-    auth_client.cookies.set("refresh_token", legitimate_refresh_token, path="/auth")
+    auth_client.cookies.set("refresh_token", legitimate_refresh_token, path="/api/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
 
 
@@ -246,7 +246,7 @@ def test_sign_in_deletes_the_expired_refresh_tokens(auth_client: TestClient, db_
 
 
 def test_unknown_refresh_token_is_rejected_and_clears_the_cookie(auth_client: TestClient):
-    auth_client.cookies.set("refresh_token", "unknown", path="/auth")
+    auth_client.cookies.set("refresh_token", "unknown", path="/api/auth")
 
     response = auth_client.post("/auth/refresh")
 
@@ -263,7 +263,7 @@ def test_logout_revokes_the_session(auth_client: TestClient):
 
     assert response.status_code == 204
     assert "refresh_token" not in auth_client.cookies
-    auth_client.cookies.set("refresh_token", refresh_token, path="/auth")
+    auth_client.cookies.set("refresh_token", refresh_token, path="/api/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
 
 
@@ -280,7 +280,7 @@ def test_logout_revokes_the_access_tokens_of_every_device(auth_client: TestClien
     for access_token in (phone_access_token, laptop_access_token):
         assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
     # L'appareil resté connecté rafraîchit sa session et continue
-    auth_client.cookies.set("refresh_token", laptop_refresh_token, path="/auth")
+    auth_client.cookies.set("refresh_token", laptop_refresh_token, path="/api/auth")
     refreshed = auth_client.post("/auth/refresh")
     assert refreshed.status_code == 200
     me = auth_client.get("/auth/me", headers=bearer(refreshed.json()["access_token"]))
@@ -297,13 +297,13 @@ def test_logout_without_session_succeeds(auth_client: TestClient):
 
 def test_refresh_cookie_attributes(client: TestClient):
     # Paramètres par défaut (production) : Secure, HttpOnly, SameSite=Strict, chemin /api/auth
-    app.dependency_overrides[get_settings] = lambda: get_settings().model_copy(
+    api_app.dependency_overrides[get_settings] = lambda: get_settings().model_copy(
         update={"auth_cookie_secure": True, "auth_cookie_path": "/api/auth"}
     )
     try:
         response = client.post("/auth/register", json=REGISTRATION)
     finally:
-        app.dependency_overrides.pop(get_settings, None)
+        api_app.dependency_overrides.pop(get_settings, None)
 
     set_cookie = response.headers["set-cookie"]
     assert set_cookie.startswith("refresh_token=")
@@ -332,7 +332,7 @@ def test_delete_account_removes_the_user_and_its_sessions(
     assert db_session.scalars(select(RefreshToken)).all() == []
     # Plus aucune session ni connexion possible
     assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
-    auth_client.cookies.set("refresh_token", refresh_token, path="/auth")
+    auth_client.cookies.set("refresh_token", refresh_token, path="/api/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
     login = auth_client.post(
         "/auth/login", json={"email": "alice@example.com", "password": PASSWORD}

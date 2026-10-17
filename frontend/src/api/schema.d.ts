@@ -845,6 +845,8 @@ export interface components {
         HealthResponse: {
             /** Status */
             status: string;
+            /** Release */
+            release: string;
         };
         /**
          * HistoryResponse

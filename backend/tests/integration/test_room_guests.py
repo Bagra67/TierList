@@ -67,7 +67,7 @@ def test_a_guest_joins_with_a_nickname_and_gets_a_cookie_and_a_personal_link(
     assert abs(expires_at - expected_expiry) < timedelta(minutes=1)
     cookie: str = response.headers["set-cookie"]
     assert cookie.startswith(f"{GUEST_COOKIE}={token_of(body['guest_link'])};")
-    assert f"Path=/rooms/{code}" in cookie
+    assert f"Path=/api/rooms/{code}" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=strict" in cookie
 
@@ -195,7 +195,7 @@ def test_the_personal_link_gives_the_seat_back_on_another_device(
     assert response.json()["participants"] == joined["participants"]
     assert response.json()["guest_link"] == joined["guest_link"]
     assert response.json()["guest_link_expires_at"] == joined["guest_link_expires_at"]
-    assert f"Path=/rooms/{code}" in response.headers["set-cookie"]
+    assert f"Path=/api/rooms/{code}" in response.headers["set-cookie"]
     assert auth_client.get(f"/rooms/{code}").status_code == 200
 
 

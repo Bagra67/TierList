@@ -18,13 +18,13 @@ export default defineConfig({
     // dans tous les navigateurs, sans exposer le serveur au réseau comme '::' ou true.
     host: '127.0.0.1',
     proxy: {
-      // /api/auth/me -> http://127.0.0.1:8000/auth/me (backend FastAPI) ; ws : transmet aussi le
-      // canal temps réel des salles (/api/rooms/<code>/ws)
+      // /api/auth/me -> http://127.0.0.1:8000/api/auth/me : le backend sert lui-même son API sous
+      // /api, comme en production (docs/technical/deployment.md) ; ws : transmet aussi le canal
+      // temps réel des salles (/api/rooms/<code>/ws)
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         ws: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

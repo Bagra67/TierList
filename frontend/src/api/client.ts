@@ -6,7 +6,8 @@ import { ApiError } from '../errors/apiError';
 import type { paths } from './schema';
 
 // Client HTTP commun : chemins, paramètres et réponses typés par schema.d.ts (pnpm gen:api).
-// '/api' est redirigé vers le backend FastAPI par le proxy Vite (vite.config.ts).
+// L'API est servie sous '/api' sur l'origine de la page : par FastAPI en production, à travers
+// le proxy Vite en développement (vite.config.ts).
 export const apiClient = createClient<paths>({
   // URL absolue : openapi-fetch crée un Request, que Node (tests) refuse avec une URL relative
   baseUrl: `${window.location.origin}/api`,

@@ -21,10 +21,11 @@ from app.api.dependencies import (
     get_round_scheduler,
     get_session_factory,
 )
+from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session
-from app.main import app
+from app.main import api_app, app
 from app.schemas.room_events import RoomEvent
 from app.services.email import Email, EmailSender
 from app.services.image_storage import ImageStorage, create_image_storage
@@ -188,40 +189,36 @@ def client(
 ) -> Iterator[TestClient]:
     email_sender = FakeEmailSender(sent_emails)
     image_storage: FakeImageStorage = FakeImageStorage(stored_images)
-    app.dependency_overrides[get_db_session] = lambda: db_session
-    app.dependency_overrides[get_email_sender] = lambda: email_sender
-    app.dependency_overrides[get_image_storage] = lambda: image_storage
+    api_app.dependency_overrides[get_db_session] = lambda: db_session
+    api_app.dependency_overrides[get_email_sender] = lambda: email_sender
+    api_app.dependency_overrides[get_image_storage] = lambda: image_storage
     # Le canal temps réel ouvre ses sessions lui-même : il réutilise celle du test (sans la fermer)
-    app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
+    api_app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
     try:
-        yield TestClient(app)
+        # L'application racine, comme uvicorn, avec son lifespan (timers, balayage) ; les chemins
+        # des tests restent relatifs à l'API : "/auth/login" part vers /api/auth/login
+        yield TestClient(app, base_url=f"http://testserver{API_PREFIX}")
     finally:
-        app.dependency_overrides.pop(get_db_session, None)
-        app.dependency_overrides.pop(get_email_sender, None)
-        app.dependency_overrides.pop(get_image_storage, None)
-        app.dependency_overrides.pop(get_session_factory, None)
+        api_app.dependency_overrides.pop(get_db_session, None)
+        api_app.dependency_overrides.pop(get_email_sender, None)
+        api_app.dependency_overrides.pop(get_image_storage, None)
+        api_app.dependency_overrides.pop(get_session_factory, None)
 
 
 def http_test_settings() -> Settings:
-    # TestClient parle en HTTP à http://testserver/auth/... (sans le proxy /api) :
-    # les cookies doivent être non Secure, et sur /auth (session) ou /rooms (invités), pour que le
-    # client les renvoie.
-    return get_settings().model_copy(
-        update={
-            "auth_cookie_secure": False,
-            "auth_cookie_path": "/auth",
-            "room_cookie_path": "/rooms",
-        }
-    )
+    # TestClient parle en HTTP à http://testserver/api/... : les cookies doivent être non Secure
+    # pour que le client les renvoie (leurs chemins par défaut, /api/auth et /api/rooms, sont ceux
+    # de l'application)
+    return get_settings().model_copy(update={"auth_cookie_secure": False})
 
 
 @pytest.fixture
 def auth_client(client: TestClient) -> Iterator[TestClient]:
-    app.dependency_overrides[get_settings] = http_test_settings
+    api_app.dependency_overrides[get_settings] = http_test_settings
     try:
         yield client
     finally:
-        app.dependency_overrides.pop(get_settings, None)
+        api_app.dependency_overrides.pop(get_settings, None)
 
 
 @pytest.fixture
@@ -233,7 +230,7 @@ def override_settings(auth_client: TestClient) -> Callable[..., None]:
     """
 
     def apply(**changes: object) -> None:
-        app.dependency_overrides[get_settings] = lambda: http_test_settings().model_copy(
+        api_app.dependency_overrides[get_settings] = lambda: http_test_settings().model_copy(
             update=changes
         )
 
@@ -269,11 +266,11 @@ class RecordingRoomEventPublisher:
 def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
     """Événements publiés par les routes REST des salles pendant le test."""
     publisher: RecordingRoomEventPublisher = RecordingRoomEventPublisher()
-    app.dependency_overrides[get_room_event_publisher] = lambda: publisher
+    api_app.dependency_overrides[get_room_event_publisher] = lambda: publisher
     try:
         yield publisher
     finally:
-        app.dependency_overrides.pop(get_room_event_publisher, None)
+        api_app.dependency_overrides.pop(get_room_event_publisher, None)
 
 
 class RecordingRoundScheduler:
@@ -298,8 +295,8 @@ class RecordingRoundScheduler:
 def round_scheduler(client: TestClient) -> Iterator[RecordingRoundScheduler]:
     """Échéances des tours programmées par les routes REST pendant le test."""
     scheduler: RecordingRoundScheduler = RecordingRoundScheduler()
-    app.dependency_overrides[get_round_scheduler] = lambda: scheduler
+    api_app.dependency_overrides[get_round_scheduler] = lambda: scheduler
     try:
         yield scheduler
     finally:
-        app.dependency_overrides.pop(get_round_scheduler, None)
+        api_app.dependency_overrides.pop(get_round_scheduler, None)

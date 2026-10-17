@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr
@@ -13,6 +14,10 @@ from app.constants.rooms import (
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
+
+# Dossier backend/ (app/core/config.py → backend/) : le build du frontend est à côté, dans le
+# bundle de déploiement (frontend_dist/)
+BACKEND_DIR: Path = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -43,7 +48,7 @@ class Settings(BaseSettings):
     email_cooldown_seconds: int = Field(default=60, ge=0)
     # True en production (HTTPS) ; false en développement local, servi en HTTP
     auth_cookie_secure: bool = True
-    # Chemin vu par le navigateur, qui passe par le proxy Vite (/api/auth/... → /auth/...)
+    # Chemin des routes d'authentification, sous l'API montée sur /api (API_PREFIX)
     auth_cookie_path: str = "/api/auth"
 
     # Templates (docs/technical/templates.md) : durée pendant laquelle un template supprimé
@@ -58,8 +63,8 @@ class Settings(BaseSettings):
     )
     # Validité du lien perso d'un invité, comptée depuis son arrivée, sans prolongation
     guest_link_ttl_days: int = Field(default=30, gt=0, le=GUEST_LINK_MAX_TTL_DAYS)
-    # Chemin des routes des salles vu par le navigateur (proxy /api) : le cookie d'un invité est
-    # posé sur ce chemin suivi du code de sa salle
+    # Chemin des routes des salles, sous l'API montée sur /api (API_PREFIX) : le cookie d'un
+    # invité est posé sur ce chemin suivi du code de sa salle
     room_cookie_path: str = "/api/rooms"
     # Canal temps réel (docs/technical/realtime.md) : ping sans message du client pendant cet
     # intervalle, socket fermé faute de pong dans le délai, participant marqué déconnecté ce
@@ -120,8 +125,18 @@ class Settings(BaseSettings):
     smtp_timeout_seconds: int = Field(default=10, gt=0)
     # Expéditeur, ex. "TierList <no-reply@example.com>" : son domaine doit être autorisé (SPF/DKIM)
     email_from: str = "TierList <no-reply@localhost>"
-    # Adresse du frontend vue par l'utilisateur : base des liens envoyés par email
+    # Adresse publique de l'application vue par l'utilisateur (frontend et API sur la même
+    # origine) : base des liens envoyés par email, seule origine acceptée par le canal temps réel
     frontend_base_url: str = "http://localhost:5173"
+
+    # Déploiement (docs/technical/deployment.md)
+    # Build du frontend servi par FastAPI ; absent en développement (Vite le sert) et en tests
+    frontend_dist: Path = BACKEND_DIR.parent / "frontend_dist"
+    # Version qui tourne, renvoyée par /api/health : écrite dans le .env par le déploiement
+    app_release: str = "dev"
+    # Tâches de nuit dans le processus (purges des templates supprimés et des images inutilisées)
+    maintenance_enabled: bool = True
+    maintenance_hour_utc: int = Field(default=3, ge=0, le=23)
 
     @property
     def app_origin(self) -> str:

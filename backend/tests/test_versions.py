@@ -2,7 +2,7 @@ import json
 import tomllib
 from pathlib import Path
 
-from app.main import app
+from app.main import api_app
 
 # Racine du dépôt : le premier dossier parent qui contient à la fois backend/ et frontend/
 REPO_ROOT = next(
@@ -21,4 +21,4 @@ def test_versions_are_in_sync():
     pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
     package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
 
-    assert app.version == pyproject["project"]["version"] == package_json["version"]
+    assert api_app.version == pyproject["project"]["version"] == package_json["version"]
