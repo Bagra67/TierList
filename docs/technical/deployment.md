@@ -154,7 +154,7 @@ In the MineStrator panel, MyBox → **Créer un serveur**, location **Toulouse**
 - 2 GB is the smallest allocation the panel offers ("Minimum").
 - Leave the Git fields of the `python generic` pod empty: the deployment uploads the bundle over SFTP (§6).
 - The pods of one MyBox get **different public IP addresses**: the app reaches PostgreSQL over the public network.
-- **"Démarrage" forever**: the panel shows a pod as online only once its console prints the line its type waits for. Both generic types wait for the placeholder `change this part`, which neither uvicorn nor cloudflared prints. The pods work anyway (check `/api/health`), but the panel keeps them "starting". Workaround: print that line in the start command, e.g. `… && echo "change this part" && ./cloudflared …` for the tunnel.
+- **"Démarrage" forever**: the panel shows a pod as online only once its console prints the line its type waits for. Both generic types wait for the placeholder `change this part`, which neither uvicorn nor cloudflared prints. The pods work anyway (check `/api/health`), but the panel keeps them "starting". The TierList pod prints it itself once `/api/health` answers (`deploy/start.sh`, §2.4). For the tunnel, print it in the start command, e.g. `… && echo "change this part" && ./cloudflared …`.
 
 ### 5.2 PostgreSQL
 
@@ -185,7 +185,7 @@ In the MineStrator panel, MyBox → **Créer un serveur**, location **Toulouse**
 One organization, project **TierList**, region **Paris** (`fr-par`). A payment method is required before ordering anything.
 
 1. **Object Storage**: bucket names are unique across all Scaleway customers, hence a prefix: `ladwein-tierlist-images-<environment>` (one per environment) and `ladwein-tierlist-backups` (shared: each environment writes and prunes under its own prefix, §8). Leave the 90-day trial off.
-2. **Public read of the images**: objects are private by default, even in a public bucket, and the console offers no bucket policy. `IMAGE_PUBLIC_BASE_URL` (`https://<bucket>.s3.fr-par.scw.cloud`) only works if each image is uploaded with the `public-read` ACL, or if a bucket policy is set through the API. **Open point**: `image_storage.py` sends no ACL today.
+2. **Public read of the images**: objects are private by default, even in a public bucket, and the console offers no bucket policy. `IMAGE_PUBLIC_BASE_URL` (`https://<bucket>.s3.fr-par.scw.cloud`) only works if each image is uploaded with the `public-read` ACL, or if a bucket policy is set through the API. `image_storage.py` uploads each image with the `public-read` ACL (`IMAGE_ACL`).
 3. **IAM → Applications**: one application per environment (`tierlist-staging`), with a policy limited to the TierList project: `ObjectStorageFullAccess` and `TransactionalEmailFullAccess`. Then **API keys → Generate**: the secret key is shown once.
 4. **Transactional Email**: plan **Essential** (pay as you go, 300 emails included), domain `ladwein.dev`. Add its DNS records in Cloudflare (all "DNS only"): TXT SPF on `@`, TXT DKIM on `<project id>._domainkey`, TXT DMARC `v=DMARC1; p=none` on `_dmarc`, MX `10 blackhole.tem.scaleway.com` on `@`. The status turns **Verified** within minutes to hours. The MX makes `@ladwein.dev` unable to receive mail; replace it if an inbox is ever needed.
 5. SMTP: `smtp.tem.scaleway.com`, port `587`; `SMTP_USERNAME` = the project identifier, `SMTP_PASSWORD` = the secret key of the IAM application.

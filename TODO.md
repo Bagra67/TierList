@@ -10,7 +10,8 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 - [x] Release bundle, pod start script and continuous deployment (#158, #160, #161).
 - [x] Create the pods, the tunnel and the GitHub environments, then deploy staging: [first deployment](docs/technical/deployment.md#5-first-deployment-step-by-step) (#159, #163).
 - [ ] Same for production ([production](docs/technical/deployment.md#59-production)): production pod, `tierlist_prod` database, `tierlist.ladwein.dev` route, `production` and `backup-production` environments.
-- [ ] Show the pods as online in the MineStrator panel: print `change this part` once the app answers (`deploy/start.sh`) and in the tunnel start command ([pods](docs/technical/deployment.md#51-minestrator-pods-159)).
+- [x] Show the TierList pod as online in the MineStrator panel: `deploy/start.sh` prints `change this part` once the app answers (#197).
+- [ ] Same for the tunnel pod: print `change this part` in its start command ([pods](docs/technical/deployment.md#51-minestrator-pods-159)).
 - [ ] Harden PostgreSQL: `scram-sha-256`, no remote superuser ([PostgreSQL](docs/technical/deployment.md#52-postgresql)).
 - [ ] Production settings (GitHub environments, [deployment guide](docs/technical/deployment.md#4-github-environments-secrets-and-variables)):
   - a `JWT_SECRET_KEY` different from development;
@@ -21,7 +22,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 - [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
 - [ ] Database backups: configure the `backup-*` environments and try a restore on staging (#162).
-- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: Scaleway Object Storage, one bucket per environment with public read, the `IMAGE_*` settings in the GitHub environments (done on staging; **the uploads send no `public-read` ACL yet**, [Scaleway](docs/technical/deployment.md#54-scaleway-163)); later, a CDN able to **purge one URL** (needed to hide an image).
+- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: Scaleway Object Storage, one bucket per environment with public read, the `IMAGE_*` settings in the GitHub environments (done on staging; each image is uploaded with the `public-read` ACL, [Scaleway](docs/technical/deployment.md#54-scaleway-163)); later, a CDN able to **purge one URL** (needed to hide an image).
 
 ## 2. Decisions to take
 

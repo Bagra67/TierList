@@ -843,6 +843,14 @@ A new application serves a fake build from a temporary folder (`index.html`, `as
 | `test_files_outside_the_build_are_never_served` (3 paths)   | `/../secret.txt`, `/%2e%2e/secret.txt`, `/..%2fsecret.txt`. | No path traversal.                                                              | The secret is never in the response.                         |
 | `test_the_bare_api_prefix_is_not_a_page`                    | `GET /api`.                                                 | `/api` is not a frontend page.                                                  | `404`.                                                       |
 
+### 1.21 Unit test: `tests/test_image_storage_unit.py` (image upload request)
+
+`ImageStorage.save` with a recording fake S3 client (`RecordingS3Client`), without any storage.
+
+| Test                                                        | What it does                             | Purpose                                                                                                         | Expected result                                                                                                                                               |
+| ----------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_a_saved_image_is_sent_public_with_its_type_and_cache` | Saves `abc.webp` in the bucket `images`. | At Scaleway, an object stays private even in a public bucket: the public image URL needs the `public-read` ACL. | One `put_object` with the bucket, the key, the bytes, `image/webp`, `public, max-age=86400` and `ACL=public-read`; the URL joins the public base and the key. |
+
 ## 2. Frontend (Vitest)
 
 ### 2.1 How Vitest works
