@@ -826,6 +826,8 @@ export interface components {
             is_guest: boolean;
             /** Connected */
             connected: boolean;
+            /** Is You */
+            is_you: boolean;
         };
         /** PlaceItemRequest */
         PlaceItemRequest: {

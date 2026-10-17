@@ -3619,6 +3619,10 @@
           "connected": {
             "type": "boolean",
             "title": "Connected"
+          },
+          "is_you": {
+            "type": "boolean",
+            "title": "Is You"
           }
         },
         "type": "object",
@@ -3627,7 +3631,8 @@
           "display_name",
           "is_admin",
           "is_guest",
-          "connected"
+          "connected",
+          "is_you"
         ],
         "title": "ParticipantResponse"
       },
