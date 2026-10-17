@@ -527,6 +527,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/game/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Next Round */
+        post: operations["next_round_rooms__code__game_next_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -598,6 +615,7 @@ export interface components {
         };
         /** CurrentGameResponse */
         CurrentGameResponse: {
+            status: components["schemas"]["GameStatus"];
             /** Round Number */
             round_number: number;
             /** Round Count */
@@ -611,6 +629,8 @@ export interface components {
             placed_participant_ids: string[];
             /** Own Placements */
             own_placements: components["schemas"]["OwnPlacementResponse"][];
+            /** Cooldown Ends At */
+            cooldown_ends_at: string | null;
         };
         /**
          * CurrentItemResponse
@@ -681,6 +701,12 @@ export interface components {
              */
             language: "fr" | "en";
         };
+        /**
+         * GameStatus
+         * @description Cycle de vie d'une partie (docs/product/milestone-1/lifecycles.md).
+         * @enum {string}
+         */
+        GameStatus: "in_round" | "cooldown" | "closed";
         /**
          * GameTierResponse
          * @description Un tier de la version figée de la partie, où placer les items.
@@ -1066,6 +1092,28 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** CooldownStartedData */
+        CooldownStartedData: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+        };
+        /**
+         * CooldownStartedEvent
+         * @description Le dernier tour est fini : le cooldown final commence (#96).
+         */
+        CooldownStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "cooldown.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["CooldownStartedData"];
+        };
         /** GameStartedData */
         GameStartedData: {
             /** Round Number */
@@ -1208,7 +1256,31 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["PingMessage"];
+        /** RoundStartedData */
+        RoundStartedData: {
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            /** Ends At */
+            ends_at: string | null;
+        };
+        /**
+         * RoundStartedEvent
+         * @description Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item
+         *     suivant est montré à tous.
+         */
+        RoundStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "round.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["RoundStartedData"];
+        };
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["RoundStartedEvent"] | components["schemas"]["CooldownStartedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -3270,6 +3342,82 @@ export interface operations {
                 };
             };
             /** @description No round in progress, or the tile is not the current item */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    next_round_rooms__code__game_next_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No round in progress (no game, or the cooldown has begun) */
             409: {
                 headers: {
                     [name: string]: unknown;

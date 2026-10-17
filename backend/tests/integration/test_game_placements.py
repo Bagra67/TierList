@@ -65,10 +65,9 @@ def tile_of_round(db_session: Session, number: int) -> str:
     return str(stored_game(db_session).rounds[number - 1].snapshot_tile_id)
 
 
-def go_to_round(db_session: Session, number: int) -> None:
-    # L'enchaînement des tours vient avec #93 : le test avance le tour en base
-    stored_game(db_session).current_round_number = number
-    db_session.flush()
+def next_item(client: TestClient, code: str, headers: dict[str, str]) -> None:
+    # Le room admin passe à l'item suivant (#93)
+    assert client.post(f"/rooms/{code}/game/next", headers=headers).status_code == 200
 
 
 def seat_id(room: JsonObject, display_name: str) -> str:
@@ -88,8 +87,16 @@ def board(room: JsonObject) -> list[tuple[str, str | None, int]]:
     ]
 
 
-def placement_count(db_session: Session) -> int:
-    return db_session.scalar(select(func.count()).select_from(Placement)) or 0
+def placed_count(db_session: Session) -> int:
+    """Placements dans un tier, sans les votes absents enregistrés à la fin des tours."""
+    return (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Placement)
+            .where(Placement.snapshot_tier_id.is_not(None))
+        )
+        or 0
+    )
 
 
 # --- Placer l'item en cours ----------------------------------------------------------------
@@ -144,7 +151,7 @@ def test_moving_the_item_in_the_same_round_replaces_the_placement(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert board(body) == [("B", "Tile 0", 0)]
-    assert placement_count(db_session) == 1
+    assert placed_count(db_session) == 1
     # Les autres n'en voient rien : ni nouvelle version, ni événement
     assert body["version"] == first["version"]
     assert len(room_events.events) == event_count
@@ -159,14 +166,14 @@ def test_positions_stay_continuous_and_past_items_keep_their_order(
     tier_a: str = started["game"]["tiers"][1]["id"]
     place(auth_client, code, tile_of_round(db_session, 1), tier_s, 0, alice)
 
-    go_to_round(db_session, 2)
+    next_item(auth_client, code, alice)
     # Avant l'item déjà placé
     before: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 2), tier_s, 0, alice
     ).json()
     assert board(before) == [("S", "Tile 1", 0), ("S", "Tile 0", 1)]
 
-    go_to_round(db_session, 3)
+    next_item(auth_client, code, alice)
     # Entre les deux
     between: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 3), tier_s, 1, alice
@@ -226,7 +233,7 @@ def test_only_the_current_item_can_be_placed(
 ):
     code: str = alice_room["code"]
     tier_s: str = start(auth_client, code, alice)["game"]["tiers"][0]["id"]
-    go_to_round(db_session, 2)
+    next_item(auth_client, code, alice)
 
     for number in (1, 3):
         response: Response = place(
@@ -234,7 +241,7 @@ def test_only_the_current_item_can_be_placed(
         )
         assert response.status_code == 409
         assert response.json()["code"] == ErrorCode.ITEM_NOT_CURRENT
-    assert placement_count(db_session) == 0
+    assert placed_count(db_session) == 0
 
 
 def test_a_tier_outside_the_game_is_refused(
@@ -332,7 +339,7 @@ def test_removing_a_player_deletes_their_placements(
 
     assert response.status_code == 200
     db_session.expire_all()
-    assert placement_count(db_session) == 0
+    assert placed_count(db_session) == 0
 
 
 def test_the_database_keeps_one_placement_per_tile_and_a_tier_with_its_position(

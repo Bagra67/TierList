@@ -32,7 +32,7 @@ Timers : le **timer de tour** par item (réglage de la room), le **cooldown** (r
 
 ### Pas encore disponible
 
-Le démarrage d'une partie (`game.started`, #91) et les placements (`participant.placed`, #92) sont construits ([guide des parties](games.fr.md)) ; les autres événements du jeu (tours, cooldown) et les timers côté serveur (§2.8) arrivent avec les issues suivantes du jeu (#93 et suivantes). Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
+Le démarrage d'une partie (`game.started`, #91), les placements (`participant.placed`, #92), l'enchaînement des tours (`round.started`, `cooldown.started`) et les timers des tours (§2.8, #93) sont construits ([guide des parties](games.fr.md)) ; le timer du cooldown et la clôture arrivent avec #96 et #98. Les hologrammes, les rooms publiques et le chat (jalons suivants) réutiliseront le même canal.
 
 ## 2. Conception technique
 
@@ -111,6 +111,8 @@ REST GET /rooms/{code} ──▶ cache TanStack Query ──▶ composants
 
 ### 2.8 Timers côté serveur
 
+**Construit pour les tours dans #93** (`services/round_timers.py`, [guide des parties](games.fr.md#25-enchaînement-des-tours)) ; le timer du cooldown arrive avec #96. Un tour fini plus tôt garde sa tâche : la transition trouve le tour fini et ne fait rien, ce qui est plus simple que de l'annuler.
+
 - Le serveur est la seule horloge. Un tour avec timer et le cooldown stockent leur **heure de fin** (`ends_at`, UTC) en base ; les événements l'envoient, les clients en déduisent le compte à rebours.
 - Dans le processus, une tâche `asyncio` attend chaque échéance et appelle la transition du service ; elle est annulée quand le tour se termine plus tôt (« suivant » de l'admin, tout le monde a fini). Au démarrage, les échéances en cours sont relues en base et reprogrammées : un redémarrage ne perd aucun timer.
 - **Courses** (timer, « suivant » et « tout le monde a fini » en même temps) : chaque transition s'exécute dans une transaction qui verrouille la ligne de la room et vérifie l'état attendu (le tour est toujours en cours) ; la seconde trouve le tour déjà terminé et ne fait rien. Les transitions sont donc **idempotentes**.
@@ -172,6 +174,8 @@ Construit dans #85. Ce qui existe aujourd'hui :
   | `room.settings_updated` | `{}`                                   | L'admin de la room change un réglage (une modification vide n'envoie rien)                                                             | Relit la room               |
   | `game.started`          | `{round_number, round_count, ends_at}` | L'admin de la room lance une partie (#91)                                                                                              | Relit la room               |
   | `participant.placed`    | `{participant_id, round_number}`       | Un participant place l'item en cours pour la première fois du tour (#92) ; un déplacement n'envoie rien. Jamais le tier ni la position | Met à jour la room en cache |
+  | `round.started`         | `{round_number, round_count, ends_at}` | Un tour se termine (« suivant », timer, tout le monde a placé) et le suivant commence (#93) ; les votes absents sont enregistrés       | Relit la room               |
+  | `cooldown.started`      | `{ends_at}`                            | Le dernier tour se termine : le cooldown final commence (#93)                                                                          | Relit la room               |
 
   Messages du canal : `{"type": "ping"}` du serveur, `{"type": "pong"}` et `{"type": "auth", "access_token": …}` du client. `RoomServerMessage` et `RoomClientMessage` sont ajoutés aux composants OpenAPI (`_openapi_with_room_messages` dans `app/main.py`).
 

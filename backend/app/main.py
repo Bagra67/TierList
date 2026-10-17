@@ -1,6 +1,9 @@
+import asyncio
 import logging
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI
@@ -14,14 +17,17 @@ from app.api.dependencies import SessionFactory, get_session_factory
 from app.api.routes import auth, images, room_channel, rooms, templates
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
+from app.services.games import GameService
 from app.services.room_channel import room_connections
 from app.services.rooms import RoomService
+from app.services.round_timers import round_timers
+from app.services.templates import TemplateService
 
 configure_logging(get_logging_settings().log_level)
 
@@ -42,13 +48,55 @@ def _reset_presence(session_factory: SessionFactory) -> None:
     logger.info("Présence remise à zéro au démarrage : %d participants", reset_count)
 
 
+def _game_service(session: Session) -> GameService:
+    """Service des parties hors requête (démarrage, timers) : mêmes dépendances que
+    get_game_service, construites à la main faute d'injection."""
+    settings: Settings = get_settings()
+    rooms: RoomService = RoomService(session, settings, room_connections)
+    return GameService(
+        session, room_connections, rooms, TemplateService(session, settings), round_timers
+    )
+
+
+def _end_round_on_timer(
+    session_factory: SessionFactory, game_id: uuid.UUID, round_number: int
+) -> None:
+    with session_factory() as session:
+        _game_service(session).end_round_on_timer(game_id, round_number)
+
+
+def _reschedule_rounds(session_factory: SessionFactory) -> None:
+    """Un processus qui démarre n'a aucun timer : les échéances des tours en cours sont relues en
+    base et reprogrammées (une échéance passée pendant l'arrêt se déclenche tout de suite)."""
+    try:
+        with session_factory() as session:
+            deadlines: list[tuple[uuid.UUID, int, datetime]] = _game_service(
+                session
+            ).pending_round_deadlines()
+    except SQLAlchemyError:
+        logger.warning("Timers des tours non reprogrammés : base injoignable", exc_info=True)
+        return
+    for game_id, round_number, ends_at in deadlines:
+        round_timers.schedule(game_id, round_number, ends_at)
+    logger.info("Timers des tours reprogrammés au démarrage : %d", len(deadlines))
+
+
 @asynccontextmanager
 async def lifespan(started_app: FastAPI) -> AsyncIterator[None]:
     # Les dépendances ne sont pas injectées ici : la fabrique remplacée par les tests, s'il y en
     # a une, est reprise pour ne jamais toucher une autre base que la leur
     get_factory = started_app.dependency_overrides.get(get_session_factory, get_session_factory)
-    await run_in_threadpool(_reset_presence, get_factory())
+    session_factory: SessionFactory = get_factory()
+    await run_in_threadpool(_reset_presence, session_factory)
+
+    async def on_deadline(game_id: uuid.UUID, round_number: int) -> None:
+        # La base est synchrone : la transition passe par le threadpool (realtime.md, §2.8)
+        await run_in_threadpool(_end_round_on_timer, session_factory, game_id, round_number)
+
+    round_timers.start(asyncio.get_running_loop(), on_deadline)
+    await run_in_threadpool(_reschedule_rounds, session_factory)
     yield
+    await round_timers.stop()
 
 
 app = FastAPI(

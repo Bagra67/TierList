@@ -46,6 +46,9 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Numéro du tour en cours, à partir de 1
     current_round_number: Mapped[int]
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Fin du cooldown final, fixée quand le dernier tour se termine (#93) ; le serveur seul la
+    # décide, les clients en affichent le compte à rebours
+    cooldown_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Rempli à la clôture (#98)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

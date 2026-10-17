@@ -88,6 +88,7 @@ NICKNAME_TAKEN_DESCRIPTION = "Nickname already used in the room"
 ROOM_FULL_OR_LOCKED_DESCRIPTION = "Room full, or locked during a game"
 NOT_A_PLACING_PARTICIPANT_DESCRIPTION = "The room admin does not play"
 ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier not in the game"
+ROUND_NOT_IN_PROGRESS_DESCRIPTION = "No round in progress (no game, or the cooldown has begun)"
 CANNOT_PLACE_DESCRIPTION = "No round in progress, or the tile is not the current item"
 GAME_CANNOT_START_DESCRIPTION = (
     "Game already in progress, no participant who places, or template deleted or without tiles"

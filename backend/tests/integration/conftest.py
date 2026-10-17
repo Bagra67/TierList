@@ -2,6 +2,7 @@ import os
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import nullcontext
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -17,6 +18,7 @@ from app.api.dependencies import (
     get_email_sender,
     get_image_storage,
     get_room_event_publisher,
+    get_round_scheduler,
     get_session_factory,
 )
 from app.constants.error_codes import ErrorCode
@@ -267,3 +269,26 @@ def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
         yield publisher
     finally:
         app.dependency_overrides.pop(get_room_event_publisher, None)
+
+
+class RecordingRoundScheduler:
+    """Timers factices : gardent les échéances programmées, sans tâche asyncio. Le test appelle
+    lui-même la transition (GameService.end_round_on_timer) pour simuler la fin du timer."""
+
+    def __init__(self) -> None:
+        # (partie, numéro du tour, fin du timer)
+        self.deadlines: list[tuple[uuid.UUID, int, datetime]] = []
+
+    def schedule(self, game_id: uuid.UUID, round_number: int, ends_at: datetime) -> None:
+        self.deadlines.append((game_id, round_number, ends_at))
+
+
+@pytest.fixture
+def round_scheduler(client: TestClient) -> Iterator[RecordingRoundScheduler]:
+    """Échéances des tours programmées par les routes REST pendant le test."""
+    scheduler: RecordingRoundScheduler = RecordingRoundScheduler()
+    app.dependency_overrides[get_round_scheduler] = lambda: scheduler
+    try:
+        yield scheduler
+    finally:
+        app.dependency_overrides.pop(get_round_scheduler, None)
