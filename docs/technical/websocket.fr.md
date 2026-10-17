@@ -120,6 +120,7 @@ Chaque événement du serveur a la même enveloppe : `{"type": "…", "room_vers
 | `participant.presence`  | serveur → client                    | Modifie `connected` d'un participant dans le cache |
 | `participant.removed`   | serveur → client                    | Retire un participant du cache                     |
 | `room.settings_updated` | serveur → client                    | Relit la salle                                     |
+| `game.started`          | serveur → client                    | Relit la salle (tour 1, item en cours)             |
 
 Les modèles sont dans `backend/app/schemas/room_events.py` et sont ajoutés au schéma OpenAPI, pour que `pnpm gen:api` génère leurs types TypeScript (`RoomServerMessage`, `RoomClientMessage` dans `frontend/src/api/schema.d.ts`).
 

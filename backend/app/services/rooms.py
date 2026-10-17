@@ -45,8 +45,9 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.models.enums import AutoAdvance, ItemOrder
 from app.models.participant import Participant
-from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
+from app.models.room import Room, RoomStatus
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
@@ -165,6 +166,11 @@ class RoomService:
         """Salle dont l'utilisateur est participant ; le code est lu sans tenir compte de la
         casse (un code tapé en minuscules est le même)."""
         return self._get_as_participant(user, code, for_update=False)
+
+    def get_for_change(self, user: User, code: str) -> Room:
+        """Salle dont l'utilisateur est participant, verrouillée jusqu'au commit : pour un
+        changement fait par un autre service (le démarrage d'une partie)."""
+        return self._get_as_participant(user, code, for_update=True)
 
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la

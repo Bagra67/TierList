@@ -46,6 +46,24 @@ export const aliceRoom: Room = {
   ],
   is_admin: true,
   bans: [],
+  game: null,
+};
+
+// La même salle pendant une partie : tour 1 sur 3, telle que la renvoie POST /rooms/{code}/game
+export const aliceRoomInGame: Room = {
+  ...aliceRoom,
+  version: 4,
+  status: 'playing',
+  game: {
+    round_number: 1,
+    round_count: 3,
+    current_item: {
+      id: '7c1d2e3f-0000-4000-8000-000000000001',
+      text: 'Paprika',
+      image_url: 'https://images.example.com/paprika.webp',
+    },
+    ends_at: null,
+  },
 };
 
 // Salle rejointe par Lou en invité, avec son lien perso, telle que la renvoie POST /guests

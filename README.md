@@ -26,7 +26,7 @@ TierList/
 ├── dev.cmd / dev.ps1   # Same for PowerShell / cmd
 ├── docs/
 │   ├── product/        # Business docs: product, game rules, permissions, roadmap
-│   └── technical/      # Technical docs: architecture, authentication, templates, images, real time, results, testing guide, i18n, emails, releasing, deployment
+│   └── technical/      # Technical docs: architecture, authentication, templates, images, real time, games, results, testing guide, i18n, emails, releasing, deployment
 ├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```

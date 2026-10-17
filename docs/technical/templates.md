@@ -124,7 +124,7 @@ Rules (`TemplateService.take_snapshot(owner, template_id)`):
 - A **deleted** template, or one of another user, raises `TemplateNotFoundError` (`template_not_found`): no new game can start with it. A game already started keeps its snapshot and can finish.
 - A template **without tiles** raises `TemplateHasNoTilesError` (`template_has_no_tiles`): a game would have no item to rank.
 - It locks the template like any change (`_get_for_change`) and only **flushes**: the caller commits the snapshot together with the game, and the lock holds until then.
-- No endpoint exposes it yet: the game start (#91) will call it.
+- The game start calls it (`GameService.start`, [games guide](games.md)).
 
 ### 2.5 Settings
 
@@ -156,7 +156,6 @@ Every route requires the Bearer access token (`401` otherwise).
 
 ### 2.7 Known limitations
 
-- `take_snapshot` has no caller until the game start (#91).
 - No pagination of the list yet (#105).
 - No super admin view of deleted templates yet (#104).
 

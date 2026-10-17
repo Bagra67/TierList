@@ -107,6 +107,11 @@ async function unban(code: string, banId: string): Promise<Room> {
   );
 }
 
+// Le room admin lance une partie (US-3.1) : la salle renvoyée porte la partie et son premier item
+async function startGame(code: string): Promise<Room> {
+  return dataOrThrow(await apiClient.POST('/rooms/{code}/game', { params: { path: { code } } }));
+}
+
 // La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
 // l'affiche sans nouvelle lecture
 function storeRoom(queryClient: QueryClient, room: Room): void {
@@ -207,6 +212,15 @@ export function useUnban(code: string): UseMutationResult<Room, Error, string> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: (banId: string) => unban(canonicalRoomCode(code), banId),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Lance une partie, réservé au room admin
+export function useStartGame(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => startGame(canonicalRoomCode(code)),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

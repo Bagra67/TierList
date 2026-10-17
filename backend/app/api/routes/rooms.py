@@ -4,13 +4,20 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Cookie, Depends, Response
 
-from app.api.dependencies import get_current_user, get_room_service, get_room_viewer
+from app.api.dependencies import (
+    get_current_user,
+    get_game_service,
+    get_image_storage,
+    get_room_service,
+    get_room_viewer,
+)
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse
+from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.rooms import (
     BanNotFoundError,
@@ -26,10 +33,15 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.models.game import Game
 from app.models.room import Room
+from app.models.round import Round
+from app.models.snapshot_tile import SnapshotTile
 from app.models.user import User
 from app.schemas.rooms import (
     CreateRoomRequest,
+    CurrentGameResponse,
+    CurrentItemResponse,
     GuestRoomResponse,
     JoinAsGuestRequest,
     ParticipantResponse,
@@ -40,6 +52,8 @@ from app.schemas.rooms import (
     RoomTemplateResponse,
     UpdateRoomSettingsRequest,
 )
+from app.services.games import GameService
+from app.services.image_storage import ImageStorage
 from app.services.rooms import GuestSeat, RoomService, RoomSettingsChanges, RoomViewer
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -59,9 +73,14 @@ RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+GameServiceDep = Annotated[GameService, Depends(get_game_service)]
+# Donne l'adresse publique de l'image de l'item en cours
+ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
 
 
-def _room_response(room: Room, user: User | None, service: RoomService) -> RoomResponse:
+def _room_response(
+    room: Room, user: User | None, service: RoomService, storage: ImageStorage
+) -> RoomResponse:
     """La salle vue par ce lecteur : user est None pour un invité (jamais room admin)."""
     participants: list[ParticipantResponse] = []
     for participant in service.seated_participants(room):
@@ -98,6 +117,25 @@ def _room_response(room: Room, user: User | None, service: RoomService) -> RoomR
         participants=participants,
         is_admin=is_admin,
         bans=bans,
+        game=_current_game_response(room.current_game, storage),
+    )
+
+
+def _current_game_response(game: Game | None, storage: ImageStorage) -> CurrentGameResponse | None:
+    """La partie en cours vue par tous : son tour et son item, jamais les placements."""
+    if game is None:
+        return None
+    current_round: Round = game.current_round
+    tile: SnapshotTile = current_round.tile
+    image_url: str | None = storage.url(tile.image.storage_key) if tile.image is not None else None
+    current_item: CurrentItemResponse = CurrentItemResponse(
+        id=tile.id, text=tile.text, image_url=image_url
+    )
+    return CurrentGameResponse(
+        round_number=current_round.number,
+        round_count=len(game.rounds),
+        current_item=current_item,
+        ends_at=current_round.ends_at,
     )
 
 
@@ -170,7 +208,10 @@ def _room_locked() -> AppHTTPException:
     },
 )
 def create_room(
-    payload: CreateRoomRequest, user: CurrentUserDep, service: RoomServiceDep
+    payload: CreateRoomRequest,
+    user: CurrentUserDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
 ) -> RoomResponse:
     template_id: uuid.UUID = payload.template_id
     try:
@@ -187,17 +228,19 @@ def create_room(
             code=ErrorCode.TEMPLATE_HAS_NO_TILES,
             detail=messages.TEMPLATE_HAS_NO_TILES,
         ) from exc
-    return _room_response(room, user, service)
+    return _room_response(room, user, service, storage)
 
 
 # Compte (access token) ou invité (cookie de sa salle) ; sans place, 404 comme un code inconnu
 @router.get("/{code}", responses=ROOM_NOT_FOUND_RESPONSES)
-def get_room(code: str, viewer: RoomViewerDep, service: RoomServiceDep) -> RoomResponse:
+def get_room(
+    code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
+) -> RoomResponse:
     try:
         room: Room = service.get_for_viewer(viewer, code)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
-    return _room_response(room, viewer.user, service)
+    return _room_response(room, viewer.user, service, storage)
 
 
 @router.post(
@@ -217,6 +260,7 @@ def join_as_guest(
     payload: JoinAsGuestRequest,
     response: Response,
     service: RoomServiceDep,
+    storage: ImageStorageDep,
     settings: SettingsDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> GuestRoomResponse:
@@ -239,7 +283,7 @@ def join_as_guest(
             detail=messages.NICKNAME_TAKEN,
         ) from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service)
+    return _guest_room_response(seat, service, storage)
 
 
 @router.post(
@@ -253,6 +297,7 @@ def restore_guest_session(
     payload: RestoreGuestRequest,
     response: Response,
     service: RoomServiceDep,
+    storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
     # Lien perso ouvert sur un autre appareil (US-5.4) : le cookie y est posé à son tour
@@ -265,7 +310,7 @@ def restore_guest_session(
             detail=messages.GUEST_LINK_INVALID,
         ) from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service)
+    return _guest_room_response(seat, service, storage)
 
 
 @router.post("/{code}/guest-link", responses=ROOM_NOT_FOUND_RESPONSES)
@@ -274,6 +319,7 @@ def renew_guest_link(
     viewer: RoomViewerDep,
     response: Response,
     service: RoomServiceDep,
+    storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
     # Invité reconnu par son cookie qui a perdu son lien perso : l'ancien cesse de marcher
@@ -282,11 +328,13 @@ def renew_guest_link(
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service)
+    return _guest_room_response(seat, service, storage)
 
 
-def _guest_room_response(seat: GuestSeat, service: RoomService) -> GuestRoomResponse:
-    room_response: RoomResponse = _room_response(seat.room, None, service)
+def _guest_room_response(
+    seat: GuestSeat, service: RoomService, storage: ImageStorage
+) -> GuestRoomResponse:
+    room_response: RoomResponse = _room_response(seat.room, None, service, storage)
     expires_at: datetime | None = seat.participant.guest_expires_at
     if expires_at is None:
         raise RuntimeError("A guest seat has an expiry date")
@@ -305,7 +353,9 @@ def _guest_room_response(seat: GuestSeat, service: RoomService) -> GuestRoomResp
         409: {"model": ErrorResponse, "description": messages.ROOM_FULL_OR_LOCKED_DESCRIPTION},
     },
 )
-def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomResponse:
+def join_room(
+    code: str, user: CurrentUserDep, service: RoomServiceDep, storage: ImageStorageDep
+) -> RoomResponse:
     # Rejoint comme joueur, ou retrouve sa place : appeler deux fois ne crée pas de seconde place
     try:
         room: Room = service.join(user, code)
@@ -317,7 +367,7 @@ def join_room(code: str, user: CurrentUserDep, service: RoomServiceDep) -> RoomR
         raise _room_locked() from exc
     except RoomFullError as exc:
         raise _room_full(exc) from exc
-    return _room_response(room, user, service)
+    return _room_response(room, user, service, storage)
 
 
 @router.patch(
@@ -333,6 +383,7 @@ def update_room_settings(
     payload: UpdateRoomSettingsRequest,
     user: CurrentUserDep,
     service: RoomServiceDep,
+    storage: ImageStorageDep,
 ) -> RoomResponse:
     # Seuls les réglages envoyés (non nuls) changent
     changes: RoomSettingsChanges = RoomSettingsChanges(**payload.model_dump(exclude_none=True))
@@ -348,7 +399,7 @@ def update_room_settings(
             code=ErrorCode.ROOM_SETTINGS_LOCKED,
             detail=messages.ROOM_SETTINGS_LOCKED,
         ) from exc
-    return _room_response(room, user, service)
+    return _room_response(room, user, service, storage)
 
 
 @router.delete(
@@ -368,6 +419,7 @@ def remove_participant(
     participant_id: uuid.UUID,
     user: CurrentUserDep,
     service: RoomServiceDep,
+    storage: ImageStorageDep,
     ban: bool = False,
 ) -> RoomResponse:
     # Supprime la place (US-2.11) ; avec ban=true, la personne ne peut plus revenir (US-2.12)
@@ -389,7 +441,7 @@ def remove_participant(
             code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
             detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
         ) from exc
-    return _room_response(room, user, service)
+    return _room_response(room, user, service, storage)
 
 
 @router.delete(
@@ -401,7 +453,11 @@ def remove_participant(
     },
 )
 def unban(
-    code: str, ban_id: uuid.UUID, user: CurrentUserDep, service: RoomServiceDep
+    code: str,
+    ban_id: uuid.UUID,
+    user: CurrentUserDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
 ) -> RoomResponse:
     try:
         room: Room = service.unban(user, code, ban_id)
@@ -415,4 +471,54 @@ def unban(
             code=ErrorCode.BAN_NOT_FOUND,
             detail=messages.BAN_NOT_FOUND,
         ) from exc
-    return _room_response(room, user, service)
+    return _room_response(room, user, service, storage)
+
+
+@router.post(
+    "/{code}/game",
+    status_code=201,
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
+        409: {"model": ErrorResponse, "description": messages.GAME_CANNOT_START_DESCRIPTION},
+    },
+)
+def start_game(
+    code: str,
+    user: CurrentUserDep,
+    games: GameServiceDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
+) -> RoomResponse:
+    # Le room admin lance une partie (US-3.1) : le premier item est montré à tous
+    try:
+        room: Room = games.start(user, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+    except GameInProgressError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.GAME_IN_PROGRESS,
+            detail=messages.GAME_IN_PROGRESS,
+        ) from exc
+    except NoPlacingParticipantError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.NO_PLACING_PARTICIPANT,
+            detail=messages.NO_PLACING_PARTICIPANT,
+        ) from exc
+    except TemplateNotFoundError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.TEMPLATE_NOT_FOUND,
+            detail=messages.TEMPLATE_NOT_FOUND,
+        ) from exc
+    except TemplateHasNoTilesError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.TEMPLATE_HAS_NO_TILES,
+            detail=messages.TEMPLATE_HAS_NO_TILES,
+        ) from exc
+    return _room_response(room, user, service, storage)

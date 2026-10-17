@@ -493,6 +493,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Game */
+        post: operations["start_game_rooms__code__game_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -561,6 +578,31 @@ export interface components {
             text?: string | null;
             /** Image Id */
             image_id?: string | null;
+        };
+        /** CurrentGameResponse */
+        CurrentGameResponse: {
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            current_item: components["schemas"]["CurrentItemResponse"];
+            /** Ends At */
+            ends_at: string | null;
+        };
+        /**
+         * CurrentItemResponse
+         * @description L'item du tour en cours, montré à tous : une tuile de la version figée.
+         */
+        CurrentItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Text */
+            text: string | null;
+            /** Image Url */
+            image_url: string | null;
         };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
@@ -637,6 +679,7 @@ export interface components {
             is_admin: boolean;
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
+            game: components["schemas"]["CurrentGameResponse"] | null;
             /** Guest Link */
             guest_link: string;
             /**
@@ -770,6 +813,7 @@ export interface components {
             is_admin: boolean;
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
+            game: components["schemas"]["CurrentGameResponse"] | null;
         };
         /** RoomSettingsResponse */
         RoomSettingsResponse: {
@@ -960,6 +1004,29 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** GameStartedData */
+        GameStartedData: {
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            /** Ends At */
+            ends_at: string | null;
+        };
+        /**
+         * GameStartedEvent
+         * @description Le room admin a lancé une partie : le premier item est montré à tous.
+         */
+        GameStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "game.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["GameStartedData"];
+        };
         /** ParticipantJoinedData */
         ParticipantJoinedData: {
             /**
@@ -1055,7 +1122,7 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["PingMessage"];
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -2959,6 +3026,82 @@ export interface operations {
             };
             /** @description Room or ban not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    start_game_rooms__code__game_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Game already in progress, no participant who places, or template deleted or without tiles */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

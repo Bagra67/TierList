@@ -223,6 +223,12 @@ export const fr = {
         submitBan: 'Bannir',
         submitting: 'Retrait…',
       },
+      start: {
+        submit: 'Lancer la partie',
+        submitting: 'Lancement…',
+      },
+      currentItem: 'Item {{number}} sur {{total}}',
+      currentItemImage: "Image de l'item en cours",
       bans: {
         title: 'Bannis ({{count}})',
         unban: 'Débannir',
@@ -314,6 +320,9 @@ export const fr = {
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: 'Seul le room admin peut faire cela.',
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
+      game_in_progress: 'Une partie est déjà en cours dans cette salle.',
+      no_placing_participant:
+        'Il faut au moins un participant qui place les items : invitez un joueur ou jouez vous-même.',
       room_full: 'Cette salle est pleine : {{max_participants}} participants au plus.',
       room_locked: 'Une partie est en cours et la salle est verrouillée.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',

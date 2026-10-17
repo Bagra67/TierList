@@ -6,6 +6,7 @@ schéma OpenAPI (app/main.py) pour que le frontend en génère les types.
 """
 
 import uuid
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
@@ -50,6 +51,22 @@ class ParticipantRemovedEvent(BaseModel):
     data: ParticipantRemovedData
 
 
+class GameStartedData(BaseModel):
+    # Le premier tour : le client relit la salle pour son item
+    round_number: int
+    round_count: int
+    # Fin du timer du tour, si la salle en a un
+    ends_at: datetime | None
+
+
+class GameStartedEvent(BaseModel):
+    """Le room admin a lancé une partie : le premier item est montré à tous."""
+
+    type: Literal["game.started"] = "game.started"
+    room_version: int
+    data: GameStartedData
+
+
 class RoomSettingsUpdatedData(BaseModel):
     pass
 
@@ -67,7 +84,8 @@ RoomEvent = Annotated[
     ParticipantJoinedEvent
     | ParticipantPresenceEvent
     | ParticipantRemovedEvent
-    | RoomSettingsUpdatedEvent,
+    | RoomSettingsUpdatedEvent
+    | GameStartedEvent,
     Field(discriminator="type"),
 ]
 
@@ -99,6 +117,7 @@ RoomServerMessage = Annotated[
     | ParticipantPresenceEvent
     | ParticipantRemovedEvent
     | RoomSettingsUpdatedEvent
+    | GameStartedEvent
     | PingMessage,
     Field(discriminator="type"),
 ]
