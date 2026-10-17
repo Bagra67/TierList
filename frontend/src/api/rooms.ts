@@ -24,6 +24,11 @@ type CreateRoomRequest = components['schemas']['CreateRoomRequest'];
 type JoinAsGuestRequest = components['schemas']['JoinAsGuestRequest'];
 // Réglages à changer : ceux qui sont absents restent tels quels
 export type RoomSettingsChanges = components['schemas']['UpdateRoomSettingsRequest'];
+// La partie en cours vue par le lecteur, ses tiers et ses propres placements
+export type CurrentGame = components['schemas']['CurrentGameResponse'];
+export type GameItem = components['schemas']['CurrentItemResponse'];
+export type GameTier = components['schemas']['GameTierResponse'];
+export type OwnPlacement = components['schemas']['OwnPlacementResponse'];
 
 async function createRoom(body: CreateRoomRequest): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms', { body }));
@@ -110,6 +115,24 @@ async function unban(code: string, banId: string): Promise<Room> {
 // Le room admin lance une partie (US-3.1) : la salle renvoyée porte la partie et son premier item
 async function startGame(code: string): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms/{code}/game', { params: { path: { code } } }));
+}
+
+// Place l'item en cours dans un tier, à une position (0 = premier) : la salle renvoyée porte le
+// plateau du lecteur à jour
+async function placeItem(code: string, request: PlaceItemRequest): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.PUT('/rooms/{code}/game/placements/{tile_id}', {
+      params: { path: { code, tile_id: request.tileId } },
+      body: { tier_id: request.tierId, position: request.position },
+    }),
+  );
+}
+
+// Le room admin passe à l'item suivant
+async function nextRound(code: string): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/game/next', { params: { path: { code } } }),
+  );
 }
 
 // La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
@@ -221,6 +244,30 @@ export function useStartGame(code: string): UseMutationResult<Room, Error, void>
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: () => startGame(canonicalRoomCode(code)),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+export interface PlaceItemRequest {
+  tileId: string;
+  tierId: string;
+  position: number;
+}
+
+// Place ou déplace l'item en cours dans le plateau du lecteur (US-3.3)
+export function usePlaceItem(code: string): UseMutationResult<Room, Error, PlaceItemRequest> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: PlaceItemRequest) => placeItem(canonicalRoomCode(code), request),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Passe à l'item suivant, réservé au room admin (US-3.4)
+export function useNextRound(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => nextRound(canonicalRoomCode(code)),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }
