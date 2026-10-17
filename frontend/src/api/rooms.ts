@@ -145,7 +145,27 @@ async function endCooldown(code: string): Promise<Room> {
 // La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
 // l'affiche sans nouvelle lecture
 function storeRoom(queryClient: QueryClient, room: Room): void {
+  const cached: Room | undefined = queryClient.getQueryData<Room>(roomQueryKey(room.code));
+  if (cached !== undefined && isOlder(room, cached)) return;
   queryClient.setQueryData(roomQueryKey(room.code), room);
+}
+
+// Une réponse arrivée après un événement temps réel déjà appliqué ne doit pas le défaire. Un
+// déplacement ne change pas la version : à version égale, une partie en retard (tour, statut)
+// est aussi plus ancienne.
+const GAME_STATUS_ORDER: Record<CurrentGame['status'], number> = {
+  in_round: 0,
+  cooldown: 1,
+  closed: 2,
+};
+
+function isOlder(room: Room, cached: Room): boolean {
+  if (room.version !== cached.version) return room.version < cached.version;
+  if (room.game === null || cached.game === null) return false;
+  if (room.game.status !== cached.game.status) {
+    return GAME_STATUS_ORDER[room.game.status] < GAME_STATUS_ORDER[cached.game.status];
+  }
+  return room.game.round_number < cached.game.round_number;
 }
 
 // Qui ouvre la salle : un compte connecté, ou un visiteur sans compte (invité, peut-être déjà

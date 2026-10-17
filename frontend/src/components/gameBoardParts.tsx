@@ -49,12 +49,23 @@ interface DraggableItemProps {
   // Identifiant du glisser-déposer : event.active.id à la fin
   id: string;
   label: string;
+  // Nom accessible, quand le texte visible n'est pas l'item lui-même (poignée du dock)
+  ariaLabel?: string;
+  // Clé pour useFocusAfterUpdate (boardHooks.ts)
+  focusKey: string;
   disabled: boolean;
   children: ReactNode;
 }
 
 // Un item à glisser vers un tier ; au clavier, Espace ou Entrée le saisit
-export function DraggableItem({ id, label, disabled, children }: DraggableItemProps) {
+export function DraggableItem({
+  id,
+  label,
+  ariaLabel,
+  focusKey,
+  disabled,
+  children,
+}: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const {
     attributes,
@@ -75,8 +86,9 @@ export function DraggableItem({ id, label, disabled, children }: DraggableItemPr
       style={style}
       {...attributes}
       {...listeners}
-      aria-label={t('rooms.game.dragLabel', { item: label })}
-      className="cursor-grab touch-none rounded-md bg-primary/10 px-2 py-1 ring-2 ring-primary"
+      data-focus-key={focusKey}
+      aria-label={ariaLabel ?? t('rooms.game.dragLabel', { item: label })}
+      className="cursor-grab rounded-md bg-primary/10 px-2 py-1 ring-2 ring-primary"
     >
       {children}
     </button>

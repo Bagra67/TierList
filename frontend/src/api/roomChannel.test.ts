@@ -123,6 +123,17 @@ describe('useRoomEvents', () => {
     expect(isInvalidated(queryClient)).toBe(true);
   });
 
+  it.each(['round.started', 'cooldown.started', 'game.closed'])(
+    'reads the room again on %s',
+    (type: string) => {
+      const { queryClient } = followRoom();
+
+      latestSocket().receive({ type, room_version: 4, data: {} });
+
+      expect(isInvalidated(queryClient)).toBe(true);
+    },
+  );
+
   it('removes a participant from the cache without reading the room again', () => {
     const { queryClient } = followRoom();
 

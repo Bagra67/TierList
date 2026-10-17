@@ -9,11 +9,13 @@ import { Button } from './ui/button';
 
 interface EndCooldownDialogProps {
   code: string;
+  // Appelé une fois la partie close : ce dialogue et l'écran de jeu disparaissent
+  onEnded: () => void;
 }
 
 // « Terminer maintenant » (US-4.1), réservé au room admin : les classements de tous deviennent
 // définitifs, d'où la confirmation dans un <dialog> natif (focus piégé, fermeture avec Échap)
-export function EndCooldownDialog({ code }: EndCooldownDialogProps) {
+export function EndCooldownDialog({ code, onEnded }: EndCooldownDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const endMutation = useEndCooldown(code);
   const { t } = useTranslation();
@@ -25,8 +27,9 @@ export function EndCooldownDialog({ code }: EndCooldownDialogProps) {
     } catch {
       return; // l'erreur est affichée depuis endMutation.error
     }
-    // La salle renvoyée n'a plus de partie : l'écran du cooldown et ce dialogue disparaissent
-    dialogRef.current?.close();
+    // La salle renvoyée n'a plus de partie : ce dialogue disparaît avec l'écran du cooldown, le
+    // focus va au lobby
+    onEnded();
   }
 
   return (
