@@ -20,8 +20,10 @@ from app.constants.rooms import GUEST_COOKIE
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.exceptions.games import (
+    CooldownNotInProgressError,
     GameInProgressError,
     ItemNotCurrentError,
+    ItemNotInGameError,
     NoPlacingParticipantError,
     NotAPlacingParticipantError,
     RoundNotInProgressError,
@@ -493,6 +495,12 @@ def place_item(
             code=ErrorCode.ITEM_NOT_CURRENT,
             detail=messages.ITEM_NOT_CURRENT,
         ) from exc
+    except ItemNotInGameError as exc:
+        raise AppHTTPException(
+            status_code=404,
+            code=ErrorCode.ITEM_NOT_IN_GAME,
+            detail=messages.ITEM_NOT_IN_GAME,
+        ) from exc
     return room_response(seat.room, seat, service, storage)
 
 
@@ -523,5 +531,36 @@ def next_round(
             status_code=409,
             code=ErrorCode.ROUND_NOT_IN_PROGRESS,
             detail=messages.ROUND_NOT_IN_PROGRESS,
+        ) from exc
+    return room_response(room, service.seat_in(room, user), service, storage)
+
+
+@router.post(
+    "/{code}/game/end",
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
+        409: {"model": ErrorResponse, "description": messages.COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION},
+    },
+)
+def end_cooldown(
+    code: str,
+    user: CurrentUserDep,
+    games: GameServiceDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
+) -> RoomResponse:
+    # Le room admin termine le cooldown final avant la fin de son timer (US-4.1)
+    try:
+        room: Room = games.end_cooldown(user, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+    except CooldownNotInProgressError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.COOLDOWN_NOT_IN_PROGRESS,
+            detail=messages.COOLDOWN_NOT_IN_PROGRESS,
         ) from exc
     return room_response(room, service.seat_in(room, user), service, storage)

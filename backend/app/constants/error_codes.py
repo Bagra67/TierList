@@ -85,6 +85,10 @@ class ErrorCode(StrEnum):
     NOT_A_PLACING_PARTICIPANT = "not_a_placing_participant"
     # La tuile n'est pas l'item du tour en cours
     ITEM_NOT_CURRENT = "item_not_current"
+    # Pendant le cooldown, la tuile n'est pas un item de la partie
+    ITEM_NOT_IN_GAME = "item_not_in_game"
+    # La partie n'est pas dans son cooldown final
+    COOLDOWN_NOT_IN_PROGRESS = "cooldown_not_in_progress"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

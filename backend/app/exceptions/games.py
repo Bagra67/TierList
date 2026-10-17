@@ -18,3 +18,11 @@ class NotAPlacingParticipantError(Exception):
 class ItemNotCurrentError(Exception):
     """La tuile n'est pas l'item du tour en cours : un item passé ne bouge pas avant le cooldown
     (US-3.3), un item futur n'est pas encore montré."""
+
+
+class ItemNotInGameError(Exception):
+    """Pendant le cooldown : la tuile n'est pas un item de la partie."""
+
+
+class CooldownNotInProgressError(Exception):
+    """La partie de la salle n'est pas dans son cooldown final : rien à terminer."""

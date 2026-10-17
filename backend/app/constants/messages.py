@@ -53,6 +53,8 @@ NO_PLACING_PARTICIPANT = "A game needs at least one participant who places the i
 ROUND_NOT_IN_PROGRESS = "No round is in progress in this room"
 NOT_A_PLACING_PARTICIPANT = "The room admin does not play: they do not place the items"
 ITEM_NOT_CURRENT = "This tile is not the item of the current round"
+ITEM_NOT_IN_GAME = "This tile is not an item of the game"
+COOLDOWN_NOT_IN_PROGRESS = "The final cooldown is not in progress in this room"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
@@ -87,9 +89,12 @@ ROOM_SETTINGS_LOCKED_DESCRIPTION = "Settings locked during a game, except late a
 NICKNAME_TAKEN_DESCRIPTION = "Nickname already used in the room"
 ROOM_FULL_OR_LOCKED_DESCRIPTION = "Room full, or locked during a game"
 NOT_A_PLACING_PARTICIPANT_DESCRIPTION = "The room admin does not play"
-ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier not in the game"
+ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier or tile not in the game"
 ROUND_NOT_IN_PROGRESS_DESCRIPTION = "No round in progress (no game, or the cooldown has begun)"
-CANNOT_PLACE_DESCRIPTION = "No round in progress, or the tile is not the current item"
+CANNOT_PLACE_DESCRIPTION = (
+    "No round nor cooldown in progress, or during a round the tile is not the current item"
+)
+COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
 GAME_CANNOT_START_DESCRIPTION = (
     "Game already in progress, no participant who places, or template deleted or without tiles"
 )

@@ -1,10 +1,10 @@
-"""Règles métier des parties : démarrage, placements et enchaînement des tours
+"""Règles métier des parties : démarrage, placements, enchaînement des tours et cooldown final
 (docs/technical/games.md).
 
 Le service possède la frontière de transaction : le démarrage fige le template, crée la partie et
-ses tours et passe la salle en partie dans un seul commit ; un placement et la fin d'un tour sont
-enregistrés sous le verrou de la salle. Les événements sont publiés aux sockets de la salle après
-le commit, et le timer du nouveau tour est programmé. Le cooldown lui-même vient avec #96.
+ses tours et passe la salle en partie dans un seul commit ; un placement, la fin d'un tour et la
+fin du cooldown sont enregistrés sous le verrou de la salle. Les événements sont publiés aux
+sockets de la salle après le commit, puis l'échéance suivante (tour ou cooldown) est programmée.
 """
 
 import logging
@@ -16,8 +16,10 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.exceptions.games import (
+    CooldownNotInProgressError,
     GameInProgressError,
     ItemNotCurrentError,
+    ItemNotInGameError,
     NoPlacingParticipantError,
     NotAPlacingParticipantError,
     RoundNotInProgressError,
@@ -37,6 +39,8 @@ from app.repositories import rooms as room_repository
 from app.schemas.room_events import (
     CooldownStartedData,
     CooldownStartedEvent,
+    GameClosedData,
+    GameClosedEvent,
     GameStartedData,
     GameStartedEvent,
     ParticipantPlacedData,
@@ -57,6 +61,40 @@ def shuffle_items(tiles: Sequence[SnapshotTile]) -> list[SnapshotTile]:
     shuffled: list[SnapshotTile] = list(tiles)
     random.SystemRandom().shuffle(shuffled)
     return shuffled
+
+
+def _board(game: Game, seat: Participant, phase: PlacementPhase) -> list[Placement]:
+    """Le plateau d'une place pour une phase : ses placements de tour, ou ses placements finaux."""
+    return [
+        placement
+        for placement in game.placements
+        if placement.participant_id == seat.id and placement.phase == phase
+    ]
+
+
+def _start_final_boards(game: Game) -> None:
+    """Début du cooldown : chaque placement de tour (sauf les votes absents) est copié en
+    placement final, au même tier et à la même position. Un item que personne ne déplace garde
+    donc un placement final égal à celui du tour (US-4.2) ; déplacer ne change que la copie."""
+    round_placements: list[Placement] = [
+        placement
+        for placement in game.placements
+        if placement.phase == PlacementPhase.ROUND and not placement.is_absent
+    ]
+    for round_placement in round_placements:
+        final: Placement = Placement(
+            participant_id=round_placement.participant_id,
+            snapshot_tile_id=round_placement.snapshot_tile_id,
+            phase=PlacementPhase.FINAL,
+            snapshot_tier_id=round_placement.snapshot_tier_id,
+            position=round_placement.position,
+        )
+        game.placements.append(final)
+
+
+def _ensure_tier_in_game(game: Game, tier_id: uuid.UUID) -> None:
+    if not any(tier.id == tier_id for tier in game.snapshot.tiers):
+        raise TierNotFoundError
 
 
 def _in_tier(board: list[Placement], tier_id: uuid.UUID, excluded: Placement) -> list[Placement]:
@@ -177,29 +215,29 @@ class GameService:
     def place(
         self, viewer: RoomViewer, code: str, tile_id: uuid.UUID, tier_id: uuid.UUID, position: int
     ) -> Participant:
-        """Place l'item en cours dans un tier, à une position (US-3.3) ; le replacer pendant le
-        même tour remplace le placement. Renvoie la place du lecteur (sa salle : seat.room).
-        Seul le premier placement du tour est diffusé, sans tier ni position (plateau privé)."""
+        """Place une tuile dans un tier, à une position. Pendant un tour (US-3.3) : l'item en
+        cours seulement ; le replacer pendant le même tour remplace le placement. Pendant le
+        cooldown final (US-4.1, US-4.6) : n'importe quel item de la partie, en placement final.
+        Renvoie la place du lecteur (sa salle : seat.room). Seul le premier placement d'un tour
+        est diffusé, sans tier ni position (plateau privé)."""
         seat: Participant = self._rooms.seat_of(viewer, code, for_update=True)
         room: Room = seat.room
         game: Game | None = room.current_game
-        if game is None or game.status != GameStatus.IN_ROUND:
+        if game is None:
             raise RoundNotInProgressError
         if seat not in self.placing_participants(room):
             raise NotAPlacingParticipantError
+        if game.status == GameStatus.COOLDOWN:
+            self._place_final(seat, game, tile_id, tier_id, position)
+            return seat
         current_round: Round = game.current_round
         # Un item passé ne bouge pas avant le cooldown, un item futur n'est pas encore montré
         if tile_id != current_round.snapshot_tile_id:
             raise ItemNotCurrentError
-        if not any(tier.id == tier_id for tier in game.snapshot.tiers):
-            raise TierNotFoundError
+        _ensure_tier_in_game(game, tier_id)
 
         # Le plateau du lecteur pour cette phase : ses placements de tour dans cette partie
-        board: list[Placement] = [
-            placement
-            for placement in game.placements
-            if placement.participant_id == seat.id and placement.phase == PlacementPhase.ROUND
-        ]
+        board: list[Placement] = _board(game, seat, PlacementPhase.ROUND)
         placement: Placement | None = next(
             (placement for placement in board if placement.snapshot_tile_id == tile_id), None
         )
@@ -256,12 +294,7 @@ class GameService:
     def end_round_on_timer(self, game_id: uuid.UUID, round_number: int) -> None:
         """Termine le tour à la fin de son timer. Sans effet si ce tour n'est plus en cours : le
         « suivant » ou « tout le monde a placé » l'a terminé avant (transition idempotente)."""
-        room_id: uuid.UUID | None = game_repository.get_room_id_of_game(self._session, game_id)
-        room: Room | None = (
-            room_repository.get_room_by_id(self._session, room_id, for_update=True)
-            if room_id is not None
-            else None
-        )
+        room: Room | None = self._locked_room_of_game(game_id)
         game: Game | None = room.current_game if room is not None else None
         if (
             room is None
@@ -294,9 +327,76 @@ class GameService:
         self._session.commit()
         self._announce_round_end(room, game, round_end)
 
+    def end_cooldown(self, user: User, code: str) -> Room:
+        """Termine le cooldown final avant son timer (room admin seulement, US-4.1) : la partie
+        est close."""
+        room: Room = self._rooms.get_for_admin_change(user, code)
+        game: Game | None = room.current_game
+        if game is None or game.status != GameStatus.COOLDOWN:
+            raise CooldownNotInProgressError
+        closed: GameClosedEvent = self._close_game(room, game)
+        self._session.commit()
+        self._publisher.publish(room.id, closed)
+        return room
+
+    def end_cooldown_on_timer(self, game_id: uuid.UUID) -> None:
+        """Termine le cooldown à la fin de son timer. Sans effet s'il n'est plus en cours : le
+        room admin l'a terminé avant (transition idempotente)."""
+        room: Room | None = self._locked_room_of_game(game_id)
+        game: Game | None = room.current_game if room is not None else None
+        if room is None or game is None or game.id != game_id or game.status != GameStatus.COOLDOWN:
+            # Le commit libère seulement le verrou
+            self._session.commit()
+            return
+        closed: GameClosedEvent = self._close_game(room, game)
+        self._session.commit()
+        self._publisher.publish(room.id, closed)
+
     def pending_round_deadlines(self) -> list[tuple[uuid.UUID, int, datetime]]:
         """Échéances des tours en cours, à reprogrammer au démarrage du processus."""
         return game_repository.list_pending_round_deadlines(self._session)
+
+    def pending_cooldown_ends(self) -> list[tuple[uuid.UUID, datetime]]:
+        """Fins des cooldowns en cours, à reprogrammer au démarrage du processus."""
+        return game_repository.list_pending_cooldown_ends(self._session)
+
+    def _place_final(
+        self, seat: Participant, game: Game, tile_id: uuid.UUID, tier_id: uuid.UUID, position: int
+    ) -> None:
+        """Pendant le cooldown : déplace un item du plateau final, ou y place un item manqué
+        (vote absent, arrivée en retard), qui garde son vote absent de tour (US-4.6). Le plateau
+        est privé : ni version, ni événement."""
+        # Le timer n'est peut-être pas encore passé : la fin du cooldown compte déjà
+        if game.cooldown_ends_at is not None and datetime.now(UTC) >= game.cooldown_ends_at:
+            raise RoundNotInProgressError
+        if not any(game_round.snapshot_tile_id == tile_id for game_round in game.rounds):
+            raise ItemNotInGameError
+        _ensure_tier_in_game(game, tier_id)
+        board: list[Placement] = _board(game, seat, PlacementPhase.FINAL)
+        placement: Placement | None = next(
+            (placement for placement in board if placement.snapshot_tile_id == tile_id), None
+        )
+        caught_up: bool = placement is None
+        if placement is None:
+            placement = Placement(
+                participant_id=seat.id, snapshot_tile_id=tile_id, phase=PlacementPhase.FINAL
+            )
+            game.placements.append(placement)
+        _place_in_tier(board, placement, tier_id, position)
+        self._session.commit()
+        logger.info(
+            "Placement final : game_id=%s participant_id=%s caught_up=%s",
+            game.id,
+            seat.id,
+            caught_up,
+        )
+
+    def _locked_room_of_game(self, game_id: uuid.UUID) -> Room | None:
+        """La salle de la partie, verrouillée ; None si elle a été supprimée."""
+        room_id: uuid.UUID | None = game_repository.get_room_id_of_game(self._session, game_id)
+        if room_id is None:
+            return None
+        return room_repository.get_room_by_id(self._session, room_id, for_update=True)
 
     @staticmethod
     def _round_ends_at(room: Room, now: datetime) -> datetime | None:
@@ -367,18 +467,34 @@ class GameService:
         cooldown_ends_at: datetime = now + timedelta(seconds=room.cooldown_seconds)
         game.status = GameStatus.COOLDOWN
         game.cooldown_ends_at = cooldown_ends_at
+        _start_final_boards(game)
         return CooldownStartedEvent(
             room_version=room.version, data=CooldownStartedData(ends_at=cooldown_ends_at)
         )
 
+    def _close_game(self, room: Room, game: Game) -> GameClosedEvent:
+        """Termine le cooldown, sous le verrou de la salle, sans commit : les classements sont
+        finaux et la partie close (US-4.1). La salle redevient ouverte dans la même transaction :
+        « une partie en cours » vit dans les deux tables (docs/technical/games.md)."""
+        game.status = GameStatus.CLOSED
+        game.closed_at = datetime.now(UTC)
+        room.status = RoomStatus.OPEN
+        room.version += 1
+        logger.info("Partie close : room_id=%s game_id=%s", room.id, game.id)
+        return GameClosedEvent(room_version=room.version, data=GameClosedData(game_id=game.id))
+
     def _announce_round_end(
         self, room: Room, game: Game, round_end: RoundStartedEvent | CooldownStartedEvent
     ) -> None:
-        """Après le commit : publie la fin du tour et programme le timer du nouveau tour."""
+        """Après le commit : publie la fin du tour et programme l'échéance qui suit."""
         self._publisher.publish(room.id, round_end)
         self._schedule_current_round(game)
 
     def _schedule_current_round(self, game: Game) -> None:
+        """Programme l'échéance de la phase en cours : le timer du tour, ou la fin du cooldown."""
+        if game.status == GameStatus.COOLDOWN and game.cooldown_ends_at is not None:
+            self._scheduler.schedule_cooldown_end(game.id, game.cooldown_ends_at)
+            return
         if game.status != GameStatus.IN_ROUND:
             return
         current_round: Round = game.current_round

@@ -111,6 +111,20 @@ class CooldownStartedEvent(BaseModel):
     data: CooldownStartedData
 
 
+class GameClosedData(BaseModel):
+    # La partie close (ses résultats viendront avec #99)
+    game_id: uuid.UUID
+
+
+class GameClosedEvent(BaseModel):
+    """Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la
+    salle redevient ouverte."""
+
+    type: Literal["game.closed"] = "game.closed"
+    room_version: int
+    data: GameClosedData
+
+
 class RoomSettingsUpdatedData(BaseModel):
     pass
 
@@ -132,7 +146,8 @@ RoomEvent = Annotated[
     | GameStartedEvent
     | ParticipantPlacedEvent
     | RoundStartedEvent
-    | CooldownStartedEvent,
+    | CooldownStartedEvent
+    | GameClosedEvent,
     Field(discriminator="type"),
 ]
 
@@ -168,6 +183,7 @@ RoomServerMessage = Annotated[
     | ParticipantPlacedEvent
     | RoundStartedEvent
     | CooldownStartedEvent
+    | GameClosedEvent
     | PingMessage,
     Field(discriminator="type"),
 ]

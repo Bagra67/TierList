@@ -65,20 +65,32 @@ def _end_round_on_timer(
         _game_service(session).end_round_on_timer(game_id, round_number)
 
 
+def _end_cooldown_on_timer(session_factory: SessionFactory, game_id: uuid.UUID) -> None:
+    with session_factory() as session:
+        _game_service(session).end_cooldown_on_timer(game_id)
+
+
 def _reschedule_rounds(session_factory: SessionFactory) -> None:
-    """Un processus qui démarre n'a aucun timer : les échéances des tours en cours sont relues en
-    base et reprogrammées (une échéance passée pendant l'arrêt se déclenche tout de suite)."""
+    """Un processus qui démarre n'a aucun timer : les échéances des tours en cours et des
+    cooldowns sont relues en base et reprogrammées (une échéance passée pendant l'arrêt se
+    déclenche tout de suite)."""
     try:
         with session_factory() as session:
-            deadlines: list[tuple[uuid.UUID, int, datetime]] = _game_service(
-                session
-            ).pending_round_deadlines()
+            games: GameService = _game_service(session)
+            deadlines: list[tuple[uuid.UUID, int, datetime]] = games.pending_round_deadlines()
+            cooldown_ends: list[tuple[uuid.UUID, datetime]] = games.pending_cooldown_ends()
     except SQLAlchemyError:
         logger.warning("Timers des tours non reprogrammés : base injoignable", exc_info=True)
         return
     for game_id, round_number, ends_at in deadlines:
         round_timers.schedule(game_id, round_number, ends_at)
-    logger.info("Timers des tours reprogrammés au démarrage : %d", len(deadlines))
+    for game_id, cooldown_ends_at in cooldown_ends:
+        round_timers.schedule_cooldown_end(game_id, cooldown_ends_at)
+    logger.info(
+        "Timers reprogrammés au démarrage : %d tours, %d cooldowns",
+        len(deadlines),
+        len(cooldown_ends),
+    )
 
 
 @asynccontextmanager
@@ -93,7 +105,10 @@ async def lifespan(started_app: FastAPI) -> AsyncIterator[None]:
         # La base est synchrone : la transition passe par le threadpool (realtime.md, §2.8)
         await run_in_threadpool(_end_round_on_timer, session_factory, game_id, round_number)
 
-    round_timers.start(asyncio.get_running_loop(), on_deadline)
+    async def on_cooldown_deadline(game_id: uuid.UUID) -> None:
+        await run_in_threadpool(_end_cooldown_on_timer, session_factory, game_id)
+
+    round_timers.start(asyncio.get_running_loop(), on_deadline, on_cooldown_deadline)
     await run_in_threadpool(_reschedule_rounds, session_factory)
     yield
     await round_timers.stop()

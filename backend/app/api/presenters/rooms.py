@@ -4,7 +4,7 @@ un invité, room admin ou non (docs/technical/rooms.md)."""
 import uuid
 
 from app.api.presenters.images import optional_image_url
-from app.models.enums import PlacementPhase
+from app.models.enums import GameStatus, PlacementPhase
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
@@ -75,7 +75,8 @@ def current_game_response(
     game: Game | None, seat: Participant, storage: ImageStorage
 ) -> CurrentGameResponse | None:
     """La partie en cours vue par ce lecteur : son tour, son item, qui l'a placé, et les
-    placements du lecteur seulement (plateau privé)."""
+    placements du lecteur seulement (plateau privé) : ceux du tour pendant les tours, les finaux
+    pendant le cooldown, avec les items qui lui manquent."""
     if game is None:
         return None
     current_round: Round = game.current_round
@@ -93,16 +94,23 @@ def current_game_response(
         for placement in round_placements
         if placement.snapshot_tile_id == current_round.snapshot_tile_id
     ]
+    # Le plateau du lecteur pour la phase en cours, sans ses votes absents
+    board_phase: PlacementPhase = (
+        PlacementPhase.FINAL if game.status == GameStatus.COOLDOWN else PlacementPhase.ROUND
+    )
+    board: list[Placement] = [
+        placement
+        for placement in game.placements
+        if placement.participant_id == seat.id
+        and placement.phase == board_phase
+        and not placement.is_absent
+    ]
     # Rang de chaque tier, de haut en bas : trie les placements du lecteur tier par tier
     tier_ranks: dict[uuid.UUID, int] = {tier.id: tier.position for tier in game.snapshot.tiers}
     own_placements: list[OwnPlacementResponse] = []
-    for placement in round_placements:
-        # Sans vote absent dans round_placements : le tier et la position sont connus
-        if (
-            placement.participant_id != seat.id
-            or placement.snapshot_tier_id is None
-            or placement.position is None
-        ):
+    for placement in board:
+        # Sans vote absent dans board : le tier et la position sont connus
+        if placement.snapshot_tier_id is None or placement.position is None:
             continue
         own_placement: OwnPlacementResponse = OwnPlacementResponse(
             item=_item_response(placement.tile, storage),
@@ -111,6 +119,15 @@ def current_game_response(
         )
         own_placements.append(own_placement)
     own_placements.sort(key=lambda own: (tier_ranks[own.tier_id], own.position))
+    # Pendant le cooldown, chaque item de la partie sans placement final reste à placer (US-4.6)
+    missed_items: list[CurrentItemResponse] = []
+    if game.status == GameStatus.COOLDOWN:
+        placed_tile_ids: set[uuid.UUID] = {placement.snapshot_tile_id for placement in board}
+        missed_items = [
+            _item_response(game_round.tile, storage)
+            for game_round in game.rounds
+            if game_round.snapshot_tile_id not in placed_tile_ids
+        ]
     return CurrentGameResponse(
         status=game.status,
         round_number=current_round.number,
@@ -121,6 +138,7 @@ def current_game_response(
         placed_participant_ids=placed_participant_ids,
         own_placements=own_placements,
         cooldown_ends_at=game.cooldown_ends_at,
+        missed_items=missed_items,
     )
 
 
