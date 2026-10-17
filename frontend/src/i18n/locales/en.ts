@@ -21,6 +21,13 @@ export const en: Translation = {
     templates: 'My templates',
     history: 'History',
   },
+  settings: {
+    open: 'Settings',
+    title: 'Settings',
+    close: 'Close',
+    display: 'Display',
+    account: 'Account',
+  },
   history: {
     title: 'History',
     empty: 'No finished game yet. Your games will show here once closed.',
