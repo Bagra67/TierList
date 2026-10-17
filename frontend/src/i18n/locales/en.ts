@@ -314,6 +314,9 @@ export const en: Translation = {
       game_in_progress: 'A game is already in progress in this room.',
       no_placing_participant:
         'A game needs at least one participant who places the items: invite a player or play yourself.',
+      round_not_in_progress: 'No round is in progress: the item can no longer be placed.',
+      not_a_placing_participant: 'You do not play in this game: you only have the controls.',
+      item_not_current: 'This item is no longer the current one: the round has moved on.',
       room_full: 'This room is full: {{max_participants}} participants at most.',
       room_locked: 'A game is in progress and the room is locked.',
       nickname_taken: 'This nickname is already used in this room.',

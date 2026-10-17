@@ -323,6 +323,10 @@ export const fr = {
       game_in_progress: 'Une partie est déjà en cours dans cette salle.',
       no_placing_participant:
         'Il faut au moins un participant qui place les items : invitez un joueur ou jouez vous-même.',
+      round_not_in_progress: "Aucun tour n'est en cours : l'item ne peut plus être placé.",
+      not_a_placing_participant:
+        'Vous ne jouez pas cette partie : vous avez seulement les commandes.',
+      item_not_current: "Cet item n'est plus l'item en cours : le tour est passé.",
       room_full: 'Cette salle est pleine : {{max_participants}} participants au plus.',
       room_locked: 'Une partie est en cours et la salle est verrouillée.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',
