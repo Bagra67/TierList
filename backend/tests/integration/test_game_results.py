@@ -191,6 +191,13 @@ def test_an_unknown_results_link_is_not_found(auth_client: TestClient):
     assert response.json()["code"] == ErrorCode.RESULTS_NOT_FOUND
 
 
+def test_a_results_link_longer_than_any_token_is_refused_at_once(auth_client: TestClient):
+    response: Response = results(auth_client, "x" * 33)
+
+    # Plus long que games.public_token : refusé avant toute lecture en base
+    assert response.status_code == 422
+
+
 def test_the_lobby_lists_the_past_games_of_the_room(
     auth_client: TestClient, bob: dict[str, str], alice_room: JsonObject, public_token: str
 ):
@@ -202,3 +209,16 @@ def test_the_lobby_lists_the_past_games_of_the_room(
     assert past_game["public_token"] == public_token
     assert past_game["player_count"] == 3
     assert past_game["closed_at"] is not None
+
+
+def test_every_room_answer_counts_the_players_of_the_past_games(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject, public_token: str
+):
+    # Une réponse construite après un commit (réglages) relit la salle : le nombre de joueurs,
+    # calculé par la requête, ne doit pas tomber à 0
+    changed: Response = auth_client.patch(
+        f"/rooms/{alice_room['code']}/settings", json={"admin_plays": False}, headers=alice
+    )
+
+    assert changed.status_code == 200
+    assert changed.json()["past_games"][0]["player_count"] == 3
