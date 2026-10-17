@@ -423,6 +423,19 @@ La fermeture d'une salle ([guide des salles](rooms.fr.md#26-fermer-une-salle)) a
 | `test_deleting_the_admin_account_closes_their_room_and_its_game` | Bob place le premier item ; Alice supprime son compte pendant le tour.                                                | Supprimer un room admin ferme ses salles, au lieu de laisser une partie orpheline. | `204` ; plus aucune salle ; la partie est `closed` avec Bob pour seul joueur ; les sockets de la salle sont fermés.                                                                                                   |
 | `test_a_wrong_password_keeps_the_admin_rooms`                    | Alice supprime son compte avec un mauvais mot de passe.                                                               | Les salles ne sont fermées qu'une fois la suppression confirmée.                   | `403` ; la salle est toujours là ; aucun socket fermé.                                                                                                                                                                |
 
+#### `tests/integration/test_room_inactivity.py` (fermeture automatique)
+
+La fermeture automatique des salles inactives ([guide des salles](rooms.fr.md#26-fermer-une-salle)), sur un vrai PostgreSQL. `games` construit le service comme le balayage (`build_game_service`) ; `last_changed` recule `rooms.updated_at` de quelques heures ; le délai est de 24 h.
+
+| Test                                                        | Ce qu'il fait                                                                     | But                                                       | Résultat attendu                                           |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| `test_an_empty_room_without_change_for_the_delay_is_closed` | La salle a changé il y a 25 h ; personne de connecté.                             | US-2.8.                                                   | Une salle fermée ; plus aucune salle ; ses sockets fermés. |
+| `test_a_room_changed_within_the_delay_stays_open`           | La salle a changé il y a 23 h.                                                    | Le délai est respecté.                                    | Rien de fermé.                                             |
+| `test_a_room_with_someone_connected_stays_open`             | Alice est connectée ; la salle a changé il y a 25 h.                              | Le heartbeat n'écrit rien : être connecté garde la salle. | Rien de fermé.                                             |
+| `test_a_room_in_game_is_never_closed_for_inactivity`        | Une partie est lancée ; la salle a changé il y a 25 h.                            | Seule une salle ouverte se ferme pour inactivité.         | Rien de fermé.                                             |
+| `test_a_room_active_again_is_checked_under_its_lock`        | La liste des candidates est remplacée pour renvoyer une salle changée il y a 1 h. | Quelqu'un peut revenir entre la liste et le verrou.       | Rien de fermé, aucun socket fermé.                         |
+| `test_a_change_of_the_room_restarts_the_delay`              | La salle a changé il y a 25 h, puis Bob la rejoint.                               | `rooms.updated_at` suit la version.                       | Rien de fermé.                                             |
+
 #### `tests/integration/test_room_capacity.py` (capacité et verrou des arrivées)
 
 La limite de la salle et le verrou des arrivées ([guide des salles](rooms.fr.md#règles)). `fill_with_guests` ajoute des invités depuis des navigateurs distincts (cookies effacés), plus vite que des comptes ; `fill_the_room` remplit les places laissées après celle du room admin ; `start_a_game` met la salle en `playing`, avec ou sans arrivées.
@@ -738,6 +751,16 @@ Tests de `RoundTimers` (`app/services/round_timers.py`) avec des transitions qui
 | `test_an_older_deadline_never_replaces_a_newer_one`             | Tour 3 puis tour 2 pour une partie ; fin du cooldown puis tour 3 pour une autre. | Des transitions concurrentes programment dans un ordre quelconque. | Seuls le tour 3 et la fin du cooldown se déclenchent.                  |
 | `test_a_failing_transition_is_tried_again`                      | La transition échoue une fois ; petits délais de retry.                          | Une coupure de la base ne perd pas l'échéance.                     | Deux essais, le second réussit, pas de troisième.                      |
 | `test_the_cooldown_end_replaces_the_deadline_of_the_last_round` | Dernier tour dans 0,05 s, puis fin du cooldown dans 0,08 s pour la même partie.  | Une échéance par partie : le cooldown remplace le tour.            | Seul le cooldown se termine ; la transition de tour n'est pas appelée. |
+
+### 1.18 Tests unitaires : `tests/test_room_sweeper.py` (balayage des salles inactives)
+
+Tests de `RoomSweeper` (`app/services/room_sweeper.py`) avec un balayage qui enregistre ses appels et de vrais intervalles courts, dans `asyncio.run`.
+
+| Test                                                        | Ce qu'il fait                            | But                                           | Résultat attendu                               |
+| ----------------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | ---------------------------------------------- |
+| `test_the_sweep_runs_at_each_interval`                      | Intervalle de 10 ms, arrêt après 100 ms. | Le balayage se répète.                        | Au moins deux balayages.                       |
+| `test_a_failed_sweep_is_logged_and_the_next_one_still_runs` | Le premier balayage échoue.              | Un incident de base n'arrête pas le balayage. | Au moins deux essais ; l'échec est journalisé. |
+| `test_stopping_cancels_the_sweep`                           | Arrêt avant le premier intervalle.       | Arrêt du processus.                           | Aucun balayage.                                |
 
 ## 2. Frontend (Vitest)
 

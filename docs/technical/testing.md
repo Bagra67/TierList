@@ -423,6 +423,19 @@ Closing a room ([rooms guide](rooms.md#26-closing-a-room)) with `auth_client`, a
 | `test_deleting_the_admin_account_closes_their_room_and_its_game` | Bob places the first item; Alice deletes her account during the round.                                            | Deleting a room admin closes their rooms, instead of leaving an orphan game. | `204`; no room left; the game is `closed` with Bob as its only player; the room's sockets are closed.                                                                                        |
 | `test_a_wrong_password_keeps_the_admin_rooms`                    | Alice deletes her account with a wrong password.                                                                  | The rooms are closed only once the deletion is confirmed.                    | `403`; the room is still there; no socket closed.                                                                                                                                            |
 
+#### `tests/integration/test_room_inactivity.py` (automatic closing)
+
+The automatic closing of inactive rooms ([rooms guide](rooms.md#26-closing-a-room)), against a real PostgreSQL. `games` builds the service as the sweep does (`build_game_service`); `last_changed` sets `rooms.updated_at` some hours back; the delay is 24 h.
+
+| Test                                                        | What it does                                                     | Purpose                                                       | Expected result                                    |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------- |
+| `test_an_empty_room_without_change_for_the_delay_is_closed` | The room last changed 25 h ago; nobody connected.                | US-2.8.                                                       | One room closed; no room left; its sockets closed. |
+| `test_a_room_changed_within_the_delay_stays_open`           | The room last changed 23 h ago.                                  | The delay is respected.                                       | Nothing closed.                                    |
+| `test_a_room_with_someone_connected_stays_open`             | Alice is connected; the room last changed 25 h ago.              | The heartbeat writes nothing: being connected keeps the room. | Nothing closed.                                    |
+| `test_a_room_in_game_is_never_closed_for_inactivity`        | A game is started; the room last changed 25 h ago.               | Only an open room closes for inactivity.                      | Nothing closed.                                    |
+| `test_a_room_active_again_is_checked_under_its_lock`        | The candidate list is replaced to return a room changed 1 h ago. | Someone may come back between the list and the lock.          | Nothing closed, no socket closed.                  |
+| `test_a_change_of_the_room_restarts_the_delay`              | The room last changed 25 h ago, then Bob joins.                  | `rooms.updated_at` follows the version.                       | Nothing closed.                                    |
+
 #### `tests/integration/test_room_capacity.py` (capacity and arrivals lock)
 
 The room limit and the arrivals lock ([rooms guide](rooms.md#rules)). `fill_with_guests` adds guests from distinct browsers (cookies cleared), faster than accounts; `fill_the_room` fills the places left after the room admin's seat; `start_a_game` sets the room `playing` with or without late arrivals.
@@ -738,6 +751,16 @@ Tests of `RoundTimers` (`app/services/round_timers.py`) with recording transitio
 | `test_an_older_deadline_never_replaces_a_newer_one`             | Round 3 then round 2 for a game; a cooldown end then round 3 for another. | Concurrent transitions schedule in any order.           | Only round 3 and the cooldown end fire.                     |
 | `test_a_failing_transition_is_tried_again`                      | The transition fails once; short retry delays.                            | A database hiccup does not lose the deadline.           | Two attempts, the second one succeeds, no third.            |
 | `test_the_cooldown_end_replaces_the_deadline_of_the_last_round` | Last round in 0.05 s, then the cooldown end in 0.08 s for the same game.  | One deadline per game: the cooldown replaces the round. | Only the cooldown ends; the round transition is not called. |
+
+### 1.18 Unit tests: `tests/test_room_sweeper.py` (inactive rooms sweep)
+
+Tests of `RoomSweeper` (`app/services/room_sweeper.py`) with a recording sweep and real short intervals, in `asyncio.run`.
+
+| Test                                                        | What it does                          | Purpose                                       | Expected result                               |
+| ----------------------------------------------------------- | ------------------------------------- | --------------------------------------------- | --------------------------------------------- |
+| `test_the_sweep_runs_at_each_interval`                      | 10 ms interval, stopped after 100 ms. | The sweep repeats.                            | At least two sweeps.                          |
+| `test_a_failed_sweep_is_logged_and_the_next_one_still_runs` | The first sweep fails.                | A database hiccup does not stop the sweeping. | At least two attempts; the failure is logged. |
+| `test_stopping_cancels_the_sweep`                           | Stopped before the first interval.    | Shutdown.                                     | No sweep.                                     |
 
 ## 2. Frontend (Vitest)
 
