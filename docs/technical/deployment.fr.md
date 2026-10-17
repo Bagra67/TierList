@@ -20,7 +20,7 @@ GitHub Actions ──SFTP──> pod TierList          GitHub Actions ──pg_d
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pod TierList   | Pod « python generic », Python 3.13, 1 cœur / 2 Go, dossier de travail `/home/container`. Il lance **une seule commande** (`bash start.sh`). Pas de Docker, pas de shell SSH, pas de root, pas de cron : les fichiers s'échangent par **SFTP**. |
 | Pod PostgreSQL | PostgreSQL 17, sur une autre IP, joint par le réseau public (`POSTGRES_HOST`, `POSTGRES_PORT`).                                                                                                                                                 |
-| Cloudflare     | Le tunnel (pod `cloudflared`) termine le TLS et transmet HTTP et WebSocket à `<IP du pod>:<SERVER_PORT>`. Domaines : `staging.tierlist.ladwein.dev` et `tierlist.ladwein.dev`.                                                                  |
+| Cloudflare     | Le tunnel (pod `cloudflared`) termine le TLS et transmet HTTP et WebSocket à `<IP du pod>:<SERVER_PORT>`. Domaines : `tierlist-staging.ladwein.dev` et `tierlist.ladwein.dev`.                                                                  |
 | Scaleway       | Object Storage : un bucket public d'images par environnement ([guide des images](images.fr.md)) et un bucket privé de sauvegardes. Transactional Email pour les emails ([guide des emails](emails.fr.md)).                                      |
 | GitHub Actions | Construit le bundle, l'envoie dans le pod, vérifie la santé ; sauvegarde la base chaque nuit.                                                                                                                                                   |
 
@@ -110,7 +110,7 @@ Un redémarrage réutilise `uv`, l'environnement et la version extraite : il est
 | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER` | variable | Le pod PostgreSQL.                                                                 |
 | `POSTGRES_PASSWORD`                                              | secret   | Robuste, différent par environnement.                                              |
 | `JWT_SECRET_KEY`                                                 | secret   | Au moins 32 caractères, différente par environnement (`openssl rand -base64 48`).  |
-| `FRONTEND_BASE_URL`                                              | variable | `https://staging.tierlist.ladwein.dev` ou `https://tierlist.ladwein.dev`.          |
+| `FRONTEND_BASE_URL`                                              | variable | `https://tierlist-staging.ladwein.dev` ou `https://tierlist.ladwein.dev`.          |
 | `TRUSTED_PROXY_IPS`                                              | variable | Adresse(s) d'où se connecte le tunnel, séparées par des virgules. Jamais `*`.      |
 | `IMAGE_S3_ENDPOINT_URL`, `IMAGE_S3_BUCKET`, `IMAGE_S3_REGION`    | variable | ex. `https://s3.fr-par.scw.cloud`, le bucket d'images, `fr-par`.                   |
 | `IMAGE_S3_ACCESS_KEY_ID`, `IMAGE_S3_SECRET_ACCESS_KEY`           | secret   | Clé d'API Scaleway autorisée sur le bucket d'images.                               |
@@ -139,12 +139,12 @@ Créés à la main dans les réglages du dépôt (Settings → Environments). Ri
 ## 5. Premier déploiement, pas à pas
 
 1. **Pods** (#159), par environnement : un pod TierList (« python generic », Python 3.13, commande de démarrage `bash start.sh`) et un pod PostgreSQL 17 (mot de passe robuste ; noter son IP et son port).
-2. **Cloudflare Tunnel** : un pod `cloudflared` ; noms d'hôte publics `staging.tierlist.ladwein.dev` et `tierlist.ladwein.dev` vers `http://<IP du pod TierList>:<SERVER_PORT>`, WebSocket activé. Noter l'adresse depuis laquelle le tunnel joint le pod : elle va dans `TRUSTED_PROXY_IPS`.
+2. **Cloudflare Tunnel** : un pod `cloudflared` ; noms d'hôte publics `tierlist-staging.ladwein.dev` et `tierlist.ladwein.dev` vers `http://<IP du pod TierList>:<SERVER_PORT>`, WebSocket activé. Noter l'adresse depuis laquelle le tunnel joint le pod : elle va dans `TRUSTED_PROXY_IPS`.
 3. **Scaleway** (#163) : bucket d'images par environnement (lecture publique) et sa clé ; bucket privé de sauvegardes et sa clé ; Transactional Email avec le domaine autorisé (SPF, DKIM, DMARC).
 4. **Google OAuth** (facultatif) : URI de redirection autorisé `https://<domaine>/api/auth/google/callback`, écran de consentement publié.
 5. **SFTP** : hôte, port, utilisateur et mot de passe de chaque pod TierList (panel) ; `ssh-keyscan -p <port> <hôte>` pour `SFTP_KNOWN_HOSTS`.
 6. **GitHub** : les environnements, secrets et variables du §4.
-7. **Staging** : merger une PR dans `develop` (ou attendre la prochaine). Le workflow Deploy envoie la version ; redémarrer le pod dans le panel si le résumé du job le demande ; le job passe au vert dès que `https://staging.tierlist.ladwein.dev/api/health` annonce la nouvelle version et que `/api/health/db` répond.
+7. **Staging** : merger une PR dans `develop` (ou attendre la prochaine). Le workflow Deploy envoie la version ; redémarrer le pod dans le panel si le résumé du job le demande ; le job passe au vert dès que `https://tierlist-staging.ladwein.dev/api/health` annonce la nouvelle version et que `/api/health/db` répond.
 8. **Production** : faire une release ([guide des releases](releasing.fr.md)) ; le workflow Deploy attend l'approbation de l'environnement `production`.
 9. **Sauvegardes** : lancer une fois le workflow Backup à la main, puis essayer une restauration sur le staging (§8, #162).
 
