@@ -96,7 +96,8 @@ SFTP ne sait ni extraire une archive ni toujours créer un lien symbolique : d'o
 1. le lanceur lit `CURRENT`, extrait `releases/tierlist-<version>.tar.gz` si besoin (dans un dossier temporaire, puis renommé), supprime les versions plus anciennes que les 3 dernières, puis lance le `start.sh` du bundle ;
 2. `start.sh` installe `uv` dans `bin/` s'il manque (installeur officiel, ou PyPI sans `curl`), charge `.env`, puis lance `uv sync --frozen --no-dev` avec le Python du pod ;
 3. `alembic upgrade head` : **en cas d'échec, le script s'arrête et uvicorn ne démarre pas** ;
-4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` vient du panel ; 8000 sinon).
+4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` vient du panel ; 8000 sinon) ;
+5. pendant ce temps, une petite boucle en arrière-plan (Python `urllib`, sans `curl`) attend que `http://127.0.0.1:$SERVER_PORT/api/health` réponde `200`, puis affiche **une seule fois** la ligne exacte `change this part` : le panel MineStrator (egg Pterodactyl « python generic ») considère le pod démarré quand sa console affiche cette ligne. Après 5 minutes sans réponse, elle abandonne avec une ligne de log, sans arrêter l'application (le panel montre alors toujours le pod en démarrage).
 
 Un redémarrage réutilise `uv`, l'environnement et la version extraite : il est rapide et idempotent.
 

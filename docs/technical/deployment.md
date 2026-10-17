@@ -96,7 +96,8 @@ SFTP can neither extract an archive nor always create a symbolic link: hence `CU
 1. the launcher reads `CURRENT`, extracts `releases/tierlist-<version>.tar.gz` if needed (into a temporary folder, then renamed), deletes the versions older than the last 3, then runs the bundle's `start.sh`;
 2. `start.sh` installs `uv` in `bin/` if it is missing (official installer, or PyPI without `curl`), loads `.env`, then runs `uv sync --frozen --no-dev` with the Python of the pod;
 3. `alembic upgrade head`: **if it fails, the script stops and uvicorn does not start**;
-4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` comes from the panel; 8000 otherwise).
+4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` comes from the panel; 8000 otherwise);
+5. meanwhile, a small background loop (Python `urllib`, no `curl`) waits for `http://127.0.0.1:$SERVER_PORT/api/health` to answer `200`, then prints **once** the exact line `change this part`: the MineStrator panel ("python generic" Pterodactyl egg) considers the pod started when its console shows that line. After 5 minutes without an answer, it gives up with a log line, without stopping the app (the panel then keeps showing the pod as starting).
 
 A restart reuses `uv`, the environment and the extracted version: it is quick and idempotent.
 
