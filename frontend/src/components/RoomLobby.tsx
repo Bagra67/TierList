@@ -5,6 +5,7 @@ import type { Room } from '../api/rooms';
 import { CloseRoomDialog } from './CloseRoomDialog';
 import { ErrorMessage } from './ErrorMessage';
 import { GameScreen } from './GameScreen';
+import { PastGames } from './PastGames';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
 import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
@@ -79,6 +80,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
           ))}
         </ul>
       </section>
+      <PastGames room={room} />
       {room.is_admin && <RoomBans room={room} />}
       <section className="flex w-full flex-col gap-2">
         <div className="flex w-full items-center justify-between gap-4">

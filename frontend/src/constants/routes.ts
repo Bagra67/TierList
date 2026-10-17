@@ -15,6 +15,8 @@ export const ROUTES = {
   TEMPLATE_EDITOR: '/templates/:templateId',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
+  // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)
+  RESULTS: '/results/:token',
 } as const;
 
 export function templateEditorPath(templateId: string): string {
@@ -23,6 +25,10 @@ export function templateEditorPath(templateId: string): string {
 
 export function roomPath(code: string): string {
   return generatePath(ROUTES.ROOM, { code });
+}
+
+export function resultsPath(token: string): string {
+  return generatePath(ROUTES.RESULTS, { token });
 }
 
 // Token du lien reçu par email (backend : TOKEN_PARAM)

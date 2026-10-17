@@ -264,6 +264,44 @@ describe('RoomPage', () => {
     expect(screen.queryByText(/Template :/)).not.toBeInTheDocument();
   });
 
+  it('lists the past games of the room with a link to their results', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoom,
+          past_games: [
+            { public_token: 'newer-token', closed_at: '2026-10-17T18:30:00Z', player_count: 3 },
+            { public_token: 'older-token', closed_at: '2026-10-16T20:00:00Z', player_count: 1 },
+          ],
+        }),
+    });
+
+    renderRoomPage();
+
+    const section: HTMLElement | null = (
+      await screen.findByRole('heading', { name: 'Parties passées (2)' })
+    ).closest('section');
+    if (section === null) throw new Error('No past games section');
+    const links: HTMLElement[] = within(section).getAllByRole('link', {
+      name: /Voir les résultats de la partie du/,
+    });
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/results/newer-token',
+      '/results/older-token',
+    ]);
+    expect(within(section).getByText('3 joueurs')).toBeInTheDocument();
+    expect(within(section).getByText('1 joueur')).toBeInTheDocument();
+  });
+
+  it('shows no past games section before the first game ends', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+
+    renderRoomPage();
+
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+    expect(screen.queryByRole('heading', { name: /Parties passées/ })).not.toBeInTheDocument();
+  });
+
   it('only lets the room admin edit the settings', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, is_admin: false }) });
 

@@ -10,6 +10,7 @@ import {
 import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
 import { apiClient, dataOrThrow, throwIfError } from './client';
+import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
 export type Room = components['schemas']['RoomResponse'];
@@ -27,6 +28,7 @@ export type RoomSettingsChanges = components['schemas']['UpdateRoomSettingsReque
 // La partie en cours vue par le lecteur, ses tiers et ses propres placements
 export type CurrentGame = components['schemas']['CurrentGameResponse'];
 export type GameItem = components['schemas']['CurrentItemResponse'];
+export type PastGame = components['schemas']['PastGameResponse'];
 export type GameTier = components['schemas']['GameTierResponse'];
 export type OwnPlacement = components['schemas']['OwnPlacementResponse'];
 
@@ -177,11 +179,6 @@ function isOlder(room: Room, cached: Room): boolean {
 // reconnu par son cookie)
 export type RoomViewer = 'account' | 'guest';
 
-// Une erreur 4xx ne change pas en réessayant (salle introuvable, lien perso expiré…)
-function shouldRetry(failureCount: number, error: Error): boolean {
-  return !(error instanceof ApiError && error.status < 500) && failureCount < 1;
-}
-
 // Salle ouverte par ce lecteur, lu une fois la session connue (viewer undefined : en attente).
 // Un compte y entre (enterRoom) ; un invité la lit grâce à son cookie, ou d'abord grâce au jeton
 // de son lien perso (guestToken), qui pose ce cookie.
@@ -199,7 +196,7 @@ export function useRoom(
       return getRoom(roomCode, signal);
     },
     enabled: viewer !== undefined,
-    retry: shouldRetry,
+    retry: retryUnlessClientError,
   });
 }
 
