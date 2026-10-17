@@ -2,20 +2,22 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Cookie, Depends, Response
+from fastapi import APIRouter, Cookie, Response
 
 from app.api.dependencies import (
-    get_current_user,
-    get_game_service,
-    get_image_storage,
-    get_room_service,
-    get_room_viewer,
+    CurrentUserDep,
+    GameServiceDep,
+    ImageStorageDep,
+    RoomServiceDep,
+    RoomViewerDep,
+    SettingsDep,
 )
+from app.api.presenters.rooms import guest_room_response, room_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
-from app.core.config import Settings, get_settings
+from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
 from app.exceptions.http import AppHTTPException
@@ -33,28 +35,16 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
-from app.models.game import Game
 from app.models.room import Room
-from app.models.round import Round
-from app.models.snapshot_tile import SnapshotTile
-from app.models.user import User
 from app.schemas.rooms import (
     CreateRoomRequest,
-    CurrentGameResponse,
-    CurrentItemResponse,
     GuestRoomResponse,
     JoinAsGuestRequest,
-    ParticipantResponse,
     RestoreGuestRequest,
-    RoomBanResponse,
     RoomResponse,
-    RoomSettingsResponse,
-    RoomTemplateResponse,
     UpdateRoomSettingsRequest,
 )
-from app.services.games import GameService
-from app.services.image_storage import ImageStorage
-from app.services.rooms import GuestSeat, RoomService, RoomSettingsChanges, RoomViewer
+from app.services.rooms import GuestSeat, RoomSettingsChanges
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
@@ -69,83 +59,11 @@ ROOM_BANNED_RESPONSE: dict[int | str, dict[str, Any]] = {
     403: {"model": ErrorResponse, "description": messages.ROOM_BANNED_DESCRIPTION},
 }
 
-RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
-RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
-SettingsDep = Annotated[Settings, Depends(get_settings)]
-GameServiceDep = Annotated[GameService, Depends(get_game_service)]
-# Donne l'adresse publique de l'image de l'item en cours
-ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
-
-
-def _room_response(
-    room: Room, user: User | None, service: RoomService, storage: ImageStorage
-) -> RoomResponse:
-    """La salle vue par ce lecteur : user est None pour un invité (jamais room admin)."""
-    participants: list[ParticipantResponse] = []
-    for participant in service.seated_participants(room):
-        participant_response: ParticipantResponse = ParticipantResponse(
-            id=participant.id,
-            display_name=participant.display_name,
-            is_admin=participant.user_id == room.admin_id,
-            is_guest=participant.is_guest,
-            connected=participant.connected,
-        )
-        participants.append(participant_response)
-    # None une fois le template purgé
-    template: RoomTemplateResponse | None = (
-        RoomTemplateResponse.model_validate(room.template) if room.template is not None else None
-    )
-    settings: RoomSettingsResponse = RoomSettingsResponse.model_validate(room)
-    link: str = service.link(room)
-    is_admin: bool = user is not None and room.admin_id == user.id
-    # Les bannissements ne regardent que le room admin
-    bans: list[RoomBanResponse] = []
-    if is_admin:
-        for room_ban in room.bans:
-            ban_response: RoomBanResponse = RoomBanResponse(
-                id=room_ban.id, display_name=room_ban.display_name, is_guest=room_ban.is_guest
-            )
-            bans.append(ban_response)
-    return RoomResponse(
-        code=room.code,
-        version=room.version,
-        link=link,
-        status=room.status,
-        template=template,
-        settings=settings,
-        participants=participants,
-        is_admin=is_admin,
-        bans=bans,
-        game=_current_game_response(room.current_game, storage),
-    )
-
-
-def _current_game_response(game: Game | None, storage: ImageStorage) -> CurrentGameResponse | None:
-    """La partie en cours vue par tous : son tour et son item, jamais les placements."""
-    if game is None:
-        return None
-    current_round: Round = game.current_round
-    tile: SnapshotTile = current_round.tile
-    image_url: str | None = storage.url(tile.image.storage_key) if tile.image is not None else None
-    current_item: CurrentItemResponse = CurrentItemResponse(
-        id=tile.id, text=tile.text, image_url=image_url
-    )
-    return CurrentGameResponse(
-        round_number=current_round.number,
-        round_count=len(game.rounds),
-        current_item=current_item,
-        ends_at=current_round.ends_at,
-    )
-
 
 def _set_guest_cookie(response: Response, seat: GuestSeat, settings: Settings) -> None:
     """Fait reconnaître l'invité par son navigateur (US-5.4) : cookie HttpOnly limité aux routes
     de sa salle, jusqu'à l'expiration de son lien perso."""
-    expires_at: datetime | None = seat.participant.guest_expires_at
-    if expires_at is None:
-        raise RuntimeError("A guest seat has an expiry date")
-    max_age: int = int((expires_at - datetime.now(UTC)).total_seconds())
+    max_age: int = int((seat.expires_at - datetime.now(UTC)).total_seconds())
     response.set_cookie(
         GUEST_COOKIE,
         seat.token,
@@ -228,7 +146,7 @@ def create_room(
             code=ErrorCode.TEMPLATE_HAS_NO_TILES,
             detail=messages.TEMPLATE_HAS_NO_TILES,
         ) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)
 
 
 # Compte (access token) ou invité (cookie de sa salle) ; sans place, 404 comme un code inconnu
@@ -240,7 +158,7 @@ def get_room(
         room: Room = service.get_for_viewer(viewer, code)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
-    return _room_response(room, viewer.user, service, storage)
+    return room_response(room, viewer.user, service, storage)
 
 
 @router.post(
@@ -283,7 +201,7 @@ def join_as_guest(
             detail=messages.NICKNAME_TAKEN,
         ) from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service, storage)
+    return guest_room_response(seat, service, storage)
 
 
 @router.post(
@@ -310,7 +228,7 @@ def restore_guest_session(
             detail=messages.GUEST_LINK_INVALID,
         ) from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service, storage)
+    return guest_room_response(seat, service, storage)
 
 
 @router.post("/{code}/guest-link", responses=ROOM_NOT_FOUND_RESPONSES)
@@ -328,21 +246,7 @@ def renew_guest_link(
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
     _set_guest_cookie(response, seat, settings)
-    return _guest_room_response(seat, service, storage)
-
-
-def _guest_room_response(
-    seat: GuestSeat, service: RoomService, storage: ImageStorage
-) -> GuestRoomResponse:
-    room_response: RoomResponse = _room_response(seat.room, None, service, storage)
-    expires_at: datetime | None = seat.participant.guest_expires_at
-    if expires_at is None:
-        raise RuntimeError("A guest seat has an expiry date")
-    return GuestRoomResponse(
-        **room_response.model_dump(),
-        guest_link=service.guest_link(seat),
-        guest_link_expires_at=expires_at,
-    )
+    return guest_room_response(seat, service, storage)
 
 
 @router.post(
@@ -367,7 +271,7 @@ def join_room(
         raise _room_locked() from exc
     except RoomFullError as exc:
         raise _room_full(exc) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)
 
 
 @router.patch(
@@ -399,7 +303,7 @@ def update_room_settings(
             code=ErrorCode.ROOM_SETTINGS_LOCKED,
             detail=messages.ROOM_SETTINGS_LOCKED,
         ) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)
 
 
 @router.delete(
@@ -441,7 +345,7 @@ def remove_participant(
             code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
             detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
         ) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)
 
 
 @router.delete(
@@ -471,7 +375,7 @@ def unban(
             code=ErrorCode.BAN_NOT_FOUND,
             detail=messages.BAN_NOT_FOUND,
         ) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)
 
 
 @router.post(
@@ -521,4 +425,4 @@ def start_game(
             code=ErrorCode.TEMPLATE_HAS_NO_TILES,
             detail=messages.TEMPLATE_HAS_NO_TILES,
         ) from exc
-    return _room_response(room, user, service, storage)
+    return room_response(room, user, service, storage)

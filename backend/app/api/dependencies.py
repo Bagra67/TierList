@@ -155,3 +155,23 @@ def get_room_viewer(
         session: AuthenticatedSession = get_current_session(credentials, service)
         return RoomViewer(user=session.user, guest_token=None)
     return RoomViewer(user=None, guest_token=guest_token)
+
+
+# --- Alias des dépendances, pour les signatures des routes --------------------------------------
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+CurrentSessionDep = Annotated[AuthenticatedSession, Depends(get_current_session)]
+# La dépendance à utiliser pour protéger une route
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
+RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
+RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
+GameServiceDep = Annotated[GameService, Depends(get_game_service)]
+ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+# Donne l'adresse publique des images (api/presenters/images.py)
+ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
+EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
+GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]
+SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
+PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
+RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]

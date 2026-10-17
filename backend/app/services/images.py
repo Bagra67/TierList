@@ -68,9 +68,6 @@ class ImageService:
         )
         return image
 
-    def url(self, image: Image) -> str:
-        return self._storage.url(image.storage_key)
-
     def purge_unused(self) -> int:
         """Ramasse-miettes : efface les images qu'aucune tuile, de template ou de snapshot,
         n'utilise depuis plus que la durée de conservation (envois abandonnés, tuiles modifiées
