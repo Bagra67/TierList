@@ -78,6 +78,15 @@ def get_room_service(
     return RoomService(session, settings, publisher)
 
 
+def build_game_service(
+    session: Session, settings: Settings, publisher: RoomEventPublisher, scheduler: RoundScheduler
+) -> GameService:
+    """Service des parties hors requête (canal temps réel, timers, démarrage du processus) : les
+    mêmes dépendances que get_game_service, construites sur une session courte."""
+    rooms: RoomService = RoomService(session, settings, publisher)
+    return GameService(session, publisher, rooms, TemplateService(session, settings), scheduler)
+
+
 def get_game_service(
     session: Annotated[Session, Depends(get_db_session)],
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],

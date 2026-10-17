@@ -343,7 +343,7 @@ def remove_participant(
 ) -> RoomResponse:
     # Supprime la place (US-2.11) ; avec ban=true, la personne ne peut plus revenir (US-2.12)
     try:
-        room: Room = service.remove_participant(user, code, participant_id, ban)
+        room: Room = games.remove_participant(user, code, participant_id, ban)
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
     except RoomAdminRequiredError as exc:
@@ -360,8 +360,6 @@ def remove_participant(
             code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
             detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
         ) from exc
-    # Le participant retiré n'est plus attendu : il était peut-être le dernier à placer
-    games.advance_if_everyone_placed(room.id)
     return room_response(room, service.seat_in(room, user), service, storage)
 
 

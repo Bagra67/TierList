@@ -95,6 +95,12 @@ def set_connected(db_session: Session, connected_names: set[str]) -> None:
     db_session.flush()
 
 
+def seat_id_of(db_session: Session, display_name: str) -> uuid.UUID:
+    return db_session.scalars(
+        select(Participant.id).where(Participant.user.has(display_name=display_name))
+    ).one()
+
+
 def absent_tiles(db_session: Session, display_name: str) -> list[str | None]:
     """Textes des items pour lesquels ce participant a un vote absent, dans l'ordre des tours."""
     participant: Participant = db_session.scalars(
@@ -338,11 +344,37 @@ def test_a_departure_can_end_the_round(
     set_connected(db_session, {"alice", "bob"})
     place_current(auth_client, db_session, code, alice)
 
-    set_connected(db_session, {"alice"})
-    game_service(db_session, room_events, round_scheduler).advance_if_everyone_placed(
-        room_id_of_game(db_session)
+    # Bob, qui n'a pas placé, ferme son dernier onglet (fin du délai de grâce)
+    game_service(db_session, room_events, round_scheduler).set_presence(
+        seat_id_of(db_session, "bob"), False
     )
 
+    assert stored_game(db_session).current_round_number == 2
+
+
+def test_a_return_can_end_the_round(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+    round_scheduler: RecordingRoundScheduler,
+):
+    code: str = alice_room["code"]
+    settings(auth_client, code, alice, auto_advance="everyone_placed")
+    join(auth_client, code, bob)
+    start(auth_client, code, alice)
+    # Alice a placé puis s'est déconnectée ; Bob, qui n'a pas placé, aussi : personne à attendre
+    set_connected(db_session, set())
+    place_current(auth_client, db_session, code, alice)
+    assert stored_game(db_session).current_round_number == 1
+
+    game_service(db_session, room_events, round_scheduler).set_presence(
+        seat_id_of(db_session, "alice"), True
+    )
+
+    # Seule connectée, Alice a placé : le tour se termine sans attendre le room admin
     assert stored_game(db_session).current_round_number == 2
 
 

@@ -13,11 +13,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from app.api.dependencies import SessionFactory, get_session_factory
+from app.api.dependencies import SessionFactory, build_game_service, get_session_factory
 from app.api.routes import auth, images, room_channel, rooms, templates
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
-from app.core.config import Settings, get_settings
+from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_error_handlers
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
@@ -27,7 +27,6 @@ from app.services.games import GameService
 from app.services.room_channel import room_connections
 from app.services.rooms import RoomService
 from app.services.round_timers import round_timers
-from app.services.templates import TemplateService
 
 configure_logging(get_logging_settings().log_level)
 
@@ -49,13 +48,9 @@ def _reset_presence(session_factory: SessionFactory) -> None:
 
 
 def _game_service(session: Session) -> GameService:
-    """Service des parties hors requête (démarrage, timers) : mêmes dépendances que
-    get_game_service, construites à la main faute d'injection."""
-    settings: Settings = get_settings()
-    rooms: RoomService = RoomService(session, settings, room_connections)
-    return GameService(
-        session, room_connections, rooms, TemplateService(session, settings), round_timers
-    )
+    """Service des parties pour le démarrage et les timers : les sockets et les timers de ce
+    processus."""
+    return build_game_service(session, get_settings(), room_connections, round_timers)
 
 
 def _end_round_on_timer(

@@ -330,6 +330,23 @@ class GameService:
         self._session.commit()
         self._announce_round_end(room, game, round_end)
 
+    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
+        """Présence d'une place (canal temps réel, US-3.4). Pendant une partie, un départ comme
+        un retour peut terminer le tour : « tout le monde a placé » ne compte que les connectés,
+        et n'avance jamais une salle vide, que le retour d'un joueur qui a placé débloque."""
+        changed: Room | None = self._rooms.set_presence(participant_id, connected)
+        if changed is not None and changed.status == RoomStatus.PLAYING:
+            self.advance_if_everyone_placed(changed.id)
+
+    def remove_participant(
+        self, user: User, code: str, participant_id: uuid.UUID, ban: bool
+    ) -> Room:
+        """Retire une place (room admin seulement, US-2.11), même pendant une partie : le retiré
+        n'est plus attendu, il était peut-être le dernier à placer l'item en cours."""
+        room: Room = self._rooms.remove_participant(user, code, participant_id, ban)
+        self.advance_if_everyone_placed(room.id)
+        return room
+
     def advance_if_everyone_placed(self, room_id: uuid.UUID) -> None:
         """Termine le tour si tous les participants connectés qui placent ont placé l'item :
         après une déconnexion ou un retrait, qui retirent quelqu'un de l'attente."""
