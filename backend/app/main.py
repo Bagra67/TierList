@@ -31,6 +31,9 @@ from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
 from app.services.games import GameService
+from app.services.image_storage import create_image_storage
+from app.services.maintenance import purge_deleted_templates, purge_unused_images
+from app.services.nightly_scheduler import nightly_scheduler
 from app.services.room_channel import room_connections
 from app.services.room_sweeper import room_sweeper
 from app.services.rooms import RoomService
@@ -110,6 +113,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # montée sous /api), s'il y en a une, est reprise pour ne jamais toucher une autre base
     get_factory = api_app.dependency_overrides.get(get_session_factory, get_session_factory)
     session_factory: SessionFactory = get_factory()
+    settings: Settings = get_settings()
     await run_in_threadpool(_reset_presence, session_factory)
 
     async def on_deadline(game_id: uuid.UUID, round_number: int) -> None:
@@ -122,10 +126,24 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async def sweep_inactive_rooms() -> None:
         await run_in_threadpool(_close_inactive_rooms, session_factory)
 
+    async def purge_templates() -> int:
+        return await run_in_threadpool(purge_deleted_templates, session_factory, settings)
+
+    async def purge_images() -> int:
+        return await run_in_threadpool(
+            purge_unused_images, session_factory, settings, create_image_storage(settings)
+        )
+
     round_timers.start(asyncio.get_running_loop(), on_deadline, on_cooldown_deadline)
     await run_in_threadpool(_reschedule_rounds, session_factory)
-    room_sweeper.start(get_settings().room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
+    room_sweeper.start(settings.room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
+    if settings.maintenance_enabled:
+        nightly_scheduler.start(
+            settings.maintenance_hour_utc,
+            {"purge_deleted_templates": purge_templates, "purge_unused_images": purge_images},
+        )
     yield
+    await nightly_scheduler.stop()
     await room_sweeper.stop()
     await round_timers.stop()
 
