@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import Select, select, update
 from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql.dml import ReturningUpdate
 
 from app.models.game import Game
@@ -37,17 +38,27 @@ def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room
     return statement
 
 
+def _attach_room_to_participants(room: Room | None) -> Room | None:
+    """Renseigne participant.room sur chaque place chargée. L'identity map ne garde que des
+    références faibles : un appelant qui ne garde que la place (seat_of) perdrait la salle
+    chargée, et participant.room la relirait, avec sa partie, une requête par tuile."""
+    if room is not None:
+        for participant in room.participants:
+            set_committed_value(participant, "room", room)
+    return room
+
+
 def get_room_by_code(session: Session, code: str, for_update: bool = False) -> Room | None:
     """Salle de ce code, avec tout ce que sa réponse montre (_room_with_details)."""
     statement: Select[Room] = _room_with_details(select(Room).where(Room.code == code), for_update)
-    return session.scalars(statement).one_or_none()
+    return _attach_room_to_participants(session.scalars(statement).one_or_none())
 
 
 def get_room_by_id(session: Session, room_id: uuid.UUID, for_update: bool = False) -> Room | None:
     """Salle de cet identifiant, chargée comme get_room_by_code : pour une transition décidée
     par le serveur (timer, déconnexion), qui ne connaît pas le code."""
     statement: Select[Room] = _room_with_details(select(Room).where(Room.id == room_id), for_update)
-    return session.scalars(statement).one_or_none()
+    return _attach_room_to_participants(session.scalars(statement).one_or_none())
 
 
 def get_room_of_participant(
