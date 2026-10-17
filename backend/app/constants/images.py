@@ -15,6 +15,9 @@ IMAGE_CONTENT_TYPE = "image/webp"
 # image masquée par la modération ou effacée doit quitter les caches des navigateurs en 24 h au
 # plus (la purge du CDN, elle, est immédiate)
 IMAGE_CACHE_CONTROL = "public, max-age=86400"
+# ACL de chaque image envoyée : chez certains fournisseurs (Scaleway), un objet reste privé même
+# dans un bucket public, et l'URL publique (IMAGE_PUBLIC_BASE_URL) répondrait 403
+IMAGE_ACL = "public-read"
 IMAGE_FILE_EXTENSION = "webp"
 # Longueur d'une clé de stockage : un UUID (36 caractères) suivi de « .webp »
 IMAGE_STORAGE_KEY_MAX_LENGTH = 64
