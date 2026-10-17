@@ -58,7 +58,7 @@ A closed WebSocket does not reopen by itself: the client must create a new one. 
 
 ### 2.1 The principle: push only
 
-The socket is used **only to push** events from the server and to know who is connected. Every action (join, change the settings, later place an item…) stays a **REST route**: it keeps validation, error codes and the OpenAPI contract. After the action, the server tells everyone in the room through the socket.
+The socket is used **only to push** events from the server and to know who is connected. Every action (join, change the settings, place an item…) stays a **REST route**: it keeps validation, error codes and the OpenAPI contract. After the action, the server tells everyone in the room through the socket.
 
 ```mermaid
 sequenceDiagram
@@ -130,7 +130,7 @@ The models live in `backend/app/schemas/room_events.py` and are added to the Ope
 
 ### 2.5 The room version
 
-`rooms.version` is an integer incremented **in the same transaction** as each change of the room (join, removal, settings, presence). Each event carries it as `room_version`, and the REST room carries it as `version`. The client compares:
+`rooms.version` is an integer incremented **in the same transaction** as each change of the room (join, removal, settings, presence, and the game: start, first placement of a round, end of a round, end of the cooldown). Each event carries it as `room_version`, and the REST room carries it as `version`. The client compares:
 
 - `room_version == cached version + 1` → apply the event;
 - `room_version <= cached version` → already in the room read, ignore;

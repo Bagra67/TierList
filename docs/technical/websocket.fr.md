@@ -58,7 +58,7 @@ Un WebSocket fermé ne se rouvre pas tout seul : le client doit en créer un nou
 
 ### 2.1 Le principe : pousser seulement
 
-Le socket sert **seulement à pousser** les événements du serveur et à savoir qui est connecté. Chaque action (rejoindre, changer les réglages, plus tard placer un item…) reste une **route REST** : elle garde la validation, les codes d'erreur et le contrat OpenAPI. Après l'action, le serveur prévient toute la salle par le socket.
+Le socket sert **seulement à pousser** les événements du serveur et à savoir qui est connecté. Chaque action (rejoindre, changer les réglages, placer un item…) reste une **route REST** : elle garde la validation, les codes d'erreur et le contrat OpenAPI. Après l'action, le serveur prévient toute la salle par le socket.
 
 ```mermaid
 sequenceDiagram
@@ -130,7 +130,7 @@ Les modèles sont dans `backend/app/schemas/room_events.py` et sont ajoutés au 
 
 ### 2.5 La version de la salle
 
-`rooms.version` est un entier incrémenté **dans la même transaction** que chaque changement de la salle (jonction, retrait, réglages, présence). Chaque événement la porte en `room_version`, et la salle REST la porte en `version`. Le client compare :
+`rooms.version` est un entier incrémenté **dans la même transaction** que chaque changement de la salle (jonction, retrait, réglages, présence, et la partie : démarrage, premier placement d'un tour, fin d'un tour, fin du cooldown). Chaque événement la porte en `room_version`, et la salle REST la porte en `version`. Le client compare :
 
 - `room_version == version en cache + 1` → il applique l'événement ;
 - `room_version <= version en cache` → déjà dans la salle lue, il l'ignore ;

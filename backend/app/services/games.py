@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.games import (
     CooldownNotInProgressError,
+    CooldownOverError,
     GameInProgressError,
     ItemNotCurrentError,
     ItemNotInGameError,
@@ -24,6 +25,7 @@ from app.exceptions.games import (
     NotAPlacingParticipantError,
     RoundNotInProgressError,
 )
+from app.exceptions.rooms import RoomNotFoundError
 from app.exceptions.templates import TemplateNotFoundError, TierNotFoundError
 from app.models.enums import AutoAdvance, GameStatus, ItemOrder, PlacementPhase, RoomStatus
 from app.models.game import Game
@@ -220,8 +222,8 @@ class GameService:
                 ),
             ),
         )
-        self._schedule_current_round(game)
-        return room
+        self._schedule_first_round(game)
+        return self._reloaded(room.id)
 
     def placing_participants(self, room: Room) -> list[Participant]:
         """Participants qui placent les items : tous, sauf le room admin quand il ne joue pas
@@ -249,8 +251,12 @@ class GameService:
             raise NotAPlacingParticipantError
         if game.status == GameStatus.COOLDOWN:
             self._place_final(seat, game, tile_id, tier_id, position)
-            return seat
+            return self._reloaded_seat(room.id, seat.id)
         current_round: Round = game.current_round
+        # Le timer n'est peut-être pas encore passé (threadpool chargé, redémarrage) : la fin du
+        # tour compte déjà, un placement en retard ne peut plus le terminer
+        if current_round.ends_at is not None and datetime.now(UTC) >= current_round.ends_at:
+            raise RoundNotInProgressError
         # Un item passé ne bouge pas avant le cooldown, un item futur n'est pas encore montré
         if tile_id != current_round.snapshot_tile_id:
             raise ItemNotCurrentError
@@ -297,7 +303,7 @@ class GameService:
             )
         if round_end is not None:
             self._announce_round_end(room, game, round_end)
-        return seat
+        return self._reloaded_seat(room.id, seat.id)
 
     def next_round(self, user: User, code: str) -> Room:
         """Termine le tour en cours (room admin seulement, US-3.4), quel que soit le réglage
@@ -309,7 +315,7 @@ class GameService:
         round_end: RoundStartedEvent | CooldownStartedEvent = self._end_round(room, game)
         self._session.commit()
         self._announce_round_end(room, game, round_end)
-        return room
+        return self._reloaded(room.id)
 
     def end_round_on_timer(self, game_id: uuid.UUID, round_number: int) -> None:
         """Termine le tour à la fin de son timer. Sans effet si ce tour n'est plus en cours : le
@@ -329,6 +335,23 @@ class GameService:
         round_end: RoundStartedEvent | CooldownStartedEvent = self._end_round(room, game)
         self._session.commit()
         self._announce_round_end(room, game, round_end)
+
+    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
+        """Présence d'une place (canal temps réel, US-3.4). Pendant une partie, un départ comme
+        un retour peut terminer le tour : « tout le monde a placé » ne compte que les connectés,
+        et n'avance jamais une salle vide, que le retour d'un joueur qui a placé débloque."""
+        changed: Room | None = self._rooms.set_presence(participant_id, connected)
+        if changed is not None and changed.status == RoomStatus.PLAYING:
+            self.advance_if_everyone_placed(changed.id)
+
+    def remove_participant(
+        self, user: User, code: str, participant_id: uuid.UUID, ban: bool
+    ) -> Room:
+        """Retire une place (room admin seulement, US-2.11), même pendant une partie : le retiré
+        n'est plus attendu, il était peut-être le dernier à placer l'item en cours."""
+        room: Room = self._rooms.remove_participant(user, code, participant_id, ban)
+        self.advance_if_everyone_placed(room.id)
+        return self._reloaded(room.id)
 
     def advance_if_everyone_placed(self, room_id: uuid.UUID) -> None:
         """Termine le tour si tous les participants connectés qui placent ont placé l'item :
@@ -357,7 +380,7 @@ class GameService:
         closed: GameClosedEvent = self._close_game(room, game)
         self._session.commit()
         self._publisher.publish(room.id, closed)
-        return room
+        return self._reloaded(room.id)
 
     def end_cooldown_on_timer(self, game_id: uuid.UUID) -> None:
         """Termine le cooldown à la fin de son timer. Sans effet s'il n'est plus en cours : le
@@ -388,7 +411,7 @@ class GameService:
         est privé : ni version, ni événement."""
         # Le timer n'est peut-être pas encore passé : la fin du cooldown compte déjà
         if game.cooldown_ends_at is not None and datetime.now(UTC) >= game.cooldown_ends_at:
-            raise RoundNotInProgressError
+            raise CooldownOverError
         if not any(game_round.snapshot_tile_id == tile_id for game_round in game.rounds):
             raise ItemNotInGameError
         _ensure_tier_in_game(game, tier_id)
@@ -410,6 +433,24 @@ class GameService:
             seat.id,
             caught_up,
         )
+
+    def _reloaded(self, room_id: uuid.UUID) -> Room:
+        """La salle relue en une fois après un commit, qui l'a expirée : la réponse la
+        rechargerait sinon objet par objet, une requête par tuile."""
+        room: Room | None = room_repository.get_room_by_id(self._session, room_id)
+        if room is None:
+            raise RoomNotFoundError
+        return room
+
+    def _reloaded_seat(self, room_id: uuid.UUID, seat_id: uuid.UUID) -> Participant:
+        """La place du lecteur, dans sa salle relue après un commit (_reloaded)."""
+        room: Room = self._reloaded(room_id)
+        seat: Participant | None = next(
+            (participant for participant in room.participants if participant.id == seat_id), None
+        )
+        if seat is None:
+            raise RoomNotFoundError
+        return seat
 
     def _locked_room_of_game(self, game_id: uuid.UUID) -> Room | None:
         """La salle de la partie, verrouillée ; None si elle a été supprimée."""
@@ -510,17 +551,17 @@ class GameService:
     def _announce_round_end(
         self, room: Room, game: Game, round_end: RoundStartedEvent | CooldownStartedEvent
     ) -> None:
-        """Après le commit : publie la fin du tour et programme l'échéance qui suit."""
+        """Après le commit : programme l'échéance qui suit, puis publie la fin du tour.
+        L'échéance vient de l'événement, figé sous le verrou : relire la partie ici pourrait voir
+        la transition suivante d'un autre thread."""
+        if isinstance(round_end, CooldownStartedEvent):
+            self._scheduler.schedule_cooldown_end(game.id, round_end.data.ends_at)
+        elif round_end.data.ends_at is not None:
+            self._scheduler.schedule(game.id, round_end.data.round_number, round_end.data.ends_at)
         self._publisher.publish(room.id, round_end)
-        self._schedule_current_round(game)
 
-    def _schedule_current_round(self, game: Game) -> None:
-        """Programme l'échéance de la phase en cours : le timer du tour, ou la fin du cooldown."""
-        if game.status == GameStatus.COOLDOWN and game.cooldown_ends_at is not None:
-            self._scheduler.schedule_cooldown_end(game.id, game.cooldown_ends_at)
-            return
-        if game.status != GameStatus.IN_ROUND:
-            return
-        current_round: Round = game.current_round
-        if current_round.ends_at is not None:
-            self._scheduler.schedule(game.id, current_round.number, current_round.ends_at)
+    def _schedule_first_round(self, game: Game) -> None:
+        """Après le démarrage : le timer du premier tour, si la salle en a un."""
+        first_round: Round = game.current_round
+        if first_round.ends_at is not None:
+            self._scheduler.schedule(game.id, first_round.number, first_round.ends_at)

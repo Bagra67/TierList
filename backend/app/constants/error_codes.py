@@ -89,6 +89,8 @@ class ErrorCode(StrEnum):
     ITEM_NOT_IN_GAME = "item_not_in_game"
     # La partie n'est pas dans son cooldown final
     COOLDOWN_NOT_IN_PROGRESS = "cooldown_not_in_progress"
+    # Le cooldown final est fini : plus rien ne se place
+    COOLDOWN_OVER = "cooldown_over"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

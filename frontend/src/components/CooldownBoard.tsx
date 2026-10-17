@@ -1,19 +1,13 @@
 import {
   closestCenter,
   DndContext,
-  KeyboardSensor,
-  PointerSensor,
   useDroppable,
-  useSensor,
-  useSensors,
   type Announcements,
   type DragEndEvent,
-  type SensorDescriptor,
-  type SensorOptions,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
-import { type ChangeEvent, useId, useState } from 'react';
+import { type ChangeEvent, useId, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -25,19 +19,27 @@ import {
   usePlaceItem,
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
+import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
+import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
-// Où une tuile serait posée : un tier, et la tuile devant laquelle elle irait (null : à la fin)
-type CooldownDropTarget = {
-  tierId: string;
-  beforeItemId: string | null;
-};
+// Les contrôles d'une tuile, pour lui rendre le focus après un déplacement
+type TileControl = 'drag' | 'earlier' | 'later' | 'up' | 'down';
 
-// Place une tuile à ce rang de ce tier
-type PlaceHandler = (itemId: string, tierId: string, position: number) => void;
+function focusKey(itemId: string, control: TileControl): string {
+  return `${itemId}:${control}`;
+}
+
+// Place une tuile à ce rang de ce tier, puis rend le focus au premier de ces contrôles
+type PlaceHandler = (
+  itemId: string,
+  tierId: string,
+  position: number,
+  focusControls: TileControl[],
+) => void;
 
 interface CooldownBoardProps {
   room: Room;
@@ -50,54 +52,77 @@ interface CooldownBoardProps {
 export function CooldownBoard({ room, game }: CooldownBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
-  const sensors: SensorDescriptor<SensorOptions>[] = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor),
-  );
-  const items: GameItem[] = [
-    ...game.own_placements.map((placement) => placement.item),
-    ...game.missed_items,
-  ];
+  const sensors = useBoardSensors();
+  const sectionRef = useRef<HTMLElement>(null);
+  const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
+  const pending: boolean = placeMutation.isPending;
 
   // Les tuiles d'un tier, dans l'ordre (le serveur les trie)
   function inTier(tierId: string): OwnPlacement[] {
     return game.own_placements.filter((placement) => placement.tier_id === tierId);
   }
 
-  function itemLabel(itemId: UniqueIdentifier): string {
-    const item: GameItem | undefined = items.find((candidate) => candidate.id === itemId);
-    return item?.text ?? t('rooms.game.placedItemImage');
-  }
-
   function tierName(tierId: string): string {
     return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
   }
 
-  // Rang parmi les autres tuiles du tier visé, sans celle qui bouge : la position du serveur
-  function positionOf(itemId: string, target: CooldownDropTarget): number {
-    const others: OwnPlacement[] = inTier(target.tierId).filter(
-      (placement) => placement.item.id !== itemId,
-    );
-    const index: number = others.findIndex(
-      (placement) => placement.item.id === target.beforeItemId,
-    );
-    return index === -1 ? others.length : index;
+  // Nom de chaque tuile, lu par les lecteurs d'écran ; une image seule est nommée par sa place,
+  // pour que ses boutons ne portent pas tous le même nom
+  const labels: Map<string, string> = new Map();
+  for (const tier of game.tiers) {
+    inTier(tier.id).forEach((placement, index) => {
+      labels.set(
+        placement.item.id,
+        placement.item.text ??
+          t('rooms.game.imageItemAt', { tier: tier.name, position: index + 1 }),
+      );
+    });
+  }
+  game.missed_items.forEach((item, index) => {
+    labels.set(item.id, item.text ?? t('rooms.game.cooldown.missedImage', { position: index + 1 }));
+  });
+
+  function itemLabel(itemId: UniqueIdentifier): string {
+    return labels.get(String(itemId)) ?? '';
   }
 
-  async function placeAt(itemId: string, tierId: string, position: number) {
+  function positionFor(itemId: string, target: BoardDropTarget, side: DropSide): number | null {
+    const tierItemIds: string[] = inTier(target.tierId).map((placement) => placement.item.id);
+    return dropPosition(tierItemIds, itemId, target, side);
+  }
+
+  async function placeAt(
+    itemId: string,
+    tierId: string,
+    position: number,
+    focusControls: TileControl[],
+  ) {
+    if (pending) return;
+    // La tuile garde le focus, même déplacée dans une autre rangée ; un item manqué placé le
+    // retrouve sur le plateau
+    const controls: TileControl[] = [...focusControls, 'drag'];
+    focus.request(controls.map((control) => focusKey(itemId, control)));
     try {
       await placeMutation.mutateAsync({ tileId: itemId, tierId, position });
     } catch {
+      focus.cancel();
       return; // l'erreur est affichée depuis placeMutation.error
     }
   }
 
-  function describe(itemId: UniqueIdentifier, target: CooldownDropTarget) {
-    return {
+  function announce(
+    key: 'rooms.game.dnd.over' | 'rooms.game.dnd.dropped',
+    itemId: UniqueIdentifier,
+    target: BoardDropTarget,
+    side: DropSide,
+  ): string {
+    const position: number | null = positionFor(String(itemId), target, side);
+    if (position === null) return t('rooms.game.dnd.unchanged', { item: itemLabel(itemId) });
+    return t(key, {
       item: itemLabel(itemId),
       tier: tierName(target.tierId),
-      position: positionOf(String(itemId), target) + 1,
-    };
+      position: position + 1,
+    });
   }
 
   const announcements: Announcements = {
@@ -105,28 +130,43 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     onDragOver: ({ active, over }) =>
       over?.data.current === undefined
         ? undefined
-        : t('rooms.game.dnd.over', describe(active.id, over.data.current as CooldownDropTarget)),
+        : announce(
+            'rooms.game.dnd.over',
+            active.id,
+            over.data.current as BoardDropTarget,
+            dropSide(active.rect.current.translated, over.rect),
+          ),
     onDragEnd: ({ active, over }) =>
       over?.data.current === undefined
         ? undefined
-        : t('rooms.game.dnd.dropped', describe(active.id, over.data.current as CooldownDropTarget)),
+        : announce(
+            'rooms.game.dnd.dropped',
+            active.id,
+            over.data.current as BoardDropTarget,
+            dropSide(active.rect.current.translated, over.rect),
+          ),
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (over?.data.current === undefined) return;
-    const target: CooldownDropTarget = over.data.current as CooldownDropTarget;
+    const target: BoardDropTarget = over.data.current as BoardDropTarget;
     const itemId: string = String(active.id);
-    // Déposée sur elle-même : elle ne bouge pas
-    if (target.beforeItemId === itemId) return;
-    void placeAt(itemId, target.tierId, positionOf(itemId, target));
+    const position: number | null = positionFor(
+      itemId,
+      target,
+      dropSide(active.rect.current.translated, over.rect),
+    );
+    // Déposée sur elle-même, ou là où elle est déjà : elle ne bouge pas
+    if (position === null) return;
+    void placeAt(itemId, target.tierId, position, ['drag']);
   }
 
-  const onPlace: PlaceHandler = (itemId, tierId, position) =>
-    void placeAt(itemId, tierId, position);
+  const onPlace: PlaceHandler = (itemId, tierId, position, focusControls) =>
+    void placeAt(itemId, tierId, position, focusControls);
 
   return (
-    <section className="flex w-full flex-col gap-3">
+    <section ref={sectionRef} className="flex w-full flex-col gap-3">
       <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
       <DndContext
         sensors={sensors}
@@ -141,8 +181,9 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
           <MissedItems
             items={game.missed_items}
             tiers={game.tiers}
+            labelOf={itemLabel}
             endOf={(tierId) => inTier(tierId).length}
-            pending={placeMutation.isPending}
+            pending={pending}
             onPlace={onPlace}
           />
         )}
@@ -155,13 +196,14 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
                 key={tier.id}
                 tier={tier}
                 placements={inTier(tier.id)}
+                labelOf={itemLabel}
                 above={
                   above === undefined ? undefined : { tier: above, end: inTier(above.id).length }
                 }
                 below={
                   below === undefined ? undefined : { tier: below, end: inTier(below.id).length }
                 }
-                pending={placeMutation.isPending}
+                pending={pending}
                 onPlace={onPlace}
               />
             );
@@ -184,6 +226,7 @@ interface NeighbourTier {
 interface CooldownTierRowProps {
   tier: GameTier;
   placements: OwnPlacement[];
+  labelOf: (itemId: string) => string;
   above: NeighbourTier | undefined;
   below: NeighbourTier | undefined;
   pending: boolean;
@@ -193,6 +236,7 @@ interface CooldownTierRowProps {
 function CooldownTierRow({
   tier,
   placements,
+  labelOf,
   above,
   below,
   pending,
@@ -206,6 +250,7 @@ function CooldownTierRow({
           <CooldownTile
             key={placement.item.id}
             item={placement.item}
+            label={labelOf(placement.item.id)}
             tierId={tier.id}
             index={index}
             count={placements.length}
@@ -215,7 +260,7 @@ function CooldownTierRow({
             onPlace={onPlace}
           />
         ))}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, beforeItemId: null }} />
+        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
       </ol>
     </li>
   );
@@ -223,6 +268,7 @@ function CooldownTierRow({
 
 interface CooldownTileProps {
   item: GameItem;
+  label: string;
   tierId: string;
   // Rang de la tuile dans son tier, et nombre de tuiles du tier
   index: number;
@@ -233,9 +279,11 @@ interface CooldownTileProps {
   onPlace: PlaceHandler;
 }
 
-// Une tuile du plateau final : elle se glisse, et déposer une autre tuile dessus la place avant elle
+// Une tuile du plateau final : elle se glisse, et une autre tuile déposée dessus se place avant
+// ou après elle, selon le côté où elle tombe
 function CooldownTile({
   item,
+  label,
   tierId,
   index,
   count,
@@ -245,31 +293,35 @@ function CooldownTile({
   onPlace,
 }: CooldownTileProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const label: string = item.text ?? t('rooms.game.placedItemImage');
-  const target: CooldownDropTarget = { tierId, beforeItemId: item.id };
-  const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({
+  const target: BoardDropTarget = { tierId, itemId: item.id };
+  const { setNodeRef, isOver, active }: ReturnType<typeof useDroppable> = useDroppable({
     id: `${tierId}:${item.id}`,
     data: target,
   });
+  // La tuile glissée survole sa propre place : rien n'y tomberait
+  const highlighted: boolean = isOver && active?.id !== item.id;
   return (
     <li
       ref={setNodeRef}
-      className={cn(
-        'flex items-center gap-1',
-        // L'endroit où la tuile tomberait : juste avant celle-ci
-        isOver && 'border-l-4 border-dashed border-primary pl-1',
-      )}
+      className={cn('flex items-center gap-1 rounded-md', highlighted && 'ring-2 ring-primary')}
     >
-      <DraggableItem id={item.id} label={label} disabled={pending}>
+      <DraggableItem
+        id={item.id}
+        label={label}
+        focusKey={focusKey(item.id, 'drag')}
+        disabled={pending}
+      >
         <GameItemView item={item} imageLabel={label} size="small" />
       </DraggableItem>
       <Button
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={focusKey(item.id, 'earlier')}
         aria-label={t('rooms.game.moveEarlier', { item: label })}
-        disabled={pending || index === 0}
-        onClick={() => onPlace(item.id, tierId, index - 1)}
+        aria-disabled={pending}
+        disabled={index === 0}
+        onClick={() => onPlace(item.id, tierId, index - 1, ['earlier', 'later'])}
       >
         ←
       </Button>
@@ -277,9 +329,11 @@ function CooldownTile({
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={focusKey(item.id, 'later')}
         aria-label={t('rooms.game.moveLater', { item: label })}
-        disabled={pending || index >= count - 1}
-        onClick={() => onPlace(item.id, tierId, index + 1)}
+        aria-disabled={pending}
+        disabled={index >= count - 1}
+        onClick={() => onPlace(item.id, tierId, index + 1, ['later', 'earlier'])}
       >
         →
       </Button>
@@ -287,9 +341,13 @@ function CooldownTile({
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={focusKey(item.id, 'up')}
         aria-label={t('rooms.game.cooldown.moveUp', { item: label })}
-        disabled={pending || above === undefined}
-        onClick={() => above !== undefined && onPlace(item.id, above.tier.id, above.end)}
+        aria-disabled={pending}
+        disabled={above === undefined}
+        onClick={() =>
+          above !== undefined && onPlace(item.id, above.tier.id, above.end, ['up', 'down'])
+        }
       >
         ↑
       </Button>
@@ -297,9 +355,13 @@ function CooldownTile({
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={focusKey(item.id, 'down')}
         aria-label={t('rooms.game.cooldown.moveDown', { item: label })}
-        disabled={pending || below === undefined}
-        onClick={() => below !== undefined && onPlace(item.id, below.tier.id, below.end)}
+        aria-disabled={pending}
+        disabled={below === undefined}
+        onClick={() =>
+          below !== undefined && onPlace(item.id, below.tier.id, below.end, ['down', 'up'])
+        }
       >
         ↓
       </Button>
@@ -310,6 +372,7 @@ function CooldownTile({
 interface MissedItemsProps {
   items: GameItem[];
   tiers: GameTier[];
+  labelOf: (itemId: string) => string;
   // Rang de la fin d'un tier : un item manqué s'y place en dernier
   endOf: (tierId: string) => number;
   pending: boolean;
@@ -317,7 +380,7 @@ interface MissedItemsProps {
 }
 
 // Les items manqués (votes absents, arrivée en retard), à placer avant la fin du cooldown (US-4.6)
-function MissedItems({ items, tiers, endOf, pending, onPlace }: MissedItemsProps) {
+function MissedItems({ items, tiers, labelOf, endOf, pending, onPlace }: MissedItemsProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
   return (
@@ -333,6 +396,7 @@ function MissedItems({ items, tiers, endOf, pending, onPlace }: MissedItemsProps
           <MissedItemRow
             key={item.id}
             item={item}
+            label={labelOf(item.id)}
             tiers={tiers}
             endOf={endOf}
             pending={pending}
@@ -346,20 +410,26 @@ function MissedItems({ items, tiers, endOf, pending, onPlace }: MissedItemsProps
 
 interface MissedItemRowProps {
   item: GameItem;
+  label: string;
   tiers: GameTier[];
   endOf: (tierId: string) => number;
   pending: boolean;
   onPlace: PlaceHandler;
 }
 
-function MissedItemRow({ item, tiers, endOf, pending, onPlace }: MissedItemRowProps) {
+function MissedItemRow({ item, label, tiers, endOf, pending, onPlace }: MissedItemRowProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const selectId: string = useId();
+  // Les tiers sont figés pour toute la partie : le premier reste le même
   const [tierId, setTierId] = useState<string>(tiers[0]?.id ?? '');
-  const label: string = item.text ?? t('rooms.game.placedItemImage');
   return (
     <li className="flex flex-wrap items-center gap-2">
-      <DraggableItem id={item.id} label={label} disabled={pending}>
+      <DraggableItem
+        id={item.id}
+        label={label}
+        focusKey={focusKey(item.id, 'drag')}
+        disabled={pending}
+      >
         <GameItemView item={item} imageLabel={label} size="small" />
       </DraggableItem>
       {/* Le mot accompagne la couleur, qui ne suffirait pas seule */}
@@ -386,8 +456,8 @@ function MissedItemRow({ item, tiers, endOf, pending, onPlace }: MissedItemRowPr
         variant="outline"
         size="sm"
         aria-label={t('rooms.game.cooldown.placeLabel', { item: label })}
-        disabled={pending}
-        onClick={() => onPlace(item.id, tierId, endOf(tierId))}
+        aria-disabled={pending}
+        onClick={() => onPlace(item.id, tierId, endOf(tierId), [])}
       >
         {t('rooms.game.cooldown.place')}
       </Button>

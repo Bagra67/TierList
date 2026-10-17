@@ -96,6 +96,8 @@ def current_game_response(
         if placement.snapshot_tile_id == current_round.snapshot_tile_id
         and placement.participant_id is not None
     ]
+    # Le room admin qui ne joue pas n'a ni plateau ni item manqué (US-3.5)
+    seat_places: bool = game.admin_plays or seat.user_id != seat.room.admin_id
     # Le plateau du lecteur pour la phase en cours, sans ses votes absents
     board_phase: PlacementPhase = (
         PlacementPhase.FINAL if game.status == GameStatus.COOLDOWN else PlacementPhase.ROUND
@@ -123,7 +125,7 @@ def current_game_response(
     own_placements.sort(key=lambda own: (tier_ranks[own.tier_id], own.position))
     # Pendant le cooldown, chaque item de la partie sans placement final reste à placer (US-4.6)
     missed_items: list[CurrentItemResponse] = []
-    if game.status == GameStatus.COOLDOWN:
+    if game.status == GameStatus.COOLDOWN and seat_places:
         placed_tile_ids: set[uuid.UUID] = {placement.snapshot_tile_id for placement in board}
         missed_items = [
             _item_response(game_round.tile, storage)

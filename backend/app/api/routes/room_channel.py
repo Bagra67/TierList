@@ -25,6 +25,7 @@ from app.api.dependencies import (
     SessionFactory,
     SessionFactoryDep,
     SettingsDep,
+    build_game_service,
 )
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
@@ -37,16 +38,13 @@ from app.constants.rooms import (
 from app.core.config import Settings
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.rooms import ChannelClosedError, RoomNotFoundError
-from app.models.enums import RoomStatus
 from app.models.participant import Participant
-from app.models.room import Room
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.games import GameService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler
-from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
 
@@ -192,14 +190,8 @@ def _set_presence(
     connected: bool,
 ) -> None:
     with session_factory() as session:
-        rooms: RoomService = RoomService(session, settings, publisher)
-        changed: Room | None = rooms.set_presence(seat.participant_id, connected)
-        if not connected and changed is not None and changed.status == RoomStatus.PLAYING:
-            # Un déconnecté n'est plus attendu par « tout le monde a placé » (US-3.4)
-            games: GameService = GameService(
-                session, publisher, rooms, TemplateService(session, settings), scheduler
-            )
-            games.advance_if_everyone_placed(seat.room_id)
+        games: GameService = build_game_service(session, settings, publisher, scheduler)
+        games.set_presence(seat.participant_id, connected)
 
 
 async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:

@@ -19,7 +19,7 @@ A room has **at most 10 participants** (room admin included) and a game **at mos
 | A participant places or moves the current item    | **Who** has placed, never **where** (rankings stay private until the results) |
 | A round ends (admin "next", timer, everyone done) | The round is over; absent placements are recorded by the server               |
 | The last round ends                               | The cooldown starts, with its end time                                        |
-| The cooldown ends (timer or admin "End now")      | The game is closed: results available, room back to _Open_                    |
+| The cooldown ends (timer or admin "End now")      | The game is closed: rankings final (results with #99), room back to _Open_    |
 | The admin closes the room, or it is inactive      | The room is closed; every participant leaves                                  |
 
 Timers: the per-item **round timer** (room setting), the **cooldown** (room setting), the **room inactivity delay** (application setting). A **disconnected** participant keeps their seat and ranking, gets absent placements for the rounds that end meanwhile, and is not waited for by "everyone done".
@@ -32,7 +32,7 @@ Timers: the per-item **round timer** (room setting), the **cooldown** (room sett
 
 ### Not available yet
 
-The game start (`game.started`, #91), the placements (`participant.placed`, #92), the round progression (`round.started`, `cooldown.started`) and the round timers (§2.8, #93) are built ([games guide](games.md)); so are the final cooldown, its timer and its end (`game.closed`, #96); saving the closed game comes with #98. Holograms, public rooms and chat (later milestones) will reuse the same channel.
+The game start (`game.started`, #91), the placements (`participant.placed`, #92), the round progression (`round.started`, `cooldown.started`) and the round timers (§2.8, #93) are built ([games guide](games.md)); so are the final cooldown, its timer and its end (`game.closed`, #96); and so is saving the closed game (`game_players`, #98); the results come with #99. Holograms, public rooms and chat (later milestones) will reuse the same channel.
 
 ## 2. Technical design
 
@@ -114,7 +114,7 @@ WS events ──▶ useRoomEvents(roomCode) ──┘ (setQueryData / invalidate
 **Built for the rounds in #93** (`services/round_timers.py`, [games guide](games.md#25-round-progression)); the cooldown timer since #96 (`schedule_cooldown_end`, one deadline per game). A round ended early keeps its task: the transition finds the round over and does nothing, which is simpler than cancelling it.
 
 - The server is the only clock. A round with a timer and the cooldown store their **end time** (`ends_at`, UTC) in the database; the events send it, the clients display the countdown from it.
-- In the process, an `asyncio` task waits for each deadline and calls the service transition; it is cancelled when the round ends earlier (admin "next", everyone done). At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
+- In the process, an `asyncio` task per game waits for the deadline and calls the service transition; a newer deadline of the game (next round, cooldown end) replaces it, an older one is ignored; a phase ended earlier leaves its task, whose transition then does nothing; a failed transition is tried again after 1, 5 then 30 s. At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
 - **Races** (timer, "next" and "everyone done" at the same time): each transition runs in a transaction that locks the room row and checks the expected state (the round is still in progress); the second one finds the round already ended and does nothing. Transitions are therefore **idempotent**.
 - The **inactivity delay** of a room is handled by a periodic sweep that closes the rooms inactive for too long.
 - SQLAlchemy is synchronous: from async code (the socket, the timers), the database calls go through the threadpool (`run_in_threadpool`) and never block the event loop.
@@ -180,7 +180,7 @@ Built in #85. What exists today:
 
   Channel messages: `{"type": "ping"}` from the server, `{"type": "pong"}` and `{"type": "auth", "access_token": …}` from the client. `RoomServerMessage` and `RoomClientMessage` are added to the OpenAPI components (`_openapi_with_room_messages` in `app/main.py`).
 
-- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), returned as `version` by the room API.
+- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), and by `GameService` (start, first placement of a round, end of a round, end of the cooldown); returned as `version` by the room API.
 - **Authentication**: the first message is always `auth`, within `ROOM_AUTH_TIMEOUT_SECONDS`: an account sends its access token, a guest sends `null` and is recognised by its `guest_token` cookie (`Path=/api/rooms/<code>`, [rooms guide](rooms.md#24-guests)). An account comes first, like in REST.
 - **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401`, `4404`, `4410` and `4411`:
 

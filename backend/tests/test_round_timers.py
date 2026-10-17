@@ -167,3 +167,48 @@ def test_the_cooldown_end_replaces_the_deadline_of_the_last_round():
         await timers.stop()
 
     run(scenario)
+
+
+def test_an_older_deadline_never_replaces_a_newer_one():
+    async def scenario() -> None:
+        deadlines: RecordingDeadlines = RecordingDeadlines()
+        timers: RoundTimers = RoundTimers()
+        timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
+
+        # Le timer du tour 1 et « suivant » se croisent : le tour 3 est programmé avant le 2
+        timers.schedule(GAME, 3, in_seconds(0.05))
+        timers.schedule(GAME, 2, in_seconds(0.02))
+        timers.schedule_cooldown_end(OTHER_GAME, in_seconds(0.02))
+        timers.schedule(OTHER_GAME, 3, in_seconds(0.02))
+        await asyncio.sleep(0.12)
+
+        assert deadlines.ended == [(GAME, 3)]
+        assert deadlines.cooldowns_ended == [OTHER_GAME]
+        await timers.stop()
+
+    run(scenario)
+
+
+def test_a_failing_transition_is_tried_again():
+    async def scenario() -> None:
+        attempts: list[int] = []
+
+        async def failing_once(game_id: uuid.UUID, round_number: int) -> None:
+            attempts.append(round_number)
+            if len(attempts) == 1:
+                raise RuntimeError("database unreachable")
+
+        async def no_cooldown(game_id: uuid.UUID) -> None:
+            raise AssertionError("no cooldown in this test")
+
+        timers: RoundTimers = RoundTimers(retry_delays_seconds=(0.02, 0.02))
+        timers.start(asyncio.get_running_loop(), failing_once, no_cooldown)
+
+        timers.schedule(GAME, 1, in_seconds(0))
+        await asyncio.sleep(0.1)
+
+        # Un premier échec, puis la transition réussit au deuxième essai, et s'arrête là
+        assert attempts == [1, 1]
+        await timers.stop()
+
+    run(scenario)

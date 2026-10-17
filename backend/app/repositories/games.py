@@ -20,11 +20,13 @@ def get_room_id_of_game(session: Session, game_id: uuid.UUID) -> uuid.UUID | Non
 
 def list_pending_round_deadlines(session: Session) -> list[tuple[uuid.UUID, int, datetime]]:
     """(partie, numéro du tour, fin du timer) des tours en cours qui attendent leur timer : à
-    reprogrammer au démarrage du processus."""
+    reprogrammer au démarrage du processus. Sans les parties dont la salle a été supprimée : leur
+    transition ne trouverait aucune salle et ne ferait rien, à chaque démarrage."""
     statement: Select[uuid.UUID, int, datetime | None] = (
         select(Game.id, Round.number, Round.ends_at)
         .join(Round, Round.game_id == Game.id)
         .where(
+            Game.room_id.is_not(None),
             Game.status == GameStatus.IN_ROUND,
             Round.number == Game.current_round_number,
             Round.ends_at.is_not(None),
@@ -41,9 +43,11 @@ def list_pending_round_deadlines(session: Session) -> list[tuple[uuid.UUID, int,
 
 def list_pending_cooldown_ends(session: Session) -> list[tuple[uuid.UUID, datetime]]:
     """(partie, fin du cooldown) des parties dans leur cooldown final : à reprogrammer au
-    démarrage du processus."""
+    démarrage du processus, sans les parties dont la salle a été supprimée."""
     statement: Select[uuid.UUID, datetime | None] = select(Game.id, Game.cooldown_ends_at).where(
-        Game.status == GameStatus.COOLDOWN, Game.cooldown_ends_at.is_not(None)
+        Game.room_id.is_not(None),
+        Game.status == GameStatus.COOLDOWN,
+        Game.cooldown_ends_at.is_not(None),
     )
     cooldown_ends: list[tuple[uuid.UUID, datetime]] = []
     for game_id, cooldown_ends_at in session.execute(statement):

@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
@@ -19,11 +20,15 @@ interface RoomLobbyProps {
 // (US-2.11, US-2.12). Pendant une partie, l'écran de jeu passe en tête
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  // Reçoit le focus quand l'écran de jeu disparaît sous le clavier (fin du cooldown)
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <>
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{t('rooms.lobby.title', { code: room.code })}</h1>
+        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-semibold outline-none">
+          {t('rooms.lobby.title', { code: room.code })}
+        </h1>
         {room.template !== null && (
           <p className="text-muted-foreground">
             {t('rooms.lobby.template', { name: room.template.name })}
@@ -31,7 +36,9 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
-      {room.game !== null && <GameScreen room={room} game={room.game} />}
+      {room.game !== null && (
+        <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
+      )}
       {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
       {room.is_admin && room.game === null && room.template !== null && (
         <StartGameButton code={room.code} />

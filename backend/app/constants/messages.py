@@ -55,6 +55,7 @@ NOT_A_PLACING_PARTICIPANT = "The room admin does not play: they do not place the
 ITEM_NOT_CURRENT = "This tile is not the item of the current round"
 ITEM_NOT_IN_GAME = "This tile is not an item of the game"
 COOLDOWN_NOT_IN_PROGRESS = "The final cooldown is not in progress in this room"
+COOLDOWN_OVER = "The final cooldown is over: nothing can be placed any more"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
@@ -92,7 +93,8 @@ NOT_A_PLACING_PARTICIPANT_DESCRIPTION = "The room admin does not play"
 ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier or tile not in the game"
 ROUND_NOT_IN_PROGRESS_DESCRIPTION = "No round in progress (no game, or the cooldown has begun)"
 CANNOT_PLACE_DESCRIPTION = (
-    "No round nor cooldown in progress, or during a round the tile is not the current item"
+    "No round nor cooldown in progress, the round or the cooldown is over,"
+    " or during a round the tile is not the current item"
 )
 COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
 GAME_CANNOT_START_DESCRIPTION = (

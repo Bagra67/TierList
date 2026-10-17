@@ -12,13 +12,15 @@ import { PlacedList } from './PlacedList';
 interface GameScreenProps {
   room: Room;
   game: CurrentGame;
+  // La partie est close par le room admin : le lobby reprend le focus
+  onGameEnded: () => void;
 }
 
 // Écran d'une partie (US-3.2 à US-3.5) : l'item en cours et le temps restant, qui l'a placé, le
 // plateau privé du lecteur s'il place les items, et les commandes du room admin. Le room admin qui
 // ne joue pas a seulement les commandes, sans plateau. Pendant le cooldown final (US-4.1, US-4.6) :
 // le bandeau et son compte à rebours, le plateau final, et « Terminer maintenant »
-export function GameScreen({ room, game }: GameScreenProps) {
+export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   // Le room admin qui ne joue pas ne place pas les items (US-3.5)
   const placingParticipants: Participant[] = room.participants.filter(
@@ -37,12 +39,12 @@ export function GameScreen({ room, game }: GameScreenProps) {
               <Countdown endsAt={game.cooldown_ends_at} label={t('rooms.game.cooldown.timeLeft')} />
             )}
           </div>
-          <p role="status" className="text-sm">
+          <p className="text-sm">
             {readerPlaces ? t('rooms.game.cooldown.hint') : t('rooms.game.cooldown.waiting')}
           </p>
         </section>
         {readerPlaces && <CooldownBoard room={room} game={game} />}
-        {room.is_admin && <EndCooldownDialog code={room.code} />}
+        {room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />}
       </div>
     );
   }
@@ -51,7 +53,7 @@ export function GameScreen({ room, game }: GameScreenProps) {
     <div className="flex w-full flex-col gap-4">
       <section className="flex w-full flex-col gap-2 rounded-lg bg-muted px-3 py-2">
         <div className="flex items-center justify-between gap-4">
-          <p className="font-medium">{t('rooms.game.title')}</p>
+          <h2 className="font-medium">{t('rooms.game.title')}</h2>
           {game.ends_at !== null && (
             <Countdown endsAt={game.ends_at} label={t('rooms.game.timeLeft')} />
           )}

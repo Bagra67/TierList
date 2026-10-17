@@ -1,18 +1,12 @@
 import {
   closestCenter,
   DndContext,
-  KeyboardSensor,
-  PointerSensor,
   useDroppable,
-  useSensor,
-  useSensors,
   type Announcements,
   type DragEndEvent,
-  type SensorDescriptor,
-  type SensorOptions,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
-import type { ReactNode } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -24,18 +18,15 @@ import {
   usePlaceItem,
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
+import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
+import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
-// Où l'item en cours serait posé : un tier, et son rang parmi les autres items de ce tier
-interface DropTarget {
-  tierId: string;
-  position: number;
-}
-
-const CURRENT_ITEM_ID = 'current-item';
+// Clés de focus de l'item en cours (useFocusAfterUpdate)
+const CURRENT_FOCUS = { drag: 'current:drag', earlier: 'current:earlier', later: 'current:later' };
 
 interface GameBoardProps {
   room: Room;
@@ -48,18 +39,25 @@ interface GameBoardProps {
 export function GameBoard({ room, game }: GameBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
-  const sensors: SensorDescriptor<SensorOptions>[] = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor),
-  );
+  const sensors = useBoardSensors();
+  const sectionRef = useRef<HTMLElement>(null);
+  const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const currentItem: GameItem = game.current_item;
+  // L'id du glisser porte l'item : un glisser commencé avant la fin du tour ne pose pas le suivant
+  const draggableId: string = `current:${currentItem.id}`;
   const currentPlacement: OwnPlacement | undefined = game.own_placements.find(
     (placement) => placement.item.id === currentItem.id,
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
+  const pending: boolean = placeMutation.isPending;
 
-  // Les items d'un tier sans l'item en cours, dans l'ordre : les positions envoyées au serveur
-  // sont des rangs parmi eux
+  // Les items d'un tier, l'item en cours compris s'il y est, dans l'ordre (le serveur les trie)
+  function idsIn(tierId: string): string[] {
+    return game.own_placements
+      .filter((placement) => placement.tier_id === tierId)
+      .map((placement) => placement.item.id);
+  }
+
   function othersIn(tierId: string): OwnPlacement[] {
     return game.own_placements.filter(
       (placement) => placement.tier_id === tierId && placement.item.id !== currentItem.id,
@@ -70,42 +68,70 @@ export function GameBoard({ room, game }: GameBoardProps) {
     return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
   }
 
-  async function placeAt(target: DropTarget) {
+  async function placeAt(tierId: string, position: number, focusKeys: string[]) {
+    if (pending) return;
+    focus.request(focusKeys);
     try {
-      await placeMutation.mutateAsync({
-        tileId: currentItem.id,
-        tierId: target.tierId,
-        position: target.position,
-      });
+      await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
+      focus.cancel();
       return; // l'erreur est affichée depuis placeMutation.error
     }
   }
 
-  function describe(target: DropTarget) {
-    return { item: itemLabel, tier: tierName(target.tierId), position: target.position + 1 };
+  function positionFor(target: BoardDropTarget, side: DropSide): number | null {
+    return dropPosition(idsIn(target.tierId), currentItem.id, target, side);
+  }
+
+  function describe(target: BoardDropTarget, side: DropSide): string {
+    const position: number | null = positionFor(target, side);
+    if (position === null) return t('rooms.game.dnd.unchanged', { item: itemLabel });
+    return t('rooms.game.dnd.over', {
+      item: itemLabel,
+      tier: tierName(target.tierId),
+      position: position + 1,
+    });
   }
 
   const announcements: Announcements = {
     onDragStart: () => t('rooms.game.dnd.pickedUp', { item: itemLabel }),
-    onDragOver: ({ over }) =>
+    onDragOver: ({ active, over }) =>
       over?.data.current === undefined
         ? undefined
-        : t('rooms.game.dnd.over', describe(over.data.current as DropTarget)),
-    onDragEnd: ({ over }) =>
-      over?.data.current === undefined
-        ? undefined
-        : t('rooms.game.dnd.dropped', describe(over.data.current as DropTarget)),
+        : describe(
+            over.data.current as BoardDropTarget,
+            dropSide(active.rect.current.translated, over.rect),
+          ),
+    onDragEnd: ({ active, over }) => {
+      if (over?.data.current === undefined) return undefined;
+      const target: BoardDropTarget = over.data.current as BoardDropTarget;
+      const position: number | null = positionFor(
+        target,
+        dropSide(active.rect.current.translated, over.rect),
+      );
+      if (position === null) return t('rooms.game.dnd.unchanged', { item: itemLabel });
+      return t('rooms.game.dnd.dropped', {
+        item: itemLabel,
+        tier: tierName(target.tierId),
+        position: position + 1,
+      });
+    },
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
-  function handleDragEnd({ over }: DragEndEvent) {
-    if (over?.data.current === undefined) return;
-    void placeAt(over.data.current as DropTarget);
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    if (active.id !== draggableId || over?.data.current === undefined) return;
+    const target: BoardDropTarget = over.data.current as BoardDropTarget;
+    const position: number | null = positionFor(
+      target,
+      dropSide(active.rect.current.translated, over.rect),
+    );
+    if (position === null) return;
+    void placeAt(target.tierId, position, [CURRENT_FOCUS.drag]);
   }
 
   return (
-    <section className="flex w-full flex-col gap-3">
+    <section ref={sectionRef} className="flex w-full flex-col gap-3">
       <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
       <DndContext
         sensors={sensors}
@@ -121,9 +147,11 @@ export function GameBoard({ room, game }: GameBoardProps) {
             <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
             {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
             <DraggableItem
-              id={CURRENT_ITEM_ID}
+              id={draggableId}
               label={itemLabel}
-              disabled={placeMutation.isPending}
+              ariaLabel={t('rooms.game.dragHandleLabel', { item: itemLabel })}
+              focusKey={CURRENT_FOCUS.drag}
+              disabled={pending}
             >
               {t('rooms.game.dragHandle')}
             </DraggableItem>
@@ -139,9 +167,10 @@ export function GameBoard({ room, game }: GameBoardProps) {
                 currentPlacement?.tier_id === tier.id ? currentPlacement : undefined
               }
               currentItem={currentItem}
+              draggableId={draggableId}
               itemLabel={itemLabel}
-              pending={placeMutation.isPending}
-              onPlace={(target) => void placeAt(target)}
+              pending={pending}
+              onPlace={(position, focusKeys) => void placeAt(tier.id, position, focusKeys)}
             />
           ))}
         </ol>
@@ -159,9 +188,11 @@ interface TierRowProps {
   // L'item en cours, s'il est déjà placé dans ce tier
   currentPlacement: OwnPlacement | undefined;
   currentItem: GameItem;
+  draggableId: string;
   itemLabel: string;
   pending: boolean;
-  onPlace: (target: DropTarget) => void;
+  // Place l'item en cours à ce rang du tier, puis rend le focus au premier de ces contrôles
+  onPlace: (position: number, focusKeys: string[]) => void;
 }
 
 function TierRow({
@@ -169,6 +200,7 @@ function TierRow({
   others,
   currentPlacement,
   currentItem,
+  draggableId,
   itemLabel,
   pending,
   onPlace,
@@ -176,19 +208,29 @@ function TierRow({
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   // Rang de l'item en cours parmi les autres items du tier : il est affiché avant others[rank]
   const currentRank: number | undefined = currentPlacement?.position;
+  const placeFocus: string = `place:${tier.id}`;
 
   const currentChip = (
     <li className="flex items-center gap-1">
-      <DraggableItem id={CURRENT_ITEM_ID} label={itemLabel} disabled={pending}>
+      <DraggableItem
+        id={draggableId}
+        label={itemLabel}
+        focusKey={CURRENT_FOCUS.drag}
+        disabled={pending}
+      >
         <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
       </DraggableItem>
       <Button
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={CURRENT_FOCUS.earlier}
         aria-label={t('rooms.game.moveEarlier', { item: itemLabel })}
-        disabled={pending || currentRank === undefined || currentRank === 0}
-        onClick={() => onPlace({ tierId: tier.id, position: (currentRank ?? 0) - 1 })}
+        aria-disabled={pending}
+        disabled={currentRank === undefined || currentRank === 0}
+        onClick={() =>
+          onPlace((currentRank ?? 0) - 1, [CURRENT_FOCUS.earlier, CURRENT_FOCUS.later])
+        }
       >
         ←
       </Button>
@@ -196,9 +238,13 @@ function TierRow({
         type="button"
         variant="ghost"
         size="sm"
+        data-focus-key={CURRENT_FOCUS.later}
         aria-label={t('rooms.game.moveLater', { item: itemLabel })}
-        disabled={pending || currentRank === undefined || currentRank >= others.length}
-        onClick={() => onPlace({ tierId: tier.id, position: (currentRank ?? 0) + 1 })}
+        aria-disabled={pending}
+        disabled={currentRank === undefined || currentRank >= others.length}
+        onClick={() =>
+          onPlace((currentRank ?? 0) + 1, [CURRENT_FOCUS.later, CURRENT_FOCUS.earlier])
+        }
       >
         →
       </Button>
@@ -213,20 +259,21 @@ function TierRow({
           <PlacedItemSlot
             key={placement.item.id}
             placement={placement}
-            target={{ tierId: tier.id, position: index }}
+            target={{ tierId: tier.id, itemId: placement.item.id }}
             before={currentRank === index ? currentChip : null}
           />
         ))}
         {currentRank !== undefined && currentRank >= others.length && currentChip}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, position: others.length }} />
+        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
       </ol>
       <Button
         type="button"
         variant="outline"
         size="sm"
+        data-focus-key={placeFocus}
         aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
-        disabled={pending}
-        onClick={() => onPlace({ tierId: tier.id, position: others.length })}
+        aria-disabled={pending}
+        onClick={() => onPlace(others.length, [placeFocus])}
       >
         {t('rooms.game.placeIn', { tier: tier.name })}
       </Button>
@@ -236,12 +283,13 @@ function TierRow({
 
 interface PlacedItemSlotProps {
   placement: OwnPlacement;
-  target: DropTarget;
+  target: BoardDropTarget;
   // L'item en cours, affiché juste avant cet item
   before: ReactNode;
 }
 
-// Un item d'un tour passé : il ne bouge pas, mais déposer l'item en cours dessus le place avant lui
+// Un item d'un tour passé : il ne bouge pas, mais déposer l'item en cours dessus le place avant
+// ou après lui, selon le côté où il tombe
 function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({
@@ -253,11 +301,7 @@ function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
       {before}
       <li
         ref={setNodeRef}
-        className={cn(
-          'rounded-md bg-muted px-2 py-1',
-          // L'endroit où l'item tomberait : juste avant celui-ci
-          isOver && 'border-l-4 border-dashed border-primary',
-        )}
+        className={cn('rounded-md bg-muted px-2 py-1', isOver && 'ring-2 ring-primary')}
       >
         <GameItemView
           item={placement.item}

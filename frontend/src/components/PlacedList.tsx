@@ -32,15 +32,16 @@ export function PlacedList({ placingParticipants, placedParticipantIds }: Placed
       <h2 className="font-semibold">
         {t('rooms.game.placedCount', {
           placed: connectedPlacedCount,
-          connected: connected.length,
+          count: connected.length,
         })}
       </h2>
       <ul className="flex flex-col gap-1 text-sm">
         {placingParticipants.map((participant) => (
           <li key={participant.id} className="flex gap-2">
             <span className="font-medium">
-              {participant.display_name}
-              {participant.is_you && ` ${t('rooms.game.you')}`}
+              {participant.is_you
+                ? t('rooms.game.nameYou', { name: participant.display_name })
+                : participant.display_name}
             </span>
             <span className="text-muted-foreground">
               {t(`rooms.game.status.${statusOf(participant)}`)}
