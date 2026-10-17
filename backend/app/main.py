@@ -12,6 +12,7 @@ from pydantic import BaseModel, TypeAdapter
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.dependencies import (
     SessionFactory,
@@ -24,7 +25,7 @@ from app.constants import messages
 from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
-from app.core.errors import ErrorResponse, register_error_handlers
+from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
 from app.core.frontend import mount_frontend
 from app.core.logging import configure_logging, get_logging_settings
 from app.db.session import get_db_session, ping_database
@@ -231,7 +232,10 @@ def health_db(
 # Application racine, lancée par uvicorn (app.main:app) : l'API sous /api et, en production, le
 # build du frontend sur la même origine (docs/technical/deployment.md)
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
-register_error_handlers(app)
+# Erreurs HTTP au format de l'API (404 hors du build, /api seul) ; pas de second middleware
+# d'erreurs : celui de api_app suffit, et chaque couche de middleware HTTP exécute la suite de la
+# requête dans une tâche à part, ce qui décale la fin des requêtes de l'API
+app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
