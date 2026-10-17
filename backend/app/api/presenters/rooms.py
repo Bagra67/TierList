@@ -1,7 +1,7 @@
 """Réponses de l'API pour les salles, construites pour le lecteur qui les demande : un compte ou
 un invité, room admin ou non (docs/technical/rooms.md)."""
 
-from app.api.presenters.images import image_url
+from app.api.presenters.images import optional_image_url
 from app.models.game import Game
 from app.models.room import Room
 from app.models.round import Round
@@ -71,7 +71,7 @@ def current_game_response(game: Game | None, storage: ImageStorage) -> CurrentGa
     current_round: Round = game.current_round
     tile: SnapshotTile = current_round.tile
     current_item: CurrentItemResponse = CurrentItemResponse(
-        id=tile.id, text=tile.text, image_url=image_url(storage, tile.image)
+        id=tile.id, text=tile.text, image_url=optional_image_url(storage, tile.image)
     )
     return CurrentGameResponse(
         round_number=current_round.number,

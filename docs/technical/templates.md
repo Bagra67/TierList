@@ -150,7 +150,7 @@ Every route requires the Bearer access token (`401` otherwise).
 | `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`               |
 | `DELETE /templates/{id}`                 | —                               | `204`                        | `401`, `404`               |
 
-- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles}`, tiers and tiles sorted by `position`. `image_url` is the public address of the compressed image, `null` for a text-only tile; `template_response` (`api/presenters/templates.py`) builds it with `image_url`, like every image of the API.
+- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles}`, tiers and tiles sorted by `position`. `image_url` is the public address of the compressed image, `null` for a text-only tile; `template_response` (`api/presenters/templates.py`) builds it with `optional_image_url` (`api/presenters/images.py`), like every image of the API.
 - `TemplateListResponse` is `{items: [{id, name, tile_count, updated_at}]}`. An object rather than an array, so that pagination (#105) can add a field without breaking the contract. The list is read in **one query**: the database counts the tiles (no N+1).
 - The tier and tile routes return the whole template, so that the editor replaces its copy without reading it again. The `404` is `template_not_found` for the template, `tier_not_found` / `tile_not_found` for a tier or a tile that is not in it.
 

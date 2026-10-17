@@ -150,7 +150,7 @@ Chaque route exige l'access token Bearer (`401` sinon).
 | `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`               |
 | `DELETE /templates/{id}`                 | —                               | `204`                        | `401`, `404`               |
 
-- `TemplateResponse` vaut `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles}`, tiers et tuiles triés par `position`. `image_url` est l'adresse publique de l'image compressée, `null` pour une tuile qui n'a qu'un texte ; `template_response` (`api/presenters/templates.py`) la construit avec `image_url`, comme toute image de l'API.
+- `TemplateResponse` vaut `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles}`, tiers et tuiles triés par `position`. `image_url` est l'adresse publique de l'image compressée, `null` pour une tuile qui n'a qu'un texte ; `template_response` (`api/presenters/templates.py`) la construit avec `optional_image_url` (`api/presenters/images.py`), comme toute image de l'API.
 - `TemplateListResponse` vaut `{items: [{id, name, tile_count, updated_at}]}`. Un objet plutôt qu'un tableau, pour qu'une pagination (#105) puisse ajouter un champ sans casser le contrat. La liste est lue en **une seule requête** : la base compte les tuiles (pas de N+1).
 - Les routes des tiers et des tuiles renvoient tout le template, pour que l'éditeur remplace sa copie sans la relire. La `404` est `template_not_found` pour le template, `tier_not_found` / `tile_not_found` pour un tier ou une tuile qui n'en fait pas partie.
 
