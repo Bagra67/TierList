@@ -843,6 +843,14 @@ Une application neuve sert un faux build depuis un dossier temporaire (`index.ht
 | `test_files_outside_the_build_are_never_served` (3 chemins)   | `/../secret.txt`, `/%2e%2e/secret.txt`, `/..%2fsecret.txt`. | Pas de path traversal.                                                                       | Le secret n'est jamais dans la réponse.                      |
 | `test_the_bare_api_prefix_is_not_a_page`                      | `GET /api`.                                                 | `/api` n'est pas une page du frontend.                                                       | `404`.                                                       |
 
+### 1.21 Test unitaire : `tests/test_image_storage_unit.py` (requête d'envoi d'une image)
+
+`ImageStorage.save` avec un faux client S3 qui garde ses appels (`RecordingS3Client`), sans aucun stockage.
+
+| Test                                                        | Ce qu'il fait                                  | But                                                                                                                         | Résultat attendu                                                                                                                                              |
+| ----------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_a_saved_image_is_sent_public_with_its_type_and_cache` | Enregistre `abc.webp` dans le bucket `images`. | Chez Scaleway, un objet reste privé même dans un bucket public : l'URL publique de l'image a besoin de l'ACL `public-read`. | Un seul `put_object` avec le bucket, la clé, les octets, `image/webp`, `public, max-age=86400` et `ACL=public-read` ; l'URL joint la base publique et la clé. |
+
 ## 2. Frontend (Vitest)
 
 ### 2.1 Fonctionnement de Vitest
