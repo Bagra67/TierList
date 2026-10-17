@@ -45,6 +45,13 @@ def test_frontend_routes_get_the_page_without_cache(client: TestClient, path: st
     assert response.headers["cache-control"] == "no-cache"
 
 
+def test_head_requests_get_the_page_headers(client: TestClient):
+    response = client.head("/r/K7P2QX")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-cache"
+
+
 def test_root_files_of_the_build_are_served(client: TestClient):
     response = client.get("/favicon.svg")
 

@@ -57,7 +57,8 @@ def mount_frontend(app: FastAPI, dist: Path) -> None:
         name="frontend-assets",
     )
 
-    @app.get("/{path:path}", include_in_schema=False)
+    # HEAD aussi : sondes de disponibilité et vérifications de lien ne demandent que les en-têtes
+    @app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
     def frontend(path: str) -> FileResponse:
         if f"/{path}" == API_PREFIX:
             # /api seul n'est pas une page : 404 JSON, comme une route inconnue de l'API
