@@ -120,6 +120,8 @@ Construite dans #100.
   - **Global** : `ResultsDistributionTable`, un vrai `<table>` (légende pour les lecteurs d'écran, un en-tête de ligne par item), une colonne par tier et la colonne « Absents » quand les votes absents sont inclus ; le tableau défile seul sur un petit écran, pas la page ;
   - **Par joueur** : un `<select>` du joueur, son `ResultsTierList` et la ligne « Jamais placés ».
 - **États** : chargement, et l'erreur traduite (`results_not_found` pour un lien inconnu).
+- **Lien public** (#101, US-5.3) : la page montre sa propre adresse, `<origine>/results/<jeton>`, avec « Copier le lien » (`CopyLinkField`, partagé avec l'invitation de la salle : la copie est annoncée, et un message demande de copier à la main si le presse-papiers refuse). Tout visiteur qui l'ouvre voit les mêmes vues, en lecture seule : la page n'offre aucune action de salle (pas de « Rejouer »). Sans session, la navigation essaie d'en restaurer une, puis la page s'affiche sans redirection vers la connexion.
+- **Durée de vie** : le lien n'expire jamais et ne se révoque pas. Il marche encore après la fermeture de la salle (la partie survit à sa salle, `games.room_id` remis à `NULL`) et après la suppression du compte d'un joueur (le joueur figé reste, sans compte).
 
 ### 2.8 Limites connues
 
@@ -196,5 +198,3 @@ Si Alice classe S : X, Y et Bob S : Y, X, les deux items ont la médiane 3/4 et 
 | Frontend | `components/ResultsTabs.tsx`, `resultsViews.ts`, `ResultsTierList.tsx`, `ResultsDistributionTable.tsx`, `ResultsPlayerView.tsx`, `PastGames.tsx` | Les vues, et les parties passées du lobby.                                                                     |
 | Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                        |
 | Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | La page et les parties passées ([guide des tests](testing.fr.md)).                                             |
-
-Le lien public (#101) vient ensuite.
