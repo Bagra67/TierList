@@ -19,7 +19,13 @@ from app.services.games import GameService
 from app.services.rooms import RoomService
 from app.services.templates import TemplateService
 from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRoundScheduler
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    create_room,
+    create_template,
+    register,
+    start_game,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -50,12 +56,6 @@ def settings(client: TestClient, code: str, headers: dict[str, str], **changes: 
 def join(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
     response: Response = client.post(f"/rooms/{code}/join", headers=headers)
     assert response.status_code == 200
-    return response.json()
-
-
-def start(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
-    response: Response = client.post(f"/rooms/{code}/game", headers=headers)
-    assert response.status_code == 201
     return response.json()
 
 
@@ -140,7 +140,7 @@ def test_the_admin_moves_to_the_next_item(
 ):
     code: str = alice_room["code"]
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     placed: JsonObject = place_current(auth_client, db_session, code, alice).json()
 
     response: Response = next_round(auth_client, code, alice)
@@ -166,7 +166,7 @@ def test_a_player_cannot_move_to_the_next_item(
 ):
     code: str = alice_room["code"]
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
 
     response: Response = next_round(auth_client, code, bob)
 
@@ -191,7 +191,7 @@ def test_the_last_round_starts_the_cooldown(
     room_events: RecordingRoomEventPublisher,
 ):
     code: str = alice_room["code"]
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     for _ in range(TILE_COUNT - 1):
         next_round(auth_client, code, alice)
 
@@ -228,7 +228,7 @@ def test_a_timer_is_scheduled_for_each_round(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     next_round(auth_client, code, alice)
 
     game: Game = stored_game(db_session)
@@ -248,7 +248,7 @@ def test_the_timer_ends_its_round_only_once(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     game_id: uuid.UUID = stored_game(db_session).id
     service: GameService = game_service(db_session, room_events, round_scheduler)
 
@@ -270,7 +270,7 @@ def test_placing_after_the_end_of_the_round_timer_is_refused(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     # La fin du tour est passée, son timer pas encore (threadpool chargé, redémarrage)
     stored_game(db_session).current_round.ends_at = datetime.now(UTC) - timedelta(seconds=1)
     db_session.flush()
@@ -290,7 +290,7 @@ def test_pending_deadlines_are_scheduled_again_at_startup(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     next_round(auth_client, code, alice)
     recorded: RecordingRoundScheduler = RecordingRoundScheduler()
     monkeypatch.setattr(main_module, "round_timers", recorded)
@@ -311,7 +311,7 @@ def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     # La salle a été supprimée (compte du room admin supprimé) : la partie reste, sans salle
     stored_game(db_session).room_id = None
     db_session.flush()
@@ -337,7 +337,7 @@ def test_everyone_placed_ends_the_round(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, {"alice", "bob"})
 
     place_current(auth_client, db_session, code, alice)
@@ -358,7 +358,7 @@ def test_a_disconnected_player_is_not_waited_for(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, {"alice"})
 
     response: Response = place_current(auth_client, db_session, code, alice)
@@ -380,7 +380,7 @@ def test_a_departure_can_end_the_round(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, {"alice", "bob"})
     place_current(auth_client, db_session, code, alice)
 
@@ -404,7 +404,7 @@ def test_a_return_can_end_the_round(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     # Alice a placé puis s'est déconnectée ; Bob, qui n'a pas placé, aussi : personne à attendre
     set_connected(db_session, set())
     place_current(auth_client, db_session, code, alice)
@@ -428,7 +428,7 @@ def test_removing_the_last_awaited_player_ends_the_round(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     joined: JsonObject = join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, {"alice", "bob"})
     place_current(auth_client, db_session, code, alice)
     bob_id: str = next(
@@ -453,7 +453,7 @@ def test_nobody_connected_does_not_end_the_round(
 ):
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="everyone_placed")
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, set())
 
     place_current(auth_client, db_session, code, alice)
@@ -473,7 +473,7 @@ def test_without_automatic_setting_the_round_waits_for_the_admin(
 ):
     code: str = alice_room["code"]
     join(auth_client, code, bob)
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     set_connected(db_session, {"alice", "bob"})
 
     place_current(auth_client, db_session, code, alice)
@@ -493,7 +493,7 @@ def test_a_late_joiner_gets_absent_votes_for_the_past_rounds(
     alice_room: JsonObject,
 ):
     code: str = alice_room["code"]
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
     next_round(auth_client, code, alice)
 
     join(auth_client, code, bob)

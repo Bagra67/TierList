@@ -13,7 +13,16 @@ from app.models.game import Game
 from app.models.placement import Placement
 from app.schemas.room_events import ParticipantPlacedEvent
 from tests.integration.conftest import RecordingRoomEventPublisher
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    board,
+    create_room,
+    create_template,
+    next_item,
+    place,
+    register,
+    start_game,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -36,27 +45,6 @@ def alice_room(auth_client: TestClient, db_session: Session, alice: dict[str, st
     return create_room(auth_client, alice, template_id)
 
 
-def start(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
-    response: Response = client.post(f"/rooms/{code}/game", headers=headers)
-    assert response.status_code == 201
-    return response.json()
-
-
-def place(
-    client: TestClient,
-    code: str,
-    tile_id: str,
-    tier_id: str,
-    position: int,
-    headers: dict[str, str] | None = None,
-) -> Response:
-    return client.put(
-        f"/rooms/{code}/game/placements/{tile_id}",
-        json={"tier_id": tier_id, "position": position},
-        headers=headers,
-    )
-
-
 def stored_game(db_session: Session) -> Game:
     return db_session.scalars(select(Game)).one()
 
@@ -65,26 +53,12 @@ def tile_of_round(db_session: Session, number: int) -> str:
     return str(stored_game(db_session).rounds[number - 1].snapshot_tile_id)
 
 
-def next_item(client: TestClient, code: str, headers: dict[str, str]) -> None:
-    # Le room admin passe à l'item suivant (#93)
-    assert client.post(f"/rooms/{code}/game/next", headers=headers).status_code == 200
-
-
 def seat_id(room: JsonObject, display_name: str) -> str:
     return next(
         participant["id"]
         for participant in room["participants"]
         if participant["display_name"] == display_name
     )
-
-
-def board(room: JsonObject) -> list[tuple[str, str | None, int]]:
-    """Plateau du lecteur : (nom du tier, texte de l'item, position), dans l'ordre renvoyé."""
-    tier_names: dict[str, str] = {tier["id"]: tier["name"] for tier in room["game"]["tiers"]}
-    return [
-        (tier_names[placement["tier_id"]], placement["item"]["text"], placement["position"])
-        for placement in room["game"]["own_placements"]
-    ]
 
 
 def placed_count(db_session: Session) -> int:
@@ -112,7 +86,7 @@ def test_a_player_places_the_current_item(
 ):
     code: str = alice_room["code"]
     joined: JsonObject = auth_client.post(f"/rooms/{code}/join", headers=bob).json()
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     tier_a: str = started["game"]["tiers"][1]["id"]
 
     response: Response = place(auth_client, code, tile_of_round(db_session, 1), tier_a, 0, bob)
@@ -139,7 +113,7 @@ def test_moving_the_item_in_the_same_round_replaces_the_placement(
     room_events: RecordingRoomEventPublisher,
 ):
     code: str = alice_room["code"]
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     tier_s: str = started["game"]["tiers"][0]["id"]
     tier_b: str = started["game"]["tiers"][2]["id"]
     tile: str = tile_of_round(db_session, 1)
@@ -161,7 +135,7 @@ def test_positions_stay_continuous_and_past_items_keep_their_order(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     tier_s: str = started["game"]["tiers"][0]["id"]
     tier_a: str = started["game"]["tiers"][1]["id"]
     place(auth_client, code, tile_of_round(db_session, 1), tier_s, 0, alice)
@@ -197,7 +171,7 @@ def test_other_participants_never_see_where_someone_placed(
 ):
     code: str = alice_room["code"]
     auth_client.post(f"/rooms/{code}/join", headers=bob)
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     placed: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 1), started["game"]["tiers"][0]["id"], 0, alice
     ).json()
@@ -214,7 +188,7 @@ def test_a_guest_places_with_their_cookie_and_finds_their_board_again(
     code: str = alice_room["code"]
     # Le cookie de l'invité reste dans le client ; les requêtes d'Alice passent son token
     assert auth_client.post(f"/rooms/{code}/guests", json={"nickname": "Lou"}).status_code == 201
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
 
     response: Response = place(
         auth_client, code, tile_of_round(db_session, 1), started["game"]["tiers"][0]["id"], 0
@@ -232,7 +206,7 @@ def test_only_the_current_item_can_be_placed(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    tier_s: str = start(auth_client, code, alice)["game"]["tiers"][0]["id"]
+    tier_s: str = start_game(auth_client, code, alice)["game"]["tiers"][0]["id"]
     next_item(auth_client, code, alice)
 
     for number in (1, 3):
@@ -248,7 +222,7 @@ def test_a_tier_outside_the_game_is_refused(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    start(auth_client, code, alice)
+    start_game(auth_client, code, alice)
 
     response: Response = place(
         auth_client, code, tile_of_round(db_session, 1), str(uuid.uuid4()), 0, alice
@@ -279,7 +253,7 @@ def test_the_admin_who_does_not_play_cannot_place(
     code: str = alice_room["code"]
     auth_client.patch(f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice)
     auth_client.post(f"/rooms/{code}/join", headers=bob)
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
 
     response: Response = place(
         auth_client, code, tile_of_round(db_session, 1), started["game"]["tiers"][0]["id"], 0, alice
@@ -294,7 +268,7 @@ def test_placing_needs_a_seat_and_a_valid_session(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    tier_s: str = start(auth_client, code, alice)["game"]["tiers"][0]["id"]
+    tier_s: str = start_game(auth_client, code, alice)["game"]["tiers"][0]["id"]
     tile: str = tile_of_round(db_session, 1)
     carol: dict[str, str] = register(auth_client, "carol@example.com")
 
@@ -310,7 +284,7 @@ def test_a_negative_position_is_refused(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    tier_s: str = start(auth_client, code, alice)["game"]["tiers"][0]["id"]
+    tier_s: str = start_game(auth_client, code, alice)["game"]["tiers"][0]["id"]
 
     response: Response = place(auth_client, code, tile_of_round(db_session, 1), tier_s, -1, alice)
 
@@ -329,7 +303,7 @@ def test_removing_a_player_deletes_their_placements(
 ):
     code: str = alice_room["code"]
     joined: JsonObject = auth_client.post(f"/rooms/{code}/join", headers=bob).json()
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     tier_s: str = started["game"]["tiers"][0]["id"]
     place(auth_client, code, tile_of_round(db_session, 1), tier_s, 0, bob)
 
@@ -346,7 +320,7 @@ def test_the_database_keeps_one_placement_per_tile_and_a_tier_with_its_position(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    started: JsonObject = start(auth_client, code, alice)
+    started: JsonObject = start_game(auth_client, code, alice)
     tier_s: uuid.UUID = uuid.UUID(started["game"]["tiers"][0]["id"])
     place(auth_client, code, tile_of_round(db_session, 1), str(tier_s), 0, alice)
     game: Game = stored_game(db_session)
