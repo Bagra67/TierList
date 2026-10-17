@@ -16,9 +16,10 @@ from app.core.config import Settings
 from app.exceptions.games import GameInProgressError, NoPlacingParticipantError
 from app.exceptions.rooms import RoomAdminRequiredError
 from app.exceptions.templates import TemplateNotFoundError
+from app.models.enums import AutoAdvance, ItemOrder
 from app.models.game import Game
 from app.models.participant import Participant
-from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
+from app.models.room import Room, RoomStatus
 from app.models.round import Round
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template_snapshot import TemplateSnapshot

@@ -11,7 +11,8 @@ from app.constants.rooms import (
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
-from app.models.room import AutoAdvance, ItemOrder, RoomStatus
+from app.models.enums import AutoAdvance, ItemOrder
+from app.models.room import RoomStatus
 
 
 class CreateRoomRequest(BaseModel):

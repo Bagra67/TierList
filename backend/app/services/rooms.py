@@ -45,8 +45,9 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.models.enums import AutoAdvance, ItemOrder
 from app.models.participant import Participant
-from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
+from app.models.room import Room, RoomStatus
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.room import ItemOrder, text_enum
+from app.db.types import text_enum
+from app.models.enums import ItemOrder
 
 if TYPE_CHECKING:
     from app.models.round import Round
