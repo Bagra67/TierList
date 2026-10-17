@@ -4,6 +4,7 @@ from app.models.game import Game
 from app.models.image import Image
 from app.models.oauth_account import OAuthAccount
 from app.models.participant import Participant
+from app.models.placement import Placement
 from app.models.refresh_token import RefreshToken
 from app.models.room import Room
 from app.models.room_ban import RoomBan
@@ -21,6 +22,7 @@ __all__ = [
     "Image",
     "OAuthAccount",
     "Participant",
+    "Placement",
     "RefreshToken",
     "Room",
     "RoomBan",

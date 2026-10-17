@@ -11,6 +11,7 @@ from app.db.types import text_enum
 from app.models.enums import GameStatus, ItemOrder
 
 if TYPE_CHECKING:
+    from app.models.placement import Placement
     from app.models.round import Round
     from app.models.template_snapshot import TemplateSnapshot
 
@@ -51,6 +52,10 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     snapshot: Mapped["TemplateSnapshot"] = relationship()
     rounds: Mapped[list["Round"]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="Round.number"
+    )
+    # Les placements de tous les participants : jamais envoyés tels quels (plateau privé)
+    placements: Mapped[list["Placement"]] = relationship(
+        back_populates="game", cascade="all, delete-orphan"
     )
 
     @property
