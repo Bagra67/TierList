@@ -31,10 +31,12 @@ export function resultsPath(token: string): string {
   return generatePath(ROUTES.RESULTS, { token });
 }
 
-// État de navigation posé par le lobby en ouvrant des résultats : la salle d'où l'on vient. Un
-// visiteur arrivé par le lien public n'en a pas
+// État de navigation posé par le lobby en ouvrant des résultats : la salle d'où l'on vient, et si
+// le lecteur en est le room admin (il peut alors rejouer, US-2.9). Un visiteur arrivé par le lien
+// public n'en a pas
 export interface ResultsLinkState {
   roomCode: string;
+  isAdmin: boolean;
 }
 
 export function isResultsLinkState(state: unknown): state is ResultsLinkState {
@@ -42,7 +44,9 @@ export function isResultsLinkState(state: unknown): state is ResultsLinkState {
     typeof state === 'object' &&
     state !== null &&
     'roomCode' in state &&
-    typeof state.roomCode === 'string'
+    typeof state.roomCode === 'string' &&
+    'isAdmin' in state &&
+    typeof state.isAdmin === 'boolean'
   );
 }
 

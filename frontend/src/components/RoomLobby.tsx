@@ -43,7 +43,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
       )}
       {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
       {room.is_admin && room.game === null && room.template !== null && (
-        <StartGameButton code={room.code} />
+        <StartGameButton code={room.code} replay={room.past_games.length > 0} />
       )}
       <RoomInvite room={room} />
       <section className="flex w-full flex-col gap-2">
