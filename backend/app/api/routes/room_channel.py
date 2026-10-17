@@ -12,17 +12,18 @@ import uuid
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, status
 from pydantic import TypeAdapter, ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.types import Message
 from starlette.websockets import WebSocketState
 
 from app.api.dependencies import (
+    PublisherDep,
+    RegistryDep,
     SessionFactory,
-    get_connection_registry,
-    get_room_event_publisher,
-    get_session_factory,
+    SessionFactoryDep,
+    SettingsDep,
 )
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
@@ -32,7 +33,7 @@ from app.constants.rooms import (
     CHANNEL_CLOSE_ROOM_NOT_FOUND,
     GUEST_COOKIE,
 )
-from app.core.config import Settings, get_settings
+from app.core.config import Settings
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.rooms import ChannelClosedError, RoomNotFoundError
 from app.models.participant import Participant
@@ -45,10 +46,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
-SettingsDep = Annotated[Settings, Depends(get_settings)]
-SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
-PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
-RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
 
 _CLIENT_MESSAGE_ADAPTER: TypeAdapter[RoomClientMessage] = TypeAdapter(RoomClientMessage)
 _PING: str = PingMessage().model_dump_json()

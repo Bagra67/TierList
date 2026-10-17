@@ -109,6 +109,15 @@ class GuestSeat:
     participant: Participant
     token: str
 
+    @property
+    def expires_at(self) -> datetime:
+        """Expiration du lien perso, et du cookie qui reconnaît l'invité."""
+        expires_at: datetime | None = self.participant.guest_expires_at
+        if expires_at is None:
+            # Garanti par la contrainte account_or_guest : une place d'invité a une expiration
+            raise RuntimeError("A guest seat has an expiry date")
+        return expires_at
+
 
 class RoomService:
     def __init__(self, session: Session, settings: Settings, publisher: RoomEventPublisher) -> None:
