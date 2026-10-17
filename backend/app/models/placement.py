@@ -11,18 +11,24 @@ from app.models.enums import PlacementPhase
 
 if TYPE_CHECKING:
     from app.models.game import Game
+    from app.models.game_player import GamePlayer
+    from app.models.participant import Participant
     from app.models.snapshot_tile import SnapshotTile
 
 
 class Placement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """Où un participant a mis une tuile pendant une partie : un tier et une position dans ce
-    tier, pour une phase. Un placement de tour peut être absent, sans tier ni position
+    tier, pour une phase. Un placement de tour peut être absent, sans tier ni position. Pendant
+    la partie, il appartient à une place ; à la clôture, à un joueur figé (GamePlayer)
     (docs/technical/games.md)."""
 
     __tablename__ = "placements"
     __table_args__ = (
         # Au plus un placement de tour et un placement final par tuile et participant (invariant 6)
         UniqueConstraint("game_id", "participant_id", "snapshot_tile_id", "phase"),
+        UniqueConstraint("game_id", "player_id", "snapshot_tile_id", "phase"),
+        # Une place pendant la partie, un joueur figé une fois la partie close : jamais les deux
+        CheckConstraint("(participant_id IS NULL) <> (player_id IS NULL)", name="seat_or_player"),
         # Un tier et une position, ou aucun des deux pour un vote absent (invariant 8)
         CheckConstraint(
             "(snapshot_tier_id IS NULL) = (position IS NULL) AND position >= 0",
@@ -38,10 +44,14 @@ class Placement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     game_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("games.id", ondelete="CASCADE"), index=True
     )
-    # CASCADE : retirer ou bannir un participant supprime ses placements, il n'est plus dans la
-    # partie ni dans ses résultats
-    participant_id: Mapped[uuid.UUID] = mapped_column(
+    # Pendant la partie. CASCADE : retirer ou bannir un participant supprime ses placements, il
+    # n'est plus dans la partie ni dans ses résultats. None une fois la partie close
+    participant_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("participants.id", ondelete="CASCADE"), index=True
+    )
+    # Une fois la partie close : le joueur figé, qui ne dépend plus de la salle
+    player_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("game_players.id", ondelete="CASCADE"), index=True
     )
     # Une tuile de la version figée, comme les tours
     snapshot_tile_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("snapshot_tiles.id"))
@@ -54,6 +64,8 @@ class Placement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     position: Mapped[int | None]
 
     game: Mapped["Game"] = relationship(back_populates="placements")
+    participant: Mapped["Participant | None"] = relationship()
+    player: Mapped["GamePlayer | None"] = relationship()
     tile: Mapped["SnapshotTile"] = relationship()
 
     @property

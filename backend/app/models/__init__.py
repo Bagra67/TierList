@@ -1,6 +1,7 @@
 # Importer chaque module de modèles ici : migrations/env.py importe ce paquet pour que
 # --autogenerate voie toutes les tables de Base.metadata.
 from app.models.game import Game
+from app.models.game_player import GamePlayer
 from app.models.image import Image
 from app.models.oauth_account import OAuthAccount
 from app.models.participant import Participant
@@ -19,6 +20,7 @@ from app.models.user import User
 
 __all__ = [
     "Game",
+    "GamePlayer",
     "Image",
     "OAuthAccount",
     "Participant",

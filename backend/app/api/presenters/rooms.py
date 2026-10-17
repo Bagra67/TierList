@@ -89,10 +89,12 @@ def current_game_response(
         for placement in game.placements
         if placement.phase == PlacementPhase.ROUND and not placement.is_absent
     ]
+    # Partie en cours : ses placements appartiennent encore aux places (participant_id)
     placed_participant_ids: list[uuid.UUID] = [
         placement.participant_id
         for placement in round_placements
         if placement.snapshot_tile_id == current_round.snapshot_tile_id
+        and placement.participant_id is not None
     ]
     # Le plateau du lecteur pour la phase en cours, sans ses votes absents
     board_phase: PlacementPhase = (

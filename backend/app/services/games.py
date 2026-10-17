@@ -27,6 +27,7 @@ from app.exceptions.games import (
 from app.exceptions.templates import TemplateNotFoundError, TierNotFoundError
 from app.models.enums import AutoAdvance, GameStatus, ItemOrder, PlacementPhase, RoomStatus
 from app.models.game import Game
+from app.models.game_player import GamePlayer
 from app.models.participant import Participant
 from app.models.placement import Placement
 from app.models.room import Room
@@ -90,6 +91,25 @@ def _start_final_boards(game: Game) -> None:
             position=round_placement.position,
         )
         game.placements.append(final)
+
+
+def _freeze_players(game: Game) -> None:
+    """Clôture (US-5.1) : un joueur figé par place qui a des placements dans la partie (joueurs et
+    retardataires, jamais le room admin qui ne joue pas), avec son compte et son nom. Ses
+    placements passent de la place au joueur : fermer la salle, retirer la place ou supprimer le
+    compte ne touche plus la partie close."""
+    players: dict[uuid.UUID, GamePlayer] = {}
+    for placement in game.placements:
+        participant: Participant | None = placement.participant
+        if participant is None:
+            continue
+        player: GamePlayer | None = players.get(participant.id)
+        if player is None:
+            player = GamePlayer(user_id=participant.user_id, display_name=participant.display_name)
+            game.players.append(player)
+            players[participant.id] = player
+        placement.player = player
+        placement.participant = None
 
 
 def _ensure_tier_in_game(game: Game, tier_id: uuid.UUID) -> None:
@@ -423,6 +443,7 @@ class GameService:
             if placement.phase == PlacementPhase.ROUND
             and placement.snapshot_tile_id == current_tile_id
             and not placement.is_absent
+            and placement.participant_id is not None
         }
         return all(participant.id in placed_ids for participant in connected)
 
@@ -438,6 +459,7 @@ class GameService:
             for placement in game.placements
             if placement.phase == PlacementPhase.ROUND
             and placement.snapshot_tile_id == ending.snapshot_tile_id
+            and placement.participant_id is not None
         }
         for participant in self.placing_participants(room):
             if participant.id not in placed_ids:
@@ -474,10 +496,12 @@ class GameService:
 
     def _close_game(self, room: Room, game: Game) -> GameClosedEvent:
         """Termine le cooldown, sous le verrou de la salle, sans commit : les classements sont
-        finaux et la partie close (US-4.1). La salle redevient ouverte dans la même transaction :
-        « une partie en cours » vit dans les deux tables (docs/technical/games.md)."""
+        finaux et la partie close, ses joueurs figés (US-4.1, US-5.1). La salle redevient ouverte
+        dans la même transaction : « une partie en cours » vit dans les deux tables
+        (docs/technical/games.md)."""
         game.status = GameStatus.CLOSED
         game.closed_at = datetime.now(UTC)
+        _freeze_players(game)
         room.status = RoomStatus.OPEN
         room.version += 1
         logger.info("Partie close : room_id=%s game_id=%s", room.id, game.id)
