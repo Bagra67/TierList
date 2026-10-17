@@ -178,6 +178,33 @@ export const en: Translation = {
       },
     },
   },
+  results: {
+    title: 'Results: {{name}}',
+    closedAt: 'Game finished on {{date, datetime(dateStyle: long; timeStyle: short)}}',
+    includeAbsentVotes: 'Include absent votes',
+    tabsLabel: 'Results views',
+    tabs: {
+      median: 'Median',
+      overall: 'Overall',
+      players: 'Per player',
+    },
+    emptyTier: 'No item',
+    itemImage: 'Image of item {{number}}',
+    backToRoom: 'Back to the room',
+    median: {
+      unranked: 'Unranked',
+    },
+    overall: {
+      caption: 'Number of players who put each item in each tier',
+      item: 'Item',
+      absent: 'Absent',
+    },
+    players: {
+      select: 'Player',
+      unplaced: 'Never placed',
+      none: 'Nobody played this game.',
+    },
+  },
   rooms: {
     create: {
       open: 'Create a room',
@@ -203,6 +230,15 @@ export const en: Translation = {
       banned: 'The room admin banned you from this room.',
       comeBack: 'Go back to the room',
       closed: 'The room admin closed this room.',
+      pastGames: {
+        title: 'Past games ({{count}})',
+        closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+        players_one: '{{count}} player',
+        players_other: '{{count}} players',
+        open: 'See the results',
+        openLabel:
+          'See the results of the game of {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      },
       backHome: 'Back to home',
       close: {
         open: 'Close the room',

@@ -183,6 +183,33 @@ export const fr = {
       },
     },
   },
+  results: {
+    title: 'Résultats : {{name}}',
+    closedAt: 'Partie terminée le {{date, datetime(dateStyle: long; timeStyle: short)}}',
+    includeAbsentVotes: 'Inclure les votes absents',
+    tabsLabel: 'Vues des résultats',
+    tabs: {
+      median: 'Médian',
+      overall: 'Global',
+      players: 'Par joueur',
+    },
+    emptyTier: 'Aucun item',
+    itemImage: "Image de l'item {{number}}",
+    backToRoom: 'Retour à la salle',
+    median: {
+      unranked: 'Non classés',
+    },
+    overall: {
+      caption: 'Nombre de joueurs qui ont mis chaque item dans chaque tier',
+      item: 'Item',
+      absent: 'Absents',
+    },
+    players: {
+      select: 'Joueur',
+      unplaced: 'Jamais placés',
+      none: "Personne n'a joué cette partie.",
+    },
+  },
   rooms: {
     create: {
       open: 'Créer une salle',
@@ -209,6 +236,15 @@ export const fr = {
       banned: 'Le room admin vous a banni de cette salle.',
       comeBack: 'Revenir dans la salle',
       closed: 'Le room admin a fermé cette salle.',
+      pastGames: {
+        title: 'Parties passées ({{count}})',
+        closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+        players_one: '{{count}} joueur',
+        players_other: '{{count}} joueurs',
+        open: 'Voir les résultats',
+        openLabel:
+          'Voir les résultats de la partie du {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      },
       backHome: "Retour à l'accueil",
       close: {
         open: 'Fermer la salle',

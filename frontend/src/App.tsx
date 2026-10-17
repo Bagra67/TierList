@@ -10,6 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { ResultsPage } from './pages/ResultsPage';
 import { RoomPage } from './pages/RoomPage';
 import { TemplateEditorPage } from './pages/TemplateEditorPage';
 import { TemplatesPage } from './pages/TemplatesPage';
@@ -33,6 +34,8 @@ export default function App() {
         </Route>
         {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}
         <Route path={ROUTES.ROOM} element={<RoomPage />} />
+        {/* Ouverte sans compte : le lien suffit à lire les résultats (US-5.3) */}
+        <Route path={ROUTES.RESULTS} element={<ResultsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
