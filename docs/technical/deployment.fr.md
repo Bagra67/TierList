@@ -134,7 +134,7 @@ Créés à la main dans les réglages du dépôt (Settings → Environments). Ri
 | `production`                          | **relecteur obligatoire**                           | comme `staging`                                                                                                                                                                                                                                          | comme `staging`                                                                                                                                                                                                                                                                                                                                                                                 |
 | `backup-staging`, `backup-production` | aucune (une exécution de nuit ne peut pas attendre) | `BACKUP_POSTGRES_PASSWORD`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`                                                                                                                                                                     | `BACKUP_POSTGRES_HOST`, `BACKUP_POSTGRES_PORT`, `BACKUP_POSTGRES_DB`, `BACKUP_POSTGRES_USER`, `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_RETENTION_DAYS` (`14` en production, `3` en staging)                                                                                                                                                                    |
 
-\* Facultatif. `SFTP_KNOWN_HOSTS` : la ou les lignes de `ssh-keyscan -p <port> <hôte>`, vérifiées avec l'empreinte affichée par le panel ; le déploiement refuse toute autre clé d'hôte. `PANEL_URL` / `PANEL_SERVER_ID` / `PANEL_API_KEY` : une clé d'API client du panel, si MineStrator en propose une (§6) ; sans elles, le pod est redémarré à la main.
+\* Facultatif. `SFTP_KNOWN_HOSTS` : la ou les lignes de `ssh-keyscan -p <port> <hôte>`, vérifiées avec l'empreinte affichée par le panel ; le déploiement refuse toute autre clé d'hôte. `PANEL_SERVER_ID` / `PANEL_API_KEY` : l'identifiant du pod et une clé d'API du panel MineStrator, pour redémarrer le pod après un envoi (§6) ; `PANEL_URL` vaut par défaut `https://mine.sttr.io`. Sans l'identifiant ou la clé, le pod est redémarré à la main.
 
 ## 5. Premier déploiement, pas à pas
 
@@ -163,7 +163,7 @@ La production suit le workflow `Release` (`workflow_run`), pas `on: push: tags` 
 1. **Planifier** : environnement, commit et version.
 2. **Bundle** (`bundle.yml`) : ShellCheck sur les scripts, `pnpm build`, `deploy/build_bundle.sh`, artefact `tierlist-bundle`.
 3. **Envoi** par SFTP (mot de passe via `sshpass`, clé d'hôte épinglée) : `releases/tierlist-<version>.tar.gz`, le lanceur sous le nom `start.sh`, `.env`, puis `CURRENT` en dernier. Un envoi raté laisse la version en cours en place.
-4. **Redémarrage** (`restart_pod.sh`) : par l'API client du panel (`POST /api/client/servers/<id>/power`, Pterodactyl) quand `PANEL_URL`, `PANEL_SERVER_ID` et `PANEL_API_KEY` sont définis ; sinon le résumé du job demande de redémarrer le pod dans le panel. Reste à vérifier si MineStrator fournit une telle clé (#159).
+4. **Redémarrage** (`restart_pod.sh`) : par l'API du panel MineStrator (la sienne, pas l'API client de Pterodactyl) quand `PANEL_SERVER_ID` et `PANEL_API_KEY` sont définis : `PUT $PANEL_URL/server/<id>/poweraction` avec `Authorization: Bearer <clé>` et `{"poweraction":"restart"}` (`PANEL_URL` vaut par défaut `https://mine.sttr.io`). `200` signifie que le redémarrage est demandé ; `400` (mauvais identifiant de pod), `401` (mauvaise clé) ou toute autre réponse fait échouer l'étape, avec la raison dans le résumé du job ; `429` (trop de requêtes) est retenté une fois après 30 s. Sans l'identifiant ou la clé, le résumé du job demande de redémarrer le pod dans le panel.
 5. **Santé** (`wait_healthy.sh`) : `/api/health` doit annoncer la nouvelle version, puis `/api/health/db` répondre `200` ; 30 essais espacés de 5 s (120 si le redémarrage est manuel). Sinon le job échoue.
 
 Un seul déploiement à la fois par environnement (`concurrency`, un déploiement en attente patiente).
@@ -198,7 +198,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 
 - Créer les pods, le tunnel, les enregistrements DNS et les ressources Scaleway (#159, #163).
 - Les environnements, secrets et variables GitHub (§4), et le relecteur de `production`.
-- Le redémarrage du pod, tant qu'aucune clé d'API du panel n'est configurée.
+- Le redémarrage du pod, tant que `PANEL_SERVER_ID` et `PANEL_API_KEY` ne sont pas définis, ou quand le panel le refuse.
 - Approuver chaque déploiement en production.
 - Tester une restauration (#162), puis après chaque montée de version majeure de PostgreSQL.
 
