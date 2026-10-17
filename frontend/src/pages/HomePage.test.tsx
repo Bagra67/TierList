@@ -7,9 +7,9 @@ import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { signedInSession, stubBackend } from '../test/stubBackend';
 import { HomePage } from './HomePage';
 
-function renderHomePage(path = '/') {
+function renderHomePage() {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={['/']}>
       <HomePage />
     </MemoryRouter>,
   );
@@ -30,13 +30,5 @@ describe('HomePage', () => {
     expect(await screen.findByText(/Connecté en tant que Alice/)).toBeInTheDocument();
     // « Se déconnecter » est dans l'en-tête de toutes les pages (LogoutButton), plus ici
     expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
-  });
-
-  it('reopens the account deletion after a Google sign-in', async () => {
-    stubBackend(signedInSession);
-
-    renderHomePage('/?confirm=delete-account');
-
-    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 });

@@ -861,10 +861,9 @@ Tests de `RoomSweeper` (`app/services/room_sweeper.py`) avec un balayage qui enr
 
 La page d'accueil avec une session restaurée.
 
-| Test                                                  | Ce qu'il fait                                      | But                                                                | Résultat attendu                                                                                            |
-| ----------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `shows the page title and the connected user`         | Ouvre `/` avec une session.                        | Vérifier le contenu de la page.                                    | Le titre `Accueil` et `Connecté en tant que Alice`. Pas de bouton `Se déconnecter` (il est dans l'en-tête). |
-| `reopens the account deletion after a Google sign-in` | Ouvre `/?confirm=delete-account` avec une session. | Au retour de la reconnexion, l'utilisateur reprend la suppression. | Le dialogue `Supprimer mon compte` est visible.                                                             |
+| Test                                          | Ce qu'il fait               | But                             | Résultat attendu                                                                                            |
+| --------------------------------------------- | --------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `shows the page title and the connected user` | Ouvre `/` avec une session. | Vérifier le contenu de la page. | Le titre `Accueil` et `Connecté en tant que Alice`. Pas de bouton `Se déconnecter` (il est dans l'en-tête). |
 
 ### 2.5 Tests : `src/pages/LoginPage.test.tsx` et `src/pages/RegisterPage.test.tsx`
 
@@ -1331,6 +1330,18 @@ La page de l'historique ([guide des résultats](results.fr.md#28-historique)) su
 | `reads the next page after the games already shown`                          | Clic sur `Voir plus`.         | Pagination.           | Fruits ajouté (3 lignes) ; offsets `0` puis `2` ; plus de `Voir plus`.                           |
 | `says when there is no game yet`                                             | L'historique est vide.        | État vide.            | Le message vide, pas de liste.                                                                   |
 | `says why the history cannot be read`                                        | L'API répond `500`.           | État d'erreur.        | Une `alert`.                                                                                     |
+
+### 2.35 Tests : `src/components/SettingsPanel.test.tsx`
+
+`App` est rendue à un chemin donné : le panneau vit dans l'en-tête de `Layout`, sur toutes les pages. jsdom ne piège pas le focus et ne gère pas Échap dans un `<dialog>` (le navigateur le fait) : ces points se vérifient à la main.
+
+| Test                                                                   | Ce qu'il fait                                                                     | But                                                                                                          | Résultat attendu                                                           |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `opens from the gear button and closes with its close button`          | Sans session ; clique sur `Paramètres`, puis `Fermer`.                            | #139 : le panneau s'ouvre et se ferme.                                                                       | Le dialogue `Paramètres` est visible, puis disparaît.                      |
+| `changes the theme and the language from the panel`                    | Choisit `dark` et `en` dans le panneau.                                           | Le thème et la langue passent de l'en-tête au panneau.                                                       | La classe `dark` sur `<html>` ; le panneau s'appelle désormais `Settings`. |
+| `hides the account section when signed out`                            | Sans session ; ouvre le panneau.                                                  | Thème et langue restent disponibles déconnecté ; le compte, non.                                             | Ni titre `Compte` ni bouton `Supprimer mon compte`.                        |
+| `deletes the account from the panel, then closes it on the login page` | Connecté ; supprime le compte depuis le panneau (`DELETE /auth/me` répond `204`). | La suppression du compte passe de l'accueil au panneau ; le panneau se ferme quand une autre page s'affiche. | Le titre `Connexion` ; plus de dialogue `Paramètres` ouvert.               |
+| `reopens the account deletion in the panel after a Google sign-in`     | Ouvre `/?confirm=delete-account` avec une session.                                | Au retour de la reconnexion, l'utilisateur reprend la suppression.                                           | Les dialogues `Supprimer mon compte` et `Paramètres` sont visibles.        |
 
 ---
 

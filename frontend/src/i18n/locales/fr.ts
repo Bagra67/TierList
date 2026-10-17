@@ -21,6 +21,13 @@ export const fr = {
     templates: 'Mes templates',
     history: 'Historique',
   },
+  settings: {
+    open: 'Paramètres',
+    title: 'Paramètres',
+    close: 'Fermer',
+    display: 'Affichage',
+    account: 'Compte',
+  },
   history: {
     title: 'Historique',
     empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",

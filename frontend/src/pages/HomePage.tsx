@@ -1,28 +1,12 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
-import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { JoinRoomForm } from '../components/JoinRoomForm';
-import { DELETE_ACCOUNT_STEP } from '../constants/auth';
-import { CONFIRM_PARAM } from '../constants/routes';
 
 export function HomePage() {
   const { data: user } = useCurrentUser();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  // Retour d'une reconnexion Google demandée pour confirmer la suppression du compte
-  const resumeDeletion = searchParams.get(CONFIRM_PARAM) === DELETE_ACCOUNT_STEP;
-
-  useEffect(() => {
-    // Une fois le dialogue affiché (donc ouvert), on retire le paramètre : un rechargement
-    // de la page ne doit pas le rouvrir.
-    if (resumeDeletion && user) {
-      setSearchParams({}, { replace: true });
-    }
-  }, [resumeDeletion, user, setSearchParams]);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
@@ -30,7 +14,6 @@ export function HomePage() {
       {user && <EmailVerificationBanner user={user} />}
       <h1 className="text-2xl font-semibold">{t('home.title')}</h1>
       <JoinRoomForm />
-      {user && <DeleteAccountDialog user={user} openOnMount={resumeDeletion} />}
     </main>
   );
 }
