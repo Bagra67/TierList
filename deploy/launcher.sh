@@ -50,8 +50,10 @@ if [ ! -f "$release_dir/start.sh" ]; then
     rm -rf "$staging_dir"
 fi
 
-# Les plus récentes d'abord ; la version lancée n'est jamais supprimée
+# Les plus récentes d'abord ; la version lancée n'est jamais supprimée. ls trie par date, ce
+# qu'un glob ne sait pas faire ; les noms, écrits par le déploiement, n'ont ni espace ni retour.
 kept=1
+# shellcheck disable=SC2045
 for archive in $(ls -1t "$RELEASES_DIR"/tierlist-*.tar.gz 2>/dev/null); do
     old_version="${archive##*/tierlist-}"
     old_version="${old_version%.tar.gz}"
