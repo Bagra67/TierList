@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { roomQueryKey } from '../constants/rooms';
 import { FakeWebSocket, latestSocket } from '../test/fakeWebSocket';
-import { aliceRoom } from '../test/rooms';
+import { aliceRoom } from '../test/fixtures/rooms';
 import { stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { setAccessToken } from './client';
 import { createQueryClient } from './queryClient';

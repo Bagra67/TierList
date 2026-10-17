@@ -6,11 +6,9 @@ import type { UploadedImage } from '../api/images';
 import type { Template, Tier, Tile } from '../api/templates';
 import { type FileDataTransfer, fileDataTransfer } from '../test/fileDataTransfer';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { aliceRoom } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import { aliceRoom } from '../test/fixtures/rooms';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
-
-type BackendMock = ReturnType<typeof stubBackend>;
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
 const templateUrl: string = `/templates/${templateId}`;

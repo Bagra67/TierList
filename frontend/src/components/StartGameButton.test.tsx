@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { aliceRoom, aliceRoomInGame, renderRoomPage } from '../test/rooms';
+import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
+import { renderRoomPage } from '../test/renderRoomPage';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
 describe('StartGameButton', () => {

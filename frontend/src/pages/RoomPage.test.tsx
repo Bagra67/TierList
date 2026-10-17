@@ -4,16 +4,15 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
 import { latestSocket } from '../test/fakeWebSocket';
+import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
+import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
 import {
-  aliceRoom,
-  aliceRoomInGame,
-  renderRoomPage,
-  settingsSummary,
+  calledRoutes,
+  errorResponse,
+  stubBackend,
   signedInSession,
-} from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+  type BackendMock,
+} from '../test/stubBackend';
 
 // Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
