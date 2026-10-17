@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 
+import type { User } from '../api/auth';
 import type { ErrorResponse } from '../errors/apiError';
 
 // Réponse simulée d'une route, à partir de la requête reçue (pour lire ses en-têtes ou son corps)
@@ -17,8 +18,10 @@ export function stubBackend(routes: Record<string, StubbedRoute>) {
   return fetchMock;
 }
 
+export type BackendMock = ReturnType<typeof stubBackend>;
+
 // Requêtes reçues par le faux backend, sous la forme « MÉTHODE /chemin »
-export function calledRoutes(fetchMock: ReturnType<typeof stubBackend>): string[] {
+export function calledRoutes(fetchMock: BackendMock): string[] {
   return fetchMock.mock.calls.map(
     ([request]) => `${request.method} ${new URL(request.url).pathname.replace(/^\/api/, '')}`,
   );
@@ -38,11 +41,18 @@ export const unauthorized = () => errorResponse(401, 'not_authenticated');
 export const tokenResponse = (accessToken: string) => () =>
   Response.json({ access_token: accessToken, token_type: 'bearer', expires_in: 900 });
 
-export const alice = {
+export const alice: User = {
   id: '0b6f3c1e-6d5c-4c1e-9f57-6d1c7e1f0a01',
   email: 'alice@example.com',
   display_name: 'Alice',
   has_password: true,
   email_verified: true,
   created_at: '2026-10-03T10:00:00Z',
+};
+
+// Session d'un compte connecté (Alice), restaurée au chargement par le refresh token : sans elle,
+// les pages protégées redirigent vers la connexion et la page de la salle voit un visiteur
+export const signedInSession: Record<string, StubbedRoute> = {
+  'POST /auth/refresh': tokenResponse('alice-token'),
+  'GET /auth/me': () => Response.json(alice),
 };

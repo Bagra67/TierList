@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
+import { signedInSession, stubBackend } from '../test/stubBackend';
 import { HomePage } from './HomePage';
 
 function renderHomePage(path = '/') {
@@ -15,11 +15,6 @@ function renderHomePage(path = '/') {
   );
 }
 
-const session = {
-  'POST /auth/refresh': tokenResponse('restored-token'),
-  'GET /auth/me': () => Response.json(alice),
-};
-
 describe('HomePage', () => {
   afterEach(() => {
     setAccessToken(null);
@@ -27,7 +22,7 @@ describe('HomePage', () => {
   });
 
   it('shows the page title and the connected user', async () => {
-    stubBackend(session);
+    stubBackend(signedInSession);
 
     renderHomePage();
 
@@ -36,7 +31,7 @@ describe('HomePage', () => {
   });
 
   it('reopens the account deletion after a Google sign-in', async () => {
-    stubBackend(session);
+    stubBackend(signedInSession);
 
     renderHomePage('/?confirm=delete-account');
 

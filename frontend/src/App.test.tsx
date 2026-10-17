@@ -5,7 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setAccessToken } from './api/client';
 import App from './App';
 import { renderWithQueryClient } from './test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse, unauthorized } from './test/stubBackend';
+import {
+  alice,
+  signedInSession,
+  stubBackend,
+  tokenResponse,
+  unauthorized,
+} from './test/stubBackend';
 
 // Seul fetch est remplacé : routeur, hooks, client API et TanStack Query tournent pour de vrai
 function renderAppAt(path: string) {
@@ -15,11 +21,6 @@ function renderAppAt(path: string) {
     </MemoryRouter>,
   );
 }
-
-const loggedInBackend = {
-  'POST /auth/refresh': tokenResponse('restored-token'),
-  'GET /auth/me': () => Response.json(alice),
-};
 
 describe('App', () => {
   afterEach(() => {
@@ -36,7 +37,7 @@ describe('App', () => {
   });
 
   it('restores the session and shows the home page', async () => {
-    stubBackend(loggedInBackend);
+    stubBackend(signedInSession);
 
     renderAppAt('/');
 
@@ -56,7 +57,7 @@ describe('App', () => {
 
   it('logs out and goes back to the login page', async () => {
     stubBackend({
-      ...loggedInBackend,
+      ...signedInSession,
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     });
     renderAppAt('/');
@@ -67,7 +68,7 @@ describe('App', () => {
   });
 
   it('sends a signed-in user away from the login page', async () => {
-    stubBackend(loggedInBackend);
+    stubBackend(signedInSession);
 
     renderAppAt('/login');
 
@@ -92,7 +93,7 @@ describe('App', () => {
   });
 
   it('shows the navigation once signed in and opens my templates', async () => {
-    stubBackend({ ...loggedInBackend, 'GET /templates': () => Response.json({ items: [] }) });
+    stubBackend({ ...signedInSession, 'GET /templates': () => Response.json({ items: [] }) });
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });

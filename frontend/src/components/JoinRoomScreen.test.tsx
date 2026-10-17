@@ -1,10 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
-import { aliceRoom, lousRoom, renderRoomPage } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+import { aliceRoom, lousRoom } from '../test/fixtures/rooms';
+import { renderRoomPage } from '../test/renderRoomPage';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
 // Corps de la première requête reçue sur cette route
 async function requestBody(fetchMock: BackendMock, route: string): Promise<unknown> {

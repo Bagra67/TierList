@@ -4,7 +4,7 @@ import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { roomQueryKey } from '../constants/rooms';
-import { aliceRoom } from '../test/rooms';
+import { aliceRoom } from '../test/fixtures/rooms';
 import { alice, calledRoutes, stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { deleteAccount, getCurrentUser, getMe, login, logout, useLogin } from './auth';
 import { createQueryClient } from './queryClient';

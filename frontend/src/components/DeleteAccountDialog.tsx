@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type FormEvent } from 'react';
+import { useEffect, useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
@@ -7,9 +7,10 @@ import { DELETE_ACCOUNT_STEP, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
 import { ROUTES } from '../constants/routes';
 import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import { ErrorMessage } from './ErrorMessage';
+import { DialogActions, ModalDialog } from './ModalDialog';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
-import { ErrorMessage } from './ErrorMessage';
 
 interface DeleteAccountDialogProps {
   user: User;
@@ -17,11 +18,9 @@ interface DeleteAccountDialogProps {
   openOnMount?: boolean;
 }
 
-// <dialog> natif ouvert avec showModal() : le navigateur piège le focus dedans et le ferme avec Échap
 export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccountDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const titleId = useId();
   const deleteMutation = useDeleteAccount();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -63,16 +62,12 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
       <Button type="button" variant="destructive" onClick={() => dialogRef.current?.showModal()}>
         {t('account.delete.open')}
       </Button>
-      <dialog
-        ref={dialogRef}
-        aria-labelledby={titleId}
+      <ModalDialog
+        dialogRef={dialogRef}
+        title={t('account.delete.title')}
+        description={t('account.delete.warning')}
         onClose={handleClose}
-        className="m-auto w-full max-w-md rounded-xl bg-card p-6 text-sm text-card-foreground shadow-lg ring-1 ring-foreground/10 backdrop:bg-black/50"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('account.delete.title')}
-        </h2>
-        <p className="mt-2 text-muted-foreground">{t('account.delete.warning')}</p>
         <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           {user.has_password ? (
             <TextField
@@ -100,18 +95,17 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
               </a>
             </p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => dialogRef.current?.close()}>
-              {t('account.delete.cancel')}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending
-                ? t('account.delete.submitting')
-                : t('account.delete.submit')}
-            </Button>
-          </div>
+          <DialogActions
+            cancelLabel={t('account.delete.cancel')}
+            onCancel={() => dialogRef.current?.close()}
+            submitLabel={
+              deleteMutation.isPending ? t('account.delete.submitting') : t('account.delete.submit')
+            }
+            submitVariant="destructive"
+            submitDisabled={deleteMutation.isPending}
+          />
         </form>
-      </dialog>
+      </ModalDialog>
     </>
   );
 }

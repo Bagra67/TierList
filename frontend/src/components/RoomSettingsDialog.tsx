@@ -1,4 +1,4 @@
-import { type FormEvent, useId, useRef, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -15,6 +15,7 @@ import {
   translateFieldError,
 } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
+import { DialogActions, ModalDialog } from './ModalDialog';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
 
@@ -29,7 +30,6 @@ interface RoomSettingsDialogProps {
 // (focus piégé, fermeture avec Échap)
 export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId: string = useId();
   const settingsMutation: SettingsMutation = useUpdateRoomSettings(room.code);
   const [formVersion, setFormVersion] = useState<number>(0);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -45,15 +45,11 @@ export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
       <Button type="button" variant="outline" onClick={handleOpen}>
         {t('rooms.settings.edit')}
       </Button>
-      <dialog
-        ref={dialogRef}
-        aria-labelledby={titleId}
+      <ModalDialog
+        dialogRef={dialogRef}
+        title={t('rooms.settings.dialogTitle')}
         onClose={() => settingsMutation.reset()}
-        className="m-auto w-full max-w-md rounded-xl bg-card p-6 text-sm text-card-foreground shadow-lg ring-1 ring-foreground/10 backdrop:bg-black/50"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('rooms.settings.dialogTitle')}
-        </h2>
         {/* Une nouvelle clé remonte le formulaire : ses champs reprennent les réglages actuels */}
         <RoomSettingsForm
           key={formVersion}
@@ -62,7 +58,7 @@ export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
           onSaved={() => dialogRef.current?.close()}
           onCancel={() => dialogRef.current?.close()}
         />
-      </dialog>
+      </ModalDialog>
     </>
   );
 }
@@ -177,14 +173,14 @@ function RoomSettingsForm({ room, settingsMutation, onSaved, onCancel }: RoomSet
       {settingsMutation.isError && (
         <ErrorMessage>{translateError(t, settingsMutation.error)}</ErrorMessage>
       )}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {t('rooms.settings.cancel')}
-        </Button>
-        <Button type="submit" disabled={settingsMutation.isPending}>
-          {settingsMutation.isPending ? t('rooms.settings.submitting') : t('rooms.settings.submit')}
-        </Button>
-      </div>
+      <DialogActions
+        cancelLabel={t('rooms.settings.cancel')}
+        onCancel={onCancel}
+        submitLabel={
+          settingsMutation.isPending ? t('rooms.settings.submitting') : t('rooms.settings.submit')
+        }
+        submitDisabled={settingsMutation.isPending}
+      />
     </form>
   );
 }

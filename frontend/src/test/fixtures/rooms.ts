@@ -1,17 +1,4 @@
-import { screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
-
-import type { GuestRoom, Room } from '../api/rooms';
-import { RoomPage } from '../pages/RoomPage';
-import { LocationHash } from './LocationHash';
-import { renderWithQueryClient } from './renderWithQueryClient';
-import { alice, type StubbedRoute, tokenResponse } from './stubBackend';
-
-// Session d'un compte connecté (Alice) : sans elle, la page de la salle voit un visiteur
-export const signedInSession: Record<string, StubbedRoute> = {
-  'POST /auth/refresh': tokenResponse('alice-token'),
-  'GET /auth/me': () => Response.json(alice),
-};
+import type { GuestRoom, Room } from '../../api/rooms';
 
 // Salle d'Alice (room admin) avec Bob, telle que la renvoie GET /rooms/{code}
 export const aliceRoom: Room = {
@@ -83,33 +70,3 @@ export const lousRoom: GuestRoom = {
   guest_link: 'http://localhost:5173/r/K7P2QX#guest=lou-token',
   guest_link_expires_at: '2026-11-10T12:00:00Z',
 };
-
-// Page de la salle ouverte par son lien (path peut porter un fragment, ex. le lien perso) ;
-// /login affiche un simple titre
-export function renderRoomPage(path: string = aliceRoom.code) {
-  return renderWithQueryClient(
-    <MemoryRouter initialEntries={[`/r/${path}`]}>
-      <Routes>
-        <Route
-          path="/r/:code"
-          element={
-            <>
-              <RoomPage />
-              <LocationHash />
-            </>
-          }
-        />
-        <Route path="/login" element={<h1>Connexion</h1>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-}
-
-// Résumé des réglages du lobby (le formulaire, fermé, contient les mêmes libellés)
-export function settingsSummary(): HTMLElement {
-  const section: HTMLElement | null = screen
-    .getByRole('heading', { name: 'Réglages' })
-    .closest('section');
-  if (section === null) throw new Error('No settings section');
-  return within(section).getByRole('list');
-}
