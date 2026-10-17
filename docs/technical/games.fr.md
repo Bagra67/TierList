@@ -164,7 +164,7 @@ Trois déclencheurs terminent un tour, et tous passent par la même transition, 
 
 `RoundTimers` garde une seule échéance par partie : `schedule_cooldown_end` remplace celle du dernier tour. Un timer de tour en retard appelle `end_round_on_timer`, qui ne fait rien en cooldown : il ne peut donc jamais clore la partie. Au démarrage, `pending_cooldown_ends` reprogramme les cooldowns en cours.
 
-**Sauvegarde de la partie close** (US-5.1) : `_close_game` appelle aussi `_freeze_players`. Chaque place qui a des placements dans la partie (joueurs et retardataires, jamais le room admin qui ne joue pas) devient un `GamePlayer` (`game_players` : la partie, le compte, le nom au moment de la clôture), et tous ses placements passent de `participant_id` à `player_id`. Fermer la salle (#89), retirer la place ou supprimer le compte (`user_id` remis à `NULL`) ne touche plus la partie close. La partie en cours lit toujours `participant_id` : les lignes figées des parties passées ne sont jamais parmi ses placements. Les résultats (#99) et l'historique (#103) liront `game_players`.
+**Sauvegarde de la partie close** (US-5.1) : `_close_game` appelle aussi `_freeze_players`. Chaque place qui a des placements dans la partie (joueurs et retardataires, jamais le room admin qui ne joue pas) devient un `GamePlayer` (`game_players` : la partie, le compte, le nom au moment de la clôture), et tous ses placements passent de `participant_id` à `player_id`. Fermer la salle ([guide des salles](rooms.fr.md#26-fermer-une-salle)), retirer la place ou supprimer le compte (`user_id` remis à `NULL`) ne touche plus la partie close. La partie en cours lit toujours `participant_id` : les lignes figées des parties passées ne sont jamais parmi ses placements. Les résultats (#99) et l'historique (#103) liront `game_players`.
 
 ### 2.7 Lecture de la salle
 
@@ -222,8 +222,7 @@ Le frontend ignore une réponse plus ancienne que la salle qu'il a déjà (`stor
 ## 4. Limites connues
 
 - Le glisser-déposer au pointeur n'est pas couvert par les tests automatiques (jsdom n'a pas de mise en page) : ils placent avec les boutons, et `boardPositions.test.ts` couvre le calcul des positions.
-- Supprimer le compte d'un room admin supprime sa salle : une partie en cours reste alors `in_round` ou `cooldown`, sans salle. Ses timers ne sont plus reprogrammés au démarrage ; sa clôture relève de la fermeture d'une salle (#89).
 - « Qui place » est calculé par le backend (`placing_participants`) et de nouveau par l'écran (`GameScreen`, depuis `admin_plays` et `is_admin`) pour afficher le plateau et le compteur.
 - La partie close n'a pas encore d'API : ses résultats arrivent avec #99, l'historique des comptes avec #103.
-- Fermer une salle pendant une partie (#89) devra d'abord clôturer la partie (`_close_game`).
+- Fermer une salle pendant une partie clôture d'abord la partie ([guide des salles](rooms.fr.md#26-fermer-une-salle)) ; pendant un tour, les classements du moment deviennent les plateaux finaux. Les parties laissées sans salle par une version antérieure (avant #89) sont ignorées au démarrage.
 - « Une partie est en cours » vit à deux endroits : `rooms.status = playing` et une ligne `games` qui n'est pas `closed`. Le démarrage écrit les deux dans une seule transaction, sous le verrou de la salle ; la fin du cooldown repasse la salle en `open` dans la même transaction que la partie.

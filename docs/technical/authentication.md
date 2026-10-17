@@ -150,7 +150,7 @@ Frontend and backend are served from the same origin (Vite proxy in development)
 
 ### Account deletion
 
-Deletion is **permanent** (no soft delete): the `users` row is deleted, and the database removes its refresh tokens through `ON DELETE CASCADE`, so every session of the account ends at once. The access tokens already issued are refused too, since `get_current_user` no longer finds the user.
+Deletion is **permanent** (no soft delete): the `users` row is deleted, and the database removes its refresh tokens through `ON DELETE CASCADE`, so every session of the account ends at once. The access tokens already issued are refused too, since `get_current_user` no longer finds the user. Before the deletion, the rooms the user is room admin of are closed like a manual close: a game in progress is closed first and the sockets are closed ([rooms guide](rooms.md#26-closing-a-room)).
 
 The current password is required: a stolen access token alone is not enough to delete an account. A wrong password returns `403`, not `401`: the user is authenticated, and a `401` would make the frontend try to refresh the session for nothing.
 

@@ -150,7 +150,7 @@ Frontend et backend sont servis depuis la même origine (proxy Vite en développ
 
 ### Suppression de compte
 
-La suppression est **définitive** (pas de suppression douce) : la ligne de `users` est supprimée, et la base efface ses refresh tokens grâce à `ON DELETE CASCADE` ; toutes les sessions du compte prennent donc fin d'un coup. Les access tokens déjà émis sont refusés eux aussi, car `get_current_user` ne trouve plus l'utilisateur.
+La suppression est **définitive** (pas de suppression douce) : la ligne de `users` est supprimée, et la base efface ses refresh tokens grâce à `ON DELETE CASCADE` ; toutes les sessions du compte prennent donc fin d'un coup. Les access tokens déjà émis sont refusés eux aussi, car `get_current_user` ne trouve plus l'utilisateur. Avant la suppression, les salles dont l'utilisateur est room admin sont fermées comme par lui : une partie en cours est close d'abord et les sockets sont fermés ([guide des salles](rooms.fr.md#26-fermer-une-salle)).
 
 Le mot de passe actuel est exigé : un access token volé ne suffit pas pour supprimer un compte. Un mot de passe faux renvoie `403`, pas `401` : l'utilisateur est bien authentifié, et une `401` pousserait le frontend à rafraîchir la session pour rien.
 
