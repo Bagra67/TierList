@@ -335,6 +335,7 @@ def remove_participant(
     participant_id: uuid.UUID,
     user: CurrentUserDep,
     service: RoomServiceDep,
+    games: GameServiceDep,
     storage: ImageStorageDep,
     ban: bool = False,
 ) -> RoomResponse:
@@ -357,6 +358,8 @@ def remove_participant(
             code=ErrorCode.CANNOT_REMOVE_ROOM_ADMIN,
             detail=messages.CANNOT_REMOVE_ROOM_ADMIN,
         ) from exc
+    # Le participant retiré n'est plus attendu : il était peut-être le dernier à placer
+    games.advance_if_everyone_placed(room.id)
     return room_response(room, service.seat_in(room, user), service, storage)
 
 
@@ -491,3 +494,34 @@ def place_item(
             detail=messages.ITEM_NOT_CURRENT,
         ) from exc
     return room_response(seat.room, seat, service, storage)
+
+
+@router.post(
+    "/{code}/game/next",
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        **ROOM_ADMIN_REQUIRED_RESPONSE,
+        409: {"model": ErrorResponse, "description": messages.ROUND_NOT_IN_PROGRESS_DESCRIPTION},
+    },
+)
+def next_round(
+    code: str,
+    user: CurrentUserDep,
+    games: GameServiceDep,
+    service: RoomServiceDep,
+    storage: ImageStorageDep,
+) -> RoomResponse:
+    # Le room admin passe à l'item suivant, quel que soit le réglage automatique (US-3.4)
+    try:
+        room: Room = games.next_round(user, code)
+    except RoomNotFoundError as exc:
+        raise _room_not_found() from exc
+    except RoomAdminRequiredError as exc:
+        raise _room_admin_required() from exc
+    except RoundNotInProgressError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.ROUND_NOT_IN_PROGRESS,
+            detail=messages.ROUND_NOT_IN_PROGRESS,
+        ) from exc
+    return room_response(room, service.seat_in(room, user), service, storage)

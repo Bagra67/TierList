@@ -81,6 +81,36 @@ class ParticipantPlacedEvent(BaseModel):
     data: ParticipantPlacedData
 
 
+class RoundStartedData(BaseModel):
+    # Le nouveau tour : le précédent est fini, ses votes absents sont enregistrés
+    round_number: int
+    round_count: int
+    # Fin du timer du tour, si la salle en a un
+    ends_at: datetime | None
+
+
+class RoundStartedEvent(BaseModel):
+    """Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item
+    suivant est montré à tous."""
+
+    type: Literal["round.started"] = "round.started"
+    room_version: int
+    data: RoundStartedData
+
+
+class CooldownStartedData(BaseModel):
+    # Fin du cooldown final
+    ends_at: datetime
+
+
+class CooldownStartedEvent(BaseModel):
+    """Le dernier tour est fini : le cooldown final commence (#96)."""
+
+    type: Literal["cooldown.started"] = "cooldown.started"
+    room_version: int
+    data: CooldownStartedData
+
+
 class RoomSettingsUpdatedData(BaseModel):
     pass
 
@@ -100,7 +130,9 @@ RoomEvent = Annotated[
     | ParticipantRemovedEvent
     | RoomSettingsUpdatedEvent
     | GameStartedEvent
-    | ParticipantPlacedEvent,
+    | ParticipantPlacedEvent
+    | RoundStartedEvent
+    | CooldownStartedEvent,
     Field(discriminator="type"),
 ]
 
@@ -134,6 +166,8 @@ RoomServerMessage = Annotated[
     | RoomSettingsUpdatedEvent
     | GameStartedEvent
     | ParticipantPlacedEvent
+    | RoundStartedEvent
+    | CooldownStartedEvent
     | PingMessage,
     Field(discriminator="type"),
 ]

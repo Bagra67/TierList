@@ -111,6 +111,7 @@ def current_game_response(
         own_placements.append(own_placement)
     own_placements.sort(key=lambda own: (tier_ranks[own.tier_id], own.position))
     return CurrentGameResponse(
+        status=game.status,
         round_number=current_round.number,
         round_count=len(game.rounds),
         current_item=_item_response(current_round.tile, storage),
@@ -118,6 +119,7 @@ def current_game_response(
         tiers=tiers,
         placed_participant_ids=placed_participant_ids,
         own_placements=own_placements,
+        cooldown_ends_at=game.cooldown_ends_at,
     )
 
 

@@ -2826,6 +2826,103 @@
         }
       }
     },
+    "/rooms/{code}/game/next": {
+      "post": {
+        "tags": [
+          "rooms"
+        ],
+        "summary": "Next Round",
+        "operationId": "next_round_rooms__code__game_next_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Room not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the room admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "No round in progress (no game, or the cooldown has begun)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -2981,6 +3078,9 @@
       },
       "CurrentGameResponse": {
         "properties": {
+          "status": {
+            "$ref": "#/components/schemas/GameStatus"
+          },
           "round_number": {
             "type": "integer",
             "title": "Round Number"
@@ -3025,17 +3125,31 @@
             },
             "type": "array",
             "title": "Own Placements"
+          },
+          "cooldown_ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cooldown Ends At"
           }
         },
         "type": "object",
         "required": [
+          "status",
           "round_number",
           "round_count",
           "current_item",
           "ends_at",
           "tiers",
           "placed_participant_ids",
-          "own_placements"
+          "own_placements",
+          "cooldown_ends_at"
         ],
         "title": "CurrentGameResponse"
       },
@@ -3237,6 +3351,16 @@
           "email"
         ],
         "title": "ForgotPasswordRequest"
+      },
+      "GameStatus": {
+        "type": "string",
+        "enum": [
+          "in_round",
+          "cooldown",
+          "closed"
+        ],
+        "title": "GameStatus",
+        "description": "Cycle de vie d'une partie (docs/product/milestone-1/lifecycles.md)."
       },
       "GameTierResponse": {
         "properties": {
@@ -4223,6 +4347,44 @@
         ],
         "title": "VerifyEmailRequest"
       },
+      "CooldownStartedData": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ends_at"
+        ],
+        "title": "CooldownStartedData",
+        "type": "object"
+      },
+      "CooldownStartedEvent": {
+        "description": "Le dernier tour est fini : le cooldown final commence (#96).",
+        "properties": {
+          "type": {
+            "const": "cooldown.started",
+            "default": "cooldown.started",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CooldownStartedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "CooldownStartedEvent",
+        "type": "object"
+      },
       "GameStartedData": {
         "properties": {
           "round_number": {
@@ -4481,16 +4643,73 @@
         "title": "RoomSettingsUpdatedEvent",
         "type": "object"
       },
+      "RoundStartedData": {
+        "properties": {
+          "round_number": {
+            "title": "Round Number",
+            "type": "integer"
+          },
+          "round_count": {
+            "title": "Round Count",
+            "type": "integer"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          }
+        },
+        "required": [
+          "round_number",
+          "round_count",
+          "ends_at"
+        ],
+        "title": "RoundStartedData",
+        "type": "object"
+      },
+      "RoundStartedEvent": {
+        "description": "Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item\nsuivant est montré à tous.",
+        "properties": {
+          "type": {
+            "const": "round.started",
+            "default": "round.started",
+            "title": "Type",
+            "type": "string"
+          },
+          "room_version": {
+            "title": "Room Version",
+            "type": "integer"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RoundStartedData"
+          }
+        },
+        "required": [
+          "room_version",
+          "data"
+        ],
+        "title": "RoundStartedEvent",
+        "type": "object"
+      },
       "RoomServerMessage": {
         "discriminator": {
           "mapping": {
+            "cooldown.started": "#/components/schemas/CooldownStartedEvent",
             "game.started": "#/components/schemas/GameStartedEvent",
             "participant.joined": "#/components/schemas/ParticipantJoinedEvent",
             "participant.placed": "#/components/schemas/ParticipantPlacedEvent",
             "participant.presence": "#/components/schemas/ParticipantPresenceEvent",
             "participant.removed": "#/components/schemas/ParticipantRemovedEvent",
             "ping": "#/components/schemas/PingMessage",
-            "room.settings_updated": "#/components/schemas/RoomSettingsUpdatedEvent"
+            "room.settings_updated": "#/components/schemas/RoomSettingsUpdatedEvent",
+            "round.started": "#/components/schemas/RoundStartedEvent"
           },
           "propertyName": "type"
         },
@@ -4512,6 +4731,12 @@
           },
           {
             "$ref": "#/components/schemas/ParticipantPlacedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/RoundStartedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/CooldownStartedEvent"
           },
           {
             "$ref": "#/components/schemas/PingMessage"

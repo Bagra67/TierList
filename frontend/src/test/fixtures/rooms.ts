@@ -42,6 +42,7 @@ export const aliceRoomInGame: Room = {
   version: 4,
   status: 'playing',
   game: {
+    status: 'in_round',
     round_number: 1,
     round_count: 3,
     current_item: {
@@ -56,6 +57,7 @@ export const aliceRoomInGame: Room = {
     ],
     placed_participant_ids: [],
     own_placements: [],
+    cooldown_ends_at: null,
   },
 };
 

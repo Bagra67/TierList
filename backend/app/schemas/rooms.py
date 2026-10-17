@@ -10,7 +10,7 @@ from app.constants.rooms import (
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
-from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
+from app.models.enums import AutoAdvance, GameStatus, ItemOrder, RoomStatus
 from app.schemas.common import DisplayName
 
 
@@ -89,6 +89,8 @@ class OwnPlacementResponse(BaseModel):
 
 
 class CurrentGameResponse(BaseModel):
+    # in_round pendant les tours, cooldown après le dernier tour
+    status: GameStatus
     # Numéro du tour en cours (à partir de 1) et nombre de tours, un par tuile
     round_number: int
     round_count: int
@@ -101,6 +103,8 @@ class CurrentGameResponse(BaseModel):
     placed_participant_ids: list[uuid.UUID]
     # Placements du lecteur seulement, par tier puis position ; jamais ceux des autres
     own_placements: list[OwnPlacementResponse]
+    # Fin du cooldown final, une fois le dernier tour fini
+    cooldown_ends_at: datetime | None
 
 
 class PlaceItemRequest(BaseModel):

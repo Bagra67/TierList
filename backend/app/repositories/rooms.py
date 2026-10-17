@@ -16,30 +16,37 @@ def add_room(session: Session, room: Room) -> None:
     session.add(room)
 
 
-def get_room_by_code(session: Session, code: str, for_update: bool = False) -> Room | None:
-    """Salle de ce code, avec son template, ses participants (et leur utilisateur), ses
+def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room]:
+    """Charge avec la salle son template, ses participants (et leur utilisateur), ses
     bannissements et sa partie en cours (ses tours et leur tuile, ses tiers, ses placements).
 
     for_update verrouille la ligne de la salle jusqu'à la fin de la transaction : deux
     modifications de la même salle passent l'une après l'autre (docs/technical/realtime.md)."""
-    statement: Select[Room] = (
-        select(Room)
-        .where(Room.code == code)
-        .options(
-            selectinload(Room.template),
-            selectinload(Room.participants).selectinload(Participant.user),
-            selectinload(Room.bans),
-            selectinload(Room.current_game).selectinload(Game.rounds).selectinload(Round.tile),
-            selectinload(Room.current_game)
-            .selectinload(Game.snapshot)
-            .selectinload(TemplateSnapshot.tiers),
-            selectinload(Room.current_game)
-            .selectinload(Game.placements)
-            .selectinload(Placement.tile),
-        )
+    statement = statement.options(
+        selectinload(Room.template),
+        selectinload(Room.participants).selectinload(Participant.user),
+        selectinload(Room.bans),
+        selectinload(Room.current_game).selectinload(Game.rounds).selectinload(Round.tile),
+        selectinload(Room.current_game)
+        .selectinload(Game.snapshot)
+        .selectinload(TemplateSnapshot.tiers),
+        selectinload(Room.current_game).selectinload(Game.placements).selectinload(Placement.tile),
     )
     if for_update:
         statement = statement.with_for_update(of=Room)
+    return statement
+
+
+def get_room_by_code(session: Session, code: str, for_update: bool = False) -> Room | None:
+    """Salle de ce code, avec tout ce que sa réponse montre (_room_with_details)."""
+    statement: Select[Room] = _room_with_details(select(Room).where(Room.code == code), for_update)
+    return session.scalars(statement).one_or_none()
+
+
+def get_room_by_id(session: Session, room_id: uuid.UUID, for_update: bool = False) -> Room | None:
+    """Salle de cet identifiant, chargée comme get_room_by_code : pour une transition décidée
+    par le serveur (timer, déconnexion), qui ne connaît pas le code."""
+    statement: Select[Room] = _room_with_details(select(Room).where(Room.id == room_id), for_update)
     return session.scalars(statement).one_or_none()
 
 

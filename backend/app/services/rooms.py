@@ -47,8 +47,10 @@ from app.exceptions.rooms import (
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
-from app.models.enums import AutoAdvance, ItemOrder, RoomStatus
+from app.models.enums import AutoAdvance, ItemOrder, PlacementPhase, RoomStatus
+from app.models.game import Game
 from app.models.participant import Participant
+from app.models.placement import Placement
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
@@ -191,6 +193,7 @@ class RoomService:
         # contrainte (room_id, user_id) reste le dernier filet
         player: Participant = Participant(user_id=user.id)
         room.participants.append(player)
+        self._absent_for_past_rounds(room, player)
         room.version += 1
         self._session.commit()
         logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
@@ -232,6 +235,8 @@ class RoomService:
         room.participants.append(guest)
         room.version += 1
         try:
+            # Le flush de la nouvelle place peut buter sur l'index du pseudo, comme le commit
+            self._absent_for_past_rounds(room, guest)
             self._session.commit()
         except IntegrityError as exc:
             # Dernier filet : lower() de PostgreSQL et str.lower() de Python peuvent différer sur
@@ -392,9 +397,10 @@ class RoomService:
                 return participant
         raise RoomNotFoundError
 
-    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
+    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> Room | None:
         """Marque le participant connecté ou déconnecté. N'écrit et ne publie que si la présence
-        change ; une place disparue entre-temps (salle fermée) est ignorée."""
+        change ; une place disparue entre-temps (salle fermée) est ignorée. Renvoie la salle quand
+        la présence a changé, None sinon."""
         room: Room | None = room_repository.get_room_of_participant(
             self._session, participant_id, for_update=True
         )
@@ -404,7 +410,7 @@ class RoomService:
         if room is None or participant is None or participant.connected == connected:
             # Rien à écrire : le commit libère seulement le verrou
             self._session.commit()
-            return
+            return None
         participant.connected = connected
         room.version += 1
         self._session.commit()
@@ -415,6 +421,7 @@ class RoomService:
                 data=ParticipantPresenceData(participant_id=participant_id, connected=connected),
             ),
         )
+        return room
 
     def reset_presence(self) -> int:
         """Au démarrage du processus, plus aucun socket n'est ouvert : personne n'est connecté.
@@ -436,6 +443,23 @@ class RoomService:
         if not self._has_seat(room, user):
             raise RoomNotFoundError
         return room
+
+    def _absent_for_past_rounds(self, room: Room, participant: Participant) -> None:
+        """Arrivée pendant une partie (US-4.5) : les tours déjà finis comptent comme votes absents
+        pour le nouveau venu ; il participe à partir du tour en cours."""
+        game: Game | None = room.current_game
+        if game is None:
+            return
+        # L'identifiant de la nouvelle place, que les placements référencent
+        self._session.flush()
+        for game_round in game.rounds:
+            if game_round.ended_at is not None:
+                absent: Placement = Placement(
+                    participant_id=participant.id,
+                    snapshot_tile_id=game_round.snapshot_tile_id,
+                    phase=PlacementPhase.ROUND,
+                )
+                game.placements.append(absent)
 
     def _ensure_can_arrive(self, room: Room) -> None:
         """Un nouveau venu peut-il prendre une place ? Pas pendant une partie aux arrivées

@@ -22,6 +22,7 @@ from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
+from app.services.round_timers import RoundScheduler, round_timers
 from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -64,6 +65,11 @@ def get_room_event_publisher(
     return registry
 
 
+def get_round_scheduler() -> RoundScheduler:
+    # Les timers de ce processus ; remplacés par un faux dans les tests
+    return round_timers
+
+
 def get_room_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -77,9 +83,10 @@ def get_game_service(
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
     rooms: Annotated[RoomService, Depends(get_room_service)],
     templates: Annotated[TemplateService, Depends(get_template_service)],
+    scheduler: Annotated[RoundScheduler, Depends(get_round_scheduler)],
 ) -> GameService:
     # FastAPI met la session en cache par requête : les trois services partagent la même
-    return GameService(session, publisher, rooms, templates)
+    return GameService(session, publisher, rooms, templates, scheduler)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:
@@ -175,3 +182,4 @@ GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_c
 SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
 PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
 RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
+RoundSchedulerDep = Annotated[RoundScheduler, Depends(get_round_scheduler)]

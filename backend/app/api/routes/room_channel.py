@@ -21,6 +21,7 @@ from starlette.websockets import WebSocketState
 from app.api.dependencies import (
     PublisherDep,
     RegistryDep,
+    RoundSchedulerDep,
     SessionFactory,
     SessionFactoryDep,
     SettingsDep,
@@ -36,11 +37,16 @@ from app.constants.rooms import (
 from app.core.config import Settings
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.rooms import ChannelClosedError, RoomNotFoundError
+from app.models.enums import RoomStatus
 from app.models.participant import Participant
+from app.models.room import Room
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
+from app.services.games import GameService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher
 from app.services.rooms import RoomService, RoomViewer
+from app.services.round_timers import RoundScheduler
+from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +73,7 @@ async def room_channel(
     session_factory: SessionFactoryDep,
     publisher: PublisherDep,
     registry: RegistryDep,
+    scheduler: RoundSchedulerDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> None:
     # Le cookie d'un invité part avec toute poignée de main vers ce chemin, même lancée par un
@@ -81,7 +88,7 @@ async def room_channel(
         seat: ChannelSeat = await run_in_threadpool(
             _find_seat, session_factory, settings, publisher, code, access_token, guest_token
         )
-        await _serve(websocket, seat, settings, session_factory, publisher, registry)
+        await _serve(websocket, seat, settings, session_factory, publisher, registry, scheduler)
     except ChannelClosedError as exc:
         await websocket.close(code=exc.close_code, reason=exc.reason)
     except WebSocketDisconnect:
@@ -150,12 +157,13 @@ async def _serve(
     session_factory: SessionFactory,
     publisher: RoomEventPublisher,
     registry: ConnectionRegistry,
+    scheduler: RoundScheduler,
 ) -> None:
     """Socket enregistré dans la salle : présence, puis battements de cœur jusqu'à la fermeture."""
 
     async def set_presence(connected: bool) -> None:
         await run_in_threadpool(
-            _set_presence, session_factory, settings, publisher, seat.participant_id, connected
+            _set_presence, session_factory, settings, publisher, scheduler, seat, connected
         )
 
     first_socket: bool = registry.add(seat.room_id, seat.participant_id, websocket)
@@ -179,11 +187,19 @@ def _set_presence(
     session_factory: SessionFactory,
     settings: Settings,
     publisher: RoomEventPublisher,
-    participant_id: uuid.UUID,
+    scheduler: RoundScheduler,
+    seat: ChannelSeat,
     connected: bool,
 ) -> None:
     with session_factory() as session:
-        RoomService(session, settings, publisher).set_presence(participant_id, connected)
+        rooms: RoomService = RoomService(session, settings, publisher)
+        changed: Room | None = rooms.set_presence(seat.participant_id, connected)
+        if not connected and changed is not None and changed.status == RoomStatus.PLAYING:
+            # Un déconnecté n'est plus attendu par « tout le monde a placé » (US-3.4)
+            games: GameService = GameService(
+                session, publisher, rooms, TemplateService(session, settings), scheduler
+            )
+            games.advance_if_everyone_placed(seat.room_id)
 
 
 async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
