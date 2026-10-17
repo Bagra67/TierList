@@ -10,7 +10,7 @@ export type ItemDistribution = components['schemas']['ItemDistributionResponse']
 export type PlayerResults = components['schemas']['PlayerResultsResponse'];
 
 // La case fait partie de la clé : basculer relit une fois, puis chaque variante reste en cache
-export function resultsQueryKey(token: string, includeAbsentVotes: boolean) {
+function resultsQueryKey(token: string, includeAbsentVotes: boolean) {
   return ['results', token, includeAbsentVotes] as const;
 }
 
