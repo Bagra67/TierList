@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from tests.integration.helpers import (
+    PASSWORD,
     JsonObject,
     create_room,
     create_template,
@@ -209,6 +210,33 @@ def test_the_lobby_lists_the_past_games_of_the_room(
     assert past_game["public_token"] == public_token
     assert past_game["player_count"] == 3
     assert past_game["closed_at"] is not None
+
+
+def test_the_results_link_keeps_working_after_the_room_is_closed(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject, public_token: str
+):
+    closed: Response = auth_client.delete(f"/rooms/{alice_room['code']}", headers=alice)
+    assert closed.status_code == 204
+
+    response: Response = results(auth_client, public_token)
+
+    # US-5.3 : la partie survit à sa salle, son lien aussi
+    assert response.status_code == 200
+    assert sorted(boards(response.json())) == ["Lou", "alice", "bob"]
+
+
+def test_the_results_link_keeps_a_player_who_deleted_their_account(
+    auth_client: TestClient, bob: dict[str, str], public_token: str
+):
+    deleted: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=bob
+    )
+    assert deleted.status_code == 204
+
+    response: Response = results(auth_client, public_token)
+
+    assert response.status_code == 200
+    assert boards(response.json())["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
 
 
 def test_every_room_answer_counts_the_players_of_the_past_games(

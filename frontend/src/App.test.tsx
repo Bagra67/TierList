@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from './api/client';
 import App from './App';
+import { closedGameResults, RESULTS_TOKEN } from './test/fixtures/results';
 import { renderWithQueryClient } from './test/renderWithQueryClient';
 import {
   alice,
@@ -113,6 +114,18 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('opens the public results link without a session, without asking to sign in', async () => {
+    stubBackend({
+      'POST /auth/refresh': unauthorized,
+      [`GET /results/${RESULTS_TOKEN}`]: () => Response.json(closedGameResults),
+    });
+
+    renderAppAt(`/results/${RESULTS_TOKEN}`);
+
+    expect(await screen.findByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument();
   });
 
   it('shows a not found page for unknown urls, with or without a session', async () => {

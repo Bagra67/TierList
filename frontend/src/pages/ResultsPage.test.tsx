@@ -50,10 +50,16 @@ function rowItems(label: string): string[] {
     .map((item: HTMLElement) => item.textContent ?? '');
 }
 
+// Presse-papiers simulé : jsdom n'en fournit pas
+function stubClipboard(writeText: (text: string) => Promise<void>): void {
+  Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+}
+
 describe('ResultsPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    Reflect.deleteProperty(navigator, 'clipboard');
   });
 
   it('shows the median ranking by default, with the absent votes included', async () => {
@@ -136,6 +142,34 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
   });
 
+  it('copies the public link of the results and announces it', async () => {
+    const writeText: (text: string) => Promise<void> = vi.fn(async () => {});
+    stubClipboard(writeText);
+    stubResults();
+    renderResultsPage();
+
+    const link: string = `${window.location.origin}/results/${RESULTS_TOKEN}`;
+    expect(await screen.findByRole('textbox', { name: 'Lien public des résultats' })).toHaveValue(
+      link,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien' }));
+
+    expect(await screen.findByText('Lien copié')).toBeInTheDocument();
+    expect(writeText).toHaveBeenCalledWith(link);
+  });
+
+  it('asks to copy the public link by hand when the clipboard refuses', async () => {
+    stubClipboard(() => Promise.reject(new Error('denied')));
+    stubResults();
+    renderResultsPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Impossible de copier le lien : sélectionnez-le et copiez-le à la main.',
+    );
+  });
+
   it('names each item without text by its number, so two images never share a name', async () => {
     const imagesOnly: GameResults = {
       ...closedGameResults,
@@ -191,6 +225,20 @@ describe('ResultsPage', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Retour à la salle' }));
 
     expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+  });
+
+  it('offers no room action: the page is read-only', async () => {
+    stubResults();
+    renderResultsPage();
+
+    await screen.findByRole('heading', { name: 'Résultats : Épices' });
+    // Seuls les onglets et le bouton de copie sont des boutons : ni « Rejouer », ni commande de salle
+    expect(
+      screen
+        .getAllByRole('button')
+        .map((button: HTMLElement) => button.textContent)
+        .filter((name) => name !== 'Copier le lien'),
+    ).toEqual([]);
   });
 
   it('offers no way back to a room when opened by the public link', async () => {

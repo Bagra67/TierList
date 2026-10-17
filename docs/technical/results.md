@@ -120,6 +120,8 @@ Built in #100.
   - **Overall**: `ResultsDistributionTable`, a real `<table>` (caption for screen readers, a row header per item), one column per tier and the "Absent" column when the absent votes are included; the table scrolls on its own on a small screen, not the page;
   - **Per player**: a player `<select>`, their `ResultsTierList` and the "Never placed" row.
 - **States**: loading, and the translated error (`results_not_found` for an unknown link).
+- **Public link** (#101, US-5.3): the page shows its own address, `<origin>/results/<token>`, with "Copy the link" (`CopyLinkField`, shared with the room invitation: the copy is announced, and a message asks to copy by hand when the clipboard refuses). Any visitor opening it sees the same views, read-only: the page offers no room action (no "Play again"; only "Back to the room" when opened from its lobby). Without a session, the navigation tries to restore one, then the page shows without any sign-in redirect.
+- **Lifetime**: the link never expires and cannot be revoked. It keeps working after the room is closed (the game survives its room, `games.room_id` set to `NULL`) and after a player deletes their account (the frozen player stays, without account).
 - **Items without text**: their image is named by their number in the template order ("Image of item 3", `ResultItem.imageLabel`), so two images never share a name in the table or the lists.
 
 ### 2.8 Known limitations
@@ -197,5 +199,3 @@ If Alice ranks S: X, Y and Bob S: Y, X, both items have median 3/4 and mean 1/2:
 | Frontend | `components/ResultsTabs.tsx`, `resultsViews.ts`, `ResultsTierList.tsx`, `ResultsDistributionTable.tsx`, `ResultsPlayerView.tsx`, `PastGames.tsx` | The views, and the past games of the lobby.                                                               |
 | Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                   |
 | Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | The page and the past games ([testing guide](testing.md)).                                                |
-
-The public link (#101) comes next.

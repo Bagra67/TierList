@@ -4,6 +4,7 @@ import { type Location, type Params, Link, useLocation, useParams } from 'react-
 
 import { type GameResults, type GameResultsState, useGameResults } from '../api/results';
 import type { GameItem } from '../api/rooms';
+import { CopyLinkField } from '../components/CopyLinkField';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { ResultsDistributionTable } from '../components/ResultsDistributionTable';
 import { ResultsPlayerView } from '../components/ResultsPlayerView';
@@ -16,12 +17,13 @@ import {
   resultsPanelId,
   resultsTabId,
 } from '../components/resultsViews';
-import { isResultsLinkState, roomPath } from '../constants/routes';
+import { isResultsLinkState, resultsPath, roomPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
 // Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
-// classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents.
-// Lecture seule : la partie close ne change plus
+// classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
+// et le lien public à copier. Lecture seule : la partie close ne change plus, et la page n'offre
+// aucune action de salle (seulement le retour à la salle quand on vient de son lobby)
 export function ResultsPage() {
   // Toujours présent : la route RESULTS déclare ce paramètre
   const { token = '' }: Readonly<Params> = useParams();
@@ -74,6 +76,12 @@ export function ResultsPage() {
           {t('results.closedAt', { date: new Date(known.closed_at) })}
         </p>
       </div>
+      {/* Le lien de cette page, sur l'adresse de l'application : il marche sans compte, et après
+          la fermeture de la salle (US-5.3) */}
+      <CopyLinkField
+        label={t('results.publicLink')}
+        link={`${window.location.origin}${resultsPath(token)}`}
+      />
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
