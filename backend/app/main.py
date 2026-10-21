@@ -155,7 +155,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 api_app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
-    version="0.5.0",
+    version="0.6.0",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )

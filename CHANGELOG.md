@@ -5,6 +5,53 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [0.6.0] - 2026-10-21
+
+### Features
+
+- rooms: cap rooms at 10 participants and lock arrivals during a game (#156)
+- games: start a game with its snapshot and rounds (#164)
+- games: place the current item with tier and position (#170)
+- games: move rounds on with next, a timer or everyone placed (#171)
+- frontend: game screen with the private board and the host controls (#172)
+- games: play the final cooldown and end it with a timer or the admin (#175)
+- frontend: cooldown screen with the final board, missed items and end now (#176)
+- games: save the closed game with its frozen players (#177)
+- rooms: close a room (#179)
+- rooms: close inactive rooms automatically (#180)
+- results: results api for a closed game (#182)
+- frontend: results page with the absent votes toggle (#183)
+- results: public results link (#184)
+- games: play again in the same room (#186)
+- history: history of the closed games of an account (#187)
+- settings: settings panel in the navbar (#190)
+- deploy: deploy to minestrator pods behind a cloudflare tunnel (#193)
+- deploy: restart the pod through the minestrator panel api (#195)
+- deploy: tell the minestrator panel when the pod is ready (#197)
+- legal: privacy policy page (#203)
+
+### Bug fixes
+
+- games: address the audit of the game stack (#178)
+- auth: hide private links once the session has ended (#189)
+- images: upload tile images with the public-read acl (#199)
+
+### Refactoring
+
+- frontend: share the dialog shell and split the test tools (#169)
+- backend: place shared types and helpers by responsibility (#166)
+- api: build responses in presenters and share dependency aliases (#167)
+
+### Documentation
+
+- decide the hosting and the continuous deployment (#157)
+- use tierlist-staging.ladwein.dev as the staging domain (#194)
+- runbook of the staging setup and steps for production (#198)
+
+### Tests
+
+- games: cover coming back to one's seat and joining during a game (#174)
+
 ## [0.5.0] - 2026-10-16
 
 ### Features
