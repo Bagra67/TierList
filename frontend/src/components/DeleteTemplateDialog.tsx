@@ -1,9 +1,10 @@
-import { useId, useRef, type FormEvent } from 'react';
+import { useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type TemplateSummary, useDeleteTemplate } from '../api/templates';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
+import { DialogActions, ModalDialog } from './ModalDialog';
 import { Button } from './ui/button';
 
 interface DeleteTemplateDialogProps {
@@ -13,7 +14,6 @@ interface DeleteTemplateDialogProps {
 // Confirmation avant suppression, dans un <dialog> natif (focus piégé, fermeture avec Échap)
 export function DeleteTemplateDialog({ template }: DeleteTemplateDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
   const deleteMutation = useDeleteTemplate();
   const { t } = useTranslation();
 
@@ -38,32 +38,29 @@ export function DeleteTemplateDialog({ template }: DeleteTemplateDialogProps) {
       >
         {t('templates.delete.open')}
       </Button>
-      <dialog
-        ref={dialogRef}
-        aria-labelledby={titleId}
+      <ModalDialog
+        dialogRef={dialogRef}
+        title={t('templates.delete.title', { name: template.name })}
+        description={t('templates.delete.warning')}
         onClose={() => deleteMutation.reset()}
-        className="m-auto w-full max-w-md rounded-xl bg-card p-6 text-sm text-card-foreground shadow-lg ring-1 ring-foreground/10 backdrop:bg-black/50"
       >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('templates.delete.title', { name: template.name })}
-        </h2>
-        <p className="mt-2 text-muted-foreground">{t('templates.delete.warning')}</p>
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           {deleteMutation.isError && (
             <ErrorMessage>{translateError(t, deleteMutation.error)}</ErrorMessage>
           )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => dialogRef.current?.close()}>
-              {t('templates.delete.cancel')}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending
+          <DialogActions
+            cancelLabel={t('templates.delete.cancel')}
+            onCancel={() => dialogRef.current?.close()}
+            submitLabel={
+              deleteMutation.isPending
                 ? t('templates.delete.submitting')
-                : t('templates.delete.submit')}
-            </Button>
-          </div>
+                : t('templates.delete.submit')
+            }
+            submitVariant="destructive"
+            submitDisabled={deleteMutation.isPending}
+          />
         </form>
-      </dialog>
+      </ModalDialog>
     </>
   );
 }

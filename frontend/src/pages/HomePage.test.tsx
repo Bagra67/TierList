@@ -4,21 +4,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse } from '../test/stubBackend';
+import { signedInSession, stubBackend } from '../test/stubBackend';
 import { HomePage } from './HomePage';
 
-function renderHomePage(path = '/') {
+function renderHomePage() {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={['/']}>
       <HomePage />
     </MemoryRouter>,
   );
 }
-
-const session = {
-  'POST /auth/refresh': tokenResponse('restored-token'),
-  'GET /auth/me': () => Response.json(alice),
-};
 
 describe('HomePage', () => {
   afterEach(() => {
@@ -27,19 +22,13 @@ describe('HomePage', () => {
   });
 
   it('shows the page title and the connected user', async () => {
-    stubBackend(session);
+    stubBackend(signedInSession);
 
     renderHomePage();
 
     expect(screen.getByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
     expect(await screen.findByText(/Connecté en tant que Alice/)).toBeInTheDocument();
-  });
-
-  it('reopens the account deletion after a Google sign-in', async () => {
-    stubBackend(session);
-
-    renderHomePage('/?confirm=delete-account');
-
-    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
+    // « Se déconnecter » est dans l'en-tête de toutes les pages (LogoutButton), plus ici
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 });

@@ -2,10 +2,9 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
-import { aliceRoom, renderRoomPage, settingsSummary } from '../test/rooms';
-import { errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+import { aliceRoom } from '../test/fixtures/rooms';
+import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
+import { errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
 // Corps de l'unique PATCH des réglages reçu par le faux backend, une fois envoyé
 async function sentChanges(fetchMock: BackendMock): Promise<unknown> {

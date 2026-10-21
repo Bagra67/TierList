@@ -4,14 +4,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import get_settings
 from app.models.participant import Participant
-from app.models.room import Room
 from app.services.rooms import RoomService
 from tests.integration.conftest import RecordingRoomEventPublisher
 from tests.integration.helpers import JsonObject, create_room, create_template, register
@@ -68,7 +67,7 @@ def test_a_guest_joins_with_a_nickname_and_gets_a_cookie_and_a_personal_link(
     assert abs(expires_at - expected_expiry) < timedelta(minutes=1)
     cookie: str = response.headers["set-cookie"]
     assert cookie.startswith(f"{GUEST_COOKIE}={token_of(body['guest_link'])};")
-    assert f"Path=/rooms/{code}" in cookie
+    assert f"Path=/api/rooms/{code}" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=strict" in cookie
 
@@ -196,7 +195,7 @@ def test_the_personal_link_gives_the_seat_back_on_another_device(
     assert response.json()["participants"] == joined["participants"]
     assert response.json()["guest_link"] == joined["guest_link"]
     assert response.json()["guest_link_expires_at"] == joined["guest_link_expires_at"]
-    assert f"Path=/rooms/{code}" in response.headers["set-cookie"]
+    assert f"Path=/api/rooms/{code}" in response.headers["set-cookie"]
     assert auth_client.get(f"/rooms/{code}").status_code == 200
 
 
@@ -210,11 +209,10 @@ def test_an_unknown_personal_link_is_invalid(auth_client: TestClient, alice_room
 
 
 def test_the_personal_link_dies_with_its_room(
-    auth_client: TestClient, db_session: Session, alice_room: JsonObject
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
     guest_link: str = join_as_guest(auth_client, alice_room["code"], "Lou").json()["guest_link"]
-    # Ce que fera la fermeture de la salle (#89)
-    db_session.execute(delete(Room).where(Room.code == alice_room["code"]))
+    assert auth_client.delete(f"/rooms/{alice_room['code']}", headers=alice).status_code == 204
 
     response: Response = auth_client.post(
         f"/rooms/{alice_room['code']}/guest-session", json={"token": token_of(guest_link)}

@@ -2,8 +2,9 @@
 UNUSED_IMAGE_RETENTION_DAYS (docs/technical/images.md, « Cleanup »).
 
 Usage (dans backend/) : uv run python scripts/purge_unused_images.py
-À planifier une fois par jour sur le serveur, à côté de scripts/purge_deleted_templates.py : voir
-TODO.md. Relancer la commande ne pose aucun problème : elle n'efface que ce qui a expiré.
+En production, l'application la lance aussi chaque nuit (MAINTENANCE_ENABLED, voir
+docs/technical/deployment.md). Relancer la commande ne pose aucun problème : elle n'efface
+que ce qui a expiré.
 """
 
 import sys
@@ -26,13 +27,13 @@ def main() -> None:
     from app.core.logging import configure_logging, get_logging_settings
     from app.db.session import get_engine
     from app.services.image_storage import create_image_storage
-    from app.services.images import ImageService
+    from app.services.maintenance import purge_unused_images
 
     configure_logging(get_logging_settings().log_level)
     settings: Settings = get_settings()
-    with Session(get_engine()) as session:
-        service: ImageService = ImageService(session, settings, create_image_storage(settings))
-        purged_count: int = service.purge_unused()
+    purged_count: int = purge_unused_images(
+        lambda: Session(get_engine()), settings, create_image_storage(settings)
+    )
     print(f"Unused images purged: {purged_count}")
 
 

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import boto3
 from botocore.config import Config
 
-from app.constants.images import IMAGE_CACHE_CONTROL, IMAGE_CONTENT_TYPE
+from app.constants.images import IMAGE_ACL, IMAGE_CACHE_CONTROL, IMAGE_CONTENT_TYPE
 from app.core.config import Settings
 
 if TYPE_CHECKING:
@@ -26,13 +26,14 @@ class ImageStorage:
 
     def save(self, key: str, data: bytes) -> None:
         """Écrit l'image sous cette clé, qui n'est jamais réécrite ; les caches la gardent un jour
-        (IMAGE_CACHE_CONTROL)."""
+        (IMAGE_CACHE_CONTROL). Lisible par tous (IMAGE_ACL) : son URL est publique."""
         self._client.put_object(
             Bucket=self._bucket,
             Key=key,
             Body=data,
             ContentType=IMAGE_CONTENT_TYPE,
             CacheControl=IMAGE_CACHE_CONTROL,
+            ACL=IMAGE_ACL,
         )
 
     def delete(self, key: str) -> None:

@@ -12,17 +12,20 @@ import uuid
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Cookie, WebSocket, WebSocketDisconnect, status
 from pydantic import TypeAdapter, ValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.types import Message
 from starlette.websockets import WebSocketState
 
 from app.api.dependencies import (
+    PublisherDep,
+    RegistryDep,
+    RoundSchedulerDep,
     SessionFactory,
-    get_connection_registry,
-    get_room_event_publisher,
-    get_session_factory,
+    SessionFactoryDep,
+    SettingsDep,
+    build_game_service,
 )
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
@@ -32,23 +35,21 @@ from app.constants.rooms import (
     CHANNEL_CLOSE_ROOM_NOT_FOUND,
     GUEST_COOKIE,
 )
-from app.core.config import Settings, get_settings
+from app.core.config import Settings
 from app.exceptions.auth import InvalidAccessTokenError
-from app.exceptions.rooms import RoomNotFoundError
+from app.exceptions.rooms import ChannelClosedError, RoomNotFoundError
 from app.models.participant import Participant
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
+from app.services.games import GameService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher
 from app.services.rooms import RoomService, RoomViewer
+from app.services.round_timers import RoundScheduler
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
-SettingsDep = Annotated[Settings, Depends(get_settings)]
-SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
-PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
-RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
 
 _CLIENT_MESSAGE_ADAPTER: TypeAdapter[RoomClientMessage] = TypeAdapter(RoomClientMessage)
 _PING: str = PingMessage().model_dump_json()
@@ -62,15 +63,6 @@ class ChannelSeat:
     participant_id: uuid.UUID
 
 
-class ChannelClosedError(Exception):
-    """Le canal doit être fermé avec ce code (4000-4999) et ce code d'erreur comme raison."""
-
-    def __init__(self, close_code: int, reason: ErrorCode) -> None:
-        super().__init__(close_code, reason)
-        self.close_code = close_code
-        self.reason = reason
-
-
 @router.websocket("/{code}/ws")
 async def room_channel(
     websocket: WebSocket,
@@ -79,6 +71,7 @@ async def room_channel(
     session_factory: SessionFactoryDep,
     publisher: PublisherDep,
     registry: RegistryDep,
+    scheduler: RoundSchedulerDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> None:
     # Le cookie d'un invité part avec toute poignée de main vers ce chemin, même lancée par un
@@ -93,7 +86,7 @@ async def room_channel(
         seat: ChannelSeat = await run_in_threadpool(
             _find_seat, session_factory, settings, publisher, code, access_token, guest_token
         )
-        await _serve(websocket, seat, settings, session_factory, publisher, registry)
+        await _serve(websocket, seat, settings, session_factory, publisher, registry, scheduler)
     except ChannelClosedError as exc:
         await websocket.close(code=exc.close_code, reason=exc.reason)
     except WebSocketDisconnect:
@@ -162,12 +155,13 @@ async def _serve(
     session_factory: SessionFactory,
     publisher: RoomEventPublisher,
     registry: ConnectionRegistry,
+    scheduler: RoundScheduler,
 ) -> None:
     """Socket enregistré dans la salle : présence, puis battements de cœur jusqu'à la fermeture."""
 
     async def set_presence(connected: bool) -> None:
         await run_in_threadpool(
-            _set_presence, session_factory, settings, publisher, seat.participant_id, connected
+            _set_presence, session_factory, settings, publisher, scheduler, seat, connected
         )
 
     first_socket: bool = registry.add(seat.room_id, seat.participant_id, websocket)
@@ -191,11 +185,13 @@ def _set_presence(
     session_factory: SessionFactory,
     settings: Settings,
     publisher: RoomEventPublisher,
-    participant_id: uuid.UUID,
+    scheduler: RoundScheduler,
+    seat: ChannelSeat,
     connected: bool,
 ) -> None:
     with session_factory() as session:
-        RoomService(session, settings, publisher).set_presence(participant_id, connected)
+        games: GameService = build_game_service(session, settings, publisher, scheduler)
+        games.set_presence(seat.participant_id, connected)
 
 
 async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:

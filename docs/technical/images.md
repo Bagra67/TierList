@@ -60,12 +60,12 @@ Fixed values are constants in `app/constants/images.py` (`IMAGE_OUTPUT_MAX_SIDE_
 
 | Variable                  | Description                                                                                                                                                             | Default             |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file; keep the reverse proxy body limit aligned with it.                                                                                   | `10485760` (10 MiB) |
+| `IMAGE_UPLOAD_MAX_BYTES`  | Maximum size of the received file; Cloudflare accepts bodies up to 100 MB ([deployment guide](deployment.md)).                                                          | `10485760` (10 MiB) |
 | `IMAGE_MAX_SOURCE_PIXELS` | Maximum number of pixels of the decoded image, checked from the header before decoding: protects against decompression bombs, small files that expand into huge images. | `40000000` (40 Mpx) |
 
 10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors.
 
-Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **reverse proxy limit** stops a huge body before it is received ([TODO](../../TODO.md)).
+Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **proxy limit** stops a huge body before it is received: Cloudflare refuses bodies over 100 MB ([deployment guide](deployment.md)).
 
 Storage settings:
 
@@ -116,7 +116,7 @@ The **S3 API is used everywhere**, through a single `ImageStorage` service (`sav
 | Environment        | S3 service                                                                                                                                                                                                                                         |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Development and CI | **SeaweedFS** container (`weed mini`: master, volume, filer and S3 in one process), the way Mailpit stands in for an SMTP provider. Same service in `compose.yaml` and in the backend CI job (`docker compose up -d --wait seaweedfs`). See below. |
-| Production         | An S3-compatible provider, chosen with the hosting ([TODO](../../TODO.md)). Public read through a CDN, or the bucket URL.                                                                                                                          |
+| Production         | **Scaleway Object Storage**, one public bucket per environment ([deployment guide](deployment.md)). Public read through the bucket URL (`IMAGE_PUBLIC_BASE_URL`), or a CDN later.                                                                  |
 
 SeaweedFS in development:
 
@@ -125,7 +125,7 @@ SeaweedFS in development:
 - `seaweedfs/s3.json` gives two identities: the backend (`tierlist-dev` key, read, write and list on the bucket only) and `anonymous` (**read** only, so that the image URLs work without authentication; listing, writing and deleting are refused). `seaweedfs/security.toml` holds a filer signing key, development only: without it SeaweedFS refuses to load the identities.
 - Data is kept in the `seaweedfs-data` Docker volume.
 
-- Each object is written with `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`: **one day**. The content of a key never changes, so a year with `immutable` would be possible; one day is chosen (#81 review) so that an image hidden by the moderation or erased leaves the browser caches within 24 hours. The CDN cache, for its part, is purged at once (§2.9).
+- Each object is written with the `public-read` ACL (at Scaleway, an object stays private even in a public bucket), `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`: **one day**. The content of a key never changes, so a year with `immutable` would be possible; one day is chosen (#81 review) so that an image hidden by the moderation or erased leaves the browser caches within 24 hours. The CDN cache, for its part, is purged at once (§2.9).
 - **Access model**: image URLs are public but **impossible to guess** (random UUID). Anyone holding a URL can see the image, which the public results link requires anyway: an image used in a game becomes public through it.
 
 ### 2.8 Cleanup
@@ -185,13 +185,13 @@ Backend (tests: [testing guide](testing.md)):
 | `app/services/images.py`           | `ImageService.upload`: checks the hourly limit, reads the file without going over the size limit, compresses it, writes it under a new key, then saves the row (the file is removed if that fails; a failure of that removal is logged with the key). `purge_unused`: the garbage collection of §2.8. |
 | `app/repositories/images.py`       | Image of an owner, number of recent uploads, deletion of the unused images.                                                                                                                                                                                                                           |
 | `app/services/templates.py`        | Tiles with an image: `_check_owned_image`, rule "a text or an image" (`TileEmptyError`).                                                                                                                                                                                                              |
-| `app/schemas/templates.py`         | `TileResponse.image_url`, built with the `ImageStorage.url` given in the validation context.                                                                                                                                                                                                          |
+| `app/schemas/templates.py`         | `TileResponse.image_url`. The URL itself comes from `image_url` or, for a tile that may have no image, `optional_image_url` (`app/api/presenters/images.py`), the only place that builds a public image URL (tiles, current item, upload).                                                            |
 | `app/models/tile.py`               | `Tile.image_id` and `Tile.image`; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                                                                  |
 | `scripts/purge_unused_images.py`   | Command of the garbage collection.                                                                                                                                                                                                                                                                    |
 | `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                                                                                                                                                       |
 | `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`) on a boto3 client, shared between requests.                                                                                                                                                                                                                  |
 | `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                                                                           |
-| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type` and `Cache-Control` of the objects.                                                                                                                                                                                                                |
+| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type`, `Cache-Control` and ACL of the objects.                                                                                                                                                                                                           |
 | `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                                                                            |
 
 Development: `compose.yaml` and `seaweedfs/` (§2.7).

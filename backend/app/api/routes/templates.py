@@ -1,9 +1,14 @@
 import uuid
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.api.dependencies import get_current_user, get_image_storage, get_template_service
+from app.api.dependencies import (
+    CurrentUserDep,
+    ImageStorageDep,
+    TemplateServiceDep,
+)
+from app.api.presenters.templates import template_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -19,9 +24,7 @@ from app.exceptions.templates import (
     TileNotFoundError,
 )
 from app.models.template import Template
-from app.models.user import User
 from app.schemas.templates import (
-    IMAGE_URL_CONTEXT_KEY,
     CreateTemplateRequest,
     CreateTileRequest,
     RenameTemplateRequest,
@@ -31,8 +34,7 @@ from app.schemas.templates import (
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.image_storage import ImageStorage
-from app.services.templates import TemplateService, TemplateSummary, TierChanges, TileChanges
+from app.services.templates import TemplateSummary, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -51,15 +53,6 @@ TILE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
 TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": messages.TILE_EMPTY_DESCRIPTION},
 }
-
-TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
-# Donne l'adresse publique des images des tuiles
-ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
-
-
-def _template_response(template: Template, storage: ImageStorage) -> TemplateResponse:
-    return TemplateResponse.model_validate(template, context={IMAGE_URL_CONTEXT_KEY: storage.url})
 
 
 def _template_not_found() -> AppHTTPException:
@@ -110,7 +103,7 @@ def create_template(
     storage: ImageStorageDep,
 ) -> TemplateResponse:
     template: Template = service.create(user, payload.name)
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.get("", responses=UNAUTHORIZED_RESPONSE)
@@ -134,7 +127,7 @@ def get_template(
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.patch("/{template_id}", responses=TEMPLATE_NOT_FOUND_RESPONSES)
@@ -149,7 +142,7 @@ def rename_template(
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.delete("/{template_id}", status_code=204, responses=TEMPLATE_NOT_FOUND_RESPONSES)
@@ -173,7 +166,7 @@ def add_tier(
         template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
         raise _template_not_found() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.patch("/{template_id}/tiers/{tier_id}", responses=TIER_NOT_FOUND_RESPONSES)
@@ -193,7 +186,7 @@ def update_tier(
         raise _template_not_found() from exc
     except TierNotFoundError as exc:
         raise _tier_not_found() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.delete(
@@ -222,7 +215,7 @@ def delete_tier(
             code=ErrorCode.LAST_TIER,
             detail=messages.LAST_TIER,
         ) from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.post(
@@ -261,7 +254,7 @@ def add_tile(
             detail=messages.TILE_LIMIT_REACHED.format(max_tiles=exc.max_tiles),
             params={"max_tiles": exc.max_tiles},
         ) from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.patch(
@@ -298,7 +291,7 @@ def update_tile(
         raise _image_not_found() from exc
     except TileEmptyError as exc:
         raise _tile_empty() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)
 
 
 @router.delete("/{template_id}/tiles/{tile_id}", responses=TILE_NOT_FOUND_RESPONSES)
@@ -315,4 +308,4 @@ def delete_tile(
         raise _template_not_found() from exc
     except TileNotFoundError as exc:
         raise _tile_not_found() from exc
-    return _template_response(template, storage)
+    return template_response(template, storage)

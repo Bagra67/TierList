@@ -4,8 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from './api/client';
 import App from './App';
+import { closedGameResults, RESULTS_TOKEN } from './test/fixtures/results';
 import { renderWithQueryClient } from './test/renderWithQueryClient';
-import { alice, stubBackend, tokenResponse, unauthorized } from './test/stubBackend';
+import {
+  alice,
+  signedInSession,
+  stubBackend,
+  tokenResponse,
+  unauthorized,
+} from './test/stubBackend';
 
 // Seul fetch est remplacé : routeur, hooks, client API et TanStack Query tournent pour de vrai
 function renderAppAt(path: string) {
@@ -15,11 +22,6 @@ function renderAppAt(path: string) {
     </MemoryRouter>,
   );
 }
-
-const loggedInBackend = {
-  'POST /auth/refresh': tokenResponse('restored-token'),
-  'GET /auth/me': () => Response.json(alice),
-};
 
 describe('App', () => {
   afterEach(() => {
@@ -36,7 +38,7 @@ describe('App', () => {
   });
 
   it('restores the session and shows the home page', async () => {
-    stubBackend(loggedInBackend);
+    stubBackend(signedInSession);
 
     renderAppAt('/');
 
@@ -54,20 +56,48 @@ describe('App', () => {
     consoleError.mockRestore();
   });
 
-  it('logs out and goes back to the login page', async () => {
+  it('logs out from the header and goes back to the login page', async () => {
     stubBackend({
-      ...loggedInBackend,
+      ...signedInSession,
+      'GET /templates': () => Response.json({ items: [] }),
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     });
-    renderAppAt('/');
+    // Depuis une autre page que l'accueil : le bouton est dans l'en-tête de toutes les pages
+    renderAppAt('/templates');
+    await screen.findByRole('heading', { name: 'Mes templates' });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(
+      within(screen.getByRole('banner')).getByRole('button', { name: 'Se déconnecter' }),
+    );
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
+  });
+
+  it('goes back to the signed-out state when the session ends elsewhere', async () => {
+    // La session est restaurée au chargement, puis se termine ailleurs (autre onglet, refresh
+    // token expiré) : le rafraîchissement suivant répond 401
+    let sessionOpen: boolean = true;
+    stubBackend({
+      'POST /auth/refresh': () => (sessionOpen ? tokenResponse('alice-token')() : unauthorized()),
+      'GET /auth/me': () => Response.json(alice),
+      'GET /templates': () => (sessionOpen ? Response.json({ items: [] }) : unauthorized()),
+      'GET /history': () => unauthorized(),
+    });
+    renderAppAt('/templates');
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    sessionOpen = false;
+
+    fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
   it('sends a signed-in user away from the login page', async () => {
-    stubBackend(loggedInBackend);
+    stubBackend(signedInSession);
 
     renderAppAt('/login');
 
@@ -92,7 +122,7 @@ describe('App', () => {
   });
 
   it('shows the navigation once signed in and opens my templates', async () => {
-    stubBackend({ ...loggedInBackend, 'GET /templates': () => Response.json({ items: [] }) });
+    stubBackend({ ...signedInSession, 'GET /templates': () => Response.json({ items: [] }) });
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
@@ -105,6 +135,27 @@ describe('App', () => {
     );
   });
 
+  it('opens my history from the navigation', async () => {
+    stubBackend({
+      ...signedInSession,
+      'GET /history': () => Response.json({ games: [], has_more: false }),
+    });
+    renderAppAt('/');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
+
+    expect(await screen.findByRole('heading', { name: 'Historique' })).toBeInTheDocument();
+  });
+
+  it('protects my history without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+
+    renderAppAt('/history');
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+  });
+
   it('hides the navigation and protects my templates without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 
@@ -112,6 +163,37 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('opens the public results link without a session, without asking to sign in', async () => {
+    stubBackend({
+      'POST /auth/refresh': unauthorized,
+      [`GET /results/${RESULTS_TOKEN}`]: () => Response.json(closedGameResults),
+    });
+
+    renderAppAt(`/results/${RESULTS_TOKEN}`);
+
+    expect(await screen.findByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument();
+    // Sans compte, l'en-tête n'a ni les liens privés ni « Se déconnecter »
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
+  });
+
+  it('opens the privacy policy from the footer, without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    renderAppAt('/login');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.click(
+      within(screen.getByRole('contentinfo')).getByRole('link', {
+        name: 'Politique de confidentialité',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Politique de confidentialité' }),
+    ).toBeInTheDocument();
   });
 
   it('shows a not found page for unknown urls, with or without a session', async () => {

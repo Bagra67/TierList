@@ -2,7 +2,8 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
-import { aliceRoom, renderRoomPage } from '../test/rooms';
+import { aliceRoom } from '../test/fixtures/rooms';
+import { renderRoomPage } from '../test/renderRoomPage';
 import { stubBackend } from '../test/stubBackend';
 
 // Salle d'Alice, room admin, qui a banni Bob (compte) et Lou (invité)

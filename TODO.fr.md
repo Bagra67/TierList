@@ -6,16 +6,25 @@
 
 ## 1. Avant le premier déploiement
 
-- [ ] Choisir un hébergement, puis écrire les images Docker de production et le déploiement (décision ouverte, voir l'[architecture](docs/technical/architecture.fr.md#décisions-en-attente)).
-- [ ] Réglages de production (`backend/.env` ou variables de l'hébergeur) :
+- [x] Choisir un hébergement : pods MineStrator derrière un Cloudflare Tunnel ([guide du déploiement](docs/technical/deployment.fr.md)).
+- [x] Bundle de release, script de démarrage du pod et déploiement continu (#158, #160, #161).
+- [x] Créer les pods, le tunnel et les environnements GitHub, puis déployer le staging : [premier déploiement](docs/technical/deployment.fr.md#5-premier-déploiement-pas-à-pas) (#159, #163).
+- [ ] Pareil pour la production ([production](docs/technical/deployment.fr.md#59-production)) : pod de production, base `tierlist_prod`, route `tierlist.ladwein.dev`, environnements `production` et `backup-production`.
+- [x] Afficher le pod TierList en ligne dans le panel MineStrator : `deploy/start.sh` écrit `change this part` une fois que l'application répond (#197).
+- [ ] Pareil pour le pod du tunnel : écrire `change this part` dans sa commande de démarrage ([pods](docs/technical/deployment.fr.md#51-pods-minestrator-159)).
+- [ ] Durcir PostgreSQL : `scram-sha-256`, pas de superutilisateur à distance ([PostgreSQL](docs/technical/deployment.fr.md#52-postgresql)).
+- [ ] Réglages de production (environnements GitHub, [guide du déploiement](docs/technical/deployment.fr.md#4-environnements-secrets-et-variables-github)) :
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
-- [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`.
-- [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (proxy, Cloudflare…), et configurer les en-têtes de proxy de confiance (`X-Forwarded-For`, `--forwarded-allow-ips`) pour que le backend voie la vraie IP.
+- [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Fait sur le staging : Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
+- [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (règles de limitation de Cloudflare). Les en-têtes de proxy de confiance sont réglés (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
-- [ ] Planifier la purge des templates supprimés une fois par jour : `uv run python scripts/purge_deleted_templates.py` dans `backend/` (cron ou tâche planifiée de l'hébergeur). Sans elle, les templates supprimés restent en base ; la durée de conservation est `DELETED_TEMPLATE_RETENTION_DAYS` (30 jours par défaut).
-- [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : choisir un fournisseur compatible S3 et un CDN capable de **purger une URL** (nécessaire pour masquer une image), créer le bucket en lecture publique, renseigner les réglages `IMAGE_*`, régler la limite de corps du reverse proxy à au moins `IMAGE_UPLOAD_MAX_BYTES`, et planifier le ramasse-miettes des images (`scripts/purge_unused_images.py`, une fois par jour) à côté de la purge des templates.
+- [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
+- [ ] Sauvegardes de la base : configurer les environnements `backup-*` et essayer une restauration sur le staging (#162).
+- [x] Politique de confidentialité : page publique `/privacy`, liée depuis le pied de page et le panneau de paramètres ([pages légales](docs/technical/legal-pages.fr.md), #200).
+- [ ] Conditions d'utilisation (#201) et export des données du compte dans l'application (#202).
+- [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub (fait sur le staging ; chaque image est envoyée avec l'ACL `public-read`, [Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)) ; plus tard, un CDN capable de **purger une URL** (nécessaire pour masquer une image).
 
 ## 2. Décisions à prendre
 

@@ -1,0 +1,197 @@
+name: Deploy
+
+# Deploys TierList to a MineStrator pod (docs/technical/deployment.md):
+# - staging: when the CI passes on a push to develop (a merged PR);
+# - production: when the Release workflow has tagged vX.Y.Z on main. Not "on: push: tags": that
+#   tag is created with GITHUB_TOKEN, and GitHub starts no workflow for an event made with it;
+# - rollback (or any tag, to any environment): run this workflow by hand.
+# workflow_run and workflow_dispatch use this file from the default branch (develop).
+on:
+  workflow_run:
+    workflows: [CI, Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy (vX.Y.Z), e.g. the previous one to roll back
+        required: true
+        type: string
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Choose what to deploy
+    # CI on develop (push), or Release (it only runs after a push on main); never a failed run
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      ((github.event.workflow_run.name == 'CI' && github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'develop') ||
+      github.event.workflow_run.name == 'Release'))
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.plan.outputs.environment }}
+      ref: ${{ steps.plan.outputs.ref }}
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Plan the deployment
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          tag_exists() {
+            git ls-remote --exit-code --tags origin "refs/tags/$1" > /dev/null
+          }
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if ! printf '%s' "$INPUT_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::'$INPUT_TAG' is not a release tag (vX.Y.Z)."
+              exit 1
+            fi
+            if ! tag_exists "$INPUT_TAG"; then
+              echo "::error::Tag $INPUT_TAG does not exist."
+              exit 1
+            fi
+            environment="$INPUT_ENVIRONMENT"
+            ref="refs/tags/$INPUT_TAG"
+            version="$INPUT_TAG"
+          elif [ "$WORKFLOW_NAME" = "Release" ]; then
+            version="v$(sed -n 's/^version = "\(.*\)"$/\1/p' backend/pyproject.toml | head -n 1)"
+            # Release succeeds without tagging when the CI of main failed: nothing to deploy then
+            if ! tag_exists "$version"; then
+              echo "::error::Release ran but tag $version does not exist: nothing deployed."
+              exit 1
+            fi
+            environment=production
+            ref="refs/tags/$version"
+          else
+            environment=staging
+            ref="$HEAD_SHA"
+            version="develop-${HEAD_SHA:0:7}"
+          fi
+          {
+            echo "environment=$environment"
+            echo "ref=$ref"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+          echo "Deploying **$version** to **$environment**." >> "$GITHUB_STEP_SUMMARY"
+
+  bundle:
+    name: Bundle
+    needs: plan
+    uses: ./.github/workflows/bundle.yml
+    with:
+      ref: ${{ needs.plan.outputs.ref }}
+      version: ${{ needs.plan.outputs.version }}
+
+  deploy:
+    name: Deploy to ${{ needs.plan.outputs.environment }}
+    needs: [plan, bundle]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.plan.outputs.environment }}
+      url: ${{ vars.FRONTEND_BASE_URL }}
+    # One deployment at a time per environment; a pending one waits instead of cancelling
+    concurrency:
+      group: deploy-${{ needs.plan.outputs.environment }}
+      cancel-in-progress: false
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      # The scripts and the pod launcher of the deployed version
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: tierlist-bundle
+          path: bundle
+
+      - name: Write the pod .env
+        env:
+          APP_RELEASE: ${{ needs.plan.outputs.version }}
+          POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ vars.POSTGRES_PORT }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          FRONTEND_BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
+          TRUSTED_PROXY_IPS: ${{ vars.TRUSTED_PROXY_IPS }}
+          IMAGE_S3_ENDPOINT_URL: ${{ vars.IMAGE_S3_ENDPOINT_URL }}
+          IMAGE_S3_BUCKET: ${{ vars.IMAGE_S3_BUCKET }}
+          IMAGE_S3_REGION: ${{ vars.IMAGE_S3_REGION }}
+          IMAGE_S3_ACCESS_KEY_ID: ${{ secrets.IMAGE_S3_ACCESS_KEY_ID }}
+          IMAGE_S3_SECRET_ACCESS_KEY: ${{ secrets.IMAGE_S3_SECRET_ACCESS_KEY }}
+          IMAGE_PUBLIC_BASE_URL: ${{ vars.IMAGE_PUBLIC_BASE_URL }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
+          LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+          MAINTENANCE_ENABLED: ${{ vars.MAINTENANCE_ENABLED }}
+          MAINTENANCE_HOUR_UTC: ${{ vars.MAINTENANCE_HOUR_UTC }}
+        run: |
+          python3 .github/scripts/write_env.py "$RUNNER_TEMP/pod.env"
+          printf '%s\n' "$VERSION" > "$RUNNER_TEMP/CURRENT"
+
+      # SFTP is the only way in: no SSH shell on the pod. The host key is pinned (no
+      # "accept any key"); sshpass gives the password, and -oBatchMode=no lets sftp use it with
+      # a batch file. CURRENT is written last: a failed upload leaves the running version in place.
+      - name: Upload over SFTP
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SSHPASS: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
+        run: |
+          sudo apt-get install -y --no-install-recommends sshpass > /dev/null
+          known_hosts="$RUNNER_TEMP/known_hosts"
+          printf '%s\n' "$SFTP_KNOWN_HOSTS" > "$known_hosts"
+          cat > "$RUNNER_TEMP/sftp-batch" <<EOF
+          -mkdir releases
+          put bundle/tierlist-$VERSION.tar.gz releases/tierlist-$VERSION.tar.gz
+          put deploy/launcher.sh start.sh
+          put $RUNNER_TEMP/pod.env .env
+          put $RUNNER_TEMP/CURRENT CURRENT
+          EOF
+          sshpass -e sftp -oBatchMode=no -oStrictHostKeyChecking=yes \
+            -oUserKnownHostsFile="$known_hosts" -oPubkeyAuthentication=no \
+            -P "$SFTP_PORT" -b "$RUNNER_TEMP/sftp-batch" "$SFTP_USER@$SFTP_HOST"
+          rm -f "$RUNNER_TEMP/pod.env"
+
+      - name: Restart the pod
+        id: restart
+        env:
+          DEPLOY_ENVIRONMENT: ${{ needs.plan.outputs.environment }}
+          PANEL_URL: ${{ vars.PANEL_URL }}
+          PANEL_SERVER_ID: ${{ vars.PANEL_SERVER_ID }}
+          PANEL_API_KEY: ${{ secrets.PANEL_API_KEY }}
+        run: bash .github/scripts/restart_pod.sh
+
+      # A manual restart takes longer: about 10 minutes instead of 2.5
+      - name: Wait for the new version
+        env:
+          BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
+          ATTEMPTS: ${{ steps.restart.outputs.restarted == 'true' && '30' || '120' }}
+        run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" "$ATTEMPTS" 5

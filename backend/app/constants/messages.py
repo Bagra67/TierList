@@ -38,11 +38,25 @@ ROOM_NOT_FOUND = "Room not found"
 ROOM_ADMIN_REQUIRED = "Only the room admin can do this"
 ROOM_SETTINGS_LOCKED = "Only late arrivals can be changed during a game"
 NICKNAME_TAKEN = "This nickname is already used in the room"
+# {max_participants} est remplacé par la limite du plan
+ROOM_FULL = "A room has at most {max_participants} participants"
+ROOM_LOCKED = "A game is in progress and the room is locked"
 GUEST_LINK_INVALID = "This guest link has expired or its room was closed"
 PARTICIPANT_NOT_FOUND = "Participant not found in this room"
 CANNOT_REMOVE_ROOM_ADMIN = "The room admin cannot be removed from their room"
 ROOM_BANNED = "You are banned from this room"
 BAN_NOT_FOUND = "Ban not found in this room"
+
+# --- Parties -------------------------------------------------------------------------------
+GAME_IN_PROGRESS = "A game is already in progress in this room"
+NO_PLACING_PARTICIPANT = "A game needs at least one participant who places the items"
+ROUND_NOT_IN_PROGRESS = "No round is in progress in this room"
+NOT_A_PLACING_PARTICIPANT = "The room admin does not play: they do not place the items"
+ITEM_NOT_CURRENT = "This tile is not the item of the current round"
+ITEM_NOT_IN_GAME = "This tile is not an item of the game"
+COOLDOWN_NOT_IN_PROGRESS = "The final cooldown is not in progress in this room"
+COOLDOWN_OVER = "The final cooldown is over: nothing can be placed any more"
+RESULTS_NOT_FOUND = "No closed game has this results link"
 
 # --- Images --------------------------------------------------------------------------------
 IMAGE_UNSUPPORTED_FORMAT = "The file is not a JPEG, PNG or WebP image"
@@ -75,6 +89,22 @@ ROOM_NOT_FOUND_DESCRIPTION = "Room not found"
 ROOM_ADMIN_REQUIRED_DESCRIPTION = "Not the room admin"
 ROOM_SETTINGS_LOCKED_DESCRIPTION = "Settings locked during a game, except late arrivals"
 NICKNAME_TAKEN_DESCRIPTION = "Nickname already used in the room"
+ROOM_FULL_OR_LOCKED_DESCRIPTION = "Room full, or locked during a game"
+NOT_A_PLACING_PARTICIPANT_DESCRIPTION = "The room admin does not play"
+ROOM_OR_TIER_NOT_FOUND_DESCRIPTION = "Room not found, or tier or tile not in the game"
+ROUND_NOT_IN_PROGRESS_DESCRIPTION = "No round in progress (no game, or the cooldown has begun)"
+CANNOT_PLACE_DESCRIPTION = (
+    "No round nor cooldown in progress, the round or the cooldown is over,"
+    " or during a round the tile is not the current item"
+)
+COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
+RESULTS_NOT_FOUND_DESCRIPTION = "Unknown results link"
+GAME_CANNOT_START_DESCRIPTION = (
+    "Game already in progress, no participant who places, or template deleted or without tiles"
+)
+NICKNAME_TAKEN_OR_ROOM_FULL_OR_LOCKED_DESCRIPTION = (
+    "Nickname already used, room full, or room locked during a game"
+)
 GUEST_LINK_INVALID_DESCRIPTION = "Guest link unknown, expired, or room closed"
 ROOM_OR_PARTICIPANT_NOT_FOUND_DESCRIPTION = "Room or participant not found"
 CANNOT_REMOVE_ROOM_ADMIN_DESCRIPTION = "The room admin cannot be removed"

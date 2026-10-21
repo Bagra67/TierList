@@ -2,10 +2,9 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
-import { aliceRoom, lousRoom, renderRoomPage } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+import { aliceRoom, lousRoom } from '../test/fixtures/rooms';
+import { renderRoomPage } from '../test/renderRoomPage';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
 const bobId: string = aliceRoom.participants[1].id;
 

@@ -6,16 +6,25 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 1. Before the first deployment
 
-- [ ] Choose a hosting target, then write the production Docker images and the deployment (open decision, see [architecture](docs/technical/architecture.md#open-decisions)).
-- [ ] Production settings (`backend/.env` or the host's variables):
+- [x] Choose a hosting target: MineStrator pods behind a Cloudflare Tunnel ([deployment guide](docs/technical/deployment.md)).
+- [x] Release bundle, pod start script and continuous deployment (#158, #160, #161).
+- [x] Create the pods, the tunnel and the GitHub environments, then deploy staging: [first deployment](docs/technical/deployment.md#5-first-deployment-step-by-step) (#159, #163).
+- [ ] Same for production ([production](docs/technical/deployment.md#59-production)): production pod, `tierlist_prod` database, `tierlist.ladwein.dev` route, `production` and `backup-production` environments.
+- [x] Show the TierList pod as online in the MineStrator panel: `deploy/start.sh` prints `change this part` once the app answers (#197).
+- [ ] Same for the tunnel pod: print `change this part` in its start command ([pods](docs/technical/deployment.md#51-minestrator-pods-159)).
+- [ ] Harden PostgreSQL: `scram-sha-256`, no remote superuser ([PostgreSQL](docs/technical/deployment.md#52-postgresql)).
+- [ ] Production settings (GitHub environments, [deployment guide](docs/technical/deployment.md#4-github-environments-secrets-and-variables)):
   - a `JWT_SECRET_KEY` different from development;
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
   - a strong `POSTGRES_PASSWORD`.
-- [ ] Emails in production ([emails guide](docs/technical/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`.
-- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (proxy, Cloudflare…), and configure the trusted proxy headers (`X-Forwarded-For`, `--forwarded-allow-ips`) so the backend sees the real IP.
+- [ ] Emails in production ([emails guide](docs/technical/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`. Done on staging: Scaleway Transactional Email, domain `ladwein.dev` verified ([Scaleway](docs/technical/deployment.md#54-scaleway-163)).
+- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (Cloudflare rate limiting rules). The trusted proxy headers are set (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
-- [ ] Schedule the purge of deleted templates once a day: `uv run python scripts/purge_deleted_templates.py` in `backend/` (cron or the host's scheduled task). Without it, deleted templates stay in the database; the retention is `DELETED_TEMPLATE_RETENTION_DAYS` (default 30).
-- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: choose an S3-compatible provider and a CDN able to **purge one URL** (needed to hide an image), create the bucket with public read, set the `IMAGE_*` settings, set the reverse proxy body limit to at least `IMAGE_UPLOAD_MAX_BYTES`, and schedule the image garbage collection (`scripts/purge_unused_images.py`, once a day) next to the template purge.
+- [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
+- [ ] Database backups: configure the `backup-*` environments and try a restore on staging (#162).
+- [x] Privacy policy: public `/privacy` page, linked from the footer and the settings panel ([legal pages](docs/technical/legal-pages.md), #200).
+- [ ] Terms of use (#201) and in-app export of the account data (#202).
+- [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: Scaleway Object Storage, one bucket per environment with public read, the `IMAGE_*` settings in the GitHub environments (done on staging; each image is uploaded with the `public-read` ACL, [Scaleway](docs/technical/deployment.md#54-scaleway-163)); later, a CDN able to **purge one URL** (needed to hide an image).
 
 ## 2. Decisions to take
 

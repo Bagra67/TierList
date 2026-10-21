@@ -119,7 +119,8 @@ En tant qu'**invité**, je veux rejoindre une room sans compte, afin de jouer to
 En tant qu'**application**, je veux limiter les rooms à la taille de l'offre gratuite, afin de pouvoir appliquer les offres plus tard.
 
 - _Étant donné_ une room avec **10 participants**, _quand_ quelqu'un d'autre essaie de la rejoindre, _alors_ c'est refusé avec un message qui indique la limite.
-- _Étant donné_ que l'admin de la room ne joue pas, _alors_ il compte quand même dans les 10 (à confirmer à l'implémentation).
+- _Étant donné_ que l'admin de la room ne joue pas, _alors_ il compte quand même dans les 10.
+- _Étant donné_ que j'ai déjà une place, _alors_ je peux toujours revenir, même quand la room est pleine.
 
 ### US-2.7 Fermer la room — Must
 
@@ -156,7 +157,7 @@ En tant qu'**admin de la room**, je veux retirer quelqu'un de ma room, afin que 
 - _Étant donné_ que je suis retiré, _alors_ je quitte la room et un message indique que l'admin de la room m'a retiré ; je peux **rejoindre à nouveau** avec le lien ou le code (sauf si les arrivées sont verrouillées, US-2.10).
 - _Étant donné_ un invité retiré, _alors_ son lien perso ne marche plus.
 - _Étant donné_ que je suis l'admin de la room, _alors_ je ne peux pas me retirer moi-même.
-- _Étant donné_ une partie en cours, _alors_ je peux aussi retirer un participant (ce que deviennent ses placements est décidé avec le jeu).
+- _Étant donné_ une partie en cours, _alors_ je peux aussi retirer un participant (ses placements sont supprimés avec sa place ; une fois une partie close, ses classements sont gardés).
 
 ### US-2.12 Bannir un participant — Must
 

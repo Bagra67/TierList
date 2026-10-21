@@ -9,7 +9,8 @@ import {
 
 import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
-import { apiClient, dataOrThrow } from './client';
+import { apiClient, dataOrThrow, throwIfError } from './client';
+import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
 export type Room = components['schemas']['RoomResponse'];
@@ -24,6 +25,12 @@ type CreateRoomRequest = components['schemas']['CreateRoomRequest'];
 type JoinAsGuestRequest = components['schemas']['JoinAsGuestRequest'];
 // Réglages à changer : ceux qui sont absents restent tels quels
 export type RoomSettingsChanges = components['schemas']['UpdateRoomSettingsRequest'];
+// La partie en cours vue par le lecteur, ses tiers et ses propres placements
+export type CurrentGame = components['schemas']['CurrentGameResponse'];
+export type GameItem = components['schemas']['CurrentItemResponse'];
+export type PastGame = components['schemas']['PastGameResponse'];
+export type GameTier = components['schemas']['GameTierResponse'];
+export type OwnPlacement = components['schemas']['OwnPlacementResponse'];
 
 async function createRoom(body: CreateRoomRequest): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms', { body }));
@@ -107,20 +114,70 @@ async function unban(code: string, banId: string): Promise<Room> {
   );
 }
 
+// Le room admin ferme la salle (US-2.7) : elle est supprimée, sa partie en cours close d'abord
+async function closeRoom(code: string): Promise<void> {
+  throwIfError(await apiClient.DELETE('/rooms/{code}', { params: { path: { code } } }));
+}
+
+// Le room admin lance une partie (US-3.1) : la salle renvoyée porte la partie et son premier item
+async function startGame(code: string): Promise<Room> {
+  return dataOrThrow(await apiClient.POST('/rooms/{code}/game', { params: { path: { code } } }));
+}
+
+// Place l'item en cours dans un tier, à une position (0 = premier) : la salle renvoyée porte le
+// plateau du lecteur à jour
+async function placeItem(code: string, request: PlaceItemRequest): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.PUT('/rooms/{code}/game/placements/{tile_id}', {
+      params: { path: { code, tile_id: request.tileId } },
+      body: { tier_id: request.tierId, position: request.position },
+    }),
+  );
+}
+
+// Le room admin passe à l'item suivant
+async function nextRound(code: string): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/game/next', { params: { path: { code } } }),
+  );
+}
+
+// Le room admin termine le cooldown final : la salle renvoyée n'a plus de partie
+async function endCooldown(code: string): Promise<Room> {
+  return dataOrThrow(
+    await apiClient.POST('/rooms/{code}/game/end', { params: { path: { code } } }),
+  );
+}
+
 // La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
 // l'affiche sans nouvelle lecture
 function storeRoom(queryClient: QueryClient, room: Room): void {
+  const cached: Room | undefined = queryClient.getQueryData<Room>(roomQueryKey(room.code));
+  if (cached !== undefined && isOlder(room, cached)) return;
   queryClient.setQueryData(roomQueryKey(room.code), room);
+}
+
+// Une réponse arrivée après un événement temps réel déjà appliqué ne doit pas le défaire. Un
+// déplacement ne change pas la version : à version égale, une partie en retard (tour, statut)
+// est aussi plus ancienne.
+const GAME_STATUS_ORDER: Record<CurrentGame['status'], number> = {
+  in_round: 0,
+  cooldown: 1,
+  closed: 2,
+};
+
+function isOlder(room: Room, cached: Room): boolean {
+  if (room.version !== cached.version) return room.version < cached.version;
+  if (room.game === null || cached.game === null) return false;
+  if (room.game.status !== cached.game.status) {
+    return GAME_STATUS_ORDER[room.game.status] < GAME_STATUS_ORDER[cached.game.status];
+  }
+  return room.game.round_number < cached.game.round_number;
 }
 
 // Qui ouvre la salle : un compte connecté, ou un visiteur sans compte (invité, peut-être déjà
 // reconnu par son cookie)
 export type RoomViewer = 'account' | 'guest';
-
-// Une erreur 4xx ne change pas en réessayant (salle introuvable, lien perso expiré…)
-function shouldRetry(failureCount: number, error: Error): boolean {
-  return !(error instanceof ApiError && error.status < 500) && failureCount < 1;
-}
 
 // Salle ouverte par ce lecteur, lu une fois la session connue (viewer undefined : en attente).
 // Un compte y entre (enterRoom) ; un invité la lit grâce à son cookie, ou d'abord grâce au jeton
@@ -139,7 +196,7 @@ export function useRoom(
       return getRoom(roomCode, signal);
     },
     enabled: viewer !== undefined,
-    retry: shouldRetry,
+    retry: retryUnlessClientError,
   });
 }
 
@@ -207,6 +264,54 @@ export function useUnban(code: string): UseMutationResult<Room, Error, string> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: (banId: string) => unban(canonicalRoomCode(code), banId),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Lance une partie, réservé au room admin
+export function useStartGame(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => startGame(canonicalRoomCode(code)),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+export interface PlaceItemRequest {
+  tileId: string;
+  tierId: string;
+  position: number;
+}
+
+// Place ou déplace une tuile dans le plateau du lecteur : l'item en cours pendant un tour (US-3.3),
+// n'importe quel item pendant le cooldown (US-4.1, US-4.6)
+export function usePlaceItem(code: string): UseMutationResult<Room, Error, PlaceItemRequest> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: PlaceItemRequest) => placeItem(canonicalRoomCode(code), request),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Passe à l'item suivant, réservé au room admin (US-3.4)
+export function useNextRound(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => nextRound(canonicalRoomCode(code)),
+    onSuccess: (room: Room) => storeRoom(queryClient, room),
+  });
+}
+
+// Ferme la salle, réservé au room admin (US-2.7)
+export function useCloseRoom(code: string): UseMutationResult<void, Error, void> {
+  return useMutation({ mutationFn: () => closeRoom(canonicalRoomCode(code)) });
+}
+
+// Termine le cooldown final, réservé au room admin (US-4.1)
+export function useEndCooldown(code: string): UseMutationResult<Room, Error, void> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => endCooldown(canonicalRoomCode(code)),
     onSuccess: (room: Room) => storeRoom(queryClient, room),
   });
 }

@@ -2,22 +2,17 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_core import PydanticCustomError
 
 from app.constants import messages
 from app.constants.auth import (
-    DISPLAY_NAME_MAX_LENGTH,
     EMAIL_TOKEN_MAX_LENGTH,
     PASSWORD_MAX_LENGTH,
 )
 from app.constants.i18n import DEFAULT_LANGUAGE, Language
 from app.core.config import get_settings
-
-DisplayName = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=DISPLAY_NAME_MAX_LENGTH),
-]
+from app.schemas.common import DisplayName
 
 
 def _check_password_length(password: str) -> str:

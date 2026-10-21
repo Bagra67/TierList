@@ -368,7 +368,8 @@ export interface paths {
         get: operations["get_room_rooms__code__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Close Room */
+        delete: operations["close_room_rooms__code__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -493,6 +494,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rooms/{code}/game": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Game */
+        post: operations["start_game_rooms__code__game_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/game/placements/{tile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Place Item */
+        put: operations["place_item_rooms__code__game_placements__tile_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/game/next": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Next Round */
+        post: operations["next_round_rooms__code__game_next_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/game/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End Cooldown */
+        post: operations["end_cooldown_rooms__code__game_end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/results/{public_token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Game Results */
+        get: operations["get_game_results_results__public_token__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get History */
+        get: operations["get_history_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -562,6 +665,43 @@ export interface components {
             /** Image Id */
             image_id?: string | null;
         };
+        /** CurrentGameResponse */
+        CurrentGameResponse: {
+            status: components["schemas"]["GameStatus"];
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            current_item: components["schemas"]["CurrentItemResponse"];
+            /** Ends At */
+            ends_at: string | null;
+            /** Tiers */
+            tiers: components["schemas"]["GameTierResponse"][];
+            /** Placed Participant Ids */
+            placed_participant_ids: string[];
+            /** Own Placements */
+            own_placements: components["schemas"]["OwnPlacementResponse"][];
+            /** Cooldown Ends At */
+            cooldown_ends_at: string | null;
+            /** Missed Items */
+            missed_items: components["schemas"]["CurrentItemResponse"][];
+        };
+        /**
+         * CurrentItemResponse
+         * @description Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
+         *     tous), un item placé par le lecteur, ou un item qu'il a manqué.
+         */
+        CurrentItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Text */
+            text: string | null;
+            /** Image Url */
+            image_url: string | null;
+        };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
             /** Password */
@@ -617,6 +757,54 @@ export interface components {
             language: "fr" | "en";
         };
         /**
+         * GameResultsResponse
+         * @description Résultats d'une partie close (US-5.2), lus par son lien (US-5.3).
+         */
+        GameResultsResponse: {
+            /** Template Name */
+            template_name: string;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Include Absent Votes */
+            include_absent_votes: boolean;
+            /** Tiers */
+            tiers: components["schemas"]["GameTierResponse"][];
+            /** Items */
+            items: components["schemas"]["CurrentItemResponse"][];
+            /** Median Ranking */
+            median_ranking: components["schemas"]["TierItemsResponse"][];
+            /** Unranked Item Ids */
+            unranked_item_ids: string[];
+            /** Distribution */
+            distribution: components["schemas"]["ItemDistributionResponse"][];
+            /** Players */
+            players: components["schemas"]["PlayerResultsResponse"][];
+        };
+        /**
+         * GameStatus
+         * @description Cycle de vie d'une partie (docs/product/milestone-1/lifecycles.md).
+         * @enum {string}
+         */
+        GameStatus: "in_round" | "cooldown" | "closed";
+        /**
+         * GameTierResponse
+         * @description Un tier de la version figée de la partie, où placer les items.
+         */
+        GameTierResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Color */
+            color: string;
+        };
+        /**
          * GuestRoomResponse
          * @description Salle rejointe en invité, avec le lien perso : donné une seule fois, la base n'en gardant
          *     que l'empreinte.
@@ -637,6 +825,9 @@ export interface components {
             is_admin: boolean;
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
+            game: components["schemas"]["CurrentGameResponse"] | null;
+            /** Past Games */
+            past_games: components["schemas"]["PastGameResponse"][];
             /** Guest Link */
             guest_link: string;
             /**
@@ -654,6 +845,18 @@ export interface components {
         HealthResponse: {
             /** Status */
             status: string;
+            /** Release */
+            release: string;
+        };
+        /**
+         * HistoryResponse
+         * @description Une page de l'historique d'un compte (US-5.5).
+         */
+        HistoryResponse: {
+            /** Games */
+            games: components["schemas"]["PastGameResponse"][];
+            /** Has More */
+            has_more: boolean;
         };
         /** ImageUploadResponse */
         ImageUploadResponse: {
@@ -668,6 +871,23 @@ export interface components {
             width: number;
             /** Height */
             height: number;
+        };
+        /**
+         * ItemDistributionResponse
+         * @description Vue globale d'un item : combien de joueurs l'ont mis dans chaque tier, et d'absents.
+         */
+        ItemDistributionResponse: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Votes Per Tier */
+            votes_per_tier: number[];
+            /** Absent Count */
+            absent_count: number;
+            /** Median Tier Id */
+            median_tier_id: string | null;
         };
         /**
          * ItemOrder
@@ -690,6 +910,21 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * OwnPlacementResponse
+         * @description Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
+         *     pendant les tours, placement final pendant le cooldown.
+         */
+        OwnPlacementResponse: {
+            item: components["schemas"]["CurrentItemResponse"];
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Position */
+            position: number;
+        };
         /** ParticipantResponse */
         ParticipantResponse: {
             /**
@@ -705,6 +940,48 @@ export interface components {
             is_guest: boolean;
             /** Connected */
             connected: boolean;
+            /** Is You */
+            is_you: boolean;
+        };
+        /**
+         * PastGameResponse
+         * @description Une partie close (parties passées d'une salle, historique d'un compte) : son lien de
+         *     résultats (/results/<public_token>).
+         */
+        PastGameResponse: {
+            /** Public Token */
+            public_token: string;
+            /** Template Name */
+            template_name: string;
+            /**
+             * Closed At
+             * Format: date-time
+             */
+            closed_at: string;
+            /** Player Count */
+            player_count: number;
+        };
+        /** PlaceItemRequest */
+        PlaceItemRequest: {
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Position */
+            position: number;
+        };
+        /**
+         * PlayerResultsResponse
+         * @description Le classement final d'un joueur.
+         */
+        PlayerResultsResponse: {
+            /** Display Name */
+            display_name: string;
+            /** Tiers */
+            tiers: components["schemas"]["TierItemsResponse"][];
+            /** Unplaced Item Ids */
+            unplaced_item_ids: string[];
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -770,6 +1047,9 @@ export interface components {
             is_admin: boolean;
             /** Bans */
             bans: components["schemas"]["RoomBanResponse"][];
+            game: components["schemas"]["CurrentGameResponse"] | null;
+            /** Past Games */
+            past_games: components["schemas"]["PastGameResponse"][];
         };
         /** RoomSettingsResponse */
         RoomSettingsResponse: {
@@ -848,6 +1128,19 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * TierItemsResponse
+         * @description Les items d'un tier, dans l'ordre.
+         */
+        TierItemsResponse: {
+            /**
+             * Tier Id
+             * Format: uuid
+             */
+            tier_id: string;
+            /** Item Ids */
+            item_ids: string[];
         };
         /** TierResponse */
         TierResponse: {
@@ -960,6 +1253,74 @@ export interface components {
             /** Token */
             token: string;
         };
+        /** CooldownStartedData */
+        CooldownStartedData: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+        };
+        /**
+         * CooldownStartedEvent
+         * @description Le dernier tour est fini : le cooldown final commence (#96).
+         */
+        CooldownStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "cooldown.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["CooldownStartedData"];
+        };
+        /** GameClosedData */
+        GameClosedData: {
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
+        };
+        /**
+         * GameClosedEvent
+         * @description Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la
+         *     salle redevient ouverte.
+         */
+        GameClosedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "game.closed";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["GameClosedData"];
+        };
+        /** GameStartedData */
+        GameStartedData: {
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            /** Ends At */
+            ends_at: string | null;
+        };
+        /**
+         * GameStartedEvent
+         * @description Le room admin a lancé une partie : le premier item est montré à tous.
+         */
+        GameStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "game.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["GameStartedData"];
+        };
         /** ParticipantJoinedData */
         ParticipantJoinedData: {
             /**
@@ -981,6 +1342,30 @@ export interface components {
             /** Room Version */
             room_version: number;
             data: components["schemas"]["ParticipantJoinedData"];
+        };
+        /** ParticipantPlacedData */
+        ParticipantPlacedData: {
+            /**
+             * Participant Id
+             * Format: uuid
+             */
+            participant_id: string;
+            /** Round Number */
+            round_number: number;
+        };
+        /**
+         * ParticipantPlacedEvent
+         * @description Un participant a placé l'item en cours pour la première fois de ce tour.
+         */
+        ParticipantPlacedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "participant.placed";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["ParticipantPlacedData"];
         };
         /** ParticipantPresenceData */
         ParticipantPresenceData: {
@@ -1055,7 +1440,31 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["PingMessage"];
+        /** RoundStartedData */
+        RoundStartedData: {
+            /** Round Number */
+            round_number: number;
+            /** Round Count */
+            round_count: number;
+            /** Ends At */
+            ends_at: string | null;
+        };
+        /**
+         * RoundStartedEvent
+         * @description Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item
+         *     suivant est montré à tous.
+         */
+        RoundStartedEvent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "round.started";
+            /** Room Version */
+            room_version: number;
+            data: components["schemas"]["RoundStartedData"];
+        };
+        RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["RoundStartedEvent"] | components["schemas"]["CooldownStartedEvent"] | components["schemas"]["GameClosedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
          * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
@@ -2497,6 +2906,71 @@ export interface operations {
             };
         };
     };
+    close_room_rooms__code__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     join_as_guest_rooms__code__guests_post: {
         parameters: {
             query?: never;
@@ -2541,7 +3015,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Nickname already used in the room */
+            /** @description Nickname already used, room full, or room locked during a game */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2723,6 +3197,15 @@ export interface operations {
             };
             /** @description Room not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room full, or locked during a game */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2950,6 +3433,418 @@ export interface operations {
             };
             /** @description Room or ban not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    start_game_rooms__code__game_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Game already in progress, no participant who places, or template deleted or without tiles */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    place_item_rooms__code__game_placements__tile_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+                tile_id: string;
+            };
+            cookie?: {
+                guest_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaceItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The room admin does not play */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found, or tier or tile not in the game */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No round nor cooldown in progress, the round or the cooldown is over, or during a round the tile is not the current item */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    next_round_rooms__code__game_next_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No round in progress (no game, or the cooldown has begun) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    end_cooldown_rooms__code__game_end_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the room admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Room not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No final cooldown in progress */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_game_results_results__public_token__get: {
+        parameters: {
+            query?: {
+                include_absent_votes?: boolean;
+            };
+            header?: never;
+            path: {
+                public_token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameResultsResponse"];
+                };
+            };
+            /** @description Unknown results link */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_history_history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

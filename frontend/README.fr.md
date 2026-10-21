@@ -41,7 +41,7 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 | Tests avec couverture                 | `pnpm test:coverage`               |
 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
-Les appels vers `/api/...` sont redirigés vers `http://127.0.0.1:8000/...` par le proxy configuré dans `vite.config.ts`.
+Les appels vers `/api/...` sont transmis tels quels à `http://127.0.0.1:8000/api/...` par le proxy configuré dans `vite.config.ts` : le backend sert son API sous `/api`, comme en production, où FastAPI sert aussi le build ([guide du déploiement](../docs/technical/deployment.fr.md)).
 
 Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/technical/testing.fr.md).
 
@@ -110,12 +110,11 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList)
+│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card, popover), modifiables
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
-│   ├── lib/utils.ts        # cn() : fusionne les classes Tailwind (utilisé par shadcn/ui)
 │   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
@@ -195,7 +194,7 @@ Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/
 
 ## 9. Traductions
 
-Tout texte affiché passe par `t()` de `react-i18next`, et l'interface existe en français et en anglais (sélecteur de langue dans l'en-tête de chaque page) :
+Tout texte affiché passe par `t()` de `react-i18next`, et l'interface existe en français et en anglais (sélecteur de langue dans le panneau de paramètres, ouvert par l'engrenage de l'en-tête sur chaque page) :
 
 ```tsx
 const { t } = useTranslation();
@@ -228,13 +227,13 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - `--overwrite` remplace entièrement le fichier : les modifications locales d'un composant de `ui/` sont perdues si on ne les remet pas depuis le diff git. Garder ces modifications légères.
 - ESLint : `react-refresh/only-export-components` est désactivée pour `src/components/ui/` (`eslint.config.js`), car les composants shadcn exportent aussi leurs variantes (ex. `buttonVariants`) ; cela les garde proches de la version générée.
 - Aucun texte n'est écrit dans un composant de `ui/` : il les reçoit en props ou en enfants, traduits avec `t()`.
-- Le dialogue de suppression du compte garde le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind.
+- Les dialogues gardent le `<dialog>` natif (focus piégé et Échap gérés par le navigateur), mis en forme avec Tailwind ; `ModalDialog` porte la coque (titre, style) et `DialogActions` le pied Annuler / envoyer, communs à tous les dialogues. `cn()` vient directement du paquet `cn`, comme dans les composants shadcn/ui.
 - Le glisser-déposer (éditeur de template) utilise **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), enveloppé dans `SortableList` : ni Radix ni shadcn/ui ne proposent de liste réordonnable, et dnd-kit gère la souris, le toucher et le clavier (Espace, flèches, Échap) avec des annonces pour les lecteurs d'écran, traduites via `templates.editor.dnd.*`.
 - Le sélecteur de couleur des tiers (`ColorField`) utilise **react-colorful** (`HexColorPicker`, `HexColorInput`) dans un `popover` shadcn : une petite bibliothèque sans dépendance, dont les curseurs fonctionnent au clavier. Ses libellés d'accessibilité sont écrits en anglais dans la bibliothèque : `ColorField` les remplace par les traductions (`templates.editor.color.*`) après chaque rendu.
 
 ### Mode sombre
 
-- Trois préférences, choisies avec le sélecteur de thème de l'en-tête : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.
+- Trois préférences, choisies avec le sélecteur de thème du panneau de paramètres (engrenage de l'en-tête) : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.
 - `src/theme/index.ts` pose la classe `dark` sur `<html>` (ou la retire). Les couleurs viennent alors du bloc `.dark` de `src/index.css` : les composants qui utilisent les jetons du thème (`bg-background`, `text-muted-foreground`, `border-input`…) n'ont rien à faire de plus. Pour un cas particulier, la variante `dark:` de Tailwind s'applique (ex. `dark:bg-input/30`).
 - Un petit script inline dans `index.html` applique le thème avant le chargement de l'application, pour éviter un flash clair en mode sombre. Il reprend la clé de stockage : la garder égale à `THEME_STORAGE_KEY` (`src/constants/theme.ts`). Un petit `<style>` inline donne tout de suite à `html.dark` son fond sombre, car en développement Vite injecte `index.css` par JavaScript, après le premier affichage : garder sa couleur égale à `--background` du bloc `.dark`.
 - `color-scheme: dark` passe aussi les éléments natifs (barres de défilement, `<select>`, autocomplétion) en sombre.

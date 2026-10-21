@@ -4,10 +4,16 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
 import { latestSocket } from '../test/fakeWebSocket';
-import { aliceRoom, renderRoomPage, settingsSummary, signedInSession } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
+import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
+import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
+import {
+  calledRoutes,
+  errorResponse,
+  stubBackend,
+  signedInSession,
+  type BackendMock,
+} from '../test/stubBackend';
 
 // Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
@@ -117,6 +123,47 @@ describe('RoomPage', () => {
     expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
   });
 
+  it('tells the participants that the room was closed, with a way back home', async () => {
+    stubBackend({ ...signedInSession, 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+
+    act(() => latestSocket().closeFromServer(4412));
+
+    expect(screen.getByRole('status')).toHaveTextContent('Le room admin a fermé cette salle.');
+    expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: "Retour à l'accueil" }));
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+  });
+
+  it('lets the room admin close the room after confirming, then goes home', async () => {
+    const fetchMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+      'DELETE /rooms/K7P2QX': () => new Response(null, { status: 204 }),
+    });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fermer la salle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Fermer la salle ?' });
+    expect(dialog).toHaveTextContent('La salle est supprimée avec son lien et son code');
+    expect(calledRoutes(fetchMock)).not.toContain('DELETE /rooms/K7P2QX');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Fermer la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('DELETE /rooms/K7P2QX');
+  });
+
+  it('warns the room admin that closing ends the game in progress', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Fermer la salle' }));
+
+    expect(screen.getByRole('dialog', { name: 'Fermer la salle ?' })).toHaveTextContent(
+      'Une partie est en cours : elle est close d’abord',
+    );
+  });
+
   it('says a banned account cannot join the room again', async () => {
     stubBackend({
       ...signedInSession,
@@ -189,6 +236,24 @@ describe('RoomPage', () => {
     consoleError.mockRestore();
   });
 
+  it('says the room is full, with the limit sent by the backend', async () => {
+    // Le cache de requêtes journalise l'erreur attendue
+    const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
+    stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'POST /rooms/K7P2QX/join': () =>
+        errorResponse(409, 'room_full', { params: { max_participants: 10 } }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cette salle est pleine : 10 participants au plus.',
+    );
+    consoleError.mockRestore();
+  });
+
   it('warns when the template of the room was deleted', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, template: null }) });
 
@@ -200,6 +265,65 @@ describe('RoomPage', () => {
     expect(screen.queryByText(/Template :/)).not.toBeInTheDocument();
   });
 
+  it('lists the past games of the room with a link to their results', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoom,
+          past_games: [
+            { public_token: 'newer-token', closed_at: '2026-10-17T18:30:00Z', player_count: 3 },
+            { public_token: 'older-token', closed_at: '2026-10-16T20:00:00Z', player_count: 1 },
+          ],
+        }),
+    });
+
+    renderRoomPage();
+
+    const section: HTMLElement | null = (
+      await screen.findByRole('heading', { name: 'Parties passées (2)' })
+    ).closest('section');
+    if (section === null) throw new Error('No past games section');
+    const links: HTMLElement[] = within(section).getAllByRole('link', {
+      name: /Voir les résultats de la partie du/,
+    });
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/results/newer-token',
+      '/results/older-token',
+    ]);
+    expect(within(section).getByText('3 joueurs')).toBeInTheDocument();
+    expect(within(section).getByText('1 joueur')).toBeInTheDocument();
+  });
+
+  it('opens the results of a past game, which link back to the room', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoom,
+          past_games: [
+            { public_token: RESULTS_TOKEN, closed_at: '2026-10-17T18:30:00Z', player_count: 2 },
+          ],
+        }),
+      [`GET /results/${RESULTS_TOKEN}`]: () => Response.json(closedGameResults),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('link', { name: /Voir les résultats de la partie du/ }),
+    );
+    fireEvent.click(await screen.findByRole('link', { name: 'Retour à la salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
+  });
+
+  it('shows no past games section before the first game ends', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+
+    renderRoomPage();
+
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+    expect(screen.queryByRole('heading', { name: /Parties passées/ })).not.toBeInTheDocument();
+  });
+
   it('only lets the room admin edit the settings', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, is_admin: false }) });
 
@@ -208,13 +332,41 @@ describe('RoomPage', () => {
     await screen.findByRole('heading', { name: 'Réglages' });
     expect(within(settingsSummary()).getByText('Ordre du template')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fermer la salle' })).not.toBeInTheDocument();
   });
 
-  it('shows that a game is in progress', async () => {
-    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json({ ...aliceRoom, status: 'playing' }) });
+  it('shows the game in progress with its current item', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
 
     renderRoomPage();
 
     expect(await screen.findByText('Partie en cours')).toBeInTheDocument();
+    expect(screen.getByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(screen.getByText('Paprika')).toBeInTheDocument();
+    // Le texte est affiché : l'image n'est pas relue par les lecteurs d'écran
+    expect(screen.getByRole('presentation')).toHaveAttribute(
+      'src',
+      'https://images.example.com/paprika.webp',
+    );
+  });
+
+  it('names the image of an item without text', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...aliceRoomInGame,
+          game: {
+            ...aliceRoomInGame.game,
+            current_item: { ...aliceRoomInGame.game?.current_item, text: null },
+          },
+        }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('img', { name: "Image de l'item en cours" })).toHaveAttribute(
+      'src',
+      'https://images.example.com/paprika.webp',
+    );
   });
 });

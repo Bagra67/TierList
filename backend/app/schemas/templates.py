@@ -1,7 +1,6 @@
 import uuid
-from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from pydantic import (
     AfterValidator,
@@ -9,8 +8,6 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
-    ValidationInfo,
-    field_validator,
 )
 
 from app.constants.templates import (
@@ -18,14 +15,6 @@ from app.constants.templates import (
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
-
-if TYPE_CHECKING:
-    from app.models.image import Image
-
-# Contexte de validation de TemplateResponse : la fonction qui donne l'adresse publique d'une
-# image à partir de sa clé de stockage (ImageStorage.url)
-IMAGE_URL_CONTEXT_KEY = "image_url"
-ImageUrlBuilder = Callable[[str], str]
 
 # Espaces de début et de fin retirés : un nom fait seulement d'espaces est un nom vide
 TemplateName = Annotated[
@@ -96,30 +85,14 @@ class TierResponse(BaseModel):
 
 
 class TileResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     text: str | None
-    # Adresse publique de l'image compressée, None pour une tuile sans image. Lu depuis la
-    # relation Tile.image ; l'URL est construite par la fonction IMAGE_URL_CONTEXT_KEY du
-    # contexte de validation (l'adresse publique dépend des réglages, pas du modèle)
-    image_url: str | None = Field(validation_alias="image")
+    # Adresse publique de l'image compressée, None pour une tuile sans image (api/presenters)
+    image_url: str | None
     position: int
-
-    @field_validator("image_url", mode="before")
-    @classmethod
-    def _image_public_url(cls, image: "Image | None", info: ValidationInfo) -> str | None:
-        if image is None:
-            return None
-        if info.context is None or IMAGE_URL_CONTEXT_KEY not in info.context:
-            raise RuntimeError("TileResponse needs the image URL builder in its context")
-        image_url: ImageUrlBuilder = info.context[IMAGE_URL_CONTEXT_KEY]
-        return image_url(image.storage_key)
 
 
 class TemplateResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     name: str
     created_at: datetime

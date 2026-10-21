@@ -52,6 +52,10 @@ class ErrorCode(StrEnum):
     ROOM_ADMIN_REQUIRED = "room_admin_required"
     # Réglage modifié pendant une partie (seules les arrivées peuvent l'être)
     ROOM_SETTINGS_LOCKED = "room_settings_locked"
+    # Salle pleine, avec le param max_participants
+    ROOM_FULL = "room_full"
+    # Partie en cours et arrivées verrouillées par le room admin
+    ROOM_LOCKED = "room_locked"
     # Pseudo d'invité déjà porté dans la salle (sans tenir compte de la casse)
     NICKNAME_TAKEN = "nickname_taken"
     # Lien perso d'invité inconnu, expiré ou d'une salle fermée
@@ -69,6 +73,28 @@ class ErrorCode(StrEnum):
     INVALID_MESSAGE = "invalid_message"
     HEARTBEAT_TIMEOUT = "heartbeat_timeout"
     REMOVED_FROM_ROOM = "removed_from_room"
+    # Canal temps réel : la salle vient d'être fermée (raison de fermeture)
+    ROOM_CLOSED = "room_closed"
+
+    # --- Parties ---------------------------------------------------------------------------
+    # La salle a déjà une partie en cours
+    GAME_IN_PROGRESS = "game_in_progress"
+    # Aucun participant ne placerait les items (room admin seul, qui ne joue pas)
+    NO_PLACING_PARTICIPANT = "no_placing_participant"
+    # Aucun tour en cours : pas de partie, ou plus de tour à placer
+    ROUND_NOT_IN_PROGRESS = "round_not_in_progress"
+    # Le room admin qui ne joue pas ne place pas les items
+    NOT_A_PLACING_PARTICIPANT = "not_a_placing_participant"
+    # La tuile n'est pas l'item du tour en cours
+    ITEM_NOT_CURRENT = "item_not_current"
+    # Pendant le cooldown, la tuile n'est pas un item de la partie
+    ITEM_NOT_IN_GAME = "item_not_in_game"
+    # La partie n'est pas dans son cooldown final
+    COOLDOWN_NOT_IN_PROGRESS = "cooldown_not_in_progress"
+    # Le cooldown final est fini : plus rien ne se place
+    COOLDOWN_OVER = "cooldown_over"
+    # Lien de résultats inconnu, ou partie pas encore close
+    RESULTS_NOT_FOUND = "results_not_found"
 
     # --- Images ----------------------------------------------------------------------------
     # Pas une image JPEG, PNG ou WebP, ou fichier illisible

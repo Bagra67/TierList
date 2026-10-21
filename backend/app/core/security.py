@@ -23,6 +23,7 @@ from app.constants.auth import (
     PASSWORD_RESET_TOKEN_TYPE,
     REFRESH_TOKEN_BYTES,
 )
+from app.constants.games import PUBLIC_RESULTS_TOKEN_BYTES
 from app.constants.rooms import GUEST_TOKEN_BYTES
 from app.exceptions.auth import InvalidAccessTokenError, InvalidEmailTokenError
 
@@ -214,6 +215,12 @@ def hash_refresh_token(refresh_token: str) -> str:
 def generate_guest_token() -> str:
     """Jeton de la place d'un invité : porté par son cookie et son lien perso."""
     return secrets.token_urlsafe(GUEST_TOKEN_BYTES)
+
+
+def generate_public_results_token() -> str:
+    """Jeton du lien des résultats d'une partie close (US-5.3) : gardé en clair, il ne donne que
+    la lecture des résultats."""
+    return secrets.token_urlsafe(PUBLIC_RESULTS_TOKEN_BYTES)
 
 
 def hash_guest_token(guest_token: str) -> str:

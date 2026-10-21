@@ -1,10 +1,9 @@
 import { fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
-import { aliceRoom, lousRoom, renderRoomPage } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
-
-type BackendMock = ReturnType<typeof stubBackend>;
+import { aliceRoom, lousRoom } from '../test/fixtures/rooms';
+import { renderRoomPage } from '../test/renderRoomPage';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
 // Corps de la première requête reçue sur cette route
 async function requestBody(fetchMock: BackendMock, route: string): Promise<unknown> {
@@ -80,6 +79,22 @@ describe('JoinRoomScreen', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ce pseudo est déjà pris dans cette salle.',
     );
+  });
+
+  it.each([
+    ['room_full', { max_participants: 10 }, 'Cette salle est pleine : 10 participants au plus.'],
+    ['room_locked', undefined, 'Une partie est en cours et la salle est verrouillée.'],
+  ])('says why a guest cannot join: %s', async (code, params, message) => {
+    stubBackend({
+      ...visitorWithoutSeat,
+      'POST /rooms/K7P2QX/guests': () => errorResponse(409, code, params ? { params } : {}),
+    });
+    renderRoomPage();
+
+    fireEvent.change(await screen.findByLabelText('Pseudo'), { target: { value: 'Lou' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rejoindre en invité' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
   });
 
   it('shows the error of the nickname field', async () => {

@@ -1,8 +1,13 @@
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, UploadFile
 
-from app.api.dependencies import get_current_user, get_image_service
+from app.api.dependencies import (
+    CurrentUserDep,
+    ImageServiceDep,
+    ImageStorageDep,
+)
+from app.api.presenters.images import image_url
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -15,9 +20,7 @@ from app.exceptions.images import (
     ImageUploadLimitReachedError,
 )
 from app.models.image import Image
-from app.models.user import User
 from app.schemas.images import ImageUploadResponse
-from app.services.images import ImageService
 
 router = APIRouter(prefix="/images", tags=["images"])
 
@@ -35,8 +38,9 @@ UPLOAD_IMAGE_RESPONSES: dict[int | str, dict[str, Any]] = {
 @router.post("", status_code=201, responses=UPLOAD_IMAGE_RESPONSES)
 def upload_image(
     file: UploadFile,
-    user: Annotated[User, Depends(get_current_user)],
-    service: Annotated[ImageService, Depends(get_image_service)],
+    user: CurrentUserDep,
+    service: ImageServiceDep,
+    storage: ImageStorageDep,
 ) -> ImageUploadResponse:
     """Envoie une image de tuile (JPEG, PNG ou WebP), compressée en WebP par le serveur."""
     try:
@@ -69,5 +73,5 @@ def upload_image(
             detail=messages.IMAGE_TOO_MANY_PIXELS,
         ) from exc
     return ImageUploadResponse(
-        id=image.id, url=service.url(image), width=image.width, height=image.height
+        id=image.id, url=image_url(storage, image), width=image.width, height=image.height
     )

@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
 
 interface ImageDropZoneProps {

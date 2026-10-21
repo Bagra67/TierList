@@ -119,7 +119,8 @@ As a **guest**, I want to join a room without an account, so that I can play rig
 As the **application**, I want to cap rooms at the free plan size, so that the plans can be enforced later.
 
 - _Given_ a room with **10 participants**, _when_ someone else tries to join, _then_ it is refused with a message stating the limit.
-- _Given_ the room admin does not play, _then_ they still count in the 10 (to be confirmed at implementation).
+- _Given_ the room admin does not play, _then_ they still count in the 10.
+- _Given_ I already have a seat, _then_ I can always come back, even when the room is full.
 
 ### US-2.7 Close the room — Must
 
@@ -156,7 +157,7 @@ As a **room admin**, I want to remove someone from my room, so that the room onl
 - _Given_ I am removed, _then_ I leave the room and a message says the room admin removed me; I can **join again** with the link or the code (unless arrivals are locked, US-2.10).
 - _Given_ a removed guest, _then_ their personal link no longer works.
 - _Given_ I am the room admin, _then_ I cannot remove myself.
-- _Given_ a game in progress, _then_ I can remove a participant too (what happens to their placements is decided with the game).
+- _Given_ a game in progress, _then_ I can remove a participant too (their placements are deleted with their seat; once a game is closed, its rankings are kept).
 
 ### US-2.12 Ban a participant — Must
 

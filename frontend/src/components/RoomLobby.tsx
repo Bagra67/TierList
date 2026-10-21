@@ -1,12 +1,17 @@
+import { useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
+import { CloseRoomDialog } from './CloseRoomDialog';
 import { ErrorMessage } from './ErrorMessage';
+import { GameScreen } from './GameScreen';
+import { PastGames } from './PastGames';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
 import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
 import { RoomSettingsSummary } from './RoomSettingsSummary';
+import { StartGameButton } from './StartGameButton';
 
 interface RoomLobbyProps {
   room: Room;
@@ -14,14 +19,18 @@ interface RoomLobbyProps {
 
 // Lobby d'une salle (US-2.2, US-2.3) : code et lien à partager, participants (comptes et
 // invités), réglages ; seul le room admin peut les modifier, et retirer ou bannir un participant
-// (US-2.11, US-2.12)
+// (US-2.11, US-2.12), et fermer la salle (US-2.7). Pendant une partie, l'écran de jeu passe en tête
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  // Reçoit le focus quand l'écran de jeu disparaît sous le clavier (fin du cooldown)
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <>
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{t('rooms.lobby.title', { code: room.code })}</h1>
+        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-semibold outline-none">
+          {t('rooms.lobby.title', { code: room.code })}
+        </h1>
         {room.template !== null && (
           <p className="text-muted-foreground">
             {t('rooms.lobby.template', { name: room.template.name })}
@@ -29,8 +38,12 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
-      {room.status === 'playing' && (
-        <p className="rounded-lg bg-muted px-3 py-2 font-medium">{t('rooms.lobby.playing')}</p>
+      {room.game !== null && (
+        <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
+      )}
+      {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
+      {room.is_admin && room.game === null && room.template !== null && (
+        <StartGameButton code={room.code} replay={room.past_games.length > 0} />
       )}
       <RoomInvite room={room} />
       <section className="flex w-full flex-col gap-2">
@@ -67,6 +80,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
           ))}
         </ul>
       </section>
+      <PastGames room={room} />
       {room.is_admin && <RoomBans room={room} />}
       <section className="flex w-full flex-col gap-2">
         <div className="flex w-full items-center justify-between gap-4">
@@ -75,6 +89,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         </div>
         <RoomSettingsSummary settings={room.settings} />
       </section>
+      {room.is_admin && <CloseRoomDialog code={room.code} gameInProgress={room.game !== null} />}
     </>
   );
 }

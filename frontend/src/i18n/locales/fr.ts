@@ -19,6 +19,122 @@ export const fr = {
     label: 'Navigation principale',
     home: 'Accueil',
     templates: 'Mes templates',
+    history: 'Historique',
+  },
+  settings: {
+    open: 'Paramètres',
+    title: 'Paramètres',
+    close: 'Fermer',
+    display: 'Affichage',
+    account: 'Compte',
+    about: 'Informations',
+  },
+  footer: {
+    privacy: 'Politique de confidentialité',
+  },
+  privacy: {
+    title: 'Politique de confidentialité',
+    updatedAt: 'Dernière mise à jour : {{date, datetime(dateStyle: long)}}',
+    intro:
+      'Cette page explique quelles données personnelles TierList collecte, pourquoi, combien de temps elles sont gardées, qui les traite et comment exercer vos droits.',
+    controller: {
+      title: 'Responsable du traitement',
+      body: 'TierList est édité par {{name}}, responsable du traitement de vos données personnelles. Pour toute question ou demande sur vos données :',
+    },
+    data: {
+      title: 'Données collectées',
+      account:
+        "Compte : adresse email, pseudo, mot de passe (jamais stocké en clair, seulement sous forme hachée) et langue de l'interface.",
+      google:
+        "Connexion avec Google, si vous la choisissez : l'identifiant et l'adresse email de votre compte Google.",
+      guest:
+        'Invités : le pseudo choisi pour rejoindre une salle, et un cookie qui vous reconnaît dans cette salle.',
+      content:
+        'Contenus : vos templates, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS).',
+      games:
+        'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
+      technical:
+        'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
+    },
+    purposes: {
+      title: 'Pourquoi ces données',
+      service:
+        "Fournir le service que vous demandez en utilisant TierList (exécution du contrat) : créer votre compte, vous connecter, faire jouer les parties, envoyer les emails de vérification de l'adresse et de réinitialisation du mot de passe.",
+      security:
+        'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
+      noAds: 'Vos données ne sont ni vendues, ni utilisées pour de la publicité ou du profilage.',
+    },
+    retention: {
+      title: 'Durées de conservation',
+      account:
+        "Compte, templates et salles que vous avez créés : jusqu'à la suppression de votre compte.",
+      sessions: 'Session de connexion : 30 jours sans utilisation.',
+      links:
+        "Liens envoyés par email : 24 heures pour la vérification de l'adresse, 30 minutes pour un nouveau mot de passe.",
+      guests:
+        "Lien personnel d'un invité : 30 jours. Une salle inactive est fermée après 24 heures.",
+      deleted:
+        'Templates supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
+      backups: 'Sauvegardes de la base de données : 14 jours.',
+    },
+    visibility: {
+      title: 'Qui voit vos données',
+      room: "Les participants d'une salle voient le template utilisé, les pseudos et les placements de la partie.",
+      results:
+        "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
+      deletedAccount:
+        "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du template joué, pour que les résultats des autres joueurs restent complets. Vous pouvez demander l'effacement de votre pseudo par email.",
+    },
+    processors: {
+      title: 'Prestataires',
+      intro:
+        'Vos données sont traitées par les prestataires suivants, uniquement pour faire fonctionner le service :',
+      minestrator: "MineStrator : hébergement de l'application et de la base de données (France).",
+      scaleway:
+        'Scaleway : stockage des images, envoi des emails et stockage des sauvegardes (France).',
+      cloudflare:
+        'Cloudflare : nom de domaine, chiffrement HTTPS et acheminement du trafic (États-Unis).',
+      google: 'Google : connexion avec un compte Google, si vous la choisissez (États-Unis).',
+      github: "GitHub : déploiement de l'application et transfert des sauvegardes (États-Unis).",
+      transfers:
+        'Les transferts vers les États-Unis reposent sur les garanties prévues par le RGPD, comme les clauses contractuelles types de la Commission européenne.',
+    },
+    cookies: {
+      title: 'Cookies et stockage local',
+      intro:
+        "TierList n'utilise que des cookies strictement nécessaires à son fonctionnement, sans mesure d'audience ni publicité : aucun consentement n'est donc demandé.",
+      session: 'Cookie de session : garde votre connexion (30 jours).',
+      google: 'Cookie de connexion avec Google : le temps de la connexion (10 minutes).',
+      guest: "Cookie d'invité : vous reconnaît dans une salle (30 jours au plus).",
+      local: 'Stockage local du navigateur : le thème et la langue choisis.',
+    },
+    security: {
+      title: 'Sécurité',
+      body: "Les échanges sont chiffrés (HTTPS), les mots de passe ne sont jamais stockés en clair, les cookies de session sont inaccessibles aux scripts de la page, et l'accès aux serveurs est limité.",
+    },
+    rights: {
+      title: 'Vos droits',
+      body: 'Vous pouvez accéder à vos données, les rectifier, les effacer, limiter leur traitement, vous opposer à ce traitement et demander leur portabilité.',
+      delete: 'Vous pouvez supprimer votre compte à tout moment depuis le panneau de paramètres.',
+      request:
+        'Pour toute autre demande, écrivez à {{email}} : une réponse vous sera apportée sous un mois.',
+      cnil: 'Vous pouvez aussi adresser une réclamation à la CNIL :',
+      cnilLink: 'déposer une plainte sur cnil.fr',
+    },
+    changes: {
+      title: 'Modifications',
+      body: "Cette politique peut évoluer avec le service. La date de dernière mise à jour figure en haut de la page, et un changement important sera signalé dans l'application.",
+    },
+  },
+  history: {
+    title: 'Historique',
+    empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",
+    closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+    players_one: '{{count}} joueur',
+    players_other: '{{count}} joueurs',
+    open: 'Voir les résultats',
+    openLabel: 'Voir les résultats de la partie {{name}}',
+    more: 'Voir plus',
   },
   renderError: {
     title: 'Une erreur est survenue',
@@ -183,6 +299,36 @@ export const fr = {
       },
     },
   },
+  results: {
+    title: 'Résultats : {{name}}',
+    closedAt: 'Partie terminée le {{date, datetime(dateStyle: long; timeStyle: short)}}',
+    includeAbsentVotes: 'Inclure les votes absents',
+    publicLink: 'Lien public des résultats',
+    tabsLabel: 'Vues des résultats',
+    tabs: {
+      median: 'Médian',
+      overall: 'Global',
+      players: 'Par joueur',
+    },
+    emptyTier: 'Aucun item',
+    itemImage: "Image de l'item {{number}}",
+    backToRoom: 'Retour à la salle',
+    playAgain: 'Rejouer',
+    playAgainSubmitting: 'Lancement…',
+    median: {
+      unranked: 'Non classés',
+    },
+    overall: {
+      caption: 'Nombre de joueurs qui ont mis chaque item dans chaque tier',
+      item: 'Item',
+      absent: 'Absents',
+    },
+    players: {
+      select: 'Joueur',
+      unplaced: 'Jamais placés',
+      none: "Personne n'a joué cette partie.",
+    },
+  },
   rooms: {
     create: {
       open: 'Créer une salle',
@@ -194,7 +340,6 @@ export const fr = {
       template: 'Template : {{name}}',
       templateDeleted:
         'Le template de cette salle a été supprimé : aucune nouvelle partie ne peut y démarrer.',
-      playing: 'Partie en cours',
       code: 'Code de la salle',
       link: 'Lien de la salle',
       copyLink: 'Copier le lien',
@@ -209,6 +354,28 @@ export const fr = {
       removed: 'Le room admin vous a retiré de cette salle.',
       banned: 'Le room admin vous a banni de cette salle.',
       comeBack: 'Revenir dans la salle',
+      closed: 'Le room admin a fermé cette salle.',
+      pastGames: {
+        title: 'Parties passées ({{count}})',
+        closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+        players_one: '{{count}} joueur',
+        players_other: '{{count}} joueurs',
+        open: 'Voir les résultats',
+        openLabel:
+          'Voir les résultats de la partie du {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      },
+      backHome: "Retour à l'accueil",
+      close: {
+        open: 'Fermer la salle',
+        title: 'Fermer la salle ?',
+        warning:
+          'La salle est supprimée avec son lien et son code ; les liens perso des invités ne marchent plus. Ses parties terminées restent dans les historiques.',
+        gameWarning:
+          'Une partie est en cours : elle est close d’abord, avec les classements du moment, puis la salle est supprimée avec son lien et son code.',
+        cancel: 'Annuler',
+        submit: 'Fermer la salle',
+        submitting: 'Fermeture…',
+      },
       remove: {
         open: 'Retirer',
         openLabel: 'Retirer {{name}}',
@@ -223,10 +390,81 @@ export const fr = {
         submitBan: 'Bannir',
         submitting: 'Retrait…',
       },
+      start: {
+        submit: 'Lancer la partie',
+        replay: 'Rejouer',
+        submitting: 'Lancement…',
+      },
       bans: {
         title: 'Bannis ({{count}})',
         unban: 'Débannir',
         unbanLabel: 'Débannir {{name}}',
+      },
+    },
+    game: {
+      title: 'Partie en cours',
+      itemProgress: 'Item {{number}} sur {{total}}',
+      timeLeft: 'Temps restant',
+      currentItemImage: "Image de l'item en cours",
+      placedItemImage: "Image d'un item placé",
+      placedCount_one: 'Placé {{placed}} / {{count}} connecté',
+      placedCount_other: 'Placé {{placed}} / {{count}} connectés',
+      nameYou: '{{name}} (vous)',
+      status: {
+        placed: 'a placé',
+        waiting: 'en attente',
+        disconnected: 'déconnecté',
+      },
+      board: 'Mon classement',
+      dock: "Glissez l'item dans un tier, à la position voulue, ou utilisez les boutons « Placer dans ».",
+      dragHandle: 'Glisser dans un tier',
+      dragHandleLabel: 'Glisser dans un tier : {{item}}',
+      dragLabel: 'Déplacer {{item}}',
+      placeIn: 'Placer dans {{tier}}',
+      placeInLabel: "Placer dans {{tier}} : l'item en cours, à la fin",
+      imageItemAt: 'Image en {{tier}}, position {{position}}',
+      moveEarlier: 'Avancer {{item}} dans son tier',
+      moveLater: 'Reculer {{item}} dans son tier',
+      next: 'Item suivant',
+      nexting: 'Passage…',
+      auto: {
+        none: 'Passage automatique : désactivé',
+        timer: 'Passage automatique : timer de {{seconds}} s',
+        everyone_placed: 'Passage automatique : quand tout le monde a placé',
+      },
+      lateArrivals: 'Arrivées ouvertes',
+      cooldown: {
+        title: 'Cooldown final',
+        timeLeft: 'Fin du cooldown',
+        hint: "Déplacez n'importe quelle tuile. Placez vos items manqués avant la fin.",
+        waiting: 'Les participants finalisent leur classement.',
+        missed: 'Items manqués',
+        missedImage: "Image d'un item manqué, {{position}}",
+        absent: 'Absent',
+        placeInLabel: 'Tier où placer {{item}}',
+        place: 'Placer',
+        placeLabel: 'Placer {{item}} à la fin du tier choisi',
+        moveUp: 'Monter {{item}} au tier du dessus',
+        moveDown: 'Descendre {{item}} au tier du dessous',
+        end: {
+          open: 'Terminer maintenant',
+          title: 'Terminer le cooldown ?',
+          warning:
+            'Les classements de tous les participants deviennent définitifs et la partie est close.',
+          cancel: 'Annuler',
+          submit: 'Terminer',
+          submitting: 'Fin…',
+        },
+      },
+      // Annonces des lecteurs d'écran pendant un glisser-déposer
+      dnd: {
+        instructions:
+          "Pour placer l'item, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.",
+        pickedUp: '{{item}} saisi.',
+        unchanged: '{{item}} reste à sa place.',
+        over: '{{item}} au-dessus de {{tier}}, position {{position}}.',
+        dropped: '{{item}} déposé dans {{tier}}, position {{position}}.',
+        cancelled: 'Déplacement de {{item}} annulé.',
       },
     },
     join: {
@@ -314,6 +552,19 @@ export const fr = {
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: 'Seul le room admin peut faire cela.',
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
+      game_in_progress: 'Une partie est déjà en cours dans cette salle.',
+      no_placing_participant:
+        'Il faut au moins un participant qui place les items : invitez un joueur ou jouez vous-même.',
+      round_not_in_progress: "Aucun tour n'est en cours : l'item ne peut plus être placé.",
+      not_a_placing_participant:
+        'Vous ne jouez pas cette partie : vous avez seulement les commandes.',
+      item_not_current: "Cet item n'est plus l'item en cours : le tour est passé.",
+      item_not_in_game: 'Cet item ne fait pas partie de la partie.',
+      cooldown_not_in_progress: "Le cooldown final n'est pas en cours.",
+      cooldown_over: 'Le cooldown final est terminé : plus rien ne peut être placé.',
+      results_not_found: 'Ce lien de résultats ne correspond à aucune partie terminée.',
+      room_full: 'Cette salle est pleine : {{max_participants}} participants au plus.',
+      room_locked: 'Une partie est en cours et la salle est verrouillée.',
       nickname_taken: 'Ce pseudo est déjà pris dans cette salle.',
       guest_link_invalid: 'Ce lien perso a expiré, ou la salle a été fermée.',
       participant_not_found: "Ce participant n'est plus dans la salle.",
@@ -321,6 +572,7 @@ export const fr = {
       room_banned: 'Vous avez été banni de cette salle.',
       ban_not_found: "Ce bannissement n'existe plus.",
       removed_from_room: 'Le room admin vous a retiré de cette salle.',
+      room_closed: 'Cette salle a été fermée.',
       invalid_message: 'Message inattendu sur le canal de la salle.',
       heartbeat_timeout: 'La connexion à la salle ne répondait plus.',
       tier_not_found: 'Ce tier est introuvable.',

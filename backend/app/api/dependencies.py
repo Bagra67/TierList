@@ -16,11 +16,15 @@ from app.exceptions.http import AppHTTPException
 from app.models.user import User
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
+from app.services.game_results import GameResultsService
+from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
+from app.services.history import HistoryService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
+from app.services.round_timers import RoundScheduler, round_timers
 from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -63,12 +67,47 @@ def get_room_event_publisher(
     return registry
 
 
+def get_round_scheduler() -> RoundScheduler:
+    # Les timers de ce processus ; remplacés par un faux dans les tests
+    return round_timers
+
+
 def get_room_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
     publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
     return RoomService(session, settings, publisher)
+
+
+def get_history_service(session: Annotated[Session, Depends(get_db_session)]) -> HistoryService:
+    return HistoryService(session)
+
+
+def get_game_results_service(
+    session: Annotated[Session, Depends(get_db_session)],
+) -> GameResultsService:
+    return GameResultsService(session)
+
+
+def build_game_service(
+    session: Session, settings: Settings, publisher: RoomEventPublisher, scheduler: RoundScheduler
+) -> GameService:
+    """Service des parties hors requête (canal temps réel, timers, démarrage du processus) : les
+    mêmes dépendances que get_game_service, construites sur une session courte."""
+    rooms: RoomService = RoomService(session, settings, publisher)
+    return GameService(session, publisher, rooms, TemplateService(session, settings), scheduler)
+
+
+def get_game_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
+    rooms: Annotated[RoomService, Depends(get_room_service)],
+    templates: Annotated[TemplateService, Depends(get_template_service)],
+    scheduler: Annotated[RoundScheduler, Depends(get_round_scheduler)],
+) -> GameService:
+    # FastAPI met la session en cache par requête : les trois services partagent la même
+    return GameService(session, publisher, rooms, templates, scheduler)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:
@@ -144,3 +183,26 @@ def get_room_viewer(
         session: AuthenticatedSession = get_current_session(credentials, service)
         return RoomViewer(user=session.user, guest_token=None)
     return RoomViewer(user=None, guest_token=guest_token)
+
+
+# --- Alias des dépendances, pour les signatures des routes --------------------------------------
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+CurrentSessionDep = Annotated[AuthenticatedSession, Depends(get_current_session)]
+# La dépendance à utiliser pour protéger une route
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
+RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
+RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
+GameServiceDep = Annotated[GameService, Depends(get_game_service)]
+GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]
+HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
+ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+# Donne l'adresse publique des images (api/presenters/images.py)
+ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
+EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
+GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]
+SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
+PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
+RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
+RoundSchedulerDep = Annotated[RoundScheduler, Depends(get_round_scheduler)]

@@ -13,8 +13,14 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
+  // Parties closes du compte (US-5.5)
+  HISTORY: '/history',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
+  // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)
+  RESULTS: '/results/:token',
+  // Politique de confidentialité (#200), lisible sans compte
+  PRIVACY: '/privacy',
 } as const;
 
 export function templateEditorPath(templateId: string): string {
@@ -23,6 +29,29 @@ export function templateEditorPath(templateId: string): string {
 
 export function roomPath(code: string): string {
   return generatePath(ROUTES.ROOM, { code });
+}
+
+export function resultsPath(token: string): string {
+  return generatePath(ROUTES.RESULTS, { token });
+}
+
+// État de navigation posé par le lobby en ouvrant des résultats : la salle d'où l'on vient, et si
+// le lecteur en est le room admin (il peut alors rejouer, US-2.9). Un visiteur arrivé par le lien
+// public n'en a pas
+export interface ResultsLinkState {
+  roomCode: string;
+  isAdmin: boolean;
+}
+
+export function isResultsLinkState(state: unknown): state is ResultsLinkState {
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    'roomCode' in state &&
+    typeof state.roomCode === 'string' &&
+    'isAdmin' in state &&
+    typeof state.isAdmin === 'boolean'
+  );
 }
 
 // Token du lien reçu par email (backend : TOKEN_PARAM)

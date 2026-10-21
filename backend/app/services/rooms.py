@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
-from psycopg.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -22,14 +21,18 @@ from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
     CHANNEL_CLOSE_BANNED,
     CHANNEL_CLOSE_REMOVED,
+    FREE_PLAN_MAX_PARTICIPANTS,
     FRONTEND_ROOM,
     GUEST_LINK_FRAGMENT,
+    NICKNAME_INDEX,
     ROOM_CODE_ALPHABET,
+    ROOM_CODE_CONSTRAINT,
     ROOM_CODE_LENGTH,
     ROOM_CODE_MAX_ATTEMPTS,
 )
 from app.core.config import Settings
 from app.core.security import generate_guest_token, hash_guest_token
+from app.db.errors import violates_unique
 from app.exceptions.rooms import (
     BanNotFoundError,
     CannotRemoveRoomAdminError,
@@ -38,12 +41,17 @@ from app.exceptions.rooms import (
     ParticipantNotFoundError,
     RoomAdminRequiredError,
     RoomBannedError,
+    RoomFullError,
+    RoomLockedError,
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.models.enums import AutoAdvance, ItemOrder, PlacementPhase, RoomStatus
+from app.models.game import Game
 from app.models.participant import Participant
-from app.models.room import AutoAdvance, ItemOrder, Room, RoomStatus
+from app.models.placement import Placement
+from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
@@ -61,18 +69,6 @@ from app.schemas.room_events import (
 from app.services.room_channel import RoomEventPublisher
 
 logger = logging.getLogger(__name__)
-
-# Contrainte d'unicité du code (convention de nommage de app/db/base.py)
-ROOM_CODE_CONSTRAINT = "uq_rooms_code"
-# Index unique du pseudo des invités dans une salle (app/models/participant.py)
-NICKNAME_INDEX = "uq_participants_room_id_lower_nickname"
-
-
-def _violates(exc: IntegrityError, constraint_name: str) -> bool:
-    """L'erreur d'intégrité vient-elle de cette contrainte d'unicité ?"""
-    return (
-        isinstance(exc.orig, UniqueViolation) and exc.orig.diag.constraint_name == constraint_name
-    )
 
 
 def generate_room_code() -> str:
@@ -93,7 +89,7 @@ class RoomSettingsChanges(TypedDict, total=False):
     late_arrivals_allowed: bool
 
 
-# Seul réglage modifiable pendant une partie (US-2.10, #88)
+# Seul réglage modifiable pendant une partie (US-2.10)
 SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
 
 
@@ -114,6 +110,15 @@ class GuestSeat:
     room: Room
     participant: Participant
     token: str
+
+    @property
+    def expires_at(self) -> datetime:
+        """Expiration du lien perso, et du cookie qui reconnaît l'invité."""
+        expires_at: datetime | None = self.participant.guest_expires_at
+        if expires_at is None:
+            # Garanti par la contrainte account_or_guest : une place d'invité a une expiration
+            raise RuntimeError("A guest seat has an expiry date")
+        return expires_at
 
 
 class RoomService:
@@ -158,15 +163,20 @@ class RoomService:
         logger.error("Aucun code de salle libre après %d tirages", ROOM_CODE_MAX_ATTEMPTS)
         raise RuntimeError("No free room code")
 
-    def get(self, user: User, code: str) -> Room:
-        """Salle dont l'utilisateur est participant ; le code est lu sans tenir compte de la
-        casse (un code tapé en minuscules est le même)."""
-        return self._get_as_participant(user, code, for_update=False)
+    def get_for_admin_change(self, user: User, code: str) -> Room:
+        """Salle dont l'utilisateur est le room admin, verrouillée jusqu'au commit : pour tout
+        changement réservé au room admin, ici ou dans un autre service (démarrer une partie).
+        Participant sans être room admin : RoomAdminRequiredError."""
+        room: Room = self._get_as_participant(user, code, for_update=True)
+        if room.admin_id != user.id:
+            raise RoomAdminRequiredError
+        return room
 
     def join(self, user: User, code: str) -> Room:
         """Donne une place de joueur à l'utilisateur (US-2.4) ; s'il en a déjà une, il la
-        retrouve au lieu d'en prendre une seconde. Le code suffit : qui l'a peut rejoindre, sauf
-        un compte banni de la salle (US-2.12)."""
+        retrouve au lieu d'en prendre une seconde, même si la salle est pleine ou verrouillée.
+        Le code suffit : qui l'a peut rejoindre, sauf un compte banni de la salle (US-2.12), ou un
+        nouveau venu quand la salle est pleine (US-2.6) ou verrouillée (US-2.10)."""
         room: Room | None = room_repository.get_room_by_code(
             self._session, code.upper(), for_update=True
         )
@@ -178,10 +188,12 @@ class RoomService:
             # Rien à écrire : le commit libère seulement le verrou
             self._session.commit()
             return room
+        self._ensure_can_arrive(room)
         # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
         # contrainte (room_id, user_id) reste le dernier filet
         player: Participant = Participant(user_id=user.id)
         room.participants.append(player)
+        self._absent_for_past_rounds(room, player)
         room.version += 1
         self._session.commit()
         logger.info("Salle rejointe : room_id=%s user_id=%s", room.id, user.id)
@@ -211,6 +223,7 @@ class RoomService:
         # Supprimées tout de suite : au flush, SQLAlchemy passe les INSERT avant les DELETE, et
         # le nouvel invité buterait sur l'index unique du pseudo libéré
         self._session.flush()
+        self._ensure_can_arrive(room)
         if nickname.lower() in self._taken_names(room):
             raise NicknameTakenError
         token: str = generate_guest_token()
@@ -222,13 +235,15 @@ class RoomService:
         room.participants.append(guest)
         room.version += 1
         try:
+            # Le flush de la nouvelle place peut buter sur l'index du pseudo, comme le commit
+            self._absent_for_past_rounds(room, guest)
             self._session.commit()
         except IntegrityError as exc:
             # Dernier filet : lower() de PostgreSQL et str.lower() de Python peuvent différer sur
             # quelques caractères Unicode ; l'index refuse alors un pseudo que le service a laissé
             # passer. C'est le même refus, pas une erreur interne.
             self._session.rollback()
-            if _violates(exc, NICKNAME_INDEX):
+            if violates_unique(exc, NICKNAME_INDEX):
                 raise NicknameTakenError from exc
             raise
         logger.info("Salle rejointe en invité : room_id=%s participant_id=%s", room.id, guest.id)
@@ -264,18 +279,6 @@ class RoomService:
         logger.info("Lien perso renouvelé : room_id=%s participant_id=%s", room.id, guest.id)
         return GuestSeat(room=room, participant=guest, token=token)
 
-    def get_for_viewer(self, viewer: RoomViewer, code: str) -> Room:
-        """Salle dont le lecteur a une place : un compte participant, ou un invité dont le
-        cookie porte un jeton valable pour cette salle."""
-        if viewer.user is not None:
-            return self.get(viewer.user, code)
-        room: Room | None = room_repository.get_room_by_code(self._session, code.upper())
-        if room is None or viewer.guest_token is None:
-            raise RoomNotFoundError
-        if self._find_guest(room, viewer.guest_token) is None:
-            raise RoomNotFoundError
-        return room
-
     def seated_participants(self, room: Room) -> list[Participant]:
         """Participants qui ont encore leur place : sans les invités dont le lien a expiré."""
         now: datetime = datetime.now(UTC)
@@ -291,9 +294,7 @@ class RoomService:
     def update_settings(self, user: User, code: str, changes: RoomSettingsChanges) -> Room:
         """Change les réglages de la prochaine partie (room admin seulement). Pendant une partie,
         seules les arrivées peuvent changer."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         if room.status == RoomStatus.PLAYING and not (
             changes.keys() <= SETTINGS_CHANGEABLE_DURING_A_GAME
         ):
@@ -314,9 +315,7 @@ class RoomService:
         """Supprime la place d'un participant (room admin seulement, US-2.11), même pendant une
         partie. Avec ban, la personne est aussi bannie (US-2.12) : son compte, ou pour un invité
         l'empreinte du jeton de son cookie. Ses sockets sont fermés après le commit."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         target: Participant | None = next(
             (
                 participant
@@ -361,9 +360,7 @@ class RoomService:
     def unban(self, user: User, code: str, ban_id: uuid.UUID) -> Room:
         """Lève un bannissement (room admin seulement) : la personne peut rejoindre à nouveau.
         Seul le room admin voit les bannissements : la version de la salle ne change pas."""
-        room: Room = self._get_as_participant(user, code, for_update=True)
-        if room.admin_id != user.id:
-            raise RoomAdminRequiredError
+        room: Room = self.get_for_admin_change(user, code)
         room_ban: RoomBan | None = next(
             (room_ban for room_ban in room.bans if room_ban.id == ban_id), None
         )
@@ -374,22 +371,36 @@ class RoomService:
         logger.info("Bannissement levé : room_id=%s ban_id=%s", room.id, ban_id)
         return room
 
-    def seat_of(self, viewer: RoomViewer, code: str) -> Participant:
-        """Place du lecteur dans la salle (compte ou invité) : elle lui ouvre le canal temps réel.
-        Sans place, RoomNotFoundError, comme pour la lecture de la salle."""
-        room: Room = self.get_for_viewer(viewer, code)
-        for participant in self.seated_participants(room):
-            if viewer.user is not None and participant.user_id == viewer.user.id:
-                return participant
-        if viewer.user is None and viewer.guest_token is not None:
+    def seat_of(self, viewer: RoomViewer, code: str, for_update: bool = False) -> Participant:
+        """Place du lecteur dans la salle : un compte participant, ou un invité dont le cookie
+        porte un jeton valable pour cette salle. La salle est participant.room ; for_update la
+        verrouille jusqu'au commit (placer un item). Sans place, RoomNotFoundError, comme pour
+        un code inconnu."""
+        room: Room | None = room_repository.get_room_by_code(
+            self._session, code.upper(), for_update=for_update
+        )
+        if room is None:
+            raise RoomNotFoundError
+        if viewer.user is not None:
+            return self.seat_in(room, viewer.user)
+        if viewer.guest_token is not None:
             guest: Participant | None = self._find_guest(room, viewer.guest_token)
             if guest is not None:
                 return guest
         raise RoomNotFoundError
 
-    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
+    @staticmethod
+    def seat_in(room: Room, user: User) -> Participant:
+        """Place du compte dans une salle déjà lue ; sans place, RoomNotFoundError."""
+        for participant in room.participants:
+            if participant.user_id == user.id:
+                return participant
+        raise RoomNotFoundError
+
+    def set_presence(self, participant_id: uuid.UUID, connected: bool) -> Room | None:
         """Marque le participant connecté ou déconnecté. N'écrit et ne publie que si la présence
-        change ; une place disparue entre-temps (salle fermée) est ignorée."""
+        change ; une place disparue entre-temps (salle fermée) est ignorée. Renvoie la salle quand
+        la présence a changé, None sinon."""
         room: Room | None = room_repository.get_room_of_participant(
             self._session, participant_id, for_update=True
         )
@@ -399,7 +410,7 @@ class RoomService:
         if room is None or participant is None or participant.connected == connected:
             # Rien à écrire : le commit libère seulement le verrou
             self._session.commit()
-            return
+            return None
         participant.connected = connected
         room.version += 1
         self._session.commit()
@@ -410,6 +421,7 @@ class RoomService:
                 data=ParticipantPresenceData(participant_id=participant_id, connected=connected),
             ),
         )
+        return room
 
     def reset_presence(self) -> int:
         """Au démarrage du processus, plus aucun socket n'est ouvert : personne n'est connecté.
@@ -431,6 +443,32 @@ class RoomService:
         if not self._has_seat(room, user):
             raise RoomNotFoundError
         return room
+
+    def _absent_for_past_rounds(self, room: Room, participant: Participant) -> None:
+        """Arrivée pendant une partie (US-4.5) : les tours déjà finis comptent comme votes absents
+        pour le nouveau venu ; il participe à partir du tour en cours."""
+        game: Game | None = room.current_game
+        if game is None:
+            return
+        # L'identifiant de la nouvelle place, que les placements référencent
+        self._session.flush()
+        for game_round in game.rounds:
+            if game_round.ended_at is not None:
+                absent: Placement = Placement(
+                    participant_id=participant.id,
+                    snapshot_tile_id=game_round.snapshot_tile_id,
+                    phase=PlacementPhase.ROUND,
+                )
+                game.placements.append(absent)
+
+    def _ensure_can_arrive(self, room: Room) -> None:
+        """Un nouveau venu peut-il prendre une place ? Pas pendant une partie aux arrivées
+        verrouillées, ni dans une salle pleine. Appelé sous le verrou de la salle : deux jonctions
+        simultanées ne dépassent pas la limite."""
+        if room.status == RoomStatus.PLAYING and not room.late_arrivals_allowed:
+            raise RoomLockedError
+        if len(self.seated_participants(room)) >= FREE_PLAN_MAX_PARTICIPANTS:
+            raise RoomFullError(FREE_PLAN_MAX_PARTICIPANTS)
 
     def _publish_joined(self, room: Room, participant: Participant) -> None:
         self._publisher.publish(
@@ -473,7 +511,7 @@ class RoomService:
             with self._session.begin_nested():
                 room_repository.add_room(self._session, room)
         except IntegrityError as exc:
-            if _violates(exc, ROOM_CODE_CONSTRAINT):
+            if violates_unique(exc, ROOM_CODE_CONSTRAINT):
                 logger.info("Code de salle déjà pris, nouveau tirage : code=%s", room.code)
                 return False
             raise

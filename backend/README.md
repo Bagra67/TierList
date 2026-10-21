@@ -87,11 +87,11 @@ uv run fastapi dev app/main.py --port 8080 --host 0.0.0.0
 
 Once running:
 
-- API: http://127.0.0.1:8000
-- Interactive documentation (Swagger): http://127.0.0.1:8000/docs
-- ReDoc documentation: http://127.0.0.1:8000/redoc
+- API: http://127.0.0.1:8000/api
+- Interactive documentation (Swagger): http://127.0.0.1:8000/api/docs
+- ReDoc documentation: http://127.0.0.1:8000/api/redoc
 
-The frontend calls the backend through the Vite proxy: a request to `http://localhost:5173/api/auth/me` is forwarded to `http://127.0.0.1:8000/auth/me`. The backend must therefore run on port **8000** during frontend development.
+The API is served under `/api` (`app.main:app` mounts it; [deployment guide](../docs/technical/deployment.md)). The frontend calls it through the Vite proxy: a request to `http://localhost:5173/api/auth/me` is forwarded unchanged to `http://127.0.0.1:8000/api/auth/me`. The backend must therefore run on port **8000** during frontend development.
 
 ---
 
@@ -182,7 +182,7 @@ Configured in `pyproject.toml` (`[tool.pyright]`, `standard` mode, on `app/`, `t
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py            # FastAPI entry point (GET /health, GET /health/db, routers)
+│   ├── main.py            # FastAPI entry point: API under /api (health, routers), frontend build, lifespan
 │   ├── api/
 │   │   ├── dependencies.py # Shared dependencies (get_auth_service, get_current_user)
 │   │   └── routes/auth.py # /auth routes: register, login, refresh, logout, me
@@ -256,23 +256,27 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `PASSWORD_RESET_TTL_MINUTES`            | Validity of the password reset link, in minutes                                                                                                                              | `30`                                             |
 | `EMAIL_COOLDOWN_SECONDS`                | Minimum time between two emails of the same type for one account (prevents flooding a mailbox)                                                                               | `60`                                             |
 | `AUTH_COOKIE_SECURE`                    | Refresh cookie sent over HTTPS only; set `false` locally (HTTP)                                                                                                              | `true`                                           |
-| `AUTH_COOKIE_PATH`                      | Refresh cookie path, as seen by the browser (through the `/api` proxy)                                                                                                       | `/api/auth`                                      |
+| `AUTH_COOKIE_PATH`                      | Refresh cookie path: the authentication routes, under `/api`                                                                                                                 | `/api/auth`                                      |
 | `DELETED_TEMPLATE_RETENTION_DAYS`       | Days a deleted template stays in the database before being purged                                                                                                            | `30`                                             |
 | `ROOM_DEFAULT_TIMER_SECONDS`            | Timer per item of a new room, in seconds (5 to 300)                                                                                                                          | `30`                                             |
 | `ROOM_DEFAULT_COOLDOWN_SECONDS`         | Final cooldown of a new room, in seconds (10 to 600)                                                                                                                         | `60`                                             |
 | `GUEST_LINK_TTL_DAYS`                   | Validity of a guest's personal link, in days (30 at most)                                                                                                                    | `30`                                             |
-| `ROOM_COOKIE_PATH`                      | Path of the room routes as seen by the browser, base of the guest cookie                                                                                                     | `/api/rooms`                                     |
+| `ROOM_COOKIE_PATH`                      | Path of the room routes (under `/api`), base of the guest cookie                                                                                                             | `/api/rooms`                                     |
 | `ROOM_HEARTBEAT_INTERVAL_SECONDS`       | Real-time channel: ping after this silence of the client, in seconds                                                                                                         | `10`                                             |
 | `ROOM_HEARTBEAT_TIMEOUT_SECONDS`        | Real-time channel: socket closed without pong within this delay, in seconds                                                                                                  | `5`                                              |
 | `ROOM_PRESENCE_GRACE_SECONDS`           | A participant becomes disconnected this long after their last socket closed, in seconds                                                                                      | `3`                                              |
 | `ROOM_AUTH_TIMEOUT_SECONDS`             | Real-time channel: delay of the auth message, in seconds                                                                                                                     | `5`                                              |
-| `IMAGE_UPLOAD_MAX_BYTES`                | Maximum size of an uploaded tile image, in bytes; keep it aligned with the reverse proxy body limit                                                                          | `10485760` (10 MiB)                              |
+| `IMAGE_UPLOAD_MAX_BYTES`                | Maximum size of an uploaded tile image, in bytes; Cloudflare accepts bodies up to 100 MB                                                                                     | `10485760` (10 MiB)                              |
 | `IMAGE_MAX_SOURCE_PIXELS`               | Maximum number of pixels of the decoded image (protection against decompression bombs)                                                                                       | `40000000`                                       |
 | `GOOGLE_CLIENT_ID`                      | OAuth client ID of the Google Cloud Console (Web application); without it, Google sign-in is disabled                                                                        | — (optional)                                     |
 | `GOOGLE_CLIENT_SECRET`                  | Secret of that client                                                                                                                                                        | — (optional)                                     |
 | `GOOGLE_REDIRECT_URI`                   | Callback URL, identical to an authorized redirect URI of the client                                                                                                          | `http://localhost:5173/api/auth/google/callback` |
 | `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`      | Time allowed on Google's page before the sign-in attempt expires                                                                                                             | `10`                                             |
 | `GOOGLE_HTTP_TIMEOUT_SECONDS`           | Timeout of the calls to Google (code exchange, public keys)                                                                                                                  | `10`                                             |
+| `FRONTEND_DIST`                         | Vite build served by FastAPI; absent in development (Vite serves the frontend)                                                                                               | `frontend_dist/` next to `backend/`              |
+| `APP_RELEASE`                           | Running version, reported by `/api/health`; written by the deployment                                                                                                        | `dev`                                            |
+| `MAINTENANCE_ENABLED`                   | Nightly purges (deleted templates, unused images) in the app process                                                                                                         | `true`                                           |
+| `MAINTENANCE_HOUR_UTC`                  | Hour of the nightly purges, UTC (0 to 23)                                                                                                                                    | `3`                                              |
 
 Emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, all optional) are described in the [emails guide](../docs/technical/emails.md). Authentication is described in the [authentication guide](../docs/technical/authentication.md), templates and their purge in the [templates guide](../docs/technical/templates.md), rooms, their default durations (`ROOM_DEFAULT_*`) and the guests (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) in the [rooms guide](../docs/technical/rooms.md), the real-time channel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) in the [real-time guide](../docs/technical/realtime.md#3-in-the-code), tile images, their S3 storage (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL`; SeaweedFS values in `.env.example`), the upload limit (`IMAGE_UPLOADS_PER_HOUR_MAX`) and the garbage collection (`UNUSED_IMAGE_RETENTION_DAYS`) in the [images guide](../docs/technical/images.md#24-limits-and-settings). Since the PostgreSQL container also reads `.env`, the authentication variables are passed to it too: harmless, as it ignores them.
 
@@ -280,9 +284,9 @@ The same file is read by the PostgreSQL container: changing the password **after
 
 ### Health probes
 
-`GET /health` only says the application is running (`200 {"status": "ok"}`), without touching the database: use it as the liveness probe for Docker or a hosting platform, so that a database outage does not make them restart a working application.
+`GET /api/health` only says the application is running (`200 {"status": "ok", "release": "<APP_RELEASE>"}`), without touching the database: use it as the liveness probe of the hosting, so that a database outage does not make them restart a working application.
 
-`GET /health/db` runs `SELECT 1`: `200 {"status": "ok"}` if the database answers, otherwise `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (the detailed error is in the backend logs).
+`GET /api/health/db` runs `SELECT 1`: `200 {"status": "ok", "release": …}` if the database answers, otherwise `503 {"detail": "Database unavailable", "code": "database_unavailable"}` (the detailed error is in the backend logs).
 
 ### Migrations (Alembic)
 

@@ -19,7 +19,7 @@ A room has **at most 10 participants** (room admin included) and a game **at mos
 | A participant places or moves the current item    | **Who** has placed, never **where** (rankings stay private until the results) |
 | A round ends (admin "next", timer, everyone done) | The round is over; absent placements are recorded by the server               |
 | The last round ends                               | The cooldown starts, with its end time                                        |
-| The cooldown ends (timer or admin "End now")      | The game is closed: results available, room back to _Open_                    |
+| The cooldown ends (timer or admin "End now")      | The game is closed: rankings final (results with #99), room back to _Open_    |
 | The admin closes the room, or it is inactive      | The room is closed; every participant leaves                                  |
 
 Timers: the per-item **round timer** (room setting), the **cooldown** (room setting), the **room inactivity delay** (application setting). A **disconnected** participant keeps their seat and ranking, gets absent placements for the rounds that end meanwhile, and is not waited for by "everyone done".
@@ -32,7 +32,7 @@ Timers: the per-item **round timer** (room setting), the **cooldown** (room sett
 
 ### Not available yet
 
-The game events (rounds, placements, cooldown) and the server-side timers (§2.8) come with the game issues (#91 and next). Holograms, public rooms and chat (later milestones) will reuse the same channel.
+The game start (`game.started`, #91), the placements (`participant.placed`, #92), the round progression (`round.started`, `cooldown.started`) and the round timers (§2.8, #93) are built ([games guide](games.md)); so are the final cooldown, its timer and its end (`game.closed`, #96); and so is saving the closed game (`game_players`, #98); the results come with #99. Holograms, public rooms and chat (later milestones) will reuse the same channel.
 
 ## 2. Technical design
 
@@ -49,7 +49,7 @@ The game events (rounds, placements, cooldown) and the server-side timers (§2.8
 
 ### 2.2 Transport
 
-- One endpoint per room: `WS /rooms/{room_code}/ws` (FastAPI `WebSocket`), reached as `/api/rooms/{room_code}/ws` through the Vite proxy, which then needs `ws: true` in `frontend/vite.config.ts`.
+- One endpoint per room: `WS /rooms/{room_code}/ws` (FastAPI `WebSocket`), served under `/api` (`/api/rooms/{room_code}/ws`); in development, the Vite proxy forwards it (`ws: true` in `frontend/vite.config.ts`).
 - **Server → client**: the events of §2.3. **Client → server**: only the authentication message (§2.4) and the heartbeat reply; any other message closes the socket.
 - A command is a normal REST call: the route calls the service, the service commits, **then** publishes the event to the room (§2.8). The participant who sent the command gets the HTTP response; everyone (sender included) gets the event.
 - No new dependency: `fastapi[standard]` already ships uvicorn with `websockets`, `uvloop` and `httptools` (present in `backend/uv.lock`).
@@ -111,10 +111,12 @@ WS events ──▶ useRoomEvents(roomCode) ──┘ (setQueryData / invalidate
 
 ### 2.8 Server-side timers
 
+**Built for the rounds in #93** (`services/round_timers.py`, [games guide](games.md#25-round-progression)); the cooldown timer since #96 (`schedule_cooldown_end`, one deadline per game). A round ended early keeps its task: the transition finds the round over and does nothing, which is simpler than cancelling it.
+
 - The server is the only clock. A round with a timer and the cooldown store their **end time** (`ends_at`, UTC) in the database; the events send it, the clients display the countdown from it.
-- In the process, an `asyncio` task waits for each deadline and calls the service transition; it is cancelled when the round ends earlier (admin "next", everyone done). At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
+- In the process, an `asyncio` task per game waits for the deadline and calls the service transition; a newer deadline of the game (next round, cooldown end) replaces it, an older one is ignored; a phase ended earlier leaves its task, whose transition then does nothing; a failed transition is tried again after 1, 5 then 30 s. At startup, the pending deadlines are read from the database and re-scheduled: a restart loses no timer.
 - **Races** (timer, "next" and "everyone done" at the same time): each transition runs in a transaction that locks the room row and checks the expected state (the round is still in progress); the second one finds the round already ended and does nothing. Transitions are therefore **idempotent**.
-- The **inactivity delay** of a room is handled by a periodic sweep that closes the rooms inactive for too long.
+- The **inactivity delay** of a room is handled by a periodic sweep that closes the rooms inactive for too long (`room_sweeper`, [rooms guide](rooms.md#26-closing-a-room)).
 - SQLAlchemy is synchronous: from async code (the socket, the timers), the database calls go through the threadpool (`run_in_threadpool`) and never block the event loop.
 
 ### 2.9 Scaling
@@ -153,7 +155,6 @@ In both cases the load balancer must accept the WebSocket upgrade, with an idle 
 
 - **One worker** in milestone 1: starting the backend with several workers would split the rooms (stage 2 needed first).
 - The access token is checked only when the socket opens: a session revoked during a game keeps receiving the events of that room until the socket closes (the commands, on REST, are refused at once). Acceptable since the socket carries nothing private beyond the room.
-- The inactivity delay (automatic closing of a room, #90) is still to be chosen.
 - A guest socket already open stays open when the guest seat expires, until it closes (like a revoked session).
 - The channel only accepts the origin of `FRONTEND_BASE_URL`: opening the app through another address (e.g. `http://127.0.0.1:5173` instead of `http://localhost:5173`) has its channel refused.
 - What happens when the **room admin** disconnects (nobody can click "next" or close) is a product question not covered by the [lifecycles](../product/milestone-1/lifecycles.md); the timers still make the game move on.
@@ -164,18 +165,23 @@ Built in #85. What exists today:
 
 - **Events** (`app/schemas/room_events.py`), a discriminated union on `type`, all carrying `room_version`:
 
-  | `type`                  | `data`                        | Sent when                                                                                                        | Frontend                |
-  | ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- |
-  | `participant.joined`    | `{participant_id}`            | An account or a guest joins (`POST /join`, `POST /guests`)                                                       | Reads the room again    |
-  | `participant.presence`  | `{participant_id, connected}` | First socket of a participant opened; last one closed for longer than the grace delay                            | Updates the cached room |
-  | `participant.removed`   | `{participant_id}`            | The room admin removes or bans a participant (#148); sent after closing their sockets, so they do not receive it | Updates the cached room |
-  | `room.settings_updated` | `{}`                          | The room admin changes a setting (an empty change sends nothing)                                                 | Reads the room again    |
+  | `type`                  | `data`                                 | Sent when                                                                                                                          | Frontend                |
+  | ----------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+  | `participant.joined`    | `{participant_id}`                     | An account or a guest joins (`POST /join`, `POST /guests`)                                                                         | Reads the room again    |
+  | `participant.presence`  | `{participant_id, connected}`          | First socket of a participant opened; last one closed for longer than the grace delay                                              | Updates the cached room |
+  | `participant.removed`   | `{participant_id}`                     | The room admin removes or bans a participant (#148); sent after closing their sockets, so they do not receive it                   | Updates the cached room |
+  | `room.settings_updated` | `{}`                                   | The room admin changes a setting (an empty change sends nothing)                                                                   | Reads the room again    |
+  | `game.started`          | `{round_number, round_count, ends_at}` | The room admin starts a game (#91)                                                                                                 | Reads the room again    |
+  | `participant.placed`    | `{participant_id, round_number}`       | A participant places the current item for the first time in the round (#92); a move sends nothing. Never the tier nor the position | Updates the cached room |
+  | `round.started`         | `{round_number, round_count, ends_at}` | A round ends ("next", timer, everyone placed) and the next one starts (#93); the absent votes are recorded                         | Reads the room again    |
+  | `cooldown.started`      | `{ends_at}`                            | The last round ends: the final cooldown starts (#93)                                                                               | Reads the room again    |
+  | `game.closed`           | `{game_id}`                            | The cooldown ends (timer or "End now"): the game is closed and the room open again (#96)                                           | Reads the room again    |
 
   Channel messages: `{"type": "ping"}` from the server, `{"type": "pong"}` and `{"type": "auth", "access_token": …}` from the client. `RoomServerMessage` and `RoomClientMessage` are added to the OpenAPI components (`_openapi_with_room_messages` in `app/main.py`).
 
-- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), returned as `version` by the room API.
+- **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), and by `GameService` (start, first placement of a round, end of a round, end of the cooldown); returned as `version` by the room API.
 - **Authentication**: the first message is always `auth`, within `ROOM_AUTH_TIMEOUT_SECONDS`: an account sends its access token, a guest sends `null` and is recognised by its `guest_token` cookie (`Path=/api/rooms/<code>`, [rooms guide](rooms.md#24-guests)). An account comes first, like in REST.
-- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401`, `4404`, `4410` and `4411`:
+- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401`, `4404`, `4410`, `4411` and `4412`:
 
   | Code       | Reason              | When                                                                             |
   | ---------- | ------------------- | -------------------------------------------------------------------------------- |
@@ -186,6 +192,7 @@ Built in #85. What exists today:
   | `4408`     | `heartbeat_timeout` | No `pong` within `ROOM_HEARTBEAT_TIMEOUT_SECONDS` after a ping                   |
   | `4410`     | `removed_from_room` | The room admin removed the participant (#148)                                    |
   | `4411`     | `room_banned`       | The room admin banned the participant (#148)                                     |
+  | `4412`     | `room_closed`       | The room was closed (#89)                                                        |
 
 - **Settings** (`app/core/config.py`, `.env.example`):
 

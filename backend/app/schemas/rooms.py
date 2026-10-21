@@ -2,16 +2,16 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.constants.auth import DISPLAY_NAME_MAX_LENGTH
 from app.constants.rooms import (
     COOLDOWN_SECONDS_MAX,
     COOLDOWN_SECONDS_MIN,
     TIMER_SECONDS_MAX,
     TIMER_SECONDS_MIN,
 )
-from app.models.room import AutoAdvance, ItemOrder, RoomStatus
+from app.models.enums import AutoAdvance, GameStatus, ItemOrder, RoomStatus
+from app.schemas.common import DisplayName
 
 
 class CreateRoomRequest(BaseModel):
@@ -61,6 +61,65 @@ class ParticipantResponse(BaseModel):
     is_guest: bool
     # Un onglet au moins a son canal temps réel ouvert (docs/technical/realtime.md)
     connected: bool
+    # La place du lecteur lui-même (« vous »)
+    is_you: bool
+
+
+class CurrentItemResponse(BaseModel):
+    """Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
+    tous), un item placé par le lecteur, ou un item qu'il a manqué."""
+
+    id: uuid.UUID
+    text: str | None
+    image_url: str | None
+
+
+class GameTierResponse(BaseModel):
+    """Un tier de la version figée de la partie, où placer les items."""
+
+    id: uuid.UUID
+    name: str
+    # Format #RRGGBB
+    color: str
+
+
+class OwnPlacementResponse(BaseModel):
+    """Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
+    pendant les tours, placement final pendant le cooldown."""
+
+    item: CurrentItemResponse
+    tier_id: uuid.UUID
+    position: int
+
+
+class CurrentGameResponse(BaseModel):
+    # in_round pendant les tours, cooldown après le dernier tour
+    status: GameStatus
+    # Numéro du tour en cours (à partir de 1) et nombre de tours, un par tuile
+    round_number: int
+    round_count: int
+    current_item: CurrentItemResponse
+    # Fin du timer du tour, si la salle en a un ; le client affiche le compte à rebours
+    ends_at: datetime | None
+    # Tiers de la version figée, de haut en bas
+    tiers: list[GameTierResponse]
+    # Qui a placé l'item en cours, jamais où (plateau privé)
+    placed_participant_ids: list[uuid.UUID]
+    # Placements du lecteur seulement, par tier puis position ; jamais ceux des autres. Pendant
+    # les tours ses placements de tour, pendant le cooldown ses placements finaux
+    own_placements: list[OwnPlacementResponse]
+    # Fin du cooldown final, une fois le dernier tour fini
+    cooldown_ends_at: datetime | None
+    # Pendant le cooldown : les items que le lecteur n'a pas encore placés (votes absents, ou
+    # arrivé en retard), dans l'ordre des tours ; vide pendant les tours
+    missed_items: list[CurrentItemResponse]
+
+
+class PlaceItemRequest(BaseModel):
+    # Un tier de la version figée de la partie
+    tier_id: uuid.UUID
+    # Rang voulu dans le tier, 0 = premier ; au-delà de la fin, l'item va en dernier
+    position: Annotated[int, Field(ge=0)]
 
 
 class RoomBanResponse(BaseModel):
@@ -68,6 +127,18 @@ class RoomBanResponse(BaseModel):
     # Nom au moment du bannissement
     display_name: str
     is_guest: bool
+
+
+class PastGameResponse(BaseModel):
+    """Une partie close (parties passées d'une salle, historique d'un compte) : son lien de
+    résultats (/results/<public_token>)."""
+
+    public_token: str
+    # Nom du template au démarrage de la partie (sa version figée)
+    template_name: str
+    closed_at: datetime
+    # Joueurs figés, sans le room admin qui ne joue pas
+    player_count: int
 
 
 class RoomResponse(BaseModel):
@@ -86,18 +157,16 @@ class RoomResponse(BaseModel):
     is_admin: bool
     # Personnes bannies de la salle, du plus ancien au plus récent : vide sauf pour le room admin
     bans: list[RoomBanResponse]
-
-
-# Mêmes règles que le nom affiché d'un compte : espaces de début et de fin retirés, 1 à 50
-# caractères ; l'unicité dans la salle est vérifiée par le service
-Nickname = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=1, max_length=DISPLAY_NAME_MAX_LENGTH),
-]
+    # La partie en cours, None hors partie
+    game: CurrentGameResponse | None
+    # Parties closes de la salle, de la plus récente à la plus ancienne
+    past_games: list[PastGameResponse]
 
 
 class JoinAsGuestRequest(BaseModel):
-    nickname: Nickname
+    # Mêmes règles que le nom affiché d'un compte ; l'unicité dans la salle est vérifiée par le
+    # service
+    nickname: DisplayName
 
 
 class RestoreGuestRequest(BaseModel):

@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Template, TemplateSummary } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { aliceRoom } from '../test/rooms';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import { aliceRoom } from '../test/fixtures/rooms';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 import { TemplatesPage } from './TemplatesPage';
 
 const chips: TemplateSummary = {
@@ -21,8 +21,6 @@ const sodas: TemplateSummary = {
   tile_count: 1,
   updated_at: '2026-10-04T12:00:00Z',
 };
-
-type BackendMock = ReturnType<typeof stubBackend>;
 
 const createdTemplate: Template = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e03',

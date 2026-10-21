@@ -8,6 +8,7 @@ from fastapi.websockets import WebSocketDisconnect
 from sqlalchemy.orm import Session
 from starlette.testclient import WebSocketTestSession
 
+from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import (
     CHANNEL_CLOSE_BANNED,
@@ -50,7 +51,8 @@ def alice_room(auth_client: TestClient, db_session: Session, alice: dict[str, st
 
 
 def channel(client: TestClient, code: str, origin: dict[str, str] = APP_ORIGIN) -> Any:
-    return client.websocket_connect(f"/rooms/{code}/ws", headers=origin)
+    # websocket_connect ignore la base_url du client : le chemin complet, sous /api
+    return client.websocket_connect(f"{API_PREFIX}/rooms/{code}/ws", headers=origin)
 
 
 def access_token(headers: dict[str, str]) -> str:

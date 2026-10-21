@@ -5,9 +5,11 @@ import jwt
 import pytest
 
 from app.constants.auth import JWT_ALGORITHM
+from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.core.security import (
     create_access_token,
     decode_access_token,
+    generate_public_results_token,
     generate_refresh_token,
     hash_password,
     hash_refresh_token,
@@ -121,3 +123,13 @@ def test_refresh_tokens_are_random_and_hashed_deterministically():
     assert hash_refresh_token(first) == hash_refresh_token(first)
     assert hash_refresh_token(first) != first
     assert len(hash_refresh_token(first)) == 64
+
+
+def test_public_results_tokens_are_random_and_fit_their_column():
+    first, second = generate_public_results_token(), generate_public_results_token()
+
+    assert first != second
+    # 128 bits en base64 URL : 22 caractères, sans caractère à échapper dans une URL
+    assert len(first) == 22
+    assert len(first) <= PUBLIC_RESULTS_TOKEN_MAX_LENGTH
+    assert all(character.isalnum() or character in "-_" for character in first)

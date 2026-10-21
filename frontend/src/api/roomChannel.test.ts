@@ -5,12 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { roomQueryKey } from '../constants/rooms';
 import { FakeWebSocket, latestSocket } from '../test/fakeWebSocket';
-import { aliceRoom } from '../test/rooms';
+import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
 import { stubBackend, tokenResponse, unauthorized } from '../test/stubBackend';
 import { setAccessToken } from './client';
 import { createQueryClient } from './queryClient';
 import type { Room, RoomViewer } from './rooms';
-import { useRoomEvents } from './roomChannel';
+import { type RemovalReason, useRoomEvents } from './roomChannel';
 
 const bobId: string = aliceRoom.participants[1].id;
 
@@ -19,7 +19,7 @@ const bobId: string = aliceRoom.participants[1].id;
 function followRoom(viewer: RoomViewer = 'account') {
   const queryClient = createQueryClient({ queries: { retry: false } });
   queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoom);
-  const onRemoved = vi.fn<(banned: boolean) => void>();
+  const onRemoved = vi.fn<(reason: RemovalReason) => void>();
   const hook = renderHook(
     () => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true, onRemoved),
     {
@@ -95,6 +95,22 @@ describe('useRoomEvents', () => {
     expect(isInvalidated(queryClient)).toBe(false);
   });
 
+  it('adds who placed the current item to the cache without reading the room again', () => {
+    const { queryClient } = followRoom();
+    queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoomInGame);
+
+    latestSocket().receive({
+      type: 'participant.placed',
+      room_version: aliceRoomInGame.version + 1,
+      data: { participant_id: bobId, round_number: 1 },
+    });
+
+    const room: Room | undefined = cachedRoom(queryClient);
+    expect(room?.version).toBe(aliceRoomInGame.version + 1);
+    expect(room?.game?.placed_participant_ids).toEqual([bobId]);
+    expect(isInvalidated(queryClient)).toBe(false);
+  });
+
   it('reads the room again when someone joins', () => {
     const { queryClient } = followRoom();
 
@@ -106,6 +122,17 @@ describe('useRoomEvents', () => {
 
     expect(isInvalidated(queryClient)).toBe(true);
   });
+
+  it.each(['round.started', 'cooldown.started', 'game.closed'])(
+    'reads the room again on %s',
+    (type: string) => {
+      const { queryClient } = followRoom();
+
+      latestSocket().receive({ type, room_version: 4, data: {} });
+
+      expect(isInvalidated(queryClient)).toBe(true);
+    },
+  );
 
   it('removes a participant from the cache without reading the room again', () => {
     const { queryClient } = followRoom();
@@ -122,17 +149,18 @@ describe('useRoomEvents', () => {
     expect(isInvalidated(queryClient)).toBe(false);
   });
 
-  it.each([
-    [4410, false],
-    [4411, true],
-  ])('tells the page and stops after the close code %i', (closeCode, banned) => {
+  it.each<[number, RemovalReason]>([
+    [4410, 'removed'],
+    [4411, 'banned'],
+    [4412, 'closed'],
+  ])('tells the page and stops after the close code %i', (closeCode, reason) => {
     vi.useFakeTimers();
     const { onRemoved } = followRoom();
 
     latestSocket().closeFromServer(closeCode);
     vi.advanceTimersByTime(10_000);
 
-    expect(onRemoved).toHaveBeenCalledExactlyOnceWith(banned);
+    expect(onRemoved).toHaveBeenCalledExactlyOnceWith(reason);
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 

@@ -2,15 +2,17 @@ import logging
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Cookie, Query, Response
 from fastapi.responses import RedirectResponse
 
 from app.api.dependencies import (
-    get_auth_service,
-    get_current_session,
-    get_current_user,
-    get_email_sender,
-    get_google_oauth_client,
+    AuthServiceDep,
+    CurrentSessionDep,
+    CurrentUserDep,
+    EmailSenderDep,
+    GameServiceDep,
+    GoogleClientDep,
+    SettingsDep,
 )
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
@@ -31,7 +33,7 @@ from app.constants.auth import (
     GoogleNextStep,
 )
 from app.constants.error_codes import ErrorCode
-from app.core.config import Settings, get_settings
+from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import (
     EmailAlreadyRegisteredError,
@@ -44,7 +46,6 @@ from app.exceptions.auth import (
 )
 from app.exceptions.google import GoogleAuthError
 from app.exceptions.http import AppHTTPException
-from app.models.user import User
 from app.schemas.auth import (
     DeleteAccountRequest,
     EmailVerificationRequest,
@@ -56,20 +57,14 @@ from app.schemas.auth import (
     UserResponse,
     VerifyEmailRequest,
 )
-from app.services.auth import AuthenticatedSession, AuthService, IssuedTokens
-from app.services.email import EmailSender
-from app.services.google_oauth import GoogleLoginAttempt, GoogleOAuthClient
+from app.services.auth import IssuedTokens
+from app.services.google_oauth import GoogleLoginAttempt
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-SettingsDep = Annotated[Settings, Depends(get_settings)]
 RefreshTokenCookie = Annotated[str | None, Cookie(alias=REFRESH_TOKEN_COOKIE)]
-GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]
-EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
-CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str, settings: Settings) -> None:
@@ -237,12 +232,15 @@ def verify_email(payload: VerifyEmailRequest, service: AuthServiceDep) -> None:
 def delete_me(
     payload: DeleteAccountRequest,
     response: Response,
-    session: Annotated[AuthenticatedSession, Depends(get_current_session)],
+    session: CurrentSessionDep,
     service: AuthServiceDep,
+    games: GameServiceDep,
     settings: SettingsDep,
 ) -> None:
     try:
-        service.delete_account(session, payload.password)
+        # Ses salles sont fermées comme par lui (US-2.7) : la base les emporterait sinon avec
+        # leur partie en cours, sans prévenir personne
+        service.delete_account(session, payload.password, before_delete=games.close_rooms_of_admin)
     except IncorrectPasswordError as exc:
         raise AppHTTPException(
             status_code=403,

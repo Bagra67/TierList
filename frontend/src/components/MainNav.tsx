@@ -3,7 +3,7 @@ import { NavLink } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
 import { ROUTES } from '../constants/routes';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 // Liens vers les pages privées, affichés seulement une fois connecté. NavLink pose
 // aria-current="page" sur le lien de la page affichée.
@@ -31,6 +31,11 @@ export function MainNav() {
         <li>
           <NavLink to={ROUTES.TEMPLATES} className={linkClassName}>
             {t('nav.templates')}
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to={ROUTES.HISTORY} className={linkClassName}>
+            {t('nav.history')}
           </NavLink>
         </li>
       </ul>
