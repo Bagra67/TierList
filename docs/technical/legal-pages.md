@@ -17,7 +17,7 @@ The text was written from the code (data inventory of #200) and validated by the
 
 ## 2. Keeping the policy up to date
 
-**Update the policy in the same PR** as any change to what it describes:
+**Update the policy in the same PR** as any change to what it describes (AGENTS.md §51: checked for every change):
 
 - a new kind of personal data collected, or data collected for a new purpose;
 - a retention period (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, the email link lifetimes);

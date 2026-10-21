@@ -17,7 +17,7 @@ Le texte a été rédigé à partir du code (inventaire des données de #200) et
 
 ## 2. Garder la politique à jour
 
-**Mettre à jour la politique dans la même PR** que tout changement de ce qu'elle décrit :
+**Mettre à jour la politique dans la même PR** que tout changement de ce qu'elle décrit (AGENTS.md §51 : vérifié à chaque changement) :
 
 - un nouveau type de donnée personnelle collectée, ou une donnée collectée pour une nouvelle finalité ;
 - une durée de conservation (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, la durée des liens envoyés par email) ;
