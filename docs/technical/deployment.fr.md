@@ -27,7 +27,7 @@ GitHub Actions ──SFTP──> pod TierList          GitHub Actions ──pg_d
 Contraintes :
 
 - **Un seul worker** : le registre temps réel est en mémoire ([guide du temps réel](realtime.fr.md#29-montée-en-charge)).
-- **Le port du pod est aussi joignable directement**, sans le tunnel : seul le tunnel peut annoncer le vrai client et le schéma (`TRUSTED_PROXY_IPS`, §2.2).
+- **Le port du pod est aussi joignable directement**, sans le tunnel : l'application refuse toute connexion qui ne vient pas du tunnel (`TRUSTED_PROXY_IPS`, §2.2).
 - **WebSocket** : Cloudflare le transmet ; le battement de cœur de 10 s garde la connexion ouverte. Un redémarrage ferme les sockets ; les clients se reconnectent et relisent la salle ([guide du WebSocket](websocket.fr.md)).
 - **Envois de fichiers** : Cloudflare accepte des corps jusqu'à 100 Mo, bien au-dessus de `IMAGE_UPLOAD_MAX_BYTES` (10 Mio).
 
@@ -61,7 +61,15 @@ L'adresse publique est `FRONTEND_BASE_URL` (`https://<domaine>`) : base des lien
 
 ### 2.2 Derrière le tunnel
 
-uvicorn est lancé avec `--proxy-headers --forwarded-allow-ips "$TRUSTED_PROXY_IPS"` : seules ces adresses (le tunnel) peuvent poser `X-Forwarded-For` et `X-Forwarded-Proto`. **Jamais `*`** : le port est joignable directement, n'importe qui pourrait alors se faire passer pour n'importe quelle adresse. `start.sh` refuse de démarrer sans la variable, ou avec `*`.
+Le port du pod est public (`<IP du pod>:<port>` répond sans Cloudflare), et l'hébergeur n'offre pas de pare-feu dessus : l'application le ferme elle-même. Quand `TRUSTED_PROXY_IPS` est défini (adresses IP ou réseaux CIDR, séparés par des virgules), `TrustedProxyMiddleware` (`app/core/proxy.py`), la couche la plus externe de l'application racine, regarde l'adresse de la connexion TCP, pas un en-tête :
+
+- les adresses du tunnel sont servies, et elles seules peuvent poser `X-Forwarded-For` et `X-Forwarded-Proto` (`ProxyHeadersMiddleware` d'uvicorn, appliqué à l'intérieur) ;
+- la boucle locale (`127.0.0.1`, `::1`) est servie, sans lire ses en-têtes de proxy : la boucle d'attente de `start.sh` l'appelle depuis le pod ;
+- toute autre requête HTTP reçoit `403` au format d'erreur de l'API (`code: http_error`) ; une poignée de main WebSocket reçoit aussi `403`.
+
+uvicorn est donc lancé avec `--no-proxy-headers` : sa propre lecture des en-têtes de proxy remplacerait l'adresse de la connexion par le client annoncé avant que l'application la voie. **Jamais `*`** : les réglages le refusent, comme toute valeur qui n'est ni une adresse ni un réseau, et `start.sh` refuse de démarrer sans la variable. Sans elle (développement, tests), tout est servi, comme avant.
+
+Si le pod cloudflared change d'adresse, le site répond `403` partout jusqu'à la mise à jour de `TRUSTED_PROXY_IPS` et un nouveau déploiement (§4).
 
 Le schéma vu par l'application ne pilote rien de sensible : les cookies sont `Secure` grâce à `AUTH_COOKIE_SECURE=true`, les redirections après la connexion Google sont relatives, et l'origine du canal vient de `FRONTEND_BASE_URL`. Les en-têtes du proxy gardent justes les journaux et `request.url`.
 
@@ -96,7 +104,7 @@ SFTP ne sait ni extraire une archive ni toujours créer un lien symbolique : d'o
 1. le lanceur lit `CURRENT`, extrait `releases/tierlist-<version>.tar.gz` si besoin (dans un dossier temporaire, puis renommé), supprime les versions plus anciennes que les 3 dernières, puis lance le `start.sh` du bundle ;
 2. `start.sh` installe `uv` dans `bin/` s'il manque (installeur officiel, ou PyPI sans `curl`), charge `.env`, puis lance `uv sync --frozen --no-dev` avec le Python du pod ;
 3. `alembic upgrade head` : **en cas d'échec, le script s'arrête et uvicorn ne démarre pas** ;
-4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` vient du panel ; 8000 sinon) ;
+4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --no-proxy-headers` (`SERVER_PORT` vient du panel ; 8000 sinon ; l'application lit `TRUSTED_PROXY_IPS`, §2.2) ;
 5. pendant ce temps, une petite boucle en arrière-plan (Python `urllib`, sans `curl`) attend que `http://127.0.0.1:$SERVER_PORT/api/health` réponde `200`, puis affiche **une seule fois** la ligne exacte `change this part` : le panel MineStrator (egg Pterodactyl « python generic ») considère le pod démarré quand sa console affiche cette ligne. Après 5 minutes sans réponse, elle abandonne avec une ligne de log, sans arrêter l'application (le panel montre alors toujours le pod en démarrage).
 
 Un redémarrage réutilise `uv`, l'environnement et la version extraite : il est rapide et idempotent.

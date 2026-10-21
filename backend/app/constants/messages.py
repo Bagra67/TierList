@@ -7,6 +7,8 @@ partir de son code (app/constants/error_codes.py). Ils ne révèlent rien d'inte
 # --- Erreurs génériques (app/core/errors.py) -----------------------------------------------
 INTERNAL_ERROR = "Internal server error"
 VALIDATION_ERROR = "Invalid request"
+# Connexion qui ne vient pas du proxy (app/core/proxy.py)
+DIRECT_ACCESS_FORBIDDEN = "Requests must go through the public address"
 
 # --- Santé ---------------------------------------------------------------------------------
 DATABASE_UNAVAILABLE = "Database unavailable"

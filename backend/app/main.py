@@ -28,6 +28,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
 from app.core.frontend import mount_frontend
 from app.core.logging import configure_logging, get_logging_settings
+from app.core.proxy import TrustedProxyMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
@@ -240,3 +241,6 @@ app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
     mount_frontend(app, _settings.frontend_dist)
+# Le port du pod est public : seul le proxy joint l'application (deployment.md, §2.2)
+if _settings.trusted_proxy_ips:
+    app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)
