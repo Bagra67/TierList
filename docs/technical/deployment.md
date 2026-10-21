@@ -27,7 +27,7 @@ GitHub Actions ──SFTP──> TierList pod          GitHub Actions ──pg_d
 Constraints:
 
 - **One worker**: the real-time registry is in memory ([real-time guide](realtime.md#29-scaling)).
-- **The pod port is also reachable directly**, without the tunnel: only the tunnel may announce the real client and scheme (`TRUSTED_PROXY_IPS`, §2.2).
+- **The pod port is also reachable directly**, without the tunnel: the app refuses any connection that does not come from the tunnel (`TRUSTED_PROXY_IPS`, §2.2).
 - **WebSocket**: Cloudflare forwards it; the 10 s heartbeat keeps the connection open. A restart closes the sockets; clients reconnect and read the room again ([WebSocket guide](websocket.md)).
 - **Uploads**: Cloudflare accepts bodies up to 100 MB, well above `IMAGE_UPLOAD_MAX_BYTES` (10 MiB).
 
@@ -61,7 +61,15 @@ The public address is `FRONTEND_BASE_URL` (`https://<domain>`): base of the link
 
 ### 2.2 Behind the tunnel
 
-uvicorn runs with `--proxy-headers --forwarded-allow-ips "$TRUSTED_PROXY_IPS"`: only these addresses (the tunnel) may set `X-Forwarded-For` and `X-Forwarded-Proto`. **Never `*`**: the port is reachable directly, anyone could then claim any address. `start.sh` refuses to start without the variable, or with `*`.
+The pod port is public (`<pod IP>:<port>` answers without Cloudflare), and the host offers no firewall on it: the app closes it itself. When `TRUSTED_PROXY_IPS` is set (comma-separated IP addresses or CIDR networks), `TrustedProxyMiddleware` (`app/core/proxy.py`), the outermost layer of the root app, looks at the address of the TCP connection, not at a header:
+
+- the tunnel addresses are served, and only they may set `X-Forwarded-For` and `X-Forwarded-Proto` (uvicorn's `ProxyHeadersMiddleware`, applied inside);
+- the loopback (`127.0.0.1`, `::1`) is served, without reading its proxy headers: the readiness loop of `start.sh` calls it from inside the pod;
+- any other HTTP request gets `403` with the API error format (`code: http_error`); a WebSocket handshake gets `403` too.
+
+uvicorn therefore runs with `--no-proxy-headers`: its own proxy-header handling would replace the connection address by the forwarded client before the app sees it. **Never `*`**: the settings refuse it, like any value that is not an address or a network, and `start.sh` refuses to start without the variable. Without it (development, tests), everything is served, as before.
+
+If the cloudflared pod changes address, the site answers `403` everywhere until `TRUSTED_PROXY_IPS` is updated and the app redeployed (§4).
 
 The scheme seen by the app does not drive anything sensitive: the cookies are `Secure` through `AUTH_COOKIE_SECURE=true`, the redirects after Google sign-in are relative, and the channel origin comes from `FRONTEND_BASE_URL`. The proxy headers keep the logs and `request.url` right.
 
@@ -96,7 +104,7 @@ SFTP can neither extract an archive nor always create a symbolic link: hence `CU
 1. the launcher reads `CURRENT`, extracts `releases/tierlist-<version>.tar.gz` if needed (into a temporary folder, then renamed), deletes the versions older than the last 3, then runs the bundle's `start.sh`;
 2. `start.sh` installs `uv` in `bin/` if it is missing (official installer, or PyPI without `curl`), loads `.env`, then runs `uv sync --frozen --no-dev` with the Python of the pod;
 3. `alembic upgrade head`: **if it fails, the script stops and uvicorn does not start**;
-4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --proxy-headers --forwarded-allow-ips $TRUSTED_PROXY_IPS` (`SERVER_PORT` comes from the panel; 8000 otherwise);
+4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --no-proxy-headers` (`SERVER_PORT` comes from the panel; 8000 otherwise; the app reads `TRUSTED_PROXY_IPS`, §2.2);
 5. meanwhile, a small background loop (Python `urllib`, no `curl`) waits for `http://127.0.0.1:$SERVER_PORT/api/health` to answer `200`, then prints **once** the exact line `change this part`: the MineStrator panel ("python generic" Pterodactyl egg) considers the pod started when its console shows that line. After 5 minutes without an answer, it gives up with a log line, without stopping the app (the panel then keeps showing the pod as starting).
 
 A restart reuses `uv`, the environment and the extracted version: it is quick and idempotent.

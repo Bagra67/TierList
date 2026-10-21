@@ -28,6 +28,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
 from app.core.frontend import mount_frontend
 from app.core.logging import configure_logging, get_logging_settings
+from app.core.proxy import TrustedProxyMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
@@ -155,7 +156,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 api_app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
-    version="0.6.0",
+    version="0.6.1",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
@@ -240,3 +241,6 @@ app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
     mount_frontend(app, _settings.frontend_dist)
+# Le port du pod est public : seul le proxy joint l'application (deployment.md, §2.2)
+if _settings.trusted_proxy_ips:
+    app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)

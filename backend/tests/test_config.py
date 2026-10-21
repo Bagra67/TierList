@@ -1,3 +1,4 @@
+from ipaddress import ip_network
 from pathlib import Path
 
 import pytest
@@ -86,3 +87,30 @@ def test_the_s3_secret_key_is_hidden_when_printed() -> None:
     assert "very-secret-key" not in repr(settings)
     assert settings.image_s3_secret_access_key is not None
     assert settings.image_s3_secret_access_key.get_secret_value() == "very-secret-key"
+
+
+def test_no_trusted_proxy_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TRUSTED_PROXY_IPS", raising=False)
+
+    assert make_settings().trusted_proxy_ips == []
+
+
+def test_trusted_proxies_are_read_from_a_comma_separated_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_IPS", "10.0.0.7, 10.1.0.0/16")
+
+    assert make_settings().trusted_proxy_ips == [
+        ip_network("10.0.0.7/32"),
+        ip_network("10.1.0.0/16"),
+    ]
+
+
+@pytest.mark.parametrize("invalid_value", ["*", "not-an-address", "10.0.0.300"])
+def test_an_invalid_trusted_proxy_is_refused(
+    monkeypatch: pytest.MonkeyPatch, invalid_value: str
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_IPS", invalid_value)
+
+    with pytest.raises(ValidationError):
+        make_settings()

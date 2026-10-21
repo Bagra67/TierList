@@ -18,7 +18,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
   - a strong `POSTGRES_PASSWORD`.
 - [ ] Emails in production ([emails guide](docs/technical/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`. Done on staging: Scaleway Transactional Email, domain `ladwein.dev` verified ([Scaleway](docs/technical/deployment.md#54-scaleway-163)).
-- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (Cloudflare rate limiting rules). The trusted proxy headers are set (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
+- [ ] Limit repeated attempts (sign-in, registration, emails) at the host level (Cloudflare rate limiting rules). Only the tunnel reaches the app, and only it may set the proxy headers (`TRUSTED_PROXY_IPS`).
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 - [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
 - [ ] Database backups: configure the `backup-*` environments and try a restore on staging (#162).
