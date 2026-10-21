@@ -5,6 +5,53 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [0.6.0] - 2026-10-21
+
+### Fonctionnalités
+
+- salles : 10 participants au plus par salle, arrivées bloquées pendant une partie (#156)
+- parties : démarrage d'une partie avec sa version figée du template et ses tours (#164)
+- parties : placement de l'item en cours, avec son tier et sa position (#170)
+- parties : passage au tour suivant par le bouton, le timer ou quand tout le monde a placé (#171)
+- frontend : écran de jeu avec le plateau privé et les commandes du room admin (#172)
+- parties : cooldown final, terminé par le timer ou par le room admin (#175)
+- frontend : écran du cooldown avec le plateau final, les items manqués et la fin immédiate (#176)
+- parties : enregistrement de la partie close avec ses joueurs figés (#177)
+- salles : fermeture d'une salle (#179)
+- salles : fermeture automatique des salles inactives (#180)
+- résultats : API des résultats d'une partie close (#182)
+- frontend : page des résultats avec l'option des votes absents (#183)
+- résultats : lien public des résultats (#184)
+- parties : rejouer dans la même salle (#186)
+- historique : historique des parties closes d'un compte (#187)
+- paramètres : panneau de paramètres dans la barre de navigation (#190)
+- déploiement : déploiement sur des pods MineStrator derrière un Cloudflare Tunnel (#193)
+- déploiement : redémarrage du pod par l'API du panel MineStrator (#195)
+- déploiement : signalement au panel MineStrator quand le pod est prêt (#197)
+- légal : page de politique de confidentialité (#203)
+
+### Corrections
+
+- parties : corrections de l'audit des parties (#178)
+- auth : liens privés masqués une fois la session terminée (#189)
+- images : envoi des images des tuiles avec l'ACL public-read (#199)
+
+### Refactorisation
+
+- frontend : enveloppe commune des dialogues et outils de test séparés (#169)
+- backend : types et utilitaires partagés rangés par responsabilité (#166)
+- api : réponses construites dans des presenters, alias de dépendances partagés (#167)
+
+### Documentation
+
+- décision de l'hébergement et du déploiement continu (#157)
+- domaine du staging : tierlist-staging.ladwein.dev (#194)
+- procédure de mise en place du staging et étapes pour la production (#198)
+
+### Tests
+
+- parties : retour à sa place et arrivée pendant une partie (#174)
+
 ## [0.5.0] - 2026-10-16
 
 ### Fonctionnalités
