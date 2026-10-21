@@ -180,6 +180,22 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
+  it('opens the privacy policy from the footer, without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    renderAppAt('/login');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.click(
+      within(screen.getByRole('contentinfo')).getByRole('link', {
+        name: 'Politique de confidentialité',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Politique de confidentialité' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows a not found page for unknown urls, with or without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 

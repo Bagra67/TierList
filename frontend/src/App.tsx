@@ -9,6 +9,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ResultsPage } from './pages/ResultsPage';
@@ -38,6 +39,7 @@ export default function App() {
         <Route path={ROUTES.ROOM} element={<RoomPage />} />
         {/* Ouverte sans compte : le lien suffit à lire les résultats (US-5.3) */}
         <Route path={ROUTES.RESULTS} element={<ResultsPage />} />
+        <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
