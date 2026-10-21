@@ -22,6 +22,8 @@
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
 - [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
 - [ ] Sauvegardes de la base : configurer les environnements `backup-*` et essayer une restauration sur le staging (#162).
+- [x] Politique de confidentialité : page publique `/privacy`, liée depuis le pied de page et le panneau de paramètres ([pages légales](docs/technical/legal-pages.fr.md), #200).
+- [ ] Conditions d'utilisation (#201) et export des données du compte dans l'application (#202).
 - [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub (fait sur le staging ; chaque image est envoyée avec l'ACL `public-read`, [Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)) ; plus tard, un CDN capable de **purger une URL** (nécessaire pour masquer une image).
 
 ## 2. Décisions à prendre

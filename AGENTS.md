@@ -1534,6 +1534,8 @@ A task is considered complete only when:
 -   [ ] Frontend build was executed when relevant.
 -   [ ] New user-facing texts and error codes are translated in every
     language (§50).
+-   [ ] The privacy policy was checked, and updated when the change
+    affects what it describes (§51).
 -   [ ] Backend validation was executed when relevant.
 -   [ ] Final Git diff was reviewed.
 -   [ ] No unrelated changes were introduced.
@@ -1618,3 +1620,34 @@ French is the reference language. How it works and step-by-step recipes:
 
 Not concerned: log messages, code comments, test names, and product
 names (`TierList`).
+
+------------------------------------------------------------------------
+
+# 51. Privacy policy
+
+The public page `/privacy` describes the personal data TierList really
+processes. Where its text lives and how to update it:
+`docs/technical/legal-pages.md`.
+
+## MUST
+
+-   For every change, check whether the privacy policy has to change,
+    when planning and again when reviewing the diff.
+-   Update it in the same PR when the change affects:
+    -   the personal data collected, or the purpose it is used for;
+    -   a retention period (sessions, guest links, purges, inactive
+        rooms, backups, email links);
+    -   a service provider, or the country it processes data in;
+    -   a cookie or a local storage key;
+    -   what other users can see (rooms, results links, history).
+-   Then change the text in **every** locale (`privacy.*` in `fr.ts`,
+    `en.ts`…) and set `PRIVACY_POLICY_UPDATED_AT`
+    (`frontend/src/constants/legal.ts`) to the date of the change.
+-   Say in the final report whether the policy was updated or needed no
+    change.
+
+## MUST NOT
+
+-   Describe in the policy a behavior the code does not have.
+-   Add an audience measurement or advertising cookie without a consent
+    mechanism and an update of the policy.

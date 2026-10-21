@@ -54,6 +54,18 @@ describe('SettingsPanel', () => {
     expect(await screen.findByRole('dialog', { name: 'Settings' })).toBeVisible();
   });
 
+  it('links to the privacy policy, signed out too', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    renderAppAt('/login');
+
+    const panel: HTMLElement = await openPanel();
+
+    expect(within(panel).getByRole('heading', { name: 'Informations' })).toBeInTheDocument();
+    expect(
+      within(panel).getByRole('link', { name: 'Politique de confidentialité' }),
+    ).toHaveAttribute('href', '/privacy');
+  });
+
   it('hides the account section when signed out', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
     renderAppAt('/login');

@@ -27,6 +27,98 @@ export const en: Translation = {
     close: 'Close',
     display: 'Display',
     account: 'Account',
+    about: 'About',
+  },
+  footer: {
+    privacy: 'Privacy policy',
+  },
+  privacy: {
+    title: 'Privacy policy',
+    updatedAt: 'Last updated: {{date, datetime(dateStyle: long)}}',
+    intro:
+      'This page explains which personal data TierList collects, why, how long it is kept, who processes it and how to exercise your rights.',
+    controller: {
+      title: 'Data controller',
+      body: 'TierList is published by {{name}}, the controller of your personal data. For any question or request about your data:',
+    },
+    data: {
+      title: 'Data collected',
+      account:
+        'Account: email address, display name, password (never stored in clear, only hashed) and interface language.',
+      google:
+        'Sign-in with Google, if you choose it: the identifier and email address of your Google account.',
+      guest:
+        'Guests: the display name chosen to join a room, and a cookie that recognises you in that room.',
+      content:
+        'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position).',
+      games: 'Games: the rooms you join, your placements and the results of the games.',
+      technical:
+        'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
+    },
+    purposes: {
+      title: 'Why this data',
+      service:
+        'Providing the service you ask for by using TierList (performance of a contract): creating your account, signing you in, running the games, sending the email address verification and password reset emails.',
+      security:
+        'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
+      noAds: 'Your data is neither sold nor used for advertising or profiling.',
+    },
+    retention: {
+      title: 'Retention periods',
+      account: 'Account, and the templates and rooms you created: until you delete your account.',
+      sessions: 'Sign-in session: 30 days without use.',
+      links:
+        'Links sent by email: 24 hours to verify the email address, 30 minutes for a new password.',
+      guests: "A guest's personal link: 30 days. An inactive room is closed after 24 hours.",
+      deleted:
+        'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
+      backups: 'Database backups: 14 days.',
+    },
+    visibility: {
+      title: 'Who sees your data',
+      room: 'The participants of a room see the template used, the display names and the placements of the game.',
+      results:
+        'The results link of a finished game can be opened by anyone who has it, without an account.',
+      deletedAccount:
+        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. You can ask by email for your display name to be erased.",
+    },
+    processors: {
+      title: 'Service providers',
+      intro: 'Your data is processed by the following providers, only to run the service:',
+      minestrator: 'MineStrator: hosting of the application and the database (France).',
+      scaleway: 'Scaleway: image storage, email sending and backup storage (France).',
+      cloudflare: 'Cloudflare: domain name, HTTPS encryption and traffic routing (United States).',
+      google: 'Google: sign-in with a Google account, if you choose it (United States).',
+      github: 'GitHub: deployment of the application and transfer of the backups (United States).',
+      transfers:
+        'Transfers to the United States rely on the safeguards provided by the GDPR, such as the standard contractual clauses of the European Commission.',
+    },
+    cookies: {
+      title: 'Cookies and local storage',
+      intro:
+        'TierList only uses cookies strictly needed for it to work, with no audience measurement or advertising: no consent is therefore asked.',
+      session: 'Session cookie: keeps you signed in (30 days).',
+      google: 'Google sign-in cookie: for the time of the sign-in (10 minutes).',
+      guest: 'Guest cookie: recognises you in a room (30 days at most).',
+      local: 'Browser local storage: the chosen theme and language.',
+    },
+    security: {
+      title: 'Security',
+      body: 'Traffic is encrypted (HTTPS), passwords are never stored in clear, session cookies cannot be read by the scripts of the page, and access to the servers is restricted.',
+    },
+    rights: {
+      title: 'Your rights',
+      body: 'You can access your data, correct it, erase it, restrict its processing, object to this processing and ask for its portability.',
+      delete: 'You can delete your account at any time from the settings panel.',
+      request:
+        'For any other request, write to {{email}}: you will get an answer within one month.',
+      cnil: 'You can also lodge a complaint with the CNIL, the French data protection authority:',
+      cnilLink: 'file a complaint on cnil.fr',
+    },
+    changes: {
+      title: 'Changes',
+      body: 'This policy may change with the service. The date of the last update is shown at the top of the page, and a significant change will be announced in the application.',
+    },
   },
   history: {
     title: 'History',

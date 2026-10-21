@@ -19,6 +19,8 @@ export const ROUTES = {
   ROOM: '/r/:code',
   // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)
   RESULTS: '/results/:token',
+  // Politique de confidentialité (#200), lisible sans compte
+  PRIVACY: '/privacy',
 } as const;
 
 export function templateEditorPath(templateId: string): string {

@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useSearchParams } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
-import { CONFIRM_PARAM } from '../constants/routes';
+import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeSwitcher } from './ThemeSwitcher';
@@ -76,6 +76,12 @@ export function SettingsPanel() {
             <DeleteAccountDialog user={user} openOnMount={deletionResumed} />
           </section>
         )}
+        <section className="mt-6 flex flex-col items-start gap-3">
+          <h3 className="font-medium">{t('settings.about')}</h3>
+          <Link to={ROUTES.PRIVACY} className="underline underline-offset-4">
+            {t('footer.privacy')}
+          </Link>
+        </section>
       </dialog>
     </>
   );
