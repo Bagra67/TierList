@@ -22,6 +22,8 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 - [ ] Google in production: add the HTTPS redirect URI to the OAuth client, set `GOOGLE_REDIRECT_URI` to it, and publish the consent screen (in "Testing" mode, only test users can sign in).
 - [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
 - [ ] Database backups: configure the `backup-*` environments and try a restore on staging (#162).
+- [x] Privacy policy: public `/privacy` page, linked from the footer and the settings panel ([legal pages](docs/technical/legal-pages.md), #200).
+- [ ] Terms of use (#201) and in-app export of the account data (#202).
 - [ ] Tile images ([images guide](docs/technical/images.md#27-storage-and-serving)), once #81 is built: Scaleway Object Storage, one bucket per environment with public read, the `IMAGE_*` settings in the GitHub environments (done on staging; each image is uploaded with the `public-read` ACL, [Scaleway](docs/technical/deployment.md#54-scaleway-163)); later, a CDN able to **purge one URL** (needed to hide an image).
 
 ## 2. Decisions to take
