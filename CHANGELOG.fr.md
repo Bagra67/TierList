@@ -5,6 +5,12 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [0.6.1] - 2026-10-21
+
+### Corrections
+
+- déploiement : requêtes refusées quand elles arrivent au pod sans passer par le tunnel (#207)
+
 ## [0.6.0] - 2026-10-21
 
 ### Fonctionnalités
