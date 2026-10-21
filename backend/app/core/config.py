@@ -1,9 +1,10 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, IPvAnyNetwork, SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy import URL
 
 from app.constants.auth import JWT_SECRET_KEY_MIN_LENGTH, PASSWORD_MAX_LENGTH
@@ -137,6 +138,18 @@ class Settings(BaseSettings):
     # Tâches de nuit dans le processus (purges des templates supprimés et des images inutilisées)
     maintenance_enabled: bool = True
     maintenance_hour_utc: int = Field(default=3, ge=0, le=23)
+    # Adresses du proxy (Cloudflare Tunnel), séparées par des virgules : adresses IP ou réseaux
+    # CIDR, jamais « * ». Le port du pod est joignable sans le tunnel : quand la liste est
+    # définie, toute autre connexion est refusée (app/core/proxy.py). Vide en développement.
+    trusted_proxy_ips: Annotated[list[IPvAnyNetwork], NoDecode] = []
+
+    @field_validator("trusted_proxy_ips", mode="before")
+    @classmethod
+    def _split_trusted_proxy_ips(cls, value: object) -> object:
+        # Le .env donne une chaîne « 10.0.0.1,10.0.0.2 », pas une liste JSON
+        if isinstance(value, str):
+            return [address.strip() for address in value.split(",") if address.strip()]
+        return value
 
     @property
     def app_origin(self) -> str:

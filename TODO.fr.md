@@ -18,7 +18,7 @@
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
 - [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Fait sur le staging : Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
-- [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (règles de limitation de Cloudflare). Les en-têtes de proxy de confiance sont réglés (`TRUSTED_PROXY_IPS`, `--forwarded-allow-ips`).
+- [ ] Limiter les tentatives répétées (connexion, inscription, emails) au niveau de l'hébergeur (règles de limitation de Cloudflare). Seul le tunnel joint l'application, et lui seul peut poser les en-têtes de proxy (`TRUSTED_PROXY_IPS`).
 - [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
 - [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
 - [ ] Sauvegardes de la base : configurer les environnements `backup-*` et essayer une restauration sur le staging (#162).

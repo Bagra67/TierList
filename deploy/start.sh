@@ -7,7 +7,8 @@
 # 2. charge le fichier d'environnement ($TIERLIST_ENV_FILE) ;
 # 3. installe les dépendances verrouillées (uv.lock), sans celles de développement ;
 # 4. applique les migrations : en cas d'échec, le script s'arrête et l'application ne démarre pas ;
-# 5. lance uvicorn, un seul worker (le registre temps réel est en mémoire).
+# 5. lance uvicorn, un seul worker (le registre temps réel est en mémoire). Les en-têtes de proxy
+#    sont lus par l'application (app/core/proxy.py), qui refuse les connexions hors du tunnel.
 #
 # Idempotent : à chaque redémarrage, uv et les dépendances déjà installés sont réutilisés.
 set -eu
@@ -62,9 +63,9 @@ if [ -z "${SERVER_PORT:-}" ]; then
     SERVER_PORT=8000
     log "SERVER_PORT non défini : port $SERVER_PORT"
 fi
-# Le port est aussi joignable sans passer par le tunnel : seules ces adresses peuvent annoncer le
-# vrai client et le schéma (X-Forwarded-For, X-Forwarded-Proto). Jamais « * », qui laisserait
-# n'importe qui se faire passer pour une autre adresse.
+# Le port est aussi joignable sans passer par le tunnel : l'application ne sert que ces adresses
+# (et la boucle locale), qui seules peuvent annoncer le vrai client et le schéma (X-Forwarded-For,
+# X-Forwarded-Proto). Jamais « * », qui laisserait passer tout le monde.
 if [ -z "${TRUSTED_PROXY_IPS:-}" ] || [ "$TRUSTED_PROXY_IPS" = "*" ]; then
     log "TRUSTED_PROXY_IPS doit lister les adresses du proxy (Cloudflare Tunnel), sans « * »"
     exit 1
@@ -122,5 +123,4 @@ exec "$UV" run --no-sync uvicorn app.main:app \
     --host 0.0.0.0 \
     --port "$SERVER_PORT" \
     --workers 1 \
-    --proxy-headers \
-    --forwarded-allow-ips "$TRUSTED_PROXY_IPS"
+    --no-proxy-headers
