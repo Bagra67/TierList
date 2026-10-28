@@ -14,7 +14,7 @@ A template is what gets ranked: its **tiers** (the rows of the tier list) and it
 | List my templates | `GET /templates`                         | My active templates, with their number of tiles, the most recently modified first.                          |
 | Open a template   | `GET /templates/{id}`                    | The template, its tiers and its tiles, sorted by position.                                                  |
 | Rename a template | `PATCH /templates/{id}`                  | The new name; the last modification date is updated.                                                        |
-| Add a tier        | `POST /templates/{id}/tiers`             | A tier at the bottom, named `?`, color `#BFBFBF`.                                                           |
+| Add a tier        | `POST /templates/{id}/tiers`             | A tier at the bottom, named `?`, color `#9AA0B4`.                                                           |
 | Change a tier     | `PATCH /templates/{id}/tiers/{tier_id}`  | Its name, its color and/or its position (the others are shifted).                                           |
 | Delete a tier     | `DELETE /templates/{id}/tiers/{tier_id}` | The tier disappears, the others move up; refused for the last tier.                                         |
 | Add a tile        | `POST /templates/{id}/tiles`             | A tile with a text, an image or both, at the end; refused beyond the maximum number of tiles.               |
@@ -27,7 +27,7 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 ### Rules
 
 - **Name**: 1 to 100 characters, surrounding spaces removed (a name made only of spaces is empty, hence refused with a `422`).
-- **Default tiers**, from top to bottom: `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
+- **Default tiers**, from top to bottom: `S` `#FF3B6B`, `A` `#FF8A2A`, `B` `#FFC22E`, `C` `#7BD94A`, `D` `#2EC4B6`, `E` `#5B7CFA` (`DEFAULT_TIERS`, `app/constants/templates.py`). Ink text (`#1D1640`) keeps a 4.5:1 contrast on each of them. Changing these values only affects new templates: the colors are data of each template.
 - **Tiers**: name 1 to 50 characters (spaces removed), color `#RRGGBB` stored in upper case. A template keeps **at least one tier**: deleting the last one answers `409` `last_tier`.
 - **Positions** of tiers start at 0 and stay continuous (no gap): moving or deleting a tier renumbers the others. A position past the end puts the tier last.
 - **Empty update**: a `PATCH` without any field (or with only `null` values) changes nothing, not even the last modification date; the tier must still exist (`404` otherwise).

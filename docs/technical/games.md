@@ -105,7 +105,7 @@ The timer end is acted on by the server-side timers, and the pending deadlines a
     "image_url": "https://…/x.webp"
   },
   "ends_at": null,
-  "tiers": [{ "id": "…", "name": "S", "color": "#FF7F7F" }],
+  "tiers": [{ "id": "…", "name": "S", "color": "#FF3B6B" }],
   "placed_participant_ids": ["…"],
   "own_placements": [
     {

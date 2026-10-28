@@ -266,7 +266,7 @@ describe('TemplateEditorPage', () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`POST ${templateUrl}/tiers`]: () =>
-          Response.json(makeTemplate([tierS, tierA, tierB, makeTier('?', 3, '#BFBFBF')]), {
+          Response.json(makeTemplate([tierS, tierA, tierB, makeTier('?', 3, '#9AA0B4')]), {
             status: 201,
           }),
       });
@@ -909,19 +909,19 @@ describe('TemplateEditorPage', () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
-          Response.json(makeTemplate([tierS, { ...tierA, color: '#7FBFFF' }, tierB])),
+          Response.json(makeTemplate([tierS, { ...tierA, color: '#4FC3F7' }, tierB])),
       });
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
       fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
 
       await waitFor(() =>
         expect(calledRoutes(fetchMock)).toContain(`PATCH ${templateUrl}/tiers/${tierA.id}`),
       );
-      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#7FBFFF' });
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#4FC3F7' });
     });
 
     it('recolors a tier with a hex code', async () => {
@@ -951,7 +951,7 @@ describe('TemplateEditorPage', () => {
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       fireEvent.keyDown(picker, { key: 'Escape' });
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -985,7 +985,7 @@ describe('TemplateEditorPage', () => {
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');

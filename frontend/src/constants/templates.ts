@@ -5,21 +5,20 @@ export const TIER_NAME_MAX_LENGTH: number = 50;
 export const TILE_TEXT_MAX_LENGTH: number = 200;
 
 // Couleurs proposées dans le sélecteur des tiers : celles des tiers par défaut (S à E, cf.
-// DEFAULT_TIERS du backend), le gris d'un nouveau tier, puis quelques teintes en plus. Une simple
+// DEFAULT_TIERS du backend), quelques teintes en plus, puis le gris d'un nouveau tier. Une simple
 // suggestion : le backend accepte n'importe quelle couleur #RRGGBB.
 export const TIER_COLOR_PRESETS: readonly string[] = [
-  '#FF7F7F',
-  '#FFBF7F',
-  '#FFDF7F',
-  '#FFFF7F',
-  '#BFFF7F',
-  '#7FFF7F',
-  '#7FFFFF',
-  '#7FBFFF',
-  '#7F7FFF',
-  '#BF7FFF',
-  '#FF7FBF',
-  '#BFBFBF',
+  '#FF3B6B',
+  '#FF8A2A',
+  '#FFC22E',
+  '#7BD94A',
+  '#2EC4B6',
+  '#5B7CFA',
+  '#4FC3F7',
+  '#A78BFA',
+  '#F06BD0',
+  '#D4B483',
+  '#9AA0B4',
 ];
 
 // TanStack Query garde en cache chaque donnée lue sur l'API, rangée sous une « clé » (un

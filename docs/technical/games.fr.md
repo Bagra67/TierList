@@ -105,7 +105,7 @@ La fin du timer est appliquée par les timers côté serveur, et les échéances
     "image_url": "https://…/x.webp"
   },
   "ends_at": null,
-  "tiers": [{ "id": "…", "name": "S", "color": "#FF7F7F" }],
+  "tiers": [{ "id": "…", "name": "S", "color": "#FF3B6B" }],
   "placed_participant_ids": ["…"],
   "own_placements": [
     {
