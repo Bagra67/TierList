@@ -10,6 +10,7 @@ import { ApiError, getFieldErrors, translateError, translateFieldError } from '.
 import { ErrorMessage } from './ErrorMessage';
 import { DialogActions, ModalDialog } from './ModalDialog';
 import { TextField } from './TextField';
+import { textLinkClassName } from './ui/text-link';
 import { Button } from './ui/button';
 
 interface DeleteAccountDialogProps {
@@ -87,10 +88,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
           )}
           {needsGoogleSignIn && (
             <p>
-              <a
-                href={googleSignInUrl(DELETE_ACCOUNT_STEP)}
-                className="font-medium underline underline-offset-4"
-              >
+              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)} className={textLinkClassName}>
                 {t('account.delete.signInAgainWithGoogle')}
               </a>
             </p>

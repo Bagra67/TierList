@@ -114,10 +114,11 @@
   }
 }
 
-/* Mouvement réduit demandé par le système : animations et transitions quasi instantanées (spinner,
-   ouverture du popover…), sans retirer l'état final qu'elles affichent */
+/* Mouvement réduit demandé par le système : animations et transitions quasi instantanées (ouverture
+   du popover…), sans retirer l'état final qu'elles affichent. Le spinner garde sa rotation : arrêté,
+   il ressemblerait à un cercle cassé au lieu de dire « en cours » */
 @media (prefers-reduced-motion: reduce) {
-  *,
+  *:not(.animate-spin),
   ::before,
   ::after {
     animation-duration: 0.01ms !important;
