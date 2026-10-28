@@ -12,6 +12,7 @@ import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
 import { RoomSettingsSummary } from './RoomSettingsSummary';
 import { StartGameButton } from './StartGameButton';
+import { panelVariants } from './ui/panel';
 
 interface RoomLobbyProps {
   room: Room;
@@ -50,7 +51,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         <h2 className="text-lg font-semibold">
           {t('rooms.lobby.participants', { count: room.participants.length })}
         </h2>
-        <ul className="flex w-full flex-col divide-y rounded-xl border">
+        <ul className={panelVariants({ variant: 'list' })}>
           {room.participants.map((participant) => (
             <li key={participant.id} className="flex items-center gap-2 px-4 py-2">
               {/* Pleine en ligne, creuse hors ligne : la forme suffit, sans compter sur la couleur */}

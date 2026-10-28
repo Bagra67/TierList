@@ -22,6 +22,7 @@ import { Button } from '../components/ui/button';
 import { canonicalRoomCode, GUEST_LINK_FRAGMENT, roomQueryKey } from '../constants/rooms';
 import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 // Jeton du lien perso d'un invité (#guest=<jeton>), absent d'un lien ordinaire
 function guestTokenFrom(hash: string): string | null {
@@ -131,9 +132,7 @@ export function RoomPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
-      {isPending && error === null && (
-        <p className="text-muted-foreground">{t('common.loading')}</p>
-      )}
+      {isPending && error === null && <LoadingSkeleton shape="board" />}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
       {viewer === 'guest' && room !== undefined && (

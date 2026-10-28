@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { panelVariants } from './ui/panel';
+import { cn } from 'cn';
 
 interface EmptyStateProps {
   // Ce qui manque, et comment le remplir
@@ -10,7 +12,7 @@ interface EmptyStateProps {
 // Liste vide : un encadré qui dit quoi faire, plutôt qu'une ligne grise
 export function EmptyState({ message, action }: EmptyStateProps) {
   return (
-    <div className="flex w-full flex-col items-start gap-3 rounded-xl border border-dashed p-6">
+    <div className={cn(panelVariants({ variant: 'dashed' }), 'items-start gap-3 p-6')}>
       <p className="text-muted-foreground">{message}</p>
       {action}
     </div>

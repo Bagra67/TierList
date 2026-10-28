@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 
 import type { PastGame, Room } from '../api/rooms';
 import { type ResultsLinkState, resultsPath } from '../constants/routes';
+import { panelVariants } from './ui/panel';
 import { textLinkClassName } from './ui/text-link';
 
 interface PastGamesProps {
@@ -22,7 +23,7 @@ export function PastGames({ room }: PastGamesProps) {
       <h2 className="text-lg font-semibold">
         {t('rooms.lobby.pastGames.title', { count: room.past_games.length })}
       </h2>
-      <ul className="flex w-full flex-col divide-y rounded-xl border">
+      <ul className={panelVariants({ variant: 'list' })}>
         {room.past_games.map((pastGame: PastGame) => {
           const closedAt: Date = new Date(pastGame.closed_at);
           return (

@@ -8,6 +8,7 @@ import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS } from './boardStyles';
 import { TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import type { ResultItem, ResultItems } from './resultsViews';
+import { panelVariants } from './ui/panel';
 
 interface ResultsTierListProps {
   tiers: GameTier[];
@@ -27,7 +28,7 @@ export function ResultsTierList({ tiers, rows, items, extraRow }: ResultsTierLis
   );
 
   return (
-    <div className="flex w-full flex-col divide-y overflow-hidden rounded-xl border bg-card">
+    <div className={panelVariants({ variant: 'list' })}>
       {tiers.map((tier: GameTier, index: number) => {
         const labelId: string = `${idPrefix}-tier-${index}`;
         return (

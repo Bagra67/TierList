@@ -61,7 +61,8 @@ describe('TemplatesPage', () => {
 
     renderTemplatesPage();
 
-    expect(screen.getByText('Chargement…')).toBeInTheDocument();
+    // Le squelette de chargement (son texte « Chargement… » arrive au rendu suivant)
+    expect(screen.getByRole('status')).toBeInTheDocument();
     const items: HTMLElement[] = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[0]).getByRole('link', { name: 'Chips' })).toHaveAttribute(

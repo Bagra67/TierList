@@ -5,6 +5,8 @@ import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { GuestLinkNotice } from './GuestLinkNotice';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
+import { cn } from 'cn';
 
 interface GuestLinkSectionProps {
   code: string;
@@ -32,7 +34,7 @@ export function GuestLinkSection({ code, guestRoom, onRenewed }: GuestLinkSectio
   }
 
   return (
-    <section className="flex w-full flex-col items-start gap-2 rounded-xl border p-4">
+    <section className={cn(panelVariants(), 'items-start')}>
       <p className="text-sm text-muted-foreground">{t('rooms.guestLink.renewHint')}</p>
       <Button type="button" variant="outline" disabled={renewMutation.isPending} onClick={renew}>
         {renewMutation.isPending ? t('rooms.guestLink.renewing') : t('rooms.guestLink.renew')}

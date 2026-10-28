@@ -20,6 +20,7 @@ import {
 } from '../components/resultsViews';
 import { isResultsLinkState, type ResultsLinkState, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 // Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
 // classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
@@ -44,7 +45,7 @@ export function ResultsPage() {
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-col items-start gap-6 px-4 py-10">
         {state.error === null ? (
-          <p className="text-muted-foreground">{t('common.loading')}</p>
+          <LoadingSkeleton shape="board" />
         ) : (
           <ErrorMessage>{translateError(t, state.error)}</ErrorMessage>
         )}
@@ -105,7 +106,7 @@ export function ResultsPage() {
           ) : state.error !== null ? (
             <ErrorMessage>{translateError(t, state.error)}</ErrorMessage>
           ) : (
-            <p className="text-muted-foreground">{t('common.loading')}</p>
+            <LoadingSkeleton shape="board" />
           )}
         </div>
       </div>

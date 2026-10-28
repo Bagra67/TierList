@@ -5,6 +5,7 @@ import { type Room, useNextRound, useUpdateRoomSettings } from '../api/rooms';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
 
 interface GameAdminControlsProps {
   room: Room;
@@ -35,7 +36,7 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
   }
 
   return (
-    <section className="flex w-full flex-col gap-2 rounded-lg border p-3">
+    <section className={panelVariants()}>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={handleNext} disabled={nextMutation.isPending}>
           {nextMutation.isPending ? t('rooms.game.nexting') : t('rooms.game.next')}

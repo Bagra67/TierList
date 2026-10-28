@@ -15,6 +15,8 @@ import {
 import { ErrorMessage } from './ErrorMessage';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
+import { cn } from 'cn';
 
 interface JoinRoomScreenProps {
   code: string;
@@ -51,7 +53,7 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
           {canonicalRoomCode(code)}
         </p>
       </div>
-      <section className="flex w-full flex-col items-start gap-2 rounded-xl border p-4">
+      <section className={cn(panelVariants(), 'items-start')}>
         <h2 className="font-semibold">{t('rooms.join.withAccount')}</h2>
         <p className="text-sm text-muted-foreground">{t('rooms.join.withAccountHint')}</p>
         {/* Après la connexion, retour sur cette salle (RequireAuth fait de même) */}
@@ -61,7 +63,7 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
           </Link>
         </Button>
       </section>
-      <section className="flex w-full flex-col gap-2 rounded-xl border p-4">
+      <section className={panelVariants()}>
         <h2 className="font-semibold">{t('rooms.join.asGuest')}</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <TextField
