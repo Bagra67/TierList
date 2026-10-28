@@ -37,7 +37,9 @@ describe('HomePage', () => {
 
     renderHomePage();
 
-    const steps: HTMLElement = screen.getByRole('list');
+    const steps: HTMLElement = within(
+      screen.getByRole('region', { name: 'Comment ça marche' }),
+    ).getByRole('list');
     expect(within(steps).getAllByRole('listitem')).toHaveLength(3);
     expect(within(steps).getAllByRole('listitem')[0]).toHaveTextContent('Préparez un template');
     expect(screen.getByRole('link', { name: 'Préparer un template' })).toHaveAttribute(

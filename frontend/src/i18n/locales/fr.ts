@@ -3,8 +3,7 @@
 export const fr = {
   common: {
     loading: 'Chargement…',
-    backendUnreachable:
-      'Impossible de joindre le serveur. Vérifiez votre connexion, puis réessayez.',
+    backendUnreachable: 'Le serveur ne répond pas. Réessayez dans un instant.',
     language: 'Langue',
     theme: 'Thème',
   },
@@ -139,7 +138,7 @@ export const fr = {
   history: {
     title: 'Historique',
     empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",
-    emptyAction: 'Choisir un template',
+    emptyAction: 'Créer ou rejoindre une partie',
     closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
     players_one: '{{count}} joueur',
     players_other: '{{count}} joueurs',

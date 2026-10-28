@@ -63,8 +63,9 @@
   --input: oklch(0.641 0.045 291.2);
   --ring: oklch(0.526 0.199 268);
   --success: oklch(0.533 0.112 161);
-  /* Jaune « projecteur » : avertissements (bordure et fond léger, jamais du texte jaune) */
-  --warning: oklch(0.847 0.163 83.8);
+  /* Ambre « projecteur » : avertissements (bordure et fond léger, jamais du texte). Plus foncé
+     qu'en sombre, pour que la bordure garde 3:1 avec le fond (WCAG 1.4.11) */
+  --warning: oklch(0.6 0.13 75);
   --radius: 0.625rem;
 }
 

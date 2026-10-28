@@ -117,9 +117,9 @@ describe('HistoryPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Choisir un template' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Créer ou rejoindre une partie' })).toHaveAttribute(
       'href',
-      '/templates',
+      '/',
     );
   });
 

@@ -3,7 +3,7 @@ import type { Translation } from './fr';
 export const en: Translation = {
   common: {
     loading: 'Loading…',
-    backendUnreachable: 'Cannot reach the server. Check your connection, then try again.',
+    backendUnreachable: 'The server is not responding. Try again in a moment.',
     language: 'Language',
     theme: 'Theme',
   },
@@ -132,7 +132,7 @@ export const en: Translation = {
   history: {
     title: 'History',
     empty: 'No finished game yet. Your games will show here once closed.',
-    emptyAction: 'Pick a template',
+    emptyAction: 'Create or join a game',
     closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
     players_one: '{{count}} player',
     players_other: '{{count}} players',

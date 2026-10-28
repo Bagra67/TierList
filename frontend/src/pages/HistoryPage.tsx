@@ -29,7 +29,7 @@ export function HistoryPage() {
           message={t('history.empty')}
           action={
             <Button asChild variant="outline">
-              <Link to={ROUTES.TEMPLATES}>{t('history.emptyAction')}</Link>
+              <Link to={ROUTES.HOME}>{t('history.emptyAction')}</Link>
             </Button>
           }
         />

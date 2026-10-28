@@ -3,15 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
-import { tierColorStyle } from '../components/boardStyles';
 import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { JoinRoomForm } from '../components/JoinRoomForm';
 import { Button } from '../components/ui/button';
-import { LOGO_BAR_COLORS } from '../constants/brand';
+import { LOGO_BARS } from '../constants/brand';
 import { ROUTES } from '../constants/routes';
+import { readableTextColor } from '../theme/contrast';
 
-// Les étapes d'une partie, dans l'ordre (home.steps.*), numérotées aux couleurs du logo
-const HOME_STEPS = ['template', 'room', 'play'] as const;
+// Les étapes d'une partie, dans l'ordre (home.steps.*), numérotées aux couleurs du logo : une
+// étape de plus doit choisir sa couleur
+const HOME_STEPS = [
+  { key: 'template', color: LOGO_BARS[0].color },
+  { key: 'room', color: LOGO_BARS[1].color },
+  { key: 'play', color: LOGO_BARS[2].color },
+] as const;
 
 export function HomePage() {
   const { data: user } = useCurrentUser();
@@ -32,16 +37,16 @@ export function HomePage() {
         </h2>
         <ol className="flex flex-col gap-2">
           {HOME_STEPS.map((step, index: number) => (
-            <li key={step} className="flex items-center gap-3">
+            <li key={step.key} className="flex items-center gap-3">
               {/* La liste numérotée annonce déjà le rang : le chiffre affiché est décoratif */}
               <span
                 aria-hidden="true"
-                style={tierColorStyle(LOGO_BAR_COLORS[index])}
+                style={{ backgroundColor: step.color, color: readableTextColor(step.color) }}
                 className="flex size-8 shrink-0 items-center justify-center rounded-md font-heading font-black"
               >
                 {index + 1}
               </span>
-              {t(`home.steps.${step}`)}
+              {t(`home.steps.${step.key}`)}
             </li>
           ))}
         </ol>

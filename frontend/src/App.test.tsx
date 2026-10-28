@@ -52,7 +52,7 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le serveur');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
     consoleError.mockRestore();
   });
 
