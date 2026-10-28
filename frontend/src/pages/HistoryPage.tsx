@@ -10,6 +10,8 @@ import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { panelVariants } from '../components/ui/panel';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 // Historique du compte (US-5.5) : ses parties closes, jouées ou animées comme room admin, de la
 // plus récente à la plus ancienne, chacune avec le lien de ses résultats
@@ -22,7 +24,7 @@ export function HistoryPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
       <h1 className="text-2xl font-semibold">{t('history.title')}</h1>
-      {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
+      {isPending && <LoadingSkeleton shape="list" />}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {data !== undefined && games.length === 0 && (
         <EmptyState
@@ -35,7 +37,7 @@ export function HistoryPage() {
         />
       )}
       {games.length > 0 && (
-        <ul className="flex w-full flex-col divide-y rounded-xl border">
+        <ul className={panelVariants({ variant: 'list' })}>
           {games.map((game: PastGame) => (
             <li
               key={game.public_token}

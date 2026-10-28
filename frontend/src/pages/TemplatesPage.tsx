@@ -9,6 +9,8 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { panelVariants } from '../components/ui/panel';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 // Templates de l'utilisateur (US-1.5) : création (US-1.1), suppression (US-1.6) et création
 // d'une salle pour jouer avec (US-2.1)
@@ -22,11 +24,11 @@ export function TemplatesPage() {
         <h1 className="text-2xl font-semibold">{t('templates.title')}</h1>
         <CreateTemplateDialog />
       </div>
-      {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
+      {isPending && <LoadingSkeleton shape="list" />}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {templates?.length === 0 && <EmptyState message={t('templates.empty')} />}
       {templates !== undefined && templates.length > 0 && (
-        <ul className="flex w-full flex-col divide-y rounded-xl border">
+        <ul className={panelVariants({ variant: 'list' })}>
           {templates.map((template) => (
             <li key={template.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="flex min-w-0 flex-col gap-1">

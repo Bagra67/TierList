@@ -25,6 +25,7 @@ import { ITEM_CHIP_CLASS } from './boardStyles';
 import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
 
 // Clés de focus de l'item en cours (useFocusAfterUpdate)
 const CURRENT_FOCUS = { drag: 'current:drag', earlier: 'current:earlier', later: 'current:later' };
@@ -144,7 +145,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
         }}
       >
         {currentPlacement === undefined && (
-          <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed p-3">
+          <div className={cn(panelVariants({ variant: 'dashed' }), 'items-start')}>
             <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
             {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
             <DraggableItem

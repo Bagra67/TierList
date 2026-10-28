@@ -4,6 +4,7 @@ import { type Room, type RoomBan, useUnban } from '../api/rooms';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
 
 interface RoomBansProps {
   room: Room;
@@ -25,7 +26,7 @@ export function RoomBans({ room }: RoomBansProps) {
       {unbanMutation.isError && (
         <ErrorMessage>{translateError(t, unbanMutation.error)}</ErrorMessage>
       )}
-      <ul className="flex w-full flex-col divide-y rounded-xl border">
+      <ul className={panelVariants({ variant: 'list' })}>
         {room.bans.map((roomBan: RoomBan) => (
           <li key={roomBan.id} className="flex items-center gap-2 px-4 py-2">
             <span className="font-medium">{roomBan.display_name}</span>

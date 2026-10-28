@@ -26,6 +26,7 @@ import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 import { NativeSelect } from './ui/native-select';
+import { panelVariants } from './ui/panel';
 
 // Les contrôles d'une tuile, pour lui rendre le focus après un déplacement
 type TileControl = 'drag' | 'earlier' | 'later' | 'up' | 'down';
@@ -389,10 +390,7 @@ function MissedItems({ items, tiers, labelOf, endOf, pending, onPlace }: MissedI
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
   return (
-    <section
-      aria-labelledby={headingId}
-      className="flex flex-col gap-2 rounded-lg border border-dashed p-3"
-    >
+    <section aria-labelledby={headingId} className={panelVariants({ variant: 'dashed' })}>
       <h3 id={headingId} className="font-semibold">
         {t('rooms.game.cooldown.missed')}
       </h3>

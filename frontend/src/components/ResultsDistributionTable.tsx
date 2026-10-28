@@ -24,7 +24,7 @@ export function ResultsDistributionTable({
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   return (
-    <div className="w-full overflow-x-auto rounded-xl border">
+    <div className="w-full overflow-x-auto rounded-[1rem] border bg-card">
       <table className="w-full text-sm">
         <caption className="sr-only">{t('results.overall.caption')}</caption>
         <thead>

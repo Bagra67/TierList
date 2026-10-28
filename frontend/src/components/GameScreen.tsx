@@ -8,6 +8,7 @@ import { GameAdminControls } from './GameAdminControls';
 import { GameBoard } from './GameBoard';
 import { GameItemView } from './GameItemView';
 import { PlacedList } from './PlacedList';
+import { panelVariants } from './ui/panel';
 
 interface GameScreenProps {
   room: Room;
@@ -30,16 +31,23 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
 
   if (game.status === 'cooldown') {
     return (
-      <div className="flex w-full flex-col gap-4">
-        {/* Bandeau sombre : l'interface « sous pression » du cooldown final (US-4.1) */}
-        <section className="flex w-full flex-col gap-1 rounded-lg bg-foreground px-3 py-2 text-background">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">{t('rooms.game.cooldown.title')}</h2>
+      // Le plateau télé du cooldown final (US-4.1) : sombre dans les deux thèmes, grâce à la
+      // classe dark qui applique les jetons du thème sombre à tout ce qu'il contient
+      <div className="dark flex w-full flex-col gap-4 rounded-[1rem] border bg-background p-4 text-foreground">
+        <section className="flex w-full flex-col gap-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-4">
+            <h2 className="text-2xl font-black [font-stretch:115%]">
+              {t('rooms.game.cooldown.title')}
+            </h2>
             {game.cooldown_ends_at !== null && (
-              <Countdown endsAt={game.cooldown_ends_at} label={t('rooms.game.cooldown.timeLeft')} />
+              <Countdown
+                endsAt={game.cooldown_ends_at}
+                label={t('rooms.game.cooldown.timeLeft')}
+                className="text-4xl font-black text-warning"
+              />
             )}
           </div>
-          <p className="text-sm">
+          <p className="text-sm text-muted-foreground">
             {readerPlaces ? t('rooms.game.cooldown.hint') : t('rooms.game.cooldown.waiting')}
           </p>
         </section>
@@ -51,7 +59,7 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <section className="flex w-full flex-col gap-2 rounded-lg bg-muted px-3 py-2">
+      <section className={panelVariants({ variant: 'muted' })}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="font-medium">{t('rooms.game.title')}</h2>
           {game.ends_at !== null && (

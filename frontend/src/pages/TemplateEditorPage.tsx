@@ -13,6 +13,7 @@ import { TileEditor } from '../components/TileEditor';
 import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 // Éditeur d'un template : son nom, ses tiers (US-1.4) et ses tuiles (US-1.2, US-1.3). Sur grand
 // écran, les tiers sont à gauche et la grille des tuiles à droite, pour profiter de la largeur
@@ -52,7 +53,7 @@ export function TemplateEditorPage() {
       <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
         {t('templates.editor.back')}
       </Link>
-      {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
+      {isPending && <LoadingSkeleton shape="board" />}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {template && (
         <>
