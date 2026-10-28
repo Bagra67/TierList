@@ -110,9 +110,9 @@ frontend/
 │   │   ├── *.test.ts       # Tests of the API layer
 │   │   └── schema.d.ts     # API types generated from backend/openapi.json (do not edit)
 │   ├── auth/               # Route guards: RequireAuth (private pages → /login), RedirectIfSignedIn (/login, /register → back where the user was going)
-│   ├── components/         # Reusable components (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
+│   ├── components/         # Reusable components (Layout, Logo, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
 │   │   └── ui/             # shadcn/ui components (button, input, label, card, popover), editable
-│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
+│   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts, brand.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
 │   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
@@ -236,6 +236,8 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - The palette (named "Le Plateau": a game show where everyone ranks together) lives in the `:root` (light) and `.dark` blocks of `src/index.css`, as shadcn/ui tokens: indigo ink text (`--foreground`) on a cool off-white stage (`--background`), raspberry accent for the main actions (`--primary`), brick red for errors and destructive actions (`--destructive`, a hue kept apart from the raspberry so that an error never looks like the accent), and `--success` for positive states (e.g. an online player).
 - The token pairs used for text are chosen for WCAG contrast: text at least 4.5:1, field borders (`--input`) and the focus ring (`--ring`) at least 3:1. A translucent variant (`bg-primary/90`, `bg-destructive/10`…) lowers the contrast: check it too, and check every pair again when changing a color.
 - The focus ring uses `--ring` at full opacity (`ring-ring`, `outline-ring`), never a faded version, so that keyboard focus stays visible.
+- Two typefaces, self-hosted with Fontsource (no third-party font service): **Geist** for the text (`font-sans`) and **Anybody** for the headings (`font-heading`, applied to `h1` and `h2`; the small `h3` section labels stay in Geist). Anybody has a variable width (`font-stretch`, 50% to 150%), used wide for the logo, the tier letters and the countdown.
+- The logo (`Logo`, in the header) and `public/favicon.svg` are three stacked bars in the colors of the S, A and B tiers (`LOGO_BARS`, `src/constants/brand.ts`). The `theme-color` meta tags of `index.html` repeat `--background` of each theme for the first paint, then `applyTheme` gives them the color of the theme chosen in the application (`THEME_COLORS`, `src/constants/theme.ts`): keep the three equal.
 
 ### Dark mode
 

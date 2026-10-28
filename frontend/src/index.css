@@ -2,11 +2,13 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+/* Graisse et largeur variables : titres, lettres de tier, chrono */
+@import '@fontsource-variable/anybody/wdth.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  --font-heading: 'Anybody Variable', sans-serif;
   --font-sans: 'Geist Variable', sans-serif;
   --color-ring: var(--ring);
   --color-success: var(--success);
@@ -95,5 +97,10 @@
   }
   html {
     @apply font-sans;
+  }
+  /* h3 reste en Geist : ce sont de petits intitulés de section (réglages, éléments manqués) */
+  h1,
+  h2 {
+    @apply font-heading;
   }
 }

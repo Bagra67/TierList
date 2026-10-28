@@ -1036,12 +1036,13 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 
 ### 2.12 Tests: `src/theme/theme.test.ts` (dark mode)
 
-| Test                                                         | What it does                                                                   | Purpose                                                          | Expected result                                                       |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `follows the system theme in system mode, live`              | `applyTheme('system')`, then `setSystemDark(true)` and `setSystemDark(false)`. | The "System" preference follows the OS theme without reloading.  | `<html>` gets then loses the `dark` class.                            |
-| `ignores the system theme once a theme is chosen`            | `changeTheme('light')`, then `setSystemDark(true)`.                            | An explicit choice wins over the OS theme.                       | No `dark` class; `localStorage` holds `light`.                        |
-| `falls back to the system theme for an unknown stored value` | Stored `purple`.                                                               | A corrupted stored value does not break the interface.           | `getTheme()` returns `system`.                                        |
-| `still applies the theme when localStorage is unavailable`   | `getItem` and `setItem` throw, then `changeTheme('dark')`.                     | Private browsing or blocked storage does not break the switcher. | `dark` class applied; `getTheme()` returns `system` (nothing stored). |
+| Test                                                         | What it does                                                                                                | Purpose                                                                                    | Expected result                                                       |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `follows the system theme in system mode, live`              | `applyTheme('system')`, then `setSystemDark(true)` and `setSystemDark(false)`.                              | The "System" preference follows the OS theme without reloading.                            | `<html>` gets then loses the `dark` class.                            |
+| `ignores the system theme once a theme is chosen`            | `changeTheme('light')`, then `setSystemDark(true)`.                                                         | An explicit choice wins over the OS theme.                                                 | No `dark` class; `localStorage` holds `light`.                        |
+| `gives the browser bar the color of the chosen theme`        | A `theme-color` meta tag for the light system theme, then `changeTheme('dark')` and `changeTheme('light')`. | The mobile browser bar follows the theme chosen in the application, not only the OS theme. | The tag holds the dark color, then the light one (`THEME_COLORS`).    |
+| `falls back to the system theme for an unknown stored value` | Stored `purple`.                                                                                            | A corrupted stored value does not break the interface.                                     | `getTheme()` returns `system`.                                        |
+| `still applies the theme when localStorage is unavailable`   | `getItem` and `setItem` throw, then `changeTheme('dark')`.                                                  | Private browsing or blocked storage does not break the switcher.                           | `dark` class applied; `getTheme()` returns `system` (nothing stored). |
 
 ### 2.13 Tests: `src/components/ThemeSwitcher.test.tsx`
 
@@ -1417,6 +1418,14 @@ The privacy policy ([legal pages guide](legal-pages.md)): `App` is rendered at `
 | `lists every section of the policy`                                 | Reads the level-2 headings.               | Every topic of the policy is there, in order.                | The 10 sections, from `Responsable du traitement` to `Modifications`.                                                                                                 |
 | `links to the CNIL complaint page in a new tab`                     | Finds the CNIL link.                      | The right to complain to the CNIL.                           | `href` = `CNIL_COMPLAINT_URL`, `target="_blank"`, `rel="noreferrer"`.                                                                                                 |
 | `is translated into English`                                        | Switches to English, then opens the page. | The policy follows the interface language.                   | The `Privacy policy` and `Your rights` headings.                                                                                                                      |
+
+### 2.37 Tests: `src/components/Logo.test.tsx`
+
+`App` is rendered at `/login` without a session, so the logo is tested in the shared layout.
+
+| Test                                            | What it does            | Purpose                                                                     | Expected result           |
+| ----------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- | ------------------------- |
+| `links to the home page from the shared layout` | Renders the login page. | The header logo is on every page and leads home; its drawing is decorative. | A `TierList` link to `/`. |
 
 ---
 

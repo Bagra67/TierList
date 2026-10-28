@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DARK_CLASS, THEME_STORAGE_KEY } from '../constants/theme';
+import { DARK_CLASS, THEME_COLORS, THEME_STORAGE_KEY } from '../constants/theme';
 import { setSystemDark } from '../test/matchMedia';
 import { applyTheme, changeTheme, getTheme } from '.';
 
@@ -31,6 +31,21 @@ describe('theme', () => {
 
     expect(isDark()).toBe(false);
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+  });
+
+  it('gives the browser bar the color of the chosen theme', () => {
+    const lightSystemMeta: HTMLMetaElement = document.createElement('meta');
+    lightSystemMeta.name = 'theme-color';
+    lightSystemMeta.media = '(prefers-color-scheme: light)';
+    document.head.append(lightSystemMeta);
+
+    changeTheme('dark');
+    expect(lightSystemMeta.content).toBe(THEME_COLORS.dark);
+
+    changeTheme('light');
+    expect(lightSystemMeta.content).toBe(THEME_COLORS.light);
+
+    lightSystemMeta.remove();
   });
 
   it('falls back to the system theme for an unknown stored value', () => {
