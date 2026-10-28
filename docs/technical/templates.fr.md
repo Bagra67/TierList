@@ -14,7 +14,7 @@ Un template est ce qu'on classe : ses **tiers** (les lignes de la tier list) et 
 | Lister mes templates  | `GET /templates`                         | Mes templates actifs, avec leur nombre de tuiles, le plus récemment modifié d'abord.                                     |
 | Ouvrir un template    | `GET /templates/{id}`                    | Le template, ses tiers et ses tuiles, triés par position.                                                                |
 | Renommer un template  | `PATCH /templates/{id}`                  | Le nouveau nom ; la date de dernière modification est mise à jour.                                                       |
-| Ajouter un tier       | `POST /templates/{id}/tiers`             | Un tier en bas, nommé `?`, couleur `#BFBFBF`.                                                                            |
+| Ajouter un tier       | `POST /templates/{id}/tiers`             | Un tier en bas, nommé `?`, couleur `#9AA0B4`.                                                                            |
 | Modifier un tier      | `PATCH /templates/{id}/tiers/{tier_id}`  | Son nom, sa couleur et/ou sa position (les autres sont décalés).                                                         |
 | Supprimer un tier     | `DELETE /templates/{id}/tiers/{tier_id}` | Le tier disparaît, les suivants remontent ; refusé pour le dernier tier.                                                 |
 | Ajouter une tuile     | `POST /templates/{id}/tiles`             | Une tuile avec un texte, une image ou les deux, à la fin ; refusé au-delà du nombre maximal de tuiles.                   |
@@ -27,7 +27,7 @@ Côté frontend, la page _Mes templates_ liste, crée et supprime les templates 
 ### Règles
 
 - **Nom** : 1 à 100 caractères, espaces de début et de fin retirés (un nom fait seulement d'espaces est vide, donc refusé avec une `422`).
-- **Tiers par défaut**, du haut vers le bas : `S` `#FF7F7F`, `A` `#FFBF7F`, `B` `#FFDF7F`, `C` `#FFFF7F`, `D` `#BFFF7F`, `E` `#7FFF7F` (`DEFAULT_TIERS`, `app/constants/templates.py`).
+- **Tiers par défaut**, du haut vers le bas : `S` `#FF3B6B`, `A` `#FF8A2A`, `B` `#FFC22E`, `C` `#7BD94A`, `D` `#2EC4B6`, `E` `#5B7CFA` (`DEFAULT_TIERS`, `app/constants/templates.py`). Le texte encre (`#1D1640`) garde un contraste de 4,5:1 sur chacune. Changer ces valeurs ne touche que les nouveaux templates : les couleurs sont des données de chaque template.
 - **Tiers** : nom de 1 à 50 caractères (espaces retirés), couleur `#RRGGBB` enregistrée en majuscules. Un template garde **au moins un tier** : supprimer le dernier répond `409` `last_tier`.
 - **Positions** des tiers : à partir de 0 et continues (sans trou) ; déplacer ou supprimer un tier renumérote les autres. Une position au-delà de la fin place le tier en dernier.
 - **Modification vide** : un `PATCH` sans aucun champ (ou avec seulement des valeurs `null`) ne change rien, pas même la date de dernière modification ; le tier doit quand même exister (`404` sinon).
