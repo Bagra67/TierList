@@ -12,3 +12,9 @@ export const THEME_STORAGE_KEY = 'tierlist.theme';
 export const DARK_CLASS = 'dark';
 
 export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)';
+
+// Couleur de la barre du navigateur mobile (balises meta theme-color de index.html) : le
+// --background de chaque thème de index.css, garder les trois égaux
+export const THEME_COLORS = { light: '#F4F5FA', dark: '#140F2B' } as const;
+
+export const THEME_COLOR_META_SELECTOR = 'meta[name="theme-color"]';

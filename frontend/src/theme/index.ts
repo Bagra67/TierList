@@ -2,6 +2,8 @@ import {
   DARK_CLASS,
   DARK_MEDIA_QUERY,
   DEFAULT_THEME,
+  THEME_COLOR_META_SELECTOR,
+  THEME_COLORS,
   THEME_STORAGE_KEY,
   THEMES,
   type Theme,
@@ -42,6 +44,14 @@ function prefersDark(): boolean {
 export function applyTheme(theme: Theme): void {
   const dark = theme === 'dark' || (theme === 'system' && prefersDark());
   document.documentElement.classList.toggle(DARK_CLASS, dark);
+  // index.html a une balise par thème du système, pour le premier affichage ; ensuite, la barre
+  // du navigateur suit le thème choisi dans l'application : les deux reçoivent sa couleur
+  const color: string = dark ? THEME_COLORS.dark : THEME_COLORS.light;
+  document
+    .querySelectorAll<HTMLMetaElement>(THEME_COLOR_META_SELECTOR)
+    .forEach((meta: HTMLMetaElement) => {
+      meta.content = color;
+    });
 }
 
 // Choix de l'utilisateur (sélecteur de thème) : appliqué puis mémorisé
