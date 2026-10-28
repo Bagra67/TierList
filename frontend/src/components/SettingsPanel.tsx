@@ -1,7 +1,7 @@
+import { Settings } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearchParams } from 'react-router';
-import { Settings } from 'lucide-react';
 
 import { useCurrentUser } from '../api/auth';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
@@ -52,7 +52,7 @@ export function SettingsPanel() {
         aria-label={t('settings.open')}
         onClick={() => panelRef.current?.showModal()}
       >
-        <Settings aria-hidden="true" className="size-5" />
+        <Settings />
       </Button>
       <dialog
         ref={panelRef}

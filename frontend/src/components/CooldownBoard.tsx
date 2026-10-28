@@ -7,9 +7,9 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 import { type ChangeEvent, useId, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
 
 import {
   type CurrentGame,
@@ -330,7 +330,7 @@ function CooldownTile({
         disabled={index === 0}
         onClick={() => onPlace(item.id, tierId, index - 1, ['earlier', 'later'])}
       >
-        <ArrowLeft aria-hidden="true" />
+        <ArrowLeft />
       </Button>
       <Button
         type="button"
@@ -342,7 +342,7 @@ function CooldownTile({
         disabled={index >= count - 1}
         onClick={() => onPlace(item.id, tierId, index + 1, ['later', 'earlier'])}
       >
-        <ArrowRight aria-hidden="true" />
+        <ArrowRight />
       </Button>
       <Button
         type="button"
@@ -356,7 +356,7 @@ function CooldownTile({
           above !== undefined && onPlace(item.id, above.tier.id, above.end, ['up', 'down'])
         }
       >
-        <ArrowUp aria-hidden="true" />
+        <ArrowUp />
       </Button>
       <Button
         type="button"
@@ -370,7 +370,7 @@ function CooldownTile({
           below !== undefined && onPlace(item.id, below.tier.id, below.end, ['down', 'up'])
         }
       >
-        <ArrowDown aria-hidden="true" />
+        <ArrowDown />
       </Button>
     </li>
   );

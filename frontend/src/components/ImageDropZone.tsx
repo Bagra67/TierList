@@ -1,3 +1,4 @@
+import { ImageIcon, LoaderCircle, X } from 'lucide-react';
 import {
   type ChangeEvent,
   type DragEvent,
@@ -7,7 +8,6 @@ import {
   useState,
 } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
-import { ImageIcon, X } from 'lucide-react';
 
 import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
@@ -30,6 +30,26 @@ interface ImageDropZoneProps {
   // inconnu, vide, part au backend)
   onRefuse: () => void;
 }
+
+// Classes de chaque taille de vignette. Le bouton de retrait : sur la petite vignette (large), il
+// déborde de son coin ; sur la carte d'une tuile (fill), il est posé dans le coin de l'image, plus
+// grand pour être facile à viser
+const SIZE_CLASSES = {
+  large: {
+    zone: 'size-24',
+    icon: 'size-7',
+    hint: 'text-[0.7rem]',
+    remove: '-top-1.5 -right-1.5 size-5',
+    removeIcon: 'size-3',
+  },
+  fill: {
+    zone: 'aspect-square w-full',
+    icon: 'size-10',
+    hint: 'text-xs',
+    remove: 'top-1.5 right-1.5 size-7',
+    removeIcon: 'size-4',
+  },
+} as const;
 
 function draggedFiles(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
@@ -57,6 +77,7 @@ export function ImageDropZone({
   const dragDepth: RefObject<number> = useRef<number>(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const sizeClasses: (typeof SIZE_CLASSES)[ImageDropZoneProps['size']] = SIZE_CLASSES[size];
   const shownUrl: string | null = isUploading && previewUrl !== null ? previewUrl : imageUrl;
 
   // L'aperçu local occupe de la mémoire tant que son URL existe : libérée quand il change
@@ -116,7 +137,7 @@ export function ImageDropZone({
 
   return (
     <div
-      className={cn('relative shrink-0', size === 'large' ? 'size-24' : 'aspect-square w-full')}
+      className={cn('relative shrink-0', sizeClasses.zone)}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -142,8 +163,8 @@ export function ImageDropZone({
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
-            <ImageIcon aria-hidden="true" className={size === 'large' ? 'size-7' : 'size-10'} />
-            <span className={cn('leading-tight', size === 'large' ? 'text-[0.7rem]' : 'text-xs')}>
+            <ImageIcon className={sizeClasses.icon} />
+            <span className={cn('leading-tight', sizeClasses.hint)}>
               {t('templates.editor.image.hint')}
             </span>
           </span>
@@ -158,10 +179,7 @@ export function ImageDropZone({
         )}
         {isUploading && (
           <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/60">
-            <span
-              className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent"
-              aria-hidden="true"
-            />
+            <LoaderCircle className="size-5 animate-spin text-primary" />
             <span role="status" className="sr-only">
               {t('templates.editor.image.uploading')}
             </span>
@@ -176,12 +194,10 @@ export function ImageDropZone({
           disabled={disabled}
           className={cn(
             'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-background focus-visible:ring-3 focus-visible:ring-ring',
-            // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
-            // il est posé dans le coin de l'image, plus grand pour être facile à viser
-            size === 'large' ? '-top-1.5 -right-1.5 size-5' : 'top-1.5 right-1.5 size-7',
+            sizeClasses.remove,
           )}
         >
-          <X aria-hidden="true" className={size === 'large' ? 'size-3' : 'size-4'} />
+          <X className={sizeClasses.removeIcon} />
         </button>
       )}
       {/* Le vrai champ fichier est caché : la vignette ci-dessus le remplace, au clavier aussi */}

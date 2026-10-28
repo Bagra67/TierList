@@ -6,9 +6,9 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { type ReactNode, useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 import {
   type CurrentGame,
@@ -237,7 +237,7 @@ function TierRow({
           onPlace((currentRank ?? 0) - 1, [CURRENT_FOCUS.earlier, CURRENT_FOCUS.later])
         }
       >
-        <ArrowLeft aria-hidden="true" />
+        <ArrowLeft />
       </Button>
       <Button
         type="button"
@@ -251,7 +251,7 @@ function TierRow({
           onPlace((currentRank ?? 0) + 1, [CURRENT_FOCUS.later, CURRENT_FOCUS.earlier])
         }
       >
-        <ArrowRight aria-hidden="true" />
+        <ArrowRight />
       </Button>
     </li>
   );
