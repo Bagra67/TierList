@@ -130,7 +130,7 @@ export function ImageDropZone({
         className={cn(
           'flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 text-muted-foreground transition-colors outline-none',
           'hover:border-primary/60 hover:bg-muted/60 hover:text-foreground',
-          'focus-visible:ring-3 focus-visible:ring-ring/50',
+          'focus-visible:ring-3 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           shownUrl === null ? 'border-dashed border-border bg-muted/30' : 'border-border bg-card',
           isDraggingOver && 'border-solid border-primary bg-primary/10 ring-3 ring-primary/30',
@@ -149,7 +149,7 @@ export function ImageDropZone({
         )}
         {isDraggingOver && (
           <span
-            className="absolute inset-0 flex items-center justify-center rounded-lg bg-primary/20 text-xs font-medium text-primary"
+            className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 text-xs font-semibold text-foreground"
             aria-hidden="true"
           >
             {t('templates.editor.image.drop')}
@@ -174,7 +174,7 @@ export function ImageDropZone({
           onClick={onRemove}
           disabled={disabled}
           className={cn(
-            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring/50',
+            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring',
             // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
             // il est posé dans le coin de l'image, plus grand pour être facile à viser
             size === 'large'

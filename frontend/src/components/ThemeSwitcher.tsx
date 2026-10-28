@@ -25,7 +25,7 @@ export function ThemeSwitcher() {
         id={id}
         value={theme}
         onChange={handleChange}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
       >
         {THEMES.map((option) => (
           <option key={option} value={option}>

@@ -231,6 +231,12 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - Drag and drop (template editor) uses **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), wrapped in `SortableList`: neither Radix nor shadcn/ui offers a sortable list, and dnd-kit handles the mouse, touch and the keyboard (Space, arrows, Escape) with screen reader announcements, translated through `templates.editor.dnd.*`.
 - The tier color picker (`ColorField`) uses **react-colorful** (`HexColorPicker`, `HexColorInput`) in a shadcn `popover`: a small library without dependencies, whose sliders work with the keyboard. Its accessibility labels are written in English in the library: `ColorField` replaces them with the translations (`templates.editor.color.*`) after each render.
 
+### Visual identity
+
+- The palette (named "Le Plateau": a game show where everyone ranks together) lives in the `:root` (light) and `.dark` blocks of `src/index.css`, as shadcn/ui tokens: indigo ink text (`--foreground`) on a cool off-white stage (`--background`), raspberry accent for the main actions (`--primary`), brick red for errors and destructive actions (`--destructive`, a hue kept apart from the raspberry so that an error never looks like the accent), and `--success` for positive states (e.g. an online player).
+- The token pairs used for text are chosen for WCAG contrast: text at least 4.5:1, field borders (`--input`) and the focus ring (`--ring`) at least 3:1. A translucent variant (`bg-primary/90`, `bg-destructive/10`…) lowers the contrast: check it too, and check every pair again when changing a color.
+- The focus ring uses `--ring` at full opacity (`ring-ring`, `outline-ring`), never a faded version, so that keyboard focus stays visible.
+
 ### Dark mode
 
 - Three preferences, chosen with the theme switcher of the settings panel (gear of the header): **System** (default, follows the operating system theme, live), **Light** and **Dark**. The choice is stored in `localStorage` (`tierlist.theme`), per browser.

@@ -23,7 +23,7 @@ export function LanguageSwitcher() {
         id={id}
         value={i18n.resolvedLanguage}
         onChange={handleChange}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
       >
         {SUPPORTED_LANGUAGES.map((language) => (
           // lang : chaque nom de langue est lu dans sa propre langue par les lecteurs d'écran

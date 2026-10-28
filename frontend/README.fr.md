@@ -231,6 +231,12 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - Le glisser-déposer (éditeur de template) utilise **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`), enveloppé dans `SortableList` : ni Radix ni shadcn/ui ne proposent de liste réordonnable, et dnd-kit gère la souris, le toucher et le clavier (Espace, flèches, Échap) avec des annonces pour les lecteurs d'écran, traduites via `templates.editor.dnd.*`.
 - Le sélecteur de couleur des tiers (`ColorField`) utilise **react-colorful** (`HexColorPicker`, `HexColorInput`) dans un `popover` shadcn : une petite bibliothèque sans dépendance, dont les curseurs fonctionnent au clavier. Ses libellés d'accessibilité sont écrits en anglais dans la bibliothèque : `ColorField` les remplace par les traductions (`templates.editor.color.*`) après chaque rendu.
 
+### Identité visuelle
+
+- La palette (baptisée « Le Plateau » : un jeu télé où l'on classe ensemble) se trouve dans les blocs `:root` (clair) et `.dark` de `src/index.css`, sous forme de jetons shadcn/ui : texte encre indigo (`--foreground`) sur un fond scène blanc froid (`--background`), accent framboise pour les actions principales (`--primary`), rouge brique pour les erreurs et les actions destructrices (`--destructive`, d'une teinte éloignée du framboise pour qu'une erreur ne ressemble jamais à l'accent), et `--success` pour les états positifs (ex. un joueur en ligne).
+- Les paires de jetons utilisées pour du texte sont choisies pour les contrastes WCAG : texte d'au moins 4,5:1, bordures des champs (`--input`) et anneau de focus (`--ring`) d'au moins 3:1. Une variante translucide (`bg-primary/90`, `bg-destructive/10`…) baisse le contraste : la vérifier aussi, et revérifier chaque paire en changeant une couleur.
+- L'anneau de focus utilise `--ring` à pleine opacité (`ring-ring`, `outline-ring`), jamais une version estompée, pour que le focus clavier reste visible.
+
 ### Mode sombre
 
 - Trois préférences, choisies avec le sélecteur de thème du panneau de paramètres (engrenage de l'en-tête) : **Système** (par défaut, suit le thème du système d'exploitation, en direct), **Clair** et **Sombre**. Le choix est mémorisé dans `localStorage` (`tierlist.theme`), par navigateur.

@@ -36,7 +36,7 @@ export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewPr
           onChange={(event: ChangeEvent<HTMLSelectElement>) =>
             setPlayerIndex(Number(event.target.value))
           }
-          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
         >
           {/* La réponse ne donne pas d'identifiant aux joueurs : leur rang, fixe, sert de valeur */}
           {players.map((candidate: PlayerResults, index: number) => (

@@ -96,7 +96,7 @@ export function ResultsPage() {
           aria-labelledby={resultsTabId(view)}
           aria-busy={state.isPending}
           tabIndex={0}
-          className="w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
         >
           {/* Les statistiques montrées correspondent toujours à la case : pendant une lecture ou
               après un échec, rien d'autre que l'état n'est affiché */}
