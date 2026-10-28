@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { cn } from 'cn';
 
 import { useHistory } from '../api/history';
 import type { PastGame } from '../api/rooms';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
 import { resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
@@ -41,7 +43,7 @@ export function HistoryPage() {
               <Link
                 to={resultsPath(game.public_token)}
                 aria-label={t('history.openLabel', { name: game.template_name })}
-                className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className={cn(textLinkClassName, 'shrink-0 text-sm')}
               >
                 {t('history.open')}
               </Link>

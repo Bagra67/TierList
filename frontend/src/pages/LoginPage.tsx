@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { cn } from 'cn';
 
 import { useLogin } from '../api/auth';
 import { pathAfterSignIn } from '../auth/signInRedirect';
@@ -13,6 +14,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
 
 export function LoginPage() {
   const loginMutation = useLogin();
@@ -44,11 +46,7 @@ export function LoginPage() {
         <p>
           {t('auth.login.noAccount')}{' '}
           {/* L'état garde la page demandée, pour y revenir après l'inscription */}
-          <Link
-            to={ROUTES.REGISTER}
-            state={location.state}
-            className="font-medium underline underline-offset-4"
-          >
+          <Link to={ROUTES.REGISTER} state={location.state} className={textLinkClassName}>
             {t('auth.login.registerLink')}
           </Link>
         </p>
@@ -80,10 +78,7 @@ export function LoginPage() {
           {loginMutation.isPending ? t('auth.login.submitting') : t('auth.login.submit')}
         </Button>
       </form>
-      <Link
-        to={ROUTES.FORGOT_PASSWORD}
-        className="self-center text-sm underline underline-offset-4"
-      >
+      <Link to={ROUTES.FORGOT_PASSWORD} className={cn(textLinkClassName, 'self-center text-sm')}>
         {t('auth.login.forgotPassword')}
       </Link>
       <GoogleSignInLink />

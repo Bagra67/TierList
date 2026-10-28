@@ -2,6 +2,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link, type Params, useParams } from 'react-router';
+import { cn } from 'cn';
 
 import { type Template, useTemplate } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
@@ -9,6 +10,7 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
+import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
@@ -47,7 +49,7 @@ export function TemplateEditorPage() {
     // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile
     // pas, ce sont la colonne des tiers et la grille des tuiles qui défilent (chacune de son côté)
     <main className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 py-10 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6">
-      <Link to={ROUTES.TEMPLATES} className="text-sm underline underline-offset-4">
+      <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
         {t('templates.editor.back')}
       </Link>
       {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}

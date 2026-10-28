@@ -105,4 +105,24 @@
   h2 {
     @apply font-heading;
   }
+  /* Cases à cocher natives : couleur de l'accent et focus clavier bien visible */
+  input[type='checkbox'] {
+    @apply size-4 accent-primary;
+  }
+  input[type='checkbox']:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+/* Mouvement réduit demandé par le système : animations et transitions quasi instantanées (ouverture
+   du popover…), sans retirer l'état final qu'elles affichent. Le spinner garde sa rotation : arrêté,
+   il ressemblerait à un cercle cassé au lieu de dire « en cours » */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

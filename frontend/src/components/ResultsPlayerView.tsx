@@ -5,6 +5,7 @@ import type { PlayerResults } from '../api/results';
 import type { GameTier } from '../api/rooms';
 import { ResultsTierList } from './ResultsTierList';
 import type { ResultItems } from './resultsViews';
+import { NativeSelect } from './ui/native-select';
 
 interface ResultsPlayerViewProps {
   tiers: GameTier[];
@@ -30,13 +31,12 @@ export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewPr
         <label htmlFor={selectId} className="text-sm font-medium">
           {t('results.players.select')}
         </label>
-        <select
+        <NativeSelect
           id={selectId}
           value={playerIndex}
           onChange={(event: ChangeEvent<HTMLSelectElement>) =>
             setPlayerIndex(Number(event.target.value))
           }
-          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
         >
           {/* La réponse ne donne pas d'identifiant aux joueurs : leur rang, fixe, sert de valeur */}
           {players.map((candidate: PlayerResults, index: number) => (
@@ -44,7 +44,7 @@ export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewPr
               {candidate.display_name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <ResultsTierList
         tiers={tiers}

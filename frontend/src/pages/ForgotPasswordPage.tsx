@@ -7,6 +7,7 @@ import { AuthPageShell } from '../components/AuthPageShell';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 
@@ -24,7 +25,7 @@ export function ForgotPasswordPage() {
     <AuthPageShell
       title={t('auth.forgotPassword.title')}
       footer={
-        <Link to={ROUTES.LOGIN} className="font-medium underline underline-offset-4">
+        <Link to={ROUTES.LOGIN} className={textLinkClassName}>
           {t('auth.forgotPassword.backToLogin')}
         </Link>
       }
