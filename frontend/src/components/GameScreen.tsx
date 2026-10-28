@@ -32,11 +32,12 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
   if (game.status === 'cooldown') {
     return (
       // Le plateau télé du cooldown final (US-4.1) : sombre dans les deux thèmes, grâce à la
-      // classe dark qui applique les jetons du thème sombre à tout ce qu'il contient
-      <div className="dark flex w-full flex-col gap-4 rounded-[1rem] border bg-background p-4 text-foreground">
+      // classe dark qui applique les jetons du thème sombre à tout ce qu'il contient. La bordure
+      // jaune « projecteur » le détache aussi d'une page déjà sombre
+      <div className="dark flex w-full flex-col gap-4 rounded-panel border-2 border-warning/60 bg-background p-4 text-foreground">
         <section className="flex w-full flex-col gap-1">
           <div className="flex flex-wrap items-center justify-between gap-x-4">
-            <h2 className="text-2xl font-black [font-stretch:115%]">
+            <h2 className="text-2xl font-black font-stretch-115%">
               {t('rooms.game.cooldown.title')}
             </h2>
             {game.cooldown_ends_at !== null && (

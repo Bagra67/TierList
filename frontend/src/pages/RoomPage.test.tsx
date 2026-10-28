@@ -32,7 +32,8 @@ describe('RoomPage', () => {
 
     renderRoomPage();
 
-    expect(screen.getByText('Chargement…')).toBeInTheDocument();
+    // Le squelette de chargement (son texte « Chargement… » arrive au rendu suivant)
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.getByText('Modèle : Chips')).toBeInTheDocument();
     expect(screen.getByLabelText('Lien de la salle')).toHaveValue(aliceRoom.link);

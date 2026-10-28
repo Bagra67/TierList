@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { panelVariants } from './ui/panel';
@@ -14,9 +15,16 @@ interface LoadingSkeletonProps {
 // Chargement d'une page : la forme du contenu attendu, et « Chargement… » pour les lecteurs d'écran
 export function LoadingSkeleton({ shape }: LoadingSkeletonProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  // Une zone role="status" n'est annoncée de façon fiable que si son texte arrive après elle :
+  // le texte est écrit au rendu suivant
+  const [isAnnounced, setIsAnnounced] = useState<boolean>(false);
+  useEffect(() => {
+    const timer: number = window.setTimeout(() => setIsAnnounced(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
   return (
     <div role="status" className="flex w-full flex-col gap-2">
-      <span className="sr-only">{t('common.loading')}</span>
+      <span className="sr-only">{isAnnounced && t('common.loading')}</span>
       {shape === 'list' ? (
         <div className={panelVariants({ variant: 'list' })}>
           {SKELETON_ROWS.map((row: number) => (
