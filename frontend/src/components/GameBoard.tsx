@@ -21,6 +21,7 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
+import { ITEM_CHIP_CLASS } from './boardStyles';
 import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
@@ -143,7 +144,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
         }}
       >
         {currentPlacement === undefined && (
-          <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+          <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed p-3">
             <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
             {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
             <DraggableItem
@@ -152,8 +153,9 @@ export function GameBoard({ room, game }: GameBoardProps) {
               ariaLabel={t('rooms.game.dragHandleLabel', { item: itemLabel })}
               focusKey={CURRENT_FOCUS.drag}
               disabled={pending}
+              emphasized
             >
-              {t('rooms.game.dragHandle')}
+              <span className="px-2 font-medium">{t('rooms.game.dragHandle')}</span>
             </DraggableItem>
           </div>
         )}
@@ -217,6 +219,7 @@ function TierRow({
         label={itemLabel}
         focusKey={CURRENT_FOCUS.drag}
         disabled={pending}
+        emphasized
       >
         <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
       </DraggableItem>
@@ -252,31 +255,35 @@ function TierRow({
   );
 
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
-      <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
-        {others.map((placement, index) => (
-          <PlacedItemSlot
-            key={placement.item.id}
-            placement={placement}
-            target={{ tierId: tier.id, itemId: placement.item.id }}
-            before={currentRank === index ? currentChip : null}
-          />
-        ))}
-        {currentRank !== undefined && currentRank >= others.length && currentChip}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-      </ol>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        data-focus-key={placeFocus}
-        aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
-        aria-disabled={pending}
-        onClick={() => onPlace(others.length, [placeFocus])}
-      >
-        {t('rooms.game.placeIn', { tier: tier.name })}
-      </Button>
+    <li className="flex w-full rounded-[10px] border bg-card">
+      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
+          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {others.map((placement, index) => (
+            <PlacedItemSlot
+              key={placement.item.id}
+              placement={placement}
+              target={{ tierId: tier.id, itemId: placement.item.id }}
+              before={currentRank === index ? currentChip : null}
+            />
+          ))}
+          {currentRank !== undefined && currentRank >= others.length && currentChip}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-focus-key={placeFocus}
+          aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
+          aria-disabled={pending}
+          onClick={() => onPlace(others.length, [placeFocus])}
+        >
+          {t('rooms.game.placeIn', { tier: tier.name })}
+        </Button>
+      </div>
     </li>
   );
 }
@@ -299,10 +306,7 @@ function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
   return (
     <>
       {before}
-      <li
-        ref={setNodeRef}
-        className={cn('rounded-md bg-muted px-2 py-1', isOver && 'ring-2 ring-primary')}
-      >
+      <li ref={setNodeRef} className={cn(ITEM_CHIP_CLASS, isOver && 'ring-2 ring-primary')}>
         <GameItemView
           item={placement.item}
           imageLabel={t('rooms.game.placedItemImage')}

@@ -115,7 +115,7 @@ frontend/
 │   ├── constants/          # Fixed values: auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts, brand.ts
 │   ├── errors/             # ApiError, getFieldErrors, error code translation (+ tests)
 │   ├── i18n/               # Translations: setup, locales/fr.ts and en.ts (+ tests)
-│   ├── theme/              # Dark mode: theme preference, dark class on <html> (+ tests)
+│   ├── theme/              # Dark mode: theme preference, dark class on <html>; WCAG contrast (+ tests)
 │   ├── pages/              # One component per route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Test setup (jest-dom matchers, cleanup, French by default)
@@ -237,6 +237,7 @@ More precisely, they are taken from the shadcn/ui registry, style **`radix-nova`
 - The token pairs used for text are chosen for WCAG contrast: text at least 4.5:1, field borders (`--input`) and the focus ring (`--ring`) at least 3:1. A translucent variant (`bg-primary/90`, `bg-destructive/10`…) lowers the contrast: check it too, and check every pair again when changing a color.
 - The focus ring uses `--ring` at full opacity (`ring-ring`, `outline-ring`), never a faded version, so that keyboard focus stays visible.
 - Two typefaces, self-hosted with Fontsource (no third-party font service): **Geist** for the text (`font-sans`) and **Anybody** for the headings (`font-heading`, applied to `h1` and `h2`; the small `h3` section labels stay in Geist). Anybody has a variable width (`font-stretch`, 50% to 150%), used wide for the logo, the tier letters and the countdown.
+- On the game board, the cooldown and the results, each tier starts with a **letter block**: its name in Anybody on the tier color (`TierLabel`). The text is ink or white, whichever contrasts most with the color chosen by the owner (`readableTextColor`, `src/theme/contrast.ts`); on a few mid-tone colors neither reaches 4.5:1, which the large letters (S, A+…) do not need. A long name is cut after three lines, shown in full by its tooltip and read in full by screen readers. The tier rows do not clip their content (no `overflow-hidden`), so that a dragged item stays visible when it leaves its row. Items share a single chip style (`ITEM_CHIP_CLASS`, `src/components/boardStyles.ts`), 56 px high on mobile and 64 px from `sm`. The item being dragged gets the `shadow-lift` shadow, and the keyboard focus a ring distinct from the accent border of the current item.
 - The logo (`Logo`, in the header) and `public/favicon.svg` are three stacked bars in the colors of the S, A and B tiers (`LOGO_BARS`, `src/constants/brand.ts`). The `theme-color` meta tags of `index.html` repeat `--background` of each theme for the first paint, then `applyTheme` gives them the color of the theme chosen in the application (`THEME_COLORS`, `src/constants/theme.ts`): keep the three equal.
 
 ### Dark mode

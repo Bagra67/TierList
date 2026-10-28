@@ -243,25 +243,29 @@ function CooldownTierRow({
   onPlace,
 }: CooldownTierRowProps) {
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
-      <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
-        {placements.map((placement, index) => (
-          <CooldownTile
-            key={placement.item.id}
-            item={placement.item}
-            label={labelOf(placement.item.id)}
-            tierId={tier.id}
-            index={index}
-            count={placements.length}
-            above={above}
-            below={below}
-            pending={pending}
-            onPlace={onPlace}
-          />
-        ))}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-      </ol>
+    <li className="flex w-full rounded-[10px] border bg-card">
+      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
+          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {placements.map((placement, index) => (
+            <CooldownTile
+              key={placement.item.id}
+              item={placement.item}
+              label={labelOf(placement.item.id)}
+              tierId={tier.id}
+              index={index}
+              count={placements.length}
+              above={above}
+              below={below}
+              pending={pending}
+              onPlace={onPlace}
+            />
+          ))}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+      </div>
     </li>
   );
 }
