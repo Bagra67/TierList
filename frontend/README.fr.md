@@ -110,9 +110,9 @@ frontend/
 │   │   ├── *.test.ts       # Tests de la couche API
 │   │   └── schema.d.ts     # Types d'API générés depuis backend/openapi.json (ne pas modifier)
 │   ├── auth/               # Gardes de routes : RequireAuth (pages privées → /login), RedirectIfSignedIn (/login, /register → là où l'utilisateur allait)
-│   ├── components/         # Composants réutilisables (Layout, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
+│   ├── components/         # Composants réutilisables (Layout, Logo, AuthPageShell, ErrorMessage, ErrorBoundary, SettingsPanel, LogoutButton, LanguageSwitcher, ThemeSwitcher, TextField, DeleteAccountDialog, GoogleSignInLink, EmailVerificationBanner, MainNav, ModalDialog, CreateTemplateDialog, DeleteTemplateDialog, TemplateNameField, TierEditor, TileEditor, InlineEditField, ColorField, SortableList, GameScreen, GameBoard, gameBoardParts, CooldownBoard, EndCooldownDialog, GameAdminControls, PlacedList, Countdown, GameItemView)
 │   │   └── ui/             # Composants shadcn/ui (button, input, label, card, popover), modifiables
-│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts
+│   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts, brand.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
 │   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
@@ -236,6 +236,8 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - La palette (baptisée « Le Plateau » : un jeu télé où l'on classe ensemble) se trouve dans les blocs `:root` (clair) et `.dark` de `src/index.css`, sous forme de jetons shadcn/ui : texte encre indigo (`--foreground`) sur un fond scène blanc froid (`--background`), accent framboise pour les actions principales (`--primary`), rouge brique pour les erreurs et les actions destructrices (`--destructive`, d'une teinte éloignée du framboise pour qu'une erreur ne ressemble jamais à l'accent), et `--success` pour les états positifs (ex. un joueur en ligne).
 - Les paires de jetons utilisées pour du texte sont choisies pour les contrastes WCAG : texte d'au moins 4,5:1, bordures des champs (`--input`) et anneau de focus (`--ring`) d'au moins 3:1. Une variante translucide (`bg-primary/90`, `bg-destructive/10`…) baisse le contraste : la vérifier aussi, et revérifier chaque paire en changeant une couleur.
 - L'anneau de focus utilise `--ring` à pleine opacité (`ring-ring`, `outline-ring`), jamais une version estompée, pour que le focus clavier reste visible.
+- Deux polices, hébergées avec l'application via Fontsource (aucun service de polices tiers) : **Geist** pour le texte (`font-sans`) et **Anybody** pour les titres (`font-heading`, appliquée à `h1`–`h3`). Anybody a une largeur variable (`font-stretch`, de 50 % à 150 %), utilisée large pour le logo, les lettres des tiers et le chrono.
+- Le logo (`Logo`, dans l'en-tête) et `public/favicon.svg` sont trois barres empilées aux couleurs des tiers S, A et B (`LOGO_BAR_COLORS`, `src/constants/brand.ts`). Les balises `theme-color` de `index.html` reprennent le `--background` de chaque thème : les garder égales.
 
 ### Mode sombre
 

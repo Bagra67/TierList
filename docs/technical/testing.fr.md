@@ -1418,6 +1418,14 @@ La politique de confidentialité ([guide des pages légales](legal-pages.fr.md))
 | `links to the CNIL complaint page in a new tab`                     | Cherche le lien de la CNIL.           | Le droit de réclamation auprès de la CNIL.                     | `href` = `CNIL_COMPLAINT_URL`, `target="_blank"`, `rel="noreferrer"`.                                                                                                       |
 | `is translated into English`                                        | Passe en anglais, puis ouvre la page. | La politique suit la langue de l'interface.                    | Les titres `Privacy policy` et `Your rights`.                                                                                                                               |
 
+### 2.37 Tests : `src/components/Logo.test.tsx`
+
+`App` est rendue sur `/login` sans session : le logo est testé dans le cadre commun.
+
+| Test                                            | Ce qu'il fait                 | But                                                                                           | Résultat attendu             |
+| ----------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------- |
+| `links to the home page from the shared layout` | Affiche la page de connexion. | Le logo de l'en-tête est sur toutes les pages et mène à l'accueil ; son dessin est décoratif. | Un lien `TierList` vers `/`. |
+
 ---
 
 ## 3. Lire les résultats

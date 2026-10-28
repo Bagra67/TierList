@@ -1418,6 +1418,14 @@ The privacy policy ([legal pages guide](legal-pages.md)): `App` is rendered at `
 | `links to the CNIL complaint page in a new tab`                     | Finds the CNIL link.                      | The right to complain to the CNIL.                           | `href` = `CNIL_COMPLAINT_URL`, `target="_blank"`, `rel="noreferrer"`.                                                                                                 |
 | `is translated into English`                                        | Switches to English, then opens the page. | The policy follows the interface language.                   | The `Privacy policy` and `Your rights` headings.                                                                                                                      |
 
+### 2.37 Tests: `src/components/Logo.test.tsx`
+
+`App` is rendered at `/login` without a session, so the logo is tested in the shared layout.
+
+| Test                                            | What it does            | Purpose                                                                     | Expected result           |
+| ----------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- | ------------------------- |
+| `links to the home page from the shared layout` | Renders the login page. | The header logo is on every page and leads home; its drawing is decorative. | A `TierList` link to `/`. |
+
 ---
 
 ## 3. Reading the results

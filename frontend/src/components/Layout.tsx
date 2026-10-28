@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router';
 
 import { useForgetEndedSession } from '../api/auth';
+import { Logo } from './Logo';
 import { LogoutButton } from './LogoutButton';
 import { MainNav } from './MainNav';
 import { SettingsPanel } from './SettingsPanel';
@@ -16,7 +17,10 @@ export function Layout() {
   return (
     <div className="lg:flex lg:h-dvh lg:flex-col">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b px-4 py-2">
-        <MainNav />
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <Logo />
+          <MainNav />
+        </div>
         <div className="ml-auto flex flex-wrap items-center gap-4">
           <LogoutButton />
           <SettingsPanel />
