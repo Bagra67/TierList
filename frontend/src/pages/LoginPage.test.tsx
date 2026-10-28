@@ -20,7 +20,7 @@ function renderLoginPage(path = '/login') {
 }
 
 function fillAndSubmit(email: string, password: string) {
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: email } });
   fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: password } });
   fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
 }
@@ -56,7 +56,7 @@ describe('LoginPage', () => {
 
     fillAndSubmit('alice@example.com', 'wrong password');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Email ou mot de passe incorrect');
+    expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou mot de passe incorrect');
     expect(screen.getByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe('LoginPage', () => {
     fillAndSubmit('alice@example', 'correct horse battery staple');
 
     expect(await screen.findByText('Valeur invalide.')).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('links to the Google sign-in', () => {

@@ -49,7 +49,7 @@ describe('GameScreen', () => {
     });
     renderRoomPage();
 
-    expect(await screen.findByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(await screen.findByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
     // Bob, déconnecté, a placé : le compteur n'attend que les connectés (Alice)
     expect(screen.getByRole('heading', { name: 'Placé 0 / 1 connecté' })).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('GameScreen', () => {
     renderRoomPage();
 
     fireEvent.click(
-      await screen.findByRole('button', { name: "Placer dans S : l'item en cours, à la fin" }),
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
     );
 
     const tierRow: HTMLElement = await screen.findByRole('list', { name: 'S' });
@@ -121,11 +121,11 @@ describe('GameScreen', () => {
     renderRoomPage();
 
     fireEvent.click(
-      await screen.findByRole('button', { name: "Placer dans S : l'item en cours, à la fin" }),
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      "Cet item n'est plus l'item en cours : le tour est passé.",
+      "Cet élément n'est plus l'élément en cours : le tour est passé.",
     );
   });
 
@@ -143,9 +143,9 @@ describe('GameScreen', () => {
     renderRoomPage();
 
     expect(await screen.findByText('Passage automatique : désactivé')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Item suivant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Élément suivant' }));
 
-    expect(await screen.findByText('Item 2 sur 3')).toBeInTheDocument();
+    expect(await screen.findByText('Élément 2 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Barbecue')).toBeInTheDocument();
     expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/next');
   });
@@ -159,7 +159,7 @@ describe('GameScreen', () => {
     });
     renderRoomPage();
 
-    expect(await screen.findByRole('button', { name: 'Item suivant' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Élément suivant' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
     // Il n'est pas attendu : seul Bob compte
     expect(within(placedList()).queryByText('Alice (vous)')).not.toBeInTheDocument();
@@ -186,7 +186,7 @@ describe('GameScreen', () => {
 
     expect(await screen.findByRole('heading', { name: 'Mon classement' })).toBeInTheDocument();
     expect(screen.getByText('Bob (vous)')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Item suivant' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Élément suivant' })).not.toBeInTheDocument();
   });
 
   it('brings a guest back to their board from the personal link during a game', async () => {
@@ -202,7 +202,7 @@ describe('GameScreen', () => {
 
     const tierRow: HTMLElement = await screen.findByRole('list', { name: 'S' });
     expect(within(tierRow).getByText('Paprika')).toBeInTheDocument();
-    expect(screen.getByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(screen.getByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(within(placedList()).getByText('Lou (vous)')).toBeInTheDocument();
     expect(calledRoutes(fetchMock)).not.toContain('GET /rooms/K7P2QX');
   });
@@ -238,11 +238,11 @@ describe('GameScreen', () => {
     renderRoomPage();
 
     fireEvent.click(
-      await screen.findByRole('button', { name: "Placer dans S : l'item en cours, à la fin" }),
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
     );
 
-    await vi.waitFor(() => expect(screen.getByText('Item 2 sur 3')).toBeInTheDocument());
-    expect(screen.queryByText('Item 1 sur 3')).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument());
+    expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
   });
 
   describe('during the final cooldown', () => {
@@ -270,17 +270,19 @@ describe('GameScreen', () => {
       stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
       renderRoomPage();
 
-      expect(await screen.findByRole('heading', { name: 'Cooldown final' })).toBeInTheDocument();
-      expect(screen.getByRole('timer', { name: 'Fin du cooldown' })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Retouches finales' })).toBeInTheDocument();
+      expect(screen.getByRole('timer', { name: 'Fin des retouches' })).toBeInTheDocument();
       // Le glisser-déposer a sa propre zone d'annonces (status) : le texte du bandeau suffit
       expect(
-        screen.getByText("Déplacez n'importe quelle tuile. Placez vos items manqués avant la fin."),
+        screen.getByText(
+          "Déplacez n'importe quelle tuile. Placez vos éléments manqués avant la fin.",
+        ),
       ).toBeInTheDocument();
       const tierRow: HTMLElement = screen.getByRole('list', { name: 'S' });
       expect(within(tierRow).getByText('Paprika')).toBeInTheDocument();
       expect(within(tierRow).getByText('Chorizo')).toBeInTheDocument();
       const missed: HTMLElement | null = screen
-        .getByRole('heading', { name: 'Items manqués' })
+        .getByRole('heading', { name: 'Éléments manqués' })
         .closest('section');
       if (missed === null) throw new Error('No missed items');
       expect(within(missed).getByText('Barbecue')).toBeInTheDocument();
@@ -351,12 +353,14 @@ describe('GameScreen', () => {
       renderRoomPage();
 
       fireEvent.click(await screen.findByRole('button', { name: 'Terminer maintenant' }));
-      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer le cooldown ?' });
+      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer les retouches ?' });
       expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/K7P2QX/game/end');
       fireEvent.click(within(dialog).getByRole('button', { name: 'Terminer' }));
 
       await vi.waitFor(() =>
-        expect(screen.queryByRole('heading', { name: 'Cooldown final' })).not.toBeInTheDocument(),
+        expect(
+          screen.queryByRole('heading', { name: 'Retouches finales' }),
+        ).not.toBeInTheDocument(),
       );
       expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/end');
       // Le focus revient au lobby, au lieu de se perdre avec l'écran du cooldown
@@ -375,11 +379,11 @@ describe('GameScreen', () => {
       expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/K7P2QX/game/end');
 
       fireEvent.click(screen.getByRole('button', { name: 'Terminer maintenant' }));
-      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer le cooldown ?' });
+      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer les retouches ?' });
       fireEvent.click(within(dialog).getByRole('button', { name: 'Terminer' }));
 
       expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-        "Le cooldown final n'est pas en cours.",
+        'Les retouches finales ne sont pas en cours.',
       );
     });
 

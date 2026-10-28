@@ -25,7 +25,7 @@ describe('ForgotPasswordPage', () => {
     });
     renderForgotPasswordPage();
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Envoyer le lien' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(

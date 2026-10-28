@@ -57,9 +57,9 @@ describe('JoinRoomScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
     const notice: HTMLElement = screen
-      .getByRole('heading', { name: 'Votre lien perso' })
+      .getByRole('heading', { name: 'Votre lien personnel' })
       .closest('section') as HTMLElement;
-    expect(within(notice).getByLabelText('Lien perso')).toHaveValue(lousRoom.guest_link);
+    expect(within(notice).getByLabelText('Lien personnel')).toHaveValue(lousRoom.guest_link);
     expect(notice).toHaveTextContent("jusqu'au 10 novembre 2026");
     expect(screen.getByText('Lou').closest('li')).toHaveTextContent('Lou(invité)');
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
@@ -127,10 +127,10 @@ describe('JoinRoomScreen', () => {
     renderRoomPage();
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Votre lien perso' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Votre lien personnel' })).not.toBeInTheDocument();
     // Le lien perso n'est plus affichable, mais l'invité peut en demander un nouveau
     expect(
-      screen.getByRole('button', { name: 'Obtenir un nouveau lien perso' }),
+      screen.getByRole('button', { name: 'Obtenir un nouveau lien personnel' }),
     ).toBeInTheDocument();
   });
 
@@ -141,12 +141,14 @@ describe('JoinRoomScreen', () => {
     });
     renderRoomPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Obtenir un nouveau lien perso' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Obtenir un nouveau lien personnel' }),
+    );
 
-    expect(await screen.findByLabelText('Lien perso')).toHaveValue(lousRoom.guest_link);
+    expect(await screen.findByLabelText('Lien personnel')).toHaveValue(lousRoom.guest_link);
     expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/guest-link');
     expect(
-      screen.queryByRole('button', { name: 'Obtenir un nouveau lien perso' }),
+      screen.queryByRole('button', { name: 'Obtenir un nouveau lien personnel' }),
     ).not.toBeInTheDocument();
   });
 
@@ -175,7 +177,7 @@ describe('JoinRoomScreen', () => {
     renderRoomPage('K7P2QX#guest=old-token');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Ce lien perso a expiré, ou la salle a été fermée.',
+      'Ce lien personnel a expiré, ou la salle a été fermée.',
     );
     expect(screen.getByRole('heading', { name: 'Rejoindre la salle' })).toBeInTheDocument();
     consoleError.mockRestore();

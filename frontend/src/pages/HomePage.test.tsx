@@ -41,8 +41,8 @@ describe('HomePage', () => {
       screen.getByRole('region', { name: 'Comment ça marche' }),
     ).getByRole('list');
     expect(within(steps).getAllByRole('listitem')).toHaveLength(3);
-    expect(within(steps).getAllByRole('listitem')[0]).toHaveTextContent('Préparez un template');
-    expect(screen.getByRole('link', { name: 'Préparer un template' })).toHaveAttribute(
+    expect(within(steps).getAllByRole('listitem')[0]).toHaveTextContent('Préparez un modèle');
+    expect(screen.getByRole('link', { name: 'Préparer un modèle' })).toHaveAttribute(
       'href',
       '/templates',
     );

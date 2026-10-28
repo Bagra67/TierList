@@ -22,7 +22,7 @@ function renderRegisterPage(from?: string) {
 
 function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText('Nom affiché'), { target: { value: 'Alice' } });
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+  fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
   fireEvent.change(screen.getByLabelText('Mot de passe'), {
     target: { value: 'correct horse battery staple' },
   });
@@ -74,7 +74,7 @@ describe('RegisterPage', () => {
 
     fillAndSubmit();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Cet email est déjà utilisé');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cet e-mail est déjà utilisé');
   });
 
   it('shows the minimum password length required by the backend', async () => {

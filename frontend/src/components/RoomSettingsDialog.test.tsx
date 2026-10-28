@@ -47,18 +47,18 @@ describe('RoomSettingsDialog', () => {
     const { fetchMock, dialog } = await openSettings(aliceRoom, {
       'PATCH /rooms/K7P2QX/settings': () => Response.json(savedRoom),
     });
-    const timer: HTMLElement = within(dialog).getByLabelText('Durée du timer (secondes)');
+    const timer: HTMLElement = within(dialog).getByLabelText('Durée du minuteur (secondes)');
     expect(timer).toBeDisabled();
 
     fireEvent.click(within(dialog).getByLabelText('Aléatoire'));
-    fireEvent.click(within(dialog).getByLabelText('Timer par item'));
+    fireEvent.click(within(dialog).getByLabelText('Minuteur par élément'));
     fireEvent.change(timer, { target: { value: '20' } });
     fireEvent.click(within(dialog).getByLabelText('Je joue aussi'));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
 
-    expect(await screen.findByText('Timer de 20 s par item')).toBeInTheDocument();
+    expect(await screen.findByText('Minuteur de 20 s par élément')).toBeInTheDocument();
     expect(within(settingsSummary()).getByText('Ordre aléatoire')).toBeInTheDocument();
-    expect(within(settingsSummary()).getByText('Le room admin ne joue pas')).toBeInTheDocument();
+    expect(within(settingsSummary()).getByText("L'hôte ne joue pas")).toBeInTheDocument();
     expect(await sentChanges(fetchMock)).toEqual({
       item_order: 'random',
       auto_advance: 'timer',
@@ -98,13 +98,13 @@ describe('RoomSettingsDialog', () => {
         }),
     });
 
-    fireEvent.change(within(dialog).getByLabelText('Durée du timer (secondes)'), {
+    fireEvent.change(within(dialog).getByLabelText('Durée du minuteur (secondes)'), {
       target: { value: '2' },
     });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Enregistrer' }));
 
     expect(await within(dialog).findByText('Au moins 5.')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Durée du timer (secondes)')).toHaveAttribute(
+    expect(within(dialog).getByLabelText('Durée du minuteur (secondes)')).toHaveAttribute(
       'aria-invalid',
       'true',
     );
@@ -120,7 +120,7 @@ describe('RoomSettingsDialog', () => {
         }),
     });
     expect(within(dialog).getByLabelText('Aléatoire')).toBeDisabled();
-    expect(within(dialog).getByLabelText('Cooldown final (secondes)')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Retouches finales (secondes)')).toBeDisabled();
     expect(within(dialog).getByLabelText('Je joue aussi')).toBeDisabled();
 
     fireEvent.click(within(dialog).getByLabelText('Autoriser les arrivées pendant la partie'));
@@ -137,6 +137,6 @@ describe('RoomSettingsDialog', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Annuler' }));
 
     expect(fetchMock.mock.calls.some(([request]) => request.method === 'PATCH')).toBe(false);
-    expect(within(settingsSummary()).getByText('Ordre du template')).toBeInTheDocument();
+    expect(within(settingsSummary()).getByText('Ordre du modèle')).toBeInTheDocument();
   });
 });

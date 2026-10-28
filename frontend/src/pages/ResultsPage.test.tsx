@@ -84,13 +84,13 @@ describe('ResultsPage', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Global' }));
 
     const table: HTMLElement = screen.getByRole('table', {
-      name: 'Nombre de joueurs qui ont mis chaque item dans chaque tier',
+      name: 'Nombre de joueurs qui ont mis chaque élément dans chaque tier',
     });
     expect(
       within(table)
         .getAllByRole('columnheader')
         .map((cell: HTMLElement) => cell.textContent),
-    ).toEqual(['Item', 'S', 'A', 'Absents']);
+    ).toEqual(['Élément', 'S', 'A', 'Absents']);
     const chorizo: HTMLElement = within(table).getByRole('row', { name: /Chorizo/ });
     expect(
       within(chorizo)
@@ -189,7 +189,7 @@ describe('ResultsPage', () => {
       screen
         .getAllByRole('rowheader')
         .map((header: HTMLElement) => within(header).getByRole('img').getAttribute('alt')),
-    ).toEqual(["Image de l'item 1", "Image de l'item 2", "Image de l'item 3"]);
+    ).toEqual(["Image de l'élément 1", "Image de l'élément 2", "Image de l'élément 3"]);
   });
 
   it('keeps the box and says so when reading the other variant fails', async () => {

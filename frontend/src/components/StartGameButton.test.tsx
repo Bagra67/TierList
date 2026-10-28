@@ -19,7 +19,7 @@ describe('StartGameButton', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Lancer la partie' }));
 
-    expect(await screen.findByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(await screen.findByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Partie en cours')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
@@ -41,7 +41,7 @@ describe('StartGameButton', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Rejouer' }));
 
-    expect(await screen.findByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(await screen.findByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
     expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game');
   });
@@ -56,7 +56,7 @@ describe('StartGameButton', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Lancer la partie' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Il faut au moins un participant qui place les items',
+      'Il faut au moins un participant qui place les éléments',
     );
   });
 
@@ -80,7 +80,7 @@ describe('StartGameButton', () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();
 
-    await screen.findByText('Item 1 sur 3');
+    await screen.findByText('Élément 1 sur 3');
     expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
   });
 });

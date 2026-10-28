@@ -78,9 +78,9 @@ describe('TemplatesPage', () => {
 
     renderTemplatesPage();
 
-    expect(await screen.findByText(/aucun template/)).toBeInTheDocument();
+    expect(await screen.findByText(/aucun modèle/)).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Nouveau template' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nouveau modèle' })).toBeInTheDocument();
   });
 
   it('shows an error when the list cannot be loaded', async () => {
@@ -102,8 +102,8 @@ describe('TemplatesPage', () => {
     });
     renderTemplatesPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau template' }));
-    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau template' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau modèle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau modèle' });
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: 'Fromages' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
@@ -131,8 +131,8 @@ describe('TemplatesPage', () => {
     });
     renderTemplatesPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau template' }));
-    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau template' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau modèle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau modèle' });
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: '   ' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
@@ -191,7 +191,7 @@ describe('TemplatesPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Supprimer' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'Ce template est introuvable.',
+      'Ce modèle est introuvable.',
     );
   });
 
@@ -220,7 +220,7 @@ describe('TemplatesPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Ajoutez au moins une tuile à ce template pour jouer avec.',
+        'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
       );
       expect(screen.queryByRole('heading', { name: 'Lobby' })).not.toBeInTheDocument();
     });

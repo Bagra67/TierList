@@ -54,7 +54,7 @@ def test_registration_sends_a_verification_link(auth_client: TestClient, sent_em
 
     [email] = sent_emails
     assert email.to == "alice@example.com"
-    assert email.subject == "Confirmez votre adresse email"
+    assert email.subject == "Confirmez votre adresse e-mail"
     assert "Bonjour Alice," in email.text
     assert "http://localhost:5173/verify-email?token=" in email.text
     assert me(auth_client, access_token)["email_verified"] is False
