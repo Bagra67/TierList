@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { textLinkClassName } from '../components/ui/text-link';
 import {
   CNIL_COMPLAINT_URL,
   LEGAL_CONTROLLER_NAME,
   PRIVACY_CONTACT_EMAIL,
   PRIVACY_POLICY_UPDATED_AT,
 } from '../constants/legal';
-
-const LINK_CLASS = 'font-medium underline underline-offset-4';
 
 // Politique de confidentialité (#200), lisible sans compte. Le texte vient des locales
 // (privacy.*) ; ce qu'il décrit est l'inventaire de docs/technical/legal-pages.md.
@@ -28,7 +27,7 @@ export function PrivacyPolicyPage() {
       <PolicySection title={t('privacy.controller.title')}>
         <p>{t('privacy.controller.body', { name: LEGAL_CONTROLLER_NAME })}</p>
         <p>
-          <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} className={LINK_CLASS}>
+          <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} className={textLinkClassName}>
             {PRIVACY_CONTACT_EMAIL}
           </a>
         </p>
@@ -106,7 +105,12 @@ export function PrivacyPolicyPage() {
         </ul>
         <p>
           {t('privacy.rights.cnil')}{' '}
-          <a href={CNIL_COMPLAINT_URL} target="_blank" rel="noreferrer" className={LINK_CLASS}>
+          <a
+            href={CNIL_COMPLAINT_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={textLinkClassName}
+          >
             {t('privacy.rights.cnilLink')}
           </a>
         </p>

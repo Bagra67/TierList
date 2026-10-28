@@ -25,6 +25,7 @@ import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
+import { NativeSelect } from './ui/native-select';
 
 // Les contrôles d'une tuile, pour lui rendre le focus après un déplacement
 type TileControl = 'drag' | 'earlier' | 'later' | 'up' | 'down';
@@ -437,24 +438,23 @@ function MissedItemRow({ item, label, tiers, endOf, pending, onPlace }: MissedIt
         <GameItemView item={item} imageLabel={label} size="small" />
       </DraggableItem>
       {/* Le mot accompagne la couleur, qui ne suffirait pas seule */}
-      <span className="rounded-sm bg-destructive/10 px-1 text-xs font-semibold uppercase text-destructive">
+      <span className="rounded-sm bg-destructive/10 px-1.5 text-sm font-semibold text-destructive">
         {t('rooms.game.cooldown.absent')}
       </span>
       <label htmlFor={selectId} className="sr-only">
         {t('rooms.game.cooldown.placeInLabel', { item: label })}
       </label>
-      <select
+      <NativeSelect
         id={selectId}
         value={tierId}
         onChange={(event: ChangeEvent<HTMLSelectElement>) => setTierId(event.target.value)}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
       >
         {tiers.map((tier) => (
           <option key={tier.id} value={tier.id}>
             {tier.name}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       <Button
         type="button"
         variant="outline"

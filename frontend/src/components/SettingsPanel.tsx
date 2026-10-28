@@ -9,6 +9,7 @@ import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Button } from './ui/button';
+import { textLinkClassName } from './ui/text-link';
 
 // Bouton engrenage de l'en-tête et panneau de paramètres qui glisse depuis la droite : thème et
 // langue pour tous, suppression du compte une fois connecté. <dialog> natif ouvert avec
@@ -78,7 +79,7 @@ export function SettingsPanel() {
         )}
         <section className="mt-6 flex flex-col items-start gap-3">
           <h3 className="font-medium">{t('settings.about')}</h3>
-          <Link to={ROUTES.PRIVACY} className="underline underline-offset-4">
+          <Link to={ROUTES.PRIVACY} className={textLinkClassName}>
             {t('footer.privacy')}
           </Link>
         </section>

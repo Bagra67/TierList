@@ -105,4 +105,23 @@
   h2 {
     @apply font-heading;
   }
+  /* Cases à cocher natives : couleur de l'accent et focus clavier bien visible */
+  input[type='checkbox'] {
+    @apply size-4 accent-primary;
+  }
+  input[type='checkbox']:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+/* Mouvement réduit demandé par le système : animations et transitions quasi instantanées (spinner,
+   ouverture du popover…), sans retirer l'état final qu'elles affichent */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

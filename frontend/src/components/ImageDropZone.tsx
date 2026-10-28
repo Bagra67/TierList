@@ -174,7 +174,7 @@ export function ImageDropZone({
           onClick={onRemove}
           disabled={disabled}
           className={cn(
-            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring',
+            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-background focus-visible:ring-3 focus-visible:ring-ring',
             // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
             // il est posé dans le coin de l'image, plus grand pour être facile à viser
             size === 'large'

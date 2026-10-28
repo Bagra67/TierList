@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { THEMES, type Theme } from '../constants/theme';
 import { changeTheme, getTheme, isTheme } from '../theme';
 import { Label } from './ui/label';
+import { NativeSelect } from './ui/native-select';
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
@@ -21,18 +22,13 @@ export function ThemeSwitcher() {
   return (
     <div className="flex items-center gap-2">
       <Label htmlFor={id}>{t('common.theme')}</Label>
-      <select
-        id={id}
-        value={theme}
-        onChange={handleChange}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring"
-      >
+      <NativeSelect id={id} value={theme} onChange={handleChange}>
         {THEMES.map((option) => (
           <option key={option} value={option}>
             {t(`theme.${option}`)}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
