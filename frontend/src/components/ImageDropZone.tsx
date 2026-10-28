@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
+import { ImageIcon, X } from 'lucide-react';
 
 import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
@@ -141,7 +142,7 @@ export function ImageDropZone({
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
-            <ImageIcon className={size === 'large' ? 'size-7' : 'size-10'} />
+            <ImageIcon aria-hidden="true" className={size === 'large' ? 'size-7' : 'size-10'} />
             <span className={cn('leading-tight', size === 'large' ? 'text-[0.7rem]' : 'text-xs')}>
               {t('templates.editor.image.hint')}
             </span>
@@ -177,12 +178,10 @@ export function ImageDropZone({
             'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-background focus-visible:ring-3 focus-visible:ring-ring',
             // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
             // il est posé dans le coin de l'image, plus grand pour être facile à viser
-            size === 'large'
-              ? '-top-1.5 -right-1.5 size-5 text-[0.65rem]'
-              : 'top-1.5 right-1.5 size-7 text-xs',
+            size === 'large' ? '-top-1.5 -right-1.5 size-5' : 'top-1.5 right-1.5 size-7',
           )}
         >
-          <span aria-hidden="true">✕</span>
+          <X aria-hidden="true" className={size === 'large' ? 'size-3' : 'size-4'} />
         </button>
       )}
       {/* Le vrai champ fichier est caché : la vignette ci-dessus le remplace, au clavier aussi */}
@@ -196,25 +195,5 @@ export function ImageDropZone({
         onChange={handleChange}
       />
     </div>
-  );
-}
-
-// Icône « image » (cadre, soleil, montagne), dessinée ici : le projet n'a pas de bibliothèque
-// d'icônes
-function ImageIcon({ className }: { className: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-4.5-4.5L5 21" />
-    </svg>
   );
 }

@@ -2,6 +2,7 @@ import { rectSortingStrategy } from '@dnd-kit/sortable';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { type FormEvent, type RefObject, useId, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
+import { ArrowLeft, ArrowRight, GripVertical, Trash2 } from 'lucide-react';
 
 import { type UploadedImage, useUploadImage } from '../api/images';
 import {
@@ -212,7 +213,7 @@ export function TileEditor({ template }: TileEditorProps) {
                     aria-label={t('templates.editor.dragHandle', { name: tileLabel(tile) })}
                     className="cursor-grab touch-none rounded px-1 text-muted-foreground"
                   >
-                    <span aria-hidden="true">⋮⋮</span>
+                    <GripVertical aria-hidden="true" className="size-4" />
                   </button>
                   <div className="flex items-center">
                     <Button
@@ -223,7 +224,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       disabled={isChangingOrder || tile.position === 0}
                       onClick={() => moveTile(tile, tile.position - 1)}
                     >
-                      <span aria-hidden="true">←</span>
+                      <ArrowLeft aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -233,7 +234,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       disabled={isChangingOrder || tile.position === tiles.length - 1}
                       onClick={() => moveTile(tile, tile.position + 1)}
                     >
-                      <span aria-hidden="true">→</span>
+                      <ArrowRight aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -243,7 +244,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       disabled={isChangingOrder}
                       onClick={() => deleteTile(tile)}
                     >
-                      <span aria-hidden="true">✕</span>
+                      <Trash2 aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
