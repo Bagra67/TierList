@@ -255,31 +255,35 @@ function TierRow({
   );
 
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 overflow-hidden rounded-[10px] border bg-card pr-2">
-      <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2 py-2" aria-label={tier.name}>
-        {others.map((placement, index) => (
-          <PlacedItemSlot
-            key={placement.item.id}
-            placement={placement}
-            target={{ tierId: tier.id, itemId: placement.item.id }}
-            before={currentRank === index ? currentChip : null}
-          />
-        ))}
-        {currentRank !== undefined && currentRank >= others.length && currentChip}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-      </ol>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        data-focus-key={placeFocus}
-        aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
-        aria-disabled={pending}
-        onClick={() => onPlace(others.length, [placeFocus])}
-      >
-        {t('rooms.game.placeIn', { tier: tier.name })}
-      </Button>
+    <li className="flex w-full rounded-[10px] border bg-card">
+      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
+          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {others.map((placement, index) => (
+            <PlacedItemSlot
+              key={placement.item.id}
+              placement={placement}
+              target={{ tierId: tier.id, itemId: placement.item.id }}
+              before={currentRank === index ? currentChip : null}
+            />
+          ))}
+          {currentRank !== undefined && currentRank >= others.length && currentChip}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-focus-key={placeFocus}
+          aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
+          aria-disabled={pending}
+          onClick={() => onPlace(others.length, [placeFocus])}
+        >
+          {t('rooms.game.placeIn', { tier: tier.name })}
+        </Button>
+      </div>
     </li>
   );
 }

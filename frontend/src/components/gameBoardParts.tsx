@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { GameTier } from '../api/rooms';
-import { ITEM_CHIP_CLASS, tierColorStyle } from './boardStyles';
+import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS, tierColorStyle } from './boardStyles';
 
 // Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
 
@@ -19,21 +19,27 @@ interface TierLabelProps {
   tier: GameTier;
   // Pour nommer la ligne (aria-labelledby)
   id?: string;
+  // Arrondi du coin gauche, quand la ligne est un cadre à elle seule (plateau, cooldown)
+  className?: string;
 }
 
 // Bloc-lettre d'un tier, collé à gauche de sa ligne : le nom sur la couleur du tier. Le nom suffit
-// à lui seul, la couleur l'accompagne
-export function TierLabel({ tier, id }: TierLabelProps) {
+// à lui seul, la couleur l'accompagne. Un nom long est coupé après trois lignes (title le montre en
+// entier, et le lecteur d'écran le lit en entier)
+export function TierLabel({ tier, id, className }: TierLabelProps) {
   return (
     <span
       id={id}
+      title={tier.name}
       style={tierColorStyle(tier.color)}
       className={cn(
-        'flex min-h-14 w-16 shrink-0 items-center justify-center self-stretch px-1 text-center font-heading font-black wrap-anywhere [font-stretch:125%] sm:min-h-16 sm:w-20',
+        TIER_LABEL_CLASS,
+        'font-heading font-black wrap-anywhere font-stretch-125%',
         tier.name.length <= SHORT_TIER_NAME_LENGTH ? 'text-3xl' : 'text-sm',
+        className,
       )}
     >
-      {tier.name}
+      <span className="line-clamp-3">{tier.name}</span>
     </span>
   );
 }

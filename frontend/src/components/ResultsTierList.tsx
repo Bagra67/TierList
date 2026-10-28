@@ -1,9 +1,10 @@
+import { cn } from 'cn';
 import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { TierItems } from '../api/results';
 import type { GameTier } from '../api/rooms';
-import { ITEM_CHIP_CLASS } from './boardStyles';
+import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS } from './boardStyles';
 import { TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import type { ResultItem, ResultItems } from './resultsViews';
@@ -49,7 +50,7 @@ export function ResultsTierList({ tiers, rows, items, extraRow }: ResultsTierLis
         >
           <span
             id={`${idPrefix}-extra`}
-            className="flex min-h-14 w-16 shrink-0 items-center justify-center self-stretch bg-muted px-1 text-center text-sm font-semibold text-muted-foreground sm:min-h-16 sm:w-20"
+            className={cn(TIER_LABEL_CLASS, 'bg-muted text-sm font-semibold text-muted-foreground')}
           >
             {extraRow.label}
           </span>

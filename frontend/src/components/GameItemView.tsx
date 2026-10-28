@@ -20,7 +20,8 @@ export function GameItemView({ item, imageLabel, size }: GameItemViewProps) {
           alt={item.text === null ? imageLabel : ''}
           className={cn(
             'rounded-sm object-cover',
-            size === 'large' ? 'size-32' : 'size-12 sm:size-14',
+            // Petite taille : la puce (bordure et marge comprises) garde la hauteur d'une puce de texte
+            size === 'large' ? 'size-32' : 'size-11 sm:size-13',
           )}
         />
       )}
