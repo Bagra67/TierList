@@ -256,7 +256,7 @@ export function TileEditor({ template }: TileEditorProps) {
       {tilesLocalError === null && showLastError && (
         <ErrorMessage>{translateError(t, lastError)}</ErrorMessage>
       )}
-      <form ref={addFormRef} onSubmit={handleAdd} className="flex w-full items-end gap-3">
+      <form ref={addFormRef} onSubmit={handleAdd} className="flex w-full flex-wrap items-end gap-3">
         <ImageDropZone
           size="large"
           label={
@@ -272,7 +272,7 @@ export function TileEditor({ template }: TileEditorProps) {
           onRemove={removeNewImage}
           onRefuse={() => setNewTileLocalError(unsupportedImageMessage)}
         />
-        <div className="flex flex-1 flex-col gap-1">
+        <div className="flex min-w-48 flex-1 flex-col gap-1">
           <TextField
             label={t('templates.editor.newTileText')}
             name="text"

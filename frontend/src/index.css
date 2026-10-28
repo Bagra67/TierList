@@ -12,6 +12,7 @@
   --font-sans: 'Geist Variable', sans-serif;
   --color-ring: var(--ring);
   --color-success: var(--success);
+  --color-warning: var(--warning);
   /* Ombre « projecteur », réservée à l'objet qu'on déplace */
   --shadow-lift: 0 12px 28px -10px oklch(0.236 0.077 286.6 / 0.5);
   --color-input: var(--input);
@@ -62,6 +63,9 @@
   --input: oklch(0.641 0.045 291.2);
   --ring: oklch(0.526 0.199 268);
   --success: oklch(0.533 0.112 161);
+  /* Ambre « projecteur » : avertissements (bordure et fond léger, jamais du texte). Plus foncé
+     qu'en sombre, pour que la bordure garde 3:1 avec le fond (WCAG 1.4.11) */
+  --warning: oklch(0.6 0.13 75);
   --radius: 0.625rem;
 }
 
@@ -88,6 +92,7 @@
   --input: oklch(0.525 0.081 290.4);
   --ring: oklch(0.744 0.131 271.9);
   --success: oklch(0.754 0.145 162.2);
+  --warning: oklch(0.847 0.163 83.8);
 }
 
 @layer base {

@@ -117,6 +117,10 @@ describe('HistoryPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Créer ou rejoindre une partie' })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 
   it('says why the history cannot be read', async () => {

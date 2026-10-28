@@ -89,10 +89,10 @@ describe('translateError', () => {
 
   it('reports an unreachable backend when the response is not from the API', () => {
     expect(translateError(i18n.t, new ApiError(502, 'Bad Gateway'))).toBe(
-      'Impossible de joindre le backend : est-il lancé ?',
+      'Le serveur ne répond pas. Réessayez dans un instant.',
     );
     expect(translateError(i18n.t, new TypeError('Failed to fetch'))).toBe(
-      'Impossible de joindre le backend : est-il lancé ?',
+      'Le serveur ne répond pas. Réessayez dans un instant.',
     );
   });
 });

@@ -3,12 +3,21 @@
 export const fr = {
   common: {
     loading: 'Chargement…',
-    backendUnreachable: 'Impossible de joindre le backend : est-il lancé ?',
+    backendUnreachable: 'Le serveur ne répond pas. Réessayez dans un instant.',
     language: 'Langue',
     theme: 'Thème',
   },
   home: {
     title: 'Accueil',
+    intro:
+      'Classez ensemble, en direct : chacun place les mêmes items dans sa tier list, puis vous comparez les résultats.',
+    steps: {
+      title: 'Comment ça marche',
+      template: 'Préparez un template : ses tiers et ses tuiles, en texte ou en image.',
+      room: 'Ouvrez une salle et partagez son lien ou son code.',
+      play: "À chaque manche, tout le monde place l'item. À la fin, découvrez les résultats.",
+    },
+    prepareTemplate: 'Préparer un template',
     joinRoom: {
       title: 'Rejoindre une salle',
       code: 'Code de la salle',
@@ -129,6 +138,7 @@ export const fr = {
   history: {
     title: 'Historique',
     empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",
+    emptyAction: 'Créer ou rejoindre une partie',
     closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
     players_one: '{{count}} joueur',
     players_other: '{{count}} joueurs',

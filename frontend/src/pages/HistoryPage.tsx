@@ -5,9 +5,10 @@ import { cn } from 'cn';
 import { useHistory } from '../api/history';
 import type { PastGame } from '../api/rooms';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { EmptyState } from '../components/EmptyState';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
-import { resultsPath } from '../constants/routes';
+import { ROUTES, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
 // Historique du compte (US-5.5) : ses parties closes, jouées ou animées comme room admin, de la
@@ -24,7 +25,14 @@ export function HistoryPage() {
       {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {data !== undefined && games.length === 0 && (
-        <p className="text-muted-foreground">{t('history.empty')}</p>
+        <EmptyState
+          message={t('history.empty')}
+          action={
+            <Button asChild variant="outline">
+              <Link to={ROUTES.HOME}>{t('history.emptyAction')}</Link>
+            </Button>
+          }
+        />
       )}
       {games.length > 0 && (
         <ul className="flex w-full flex-col divide-y rounded-xl border">

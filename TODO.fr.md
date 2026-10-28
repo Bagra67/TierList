@@ -29,7 +29,7 @@
 ## 2. Décisions à prendre
 
 - [ ] Fonctionnalités pas encore disponibles ([guide de l'authentification](docs/technical/authentication.fr.md#pas-encore-disponible)) : autres fournisseurs d'identité (Discord, GitHub…), à ajouter avec le premier réellement voulu. La limitation des tentatives est prévue au niveau de l'hébergeur (voir « Avant le premier déploiement »).
-- [ ] Charte graphique (couleur d'accent, typographie, logo), **une fois l'éditeur de tier list et une ou deux fonctionnalités autour en place**, pour la concevoir sur de vrais écrans. D'ici là : uniquement les jetons du thème (`bg-primary`, `text-muted-foreground`…), aucune couleur en dur, pour que la charte se résume surtout à changer les variables de `frontend/src/index.css` ([README du frontend](frontend/README.fr.md#10-composants-dinterface)). Les couleurs des tiers (S, A, B…) se décident avec l'éditeur, en jetons clair et sombre.
+- [x] Charte graphique (couleur d'accent, typographie, logo), conçue sur les vrais écrans (#213 à #218) : la palette « Le Plateau » dans les jetons du thème de `frontend/src/index.css`, Anybody pour les titres et Geist pour le texte, un logo en trois barres ([README du frontend](frontend/README.fr.md#10-composants-dinterface)). Les couleurs des tiers restent des données de chaque template : nouvelles valeurs par défaut (`DEFAULT_TIERS`), avec une couleur de texte calculée pour le contraste.
 - [ ] Passage en version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), quand l'API sera jugée stable.
 
 ## 3. Outillage
