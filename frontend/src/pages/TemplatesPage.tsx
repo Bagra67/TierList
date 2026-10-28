@@ -5,6 +5,7 @@ import { useTemplates } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
+import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
@@ -23,7 +24,7 @@ export function TemplatesPage() {
       </div>
       {isPending && <p className="text-muted-foreground">{t('common.loading')}</p>}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {templates?.length === 0 && <p className="text-muted-foreground">{t('templates.empty')}</p>}
+      {templates?.length === 0 && <EmptyState message={t('templates.empty')} />}
       {templates !== undefined && templates.length > 0 && (
         <ul className="flex w-full flex-col divide-y rounded-xl border">
           {templates.map((template) => (

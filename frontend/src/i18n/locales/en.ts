@@ -3,12 +3,21 @@ import type { Translation } from './fr';
 export const en: Translation = {
   common: {
     loading: 'Loading…',
-    backendUnreachable: 'Cannot reach the backend: is it running?',
+    backendUnreachable: 'Cannot reach the server. Check your connection, then try again.',
     language: 'Language',
     theme: 'Theme',
   },
   home: {
     title: 'Home',
+    intro:
+      'Rank together, live: everyone places the same items in their own tier list, then you compare the results.',
+    steps: {
+      title: 'How it works',
+      template: 'Prepare a template: its tiers and its tiles, as text or images.',
+      room: 'Open a room and share its link or code.',
+      play: 'Each round, everyone places the item. At the end, discover the results.',
+    },
+    prepareTemplate: 'Prepare a template',
     joinRoom: {
       title: 'Join a room',
       code: 'Room code',
@@ -123,6 +132,7 @@ export const en: Translation = {
   history: {
     title: 'History',
     empty: 'No finished game yet. Your games will show here once closed.',
+    emptyAction: 'Pick a template',
     closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
     players_one: '{{count}} player',
     players_other: '{{count}} players',

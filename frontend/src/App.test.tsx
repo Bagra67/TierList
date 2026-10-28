@@ -52,7 +52,7 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le serveur');
     consoleError.mockRestore();
   });
 

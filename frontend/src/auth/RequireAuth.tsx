@@ -14,7 +14,7 @@ export function RequireAuth() {
   const { t } = useTranslation();
 
   if (isPending) return <p className="p-4 text-muted-foreground">{t('common.loading')}</p>;
-  if (isError) return <ErrorMessage className="p-4">{t('common.backendUnreachable')}</ErrorMessage>;
+  if (isError) return <ErrorMessage className="m-4">{t('common.backendUnreachable')}</ErrorMessage>;
   if (user === null)
     return <Navigate to={ROUTES.LOGIN} replace state={signInRedirectState(location)} />;
   return <Outlet />;

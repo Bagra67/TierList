@@ -117,6 +117,10 @@ describe('HistoryPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Choisir un template' })).toHaveAttribute(
+      'href',
+      '/templates',
+    );
   });
 
   it('says why the history cannot be read', async () => {
