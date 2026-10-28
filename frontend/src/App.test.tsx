@@ -64,7 +64,7 @@ describe('App', () => {
     });
     // Depuis une autre page que l'accueil : le bouton est dans l'en-tête de toutes les pages
     renderAppAt('/templates');
-    await screen.findByRole('heading', { name: 'Mes templates' });
+    await screen.findByRole('heading', { name: 'Mes modèles' });
 
     fireEvent.click(
       within(screen.getByRole('banner')).getByRole('button', { name: 'Se déconnecter' }),
@@ -113,7 +113,7 @@ describe('App', () => {
     renderAppAt('/?confirm=delete-account');
     await screen.findByRole('heading', { name: 'Connexion' });
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
     fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
 
@@ -126,10 +126,10 @@ describe('App', () => {
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
-    fireEvent.click(within(nav).getByRole('link', { name: 'Mes templates' }));
+    fireEvent.click(within(nav).getByRole('link', { name: 'Mes modèles' }));
 
-    expect(await screen.findByRole('heading', { name: 'Mes templates' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Mes templates' })).toHaveAttribute(
+    expect(await screen.findByRole('heading', { name: 'Mes modèles' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Mes modèles' })).toHaveAttribute(
       'aria-current',
       'page',
     );

@@ -84,9 +84,9 @@ describe('TemplateEditorPage', () => {
     renderEditor();
 
     expect(await screen.findByRole('heading', { name: 'Chips' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Nom du template' })).toHaveValue('Chips');
+    expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toHaveValue('Chips');
     expect(displayedTierNames()).toEqual(['S', 'A', 'B']);
-    expect(screen.getByRole('link', { name: 'Retour à mes templates' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Retour à mes modèles' })).toHaveAttribute(
       'href',
       '/templates',
     );
@@ -100,7 +100,7 @@ describe('TemplateEditorPage', () => {
 
     renderEditor();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Ce template est introuvable.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
     consoleError.mockRestore();
   });
 
@@ -126,7 +126,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
@@ -142,7 +142,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: '  Chips ' } });
@@ -168,7 +168,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: '   ' } });
@@ -309,7 +309,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier B' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Un template garde au moins un tier.',
+        'Un modèle garde au moins un tier.',
       );
       expect(displayedTierNames()).toEqual(['S', 'A', 'B']);
     });
@@ -398,9 +398,7 @@ describe('TemplateEditorPage', () => {
       });
       fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Un template a au plus 32 tuiles.',
-      );
+      expect(await screen.findByRole('alert')).toHaveTextContent('Un modèle a au plus 32 tuiles.');
     });
 
     it('disables adding once the template has its maximum number of tiles', async () => {
@@ -409,7 +407,7 @@ describe('TemplateEditorPage', () => {
 
       renderEditor();
 
-      expect(await screen.findByText('Un template a au plus 2 tuiles.')).toBeInTheDocument();
+      expect(await screen.findByText('Un modèle a au plus 2 tuiles.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Ajouter la tuile' })).toBeDisabled();
       expect(screen.getByLabelText('Texte de la nouvelle tuile')).toBeDisabled();
     });
@@ -796,7 +794,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
@@ -823,7 +821,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });

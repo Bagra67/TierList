@@ -34,18 +34,18 @@ describe('RoomPage', () => {
 
     expect(screen.getByText('Chargement…')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
-    expect(screen.getByText('Template : Chips')).toBeInTheDocument();
+    expect(screen.getByText('Modèle : Chips')).toBeInTheDocument();
     expect(screen.getByLabelText('Lien de la salle')).toHaveValue(aliceRoom.link);
     const participants: HTMLElement = screen.getByRole('heading', { name: 'Participants (2)' });
     expect(participants).toBeInTheDocument();
-    expect(screen.getByText('Alice').closest('li')).toHaveTextContent('Alice(room admin)');
-    expect(screen.getByText('Bob').closest('li')).not.toHaveTextContent('room admin');
+    expect(screen.getByText('Alice').closest('li')).toHaveTextContent('Alice(hôte)');
+    expect(screen.getByText('Bob').closest('li')).not.toHaveTextContent('hôte');
     const summary: HTMLElement = settingsSummary();
     for (const line of [
-      'Ordre du template',
-      'Item suivant à la main',
-      'Cooldown final de 60 s',
-      'Le room admin joue',
+      'Ordre du modèle',
+      'Élément suivant à la main',
+      'Retouches finales de 60 s',
+      "L'hôte joue",
       'Arrivées autorisées pendant la partie',
     ]) {
       expect(within(summary).getByText(line)).toBeInTheDocument();
@@ -92,9 +92,7 @@ describe('RoomPage', () => {
 
     act(() => latestSocket().closeFromServer(4410));
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Le room admin vous a retiré de cette salle.',
-    );
+    expect(screen.getByRole('status')).toHaveTextContent("L'hôte vous a retiré de cette salle.");
     expect(screen.queryByRole('heading', { name: 'Salle K7P2QX' })).not.toBeInTheDocument();
     const reads: number = calledRoutes(fetchMock).filter(
       (route) => route === 'GET /rooms/K7P2QX',
@@ -117,9 +115,7 @@ describe('RoomPage', () => {
 
     act(() => latestSocket().closeFromServer(4411));
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Le room admin vous a banni de cette salle.',
-    );
+    expect(screen.getByRole('status')).toHaveTextContent("L'hôte vous a banni de cette salle.");
     expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
   });
 
@@ -130,7 +126,7 @@ describe('RoomPage', () => {
 
     act(() => latestSocket().closeFromServer(4412));
 
-    expect(screen.getByRole('status')).toHaveTextContent('Le room admin a fermé cette salle.');
+    expect(screen.getByRole('status')).toHaveTextContent("L'hôte a fermé cette salle.");
     expect(screen.queryByRole('button', { name: 'Revenir dans la salle' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('link', { name: "Retour à l'accueil" }));
     expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
@@ -260,7 +256,7 @@ describe('RoomPage', () => {
     renderRoomPage();
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Le template de cette salle a été supprimé',
+      'Le modèle de cette salle a été supprimé',
     );
     expect(screen.queryByText(/Template :/)).not.toBeInTheDocument();
   });
@@ -330,7 +326,7 @@ describe('RoomPage', () => {
     renderRoomPage();
 
     await screen.findByRole('heading', { name: 'Réglages' });
-    expect(within(settingsSummary()).getByText('Ordre du template')).toBeInTheDocument();
+    expect(within(settingsSummary()).getByText('Ordre du modèle')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fermer la salle' })).not.toBeInTheDocument();
   });
@@ -341,7 +337,7 @@ describe('RoomPage', () => {
     renderRoomPage();
 
     expect(await screen.findByText('Partie en cours')).toBeInTheDocument();
-    expect(screen.getByText('Item 1 sur 3')).toBeInTheDocument();
+    expect(screen.getByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
     // Le texte est affiché : l'image n'est pas relue par les lecteurs d'écran
     expect(screen.getByRole('presentation')).toHaveAttribute(
@@ -364,7 +360,7 @@ describe('RoomPage', () => {
 
     renderRoomPage();
 
-    expect(await screen.findByRole('img', { name: "Image de l'item en cours" })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: "Image de l'élément en cours" })).toHaveAttribute(
       'src',
       'https://images.example.com/paprika.webp',
     );
