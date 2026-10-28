@@ -51,7 +51,7 @@ export function ResultsTabs({ selected, onSelect }: ResultsTabsProps) {
           onClick={() => onSelect(view)}
           onKeyDown={handleKeyDown}
           className={cn(
-            '-mb-px border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            '-mb-px border-b-2 px-3 py-2 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring',
             view === selected
               ? 'border-primary text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground',

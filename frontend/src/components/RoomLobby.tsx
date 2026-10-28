@@ -58,7 +58,7 @@ export function RoomLobby({ room }: RoomLobbyProps) {
                 aria-hidden="true"
                 className={
                   participant.connected
-                    ? 'size-2.5 shrink-0 rounded-full bg-green-600'
+                    ? 'size-2.5 shrink-0 rounded-full bg-success'
                     : 'size-2.5 shrink-0 rounded-full border-2 border-muted-foreground'
                 }
               />
