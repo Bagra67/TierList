@@ -5,21 +5,34 @@ import type { CSSProperties, ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { GameTier } from '../api/rooms';
+import { ITEM_CHIP_CLASS, tierColorStyle } from './boardStyles';
 
 // Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
 
 // Ce que porte une zone de dépôt, lu à la fin du glisser-déposer
 type DropData = UseDroppableArguments['data'];
 
-// Pastille de couleur et nom d'un tier ; la couleur accompagne le nom, qui suffit à lui seul
-export function TierLabel({ tier }: { tier: GameTier }) {
+// Un nom de tier jusqu'à cette longueur (S, A+…) s'affiche en grand dans son bloc
+const SHORT_TIER_NAME_LENGTH: number = 2;
+
+interface TierLabelProps {
+  tier: GameTier;
+  // Pour nommer la ligne (aria-labelledby)
+  id?: string;
+}
+
+// Bloc-lettre d'un tier, collé à gauche de sa ligne : le nom sur la couleur du tier. Le nom suffit
+// à lui seul, la couleur l'accompagne
+export function TierLabel({ tier, id }: TierLabelProps) {
   return (
-    <span className="flex min-w-16 items-center gap-2 font-semibold">
-      <span
-        aria-hidden="true"
-        className="size-4 shrink-0 rounded-sm"
-        style={{ backgroundColor: tier.color }}
-      />
+    <span
+      id={id}
+      style={tierColorStyle(tier.color)}
+      className={cn(
+        'flex min-h-14 w-16 shrink-0 items-center justify-center self-stretch px-1 text-center font-heading font-black wrap-anywhere [font-stretch:125%] sm:min-h-16 sm:w-20',
+        tier.name.length <= SHORT_TIER_NAME_LENGTH ? 'text-3xl' : 'text-sm',
+      )}
+    >
       {tier.name}
     </span>
   );
@@ -38,7 +51,7 @@ export function EndSlot({ id, data }: EndSlotProps) {
       ref={setNodeRef}
       aria-hidden="true"
       className={cn(
-        'h-10 w-12 rounded-md border-2 border-dashed border-muted-foreground/30',
+        'h-14 w-12 rounded-md border-2 border-dashed border-muted-foreground/30 sm:h-16',
         isOver && 'border-primary',
       )}
     />
@@ -54,6 +67,8 @@ interface DraggableItemProps {
   // Clé pour useFocusAfterUpdate (boardHooks.ts)
   focusKey: string;
   disabled: boolean;
+  // L'item à placer maintenant (tour en cours) : bordure de l'accent, pour le repérer
+  emphasized?: boolean;
   children: ReactNode;
 }
 
@@ -64,6 +79,7 @@ export function DraggableItem({
   ariaLabel,
   focusKey,
   disabled,
+  emphasized = false,
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -88,7 +104,13 @@ export function DraggableItem({
       {...listeners}
       data-focus-key={focusKey}
       aria-label={ariaLabel ?? t('rooms.game.dragLabel', { item: label })}
-      className="cursor-grab rounded-md bg-primary/10 px-2 py-1 ring-2 ring-primary"
+      className={cn(
+        ITEM_CHIP_CLASS,
+        // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
+        'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        emphasized && 'border-2 border-primary',
+        isDragging && 'cursor-grabbing shadow-lift',
+      )}
     >
       {children}
     </button>

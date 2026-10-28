@@ -2,6 +2,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { ItemDistribution } from '../api/results';
 import type { GameTier } from '../api/rooms';
+import { tierColorStyle } from './boardStyles';
 import { GameItemView } from './GameItemView';
 import type { ResultItem, ResultItems } from './resultsViews';
 
@@ -32,8 +33,13 @@ export function ResultsDistributionTable({
               {t('results.overall.item')}
             </th>
             {tiers.map((tier: GameTier) => (
-              <th key={tier.id} scope="col" className="px-3 py-2 text-center font-semibold">
-                {tier.name}
+              <th key={tier.id} scope="col" className="px-3 py-2 text-center">
+                <span
+                  style={tierColorStyle(tier.color)}
+                  className="inline-flex min-w-8 justify-center rounded-md px-1.5 py-0.5 font-heading font-black"
+                >
+                  {tier.name}
+                </span>
               </th>
             ))}
             {includeAbsentVotes && (

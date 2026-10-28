@@ -12,6 +12,8 @@
   --font-sans: 'Geist Variable', sans-serif;
   --color-ring: var(--ring);
   --color-success: var(--success);
+  /* Ombre « projecteur », réservée à l'objet qu'on déplace */
+  --shadow-lift: 0 12px 28px -10px oklch(0.236 0.077 286.6 / 0.5);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);

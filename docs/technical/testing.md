@@ -1427,6 +1427,14 @@ The privacy policy ([legal pages guide](legal-pages.md)): `App` is rendered at `
 | ----------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- | ------------------------- |
 | `links to the home page from the shared layout` | Renders the login page. | The header logo is on every page and leads home; its drawing is decorative. | A `TierList` link to `/`. |
 
+### 2.38 Tests: `src/theme/contrast.test.ts`
+
+| Test                                                                                      | What it does                                                 | Purpose                                                                     | Expected result               |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------- | ----------------------------- |
+| `contrastRatio` › `goes from 1 for the same color to 21 for black on white, in any order` | Compares a grey with itself, then black and white both ways. | The WCAG formula and its bounds.                                            | `1`, then `21` both ways.     |
+| `readableTextColor` › `writes in ink on light and saturated tier colors`                  | `#FFC22E`, `#5B7CFA`, `#ffffff`.                             | The tier letter stays readable on the default colors (lower case accepted). | `INK_TEXT_COLOR` each time.   |
+| `readableTextColor` › `writes in white on dark colors`                                    | `#1D1640`, `#000000`.                                        | A dark color chosen by the owner gets white text.                           | `WHITE_TEXT_COLOR` each time. |
+
 ---
 
 ## 3. Reading the results

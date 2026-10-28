@@ -1427,6 +1427,14 @@ La politique de confidentialité ([guide des pages légales](legal-pages.fr.md))
 | ----------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------- |
 | `links to the home page from the shared layout` | Affiche la page de connexion. | Le logo de l'en-tête est sur toutes les pages et mène à l'accueil ; son dessin est décoratif. | Un lien `TierList` vers `/`. |
 
+### 2.38 Tests : `src/theme/contrast.test.ts`
+
+| Test                                                                                      | Ce qu'il fait                                                               | But                                                                                 | Résultat attendu                   |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------- |
+| `contrastRatio` › `goes from 1 for the same color to 21 for black on white, in any order` | Compare un gris avec lui-même, puis le noir et le blanc dans les deux sens. | La formule WCAG et ses bornes.                                                      | `1`, puis `21` dans les deux sens. |
+| `readableTextColor` › `writes in ink on light and saturated tier colors`                  | `#FFC22E`, `#5B7CFA`, `#ffffff`.                                            | La lettre du tier reste lisible sur les couleurs par défaut (minuscules acceptées). | `INK_TEXT_COLOR` à chaque fois.    |
+| `readableTextColor` › `writes in white on dark colors`                                    | `#1D1640`, `#000000`.                                                       | Une couleur sombre choisie par le propriétaire reçoit un texte blanc.               | `WHITE_TEXT_COLOR` à chaque fois.  |
+
 ---
 
 ## 3. Lire les résultats

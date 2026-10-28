@@ -18,11 +18,14 @@ export function GameItemView({ item, imageLabel, size }: GameItemViewProps) {
         <img
           src={item.image_url}
           alt={item.text === null ? imageLabel : ''}
-          className={cn('rounded-md object-cover', size === 'large' ? 'size-32' : 'size-8')}
+          className={cn(
+            'rounded-sm object-cover',
+            size === 'large' ? 'size-32' : 'size-12 sm:size-14',
+          )}
         />
       )}
       {item.text !== null && (
-        <span className={size === 'large' ? 'text-lg font-semibold' : 'text-sm font-medium'}>
+        <span className={size === 'large' ? 'text-lg font-semibold' : 'px-1 text-sm font-medium'}>
           {item.text}
         </span>
       )}

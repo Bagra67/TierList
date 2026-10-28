@@ -115,7 +115,7 @@ frontend/
 │   ├── constants/          # Valeurs fixes : auth.ts, routes.ts, http.ts, i18n.ts, templates.ts, theme.ts, brand.ts
 │   ├── errors/             # ApiError, getFieldErrors, traduction des codes d'erreur (+ tests)
 │   ├── i18n/               # Traductions : mise en place, locales/fr.ts et en.ts (+ tests)
-│   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> (+ tests)
+│   ├── theme/              # Mode sombre : préférence de thème, classe dark sur <html> ; contraste WCAG (+ tests)
 │   ├── pages/              # Un composant par route (HomePage, LoginPage, RegisterPage, VerifyEmailPage, ForgotPasswordPage, ResetPasswordPage, TemplatesPage, TemplateEditorPage) + tests
 │   ├── test/
 │   │   ├── setup.ts        # Préparation des tests (matchers jest-dom, nettoyage, français par défaut)
@@ -237,6 +237,7 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 - Les paires de jetons utilisées pour du texte sont choisies pour les contrastes WCAG : texte d'au moins 4,5:1, bordures des champs (`--input`) et anneau de focus (`--ring`) d'au moins 3:1. Une variante translucide (`bg-primary/90`, `bg-destructive/10`…) baisse le contraste : la vérifier aussi, et revérifier chaque paire en changeant une couleur.
 - L'anneau de focus utilise `--ring` à pleine opacité (`ring-ring`, `outline-ring`), jamais une version estompée, pour que le focus clavier reste visible.
 - Deux polices, hébergées avec l'application via Fontsource (aucun service de polices tiers) : **Geist** pour le texte (`font-sans`) et **Anybody** pour les titres (`font-heading`, appliquée à `h1` et `h2` ; les petits intitulés de section `h3` restent en Geist). Anybody a une largeur variable (`font-stretch`, de 50 % à 150 %), utilisée large pour le logo, les lettres des tiers et le chrono.
+- Sur le plateau, le cooldown et les résultats, chaque tier commence par un **bloc-lettre** : son nom en Anybody sur la couleur du tier (`TierLabel`). Le texte est encre ou blanc, celui des deux qui contraste le plus avec la couleur choisie par le propriétaire (`readableTextColor`, `src/theme/contrast.ts`). Les items partagent un seul style de puce (`ITEM_CHIP_CLASS`, `src/components/boardStyles.ts`), de 56 px de haut sur mobile et 64 px à partir de `sm`. L'item qu'on glisse prend l'ombre `shadow-lift`, et le focus clavier un anneau distinct de la bordure d'accent de l'item en cours.
 - Le logo (`Logo`, dans l'en-tête) et `public/favicon.svg` sont trois barres empilées aux couleurs des tiers S, A et B (`LOGO_BARS`, `src/constants/brand.ts`). Les balises `theme-color` de `index.html` reprennent le `--background` de chaque thème pour le premier affichage, puis `applyTheme` leur donne la couleur du thème choisi dans l'application (`THEME_COLORS`, `src/constants/theme.ts`) : garder les trois égaux.
 
 ### Mode sombre

@@ -243,9 +243,9 @@ function CooldownTierRow({
   onPlace,
 }: CooldownTierRowProps) {
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
+    <li className="flex w-full flex-wrap items-center gap-2 overflow-hidden rounded-[10px] border bg-card pr-2">
       <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+      <ol className="flex flex-1 flex-wrap items-center gap-2 py-2" aria-label={tier.name}>
         {placements.map((placement, index) => (
           <CooldownTile
             key={placement.item.id}
