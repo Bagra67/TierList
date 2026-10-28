@@ -6,7 +6,8 @@ export const TILE_TEXT_MAX_LENGTH: number = 200;
 
 // Couleurs proposées dans le sélecteur des tiers : celles des tiers par défaut (S à E, cf.
 // DEFAULT_TIERS du backend), quelques teintes en plus, puis le gris d'un nouveau tier. Une simple
-// suggestion : le backend accepte n'importe quelle couleur #RRGGBB.
+// suggestion : le backend accepte n'importe quelle couleur #RRGGBB. Douze couleurs, pour remplir
+// les deux lignes de six du sélecteur.
 export const TIER_COLOR_PRESETS: readonly string[] = [
   '#FF3B6B',
   '#FF8A2A',
@@ -18,6 +19,7 @@ export const TIER_COLOR_PRESETS: readonly string[] = [
   '#A78BFA',
   '#F06BD0',
   '#D4B483',
+  '#3D405B',
   '#9AA0B4',
 ];
 
