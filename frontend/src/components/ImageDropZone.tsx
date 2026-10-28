@@ -149,7 +149,7 @@ export function ImageDropZone({
         )}
         {isDraggingOver && (
           <span
-            className="absolute inset-0 flex items-center justify-center rounded-lg bg-primary/20 text-xs font-medium text-primary"
+            className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 text-xs font-semibold text-foreground"
             aria-hidden="true"
           >
             {t('templates.editor.image.drop')}

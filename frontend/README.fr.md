@@ -233,8 +233,8 @@ Plus précisément, ils sont tirés du registre shadcn/ui, style **`radix-nova`*
 
 ### Identité visuelle
 
-- La palette (baptisée « Le Plateau » : un jeu télé où l'on classe ensemble) se trouve dans les blocs `:root` (clair) et `.dark` de `src/index.css`, sous forme de jetons shadcn/ui : texte encre indigo (`--foreground`) sur un fond scène blanc froid (`--background`), accent framboise pour les actions principales (`--primary`), et `--success` pour les états positifs (ex. un joueur en ligne).
-- Chaque paire de jetons utilisés ensemble respecte les contrastes WCAG : texte d'au moins 4,5:1, bordures des champs (`--input`) et anneau de focus (`--ring`) d'au moins 3:1. Les revérifier en changeant une couleur.
+- La palette (baptisée « Le Plateau » : un jeu télé où l'on classe ensemble) se trouve dans les blocs `:root` (clair) et `.dark` de `src/index.css`, sous forme de jetons shadcn/ui : texte encre indigo (`--foreground`) sur un fond scène blanc froid (`--background`), accent framboise pour les actions principales (`--primary`), rouge brique pour les erreurs et les actions destructrices (`--destructive`, d'une teinte éloignée du framboise pour qu'une erreur ne ressemble jamais à l'accent), et `--success` pour les états positifs (ex. un joueur en ligne).
+- Les paires de jetons utilisées pour du texte sont choisies pour les contrastes WCAG : texte d'au moins 4,5:1, bordures des champs (`--input`) et anneau de focus (`--ring`) d'au moins 3:1. Une variante translucide (`bg-primary/90`, `bg-destructive/10`…) baisse le contraste : la vérifier aussi, et revérifier chaque paire en changeant une couleur.
 - L'anneau de focus utilise `--ring` à pleine opacité (`ring-ring`, `outline-ring`), jamais une version estompée, pour que le focus clavier reste visible.
 
 ### Mode sombre
