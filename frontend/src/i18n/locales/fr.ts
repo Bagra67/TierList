@@ -314,6 +314,7 @@ export const fr = {
     title: 'Résultats : {{name}}',
     closedAt: 'Partie terminée le {{date, datetime(dateStyle: long; timeStyle: short)}}',
     includeAbsentVotes: 'Inclure les votes absents',
+    replayReveal: 'Rejouer la révélation',
     publicLink: 'Lien public des résultats',
     tabsLabel: 'Vues des résultats',
     tabs: {

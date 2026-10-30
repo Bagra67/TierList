@@ -120,6 +120,35 @@ describe('ResultsPage', () => {
     expect(includeAbsentVotes).toEqual(['true', 'false']);
   });
 
+  it('reveals the tiers one by one, from the bottom, when the results open', async () => {
+    stubResults();
+    renderResultsPage();
+
+    const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
+    // Le tier du haut apparaît en dernier ; l'animation est sous motion-safe (mouvement réduit)
+    expect(tierS).toHaveClass('motion-safe:animate-reveal');
+    expect(tierS).toHaveStyle({ animationDelay: '520ms' });
+    expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
+    expect(screen.getByRole('group', { name: 'Non classés' })).toHaveStyle({
+      animationDelay: '0ms',
+    });
+  });
+
+  it('does not reveal a view again when coming back to it, unless asked', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('group', { name: 'S' });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    // Le tableau global ne se révèle pas
+    expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Médian' }));
+    expect(screen.getByRole('group', { name: 'S' })).not.toHaveClass('motion-safe:animate-reveal');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
+    expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
+  });
+
   it('shows the votes of the first item by default, with the players', async () => {
     stubResults();
     renderResultsPage();
@@ -312,14 +341,15 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     await screen.findByRole('heading', { name: 'Résultats : Épices' });
-    // En dehors des onglets, seuls le bouton de copie et les éléments (qui ouvrent leurs votes)
-    // sont des boutons : ni « Rejouer », ni commande de salle
+    // En dehors des onglets, seuls le bouton de copie, celui qui rejoue la révélation et les
+    // éléments (qui ouvrent leurs votes) sont des boutons : ni « Rejouer », ni commande de salle
     expect(
       screen
         .getAllByRole('button')
         .filter(
           (button: HTMLElement) =>
             button.textContent !== 'Copier le lien' &&
+            button.textContent !== 'Rejouer la révélation' &&
             !(button.getAttribute('aria-label') ?? '').startsWith('Voir les votes : '),
         ),
     ).toEqual([]);

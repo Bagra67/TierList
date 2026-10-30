@@ -34,7 +34,7 @@ Right after the MVP, and soon: blind templates, hidden tiles, admin view with th
 - **Template sharing**: contributors and read-only.
 - **Solo** mode.
 - **Sound and video** tiles.
-- **Animated reveal** of the results.
+- **Animated reveal** of the results, item by item, with who placed it where (the MVP already shows the tier list appearing tier by tier).
 - **Image export** of the results.
 - More **statistics** (see [game-rules.md](game-rules.md#6-statistics)).
 - **Friends**, then profile statistics, badges and fun facts.

@@ -302,6 +302,7 @@ export const en: Translation = {
     title: 'Results: {{name}}',
     closedAt: 'Game finished on {{date, datetime(dateStyle: long; timeStyle: short)}}',
     includeAbsentVotes: 'Include absent votes',
+    replayReveal: 'Replay the reveal',
     publicLink: 'Public results link',
     tabsLabel: 'Results views',
     tabs: {

@@ -8,6 +8,7 @@ import type { GameItem } from '../api/rooms';
 import { CopyLinkField } from '../components/CopyLinkField';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { ItemVotesPanel } from '../components/ItemVotesPanel';
+import { Button } from '../components/ui/button';
 import { ResultsDistributionTable } from '../components/ResultsDistributionTable';
 import { ResultsPlayerView } from '../components/ResultsPlayerView';
 import { ResultsRoomActions } from '../components/ResultsRoomActions';
@@ -38,6 +39,10 @@ export function ResultsPage() {
   const [view, setView] = useState<ResultsView>('median');
   // Élément dont les votes sont affichés ; par défaut le premier du modèle
   const [chosenItemId, setChosenItemId] = useState<string | null>(null);
+  // Vues déjà quittées : y revenir ne rejoue pas la révélation
+  const [seenViews, setSeenViews] = useState<ReadonlySet<ResultsView>>(new Set());
+  // Change à chaque « Rejouer la révélation » : la vue est montée à nouveau
+  const [revealRun, setRevealRun] = useState<number>(0);
   const state: GameResultsState = useGameResults(token, includeAbsentVotes);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   // Venu du lobby d'une salle : un lien y ramène, et le room admin peut rejouer
@@ -72,6 +77,23 @@ export function ResultsPage() {
     known.items.length > 0 &&
     !(view === 'players' && state.results.players.length === 0);
 
+  // Seules les tier lists (médian, par joueur) se révèlent, pas le tableau global
+  const revealable: boolean = view !== 'overall';
+
+  function selectView(nextView: ResultsView) {
+    setSeenViews((seen: ReadonlySet<ResultsView>) => new Set(seen).add(view));
+    setView(nextView);
+  }
+
+  function replayReveal() {
+    setSeenViews((seen: ReadonlySet<ResultsView>) => {
+      const next: Set<ResultsView> = new Set(seen);
+      next.delete(view);
+      return next;
+    });
+    setRevealRun((run: number) => run + 1);
+  }
+
   const selection: ItemSelection = {
     selectedItemId: chosenItemId ?? known.items[0]?.id ?? null,
     onSelect: setChosenItemId,
@@ -99,20 +121,27 @@ export function ResultsPage() {
         label={t('results.publicLink')}
         link={`${window.location.origin}${resultsPath(token)}`}
       />
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={includeAbsentVotes}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setIncludeAbsentVotes(event.target.checked)
-          }
-        />
-        {t('results.includeAbsentVotes')}
-      </label>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeAbsentVotes}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setIncludeAbsentVotes(event.target.checked)
+            }
+          />
+          {t('results.includeAbsentVotes')}
+        </label>
+        {revealable && (
+          <Button type="button" variant="outline" size="sm" onClick={replayReveal}>
+            {t('results.replayReveal')}
+          </Button>
+        )}
+      </div>
       {/* Sur grand écran, les votes de l'élément choisi à droite de la vue (ItemVotesPanel) */}
       <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
-          <ResultsTabs selected={view} onSelect={setView} />
+          <ResultsTabs selected={view} onSelect={selectView} />
           {/* Motif ARIA tabs : le panneau n'est focalisable que s'il n'a aucun élément interactif
               (chargement, erreur, partie sans joueur) ; sinon ses items, des boutons, suffisent */}
           <div
@@ -127,10 +156,12 @@ export function ResultsPage() {
               après un échec, rien d'autre que l'état n'est affiché */}
             {state.results !== undefined ? (
               <ResultsViewContent
+                key={revealRun}
                 view={view}
                 results={state.results}
                 items={items}
                 selection={selection}
+                reveal={!seenViews.has(view)}
               />
             ) : state.error !== null ? (
               <ErrorMessage>{translateError(t, state.error)}</ErrorMessage>
@@ -160,9 +191,11 @@ interface ResultsViewContentProps {
   results: GameResults;
   items: ResultItems;
   selection: ItemSelection;
+  // Les lignes des tier lists apparaissent une à une (ResultsTierList)
+  reveal: boolean;
 }
 
-function ResultsViewContent({ view, results, items, selection }: ResultsViewContentProps) {
+function ResultsViewContent({ view, results, items, selection, reveal }: ResultsViewContentProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   if (view === 'median') {
@@ -173,6 +206,7 @@ function ResultsViewContent({ view, results, items, selection }: ResultsViewCont
         items={items}
         extraRow={{ label: t('results.median.unranked'), itemIds: results.unranked_item_ids }}
         selection={selection}
+        reveal={reveal}
       />
     );
   }
@@ -193,6 +227,7 @@ function ResultsViewContent({ view, results, items, selection }: ResultsViewCont
       players={results.players}
       items={items}
       selection={selection}
+      reveal={reveal}
     />
   );
 }

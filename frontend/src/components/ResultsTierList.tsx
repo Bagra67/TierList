@@ -1,9 +1,10 @@
 import { cn } from 'cn';
-import { useId } from 'react';
+import { type CSSProperties, useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { TierItems } from '../api/results';
 import type { GameTier } from '../api/rooms';
+import { REVEAL_STEP_MS } from '../constants/results';
 import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS } from './boardStyles';
 import { TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
@@ -20,26 +21,50 @@ interface ResultsTierListProps {
   extraRow?: { label: string; itemIds: string[] };
   // Cliquer un item ouvre ses votes
   selection: ItemSelection;
+  // Les lignes apparaissent une à une, du bas vers le haut (sauf mouvement réduit)
+  reveal?: boolean;
 }
 
 // Une tier list en lecture seule : le classement médian, ou le classement final d'un joueur.
 // Chaque ligne est un groupe nommé par son tier, que le lecteur d'écran annonce avec ses items
-export function ResultsTierList({ tiers, rows, items, extraRow, selection }: ResultsTierListProps) {
+export function ResultsTierList({
+  tiers,
+  rows,
+  items,
+  extraRow,
+  selection,
+  reveal = false,
+}: ResultsTierListProps) {
   const idPrefix: string = useId();
   const itemIdsByTier: ReadonlyMap<string, string[]> = new Map(
     rows.map((row: TierItems) => [row.tier_id, row.item_ids]),
   );
+  const showsExtraRow: boolean = extraRow !== undefined && extraRow.itemIds.length > 0;
+  const rowCount: number = tiers.length + (showsExtraRow ? 1 : 0);
+
+  // Ligne d'indice index (0 = en haut) : la dernière apparaît la première, le tier du haut en
+  // dernier, pour garder le suspense
+  function revealProps(index: number): { className?: string; style?: CSSProperties } {
+    if (!reveal) return {};
+    return {
+      className: 'motion-safe:animate-reveal',
+      style: { animationDelay: `${(rowCount - 1 - index) * REVEAL_STEP_MS}ms` },
+    };
+  }
+  const extraAnimation: { className?: string; style?: CSSProperties } = revealProps(tiers.length);
 
   return (
     <div className={panelVariants({ variant: 'list' })}>
       {tiers.map((tier: GameTier, index: number) => {
         const labelId: string = `${idPrefix}-tier-${index}`;
+        const animation: { className?: string; style?: CSSProperties } = revealProps(index);
         return (
           <div
             key={tier.id}
             role="group"
             aria-labelledby={labelId}
-            className="flex items-center gap-3 pr-3"
+            className={cn('flex items-center gap-3 pr-3', animation.className)}
+            style={animation.style}
           >
             <TierLabel tier={tier} id={labelId} />
             <ItemList
@@ -50,11 +75,12 @@ export function ResultsTierList({ tiers, rows, items, extraRow, selection }: Res
           </div>
         );
       })}
-      {extraRow !== undefined && extraRow.itemIds.length > 0 && (
+      {showsExtraRow && extraRow !== undefined && (
         <div
           role="group"
           aria-labelledby={`${idPrefix}-extra`}
-          className="flex items-center gap-3 pr-3"
+          className={cn('flex items-center gap-3 pr-3', extraAnimation.className)}
+          style={extraAnimation.style}
         >
           <span
             id={`${idPrefix}-extra`}
