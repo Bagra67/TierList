@@ -61,7 +61,7 @@ describe('translateError', () => {
   it('translates the error code in the interface language', async () => {
     const error = new ApiError(401, { detail: 'Incorrect', code: 'invalid_credentials' });
 
-    expect(translateError(i18n.t, error)).toBe('Email ou mot de passe incorrect');
+    expect(translateError(i18n.t, error)).toBe('E-mail ou mot de passe incorrect');
     await i18n.changeLanguage('en');
     expect(translateError(i18n.t, error)).toBe('Incorrect email or password');
   });
@@ -89,10 +89,10 @@ describe('translateError', () => {
 
   it('reports an unreachable backend when the response is not from the API', () => {
     expect(translateError(i18n.t, new ApiError(502, 'Bad Gateway'))).toBe(
-      'Impossible de joindre le backend : est-il lancé ?',
+      'Le serveur ne répond pas. Réessayez dans un instant.',
     );
     expect(translateError(i18n.t, new TypeError('Failed to fetch'))).toBe(
-      'Impossible de joindre le backend : est-il lancé ?',
+      'Le serveur ne répond pas. Réessayez dans un instant.',
     );
   });
 });

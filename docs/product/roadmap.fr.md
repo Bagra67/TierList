@@ -2,13 +2,15 @@
 
 [English](roadmap.md) | Français
 
-Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Aujourd'hui, le dépôt contient les fondations : comptes et connexion ([authentication.fr.md](../technical/authentication.fr.md)), traductions ([i18n.fr.md](../technical/i18n.fr.md)) et emails ([emails.fr.md](../technical/emails.fr.md)).
+Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Le jalon 1 (MVP) est **terminé** : il tourne sur le staging, et arrive en production avec la prochaine release ([guide de déploiement](../technical/deployment.fr.md)). Le jalon 2 vient ensuite.
 
 Les jalons ne sont pas des numéros de version : les releases suivent toujours [releasing.fr.md](../technical/releasing.fr.md). Une fonctionnalité reçoit sa documentation technique (dans [architecture.fr.md](../technical/architecture.fr.md) ou sa propre page dans `docs/technical/`) une fois **implémentée**, pas avant.
 
 ## Jalon 1 — MVP
 
 La première version jouable : une room en direct entre amis.
+
+**Terminé** : toutes les user stories sont livrées ([jalon GitHub](https://github.com/Bagra67/TierList/milestone/1?closed=1)).
 
 - **Templates** : tuiles texte et image (images envoyées), **tiers configurables** (ajout, suppression, réglages).
 - **Room privée** : rejointe par lien ou par code, invités acceptés, **tours menés par l'admin de la room**.
@@ -24,7 +26,7 @@ Conception détaillée (user stories, modèle de domaine, cycles de vie, déroul
 
 ## Jalon 2 — Mode à l'aveugle
 
-Juste après le MVP, et rapidement : templates à l'aveugle, tuiles cachées, vue admin avec les réponses, révélation après chaque tour ou à la fin, devinette avec points (trois modes de réponse, réponse libre jugée collectivement). Voir [game-rules.fr.md](game-rules.fr.md#4-mode-à-laveugle).
+Le prochain jalon : templates à l'aveugle, tuiles cachées, vue admin avec les réponses, révélation après chaque tour ou à la fin, devinette avec points (trois modes de réponse, réponse libre jugée collectivement). Voir [game-rules.fr.md](game-rules.fr.md#4-mode-à-laveugle).
 
 ## Ensuite (ordre à décider)
 
@@ -34,7 +36,7 @@ Juste après le MVP, et rapidement : templates à l'aveugle, tuiles cachées, vu
 - **Partage de templates** : contributeurs et lecture seule.
 - Mode **solo**.
 - Tuiles **son et vidéo**.
-- **Révélation animée** des résultats.
+- **Révélation animée** des résultats, item par item, avec qui l'a placé où (le MVP montre déjà la tier list apparaître tier par tier).
 - **Export en image** des résultats.
 - Plus de **statistiques** (voir [game-rules.fr.md](game-rules.fr.md#6-statistiques)).
 - **Amis**, puis stats de profil, badges et fun facts.

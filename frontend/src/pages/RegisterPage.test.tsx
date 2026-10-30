@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,7 +22,7 @@ function renderRegisterPage(from?: string) {
 
 function fillAndSubmit() {
   fireEvent.change(screen.getByLabelText('Nom affiché'), { target: { value: 'Alice' } });
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+  fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
   fireEvent.change(screen.getByLabelText('Mot de passe'), {
     target: { value: 'correct horse battery staple' },
   });
@@ -74,7 +74,7 @@ describe('RegisterPage', () => {
 
     fillAndSubmit();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Cet email est déjà utilisé');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cet e-mail est déjà utilisé');
   });
 
   it('shows the minimum password length required by the backend', async () => {
@@ -98,6 +98,19 @@ describe('RegisterPage', () => {
     expect(
       await screen.findByText('Le mot de passe doit contenir au moins 12 caractères'),
     ).toBeInTheDocument();
+  });
+
+  it('says that creating an account accepts the terms and the privacy policy', () => {
+    stubBackend({});
+    renderRegisterPage();
+
+    const sentence: HTMLElement = screen.getByText(/^En créant un compte, vous acceptez/);
+    expect(
+      within(sentence).getByRole('link', { name: "conditions d'utilisation" }),
+    ).toHaveAttribute('href', '/terms');
+    expect(
+      within(sentence).getByRole('link', { name: 'politique de confidentialité' }),
+    ).toHaveAttribute('href', '/privacy');
   });
 
   it('links to the Google sign-in', () => {

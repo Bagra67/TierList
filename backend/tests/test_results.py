@@ -50,6 +50,8 @@ def test_example_1_median_ranking_without_absent_votes() -> None:
     assert results.items[PAPRIKA] == ItemResults(
         votes_per_tier=(2, 1, 0),
         absent_count=0,
+        voters_per_tier=((0, 2), (1,), ()),
+        absent_player_indexes=(),
         median_score=Fraction(1, 2),
         mean_score=Fraction(2, 3),
         median_tier_index=S,
@@ -57,6 +59,8 @@ def test_example_1_median_ranking_without_absent_votes() -> None:
     assert results.items[BARBECUE] == ItemResults(
         votes_per_tier=(2, 1, 0),
         absent_count=0,
+        voters_per_tier=((0, 1), (2,), ()),
+        absent_player_indexes=(),
         median_score=Fraction(3, 4),
         mean_score=Fraction(11, 12),
         median_tier_index=S,
@@ -64,6 +68,8 @@ def test_example_1_median_ranking_without_absent_votes() -> None:
     assert results.items[NATURE] == ItemResults(
         votes_per_tier=(0, 2, 1),
         absent_count=0,
+        voters_per_tier=((), (0, 1), (2,)),
+        absent_player_indexes=(),
         median_score=Fraction(7, 4),
         mean_score=Fraction(23, 12),
         median_tier_index=A,
@@ -95,6 +101,8 @@ def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
             ItemResults(
                 votes_per_tier=(1, 0, 1),
                 absent_count=1,
+                voters_per_tier=((0,), (), (1,)),
+                absent_player_indexes=(2,),
                 median_score=Fraction(5, 2),
                 mean_score=Fraction(3, 2),
                 median_tier_index=B,
@@ -106,6 +114,8 @@ def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
             ItemResults(
                 votes_per_tier=(1, 0, 0),
                 absent_count=0,
+                voters_per_tier=((0,), (), ()),
+                absent_player_indexes=(),
                 median_score=Fraction(1, 2),
                 mean_score=Fraction(1, 2),
                 median_tier_index=S,
@@ -133,6 +143,8 @@ def test_example_3_absent_votes_with_and_without_the_toggle(
     assert results.items[PAPRIKA] == ItemResults(
         votes_per_tier=(1, 2, 0),
         absent_count=0,
+        voters_per_tier=((1,), (0, 2), ()),
+        absent_player_indexes=(),
         median_score=Fraction(3, 2),
         mean_score=Fraction(7, 6),
         median_tier_index=A,
@@ -140,9 +152,11 @@ def test_example_3_absent_votes_with_and_without_the_toggle(
     assert results.median_ranking == expected_ranking
 
 
-@pytest.mark.parametrize(("include_absent_votes", "expected_absent_count"), [(True, 2), (False, 0)])
+@pytest.mark.parametrize(
+    ("include_absent_votes", "expected_absent_indexes"), [(True, (0, 1)), (False, ())]
+)
 def test_example_4_an_item_nobody_placed_is_unranked(
-    include_absent_votes: bool, expected_absent_count: int
+    include_absent_votes: bool, expected_absent_indexes: tuple[int, ...]
 ) -> None:
     alice: PlayerRanking = ranking({S: [PAPRIKA]}, frozenset({VINAIGRE}))
     bob: PlayerRanking = ranking({A: [PAPRIKA]}, frozenset({VINAIGRE}))
@@ -153,7 +167,9 @@ def test_example_4_an_item_nobody_placed_is_unranked(
 
     assert results.items[VINAIGRE] == ItemResults(
         votes_per_tier=(0, 0, 0),
-        absent_count=expected_absent_count,
+        absent_count=len(expected_absent_indexes),
+        voters_per_tier=((), (), ()),
+        absent_player_indexes=expected_absent_indexes,
         median_score=None,
         mean_score=None,
         median_tier_index=None,

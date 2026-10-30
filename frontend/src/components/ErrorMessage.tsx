@@ -10,7 +10,10 @@ interface ErrorMessageProps {
 // Message d'erreur affiché à l'utilisateur, annoncé tout de suite par les lecteurs d'écran
 export function ErrorMessage({ children, className }: ErrorMessageProps) {
   return (
-    <p role="alert" className={cn('text-destructive', className)}>
+    <p
+      role="alert"
+      className={cn('rounded-lg bg-destructive/10 px-3 py-2 text-destructive', className)}
+    >
       {children}
     </p>
   );

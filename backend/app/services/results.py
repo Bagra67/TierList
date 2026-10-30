@@ -33,6 +33,10 @@ class PlayerRanking:
 class ItemResults:
     votes_per_tier: tuple[int, ...]
     absent_count: int
+    # Qui a voté : pour chaque tier, les indices (dans l'ordre de players) des joueurs comptés
+    voters_per_tier: tuple[tuple[int, ...], ...]
+    # Indices des joueurs comptés absents ; toujours vide sans les votes absents
+    absent_player_indexes: tuple[int, ...]
     # None quand aucun vote n'est compté pour l'item : il n'est alors pas classé
     median_score: Fraction | None
     mean_score: Fraction | None
@@ -103,24 +107,30 @@ def _item_results(
     scores_per_player: Sequence[Mapping[uuid.UUID, Fraction]],
     include_absent_votes: bool,
 ) -> ItemResults:
-    votes_per_tier: list[int] = [0] * tier_count
-    absent_count: int = 0
+    voters_per_tier: list[list[int]] = [[] for _ in range(tier_count)]
+    absent_player_indexes: list[int] = []
     scores: list[Fraction] = []
-    for player, player_scores in zip(players, scores_per_player, strict=True):
+    for player_index, (player, player_scores) in enumerate(
+        zip(players, scores_per_player, strict=True)
+    ):
         # Sans les votes absents, seuls comptent les joueurs qui ont voté pendant le tour
         if not include_absent_votes and tile_id in player.absent_tile_ids:
             continue
         placement: FinalPlacement | None = player.final_placements.get(tile_id)
         if placement is None:
-            absent_count += 1
+            absent_player_indexes.append(player_index)
             continue
-        votes_per_tier[placement.tier_index] += 1
+        voters_per_tier[placement.tier_index].append(player_index)
         scores.append(player_scores[tile_id])
 
+    votes_per_tier: tuple[int, ...] = tuple(len(voters) for voters in voters_per_tier)
+    voters: tuple[tuple[int, ...], ...] = tuple(tuple(voters) for voters in voters_per_tier)
     if not scores:
         return ItemResults(
-            votes_per_tier=tuple(votes_per_tier),
-            absent_count=absent_count,
+            votes_per_tier=votes_per_tier,
+            absent_count=len(absent_player_indexes),
+            voters_per_tier=voters,
+            absent_player_indexes=tuple(absent_player_indexes),
             median_score=None,
             mean_score=None,
             median_tier_index=None,
@@ -128,8 +138,10 @@ def _item_results(
     median_score: Fraction = _median_score(scores)
     mean_score: Fraction = sum(scores, Fraction(0)) / len(scores)
     return ItemResults(
-        votes_per_tier=tuple(votes_per_tier),
-        absent_count=absent_count,
+        votes_per_tier=votes_per_tier,
+        absent_count=len(absent_player_indexes),
+        voters_per_tier=voters,
+        absent_player_indexes=tuple(absent_player_indexes),
         median_score=median_score,
         mean_score=mean_score,
         median_tier_index=math.floor(median_score),

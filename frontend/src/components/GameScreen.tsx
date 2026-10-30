@@ -1,13 +1,14 @@
+import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { CurrentGame, Participant, Room } from '../api/rooms';
-import { CooldownBoard } from './CooldownBoard';
-import { Countdown } from './Countdown';
+import { CooldownStage } from './CooldownStage';
+import { CurrentItemCard } from './CurrentItemCard';
 import { EndCooldownDialog } from './EndCooldownDialog';
 import { GameAdminControls } from './GameAdminControls';
 import { GameBoard } from './GameBoard';
-import { GameItemView } from './GameItemView';
 import { PlacedList } from './PlacedList';
+import { RoundHeader } from './RoundHeader';
 
 interface GameScreenProps {
   room: Room;
@@ -29,50 +30,44 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
   const readerPlaces: boolean = placingParticipants.some((participant) => participant.is_you);
 
   if (game.status === 'cooldown') {
+    // « Terminer maintenant », pour l'hôte : dans le panneau du plateau s'il place, seul sinon
+    const endCooldown: ReactNode = room.is_admin && (
+      <EndCooldownDialog code={room.code} onEnded={onGameEnded} />
+    );
     return (
-      <div className="flex w-full flex-col gap-4">
-        {/* Bandeau sombre : l'interface « sous pression » du cooldown final (US-4.1) */}
-        <section className="flex w-full flex-col gap-1 rounded-lg bg-foreground px-3 py-2 text-background">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">{t('rooms.game.cooldown.title')}</h2>
-            {game.cooldown_ends_at !== null && (
-              <Countdown endsAt={game.cooldown_ends_at} label={t('rooms.game.cooldown.timeLeft')} />
-            )}
-          </div>
-          <p className="text-sm">
-            {readerPlaces ? t('rooms.game.cooldown.hint') : t('rooms.game.cooldown.waiting')}
-          </p>
-        </section>
-        {readerPlaces && <CooldownBoard room={room} game={game} />}
-        {room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />}
-      </div>
+      <CooldownStage
+        room={room}
+        game={game}
+        readerPlaces={readerPlaces}
+        endCooldown={endCooldown}
+      />
     );
   }
 
+  // Sur grand écran, trois colonnes comme sur un plateau télé : l'élément en cours, le plateau du
+  // lecteur, puis « qui a placé » et les commandes de l'hôte
   return (
-    <div className="flex w-full flex-col gap-4">
-      <section className="flex w-full flex-col gap-2 rounded-lg bg-muted px-3 py-2">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="font-medium">{t('rooms.game.title')}</h2>
-          {game.ends_at !== null && (
-            <Countdown endsAt={game.ends_at} label={t('rooms.game.timeLeft')} />
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {t('rooms.game.itemProgress', { number: game.round_number, total: game.round_count })}
-        </p>
-        <GameItemView
-          item={game.current_item}
-          imageLabel={t('rooms.game.currentItemImage')}
-          size="large"
-        />
-      </section>
-      <PlacedList
-        placingParticipants={placingParticipants}
-        placedParticipantIds={game.placed_participant_ids}
+    <section className="flex w-full flex-col gap-6">
+      <h2 className="sr-only">{t('rooms.game.title')}</h2>
+      <RoundHeader
+        roundNumber={game.round_number}
+        roundCount={game.round_count}
+        endsAt={game.ends_at}
       />
-      {readerPlaces && <GameBoard room={room} game={game} />}
-      {room.is_admin && <GameAdminControls room={room} />}
-    </div>
+      <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        {readerPlaces ? (
+          <GameBoard room={room} game={game} />
+        ) : (
+          <CurrentItemCard item={game.current_item} />
+        )}
+        <aside className="flex flex-col gap-4">
+          <PlacedList
+            placingParticipants={placingParticipants}
+            placedParticipantIds={game.placed_participant_ids}
+          />
+          {room.is_admin && <GameAdminControls room={room} />}
+        </aside>
+      </div>
+    </section>
   );
 }

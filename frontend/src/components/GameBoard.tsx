@@ -6,6 +6,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { type ReactNode, useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -21,7 +22,20 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
+import {
+  CURRENT_CARD_CLASS,
+  CURRENT_CARD_IN_BOARD_CLASS,
+  EMPHASIZED_BORDER_CLASS,
+  ITEM_CHIP_CLASS,
+} from './boardStyles';
+import { CurrentItemCard } from './CurrentItemCard';
+import {
+  type DragPreviewContent,
+  DragPreview,
+  DraggableItem,
+  EndSlot,
+  TierLabel,
+} from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
@@ -33,9 +47,10 @@ interface GameBoardProps {
   game: CurrentGame;
 }
 
-// Le plateau privé du lecteur (US-3.3) : ses tiers, les items qu'il a déjà placés (ils ne bougent
-// plus avant le cooldown) et l'item en cours, à déposer dans un tier à la position voulue. À la
-// souris ou au doigt par glisser-déposer ; au clavier par les boutons « Placer dans » et ←/→.
+// Le plateau privé du lecteur (US-3.3) : à gauche, la carte de l'élément en cours ; à droite, ses
+// tiers et les items qu'il a déjà placés (ils ne bougent plus avant le cooldown). L'élément en cours
+// se dépose dans un tier à la position voulue : à la souris ou au doigt en glissant sa carte ; au
+// clavier par les boutons « Placer dans » et ←/→.
 export function GameBoard({ room, game }: GameBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
@@ -119,6 +134,26 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
+  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu.
+  // L'aperçu a la forme de ce qu'on glisse : la carte tant qu'il n'est pas placé, sa puce ensuite
+  function previewOf(id: string): DragPreviewContent | undefined {
+    if (id !== draggableId) return undefined;
+    if (currentPlacement === undefined) {
+      return {
+        item: currentItem,
+        label: itemLabel,
+        className: cn(ITEM_CHIP_CLASS, CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS),
+        size: 'large',
+      };
+    }
+    return {
+      item: currentItem,
+      label: itemLabel,
+      className: cn(ITEM_CHIP_CLASS, EMPHASIZED_BORDER_CLASS),
+      size: 'small',
+    };
+  }
+
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (active.id !== draggableId || over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
@@ -131,8 +166,10 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   return (
-    <section ref={sectionRef} className="flex w-full flex-col gap-3">
-      <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+    <section
+      ref={sectionRef}
+      className="grid w-full items-start gap-x-6 gap-y-3 lg:grid-cols-[12rem_minmax(0,1fr)]"
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -142,22 +179,30 @@ export function GameBoard({ room, game }: GameBoardProps) {
           screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
         }}
       >
-        {currentPlacement === undefined && (
-          <div className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
-            <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
-            {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
+        <div className="flex flex-col items-center gap-3 lg:row-span-2">
+          {/* Pas encore placé : la carte elle-même se glisse ; placé, elle reste en vue et c'est sa
+              puce, dans le tier, qui bouge */}
+          {currentPlacement === undefined ? (
             <DraggableItem
               id={draggableId}
               label={itemLabel}
               ariaLabel={t('rooms.game.dragHandleLabel', { item: itemLabel })}
               focusKey={CURRENT_FOCUS.drag}
               disabled={pending}
+              emphasized
+              className={cn(CURRENT_CARD_CLASS, CURRENT_CARD_IN_BOARD_CLASS)}
             >
-              {t('rooms.game.dragHandle')}
+              <GameItemView item={currentItem} imageLabel={itemLabel} size="large" />
             </DraggableItem>
-          </div>
-        )}
-        <ol className="flex w-full flex-col gap-2">
+          ) : (
+            <CurrentItemCard item={currentItem} className={CURRENT_CARD_IN_BOARD_CLASS} />
+          )}
+          {currentPlacement === undefined && (
+            <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
+          )}
+        </div>
+        <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+        <ol className="flex w-full flex-col gap-2 lg:col-start-2">
           {game.tiers.map((tier) => (
             <TierRow
               key={tier.id}
@@ -174,9 +219,12 @@ export function GameBoard({ room, game }: GameBoardProps) {
             />
           ))}
         </ol>
+        <DragPreview previewOf={previewOf} />
       </DndContext>
       {placeMutation.isError && (
-        <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
+        <div className="lg:col-start-2">
+          <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
+        </div>
       )}
     </section>
   );
@@ -217,6 +265,7 @@ function TierRow({
         label={itemLabel}
         focusKey={CURRENT_FOCUS.drag}
         disabled={pending}
+        emphasized
       >
         <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
       </DraggableItem>
@@ -232,7 +281,7 @@ function TierRow({
           onPlace((currentRank ?? 0) - 1, [CURRENT_FOCUS.earlier, CURRENT_FOCUS.later])
         }
       >
-        ←
+        <ArrowLeft />
       </Button>
       <Button
         type="button"
@@ -246,37 +295,41 @@ function TierRow({
           onPlace((currentRank ?? 0) + 1, [CURRENT_FOCUS.later, CURRENT_FOCUS.earlier])
         }
       >
-        →
+        <ArrowRight />
       </Button>
     </li>
   );
 
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
-      <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
-        {others.map((placement, index) => (
-          <PlacedItemSlot
-            key={placement.item.id}
-            placement={placement}
-            target={{ tierId: tier.id, itemId: placement.item.id }}
-            before={currentRank === index ? currentChip : null}
-          />
-        ))}
-        {currentRank !== undefined && currentRank >= others.length && currentChip}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-      </ol>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        data-focus-key={placeFocus}
-        aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
-        aria-disabled={pending}
-        onClick={() => onPlace(others.length, [placeFocus])}
-      >
-        {t('rooms.game.placeIn', { tier: tier.name })}
-      </Button>
+    <li className="flex w-full rounded-[10px] border bg-card">
+      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
+          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {others.map((placement, index) => (
+            <PlacedItemSlot
+              key={placement.item.id}
+              placement={placement}
+              target={{ tierId: tier.id, itemId: placement.item.id }}
+              before={currentRank === index ? currentChip : null}
+            />
+          ))}
+          {currentRank !== undefined && currentRank >= others.length && currentChip}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-focus-key={placeFocus}
+          aria-label={t('rooms.game.placeInLabel', { tier: tier.name })}
+          aria-disabled={pending}
+          onClick={() => onPlace(others.length, [placeFocus])}
+        >
+          {t('rooms.game.placeIn', { tier: tier.name })}
+        </Button>
+      </div>
     </li>
   );
 }
@@ -299,10 +352,7 @@ function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
   return (
     <>
       {before}
-      <li
-        ref={setNodeRef}
-        className={cn('rounded-md bg-muted px-2 py-1', isOver && 'ring-2 ring-primary')}
-      >
+      <li ref={setNodeRef} className={cn(ITEM_CHIP_CLASS, isOver && 'ring-2 ring-primary')}>
         <GameItemView
           item={placement.item}
           imageLabel={t('rooms.game.placedItemImage')}

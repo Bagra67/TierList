@@ -84,9 +84,9 @@ describe('TemplateEditorPage', () => {
     renderEditor();
 
     expect(await screen.findByRole('heading', { name: 'Chips' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Nom du template' })).toHaveValue('Chips');
+    expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toHaveValue('Chips');
     expect(displayedTierNames()).toEqual(['S', 'A', 'B']);
-    expect(screen.getByRole('link', { name: 'Retour à mes templates' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Retour à mes modèles' })).toHaveAttribute(
       'href',
       '/templates',
     );
@@ -100,7 +100,7 @@ describe('TemplateEditorPage', () => {
 
     renderEditor();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Ce template est introuvable.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
     consoleError.mockRestore();
   });
 
@@ -126,7 +126,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
@@ -142,7 +142,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: '  Chips ' } });
@@ -168,7 +168,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: '   ' } });
@@ -266,7 +266,7 @@ describe('TemplateEditorPage', () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`POST ${templateUrl}/tiers`]: () =>
-          Response.json(makeTemplate([tierS, tierA, tierB, makeTier('?', 3, '#BFBFBF')]), {
+          Response.json(makeTemplate([tierS, tierA, tierB, makeTier('?', 3, '#9AA0B4')]), {
             status: 201,
           }),
       });
@@ -309,7 +309,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier B' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Un template garde au moins un tier.',
+        'Un modèle garde au moins un tier.',
       );
       expect(displayedTierNames()).toEqual(['S', 'A', 'B']);
     });
@@ -341,6 +341,32 @@ describe('TemplateEditorPage', () => {
       await expect(requestBody(fetchMock, 'POST')).resolves.toEqual({ text: 'Tacos' });
       // Le champ est vidé pour la tuile suivante
       expect(newTileField).toHaveValue('');
+    });
+
+    it('highlights the last added tile, and only it after the next addition', async () => {
+      const tiles: Tile[] = [pizza];
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles(tiles)),
+        [`POST ${templateUrl}/tiles`]: async (request) => {
+          const { text }: { text: string } = await request.json();
+          tiles.push(makeTile(text, tiles.length));
+          return Response.json(withTiles(tiles), { status: 201 });
+        },
+      });
+      renderEditor();
+      const newTileField: HTMLElement = await screen.findByLabelText('Texte de la nouvelle tuile');
+      const card = (text: string): Element | null =>
+        document.querySelector(`[data-tile-id="tile-${text}"]`);
+
+      fireEvent.change(newTileField, { target: { value: 'Tacos' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
+      await waitFor(() => expect(card('Tacos')).toHaveClass('border-primary'));
+      expect(card('Pizza')).not.toHaveClass('border-primary');
+
+      fireEvent.change(newTileField, { target: { value: 'Ramen' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
+      await waitFor(() => expect(card('Ramen')).toHaveClass('border-primary'));
+      expect(card('Tacos')).not.toHaveClass('border-primary');
     });
 
     it('refuses a new tile without text nor image without calling the backend', async () => {
@@ -398,9 +424,7 @@ describe('TemplateEditorPage', () => {
       });
       fireEvent.click(screen.getByRole('button', { name: 'Ajouter la tuile' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Un template a au plus 32 tuiles.',
-      );
+      expect(await screen.findByRole('alert')).toHaveTextContent('Un modèle a au plus 32 tuiles.');
     });
 
     it('disables adding once the template has its maximum number of tiles', async () => {
@@ -409,7 +433,7 @@ describe('TemplateEditorPage', () => {
 
       renderEditor();
 
-      expect(await screen.findByText('Un template a au plus 2 tuiles.')).toBeInTheDocument();
+      expect(await screen.findByText('Un modèle a au plus 2 tuiles.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Ajouter la tuile' })).toBeDisabled();
       expect(screen.getByLabelText('Texte de la nouvelle tuile')).toBeDisabled();
     });
@@ -738,6 +762,163 @@ describe('TemplateEditorPage', () => {
       );
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
     });
+
+    describe('several images at once', () => {
+      // Une image envoyée par appel, dans l'ordre des appels : img-1, img-2…
+      function imageNumber(index: number): UploadedImage {
+        return {
+          ...uploadedImage,
+          id: `img-${index}`,
+          url: `https://images.example.com/${index}.webp`,
+        };
+      }
+
+      // Faux backend qui garde les tuiles : chaque ajout renvoie le modèle avec la nouvelle tuile
+      // en dernier ; addedImageIds note l'image de chaque ajout, dans l'ordre
+      function stubBulkBackend(
+        startTiles: Tile[],
+        upload: (index: number) => Response | Promise<Response> = (index) =>
+          Response.json(imageNumber(index), { status: 201 }),
+      ) {
+        const tiles: Tile[] = [...startTiles];
+        const addedImageIds: string[] = [];
+        let uploadCount: number = 0;
+        const fetchMock: BackendMock = stubBackend({
+          [`GET ${templateUrl}`]: () => Response.json(withTiles(tiles)),
+          'POST /images': () => {
+            uploadCount += 1;
+            return upload(uploadCount);
+          },
+          [`POST ${templateUrl}/tiles`]: async (request) => {
+            const { image_id }: { image_id: string } = await request.json();
+            addedImageIds.push(image_id);
+            tiles.push({
+              id: `tile-${image_id}`,
+              text: null,
+              image_url: `https://images.example.com/${image_id}.webp`,
+              position: tiles.length,
+            });
+            return Response.json(withTiles(tiles), { status: 201 });
+          },
+        });
+        return { fetchMock, addedImageIds };
+      }
+
+      function dropFiles(files: File[]) {
+        const zone: HTMLElement = screen.getByRole('button', {
+          name: 'Ajouter une image à la nouvelle tuile',
+        });
+        const dataTransfer: FileDataTransfer = fileDataTransfer(...files);
+        fireEvent.dragEnter(zone, { dataTransfer });
+        fireEvent.dragOver(zone, { dataTransfer });
+        fireEvent.drop(zone, { dataTransfer });
+      }
+
+      function imageUploads(fetchMock: BackendMock): string[] {
+        return calledRoutes(fetchMock).filter((route) => route === 'POST /images');
+      }
+
+      it('adds one image-only tile per image, in order, and highlights them', async () => {
+        const { addedImageIds } = stubBulkBackend([pizza]);
+        renderEditor();
+        await screen.findByText('1 / 32 tuiles');
+
+        dropFiles([pngFile('a.png'), pngFile('b.png'), pngFile('c.png')]);
+
+        expect(await screen.findByText('3 tuiles ajoutées.')).toBeInTheDocument();
+        expect(addedImageIds).toEqual(['img-1', 'img-2', 'img-3']);
+        expect(screen.getByText('4 / 32 tuiles')).toBeInTheDocument();
+        for (const imageId of ['img-1', 'img-2', 'img-3']) {
+          expect(document.querySelector(`[data-tile-id="tile-${imageId}"]`)).toHaveClass(
+            'border-primary',
+          );
+        }
+        // La tuile d'avant n'est pas mise en avant
+        expect(document.querySelector('[data-tile-id="tile-Pizza"]')).not.toHaveClass(
+          'border-primary',
+        );
+      });
+
+      it('keeps the order of the selection when a later image is uploaded first', async () => {
+        const { addedImageIds } = stubBulkBackend([], async (index) => {
+          // La première image met plus de temps que la seconde
+          if (index === 1) await new Promise((resolve) => setTimeout(resolve, 50));
+          return Response.json(imageNumber(index), { status: 201 });
+        });
+        renderEditor();
+        await screen.findByText('0 / 32 tuiles');
+
+        dropFiles([pngFile('slow.png'), pngFile('fast.png')]);
+
+        expect(await screen.findByText('2 tuiles ajoutées.')).toBeInTheDocument();
+        expect(addedImageIds).toEqual(['img-1', 'img-2']);
+      });
+
+      it('skips a file of a refused type and adds the others', async () => {
+        const { fetchMock } = stubBulkBackend([]);
+        renderEditor();
+        await screen.findByText('0 / 32 tuiles');
+
+        dropFiles([
+          pngFile('a.png'),
+          new File(['gif'], 'anim.gif', { type: 'image/gif' }),
+          pngFile('b.png'),
+        ]);
+
+        expect(await screen.findByText('2 tuiles ajoutées.')).toBeInTheDocument();
+        expect(screen.getByText('1 image ignorée :')).toBeInTheDocument();
+        expect(
+          screen.getByText("anim.gif : Ce fichier n'est pas une image JPEG, PNG ou WebP."),
+        ).toBeInTheDocument();
+        expect(imageUploads(fetchMock)).toHaveLength(2);
+      });
+
+      it('skips the images beyond the free slots without sending them', async () => {
+        const thirtyTiles: Tile[] = Array.from({ length: 30 }, (_, index) =>
+          makeTile(`Tuile ${index}`, index),
+        );
+        const { fetchMock } = stubBulkBackend(thirtyTiles);
+        renderEditor();
+        await screen.findByText('30 / 32 tuiles');
+
+        dropFiles([pngFile('1.png'), pngFile('2.png'), pngFile('3.png'), pngFile('4.png')]);
+
+        expect(await screen.findByText('2 tuiles ajoutées.')).toBeInTheDocument();
+        expect(screen.getByText('2 images ignorées :')).toBeInTheDocument();
+        expect(
+          screen.getByText('3.png : plus de place dans le modèle (32 tuiles au maximum).'),
+        ).toBeInTheDocument();
+        expect(imageUploads(fetchMock)).toHaveLength(2);
+      });
+
+      it('reports a failed upload and still adds the next images', async () => {
+        const { addedImageIds } = stubBulkBackend([], (index) =>
+          index === 2
+            ? errorResponse(413, 'image_too_large', { params: { max_bytes: 10485760 } })
+            : Response.json(imageNumber(index), { status: 201 }),
+        );
+        renderEditor();
+        await screen.findByText('0 / 32 tuiles');
+
+        dropFiles([pngFile('a.png'), pngFile('big.png'), pngFile('c.png')]);
+
+        expect(await screen.findByText('2 tuiles ajoutées.')).toBeInTheDocument();
+        expect(addedImageIds).toEqual(['img-1', 'img-3']);
+        expect(
+          screen.getByText(/^big\.png : L'image est trop lourde : 10\sMo au maximum\.$/),
+        ).toBeInTheDocument();
+      });
+
+      it('picks several files only on the new tile thumbnail', async () => {
+        stubBulkBackend([pizzaWithImage]);
+        renderEditor();
+        await screen.findByText('1 / 32 tuiles');
+
+        expect(fileInputOf('Ajouter une image à la nouvelle tuile')).toHaveAttribute('multiple');
+        expect(fileInputOf("Remplacer l'image de Pizza")).not.toHaveAttribute('multiple');
+        expect(screen.getByText('Glisser une ou plusieurs images, ou cliquer')).toBeInTheDocument();
+      });
+    });
   });
 
   describe('editing safeguards', () => {
@@ -796,7 +977,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
@@ -823,7 +1004,7 @@ describe('TemplateEditorPage', () => {
       });
       renderEditor();
       const nameField: HTMLElement = await screen.findByRole('textbox', {
-        name: 'Nom du template',
+        name: 'Nom du modèle',
       });
 
       fireEvent.change(nameField, { target: { value: 'Crisps' } });
@@ -909,19 +1090,19 @@ describe('TemplateEditorPage', () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
         [`PATCH ${templateUrl}/tiers/${tierA.id}`]: () =>
-          Response.json(makeTemplate([tierS, { ...tierA, color: '#7FBFFF' }, tierB])),
+          Response.json(makeTemplate([tierS, { ...tierA, color: '#4FC3F7' }, tierB])),
       });
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
       fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
 
       await waitFor(() =>
         expect(calledRoutes(fetchMock)).toContain(`PATCH ${templateUrl}/tiers/${tierA.id}`),
       );
-      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#7FBFFF' });
+      await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ color: '#4FC3F7' });
     });
 
     it('recolors a tier with a hex code', async () => {
@@ -951,7 +1132,7 @@ describe('TemplateEditorPage', () => {
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       fireEvent.keyDown(picker, { key: 'Escape' });
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -985,7 +1166,7 @@ describe('TemplateEditorPage', () => {
       renderEditor();
       const picker: HTMLElement = await openColorPicker();
 
-      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #7FBFFF' }));
+      fireEvent.click(within(picker).getByRole('button', { name: 'Choisir #4FC3F7' }));
       fireEvent.click(within(picker).getByRole('button', { name: 'OK' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');

@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../App';
-import { CNIL_COMPLAINT_URL, PRIVACY_CONTACT_EMAIL } from '../constants/legal';
+import { CNIL_COMPLAINT_URL, LEGAL_CONTACT_EMAIL } from '../constants/legal';
 import { changeLanguage } from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { stubBackend, unauthorized } from '../test/stubBackend';
@@ -32,9 +32,9 @@ describe('PrivacyPolicyPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/^Dernière mise à jour : .*2026/)).toBeInTheDocument();
     expect(screen.getByText(/édité par Samuel Ladwein/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: PRIVACY_CONTACT_EMAIL })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: LEGAL_CONTACT_EMAIL })).toHaveAttribute(
       'href',
-      `mailto:${PRIVACY_CONTACT_EMAIL}`,
+      `mailto:${LEGAL_CONTACT_EMAIL}`,
     );
     expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument();
   });
@@ -58,6 +58,14 @@ describe('PrivacyPolicyPage', () => {
       'Vos droits',
       'Modifications',
     ]);
+  });
+
+  it('describes the data of a content report and how long it is kept', async () => {
+    renderPrivacyPage();
+
+    expect(await screen.findByText(/^Signalements : l'adresse e-mail/)).toBeInTheDocument();
+    expect(screen.getByText(/^Traiter les signalements de contenus illicites/)).toBeInTheDocument();
+    expect(screen.getByText(/^Signalements : le temps de les traiter/)).toBeInTheDocument();
   });
 
   it('links to the CNIL complaint page in a new tab', async () => {

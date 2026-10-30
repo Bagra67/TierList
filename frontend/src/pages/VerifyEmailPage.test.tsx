@@ -37,7 +37,7 @@ describe('VerifyEmailPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirmer mon adresse' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Votre adresse email est confirmée.',
+      'Votre adresse e-mail est confirmée.',
     );
     expect(screen.getByRole('link', { name: 'Continuer' })).toHaveAttribute('href', '/');
     await expect(fetchMock.mock.calls[0][0].json()).resolves.toEqual({ token: 'link-token' });

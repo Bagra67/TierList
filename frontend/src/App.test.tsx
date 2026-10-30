@@ -29,12 +29,15 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('redirects to the login page without a session', async () => {
+  it('shows the public home page without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Classez ensemble, en direct.' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
   it('restores the session and shows the home page', async () => {
@@ -42,8 +45,9 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
-    expect(screen.getByText(/Connecté en tant que Alice/)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Prêt pour une partie, Alice ?' }),
+    ).toBeInTheDocument();
   });
 
   it('shows an alert when the backend cannot be reached', async () => {
@@ -52,7 +56,7 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le backend');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
     consoleError.mockRestore();
   });
 
@@ -64,7 +68,7 @@ describe('App', () => {
     });
     // Depuis une autre page que l'accueil : le bouton est dans l'en-tête de toutes les pages
     renderAppAt('/templates');
-    await screen.findByRole('heading', { name: 'Mes templates' });
+    await screen.findByRole('heading', { name: 'Mes modèles' });
 
     fireEvent.click(
       within(screen.getByRole('banner')).getByRole('button', { name: 'Se déconnecter' }),
@@ -101,7 +105,9 @@ describe('App', () => {
 
     renderAppAt('/login');
 
-    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Prêt pour une partie, Alice ?' }),
+    ).toBeInTheDocument();
   });
 
   it('returns to the requested page, query string included, after signing in', async () => {
@@ -109,15 +115,17 @@ describe('App', () => {
       'POST /auth/refresh': unauthorized,
       'POST /auth/login': tokenResponse('login-token'),
       'GET /auth/me': () => Response.json(alice),
+      'GET /history': () => Response.json({ games: [], has_more: false }),
     });
-    renderAppAt('/?confirm=delete-account');
+    // Une page privée : sans session, elle mène à la connexion, puis y revient
+    renderAppAt('/history?confirm=delete-account');
     await screen.findByRole('heading', { name: 'Connexion' });
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
     fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
 
-    // ?confirm=delete-account rouvre le dialogue de suppression sur la page d'accueil
+    // ?confirm=delete-account rouvre le dialogue de suppression, sur n'importe quelle page
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 
@@ -126,10 +134,10 @@ describe('App', () => {
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
-    fireEvent.click(within(nav).getByRole('link', { name: 'Mes templates' }));
+    fireEvent.click(within(nav).getByRole('link', { name: 'Mes modèles' }));
 
-    expect(await screen.findByRole('heading', { name: 'Mes templates' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Mes templates' })).toHaveAttribute(
+    expect(await screen.findByRole('heading', { name: 'Mes modèles' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Mes modèles' })).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -178,6 +186,19 @@ describe('App', () => {
     // Sans compte, l'en-tête n'a ni les liens privés ni « Se déconnecter »
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["Conditions d'utilisation", "Conditions d'utilisation"],
+    ['Mentions légales', 'Mentions légales'],
+  ])('opens the %s page from the footer, without a session', async (linkName, title) => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    renderAppAt('/login');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: linkName }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
   });
 
   it('opens the privacy policy from the footer, without a session', async () => {

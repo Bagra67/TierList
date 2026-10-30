@@ -1,8 +1,11 @@
+import { cn } from 'cn';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { PastGame, Room } from '../api/rooms';
 import { type ResultsLinkState, resultsPath } from '../constants/routes';
+import { panelVariants } from './ui/panel';
+import { textLinkClassName } from './ui/text-link';
 
 interface PastGamesProps {
   room: Room;
@@ -20,7 +23,7 @@ export function PastGames({ room }: PastGamesProps) {
       <h2 className="text-lg font-semibold">
         {t('rooms.lobby.pastGames.title', { count: room.past_games.length })}
       </h2>
-      <ul className="flex w-full flex-col divide-y rounded-xl border">
+      <ul className={panelVariants({ variant: 'list' })}>
         {room.past_games.map((pastGame: PastGame) => {
           const closedAt: Date = new Date(pastGame.closed_at);
           return (
@@ -35,7 +38,7 @@ export function PastGames({ room }: PastGamesProps) {
                 // de rejouer
                 state={{ roomCode: room.code, isAdmin: room.is_admin } satisfies ResultsLinkState}
                 aria-label={t('rooms.lobby.pastGames.openLabel', { date: closedAt })}
-                className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className={cn(textLinkClassName, 'ml-auto text-sm')}
               >
                 {t('rooms.lobby.pastGames.open')}
               </Link>

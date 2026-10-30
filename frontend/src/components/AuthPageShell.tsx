@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { PageContainer } from './PageContainer';
 
 interface AuthPageShellProps {
   title: string;
@@ -12,7 +13,7 @@ interface AuthPageShellProps {
 // par email) et page introuvable
 export function AuthPageShell({ title, children, footer }: AuthPageShellProps) {
   return (
-    <main className="mx-auto w-full max-w-sm px-4 py-10">
+    <PageContainer width="form">
       <Card>
         <CardHeader>
           <h1 className="text-lg font-semibold">{title}</h1>
@@ -20,6 +21,6 @@ export function AuthPageShell({ title, children, footer }: AuthPageShellProps) {
         <CardContent className="flex flex-col gap-4">{children}</CardContent>
         {footer !== undefined && <CardFooter className="justify-center">{footer}</CardFooter>}
       </Card>
-    </main>
+    </PageContainer>
   );
 }

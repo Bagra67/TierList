@@ -18,6 +18,14 @@ export function resultsPanelId(view: ResultsView): string {
 export interface ResultItem {
   item: GameItem;
   imageLabel: string;
+  // Nom lu par les lecteurs d'écran et affiché dans les votes : son texte, ou le nom de son image
+  name: string;
 }
 
 export type ResultItems = ReadonlyMap<string, ResultItem>;
+
+// L'élément dont le panneau des votes est ouvert, partagé par les vues : cliquer une tuile le choisit
+export interface ItemSelection {
+  selectedItemId: string | null;
+  onSelect: (itemId: string) => void;
+}

@@ -10,8 +10,10 @@ import { getFieldErrors, translateError, translateFieldError } from '../errors/a
 import { AuthPageShell } from '../components/AuthPageShell';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
+import { TermsAcceptance } from '../components/TermsAcceptance';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
 
 export function RegisterPage() {
   const registerMutation = useRegister();
@@ -43,11 +45,7 @@ export function RegisterPage() {
         <p>
           {t('auth.register.hasAccount')}{' '}
           {/* L'état garde la page demandée, pour y revenir après la connexion */}
-          <Link
-            to={ROUTES.LOGIN}
-            state={location.state}
-            className="font-medium underline underline-offset-4"
-          >
+          <Link to={ROUTES.LOGIN} state={location.state} className={textLinkClassName}>
             {t('auth.register.loginLink')}
           </Link>
         </p>
@@ -87,6 +85,7 @@ export function RegisterPage() {
         </Button>
       </form>
       <GoogleSignInLink />
+      <TermsAcceptance i18nKey="auth.acceptTerms.register" />
     </AuthPageShell>
   );
 }

@@ -31,9 +31,9 @@ describe('EmailVerificationBanner', () => {
     });
     renderWithQueryClient(<EmailVerificationBanner user={unverifiedAlice} />);
 
-    fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'email" }));
+    fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'e-mail" }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Email envoyé.');
+    expect(await screen.findByRole('status')).toHaveTextContent('E-mail envoyé.');
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/email/verification']);
     await expect(fetchMock.mock.calls[0][0].json()).resolves.toEqual({ language: 'fr' });
   });

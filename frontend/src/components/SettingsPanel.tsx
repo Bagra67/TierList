@@ -1,14 +1,17 @@
+import { Settings } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
-import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
+import { CONFIRM_PARAM } from '../constants/routes';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { LegalLinks } from './LegalLinks';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Button } from './ui/button';
+import { textLinkClassName } from './ui/text-link';
 
 // Bouton engrenage de l'en-tête et panneau de paramètres qui glisse depuis la droite : thème et
 // langue pour tous, suppression du compte une fois connecté. <dialog> natif ouvert avec
@@ -50,7 +53,7 @@ export function SettingsPanel() {
         aria-label={t('settings.open')}
         onClick={() => panelRef.current?.showModal()}
       >
-        <GearIcon className="size-5" />
+        <Settings />
       </Button>
       <dialog
         ref={panelRef}
@@ -78,30 +81,12 @@ export function SettingsPanel() {
         )}
         <section className="mt-6 flex flex-col items-start gap-3">
           <h3 className="font-medium">{t('settings.about')}</h3>
-          <Link to={ROUTES.PRIVACY} className="underline underline-offset-4">
-            {t('footer.privacy')}
-          </Link>
+          <LegalLinks
+            className="flex flex-col items-start gap-2"
+            linkClassName={textLinkClassName}
+          />
         </section>
       </dialog>
     </>
-  );
-}
-
-// Icône « engrenage », dessinée ici : le projet n'a pas de bibliothèque d'icônes
-function GearIcon({ className }: { className: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
   );
 }

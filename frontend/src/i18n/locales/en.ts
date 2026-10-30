@@ -3,16 +3,57 @@ import type { Translation } from './fr';
 export const en: Translation = {
   common: {
     loading: 'Loading…',
-    backendUnreachable: 'Cannot reach the backend: is it running?',
+    backendUnreachable: 'The server is not responding. Try again in a moment.',
     language: 'Language',
     theme: 'Theme',
   },
   home: {
-    title: 'Home',
+    visitor: {
+      title: 'Rank together, live.',
+      intro:
+        "Everyone places the same items in their own tier list, without seeing the others'. At the end, you compare who put what, and where.",
+      register: 'Create an account',
+      signIn: 'I already have an account',
+    },
+    signedIn: {
+      title: 'Ready for a game, {{name}}?',
+      intro: 'Enter the code of a room, or open one with one of your templates.',
+    },
+    board: {
+      description:
+        'Example tier list: three players ranked dishes in the tiers S, A, B and C; pizza is in S for all three.',
+      items: {
+        pizza: 'Pizza',
+        crepes: 'Crêpes',
+        sushi: 'Sushi',
+        tacos: 'Tacos',
+        ramen: 'Ramen',
+        croissant: 'Croissant',
+        burger: 'Burger',
+        salad: 'Salad',
+      },
+    },
+    steps: {
+      title: 'How it works',
+      template: 'Prepare a template: its tiers and its tiles, as text or images.',
+      room: 'Open a room and share its link or code.',
+      play: 'Each round, everyone places the item. At the end, discover the results.',
+    },
+    prepareTemplate: 'Prepare a template',
     joinRoom: {
       title: 'Join a room',
       code: 'Room code',
       submit: 'Join',
+    },
+    recentTemplates: {
+      title: 'Your templates',
+      all: 'All my templates',
+      empty: 'No template yet: prepare the first one to open a room.',
+    },
+    recentGames: {
+      title: 'Your latest games',
+      all: 'All history',
+      empty: 'No finished game yet: the results of your games will show up here.',
     },
   },
   nav: {
@@ -31,10 +72,11 @@ export const en: Translation = {
   },
   footer: {
     privacy: 'Privacy policy',
+    terms: 'Terms of use',
+    legalNotice: 'Legal notice',
   },
   privacy: {
     title: 'Privacy policy',
-    updatedAt: 'Last updated: {{date, datetime(dateStyle: long)}}',
     intro:
       'This page explains which personal data TierList collects, why, how long it is kept, who processes it and how to exercise your rights.',
     controller: {
@@ -52,6 +94,8 @@ export const en: Translation = {
       content:
         'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position).',
       games: 'Games: the rooms you join, your placements and the results of the games.',
+      reports:
+        'Reports: the email address of the person who reports content, and what their message contains.',
       technical:
         'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
     },
@@ -61,6 +105,7 @@ export const en: Translation = {
         'Providing the service you ask for by using TierList (performance of a contract): creating your account, signing you in, running the games, sending the email address verification and password reset emails.',
       security:
         'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
+      reports: 'Handling the reports of illegal content (legal obligation).',
       noAds: 'Your data is neither sold nor used for advertising or profiling.',
     },
     retention: {
@@ -73,6 +118,8 @@ export const en: Translation = {
       deleted:
         'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
       backups: 'Database backups: 14 days.',
+      reports:
+        'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
     },
     visibility: {
       title: 'Who sees your data',
@@ -120,9 +167,109 @@ export const en: Translation = {
       body: 'This policy may change with the service. The date of the last update is shown at the top of the page, and a significant change will be announced in the application.',
     },
   },
+  legalPages: {
+    updatedAt: 'Last updated: {{date, datetime(dateStyle: long)}}',
+    report: {
+      title: 'Report content',
+      intro:
+        "If content published on TierList seems illegal to you (hateful, sexual, infringing someone's rights or against the law), report it by email:",
+      include: 'So that the report can be handled, give:',
+      page: 'the link of the page where the content is (template, room or results);',
+      content: 'the content concerned: a tile (its text or image), a template or a nickname;',
+      reason: 'the reason for the report;',
+      reply: 'an email address to answer you.',
+      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. You receive an answer with the decision taken.',
+    },
+  },
+  terms: {
+    title: 'Terms of use',
+    intro:
+      'These terms apply to anyone who uses TierList, with an account or as a guest. Using the service means accepting them.',
+    service: {
+      title: 'The service',
+      body: 'TierList lets you create tier list templates and rank them together, live, in a room: each player places the items in the tiers, then the results of the game are computed. The service is free.',
+    },
+    account: {
+      title: 'Your account',
+      one: 'One account per person, with an email address that belongs to you.',
+      password: 'Keep your password secret: what is done from your account is your responsibility.',
+      delete: 'You can delete your account at any time from the settings panel.',
+    },
+    guests: {
+      title: 'Playing as a guest',
+      body: 'Without an account, you join a room with a nickname. A personal link, valid for 30 days at most, lets you get your seat back from another device: do not share it.',
+    },
+    content: {
+      title: 'Your content',
+      rights:
+        'You keep your rights on the templates, texts and images you create or upload. You allow TierList to host them and show them to the participants of your rooms and to the people who have the results link, for as long as the service needs.',
+      forbidden: 'Only publish content you have the right to share. Forbidden:',
+      illegal: 'illegal content;',
+      hateful: 'hateful, violent or harassing content;',
+      sexual: 'sexual content;',
+      infringing: "content that infringes someone's rights (copyright, image rights, privacy).",
+      removal: 'Forbidden content may be removed without notice.',
+    },
+    visibility: {
+      title: 'What others see',
+      room: 'The participants of a room see the template played, the nicknames and the placements of the game.',
+      results:
+        'The results link of a finished game can be opened by anyone who has it, without an account: only share it with the people you choose.',
+    },
+    sanctions: {
+      title: 'Suspension and deletion',
+      body: 'An account that does not follow these terms may be suspended or deleted, after a report or a check.',
+    },
+    availability: {
+      title: 'Availability',
+      body: 'TierList is provided as is, without any availability guarantee. The service may be interrupted for maintenance, change or stop.',
+    },
+    liability: {
+      title: 'Liability',
+      body: 'Each user is responsible for the content they publish. Within the limits set by law, TierList cannot be held liable for an interruption of the service or a loss of data.',
+    },
+    law: {
+      title: 'Applicable law',
+      body: 'These terms are governed by French law. In case of dispute, an amicable solution is sought first; failing that, the competent courts are those set by law.',
+    },
+    changes: {
+      title: 'Changes',
+      body: 'These terms may change with the service. The date of the last update is shown at the top of the page, and a significant change will be announced in the application.',
+    },
+    contact: {
+      title: 'Contact',
+      body: 'For any question about these terms:',
+    },
+  },
+  legalNotice: {
+    title: 'Legal notice',
+    intro:
+      'Information about the publisher and the host of TierList (French law no. 2004-575 of 21 June 2004 on confidence in the digital economy).',
+    publisher: {
+      title: 'Publisher and publication director',
+      body: 'TierList is published on a non-professional basis by {{name}}, who is also its publication director. Contact:',
+      anonymity:
+        'As article 6-III-2 of that law allows for a non-professional publisher, their address is not published: their details were given to the host.',
+    },
+    host: {
+      title: 'Host',
+      body: 'The application and the database are hosted by:',
+    },
+    providers: {
+      title: 'Other providers',
+      cloudflare:
+        'Cloudflare, Inc.: domain name, HTTPS encryption and traffic routing (United States).',
+      scaleway: 'Scaleway SAS: image storage and email sending (France).',
+    },
+    data: {
+      title: 'Personal data',
+      body: 'How your personal data is processed is described in the <privacy>privacy policy</privacy>.',
+    },
+  },
   history: {
     title: 'History',
     empty: 'No finished game yet. Your games will show here once closed.',
+    emptyAction: 'Create or join a game',
     closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
     players_one: '{{count}} player',
     players_other: '{{count}} players',
@@ -151,8 +298,13 @@ export const en: Translation = {
     password: 'Password',
     displayName: 'Display name',
     continueWithGoogle: 'Continue with Google',
-    signedInAs: 'Signed in as {{name}}',
     logout: 'Sign out',
+    acceptTerms: {
+      register:
+        'By creating an account, you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.',
+      google:
+        'By continuing with Google, you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.',
+    },
     login: {
       title: 'Sign in',
       submit: 'Sign in',
@@ -259,11 +411,20 @@ export const en: Translation = {
       tiles: 'Tiles',
       tileCount: '{{count}} / {{max}} tiles',
       newTileText: 'Text of the new tile',
-      newTileHint: 'A text, an image, or both.',
+      newTileHint: 'A text, an image, or both. Several images at once: one tile per image.',
       addTile: 'Add the tile',
       addingTile: 'Adding…',
       tileText: 'Text of tile {{position}}',
       tileName: 'Tile {{position}}',
+      bulk: {
+        progress: 'Uploading images: {{done}} / {{total}}',
+        added_one: '{{count}} tile added.',
+        added_other: '{{count}} tiles added.',
+        skipped_one: '{{count}} image skipped:',
+        skipped_other: '{{count}} images skipped:',
+        skippedImage: '{{name}}: {{reason}}',
+        noRoom: 'no room left in the template ({{max_tiles}} tiles at most).',
+      },
       image: {
         addToNew: 'Add an image to the new tile',
         replaceNew: 'Replace the image of the new tile',
@@ -272,6 +433,7 @@ export const en: Translation = {
         replace: 'Replace the image of {{name}}',
         remove: 'Remove the image of {{name}}',
         hint: 'Drop an image or click',
+        hintMany: 'Drop one or more images, or click',
         drop: 'Drop',
         uploading: 'Uploading the image…',
       },
@@ -292,6 +454,7 @@ export const en: Translation = {
     title: 'Results: {{name}}',
     closedAt: 'Game finished on {{date, datetime(dateStyle: long; timeStyle: short)}}',
     includeAbsentVotes: 'Include absent votes',
+    replayReveal: 'Replay the reveal',
     publicLink: 'Public results link',
     tabsLabel: 'Results views',
     tabs: {
@@ -317,6 +480,13 @@ export const en: Translation = {
       unplaced: 'Never placed',
       none: 'Nobody played this game.',
     },
+    votes: {
+      title: 'Votes: {{item}}',
+      open: 'See the votes: {{item}}',
+      count_one: '{{count}} vote',
+      count_other: '{{count}} votes',
+      absent: 'Absent',
+    },
   },
   rooms: {
     create: {
@@ -334,15 +504,15 @@ export const en: Translation = {
       linkCopied: 'Link copied',
       copyFailed: 'The link could not be copied: select it and copy it by hand.',
       participants: 'Participants ({{count}})',
-      admin: 'room admin',
+      admin: 'host',
       online: 'online',
       offline: 'offline',
       liveUnavailable: 'Live updates are unavailable: reload the page.',
       guest: 'guest',
-      removed: 'The room admin removed you from this room.',
-      banned: 'The room admin banned you from this room.',
+      removed: 'The host removed you from this room.',
+      banned: 'The host banned you from this room.',
       comeBack: 'Go back to the room',
-      closed: 'The room admin closed this room.',
+      closed: 'The host closed this room.',
       pastGames: {
         title: 'Past games ({{count}})',
         closedAt: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
@@ -393,6 +563,8 @@ export const en: Translation = {
       title: 'Game in progress',
       itemProgress: 'Item {{number}} of {{total}}',
       timeLeft: 'Time left',
+      progress: 'Game progress',
+      hostControls: 'Host controls',
       currentItemImage: 'Image of the current item',
       placedItemImage: 'Image of a placed item',
       placedCount_one: 'Placed {{placed}} / {{count}} connected',
@@ -405,7 +577,6 @@ export const en: Translation = {
       },
       board: 'My ranking',
       dock: 'Drag the item into a tier, at the position you want, or use the "Place in" buttons.',
-      dragHandle: 'Drag into a tier',
       dragHandleLabel: 'Drag into a tier: {{item}}',
       dragLabel: 'Move {{item}}',
       placeIn: 'Place in {{tier}}',
@@ -422,21 +593,25 @@ export const en: Translation = {
       },
       lateArrivals: 'Arrivals open',
       cooldown: {
-        title: 'Final cooldown',
-        timeLeft: 'Cooldown end',
+        title: 'Final touches',
+        timeLeft: 'End of the final touches',
         hint: 'Move any tile. Place your missed items before the end.',
         waiting: 'The participants are finalising their ranking.',
         missed: 'Missed items',
         missedImage: 'Image of a missed item, {{position}}',
         absent: 'Absent',
-        placeInLabel: 'Tier to place {{item}} in',
-        place: 'Place',
-        placeLabel: 'Place {{item}} at the end of the chosen tier',
-        moveUp: 'Move {{item}} to the tier above',
-        moveDown: 'Move {{item}} to the tier below',
+        dndInstructions:
+          'Enter chooses the tile, then "Move here" puts it at the end of a tier. To place it at a precise position, press Space, use the arrow keys, then Space to drop it, or Escape to cancel.',
+        chooseLabel: 'Choose {{item}}',
+        chooseHint: 'Choose a tile, then "Move here" in a tier. You can also drag it.',
+        chosen: 'Chosen tile: {{item}}',
+        cancelChoice: 'Cancel the choice',
+        moveHere: 'Move here',
+        moveHereLabel: 'Move {{item}} to the end of {{tier}}',
+        missedNone: 'None: everything is placed.',
         end: {
           open: 'End now',
-          title: 'End the cooldown?',
+          title: 'End the final touches?',
           warning: "Every participant's ranking becomes final and the game is closed.",
           cancel: 'Cancel',
           submit: 'End',
@@ -491,8 +666,8 @@ export const en: Translation = {
         everyone_placed: 'When everyone has placed',
       },
       timerSeconds: 'Timer duration (seconds)',
-      manualNote: 'The room admin can always move on by hand.',
-      cooldownSeconds: 'Final cooldown (seconds)',
+      manualNote: 'The host can always move on by hand.',
+      cooldownSeconds: 'Final touches (seconds)',
       adminPlays: 'I play too',
       lateArrivals: 'Allow late arrivals during the game',
       lockedNote: 'A game is in progress: only late arrivals can be changed.',
@@ -509,9 +684,9 @@ export const en: Translation = {
           timer: 'Timer of {{seconds}} s per item',
           everyone_placed: 'Next item when everyone has placed',
         },
-        cooldown: 'Final cooldown of {{seconds}} s',
-        adminPlays: 'The room admin plays',
-        adminDoesNotPlay: 'The room admin does not play',
+        cooldown: 'Final touches of {{seconds}} s',
+        adminPlays: 'The host plays',
+        adminDoesNotPlay: 'The host does not play',
         lateArrivalsAllowed: 'Late arrivals allowed during the game',
         lateArrivalsLocked: 'Late arrivals locked during the game',
       },
@@ -534,7 +709,7 @@ export const en: Translation = {
       template_not_found: 'This template could not be found.',
       template_has_no_tiles: 'Add at least one tile to this template to play with it.',
       room_not_found: 'This room could not be found or has been closed.',
-      room_admin_required: 'Only the room admin can do this.',
+      room_admin_required: 'Only the host can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
       game_in_progress: 'A game is already in progress in this room.',
       no_placing_participant:
@@ -543,18 +718,18 @@ export const en: Translation = {
       not_a_placing_participant: 'You do not play in this game: you only have the controls.',
       item_not_current: 'This item is no longer the current one: the round has moved on.',
       item_not_in_game: 'This item is not part of the game.',
-      cooldown_not_in_progress: 'The final cooldown is not in progress.',
-      cooldown_over: 'The final cooldown is over: nothing can be placed any more.',
+      cooldown_not_in_progress: 'The final touches are not in progress.',
+      cooldown_over: 'The final touches are over: nothing can be placed any more.',
       results_not_found: 'This results link matches no finished game.',
       room_full: 'This room is full: {{max_participants}} participants at most.',
       room_locked: 'A game is in progress and the room is locked.',
       nickname_taken: 'This nickname is already used in this room.',
       guest_link_invalid: 'This personal link has expired, or the room was closed.',
       participant_not_found: 'This participant is no longer in the room.',
-      cannot_remove_room_admin: 'The room admin cannot be removed from their room.',
+      cannot_remove_room_admin: 'The host cannot be removed from their room.',
       room_banned: 'You were banned from this room.',
       ban_not_found: 'This ban no longer exists.',
-      removed_from_room: 'The room admin removed you from this room.',
+      removed_from_room: 'The host removed you from this room.',
       room_closed: 'This room has been closed.',
       invalid_message: 'Unexpected message on the room channel.',
       heartbeat_timeout: 'The connection to the room stopped answering.',

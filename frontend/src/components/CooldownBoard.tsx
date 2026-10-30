@@ -7,7 +7,7 @@ import {
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
-import { type ChangeEvent, useId, useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -21,41 +21,44 @@ import {
 import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
-import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
-import { GameItemView } from './GameItemView';
+import {
+  COOLDOWN_KEYBOARD_CODES,
+  tileFocusKey,
+  useBoardSensors,
+  useFocusAfterUpdate,
+} from './boardHooks';
+import { ITEM_CHIP_CLASS } from './boardStyles';
+import {
+  type DragPreviewContent,
+  ChoosableTile,
+  DragPreview,
+  EndSlot,
+  TierLabel,
+} from './gameBoardParts';
+import { MissedItemsPanel } from './MissedItemsPanel';
 import { Button } from './ui/button';
-
-// Les contrôles d'une tuile, pour lui rendre le focus après un déplacement
-type TileControl = 'drag' | 'earlier' | 'later' | 'up' | 'down';
-
-function focusKey(itemId: string, control: TileControl): string {
-  return `${itemId}:${control}`;
-}
-
-// Place une tuile à ce rang de ce tier, puis rend le focus au premier de ces contrôles
-type PlaceHandler = (
-  itemId: string,
-  tierId: string,
-  position: number,
-  focusControls: TileControl[],
-) => void;
+import { panelVariants } from './ui/panel';
 
 interface CooldownBoardProps {
   room: Room;
   game: CurrentGame;
+  // Sous le panneau des éléments manqués : « Terminer maintenant » pour l'hôte
+  aside?: ReactNode;
 }
 
-// Le plateau du lecteur pendant le cooldown final (US-4.1, US-4.6) : toutes ses tuiles bougent, et
-// les items qu'il a manqués attendent à part. À la souris ou au doigt par glisser-déposer ; au
-// clavier par les boutons ←/→ (dans le tier), ↑/↓ (tier voisin) et la liste « Placer dans ».
-export function CooldownBoard({ room, game }: CooldownBoardProps) {
+// Le plateau du lecteur pendant les retouches finales (US-4.1, US-4.6) : à gauche ses tiers, où
+// toutes les tuiles bougent ; à droite les éléments manqués. Une tuile se glisse à la position
+// voulue (souris, doigt, ou Espace puis les flèches au clavier), ou se choisit d'un clic (ou
+// Entrée) puis « Déplacer ici » la met à la fin d'un tier.
+export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
-  const sensors = useBoardSensors();
+  const sensors = useBoardSensors(COOLDOWN_KEYBOARD_CODES);
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const pending: boolean = placeMutation.isPending;
+  // Tuile choisie pour « Déplacer ici »
+  const [chosenId, setChosenId] = useState<string | null>(null);
 
   // Les tuiles d'un tier, dans l'ordre (le serveur les trie)
   function inTier(tierId: string): OwnPlacement[] {
@@ -86,28 +89,54 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     return labels.get(String(itemId)) ?? '';
   }
 
+  // Une tuile du plateau ou un élément manqué
+  function itemById(itemId: string): GameItem | undefined {
+    return (
+      game.own_placements.find((placement) => placement.item.id === itemId)?.item ??
+      game.missed_items.find((item) => item.id === itemId)
+    );
+  }
+
   function positionFor(itemId: string, target: BoardDropTarget, side: DropSide): number | null {
     const tierItemIds: string[] = inTier(target.tierId).map((placement) => placement.item.id);
     return dropPosition(tierItemIds, itemId, target, side);
   }
 
-  async function placeAt(
-    itemId: string,
-    tierId: string,
-    position: number,
-    focusControls: TileControl[],
-  ) {
-    if (pending) return;
-    // La tuile garde le focus, même déplacée dans une autre rangée ; un item manqué placé le
-    // retrouve sur le plateau
-    const controls: TileControl[] = [...focusControls, 'drag'];
-    focus.request(controls.map((control) => focusKey(itemId, control)));
+  // Envoie le placement ; true s'il a réussi (rien n'est envoyé pendant un autre envoi)
+  async function placeAt(itemId: string, tierId: string, position: number): Promise<boolean> {
+    if (pending) return false;
+    focus.request([tileFocusKey(itemId)]);
     try {
       await placeMutation.mutateAsync({ tileId: itemId, tierId, position });
+      return true;
     } catch {
       focus.cancel();
-      return; // l'erreur est affichée depuis placeMutation.error
+      return false; // l'erreur est affichée depuis placeMutation.error
     }
+  }
+
+  // La tuile choisie, si elle est toujours là (une relecture de la salle a pu la retirer)
+  const chosenItem: GameItem | undefined = chosenId === null ? undefined : itemById(chosenId);
+
+  // « Déplacer ici » : la tuile choisie passe à la fin de ce tier (dernière place si elle y est
+  // déjà). Pendant un envoi, le bouton n'est qu'aria-disabled : le clic ne fait rien et garde le
+  // choix. Le choix reste jusqu'à la réponse : après un échec, les boutons et le focus restent
+  async function moveChosenTo(tierId: string) {
+    if (chosenItem === undefined || pending) return;
+    const itemId: string = chosenItem.id;
+    const tierItemIds: string[] = inTier(tierId).map((placement) => placement.item.id);
+    const currentIndex: number = tierItemIds.indexOf(itemId);
+    // Déjà dernière de ce tier : rien à envoyer
+    if (currentIndex !== -1 && currentIndex === tierItemIds.length - 1) {
+      setChosenId(null);
+      return;
+    }
+    const end: number = currentIndex === -1 ? tierItemIds.length : tierItemIds.length - 1;
+    if (await placeAt(itemId, tierId, end)) setChosenId(null);
+  }
+
+  function toggleChosen(itemId: string) {
+    setChosenId((current) => (current === itemId ? null : itemId));
   }
 
   function announce(
@@ -148,6 +177,13 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
+  // Aperçu de la tuile glissée, sur le plateau ou parmi les items manqués
+  function previewOf(id: string): DragPreviewContent | undefined {
+    const item: GameItem | undefined = itemById(id);
+    if (item === undefined) return undefined;
+    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS, size: 'small' };
+  }
+
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
@@ -159,109 +195,141 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     );
     // Déposée sur elle-même, ou là où elle est déjà : elle ne bouge pas
     if (position === null) return;
-    void placeAt(itemId, target.tierId, position, ['drag']);
+    // Glisser la tuile choisie annule son choix ; glisser une autre tuile le garde
+    if (itemId === chosenId) setChosenId(null);
+    void placeAt(itemId, target.tierId, position);
   }
 
-  const onPlace: PlaceHandler = (itemId, tierId, position, focusControls) =>
-    void placeAt(itemId, tierId, position, focusControls);
-
   return (
-    <section ref={sectionRef} className="flex w-full flex-col gap-3">
-      <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+    <section
+      ref={sectionRef}
+      className="grid w-full items-start gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,1fr)_18rem]"
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
         accessibility={{
           announcements,
-          screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
+          screenReaderInstructions: { draggable: t('rooms.game.cooldown.dndInstructions') },
         }}
       >
-        {game.missed_items.length > 0 && (
-          <MissedItems
-            items={game.missed_items}
-            tiers={game.tiers}
-            labelOf={itemLabel}
-            endOf={(tierId) => inTier(tierId).length}
-            pending={pending}
-            onPlace={onPlace}
-          />
-        )}
-        <ol className="flex w-full flex-col gap-2">
-          {game.tiers.map((tier, index) => {
-            const above: GameTier | undefined = game.tiers[index - 1];
-            const below: GameTier | undefined = game.tiers[index + 1];
-            return (
+        <div className="flex min-w-0 flex-col gap-3">
+          <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+          <ol className="flex w-full flex-col gap-2">
+            {game.tiers.map((tier) => (
               <CooldownTierRow
                 key={tier.id}
                 tier={tier}
                 placements={inTier(tier.id)}
                 labelOf={itemLabel}
-                above={
-                  above === undefined ? undefined : { tier: above, end: inTier(above.id).length }
-                }
-                below={
-                  below === undefined ? undefined : { tier: below, end: inTier(below.id).length }
-                }
+                chosenId={chosenItem?.id ?? null}
+                chosenLabel={chosenItem === undefined ? '' : itemLabel(chosenItem.id)}
                 pending={pending}
-                onPlace={onPlace}
+                onChoose={toggleChosen}
+                onMoveHere={() => void moveChosenTo(tier.id)}
               />
-            );
-          })}
-        </ol>
+            ))}
+          </ol>
+          {placeMutation.isError && (
+            <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
+          )}
+        </div>
+        <aside className="flex flex-col gap-4">
+          <MissedItemsPanel
+            items={game.missed_items}
+            labelOf={itemLabel}
+            chosenId={chosenItem?.id ?? null}
+            pending={pending}
+            onChoose={toggleChosen}
+          />
+          {/* La tuile choisie, annoncée aux lecteurs d'écran quand elle change */}
+          <div aria-live="polite" className={panelVariants({ variant: 'muted' })}>
+            {chosenItem === undefined ? (
+              <p className="text-sm text-muted-foreground">{t('rooms.game.cooldown.chooseHint')}</p>
+            ) : (
+              <>
+                <p className="text-sm">
+                  {t('rooms.game.cooldown.chosen', { item: itemLabel(chosenItem.id) })}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setChosenId(null)}
+                >
+                  {t('rooms.game.cooldown.cancelChoice')}
+                </Button>
+              </>
+            )}
+          </div>
+          {aside}
+        </aside>
+        <DragPreview previewOf={previewOf} />
       </DndContext>
-      {placeMutation.isError && (
-        <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
-      )}
     </section>
   );
-}
-
-// Un tier voisin, et le rang de sa fin : ↑/↓ y mettent la tuile en dernier
-interface NeighbourTier {
-  tier: GameTier;
-  end: number;
 }
 
 interface CooldownTierRowProps {
   tier: GameTier;
   placements: OwnPlacement[];
   labelOf: (itemId: string) => string;
-  above: NeighbourTier | undefined;
-  below: NeighbourTier | undefined;
+  chosenId: string | null;
+  chosenLabel: string;
   pending: boolean;
-  onPlace: PlaceHandler;
+  onChoose: (itemId: string) => void;
+  onMoveHere: () => void;
 }
 
 function CooldownTierRow({
   tier,
   placements,
   labelOf,
-  above,
-  below,
+  chosenId,
+  chosenLabel,
   pending,
-  onPlace,
+  onChoose,
+  onMoveHere,
 }: CooldownTierRowProps) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (
-    <li className="flex w-full flex-wrap items-center gap-2 rounded-lg border p-2">
-      <TierLabel tier={tier} />
-      <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
-        {placements.map((placement, index) => (
-          <CooldownTile
-            key={placement.item.id}
-            item={placement.item}
-            label={labelOf(placement.item.id)}
-            tierId={tier.id}
-            index={index}
-            count={placements.length}
-            above={above}
-            below={below}
-            pending={pending}
-            onPlace={onPlace}
-          />
-        ))}
-        <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-      </ol>
+    <li className="flex w-full rounded-[10px] border bg-card">
+      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
+          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {placements.map((placement) => (
+            <CooldownTile
+              key={placement.item.id}
+              item={placement.item}
+              label={labelOf(placement.item.id)}
+              tierId={tier.id}
+              chosen={chosenId === placement.item.id}
+              pending={pending}
+              onChoose={onChoose}
+            />
+          ))}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        {chosenId !== null && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={t('rooms.game.cooldown.moveHereLabel', {
+              item: chosenLabel,
+              tier: tier.name,
+            })}
+            aria-disabled={pending}
+            onClick={onMoveHere}
+          >
+            {t('rooms.game.cooldown.moveHere')}
+          </Button>
+        )}
+      </div>
     </li>
   );
 }
@@ -270,29 +338,14 @@ interface CooldownTileProps {
   item: GameItem;
   label: string;
   tierId: string;
-  // Rang de la tuile dans son tier, et nombre de tuiles du tier
-  index: number;
-  count: number;
-  above: NeighbourTier | undefined;
-  below: NeighbourTier | undefined;
+  chosen: boolean;
   pending: boolean;
-  onPlace: PlaceHandler;
+  onChoose: (itemId: string) => void;
 }
 
-// Une tuile du plateau final : elle se glisse, et une autre tuile déposée dessus se place avant
-// ou après elle, selon le côté où elle tombe
-function CooldownTile({
-  item,
-  label,
-  tierId,
-  index,
-  count,
-  above,
-  below,
-  pending,
-  onPlace,
-}: CooldownTileProps) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+// Une tuile du plateau final : elle se glisse ou se choisit, et une autre tuile déposée dessus se
+// place avant ou après elle, selon le côté où elle tombe
+function CooldownTile({ item, label, tierId, chosen, pending, onChoose }: CooldownTileProps) {
   const target: BoardDropTarget = { tierId, itemId: item.id };
   const { setNodeRef, isOver, active }: ReturnType<typeof useDroppable> = useDroppable({
     id: `${tierId}:${item.id}`,
@@ -301,166 +354,14 @@ function CooldownTile({
   // La tuile glissée survole sa propre place : rien n'y tomberait
   const highlighted: boolean = isOver && active?.id !== item.id;
   return (
-    <li
-      ref={setNodeRef}
-      className={cn('flex items-center gap-1 rounded-md', highlighted && 'ring-2 ring-primary')}
-    >
-      <DraggableItem
-        id={item.id}
+    <li ref={setNodeRef} className={cn('rounded-md', highlighted && 'ring-2 ring-primary')}>
+      <ChoosableTile
+        item={item}
         label={label}
-        focusKey={focusKey(item.id, 'drag')}
-        disabled={pending}
-      >
-        <GameItemView item={item} imageLabel={label} size="small" />
-      </DraggableItem>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        data-focus-key={focusKey(item.id, 'earlier')}
-        aria-label={t('rooms.game.moveEarlier', { item: label })}
-        aria-disabled={pending}
-        disabled={index === 0}
-        onClick={() => onPlace(item.id, tierId, index - 1, ['earlier', 'later'])}
-      >
-        ←
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        data-focus-key={focusKey(item.id, 'later')}
-        aria-label={t('rooms.game.moveLater', { item: label })}
-        aria-disabled={pending}
-        disabled={index >= count - 1}
-        onClick={() => onPlace(item.id, tierId, index + 1, ['later', 'earlier'])}
-      >
-        →
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        data-focus-key={focusKey(item.id, 'up')}
-        aria-label={t('rooms.game.cooldown.moveUp', { item: label })}
-        aria-disabled={pending}
-        disabled={above === undefined}
-        onClick={() =>
-          above !== undefined && onPlace(item.id, above.tier.id, above.end, ['up', 'down'])
-        }
-      >
-        ↑
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        data-focus-key={focusKey(item.id, 'down')}
-        aria-label={t('rooms.game.cooldown.moveDown', { item: label })}
-        aria-disabled={pending}
-        disabled={below === undefined}
-        onClick={() =>
-          below !== undefined && onPlace(item.id, below.tier.id, below.end, ['down', 'up'])
-        }
-      >
-        ↓
-      </Button>
-    </li>
-  );
-}
-
-interface MissedItemsProps {
-  items: GameItem[];
-  tiers: GameTier[];
-  labelOf: (itemId: string) => string;
-  // Rang de la fin d'un tier : un item manqué s'y place en dernier
-  endOf: (tierId: string) => number;
-  pending: boolean;
-  onPlace: PlaceHandler;
-}
-
-// Les items manqués (votes absents, arrivée en retard), à placer avant la fin du cooldown (US-4.6)
-function MissedItems({ items, tiers, labelOf, endOf, pending, onPlace }: MissedItemsProps) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const headingId: string = useId();
-  return (
-    <section
-      aria-labelledby={headingId}
-      className="flex flex-col gap-2 rounded-lg border border-dashed p-3"
-    >
-      <h3 id={headingId} className="font-semibold">
-        {t('rooms.game.cooldown.missed')}
-      </h3>
-      <ul className="flex flex-col gap-2">
-        {items.map((item) => (
-          <MissedItemRow
-            key={item.id}
-            item={item}
-            label={labelOf(item.id)}
-            tiers={tiers}
-            endOf={endOf}
-            pending={pending}
-            onPlace={onPlace}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-interface MissedItemRowProps {
-  item: GameItem;
-  label: string;
-  tiers: GameTier[];
-  endOf: (tierId: string) => number;
-  pending: boolean;
-  onPlace: PlaceHandler;
-}
-
-function MissedItemRow({ item, label, tiers, endOf, pending, onPlace }: MissedItemRowProps) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const selectId: string = useId();
-  // Les tiers sont figés pour toute la partie : le premier reste le même
-  const [tierId, setTierId] = useState<string>(tiers[0]?.id ?? '');
-  return (
-    <li className="flex flex-wrap items-center gap-2">
-      <DraggableItem
-        id={item.id}
-        label={label}
-        focusKey={focusKey(item.id, 'drag')}
-        disabled={pending}
-      >
-        <GameItemView item={item} imageLabel={label} size="small" />
-      </DraggableItem>
-      {/* Le mot accompagne la couleur, qui ne suffirait pas seule */}
-      <span className="rounded-sm bg-destructive/10 px-1 text-xs font-semibold uppercase text-destructive">
-        {t('rooms.game.cooldown.absent')}
-      </span>
-      <label htmlFor={selectId} className="sr-only">
-        {t('rooms.game.cooldown.placeInLabel', { item: label })}
-      </label>
-      <select
-        id={selectId}
-        value={tierId}
-        onChange={(event: ChangeEvent<HTMLSelectElement>) => setTierId(event.target.value)}
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        {tiers.map((tier) => (
-          <option key={tier.id} value={tier.id}>
-            {tier.name}
-          </option>
-        ))}
-      </select>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        aria-label={t('rooms.game.cooldown.placeLabel', { item: label })}
-        aria-disabled={pending}
-        onClick={() => onPlace(item.id, tierId, endOf(tierId), [])}
-      >
-        {t('rooms.game.cooldown.place')}
-      </Button>
+        chosen={chosen}
+        pending={pending}
+        onChoose={onChoose}
+      />
     </li>
   );
 }

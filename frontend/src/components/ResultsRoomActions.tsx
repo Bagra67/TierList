@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { type NavigateFunction, Link, useNavigate } from 'react-router';
+import { cn } from 'cn';
 
 import { useStartGame } from '../api/rooms';
 import { type ResultsLinkState, roomPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { Button } from './ui/button';
+import { textLinkClassName } from './ui/text-link';
 
 interface ResultsRoomActionsProps {
   // La salle d'où viennent les résultats (état de navigation posé par le lobby)
@@ -33,10 +35,7 @@ export function ResultsRoomActions({ fromRoom }: ResultsRoomActionsProps) {
   return (
     <div className="flex flex-col items-start gap-2">
       <div className="flex flex-wrap items-center gap-4">
-        <Link
-          to={roomPath(fromRoom.roomCode)}
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
+        <Link to={roomPath(fromRoom.roomCode)} className={cn(textLinkClassName, 'text-sm')}>
           {t('results.backToRoom')}
         </Link>
         {fromRoom.isAdmin && (

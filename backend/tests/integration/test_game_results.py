@@ -103,6 +103,25 @@ def distribution(body: JsonObject) -> dict[str, tuple[list[int], int, str | None
     }
 
 
+def voters(body: JsonObject) -> dict[str, tuple[dict[str, list[str]], list[str]]]:
+    """Par texte d'item : (noms des joueurs par nom de tier, sans les tiers vides ; absents)."""
+    tier_names, item_texts = names(body)
+    player_names: list[str] = [player["display_name"] for player in body["players"]]
+    return {
+        item_texts[entry["item_id"]]: (
+            {
+                tier_names[tier["id"]]: [player_names[index] for index in indexes]
+                for tier, indexes in zip(
+                    body["tiers"], entry["player_indexes_per_tier"], strict=True
+                )
+                if indexes
+            },
+            [player_names[index] for index in entry["absent_player_indexes"]],
+        )
+        for entry in body["distribution"]
+    }
+
+
 def boards(body: JsonObject) -> dict[str, tuple[dict[str, list[str]], list[str]]]:
     """Par joueur : (items par nom de tier, sans les tiers vides ; items jamais placés)."""
     tier_names, item_texts = names(body)
@@ -141,6 +160,12 @@ def test_the_results_show_every_ranking_the_distribution_and_the_median(
         "Tile 1": ([1, 0, 1, 0, 0, 0], 1, "B"),
         "Tile 2": ([0, 0, 0, 0, 0, 0], 3, None),
     }
+    # Qui a voté où, pour le détail d'un item : le même décompte, avec les noms
+    assert voters(body) == {
+        "Tile 0": ({"S": ["alice"], "A": ["bob"]}, ["Lou"]),
+        "Tile 1": ({"S": ["alice"], "B": ["bob"]}, ["Lou"]),
+        "Tile 2": ({}, ["alice", "bob", "Lou"]),
+    }
     _, item_texts = names(body)
     median: dict[str, list[str]] = {
         tier["tier_id"]: [item_texts[item_id] for item_id in tier["item_ids"]]
@@ -166,6 +191,10 @@ def test_without_absent_votes_the_caught_up_votes_and_the_absents_are_ignored(
         "Tile 1": ([1, 0, 0, 0, 0, 0], 0, "S"),
         "Tile 2": ([0, 0, 0, 0, 0, 0], 0, None),
     }
+    # Pas de noms sans les votes absents : on saurait qui a rattrapé un item (results.md §2.6)
+    for entry in body["distribution"]:
+        assert entry["player_indexes_per_tier"] is None
+        assert entry["absent_player_indexes"] is None
     # Les classements des joueurs ne changent pas
     assert boards(body)["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
 

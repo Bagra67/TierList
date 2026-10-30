@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { type ChangeEvent, useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -5,6 +6,7 @@ import { type Room, useNextRound, useUpdateRoomSettings } from '../api/rooms';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { Button } from './ui/button';
+import { panelVariants } from './ui/panel';
 
 interface GameAdminControlsProps {
   room: Room;
@@ -17,6 +19,7 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
   const nextMutation = useNextRound(room.code);
   const settingsMutation = useUpdateRoomSettings(room.code);
   const arrivalsId: string = useId();
+  const headingId: string = useId();
 
   async function handleNext() {
     try {
@@ -34,8 +37,13 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
     }
   }
 
+  // Encadré bordé d'ambre (--warning, 3:1 avec le fond en clair) : les commandes de l'hôte se
+  // repèrent d'un coup d'œil
   return (
-    <section className="flex w-full flex-col gap-2 rounded-lg border p-3">
+    <section aria-labelledby={headingId} className={cn(panelVariants(), 'border-2 border-warning')}>
+      <h2 id={headingId} className="font-semibold">
+        {t('rooms.game.hostControls')}
+      </h2>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={handleNext} disabled={nextMutation.isPending}>
           {nextMutation.isPending ? t('rooms.game.nexting') : t('rooms.game.next')}

@@ -22,6 +22,8 @@ import { Button } from '../components/ui/button';
 import { canonicalRoomCode, GUEST_LINK_FRAGMENT, roomQueryKey } from '../constants/rooms';
 import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { PageContainer } from '../components/PageContainer';
 
 // Jeton du lien perso d'un invité (#guest=<jeton>), absent d'un lien ordinaire
 function guestTokenFrom(hash: string): string | null {
@@ -111,7 +113,7 @@ export function RoomPage() {
 
   if (removal !== null) {
     return (
-      <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
+      <PageContainer width="app" className="flex flex-col items-start gap-6">
         <p role="status" className="font-medium">
           {t(REMOVAL_MESSAGES[removal.reason])}
         </p>
@@ -125,26 +127,29 @@ export function RoomPage() {
             <Link to={ROUTES.HOME}>{t('rooms.lobby.backHome')}</Link>
           </Button>
         )}
-      </main>
+      </PageContainer>
     );
   }
 
+  // Même largeur avant et pendant la partie : le plateau en trois colonnes (GameScreen) tient
+  // dans la largeur app, et rien ne saute au démarrage
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
-      {isPending && error === null && (
-        <p className="text-muted-foreground">{t('common.loading')}</p>
-      )}
+    <PageContainer width="app" className="flex flex-col items-start gap-6">
+      {isPending && error === null && <LoadingSkeleton shape="board" />}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
       {viewer === 'guest' && room !== undefined && (
         <GuestLinkSection code={code} guestRoom={guestRoom} onRenewed={setGuestRoom} />
       )}
       {room !== undefined && roomEvents.unavailable && (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p
+          role="status"
+          className="w-full rounded-lg border border-warning bg-warning/15 px-3 py-2 text-sm"
+        >
           {t('rooms.lobby.liveUnavailable')}
         </p>
       )}
       {room !== undefined && <RoomLobby room={room} />}
-    </main>
+    </PageContainer>
   );
 }

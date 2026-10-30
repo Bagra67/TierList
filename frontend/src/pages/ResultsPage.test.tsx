@@ -51,6 +51,13 @@ function rowItems(label: string): string[] {
     .map((item: HTMLElement) => item.textContent ?? '');
 }
 
+// Les lignes du panneau des votes d'un item : nom du tier (ou « Absents »), nombre de votes, noms
+function voteLines(item: string): string[] {
+  return within(screen.getByRole('region', { name: `Votes : ${item}` }))
+    .getAllByRole('listitem')
+    .map((line: HTMLElement) => line.textContent ?? '');
+}
+
 // Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -84,13 +91,13 @@ describe('ResultsPage', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Global' }));
 
     const table: HTMLElement = screen.getByRole('table', {
-      name: 'Nombre de joueurs qui ont mis chaque item dans chaque tier',
+      name: 'Nombre de joueurs qui ont mis chaque élément dans chaque tier',
     });
     expect(
       within(table)
         .getAllByRole('columnheader')
         .map((cell: HTMLElement) => cell.textContent),
-    ).toEqual(['Item', 'S', 'A', 'Absents']);
+    ).toEqual(['Élément', 'S', 'A', 'Absents']);
     const chorizo: HTMLElement = within(table).getByRole('row', { name: /Chorizo/ });
     expect(
       within(chorizo)
@@ -111,6 +118,98 @@ describe('ResultsPage', () => {
       expect(screen.queryByRole('columnheader', { name: 'Absents' })).not.toBeInTheDocument(),
     );
     expect(includeAbsentVotes).toEqual(['true', 'false']);
+  });
+
+  it('reveals the tiers one by one, from the bottom, when the results open', async () => {
+    stubResults();
+    renderResultsPage();
+
+    const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
+    // Le tier du haut apparaît en dernier ; l'animation est sous motion-safe (mouvement réduit)
+    expect(tierS).toHaveClass('motion-safe:animate-reveal');
+    expect(tierS).toHaveStyle({ animationDelay: '520ms' });
+    expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
+    expect(screen.getByRole('group', { name: 'Non classés' })).toHaveStyle({
+      animationDelay: '0ms',
+    });
+  });
+
+  it('does not reveal a view again when coming back to it, unless asked', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('group', { name: 'S' });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    // Le tableau global ne se révèle pas
+    expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Médian' }));
+    expect(screen.getByRole('group', { name: 'S' })).not.toHaveClass('motion-safe:animate-reveal');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
+    expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
+  });
+
+  it('keeps the chosen player when the reveal is replayed', async () => {
+    stubResults();
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
+
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue('1');
+    expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
+  });
+
+  it('does not reveal again when the absent votes box is toggled', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('group', { name: 'S' });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+    // Pendant la lecture de l'autre variante, rien à rejouer
+    expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
+
+    expect(await screen.findByRole('group', { name: 'S' })).not.toHaveClass(
+      'motion-safe:animate-reveal',
+    );
+  });
+
+  it('shows the votes of the first item by default, with the players', async () => {
+    stubResults();
+    renderResultsPage();
+
+    await screen.findByRole('region', { name: 'Votes : Paprika' });
+    expect(voteLines('Paprika')).toEqual(['S1 voteAlice', 'A1 voteLou', 'Absents0 vote']);
+  });
+
+  it('shows the votes of the item clicked in a view', async () => {
+    stubResults();
+    renderResultsPage();
+    const chorizo: HTMLElement = await screen.findByRole('button', {
+      name: 'Voir les votes : Chorizo',
+    });
+    expect(chorizo).not.toHaveAttribute('aria-current');
+
+    fireEvent.click(chorizo);
+
+    expect(chorizo).toHaveAttribute('aria-current', 'true');
+    expect(voteLines('Chorizo')).toEqual(['S0 vote', 'A1 voteAlice', 'Absents1 voteLou']);
+    // Le choix reste d'une vue à l'autre
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    expect(screen.getByRole('region', { name: 'Votes : Chorizo' })).toBeInTheDocument();
+  });
+
+  it('leaves the absent players out of the votes without the absent votes', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('region', { name: 'Votes : Paprika' });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+
+    // Le vote rattrapé de Lou ne compte plus, et aucun nom n'est affiché : il dirait qui a
+    // rattrapé l'item
+    await vi.waitFor(() => expect(voteLines('Paprika')).toEqual(['S1 vote', 'A0 vote']));
   });
 
   it('shows the ranking of each player and the items they never placed', async () => {
@@ -137,8 +236,8 @@ describe('ResultsPage', () => {
     expect(overall).toHaveFocus();
     const panel: HTMLElement = screen.getByRole('tabpanel');
     expect(panel).toHaveAttribute('aria-labelledby', overall.id);
-    // Focalisable : la vue n'a pas toujours d'élément interactif
-    expect(panel).toHaveAttribute('tabindex', '0');
+    // Ses items sont des boutons : le panneau lui-même n'est pas un arrêt de tabulation
+    expect(panel).not.toHaveAttribute('tabindex');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
   });
@@ -189,7 +288,7 @@ describe('ResultsPage', () => {
       screen
         .getAllByRole('rowheader')
         .map((header: HTMLElement) => within(header).getByRole('img').getAttribute('alt')),
-    ).toEqual(["Image de l'item 1", "Image de l'item 2", "Image de l'item 3"]);
+    ).toEqual(["Image de l'élément 1", "Image de l'élément 2", "Image de l'élément 3"]);
   });
 
   it('keeps the box and says so when reading the other variant fails', async () => {
@@ -268,12 +367,17 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     await screen.findByRole('heading', { name: 'Résultats : Épices' });
-    // Seuls les onglets et le bouton de copie sont des boutons : ni « Rejouer », ni commande de salle
+    // En dehors des onglets, seuls le bouton de copie, celui qui rejoue la révélation et les
+    // éléments (qui ouvrent leurs votes) sont des boutons : ni « Rejouer », ni commande de salle
     expect(
       screen
         .getAllByRole('button')
-        .map((button: HTMLElement) => button.textContent)
-        .filter((name) => name !== 'Copier le lien'),
+        .filter(
+          (button: HTMLElement) =>
+            button.textContent !== 'Copier le lien' &&
+            button.textContent !== 'Rejouer la révélation' &&
+            !(button.getAttribute('aria-label') ?? '').startsWith('Voir les votes : '),
+        ),
     ).toEqual([]);
   });
 

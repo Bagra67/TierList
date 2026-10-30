@@ -4,6 +4,8 @@
 
 La conception de la première version jouable de TierList : **une room privée en direct entre amis**. Elle détaille, pour ce seul jalon, ce que liste [roadmap.fr.md](../roadmap.fr.md#jalon-1--mvp), avec le vocabulaire de [product.fr.md](../product.fr.md#glossaire) et les règles de [game-rules.fr.md](../game-rules.fr.md).
 
+**Statut : terminé.** Toutes les user stories sont livrées ([jalon GitHub](https://github.com/Bagra67/TierList/milestone/1?closed=1)).
+
 C'est de la **conception métier**, pas de la documentation technique : ni tables, ni endpoints, ni protocole temps réel. Ceux-ci s'écrivent dans `docs/technical/` une fois implémentés.
 
 ## Pages
@@ -27,7 +29,7 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 - **Cooldown final** : replacer toutes ses tuiles ; les deux placements sont gardés.
 - **Joueurs absents** : votes absents, reconnexion à sa place, rattrapage des items manqués pendant le cooldown.
 - **Room qui persiste** : relancer une partie dans la même room ; fermée par l'admin de la room ou après inactivité. Une room fermée **n'est pas gardée** : seules ses parties le sont (historique, liens publics).
-- **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents.
+- **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents, et les **votes d'un item** (qui l'a mis dans quel tier). La tier list apparaît tier par tier à l'ouverture des résultats.
 - **Liens** : lien public des résultats ; lien perso de l'invité (30 jours max, mort une fois la room fermée).
 - **Retour des invités** : reconnus par leur navigateur (un cookie) ; le lien perso sert de secours sur un autre appareil. Jamais par l'adresse IP.
 - **Historique** des parties pour les comptes.
@@ -44,7 +46,7 @@ Points pas encore décidés, pris dans leur version la plus simple pour ce jalon
 - **Les résultats sont visibles une fois la partie clôturée** (le réglage « avant ou après la clôture » vient plus tard).
 - **Personne n'a de photo de profil** dans ce jalon : les participants sont affichés par leur nom affiché (compte) ou leur pseudo (invité).
 - **Les durées** (timer par item, cooldown, inactivité avant fermeture, validité du lien invité) sont des réglages de la room ou de l'application, dont les valeurs par défaut se choisissent à l'implémentation.
-- **Règles ajoutées par les user stories**, à confirmer :
+- **Règles ajoutées par les user stories**, à confirmer (le jalon livré les applique telles qu'écrites) :
   - un template garde **au moins un tier**, et une room a besoin d'un template avec **au moins une tuile** ;
   - le **pseudo d'un invité est unique** dans la room ;
   - les réglages de la room **ne changent pas pendant une partie**, sauf les arrivées ;

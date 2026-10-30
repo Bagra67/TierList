@@ -2,14 +2,17 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { ItemDistribution } from '../api/results';
 import type { GameTier } from '../api/rooms';
+import { tierColorStyle } from './boardStyles';
 import { GameItemView } from './GameItemView';
-import type { ResultItem, ResultItems } from './resultsViews';
+import { ResultItemButton } from './ResultItemButton';
+import type { ItemSelection, ResultItem, ResultItems } from './resultsViews';
 
 interface ResultsDistributionTableProps {
   tiers: GameTier[];
   items: ResultItems;
   distribution: ItemDistribution[];
   includeAbsentVotes: boolean;
+  selection: ItemSelection;
 }
 
 // Vue globale (US-5.2) : pour chaque item, combien de joueurs l'ont mis dans chaque tier, et
@@ -19,11 +22,12 @@ export function ResultsDistributionTable({
   items,
   distribution,
   includeAbsentVotes,
+  selection,
 }: ResultsDistributionTableProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   return (
-    <div className="w-full overflow-x-auto rounded-xl border">
+    <div className="w-full overflow-x-auto rounded-panel border bg-card">
       <table className="w-full text-sm">
         <caption className="sr-only">{t('results.overall.caption')}</caption>
         <thead>
@@ -32,8 +36,13 @@ export function ResultsDistributionTable({
               {t('results.overall.item')}
             </th>
             {tiers.map((tier: GameTier) => (
-              <th key={tier.id} scope="col" className="px-3 py-2 text-center font-semibold">
-                {tier.name}
+              <th key={tier.id} scope="col" className="px-3 py-2 text-center">
+                <span
+                  style={tierColorStyle(tier.color)}
+                  className="inline-flex min-w-8 justify-center rounded-md px-1.5 py-0.5 font-heading font-black"
+                >
+                  {tier.name}
+                </span>
               </th>
             ))}
             {includeAbsentVotes && (
@@ -50,11 +59,19 @@ export function ResultsDistributionTable({
             return (
               <tr key={entry.item_id} className="border-b last:border-0">
                 <th scope="row" className="px-3 py-2 text-left font-normal">
-                  <GameItemView
-                    item={resultItem.item}
-                    imageLabel={resultItem.imageLabel}
-                    size="small"
-                  />
+                  {/* Le bouton garde le nom de l'item : il nomme aussi la ligne du tableau */}
+                  <ResultItemButton
+                    resultItem={resultItem}
+                    selection={selection}
+                    labelled={false}
+                    className="rounded-md p-1 hover:bg-muted"
+                  >
+                    <GameItemView
+                      item={resultItem.item}
+                      imageLabel={resultItem.imageLabel}
+                      size="small"
+                    />
+                  </ResultItemButton>
                 </th>
                 {entry.votes_per_tier.map((votes: number, index: number) => (
                   <td

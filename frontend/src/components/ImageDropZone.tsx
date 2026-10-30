@@ -1,3 +1,4 @@
+import { ImageIcon, LoaderCircle, X } from 'lucide-react';
 import {
   type ChangeEvent,
   type DragEvent,
@@ -10,6 +11,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
+import { isAcceptedImageFile } from './imageFiles';
 
 interface ImageDropZoneProps {
   // Nom accessible de la vignette : ce que fait un clic (ajouter ou remplacer l'image)
@@ -24,11 +26,35 @@ interface ImageDropZoneProps {
   // Bouton pour retirer l'image, affiché seulement s'il y a une image et un libellé
   removeLabel?: string;
   onSelect: (file: File) => void;
+  // Plusieurs fichiers d'un coup (sélecteur ou dépôt) : sans cette prop, seul le premier compte.
+  // Avec elle, deux fichiers ou plus lui sont passés tels quels (le parent les trie), un seul
+  // suit le chemin habituel (onSelect ou onRefuse)
+  onSelectMany?: (files: File[]) => void;
   onRemove?: () => void;
   // Fichier d'un type connu autre que JPEG, PNG ou WebP : refusé sans être envoyé (un type
   // inconnu, vide, part au backend)
   onRefuse: () => void;
 }
+
+// Classes de chaque taille de vignette. Le bouton de retrait : sur la petite vignette (large), il
+// déborde de son coin ; sur la carte d'une tuile (fill), il est posé dans le coin de l'image, plus
+// grand pour être facile à viser
+const SIZE_CLASSES = {
+  large: {
+    zone: 'size-24',
+    icon: 'size-7',
+    hint: 'text-[0.7rem]',
+    remove: '-top-1.5 -right-1.5 size-5',
+    removeIcon: 'size-3',
+  },
+  fill: {
+    zone: 'aspect-square w-full',
+    icon: 'size-10',
+    hint: 'text-xs',
+    remove: 'top-1.5 right-1.5 size-7',
+    removeIcon: 'size-4',
+  },
+} as const;
 
 function draggedFiles(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
@@ -46,6 +72,7 @@ export function ImageDropZone({
   size,
   removeLabel,
   onSelect,
+  onSelectMany,
   onRemove,
   onRefuse,
 }: ImageDropZoneProps) {
@@ -56,6 +83,7 @@ export function ImageDropZone({
   const dragDepth: RefObject<number> = useRef<number>(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const sizeClasses: (typeof SIZE_CLASSES)[ImageDropZoneProps['size']] = SIZE_CLASSES[size];
   const shownUrl: string | null = isUploading && previewUrl !== null ? previewUrl : imageUrl;
 
   // L'aperçu local occupe de la mémoire tant que son URL existe : libérée quand il change
@@ -67,9 +95,7 @@ export function ImageDropZone({
 
   function handleFile(file: File | undefined) {
     if (file === undefined || disabled) return;
-    // Un type vide veut dire que le système ne le connaît pas (ex. .webp sur un Windows ancien) :
-    // le fichier part au backend, qui reconnaît le format d'après son contenu
-    if (file.type !== '' && !ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    if (!isAcceptedImageFile(file)) {
       onRefuse();
       return;
     }
@@ -77,8 +103,17 @@ export function ImageDropZone({
     onSelect(file);
   }
 
+  function handleFiles(fileList: FileList | null) {
+    const files: File[] = fileList === null ? [] : Array.from(fileList);
+    if (onSelectMany !== undefined && files.length > 1) {
+      if (!disabled) onSelectMany(files);
+      return;
+    }
+    handleFile(files[0]);
+  }
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    handleFile(event.target.files?.[0]);
+    handleFiles(event.target.files);
     // Permet de choisir à nouveau le même fichier (ex. après une erreur)
     event.target.value = '';
   }
@@ -107,7 +142,7 @@ export function ImageDropZone({
     event.preventDefault();
     dragDepth.current = 0;
     setIsDraggingOver(false);
-    handleFile(event.dataTransfer.files[0]);
+    handleFiles(event.dataTransfer.files);
   }
 
   const showRemove: boolean =
@@ -115,7 +150,7 @@ export function ImageDropZone({
 
   return (
     <div
-      className={cn('relative shrink-0', size === 'large' ? 'size-24' : 'aspect-square w-full')}
+      className={cn('relative shrink-0', sizeClasses.zone)}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -130,7 +165,7 @@ export function ImageDropZone({
         className={cn(
           'flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 text-muted-foreground transition-colors outline-none',
           'hover:border-primary/60 hover:bg-muted/60 hover:text-foreground',
-          'focus-visible:ring-3 focus-visible:ring-ring/50',
+          'focus-visible:ring-3 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           shownUrl === null ? 'border-dashed border-border bg-muted/30' : 'border-border bg-card',
           isDraggingOver && 'border-solid border-primary bg-primary/10 ring-3 ring-primary/30',
@@ -141,15 +176,17 @@ export function ImageDropZone({
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
-            <ImageIcon className={size === 'large' ? 'size-7' : 'size-10'} />
-            <span className={cn('leading-tight', size === 'large' ? 'text-[0.7rem]' : 'text-xs')}>
-              {t('templates.editor.image.hint')}
+            <ImageIcon className={sizeClasses.icon} />
+            <span className={cn('leading-tight', sizeClasses.hint)}>
+              {onSelectMany === undefined
+                ? t('templates.editor.image.hint')
+                : t('templates.editor.image.hintMany')}
             </span>
           </span>
         )}
         {isDraggingOver && (
           <span
-            className="absolute inset-0 flex items-center justify-center rounded-lg bg-primary/20 text-xs font-medium text-primary"
+            className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/90 text-xs font-semibold text-foreground"
             aria-hidden="true"
           >
             {t('templates.editor.image.drop')}
@@ -157,10 +194,7 @@ export function ImageDropZone({
         )}
         {isUploading && (
           <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/60">
-            <span
-              className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent"
-              aria-hidden="true"
-            />
+            <LoaderCircle className="size-5 animate-spin text-primary" />
             <span role="status" className="sr-only">
               {t('templates.editor.image.uploading')}
             </span>
@@ -174,15 +208,11 @@ export function ImageDropZone({
           onClick={onRemove}
           disabled={disabled}
           className={cn(
-            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:ring-3 focus-visible:ring-ring/50',
-            // Petite vignette (large) : le bouton déborde de son coin ; carte d'une tuile (fill) :
-            // il est posé dans le coin de l'image, plus grand pour être facile à viser
-            size === 'large'
-              ? '-top-1.5 -right-1.5 size-5 text-[0.65rem]'
-              : 'top-1.5 right-1.5 size-7 text-xs',
+            'absolute flex cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-background focus-visible:ring-3 focus-visible:ring-ring',
+            sizeClasses.remove,
           )}
         >
-          <span aria-hidden="true">✕</span>
+          <X className={sizeClasses.removeIcon} />
         </button>
       )}
       {/* Le vrai champ fichier est caché : la vignette ci-dessus le remplace, au clavier aussi */}
@@ -190,31 +220,12 @@ export function ImageDropZone({
         ref={inputRef}
         type="file"
         accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        multiple={onSelectMany !== undefined}
         tabIndex={-1}
         aria-hidden="true"
         className="sr-only"
         onChange={handleChange}
       />
     </div>
-  );
-}
-
-// Icône « image » (cadre, soleil, montagne), dessinée ici : le projet n'a pas de bibliothèque
-// d'icônes
-function ImageIcon({ className }: { className: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-4.5-4.5L5 21" />
-    </svg>
   );
 }

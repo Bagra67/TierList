@@ -18,14 +18,14 @@ class _LinkEmailTexts:
 
 _VERIFICATION_TEXTS: dict[Language, _LinkEmailTexts] = {
     "fr": _LinkEmailTexts(
-        subject="Confirmez votre adresse email",
+        subject="Confirmez votre adresse e-mail",
         greeting="Bonjour {name},",
         body=(
             "Pour confirmer l'adresse de votre compte TierList, ouvrez le lien ci-dessous. "
             "Il est valable {hours} heures."
         ),
         button="Confirmer mon adresse",
-        footer="Si vous n'avez pas créé de compte TierList, ignorez cet email.",
+        footer="Si vous n'avez pas créé de compte TierList, ignorez cet e-mail.",
     ),
     "en": _LinkEmailTexts(
         subject="Confirm your email address",
@@ -50,7 +50,7 @@ _PASSWORD_RESET_TEXTS: dict[Language, _LinkEmailTexts] = {
         ),
         button="Choisir un nouveau mot de passe",
         footer=(
-            "Si vous n'avez rien demandé, ignorez cet email : votre mot de passe actuel reste "
+            "Si vous n'avez rien demandé, ignorez cet e-mail : votre mot de passe actuel reste "
             "valable."
         ),
     ),

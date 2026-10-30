@@ -1,4 +1,5 @@
 import { verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { ArrowDown, ArrowUp, GripVertical, Trash2 } from 'lucide-react';
 import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -78,7 +79,7 @@ export function TierEditor({ template }: TierEditorProps) {
                   aria-label={t('templates.editor.dragHandle', { name: tier.name })}
                   className="cursor-grab touch-none rounded px-1 text-muted-foreground"
                 >
-                  <span aria-hidden="true">⋮⋮</span>
+                  <GripVertical className="size-4" />
                 </button>
                 <ColorField
                   key={tier.color}
@@ -97,7 +98,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     disabled={isChangingOrder || tier.position === 0}
                     onClick={() => moveTier(tier, tier.position - 1)}
                   >
-                    <span aria-hidden="true">↑</span>
+                    <ArrowUp />
                   </Button>
                   <Button
                     type="button"
@@ -107,7 +108,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     disabled={isChangingOrder || tier.position === tiers.length - 1}
                     onClick={() => moveTier(tier, tier.position + 1)}
                   >
-                    <span aria-hidden="true">↓</span>
+                    <ArrowDown />
                   </Button>
                   <Button
                     type="button"
@@ -118,7 +119,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     disabled={isChangingOrder || tiers.length === 1}
                     onClick={() => deleteMutation.mutate(tier.id)}
                   >
-                    <span aria-hidden="true">✕</span>
+                    <Trash2 />
                   </Button>
                 </div>
               </div>
