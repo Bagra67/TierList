@@ -4,6 +4,8 @@ English | [Français](README.fr.md)
 
 The design of the first playable version of TierList: **a live private room with friends**. It details, for this milestone only, what [roadmap.md](../roadmap.md#milestone-1--mvp) lists, using the vocabulary of [product.md](../product.md#glossary) and the rules of [game-rules.md](../game-rules.md).
 
+**Status: done.** Every user story is delivered ([GitHub milestone](https://github.com/Bagra67/TierList/milestone/1?closed=1)).
+
 This is **business design**, not technical documentation: no tables, endpoints or real-time protocol. Those are written in `docs/technical/` once implemented.
 
 ## Pages
@@ -44,7 +46,7 @@ Points not decided yet, taken as the simplest option for this milestone. Each on
 - **Results are visible once the game is closed** (the "before or after closing" setting comes later).
 - **Nobody has a profile picture** in this milestone: participants are shown by their display name (account) or nickname (guest).
 - **Durations** (timer per item, cooldown, inactivity before closing, guest link validity) are room settings or application settings whose default values are chosen at implementation.
-- **Rules added by the user stories**, to confirm:
+- **Rules added by the user stories**, to confirm (the delivered milestone applies them as written):
   - a template keeps **at least one tier**, and a room needs a template with **at least one tile**;
   - a guest **nickname is unique** within the room;
   - room settings **cannot change during a game**, except late arrivals;
