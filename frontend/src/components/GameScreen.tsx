@@ -2,8 +2,7 @@ import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { CurrentGame, Participant, Room } from '../api/rooms';
-import { CooldownBoard } from './CooldownBoard';
-import { Countdown } from './Countdown';
+import { CooldownStage } from './CooldownStage';
 import { CurrentItemCard } from './CurrentItemCard';
 import { EndCooldownDialog } from './EndCooldownDialog';
 import { GameAdminControls } from './GameAdminControls';
@@ -36,31 +35,12 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
       <EndCooldownDialog code={room.code} onEnded={onGameEnded} />
     );
     return (
-      // Le plateau télé du cooldown final (US-4.1) : sombre dans les deux thèmes, grâce à la
-      // classe dark qui applique les jetons du thème sombre à tout ce qu'il contient. La bordure
-      // jaune « projecteur » le détache aussi d'une page déjà sombre
-      <div className="dark flex w-full flex-col gap-4 rounded-panel border-2 border-warning/60 bg-background p-4 text-foreground">
-        <section className="flex w-full flex-col gap-1">
-          <div className="flex flex-wrap items-center justify-between gap-x-4">
-            <h2 className="text-2xl font-black font-stretch-115%">
-              {t('rooms.game.cooldown.title')}
-            </h2>
-            {game.cooldown_ends_at !== null && (
-              <Countdown
-                endsAt={game.cooldown_ends_at}
-                label={t('rooms.game.cooldown.timeLeft')}
-                className="text-4xl font-black text-warning"
-              />
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {readerPlaces ? t('rooms.game.cooldown.hint') : t('rooms.game.cooldown.waiting')}
-          </p>
-        </section>
-        {/* Le lecteur qui place a le plateau, avec « Terminer maintenant » dans son panneau ;
-            l'hôte qui ne joue pas n'a que ce bouton */}
-        {readerPlaces ? <CooldownBoard room={room} game={game} aside={endCooldown} /> : endCooldown}
-      </div>
+      <CooldownStage
+        room={room}
+        game={game}
+        readerPlaces={readerPlaces}
+        endCooldown={endCooldown}
+      />
     );
   }
 

@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
@@ -40,6 +40,7 @@ function placedList(): HTMLElement {
 
 describe('GameScreen', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -284,6 +285,18 @@ describe('GameScreen', () => {
     expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
   });
 
+  it('does not shake during a round, even in its last seconds', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json(inGame({ ends_at: new Date(Date.now() + 3_000).toISOString() })),
+    });
+    const { container } = renderRoomPage();
+
+    // La pastille de la manche passe à l'accent, mais rien ne tremble
+    expect(await screen.findByRole('timer')).toHaveClass('bg-primary');
+    expect(container.querySelector('[class~="motion-safe:animate-shake"]')).toBeNull();
+  });
+
   describe('during the final cooldown', () => {
     const barbecue = {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
@@ -292,18 +305,63 @@ describe('GameScreen', () => {
     };
     const paprikaPut = `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`;
 
-    // Alice a placé Paprika puis Chorizo en S, et a manqué Barbecue
-    function inCooldown(roomChanges: Partial<Room> = {}): Room {
+    // Alice a placé Paprika puis Chorizo en S, et a manqué Barbecue ; fin dans endsInMs
+    function inCooldown(roomChanges: Partial<Room> = {}, endsInMs: number = 60_000): Room {
       return inGame(
         {
           status: 'cooldown',
-          cooldown_ends_at: new Date(Date.now() + 60_000).toISOString(),
+          cooldown_ends_at: new Date(Date.now() + endsInMs).toISOString(),
           own_placements: [paprikaInS, chorizoInS],
           missed_items: [barbecue],
         },
         roomChanges,
       );
     }
+
+    // Le bloc du cooldown : le cadre sombre qui contient le chrono
+    async function findCooldownStage(): Promise<{ stage: HTMLElement; timer: HTMLElement }> {
+      const timer: HTMLElement = await screen.findByRole('timer', { name: 'Fin des retouches' });
+      const stage: HTMLElement | null = timer.closest('.dark');
+      if (stage === null) throw new Error('No cooldown stage');
+      return { stage, timer };
+    }
+
+    it('stays still with a yellow timer before the last seconds', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+
+      const { stage, timer } = await findCooldownStage();
+      expect(stage).not.toHaveClass('motion-safe:animate-shake');
+      expect(timer).toHaveClass('text-warning');
+    });
+
+    it('shakes harder each second in the last seconds, with a pink timer', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      // 4,5 s restantes : la cinquième seconde avant la fin
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, 4_500)) });
+      renderRoomPage();
+
+      const { stage, timer } = await findCooldownStage();
+      expect(stage).toHaveClass('motion-safe:animate-shake');
+      // Le sélecteur du test des manches trouve bien un bloc qui tremble
+      expect(document.querySelector('[class~="motion-safe:animate-shake"]')).toBe(stage);
+      expect(stage.style.getPropertyValue('--shake-px')).toBe('0.5px');
+      expect(timer).toHaveClass('text-primary');
+
+      act(() => {
+        vi.advanceTimersByTime(3_000);
+      });
+
+      await waitFor(() => expect(stage.style.getPropertyValue('--shake-px')).toBe('2px'));
+    });
+
+    it('stops shaking once the cooldown time is over', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, -1_000)) });
+      renderRoomPage();
+
+      const { stage } = await findCooldownStage();
+      expect(stage).not.toHaveClass('motion-safe:animate-shake');
+    });
 
     it('shows the banner, the final board and the missed items', async () => {
       stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
