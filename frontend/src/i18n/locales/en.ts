@@ -40,10 +40,11 @@ export const en: Translation = {
   },
   footer: {
     privacy: 'Privacy policy',
+    terms: 'Terms of use',
+    legalNotice: 'Legal notice',
   },
   privacy: {
     title: 'Privacy policy',
-    updatedAt: 'Last updated: {{date, datetime(dateStyle: long)}}',
     intro:
       'This page explains which personal data TierList collects, why, how long it is kept, who processes it and how to exercise your rights.',
     controller: {
@@ -61,6 +62,8 @@ export const en: Translation = {
       content:
         'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position).',
       games: 'Games: the rooms you join, your placements and the results of the games.',
+      reports:
+        'Reports: the email address of the person who reports content, and what their message contains.',
       technical:
         'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
     },
@@ -70,6 +73,7 @@ export const en: Translation = {
         'Providing the service you ask for by using TierList (performance of a contract): creating your account, signing you in, running the games, sending the email address verification and password reset emails.',
       security:
         'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
+      reports: 'Handling the reports of illegal content (legal obligation).',
       noAds: 'Your data is neither sold nor used for advertising or profiling.',
     },
     retention: {
@@ -82,6 +86,8 @@ export const en: Translation = {
       deleted:
         'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
       backups: 'Database backups: 14 days.',
+      reports:
+        'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
     },
     visibility: {
       title: 'Who sees your data',
@@ -129,6 +135,105 @@ export const en: Translation = {
       body: 'This policy may change with the service. The date of the last update is shown at the top of the page, and a significant change will be announced in the application.',
     },
   },
+  legalPages: {
+    updatedAt: 'Last updated: {{date, datetime(dateStyle: long)}}',
+    report: {
+      title: 'Report content',
+      intro:
+        "If content published on TierList seems illegal to you (hateful, sexual, infringing someone's rights or against the law), report it by email:",
+      include: 'So that the report can be handled, give:',
+      page: 'the link of the page where the content is (template, room or results);',
+      content: 'the content concerned: a tile (its text or image), a template or a nickname;',
+      reason: 'the reason for the report;',
+      reply: 'an email address to answer you.',
+      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. You receive an answer with the decision taken.',
+    },
+  },
+  terms: {
+    title: 'Terms of use',
+    intro:
+      'These terms apply to anyone who uses TierList, with an account or as a guest. Using the service means accepting them.',
+    service: {
+      title: 'The service',
+      body: 'TierList lets you create tier list templates and rank them together, live, in a room: each player places the items in the tiers, then the results of the game are computed. The service is free.',
+    },
+    account: {
+      title: 'Your account',
+      one: 'One account per person, with an email address that belongs to you.',
+      password: 'Keep your password secret: what is done from your account is your responsibility.',
+      delete: 'You can delete your account at any time from the settings panel.',
+    },
+    guests: {
+      title: 'Playing as a guest',
+      body: 'Without an account, you join a room with a nickname. A personal link, valid for 30 days at most, lets you get your seat back from another device: do not share it.',
+    },
+    content: {
+      title: 'Your content',
+      rights:
+        'You keep your rights on the templates, texts and images you create or upload. You allow TierList to host them and show them to the participants of your rooms and to the people who have the results link, for as long as the service needs.',
+      forbidden: 'Only publish content you have the right to share. Forbidden:',
+      illegal: 'illegal content;',
+      hateful: 'hateful, violent or harassing content;',
+      sexual: 'sexual content;',
+      infringing: "content that infringes someone's rights (copyright, image rights, privacy).",
+      removal: 'Forbidden content may be removed without notice.',
+    },
+    visibility: {
+      title: 'What others see',
+      room: 'The participants of a room see the template played, the nicknames and the placements of the game.',
+      results:
+        'The results link of a finished game can be opened by anyone who has it, without an account: only share it with the people you choose.',
+    },
+    sanctions: {
+      title: 'Suspension and deletion',
+      body: 'An account that does not follow these terms may be suspended or deleted, after a report or a check.',
+    },
+    availability: {
+      title: 'Availability',
+      body: 'TierList is provided as is, without any availability guarantee. The service may be interrupted for maintenance, change or stop.',
+    },
+    liability: {
+      title: 'Liability',
+      body: 'Each user is responsible for the content they publish. Within the limits set by law, TierList cannot be held liable for an interruption of the service or a loss of data.',
+    },
+    law: {
+      title: 'Applicable law',
+      body: 'These terms are governed by French law. In case of dispute, an amicable solution is sought first; failing that, the competent courts are those set by law.',
+    },
+    changes: {
+      title: 'Changes',
+      body: 'These terms may change with the service. The date of the last update is shown at the top of the page, and a significant change will be announced in the application.',
+    },
+    contact: {
+      title: 'Contact',
+      body: 'For any question about these terms:',
+    },
+  },
+  legalNotice: {
+    title: 'Legal notice',
+    intro:
+      'Information about the publisher and the host of TierList (French law no. 2004-575 of 21 June 2004 on confidence in the digital economy).',
+    publisher: {
+      title: 'Publisher and publication director',
+      body: 'TierList is published on a non-professional basis by {{name}}, who is also its publication director. Contact:',
+      anonymity:
+        'As article 6-III-2 of that law allows for a non-professional publisher, their address is not published: their details were given to the host.',
+    },
+    host: {
+      title: 'Host',
+      body: 'The application and the database are hosted by:',
+    },
+    providers: {
+      title: 'Other providers',
+      cloudflare:
+        'Cloudflare, Inc.: domain name, HTTPS encryption and traffic routing (United States).',
+      scaleway: 'Scaleway SAS: image storage and email sending (France).',
+    },
+    data: {
+      title: 'Personal data',
+      body: 'How your personal data is processed is described in the <privacy>privacy policy</privacy>.',
+    },
+  },
   history: {
     title: 'History',
     empty: 'No finished game yet. Your games will show here once closed.',
@@ -163,6 +268,12 @@ export const en: Translation = {
     continueWithGoogle: 'Continue with Google',
     signedInAs: 'Signed in as {{name}}',
     logout: 'Sign out',
+    acceptTerms: {
+      register:
+        'By creating an account, you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.',
+      google:
+        'By continuing with Google, you accept the <terms>terms of use</terms> and the <privacy>privacy policy</privacy>.',
+    },
     login: {
       title: 'Sign in',
       submit: 'Sign in',

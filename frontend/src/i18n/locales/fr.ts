@@ -40,10 +40,11 @@ export const fr = {
   },
   footer: {
     privacy: 'Politique de confidentialité',
+    terms: "Conditions d'utilisation",
+    legalNotice: 'Mentions légales',
   },
   privacy: {
     title: 'Politique de confidentialité',
-    updatedAt: 'Dernière mise à jour : {{date, datetime(dateStyle: long)}}',
     intro:
       'Cette page explique quelles données personnelles TierList collecte, pourquoi, combien de temps elles sont gardées, qui les traite et comment exercer vos droits.',
     controller: {
@@ -62,6 +63,8 @@ export const fr = {
         'Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS).',
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
+      reports:
+        "Signalements : l'adresse e-mail de la personne qui signale un contenu, et ce que contient son message.",
       technical:
         'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
     },
@@ -71,6 +74,7 @@ export const fr = {
         "Fournir le service que vous demandez en utilisant TierList (exécution du contrat) : créer votre compte, vous connecter, faire jouer les parties, envoyer les e-mails de vérification de l'adresse et de réinitialisation du mot de passe.",
       security:
         'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
+      reports: 'Traiter les signalements de contenus illicites (obligation légale).',
       noAds: 'Vos données ne sont ni vendues, ni utilisées pour de la publicité ou du profilage.',
     },
     retention: {
@@ -85,6 +89,8 @@ export const fr = {
       deleted:
         'Modèles supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
       backups: 'Sauvegardes de la base de données : 14 jours.',
+      reports:
+        'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
     },
     visibility: {
       title: 'Qui voit vos données',
@@ -135,6 +141,107 @@ export const fr = {
       body: "Cette politique peut évoluer avec le service. La date de dernière mise à jour figure en haut de la page, et un changement important sera signalé dans l'application.",
     },
   },
+  legalPages: {
+    updatedAt: 'Dernière mise à jour : {{date, datetime(dateStyle: long)}}',
+    report: {
+      title: 'Signaler un contenu',
+      intro:
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), signalez-le par e-mail :",
+      include: 'Pour que le signalement puisse être traité, indiquez :',
+      page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
+      content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',
+      reason: 'le motif du signalement ;',
+      reply: 'une adresse e-mail pour vous répondre.',
+      next: "Chaque signalement est examiné rapidement. Un contenu illicite est retiré, et le compte qui l'a publié peut être suspendu ou supprimé. Vous recevez une réponse avec la décision prise.",
+    },
+  },
+  terms: {
+    title: "Conditions d'utilisation",
+    intro:
+      "Ces conditions s'appliquent à toute personne qui utilise TierList, avec un compte ou en invité. Utiliser le service, c'est les accepter.",
+    service: {
+      title: 'Le service',
+      body: 'TierList permet de créer des modèles de tier list et de les classer ensemble, en direct, dans une salle : chaque joueur place les éléments dans les tiers, puis les résultats de la partie sont calculés. Le service est gratuit.',
+    },
+    account: {
+      title: 'Votre compte',
+      one: 'Un compte par personne, avec une adresse e-mail qui vous appartient.',
+      password:
+        'Gardez votre mot de passe secret : ce qui est fait depuis votre compte est sous votre responsabilité.',
+      delete: 'Vous pouvez supprimer votre compte à tout moment depuis le panneau de paramètres.',
+    },
+    guests: {
+      title: 'Jouer en invité',
+      body: 'Sans compte, vous rejoignez une salle avec un pseudo. Un lien personnel, valable 30 jours au plus, vous permet de retrouver votre place depuis un autre appareil : ne le partagez pas.',
+    },
+    content: {
+      title: 'Vos contenus',
+      rights:
+        'Vous gardez vos droits sur les modèles, les textes et les images que vous créez ou envoyez. Vous autorisez TierList à les héberger et à les afficher aux participants de vos salles et aux personnes qui ont le lien des résultats, le temps nécessaire au service.',
+      forbidden: 'Ne publiez que des contenus que vous avez le droit de partager. Sont interdits :',
+      illegal: 'les contenus illicites ;',
+      hateful: 'les contenus haineux, violents ou harcelants ;',
+      sexual: 'les contenus à caractère sexuel ;',
+      infringing:
+        "les contenus qui portent atteinte aux droits d'une personne (droit d'auteur, droit à l'image, vie privée).",
+      removal: 'Un contenu interdit peut être retiré sans préavis.',
+    },
+    visibility: {
+      title: 'Ce que voient les autres',
+      room: "Les participants d'une salle voient le modèle joué, les pseudos et les placements de la partie.",
+      results:
+        "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte : ne le partagez qu'avec les personnes de votre choix.",
+    },
+    sanctions: {
+      title: 'Suspension et suppression',
+      body: 'Un compte qui ne respecte pas ces conditions peut être suspendu ou supprimé, après un signalement ou une vérification.',
+    },
+    availability: {
+      title: 'Disponibilité',
+      body: "TierList est fourni tel quel, sans garantie de disponibilité. Le service peut être interrompu pour maintenance, évoluer ou s'arrêter.",
+    },
+    liability: {
+      title: 'Responsabilité',
+      body: "Chaque utilisateur est responsable des contenus qu'il publie. Dans les limites prévues par la loi, TierList ne peut être tenu responsable d'une interruption du service ou d'une perte de données.",
+    },
+    law: {
+      title: 'Droit applicable',
+      body: 'Ces conditions sont soumises au droit français. En cas de litige, une solution amiable est recherchée avant tout recours ; à défaut, les tribunaux compétents sont ceux prévus par la loi.',
+    },
+    changes: {
+      title: 'Modifications',
+      body: "Ces conditions peuvent évoluer avec le service. La date de dernière mise à jour figure en haut de la page, et un changement important sera signalé dans l'application.",
+    },
+    contact: {
+      title: 'Contact',
+      body: 'Pour toute question sur ces conditions :',
+    },
+  },
+  legalNotice: {
+    title: 'Mentions légales',
+    intro:
+      "Informations sur l'éditeur et l'hébergeur de TierList (loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique).",
+    publisher: {
+      title: 'Éditeur et directeur de la publication',
+      body: 'TierList est édité à titre non professionnel par {{name}}, qui en est aussi le directeur de la publication. Contact :',
+      anonymity:
+        "Comme le permet l'article 6-III-2 de cette loi pour un éditeur non professionnel, son adresse n'est pas publiée : ses coordonnées ont été communiquées à l'hébergeur.",
+    },
+    host: {
+      title: 'Hébergeur',
+      body: "L'application et la base de données sont hébergées par :",
+    },
+    providers: {
+      title: 'Autres prestataires',
+      cloudflare:
+        'Cloudflare, Inc. : nom de domaine, chiffrement HTTPS et acheminement du trafic (États-Unis).',
+      scaleway: 'Scaleway SAS : stockage des images et envoi des e-mails (France).',
+    },
+    data: {
+      title: 'Données personnelles',
+      body: 'Le traitement de vos données personnelles est décrit dans la <privacy>politique de confidentialité</privacy>.',
+    },
+  },
   history: {
     title: 'Historique',
     empty: "Aucune partie terminée pour l'instant. Vos parties apparaîtront ici une fois closes.",
@@ -169,6 +276,12 @@ export const fr = {
     continueWithGoogle: 'Continuer avec Google',
     signedInAs: 'Connecté en tant que {{name}}',
     logout: 'Se déconnecter',
+    acceptTerms: {
+      register:
+        "En créant un compte, vous acceptez les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy>.",
+      google:
+        "En continuant avec Google, vous acceptez les <terms>conditions d'utilisation</terms> et la <privacy>politique de confidentialité</privacy>.",
+    },
     login: {
       title: 'Connexion',
       submit: 'Se connecter',

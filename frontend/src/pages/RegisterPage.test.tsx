@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -98,6 +98,19 @@ describe('RegisterPage', () => {
     expect(
       await screen.findByText('Le mot de passe doit contenir au moins 12 caractères'),
     ).toBeInTheDocument();
+  });
+
+  it('says that creating an account accepts the terms and the privacy policy', () => {
+    stubBackend({});
+    renderRegisterPage();
+
+    const sentence: HTMLElement = screen.getByText(/^En créant un compte, vous acceptez/);
+    expect(
+      within(sentence).getByRole('link', { name: "conditions d'utilisation" }),
+    ).toHaveAttribute('href', '/terms');
+    expect(
+      within(sentence).getByRole('link', { name: 'politique de confidentialité' }),
+    ).toHaveAttribute('href', '/privacy');
   });
 
   it('links to the Google sign-in', () => {

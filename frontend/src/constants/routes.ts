@@ -21,6 +21,9 @@ export const ROUTES = {
   RESULTS: '/results/:token',
   // Politique de confidentialité (#200), lisible sans compte
   PRIVACY: '/privacy',
+  // Conditions d'utilisation (#201) et mentions légales (#235), lisibles sans compte
+  TERMS: '/terms',
+  LEGAL_NOTICE: '/legal',
 } as const;
 
 export function templateEditorPath(templateId: string): string {
