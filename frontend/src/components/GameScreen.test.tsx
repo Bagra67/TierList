@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
@@ -93,6 +93,22 @@ describe('GameScreen', () => {
     // Seul dans son tier : il ne peut ni avancer ni reculer
     expect(screen.getByRole('button', { name: 'Avancer Paprika dans son tier' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reculer Paprika dans son tier' })).toBeDisabled();
+  });
+
+  it('shows a preview of the item while it is dragged', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+    const handle: HTMLElement = await screen.findByRole('button', {
+      name: 'Glisser dans un tier : Paprika',
+    });
+    expect(screen.getAllByText('Paprika')).toHaveLength(1);
+
+    fireEvent.keyDown(handle, { code: 'Space', key: ' ' });
+    // L'aperçu, une copie de l'item, suit le glisser
+    await waitFor(() => expect(screen.getAllByText('Paprika')).toHaveLength(2));
+
+    fireEvent.keyDown(handle, { code: 'Escape', key: 'Escape' });
+    await waitFor(() => expect(screen.getAllByText('Paprika')).toHaveLength(1));
   });
 
   it('moves the placed item one position later in its tier', async () => {
@@ -287,6 +303,19 @@ describe('GameScreen', () => {
       if (missed === null) throw new Error('No missed items');
       expect(within(missed).getByText('Barbecue')).toBeInTheDocument();
       expect(within(missed).getByText('Absent')).toBeInTheDocument();
+    });
+
+    it('shows a preview of a tile dragged on the final board', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+      const chorizo: HTMLElement = await screen.findByRole('button', { name: 'Déplacer Chorizo' });
+      expect(screen.getAllByText('Chorizo')).toHaveLength(1);
+
+      fireEvent.keyDown(chorizo, { code: 'Space', key: ' ' });
+      await waitFor(() => expect(screen.getAllByText('Chorizo')).toHaveLength(2));
+
+      fireEvent.keyDown(chorizo, { code: 'Escape', key: 'Escape' });
+      await waitFor(() => expect(screen.getAllByText('Chorizo')).toHaveLength(1));
     });
 
     it('moves any tile with the arrow buttons', async () => {

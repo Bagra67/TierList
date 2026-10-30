@@ -23,7 +23,14 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
+import { ITEM_CHIP_CLASS } from './boardStyles';
+import {
+  type DragPreviewContent,
+  DragPreview,
+  DraggableItem,
+  EndSlot,
+  TierLabel,
+} from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 import { NativeSelect } from './ui/native-select';
@@ -151,6 +158,15 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
+  // Aperçu de la tuile glissée, sur le plateau ou parmi les items manqués
+  function previewOf(id: string): DragPreviewContent | undefined {
+    const item: GameItem | undefined =
+      game.own_placements.find((placement) => placement.item.id === id)?.item ??
+      game.missed_items.find((missed) => missed.id === id);
+    if (item === undefined) return undefined;
+    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS };
+  }
+
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
@@ -212,6 +228,7 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
             );
           })}
         </ol>
+        <DragPreview previewOf={previewOf} />
       </DndContext>
       {placeMutation.isError && (
         <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
@@ -248,7 +265,7 @@ function CooldownTierRow({
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
       {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
