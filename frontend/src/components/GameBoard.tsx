@@ -4,10 +4,11 @@ import {
   useDroppable,
   type Announcements,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -23,7 +24,7 @@ import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './b
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import { ITEM_CHIP_CLASS } from './boardStyles';
-import { DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
+import { DragPreview, DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 import { panelVariants } from './ui/panel';
@@ -53,6 +54,8 @@ export function GameBoard({ room, game }: GameBoardProps) {
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
   const pending: boolean = placeMutation.isPending;
+  // Identifiant de l'item glissé, pour son aperçu (DragPreview)
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Les items d'un tier, l'item en cours compris s'il y est, dans l'ordre (le serveur les trie)
   function idsIn(tierId: string): string[] {
@@ -122,7 +125,12 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
+  function handleDragStart({ active }: DragStartEvent) {
+    setDraggedId(String(active.id));
+  }
+
   function handleDragEnd({ active, over }: DragEndEvent) {
+    setDraggedId(null);
     if (active.id !== draggableId || over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
     const position: number | null = positionFor(
@@ -139,7 +147,9 @@ export function GameBoard({ room, game }: GameBoardProps) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setDraggedId(null)}
         accessibility={{
           announcements,
           screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
@@ -178,6 +188,11 @@ export function GameBoard({ room, game }: GameBoardProps) {
             />
           ))}
         </ol>
+        <DragPreview>
+          {draggedId === draggableId ? (
+            <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
+          ) : null}
+        </DragPreview>
       </DndContext>
       {placeMutation.isError && (
         <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>

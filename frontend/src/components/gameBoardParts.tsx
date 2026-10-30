@@ -1,7 +1,6 @@
-import { type UseDroppableArguments, useDraggable, useDroppable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
+import { DragOverlay, type UseDroppableArguments, useDraggable, useDroppable } from '@dnd-kit/core';
 import { cn } from 'cn';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { GameTier } from '../api/rooms';
@@ -78,7 +77,8 @@ interface DraggableItemProps {
   children: ReactNode;
 }
 
-// Un item à glisser vers un tier ; au clavier, Espace ou Entrée le saisit
+// Un item à glisser vers un tier ; au clavier, Espace ou Entrée le saisit. Pendant le glisser, il
+// reste à sa place, estompé : c'est son aperçu (DragPreview) qui suit le pointeur
 export function DraggableItem({
   id,
   label,
@@ -89,23 +89,12 @@ export function DraggableItem({
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging,
-  }: ReturnType<typeof useDraggable> = useDraggable({ id, disabled });
-  const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 1 : undefined,
-    position: 'relative',
-  };
+  const { attributes, listeners, setNodeRef, isDragging }: ReturnType<typeof useDraggable> =
+    useDraggable({ id, disabled });
   return (
     <button
       ref={setNodeRef}
       type="button"
-      style={style}
       {...attributes}
       {...listeners}
       data-focus-key={focusKey}
@@ -115,10 +104,30 @@ export function DraggableItem({
         // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && 'border-2 border-primary',
-        isDragging && 'cursor-grabbing shadow-lift',
+        isDragging && 'opacity-40',
       )}
     >
       {children}
     </button>
+  );
+}
+
+interface DragPreviewProps {
+  // Ce que montre l'aperçu (l'item glissé), null quand rien n'est glissé
+  children: ReactNode;
+}
+
+// Aperçu de l'item glissé : une copie qui suit le pointeur (ou les flèches du clavier) au-dessus de
+// tout le reste, avec l'ombre « projecteur ». Sans animation de dépôt : l'item apparaît à sa
+// nouvelle place quand le serveur a répondu
+export function DragPreview({ children }: DragPreviewProps) {
+  return (
+    <DragOverlay dropAnimation={null}>
+      {children === null ? null : (
+        <div className={cn(ITEM_CHIP_CLASS, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}>
+          {children}
+        </div>
+      )}
+    </DragOverlay>
   );
 }
