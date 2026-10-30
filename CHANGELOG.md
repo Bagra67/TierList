@@ -5,6 +5,50 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.0.0] - 2026-10-30
+
+### Features
+
+- frontend: visual identity color tokens (#213)
+- frontend: logo, favicon and display font (#214)
+- new default tier colors (#215)
+- frontend: tier board redesign (#216)
+- frontend: home presentation and clearer states (#218)
+- frontend: loading skeletons, cooldown stage and panel variants (#221)
+- frontend: lucide icons (#222)
+- frontend: drag preview on the boards (#227)
+- frontend: three-column round layout (#228)
+- frontend: cooldown side panel and move here (#229)
+- votes of an item in the results (#230)
+- frontend: results reveal (#231)
+- frontend: terms of use, legal notice and content reports (#237)
+- frontend: public home page (#239)
+- frontend: shake the final cooldown in its last seconds (#244)
+- frontend: add many image tiles at once (#245)
+
+### Bug fixes
+
+- i18n: replace franglais with plain french and english (#220)
+
+### Refactoring
+
+- frontend: ui consistency (#217)
+- frontend: one page width for the app (#238)
+
+### Documentation
+
+- mark milestone 1 as done (#234)
+- mark node 26 as lts (#243)
+
+### Chores
+
+- deps: bump astral-sh/setup-uv from 10.3.0 to 10.3.2 (#225)
+- deps: bump the frontend-minor-patch group with 17 updates (#223)
+- deps: bump pillow from 12.3.0 to 13.0.0 (#211)
+- unblock the httpx2 and seaweedfs updates (#233)
+- deps: bump the backend-minor-patch group with 6 updates (#226)
+- deps: bump chrislusf/seaweedfs from 4.48 to 4.50 (#224)
+
 ## [0.6.1] - 2026-10-21
 
 ### Bug fixes
