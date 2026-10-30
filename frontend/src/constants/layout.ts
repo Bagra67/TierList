@@ -2,7 +2,7 @@
 // toute l'application, pour que rien ne saute d'une page à l'autre ni au démarrage d'une partie
 export const PAGE_WIDTH_CLASS = {
   // Pages de l'application : accueil, modèles, historique, salle (avant et pendant la partie),
-  // résultats, éditeur. L'en-tête et le pied de page s'alignent sur cette largeur
+  // résultats, éditeur. L'en-tête et le pied de page, eux, prennent toute la fenêtre
   app: 'max-w-6xl',
   // Pages de texte (pages légales) : des lignes courtes, lisibles
   reading: 'max-w-3xl',
