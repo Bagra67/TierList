@@ -16,6 +16,7 @@ import {
   TIER_LABEL_CLASS,
   tierColorStyle,
 } from './boardStyles';
+import { tileFocusKey } from './boardHooks';
 import { GameItemView } from './GameItemView';
 
 // Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
@@ -88,6 +89,10 @@ interface DraggableItemProps {
   emphasized?: boolean;
   // Autre forme que la puce (carte de l'élément en cours)
   className?: string;
+  // Clic (ou Entrée, quand Entrée ne saisit pas l'item) : choisir la tuile, pressed dit si elle
+  // l'est (plateau final)
+  onClick?: () => void;
+  pressed?: boolean;
   children: ReactNode;
 }
 
@@ -101,6 +106,8 @@ export function DraggableItem({
   disabled,
   emphasized = false,
   className,
+  onClick,
+  pressed,
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -114,11 +121,14 @@ export function DraggableItem({
       {...listeners}
       data-focus-key={focusKey}
       aria-label={ariaLabel ?? t('rooms.game.dragLabel', { item: label })}
+      aria-pressed={pressed}
+      onClick={onClick}
       className={cn(
         ITEM_CHIP_CLASS,
         // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && EMPHASIZED_BORDER_CLASS,
+        pressed && 'ring-3 ring-primary',
         isDragging && 'opacity-40',
         className,
       )}
@@ -162,5 +172,32 @@ export function DragPreview({ previewOf }: DragPreviewProps) {
         </div>
       )}
     </DragOverlay>
+  );
+}
+
+interface ChoosableTileProps {
+  item: GameItem;
+  label: string;
+  chosen: boolean;
+  pending: boolean;
+  onChoose: (itemId: string) => void;
+}
+
+// Une tuile du plateau final ou un élément manqué : elle se glisse, ou se choisit d'un clic (ou
+// Entrée) pour « Déplacer ici »
+export function ChoosableTile({ item, label, chosen, pending, onChoose }: ChoosableTileProps) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  return (
+    <DraggableItem
+      id={item.id}
+      label={label}
+      ariaLabel={t('rooms.game.cooldown.chooseLabel', { item: label })}
+      focusKey={tileFocusKey(item.id)}
+      disabled={pending}
+      pressed={chosen}
+      onClick={() => onChoose(item.id)}
+    >
+      <GameItemView item={item} imageLabel={label} size="small" />
+    </DraggableItem>
   );
 }

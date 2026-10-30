@@ -453,11 +453,16 @@ export const fr = {
         missed: 'Éléments manqués',
         missedImage: "Image d'un élément manqué, {{position}}",
         absent: 'Absent',
-        placeInLabel: 'Tier où placer {{item}}',
-        place: 'Placer',
-        placeLabel: 'Placer {{item}} à la fin du tier choisi',
-        moveUp: 'Monter {{item}} au tier du dessus',
-        moveDown: 'Descendre {{item}} au tier du dessous',
+        dndInstructions:
+          "Entrée choisit la tuile, puis « Déplacer ici » la met à la fin d'un tier. Pour la placer à une position précise, appuyez sur Espace, utilisez les flèches, puis Espace pour la déposer, ou Échap pour annuler.",
+        chooseLabel: 'Choisir {{item}}',
+        chooseHint:
+          'Choisissez une tuile, puis « Déplacer ici » dans un tier. Vous pouvez aussi la glisser.',
+        chosen: 'Tuile choisie : {{item}}',
+        cancelChoice: 'Annuler le choix',
+        moveHere: 'Déplacer ici',
+        moveHereLabel: 'Déplacer {{item}} à la fin de {{tier}}',
+        missedNone: 'Aucun : tout est placé.',
         end: {
           open: 'Terminer maintenant',
           title: 'Terminer les retouches ?',
