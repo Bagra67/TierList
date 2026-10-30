@@ -3,8 +3,12 @@
 // renvoie dans ses erreurs de validation (params ge / le), affichées telles quelles.
 export const ROOMS_QUERY_KEY: readonly ['rooms'] = ['rooms'];
 
-// À partir de ce nombre de secondes restantes, le chrono de la manche passe à la couleur de l'accent
+// À partir de ce nombre de secondes restantes, le chrono passe à la couleur de l'accent (manche et
+// cooldown), et le cooldown final tremble
 export const COUNTDOWN_URGENT_SECONDS: number = 5;
+
+// Amplitude du tremblement du cooldown ajoutée à chaque seconde des dernières secondes, en pixels
+export const COOLDOWN_SHAKE_STEP_PX: number = 1;
 
 // Le lien perso d'un invité porte son jeton dans le fragment : /r/<code>#guest=<jeton> (backend :
 // GUEST_LINK_FRAGMENT). Le fragment n'est jamais envoyé au serveur.
