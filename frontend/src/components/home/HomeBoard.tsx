@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   HOME_BOARD,
+  HOME_BOARD_ITEM_MS,
   HOME_BOARD_PLAYER_COLORS,
   HOME_BOARD_STEP_MS,
   type HomeBoardItem,
@@ -36,13 +37,14 @@ export function HomeBoard({ className }: { className?: string }) {
             </span>
             <div className="flex flex-wrap items-center gap-2 p-2">
               {row.items.map((item: HomeBoardItem) => {
-                const delay: CSSProperties = {
+                const timing: CSSProperties = {
                   animationDelay: `${order++ * HOME_BOARD_STEP_MS}ms`,
+                  animationDuration: `${HOME_BOARD_ITEM_MS}ms`,
                 };
                 return (
                   <span
                     key={item.key}
-                    style={delay}
+                    style={timing}
                     className={cn(ITEM_CHIP_CLASS, 'relative px-2 motion-safe:animate-reveal')}
                   >
                     <span className="text-sm font-medium">{t(`home.board.items.${item.key}`)}</span>

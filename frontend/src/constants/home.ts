@@ -55,8 +55,10 @@ export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<string, string>> = {
   C: TIER_COLOR_PRESETS[2],
 };
 
-// Écart entre l'apparition de deux éléments du plateau, en millisecondes
-export const HOME_BOARD_STEP_MS: number = 160;
+// Rythme du plateau, en millisecondes : écart entre l'apparition de deux éléments, et durée de
+// l'apparition d'un élément (plus lente que la révélation des résultats, 420 ms)
+export const HOME_BOARD_STEP_MS: number = 240;
+export const HOME_BOARD_ITEM_MS: number = 630;
 
 // Nombre de modèles et de parties récents montrés à un joueur connecté
 export const HOME_RECENT_COUNT: number = 3;
