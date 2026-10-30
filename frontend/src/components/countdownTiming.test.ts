@@ -13,9 +13,9 @@ describe('countdownTiming', () => {
 
   it('shakes the cooldown harder each second of the last seconds', () => {
     expect(cooldownShakePx(COUNTDOWN_URGENT_SECONDS + 1)).toBe(0);
-    expect(cooldownShakePx(5)).toBe(1);
-    expect(cooldownShakePx(4)).toBe(2);
-    expect(cooldownShakePx(1)).toBe(5);
+    expect(cooldownShakePx(5)).toBe(0.5);
+    expect(cooldownShakePx(4)).toBe(1);
+    expect(cooldownShakePx(1)).toBe(2.5);
     expect(cooldownShakePx(0)).toBe(0);
   });
 });

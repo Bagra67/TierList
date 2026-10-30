@@ -21,7 +21,7 @@
   --animate-reveal: reveal 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   /* Tremblement du cooldown final : left / top (pas transform, qui piégerait l'aperçu du glisser en
      position fixe), sur un élément relative ; l'amplitude vient de --shake-px */
-  --animate-shake: shake 280ms linear infinite;
+  --animate-shake: shake 420ms ease-in-out infinite;
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);

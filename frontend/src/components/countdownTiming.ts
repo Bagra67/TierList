@@ -22,9 +22,8 @@ export function isUrgent(remainingSeconds: number): boolean {
   return remainingSeconds > 0 && remainingSeconds <= COUNTDOWN_URGENT_SECONDS;
 }
 
-// Amplitude du tremblement du cooldown, en pixels : elle grandit à chaque seconde (1 px à
-// COUNTDOWN_URGENT_SECONDS, puis +COOLDOWN_SHAKE_STEP_PX par seconde) ; 0 hors des dernières
-// secondes
+// Amplitude du tremblement du cooldown, en pixels : elle grandit de COOLDOWN_SHAKE_STEP_PX à chaque
+// seconde (0,5 px à COUNTDOWN_URGENT_SECONDS, 2,5 px à la dernière) ; 0 hors des dernières secondes
 export function cooldownShakePx(remainingSeconds: number): number {
   if (!isUrgent(remainingSeconds)) return 0;
   return (COUNTDOWN_URGENT_SECONDS + 1 - remainingSeconds) * COOLDOWN_SHAKE_STEP_PX;

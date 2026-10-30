@@ -345,14 +345,14 @@ describe('GameScreen', () => {
       expect(stage).toHaveClass('motion-safe:animate-shake');
       // Le sélecteur du test des manches trouve bien un bloc qui tremble
       expect(document.querySelector('[class~="motion-safe:animate-shake"]')).toBe(stage);
-      expect(stage.style.getPropertyValue('--shake-px')).toBe('1px');
+      expect(stage.style.getPropertyValue('--shake-px')).toBe('0.5px');
       expect(timer).toHaveClass('text-primary');
 
       act(() => {
         vi.advanceTimersByTime(3_000);
       });
 
-      await waitFor(() => expect(stage.style.getPropertyValue('--shake-px')).toBe('4px'));
+      await waitFor(() => expect(stage.style.getPropertyValue('--shake-px')).toBe('2px'));
     });
 
     it('stops shaking once the cooldown time is over', async () => {

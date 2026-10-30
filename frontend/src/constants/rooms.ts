@@ -8,7 +8,7 @@ export const ROOMS_QUERY_KEY: readonly ['rooms'] = ['rooms'];
 export const COUNTDOWN_URGENT_SECONDS: number = 5;
 
 // Amplitude du tremblement du cooldown ajoutée à chaque seconde des dernières secondes, en pixels
-export const COOLDOWN_SHAKE_STEP_PX: number = 1;
+export const COOLDOWN_SHAKE_STEP_PX: number = 0.5;
 
 // Le lien perso d'un invité porte son jeton dans le fragment : /r/<code>#guest=<jeton> (backend :
 // GUEST_LINK_FRAGMENT). Le fragment n'est jamais envoyé au serveur.
