@@ -17,6 +17,8 @@
   --color-spotlight-foreground: var(--spotlight-foreground);
   /* Ombre « projecteur », réservée à l'objet qu'on déplace */
   --shadow-lift: 0 12px 28px -10px oklch(0.236 0.077 286.6 / 0.5);
+  /* Révélation des résultats : chaque ligne de tier glisse depuis la gauche (ResultsTierList) */
+  --animate-reveal: reveal 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
@@ -139,5 +141,16 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes reveal {
+  from {
+    transform: translateX(-28px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
   }
 }

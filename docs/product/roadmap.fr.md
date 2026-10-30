@@ -34,7 +34,7 @@ Juste après le MVP, et rapidement : templates à l'aveugle, tuiles cachées, vu
 - **Partage de templates** : contributeurs et lecture seule.
 - Mode **solo**.
 - Tuiles **son et vidéo**.
-- **Révélation animée** des résultats.
+- **Révélation animée** des résultats, item par item, avec qui l'a placé où (le MVP montre déjà la tier list apparaître tier par tier).
 - **Export en image** des résultats.
 - Plus de **statistiques** (voir [game-rules.fr.md](game-rules.fr.md#6-statistiques)).
 - **Amis**, puis stats de profil, badges et fun facts.

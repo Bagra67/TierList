@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from 'react';
+import { type ChangeEvent, useCallback, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { type Location, type Params, useLocation, useParams } from 'react-router';
 
@@ -21,6 +21,7 @@ import {
   resultsPanelId,
   resultsTabId,
 } from '../components/resultsViews';
+import { Button } from '../components/ui/button';
 import { isResultsLinkState, type ResultsLinkState, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -38,6 +39,16 @@ export function ResultsPage() {
   const [view, setView] = useState<ResultsView>('median');
   // Élément dont les votes sont affichés ; par défaut le premier du modèle
   const [chosenItemId, setChosenItemId] = useState<string | null>(null);
+  // Vues déjà révélées (leur tier list s'est affichée) : elles ne se révèlent plus, ni en y
+  // revenant ni après une relecture (case des votes absents), sauf « Rejouer la révélation »
+  const [revealedViews, setRevealedViews] = useState<ReadonlySet<ResultsView>>(new Set());
+  // Change à chaque « Rejouer la révélation » : seule la tier list est montée à nouveau
+  const [revealRun, setRevealRun] = useState<number>(0);
+  const markRevealed = useCallback(() => {
+    setRevealedViews((revealed: ReadonlySet<ResultsView>) =>
+      revealed.has(view) ? revealed : new Set(revealed).add(view),
+    );
+  }, [view]);
   const state: GameResultsState = useGameResults(token, includeAbsentVotes);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   // Venu du lobby d'une salle : un lien y ramène, et le room admin peut rejouer
@@ -72,6 +83,19 @@ export function ResultsPage() {
     known.items.length > 0 &&
     !(view === 'players' && state.results.players.length === 0);
 
+  // Seules les tier lists (médian, par joueur) se révèlent, pas le tableau global ; il faut aussi
+  // qu'elles soient à l'écran (pas pendant une lecture ou après un échec)
+  const revealable: boolean = view !== 'overall' && state.results !== undefined;
+
+  function replayReveal() {
+    setRevealedViews((revealed: ReadonlySet<ResultsView>) => {
+      const next: Set<ResultsView> = new Set(revealed);
+      next.delete(view);
+      return next;
+    });
+    setRevealRun((run: number) => run + 1);
+  }
+
   const selection: ItemSelection = {
     selectedItemId: chosenItemId ?? known.items[0]?.id ?? null,
     onSelect: setChosenItemId,
@@ -99,16 +123,23 @@ export function ResultsPage() {
         label={t('results.publicLink')}
         link={`${window.location.origin}${resultsPath(token)}`}
       />
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={includeAbsentVotes}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setIncludeAbsentVotes(event.target.checked)
-          }
-        />
-        {t('results.includeAbsentVotes')}
-      </label>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeAbsentVotes}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setIncludeAbsentVotes(event.target.checked)
+            }
+          />
+          {t('results.includeAbsentVotes')}
+        </label>
+        {revealable && (
+          <Button type="button" variant="outline" size="sm" onClick={replayReveal}>
+            {t('results.replayReveal')}
+          </Button>
+        )}
+      </div>
       {/* Sur grand écran, les votes de l'élément choisi à droite de la vue (ItemVotesPanel) */}
       <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
@@ -131,6 +162,9 @@ export function ResultsPage() {
                 results={state.results}
                 items={items}
                 selection={selection}
+                reveal={!revealedViews.has(view)}
+                revealRun={revealRun}
+                onRevealStarted={markRevealed}
               />
             ) : state.error !== null ? (
               <ErrorMessage>{translateError(t, state.error)}</ErrorMessage>
@@ -160,19 +194,34 @@ interface ResultsViewContentProps {
   results: GameResults;
   items: ResultItems;
   selection: ItemSelection;
+  // Les lignes des tier lists apparaissent une à une (ResultsTierList)
+  reveal: boolean;
+  revealRun: number;
+  onRevealStarted: () => void;
 }
 
-function ResultsViewContent({ view, results, items, selection }: ResultsViewContentProps) {
+function ResultsViewContent({
+  view,
+  results,
+  items,
+  selection,
+  reveal,
+  revealRun,
+  onRevealStarted,
+}: ResultsViewContentProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   if (view === 'median') {
     return (
       <ResultsTierList
+        key={revealRun}
         tiers={results.tiers}
         rows={results.median_ranking}
         items={items}
         extraRow={{ label: t('results.median.unranked'), itemIds: results.unranked_item_ids }}
         selection={selection}
+        reveal={reveal}
+        onRevealStarted={onRevealStarted}
       />
     );
   }
@@ -193,6 +242,9 @@ function ResultsViewContent({ view, results, items, selection }: ResultsViewCont
       players={results.players}
       items={items}
       selection={selection}
+      reveal={reveal}
+      revealRun={revealRun}
+      onRevealStarted={onRevealStarted}
     />
   );
 }

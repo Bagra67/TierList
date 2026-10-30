@@ -12,11 +12,23 @@ interface ResultsPlayerViewProps {
   players: PlayerResults[];
   items: ResultItems;
   selection: ItemSelection;
+  reveal: boolean;
+  // Change à chaque « Rejouer la révélation » : seule la tier list est montée à nouveau
+  revealRun: number;
+  onRevealStarted: () => void;
 }
 
 // Vue « par joueur » (US-5.2) : le classement final du joueur choisi, avec les items qu'il n'a
 // jamais placés
-export function ResultsPlayerView({ tiers, players, items, selection }: ResultsPlayerViewProps) {
+export function ResultsPlayerView({
+  tiers,
+  players,
+  items,
+  selection,
+  reveal,
+  revealRun,
+  onRevealStarted,
+}: ResultsPlayerViewProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const selectId: string = useId();
   const [playerIndex, setPlayerIndex] = useState<number>(0);
@@ -48,11 +60,14 @@ export function ResultsPlayerView({ tiers, players, items, selection }: ResultsP
         </NativeSelect>
       </div>
       <ResultsTierList
+        key={revealRun}
         tiers={tiers}
         rows={player.tiers}
         items={items}
         extraRow={{ label: t('results.players.unplaced'), itemIds: player.unplaced_item_ids }}
         selection={selection}
+        reveal={reveal}
+        onRevealStarted={onRevealStarted}
       />
     </div>
   );

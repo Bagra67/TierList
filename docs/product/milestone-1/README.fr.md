@@ -27,7 +27,7 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 - **Cooldown final** : replacer toutes ses tuiles ; les deux placements sont gardés.
 - **Joueurs absents** : votes absents, reconnexion à sa place, rattrapage des items manqués pendant le cooldown.
 - **Room qui persiste** : relancer une partie dans la même room ; fermée par l'admin de la room ou après inactivité. Une room fermée **n'est pas gardée** : seules ses parties le sont (historique, liens publics).
-- **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents, et les **votes d'un item** (qui l'a mis dans quel tier).
+- **Résultats** : par joueur, globaux (répartition par item), **classement médian**, avec ou sans les votes absents, et les **votes d'un item** (qui l'a mis dans quel tier). La tier list apparaît tier par tier à l'ouverture des résultats.
 - **Liens** : lien public des résultats ; lien perso de l'invité (30 jours max, mort une fois la room fermée).
 - **Retour des invités** : reconnus par leur navigateur (un cookie) ; le lien perso sert de secours sur un autre appareil. Jamais par l'adresse IP.
 - **Historique** des parties pour les comptes.
