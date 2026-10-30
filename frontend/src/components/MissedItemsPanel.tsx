@@ -2,15 +2,12 @@ import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { GameItem } from '../api/rooms';
-import { DraggableItem } from './gameBoardParts';
-import { GameItemView } from './GameItemView';
+import { ChoosableTile } from './gameBoardParts';
 import { panelVariants } from './ui/panel';
 
 interface MissedItemsPanelProps {
   items: GameItem[];
   labelOf: (itemId: string) => string;
-  // Clé de focus de chaque tuile (useFocusAfterUpdate)
-  focusKeyOf: (itemId: string) => string;
   chosenId: string | null;
   pending: boolean;
   onChoose: (itemId: string) => void;
@@ -21,7 +18,6 @@ interface MissedItemsPanelProps {
 export function MissedItemsPanel({
   items,
   labelOf,
-  focusKeyOf,
   chosenId,
   pending,
   onChoose,
@@ -39,17 +35,13 @@ export function MissedItemsPanel({
         <ul className="flex flex-wrap gap-3">
           {items.map((item) => (
             <li key={item.id} className="flex flex-col items-center gap-1">
-              <DraggableItem
-                id={item.id}
+              <ChoosableTile
+                item={item}
                 label={labelOf(item.id)}
-                ariaLabel={t('rooms.game.cooldown.chooseLabel', { item: labelOf(item.id) })}
-                focusKey={focusKeyOf(item.id)}
-                disabled={pending}
-                pressed={chosenId === item.id}
-                onClick={() => onChoose(item.id)}
-              >
-                <GameItemView item={item} imageLabel={labelOf(item.id)} size="small" />
-              </DraggableItem>
+                chosen={chosenId === item.id}
+                pending={pending}
+                onChoose={onChoose}
+              />
               {/* Le mot accompagne la couleur, qui ne suffirait pas seule */}
               <span className="rounded-sm bg-destructive/10 px-1.5 text-sm font-semibold text-destructive">
                 {t('rooms.game.cooldown.absent')}

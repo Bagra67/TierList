@@ -372,6 +372,37 @@ describe('GameScreen', () => {
       expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
     });
 
+    it('keeps the choice when the move fails', async () => {
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        [paprikaPut]: () => errorResponse(409, 'cooldown_not_in_progress'),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Paprika' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Les retouches finales ne sont pas en cours.',
+      );
+      // Le choix et les boutons restent : le focus ne se perd pas, on peut réessayer
+      expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }),
+      ).toBeInTheDocument();
+    });
+
+    it('sends nothing when the chosen tile is already last of the tier', async () => {
+      const fetchMock = stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Chorizo' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Chorizo à la fin de S' }));
+
+      expect(screen.queryByText('Tuile choisie : Chorizo')).not.toBeInTheDocument();
+      expect(calledRoutes(fetchMock).filter((route) => route.startsWith('PUT'))).toEqual([]);
+    });
+
     it('cancels the choice of a tile', async () => {
       stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
       renderRoomPage();

@@ -79,3 +79,9 @@ export function useFocusAfterUpdate(
     },
   };
 }
+
+// Clé de focus d'une tuile du plateau final : elle garde le focus après un déplacement, même dans
+// une autre rangée (useFocusAfterUpdate)
+export function tileFocusKey(itemId: string): string {
+  return `${itemId}:tile`;
+}

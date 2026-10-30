@@ -16,6 +16,7 @@ import {
   TIER_LABEL_CLASS,
   tierColorStyle,
 } from './boardStyles';
+import { tileFocusKey } from './boardHooks';
 import { GameItemView } from './GameItemView';
 
 // Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
@@ -171,5 +172,32 @@ export function DragPreview({ previewOf }: DragPreviewProps) {
         </div>
       )}
     </DragOverlay>
+  );
+}
+
+interface ChoosableTileProps {
+  item: GameItem;
+  label: string;
+  chosen: boolean;
+  pending: boolean;
+  onChoose: (itemId: string) => void;
+}
+
+// Une tuile du plateau final ou un élément manqué : elle se glisse, ou se choisit d'un clic (ou
+// Entrée) pour « Déplacer ici »
+export function ChoosableTile({ item, label, chosen, pending, onChoose }: ChoosableTileProps) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  return (
+    <DraggableItem
+      id={item.id}
+      label={label}
+      ariaLabel={t('rooms.game.cooldown.chooseLabel', { item: label })}
+      focusKey={tileFocusKey(item.id)}
+      disabled={pending}
+      pressed={chosen}
+      onClick={() => onChoose(item.id)}
+    >
+      <GameItemView item={item} imageLabel={label} size="small" />
+    </DraggableItem>
   );
 }

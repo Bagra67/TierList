@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { CurrentGame, Participant, Room } from '../api/rooms';
@@ -30,6 +31,10 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
   const readerPlaces: boolean = placingParticipants.some((participant) => participant.is_you);
 
   if (game.status === 'cooldown') {
+    // « Terminer maintenant », pour l'hôte : dans le panneau du plateau s'il place, seul sinon
+    const endCooldown: ReactNode = room.is_admin && (
+      <EndCooldownDialog code={room.code} onEnded={onGameEnded} />
+    );
     return (
       // Le plateau télé du cooldown final (US-4.1) : sombre dans les deux thèmes, grâce à la
       // classe dark qui applique les jetons du thème sombre à tout ce qu'il contient. La bordure
@@ -54,15 +59,7 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
         </section>
         {/* Le lecteur qui place a le plateau, avec « Terminer maintenant » dans son panneau ;
             l'hôte qui ne joue pas n'a que ce bouton */}
-        {readerPlaces ? (
-          <CooldownBoard
-            room={room}
-            game={game}
-            aside={room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />}
-          />
-        ) : (
-          room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />
-        )}
+        {readerPlaces ? <CooldownBoard room={room} game={game} aside={endCooldown} /> : endCooldown}
       </div>
     );
   }

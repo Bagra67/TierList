@@ -21,24 +21,23 @@ import {
 import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
-import { COOLDOWN_KEYBOARD_CODES, useBoardSensors, useFocusAfterUpdate } from './boardHooks';
+import {
+  COOLDOWN_KEYBOARD_CODES,
+  tileFocusKey,
+  useBoardSensors,
+  useFocusAfterUpdate,
+} from './boardHooks';
 import { ITEM_CHIP_CLASS } from './boardStyles';
 import {
   type DragPreviewContent,
+  ChoosableTile,
   DragPreview,
-  DraggableItem,
   EndSlot,
   TierLabel,
 } from './gameBoardParts';
-import { GameItemView } from './GameItemView';
 import { MissedItemsPanel } from './MissedItemsPanel';
 import { Button } from './ui/button';
 import { panelVariants } from './ui/panel';
-
-// Clé de focus d'une tuile : elle garde le focus après un déplacement, même dans une autre rangée
-function tileFocusKey(itemId: string): string {
-  return `${itemId}:tile`;
-}
 
 interface CooldownBoardProps {
   room: Room;
@@ -103,27 +102,37 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     return dropPosition(tierItemIds, itemId, target, side);
   }
 
-  async function placeAt(itemId: string, tierId: string, position: number) {
-    if (pending) return;
+  // Envoie le placement ; true s'il a réussi (rien n'est envoyé pendant un autre envoi)
+  async function placeAt(itemId: string, tierId: string, position: number): Promise<boolean> {
+    if (pending) return false;
     focus.request([tileFocusKey(itemId)]);
     try {
       await placeMutation.mutateAsync({ tileId: itemId, tierId, position });
+      return true;
     } catch {
       focus.cancel();
-      return; // l'erreur est affichée depuis placeMutation.error
+      return false; // l'erreur est affichée depuis placeMutation.error
     }
   }
 
-  // « Déplacer ici » : la tuile choisie passe à la fin de ce tier (dernière place si elle y est déjà)
-  function moveChosenTo(tierId: string) {
-    if (chosenId === null) return;
+  // La tuile choisie, si elle est toujours là (une relecture de la salle a pu la retirer)
+  const chosenItem: GameItem | undefined = chosenId === null ? undefined : itemById(chosenId);
+
+  // « Déplacer ici » : la tuile choisie passe à la fin de ce tier (dernière place si elle y est
+  // déjà). Pendant un envoi, le bouton n'est qu'aria-disabled : le clic ne fait rien et garde le
+  // choix. Le choix reste jusqu'à la réponse : après un échec, les boutons et le focus restent
+  async function moveChosenTo(tierId: string) {
+    if (chosenItem === undefined || pending) return;
+    const itemId: string = chosenItem.id;
     const tierItemIds: string[] = inTier(tierId).map((placement) => placement.item.id);
-    const end: number = tierItemIds.includes(chosenId)
-      ? tierItemIds.length - 1
-      : tierItemIds.length;
-    const itemId: string = chosenId;
-    setChosenId(null);
-    void placeAt(itemId, tierId, end);
+    const currentIndex: number = tierItemIds.indexOf(itemId);
+    // Déjà dernière de ce tier : rien à envoyer
+    if (currentIndex !== -1 && currentIndex === tierItemIds.length - 1) {
+      setChosenId(null);
+      return;
+    }
+    const end: number = currentIndex === -1 ? tierItemIds.length : tierItemIds.length - 1;
+    if (await placeAt(itemId, tierId, end)) setChosenId(null);
   }
 
   function toggleChosen(itemId: string) {
@@ -168,8 +177,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
-  const chosenItem: GameItem | undefined = chosenId === null ? undefined : itemById(chosenId);
-
   // Aperçu de la tuile glissée, sur le plateau ou parmi les items manqués
   function previewOf(id: string): DragPreviewContent | undefined {
     const item: GameItem | undefined = itemById(id);
@@ -188,7 +195,8 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     );
     // Déposée sur elle-même, ou là où elle est déjà : elle ne bouge pas
     if (position === null) return;
-    setChosenId(null);
+    // Glisser la tuile choisie annule son choix ; glisser une autre tuile le garde
+    if (itemId === chosenId) setChosenId(null);
     void placeAt(itemId, target.tierId, position);
   }
 
@@ -215,11 +223,11 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
                 tier={tier}
                 placements={inTier(tier.id)}
                 labelOf={itemLabel}
-                chosenId={chosenId}
-                chosenLabel={chosenId === null ? '' : itemLabel(chosenId)}
+                chosenId={chosenItem?.id ?? null}
+                chosenLabel={chosenItem === undefined ? '' : itemLabel(chosenItem.id)}
                 pending={pending}
                 onChoose={toggleChosen}
-                onMoveHere={() => moveChosenTo(tier.id)}
+                onMoveHere={() => void moveChosenTo(tier.id)}
               />
             ))}
           </ol>
@@ -231,8 +239,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
           <MissedItemsPanel
             items={game.missed_items}
             labelOf={itemLabel}
-            focusKeyOf={tileFocusKey}
-            chosenId={chosenId}
+            chosenId={chosenItem?.id ?? null}
             pending={pending}
             onChoose={toggleChosen}
           />
@@ -339,7 +346,6 @@ interface CooldownTileProps {
 // Une tuile du plateau final : elle se glisse ou se choisit, et une autre tuile déposée dessus se
 // place avant ou après elle, selon le côté où elle tombe
 function CooldownTile({ item, label, tierId, chosen, pending, onChoose }: CooldownTileProps) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const target: BoardDropTarget = { tierId, itemId: item.id };
   const { setNodeRef, isOver, active }: ReturnType<typeof useDroppable> = useDroppable({
     id: `${tierId}:${item.id}`,
@@ -349,17 +355,13 @@ function CooldownTile({ item, label, tierId, chosen, pending, onChoose }: Cooldo
   const highlighted: boolean = isOver && active?.id !== item.id;
   return (
     <li ref={setNodeRef} className={cn('rounded-md', highlighted && 'ring-2 ring-primary')}>
-      <DraggableItem
-        id={item.id}
+      <ChoosableTile
+        item={item}
         label={label}
-        ariaLabel={t('rooms.game.cooldown.chooseLabel', { item: label })}
-        focusKey={tileFocusKey(item.id)}
-        disabled={pending}
-        pressed={chosen}
-        onClick={() => onChoose(item.id)}
-      >
-        <GameItemView item={item} imageLabel={label} size="small" />
-      </DraggableItem>
+        chosen={chosen}
+        pending={pending}
+        onChoose={onChoose}
+      />
     </li>
   );
 }
