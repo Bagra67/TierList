@@ -2,13 +2,15 @@
 
 English | [Français](roadmap.fr.md)
 
-In which order the [product](product.md) is built, and the technical questions to settle along the way. Today the repository contains the foundations: accounts and sign-in ([authentication.md](../technical/authentication.md)), translations ([i18n.md](../technical/i18n.md)) and emails ([emails.md](../technical/emails.md)).
+In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**; it is not in production yet (the [Infrastructure milestone](https://github.com/Bagra67/TierList/milestone/2) remains). Milestone 2 comes next.
 
 Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.
 
 ## Milestone 1 — MVP
 
 The first playable version: a live room with friends.
+
+**Done**: every user story is delivered ([GitHub milestone](https://github.com/Bagra67/TierList/milestone/1?closed=1)).
 
 - **Templates**: text and image tiles (uploaded images), **configurable tiers** (add, remove, settings).
 - **Private room**: joined with a link or a code, guests allowed, **rounds run by the room admin**.
@@ -24,7 +26,7 @@ Detailed design (user stories, domain model, lifecycles, game flow, wireframes):
 
 ## Milestone 2 — Blind mode
 
-Right after the MVP, and soon: blind templates, hidden tiles, admin view with the answers, reveal after each round or at the end, guessing with points (three answer modes, free text judged collectively). See [game-rules.md](game-rules.md#4-blind-mode).
+The next milestone: blind templates, hidden tiles, admin view with the answers, reveal after each round or at the end, guessing with points (three answer modes, free text judged collectively). See [game-rules.md](game-rules.md#4-blind-mode).
 
 ## Next (order to decide)
 
