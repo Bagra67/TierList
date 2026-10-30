@@ -4,11 +4,10 @@ import {
   useDroppable,
   type Announcements,
   type DragEndEvent,
-  type DragStartEvent,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -23,8 +22,14 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { ITEM_CHIP_CLASS } from './boardStyles';
-import { DragPreview, DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
+import { EMPHASIZED_BORDER_CLASS, ITEM_CHIP_CLASS } from './boardStyles';
+import {
+  type DragPreviewContent,
+  DragPreview,
+  DraggableItem,
+  EndSlot,
+  TierLabel,
+} from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 import { panelVariants } from './ui/panel';
@@ -54,8 +59,6 @@ export function GameBoard({ room, game }: GameBoardProps) {
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
   const pending: boolean = placeMutation.isPending;
-  // Identifiant de l'item glissé, pour son aperçu (DragPreview)
-  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Les items d'un tier, l'item en cours compris s'il y est, dans l'ordre (le serveur les trie)
   function idsIn(tierId: string): string[] {
@@ -125,12 +128,17 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
-  function handleDragStart({ active }: DragStartEvent) {
-    setDraggedId(String(active.id));
+  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu
+  function previewOf(id: string): DragPreviewContent | undefined {
+    if (id !== draggableId) return undefined;
+    return {
+      item: currentItem,
+      label: itemLabel,
+      className: cn(ITEM_CHIP_CLASS, EMPHASIZED_BORDER_CLASS),
+    };
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
-    setDraggedId(null);
     if (active.id !== draggableId || over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
     const position: number | null = positionFor(
@@ -147,9 +155,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragCancel={() => setDraggedId(null)}
         accessibility={{
           announcements,
           screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
@@ -188,11 +194,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
             />
           ))}
         </ol>
-        <DragPreview>
-          {draggedId === draggableId ? (
-            <GameItemView item={currentItem} imageLabel={itemLabel} size="small" />
-          ) : null}
-        </DragPreview>
+        <DragPreview previewOf={previewOf} />
       </DndContext>
       {placeMutation.isError && (
         <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
@@ -274,7 +276,7 @@ function TierRow({
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
       {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>

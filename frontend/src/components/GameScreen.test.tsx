@@ -305,6 +305,19 @@ describe('GameScreen', () => {
       expect(within(missed).getByText('Absent')).toBeInTheDocument();
     });
 
+    it('shows a preview of a tile dragged on the final board', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+      const chorizo: HTMLElement = await screen.findByRole('button', { name: 'Déplacer Chorizo' });
+      expect(screen.getAllByText('Chorizo')).toHaveLength(1);
+
+      fireEvent.keyDown(chorizo, { code: 'Space', key: ' ' });
+      await waitFor(() => expect(screen.getAllByText('Chorizo')).toHaveLength(2));
+
+      fireEvent.keyDown(chorizo, { code: 'Escape', key: 'Escape' });
+      await waitFor(() => expect(screen.getAllByText('Chorizo')).toHaveLength(1));
+    });
+
     it('moves any tile with the arrow buttons', async () => {
       const bodies: unknown[] = [];
       stubBackend({

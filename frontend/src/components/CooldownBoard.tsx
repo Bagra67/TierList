@@ -4,7 +4,6 @@ import {
   useDroppable,
   type Announcements,
   type DragEndEvent,
-  type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { cn } from 'cn';
@@ -24,7 +23,14 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { DragPreview, DraggableItem, EndSlot, TierLabel } from './gameBoardParts';
+import { ITEM_CHIP_CLASS } from './boardStyles';
+import {
+  type DragPreviewContent,
+  DragPreview,
+  DraggableItem,
+  EndSlot,
+  TierLabel,
+} from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 import { NativeSelect } from './ui/native-select';
@@ -60,8 +66,6 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const pending: boolean = placeMutation.isPending;
-  // Identifiant de la tuile glissée, pour son aperçu (DragPreview)
-  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // Les tuiles d'un tier, dans l'ordre (le serveur les trie)
   function inTier(tierId: string): OwnPlacement[] {
@@ -154,19 +158,16 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
-  // La tuile glissée, sur le plateau ou parmi les items manqués
-  const draggedItem: GameItem | undefined =
-    draggedId === null
-      ? undefined
-      : (game.own_placements.find((placement) => placement.item.id === draggedId)?.item ??
-        game.missed_items.find((item) => item.id === draggedId));
-
-  function handleDragStart({ active }: DragStartEvent) {
-    setDraggedId(String(active.id));
+  // Aperçu de la tuile glissée, sur le plateau ou parmi les items manqués
+  function previewOf(id: string): DragPreviewContent | undefined {
+    const item: GameItem | undefined =
+      game.own_placements.find((placement) => placement.item.id === id)?.item ??
+      game.missed_items.find((missed) => missed.id === id);
+    if (item === undefined) return undefined;
+    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS };
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
-    setDraggedId(null);
     if (over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
     const itemId: string = String(active.id);
@@ -189,9 +190,7 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragCancel={() => setDraggedId(null)}
         accessibility={{
           announcements,
           screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
@@ -229,11 +228,7 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
             );
           })}
         </ol>
-        <DragPreview>
-          {draggedItem === undefined ? null : (
-            <GameItemView item={draggedItem} imageLabel={itemLabel(draggedItem.id)} size="small" />
-          )}
-        </DragPreview>
+        <DragPreview previewOf={previewOf} />
       </DndContext>
       {placeMutation.isError && (
         <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
@@ -270,7 +265,7 @@ function CooldownTierRow({
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
       {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'item glissé vers un autre tier */}
+          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>

@@ -1,10 +1,22 @@
-import { DragOverlay, type UseDroppableArguments, useDraggable, useDroppable } from '@dnd-kit/core';
+import {
+  DragOverlay,
+  type UseDroppableArguments,
+  useDndContext,
+  useDraggable,
+  useDroppable,
+} from '@dnd-kit/core';
 import { cn } from 'cn';
 import type { ReactNode } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
-import type { GameTier } from '../api/rooms';
-import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS, tierColorStyle } from './boardStyles';
+import type { GameItem, GameTier } from '../api/rooms';
+import {
+  EMPHASIZED_BORDER_CLASS,
+  ITEM_CHIP_CLASS,
+  TIER_LABEL_CLASS,
+  tierColorStyle,
+} from './boardStyles';
+import { GameItemView } from './GameItemView';
 
 // Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
 
@@ -103,7 +115,7 @@ export function DraggableItem({
         ITEM_CHIP_CLASS,
         // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        emphasized && 'border-2 border-primary',
+        emphasized && EMPHASIZED_BORDER_CLASS,
         isDragging && 'opacity-40',
       )}
     >
@@ -112,20 +124,36 @@ export function DraggableItem({
   );
 }
 
+// Ce que montre l'aperçu d'un item glissé
+export interface DragPreviewContent {
+  item: GameItem;
+  label: string;
+  // Forme de la source (puce, puce d'accent) : l'aperçu a sa taille, qui est aussi celle du
+  // rectangle dont dnd-kit se sert pour viser le dépôt
+  className: string;
+}
+
 interface DragPreviewProps {
-  // Ce que montre l'aperçu (l'item glissé), null quand rien n'est glissé
-  children: ReactNode;
+  // L'aperçu de l'item d'identifiant id, undefined s'il n'en a pas
+  previewOf: (id: string) => DragPreviewContent | undefined;
 }
 
 // Aperçu de l'item glissé : une copie qui suit le pointeur (ou les flèches du clavier) au-dessus de
-// tout le reste, avec l'ombre « projecteur ». Sans animation de dépôt : l'item apparaît à sa
-// nouvelle place quand le serveur a répondu
-export function DragPreview({ children }: DragPreviewProps) {
+// tout le reste, avec l'ombre « projecteur ». Cachée aux lecteurs d'écran, qui ont déjà l'item et
+// les annonces du glisser. Sans animation de dépôt : l'item apparaît à sa nouvelle place quand le
+// serveur a répondu
+export function DragPreview({ previewOf }: DragPreviewProps) {
+  const { active }: ReturnType<typeof useDndContext> = useDndContext();
+  const content: DragPreviewContent | undefined =
+    active === null ? undefined : previewOf(String(active.id));
   return (
     <DragOverlay dropAnimation={null}>
-      {children === null ? null : (
-        <div className={cn(ITEM_CHIP_CLASS, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}>
-          {children}
+      {content === undefined ? null : (
+        <div
+          aria-hidden="true"
+          className={cn(content.className, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}
+        >
+          <GameItemView item={content.item} imageLabel={content.label} size="small" />
         </div>
       )}
     </DragOverlay>
