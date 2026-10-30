@@ -79,7 +79,7 @@ interface DraggableItemProps {
   // Identifiant du glisser-déposer : event.active.id à la fin
   id: string;
   label: string;
-  // Nom accessible, quand le texte visible n'est pas l'item lui-même (poignée du dock)
+  // Nom accessible, quand le texte visible ne suffit pas (carte de l'élément en cours)
   ariaLabel?: string;
   // Clé pour useFocusAfterUpdate (boardHooks.ts)
   focusKey: string;
@@ -132,9 +132,10 @@ export function DraggableItem({
 export interface DragPreviewContent {
   item: GameItem;
   label: string;
-  // Forme de la source (puce, puce d'accent) : l'aperçu a sa taille, qui est aussi celle du
+  // Forme de la source (puce, puce d'accent, carte) : l'aperçu a sa taille, qui est aussi celle du
   // rectangle dont dnd-kit se sert pour viser le dépôt
   className: string;
+  size: 'small' | 'large';
 }
 
 interface DragPreviewProps {
@@ -157,7 +158,7 @@ export function DragPreview({ previewOf }: DragPreviewProps) {
           aria-hidden="true"
           className={cn(content.className, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}
         >
-          <GameItemView item={content.item} imageLabel={content.label} size="small" />
+          <GameItemView item={content.item} imageLabel={content.label} size={content.size} />
         </div>
       )}
     </DragOverlay>

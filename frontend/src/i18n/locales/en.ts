@@ -417,7 +417,6 @@ export const en: Translation = {
       },
       board: 'My ranking',
       dock: 'Drag the item into a tier, at the position you want, or use the "Place in" buttons.',
-      dragHandle: 'Drag into a tier',
       dragHandleLabel: 'Drag into a tier: {{item}}',
       dragLabel: 'Move {{item}}',
       placeIn: 'Place in {{tier}}',

@@ -22,7 +22,12 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS, ITEM_CHIP_CLASS } from './boardStyles';
+import {
+  CURRENT_CARD_CLASS,
+  CURRENT_CARD_IN_BOARD_CLASS,
+  EMPHASIZED_BORDER_CLASS,
+  ITEM_CHIP_CLASS,
+} from './boardStyles';
 import { CurrentItemCard } from './CurrentItemCard';
 import {
   type DragPreviewContent,
@@ -129,13 +134,23 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
-  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu
+  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu.
+  // L'aperçu a la forme de ce qu'on glisse : la carte tant qu'il n'est pas placé, sa puce ensuite
   function previewOf(id: string): DragPreviewContent | undefined {
     if (id !== draggableId) return undefined;
+    if (currentPlacement === undefined) {
+      return {
+        item: currentItem,
+        label: itemLabel,
+        className: cn(ITEM_CHIP_CLASS, CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS),
+        size: 'large',
+      };
+    }
     return {
       item: currentItem,
       label: itemLabel,
       className: cn(ITEM_CHIP_CLASS, EMPHASIZED_BORDER_CLASS),
+      size: 'small',
     };
   }
 
@@ -175,12 +190,12 @@ export function GameBoard({ room, game }: GameBoardProps) {
               focusKey={CURRENT_FOCUS.drag}
               disabled={pending}
               emphasized
-              className={CURRENT_CARD_CLASS}
+              className={cn(CURRENT_CARD_CLASS, CURRENT_CARD_IN_BOARD_CLASS)}
             >
               <GameItemView item={currentItem} imageLabel={itemLabel} size="large" />
             </DraggableItem>
           ) : (
-            <CurrentItemCard item={currentItem} />
+            <CurrentItemCard item={currentItem} className={CURRENT_CARD_IN_BOARD_CLASS} />
           )}
           {currentPlacement === undefined && (
             <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>

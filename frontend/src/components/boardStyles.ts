@@ -11,10 +11,14 @@ export const ITEM_CHIP_CLASS: string =
 // Bordure d'accent de l'élément à placer maintenant (tour en cours), sur sa puce et son aperçu
 export const EMPHASIZED_BORDER_CLASS: string = 'border-2 border-primary';
 
-// Carte de l'élément en cours, posée de biais comme une carte de jeu (sous motion-safe), avec
-// l'ombre « projecteur » ; sur le plateau, c'est aussi la poignée à glisser
+// Carte de l'élément en cours, posée de biais comme une carte de jeu (sous motion-safe) ; sur le
+// plateau, c'est aussi elle qu'on glisse. Sans bordure ici : la carte glissable prend la bordure
+// d'accent, la carte posée la sienne. L'ombre « projecteur » reste réservée à ce qu'on déplace
 export const CURRENT_CARD_CLASS: string =
-  'flex w-full max-w-56 flex-col items-center justify-center gap-2 rounded-panel border bg-card p-3 shadow-lift motion-safe:-rotate-2 lg:max-w-none';
+  'flex w-full max-w-56 flex-col items-center justify-center gap-2 rounded-panel bg-card p-3 shadow-md motion-safe:-rotate-2';
+
+// Dans la colonne de 12rem du plateau, la carte en prend toute la largeur
+export const CURRENT_CARD_IN_BOARD_CLASS: string = 'lg:max-w-none';
 
 // Colonne de gauche d'une ligne de tier (bloc-lettre, ou ligne « en plus » des résultats)
 export const TIER_LABEL_CLASS: string =

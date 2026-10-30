@@ -164,7 +164,7 @@ export function CooldownBoard({ room, game }: CooldownBoardProps) {
       game.own_placements.find((placement) => placement.item.id === id)?.item ??
       game.missed_items.find((missed) => missed.id === id);
     if (item === undefined) return undefined;
-    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS };
+    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS, size: 'small' };
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {

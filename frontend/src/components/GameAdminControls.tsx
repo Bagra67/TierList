@@ -37,15 +37,13 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
     }
   }
 
-  // Encadré bordé de jaune « projecteur » : les commandes de l'hôte se repèrent d'un coup d'œil
+  // Encadré bordé d'ambre (--warning, 3:1 avec le fond en clair) : les commandes de l'hôte se
+  // repèrent d'un coup d'œil
   return (
-    <section
-      aria-labelledby={headingId}
-      className={cn(panelVariants(), 'border-2 border-spotlight')}
-    >
-      <h3 id={headingId} className="font-semibold">
+    <section aria-labelledby={headingId} className={cn(panelVariants(), 'border-2 border-warning')}>
+      <h2 id={headingId} className="font-semibold">
         {t('rooms.game.hostControls')}
-      </h3>
+      </h2>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={handleNext} disabled={nextMutation.isPending}>
           {nextMutation.isPending ? t('rooms.game.nexting') : t('rooms.game.next')}

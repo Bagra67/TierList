@@ -3,7 +3,7 @@
 // renvoie dans ses erreurs de validation (params ge / le), affichées telles quelles.
 export const ROOMS_QUERY_KEY: readonly ['rooms'] = ['rooms'];
 
-// Sous ce nombre de secondes, le chrono de la manche passe à la couleur de l'accent
+// À partir de ce nombre de secondes restantes, le chrono de la manche passe à la couleur de l'accent
 export const COUNTDOWN_URGENT_SECONDS: number = 5;
 
 // Le lien perso d'un invité porte son jeton dans le fragment : /r/<code>#guest=<jeton> (backend :

@@ -70,7 +70,8 @@
   /* Ambre « projecteur » : avertissements (bordure et fond léger, jamais du texte). Plus foncé
      qu'en sombre, pour que la bordure garde 3:1 avec le fond (WCAG 1.4.11) */
   --warning: oklch(0.6 0.13 75);
-  /* Jaune « projecteur » plein, avec l'encre dessus : chrono de la manche, encadré de l'hôte */
+  /* Jaune « projecteur » plein, avec l'encre dessus : fond du chrono de la manche (pas une bordure,
+     trop pâle en clair) */
   --spotlight: oklch(0.847 0.163 83.8);
   --spotlight-foreground: oklch(0.236 0.077 286.6);
   --radius: 0.625rem;

@@ -430,7 +430,6 @@ export const fr = {
       },
       board: 'Mon classement',
       dock: "Glissez l'élément dans un tier, à la position voulue, ou utilisez les boutons « Placer dans ».",
-      dragHandle: 'Glisser dans un tier',
       dragHandleLabel: 'Glisser dans un tier : {{item}}',
       dragLabel: 'Déplacer {{item}}',
       placeIn: 'Placer dans {{tier}}',

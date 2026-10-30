@@ -42,55 +42,58 @@ export function RoomLobby({ room }: RoomLobbyProps) {
       {room.game !== null && (
         <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
       )}
-      {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
-      {room.is_admin && room.game === null && room.template !== null && (
-        <StartGameButton code={room.code} replay={room.past_games.length > 0} />
-      )}
-      <RoomInvite room={room} />
-      <section className="flex w-full flex-col gap-2">
-        <h2 className="text-lg font-semibold">
-          {t('rooms.lobby.participants', { count: room.participants.length })}
-        </h2>
-        <ul className={panelVariants({ variant: 'list' })}>
-          {room.participants.map((participant) => (
-            <li key={participant.id} className="flex items-center gap-2 px-4 py-2">
-              {/* Pleine en ligne, creuse hors ligne : la forme suffit, sans compter sur la couleur */}
-              <span
-                aria-hidden="true"
-                className={
-                  participant.connected
-                    ? 'size-2.5 shrink-0 rounded-full bg-success'
-                    : 'size-2.5 shrink-0 rounded-full border-2 border-muted-foreground'
-                }
-              />
-              <span className="sr-only">
-                {participant.connected ? t('rooms.lobby.online') : t('rooms.lobby.offline')}
-              </span>
-              <span className="font-medium">{participant.display_name}</span>
-              {participant.is_admin && (
-                <span className="text-sm text-muted-foreground">({t('rooms.lobby.admin')})</span>
-              )}
-              {participant.is_guest && (
-                <span className="text-sm text-muted-foreground">({t('rooms.lobby.guest')})</span>
-              )}
-              {/* Le room admin ne peut pas se retirer lui-même */}
-              {room.is_admin && !participant.is_admin && (
-                <RemoveParticipantDialog code={room.code} participant={participant} />
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-      <PastGames room={room} />
-      {room.is_admin && <RoomBans room={room} />}
-      <section className="flex w-full flex-col gap-2">
-        <div className="flex w-full items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">{t('rooms.settings.title')}</h2>
-          {room.is_admin && <RoomSettingsDialog room={room} />}
-        </div>
-        <RoomSettingsSummary settings={room.settings} />
-      </section>
-      {room.is_admin && <CloseRoomDialog code={room.code} gameInProgress={room.game !== null} />}
+      {/* Pendant une partie la page s'élargit pour le plateau : le salon garde sa largeur */}
+      <div className="flex w-full max-w-2xl flex-col items-start gap-6">
+        {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
+        {room.is_admin && room.game === null && room.template !== null && (
+          <StartGameButton code={room.code} replay={room.past_games.length > 0} />
+        )}
+        <RoomInvite room={room} />
+        <section className="flex w-full flex-col gap-2">
+          <h2 className="text-lg font-semibold">
+            {t('rooms.lobby.participants', { count: room.participants.length })}
+          </h2>
+          <ul className={panelVariants({ variant: 'list' })}>
+            {room.participants.map((participant) => (
+              <li key={participant.id} className="flex items-center gap-2 px-4 py-2">
+                {/* Pleine en ligne, creuse hors ligne : la forme suffit, sans compter sur la couleur */}
+                <span
+                  aria-hidden="true"
+                  className={
+                    participant.connected
+                      ? 'size-2.5 shrink-0 rounded-full bg-success'
+                      : 'size-2.5 shrink-0 rounded-full border-2 border-muted-foreground'
+                  }
+                />
+                <span className="sr-only">
+                  {participant.connected ? t('rooms.lobby.online') : t('rooms.lobby.offline')}
+                </span>
+                <span className="font-medium">{participant.display_name}</span>
+                {participant.is_admin && (
+                  <span className="text-sm text-muted-foreground">({t('rooms.lobby.admin')})</span>
+                )}
+                {participant.is_guest && (
+                  <span className="text-sm text-muted-foreground">({t('rooms.lobby.guest')})</span>
+                )}
+                {/* Le room admin ne peut pas se retirer lui-même */}
+                {room.is_admin && !participant.is_admin && (
+                  <RemoveParticipantDialog code={room.code} participant={participant} />
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <PastGames room={room} />
+        {room.is_admin && <RoomBans room={room} />}
+        <section className="flex w-full flex-col gap-2">
+          <div className="flex w-full items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold">{t('rooms.settings.title')}</h2>
+            {room.is_admin && <RoomSettingsDialog room={room} />}
+          </div>
+          <RoomSettingsSummary settings={room.settings} />
+        </section>
+        {room.is_admin && <CloseRoomDialog code={room.code} gameInProgress={room.game !== null} />}
+      </div>
     </>
   );
 }
