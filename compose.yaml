@@ -33,7 +33,7 @@ services:
   # (docs/technical/images.md). Interface web du filer : http://localhost:8888
   seaweedfs:
     # Version exacte : la CI lance la même (.github/workflows/ci.yml)
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.50
     # mini : maître, volume, filer et S3 dans un seul conteneur. Crée le bucket au démarrage ;
     # s3.json donne l'identité du backend et la lecture anonyme des images.
     command: >-
