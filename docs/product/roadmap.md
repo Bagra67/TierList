@@ -2,7 +2,7 @@
 
 English | [Français](roadmap.fr.md)
 
-In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**; it is not in production yet (the [Infrastructure milestone](https://github.com/Bagra67/TierList/milestone/2) remains). Milestone 2 comes next.
+In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**: it runs on staging, and reaches production with the next release ([deployment guide](../technical/deployment.md)). Milestone 2 comes next.
 
 Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.
 

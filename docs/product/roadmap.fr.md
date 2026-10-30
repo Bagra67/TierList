@@ -2,7 +2,7 @@
 
 [English](roadmap.md) | Français
 
-Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Le jalon 1 (MVP) est **terminé** ; il n'est pas encore en production (il reste le [jalon Infrastructure](https://github.com/Bagra67/TierList/milestone/2)). Le jalon 2 vient ensuite.
+Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Le jalon 1 (MVP) est **terminé** : il tourne sur le staging, et arrive en production avec la prochaine release ([guide de déploiement](../technical/deployment.fr.md)). Le jalon 2 vient ensuite.
 
 Les jalons ne sont pas des numéros de version : les releases suivent toujours [releasing.fr.md](../technical/releasing.fr.md). Une fonctionnalité reçoit sa documentation technique (dans [architecture.fr.md](../technical/architecture.fr.md) ou sa propre page dans `docs/technical/`) une fois **implémentée**, pas avant.
 
