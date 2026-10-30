@@ -11,6 +11,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
+import { isAcceptedImageFile } from './imageFiles';
 
 interface ImageDropZoneProps {
   // Nom accessible de la vignette : ce que fait un clic (ajouter ou remplacer l'image)
@@ -25,6 +26,10 @@ interface ImageDropZoneProps {
   // Bouton pour retirer l'image, affiché seulement s'il y a une image et un libellé
   removeLabel?: string;
   onSelect: (file: File) => void;
+  // Plusieurs fichiers d'un coup (sélecteur ou dépôt) : sans cette prop, seul le premier compte.
+  // Avec elle, deux fichiers ou plus lui sont passés tels quels (le parent les trie), un seul
+  // suit le chemin habituel (onSelect ou onRefuse)
+  onSelectMany?: (files: File[]) => void;
   onRemove?: () => void;
   // Fichier d'un type connu autre que JPEG, PNG ou WebP : refusé sans être envoyé (un type
   // inconnu, vide, part au backend)
@@ -67,6 +72,7 @@ export function ImageDropZone({
   size,
   removeLabel,
   onSelect,
+  onSelectMany,
   onRemove,
   onRefuse,
 }: ImageDropZoneProps) {
@@ -89,9 +95,7 @@ export function ImageDropZone({
 
   function handleFile(file: File | undefined) {
     if (file === undefined || disabled) return;
-    // Un type vide veut dire que le système ne le connaît pas (ex. .webp sur un Windows ancien) :
-    // le fichier part au backend, qui reconnaît le format d'après son contenu
-    if (file.type !== '' && !ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    if (!isAcceptedImageFile(file)) {
       onRefuse();
       return;
     }
@@ -99,8 +103,17 @@ export function ImageDropZone({
     onSelect(file);
   }
 
+  function handleFiles(fileList: FileList | null) {
+    const files: File[] = fileList === null ? [] : Array.from(fileList);
+    if (onSelectMany !== undefined && files.length > 1) {
+      if (!disabled) onSelectMany(files);
+      return;
+    }
+    handleFile(files[0]);
+  }
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    handleFile(event.target.files?.[0]);
+    handleFiles(event.target.files);
     // Permet de choisir à nouveau le même fichier (ex. après une erreur)
     event.target.value = '';
   }
@@ -129,7 +142,7 @@ export function ImageDropZone({
     event.preventDefault();
     dragDepth.current = 0;
     setIsDraggingOver(false);
-    handleFile(event.dataTransfer.files[0]);
+    handleFiles(event.dataTransfer.files);
   }
 
   const showRemove: boolean =
@@ -165,7 +178,9 @@ export function ImageDropZone({
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
             <ImageIcon className={sizeClasses.icon} />
             <span className={cn('leading-tight', sizeClasses.hint)}>
-              {t('templates.editor.image.hint')}
+              {onSelectMany === undefined
+                ? t('templates.editor.image.hint')
+                : t('templates.editor.image.hintMany')}
             </span>
           </span>
         )}
@@ -205,6 +220,7 @@ export function ImageDropZone({
         ref={inputRef}
         type="file"
         accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        multiple={onSelectMany !== undefined}
         tabIndex={-1}
         aria-hidden="true"
         className="sr-only"

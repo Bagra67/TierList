@@ -6,6 +6,7 @@ export interface FileDataTransfer {
   dropEffect: string;
 }
 
-export function fileDataTransfer(file: File): FileDataTransfer {
-  return { files: [file], types: ['Files'], dropEffect: 'none' };
+// Un ou plusieurs fichiers glissés ensemble
+export function fileDataTransfer(...files: File[]): FileDataTransfer {
+  return { files, types: ['Files'], dropEffect: 'none' };
 }
