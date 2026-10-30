@@ -5,6 +5,50 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [1.0.0] - 2026-10-30
+
+### Fonctionnalités
+
+- frontend : couleurs de l'identité visuelle (#213)
+- frontend : logo, favicon et police de titre (#214)
+- nouvelles couleurs par défaut des tiers (#215)
+- frontend : nouveau plateau de tiers (#216)
+- frontend : présentation de l'accueil et états plus clairs (#218)
+- frontend : squelettes de chargement, scène des retouches finales et variantes de panneaux (#221)
+- frontend : icônes lucide (#222)
+- frontend : aperçu du glisser-déposer sur les plateaux (#227)
+- frontend : écran de tour en trois colonnes (#228)
+- frontend : panneau latéral des retouches finales et « déplacer ici » (#229)
+- votes d'un élément dans les résultats (#230)
+- frontend : révélation des résultats (#231)
+- frontend : conditions d'utilisation, mentions légales et signalement de contenu (#237)
+- frontend : page d'accueil publique (#239)
+- frontend : tremblement des retouches finales dans leurs dernières secondes (#244)
+- frontend : ajout de plusieurs tuiles image d'un coup (#245)
+
+### Corrections
+
+- i18n : franglais remplacé par un français et un anglais simples (#220)
+
+### Refactorisation
+
+- frontend : cohérence de l'interface (#217)
+- frontend : une seule largeur de page pour l'application (#238)
+
+### Documentation
+
+- jalon 1 marqué comme terminé (#234)
+- node 26 indiqué comme LTS (#243)
+
+### Maintenance
+
+- deps : astral-sh/setup-uv passe de 10.3.0 à 10.3.2 (#225)
+- deps : 17 mises à jour du groupe frontend-minor-patch (#223)
+- deps : pillow passe de 12.3.0 à 13.0.0 (#211)
+- mises à jour httpx2 et seaweedfs débloquées (#233)
+- deps : 6 mises à jour du groupe backend-minor-patch (#226)
+- deps : chrislusf/seaweedfs passe de 4.48 à 4.50 (#224)
+
 ## [0.6.1] - 2026-10-21
 
 ### Corrections
