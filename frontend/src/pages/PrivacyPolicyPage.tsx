@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { LegalList, LegalPage, LegalSection } from '../components/LegalPage';
 import { textLinkClassName } from '../components/ui/text-link';
 import {
   CNIL_COMPLAINT_URL,
+  LEGAL_CONTACT_EMAIL,
   LEGAL_CONTROLLER_NAME,
-  PRIVACY_CONTACT_EMAIL,
   PRIVACY_POLICY_UPDATED_AT,
 } from '../constants/legal';
 
@@ -15,94 +15,107 @@ export function PrivacyPolicyPage() {
   const { t } = useTranslation();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 text-sm leading-relaxed">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{t('privacy.title')}</h1>
-        <p className="text-muted-foreground">
-          {t('privacy.updatedAt', { date: new Date(PRIVACY_POLICY_UPDATED_AT) })}
-        </p>
-        <p>{t('privacy.intro')}</p>
-      </header>
-
-      <PolicySection title={t('privacy.controller.title')}>
+    <LegalPage
+      title={t('privacy.title')}
+      updatedAt={PRIVACY_POLICY_UPDATED_AT}
+      intro={t('privacy.intro')}
+    >
+      <LegalSection title={t('privacy.controller.title')}>
         <p>{t('privacy.controller.body', { name: LEGAL_CONTROLLER_NAME })}</p>
         <p>
-          <a href={`mailto:${PRIVACY_CONTACT_EMAIL}`} className={textLinkClassName}>
-            {PRIVACY_CONTACT_EMAIL}
+          <a href={`mailto:${LEGAL_CONTACT_EMAIL}`} className={textLinkClassName}>
+            {LEGAL_CONTACT_EMAIL}
           </a>
         </p>
-      </PolicySection>
+      </LegalSection>
 
-      <PolicySection title={t('privacy.data.title')}>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.data.account')}</li>
-          <li>{t('privacy.data.google')}</li>
-          <li>{t('privacy.data.guest')}</li>
-          <li>{t('privacy.data.content')}</li>
-          <li>{t('privacy.data.games')}</li>
-          <li>{t('privacy.data.technical')}</li>
-        </ul>
-      </PolicySection>
+      <LegalSection title={t('privacy.data.title')}>
+        <LegalList
+          items={[
+            t('privacy.data.account'),
+            t('privacy.data.google'),
+            t('privacy.data.guest'),
+            t('privacy.data.content'),
+            t('privacy.data.games'),
+            t('privacy.data.reports'),
+            t('privacy.data.technical'),
+          ]}
+        />
+      </LegalSection>
 
-      <PolicySection title={t('privacy.purposes.title')}>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.purposes.service')}</li>
-          <li>{t('privacy.purposes.security')}</li>
-        </ul>
+      <LegalSection title={t('privacy.purposes.title')}>
+        <LegalList
+          items={[
+            t('privacy.purposes.service'),
+            t('privacy.purposes.security'),
+            t('privacy.purposes.reports'),
+          ]}
+        />
         <p>{t('privacy.purposes.noAds')}</p>
-      </PolicySection>
+      </LegalSection>
 
-      <PolicySection title={t('privacy.retention.title')}>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.retention.account')}</li>
-          <li>{t('privacy.retention.sessions')}</li>
-          <li>{t('privacy.retention.links')}</li>
-          <li>{t('privacy.retention.guests')}</li>
-          <li>{t('privacy.retention.deleted')}</li>
-          <li>{t('privacy.retention.backups')}</li>
-        </ul>
-      </PolicySection>
+      <LegalSection title={t('privacy.retention.title')}>
+        <LegalList
+          items={[
+            t('privacy.retention.account'),
+            t('privacy.retention.sessions'),
+            t('privacy.retention.links'),
+            t('privacy.retention.guests'),
+            t('privacy.retention.deleted'),
+            t('privacy.retention.backups'),
+            t('privacy.retention.reports'),
+          ]}
+        />
+      </LegalSection>
 
-      <PolicySection title={t('privacy.visibility.title')}>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.visibility.room')}</li>
-          <li>{t('privacy.visibility.results')}</li>
-          <li>{t('privacy.visibility.deletedAccount')}</li>
-        </ul>
-      </PolicySection>
+      <LegalSection title={t('privacy.visibility.title')}>
+        <LegalList
+          items={[
+            t('privacy.visibility.room'),
+            t('privacy.visibility.results'),
+            t('privacy.visibility.deletedAccount'),
+          ]}
+        />
+      </LegalSection>
 
-      <PolicySection title={t('privacy.processors.title')}>
+      <LegalSection title={t('privacy.processors.title')}>
         <p>{t('privacy.processors.intro')}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.processors.minestrator')}</li>
-          <li>{t('privacy.processors.scaleway')}</li>
-          <li>{t('privacy.processors.cloudflare')}</li>
-          <li>{t('privacy.processors.google')}</li>
-          <li>{t('privacy.processors.github')}</li>
-        </ul>
+        <LegalList
+          items={[
+            t('privacy.processors.minestrator'),
+            t('privacy.processors.scaleway'),
+            t('privacy.processors.cloudflare'),
+            t('privacy.processors.google'),
+            t('privacy.processors.github'),
+          ]}
+        />
         <p>{t('privacy.processors.transfers')}</p>
-      </PolicySection>
+      </LegalSection>
 
-      <PolicySection title={t('privacy.cookies.title')}>
+      <LegalSection title={t('privacy.cookies.title')}>
         <p>{t('privacy.cookies.intro')}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.cookies.session')}</li>
-          <li>{t('privacy.cookies.google')}</li>
-          <li>{t('privacy.cookies.guest')}</li>
-          <li>{t('privacy.cookies.local')}</li>
-        </ul>
-      </PolicySection>
+        <LegalList
+          items={[
+            t('privacy.cookies.session'),
+            t('privacy.cookies.google'),
+            t('privacy.cookies.guest'),
+            t('privacy.cookies.local'),
+          ]}
+        />
+      </LegalSection>
 
-      <PolicySection title={t('privacy.security.title')}>
+      <LegalSection title={t('privacy.security.title')}>
         <p>{t('privacy.security.body')}</p>
-      </PolicySection>
+      </LegalSection>
 
-      <PolicySection title={t('privacy.rights.title')}>
+      <LegalSection title={t('privacy.rights.title')}>
         <p>{t('privacy.rights.body')}</p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t('privacy.rights.delete')}</li>
-          <li>{t('privacy.rights.request', { email: PRIVACY_CONTACT_EMAIL })}</li>
-        </ul>
+        <LegalList
+          items={[
+            t('privacy.rights.delete'),
+            t('privacy.rights.request', { email: LEGAL_CONTACT_EMAIL }),
+          ]}
+        />
         <p>
           {t('privacy.rights.cnil')}{' '}
           <a
@@ -114,20 +127,11 @@ export function PrivacyPolicyPage() {
             {t('privacy.rights.cnilLink')}
           </a>
         </p>
-      </PolicySection>
+      </LegalSection>
 
-      <PolicySection title={t('privacy.changes.title')}>
+      <LegalSection title={t('privacy.changes.title')}>
         <p>{t('privacy.changes.body')}</p>
-      </PolicySection>
-    </main>
-  );
-}
-
-function PolicySection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      {children}
-    </section>
+      </LegalSection>
+    </LegalPage>
   );
 }

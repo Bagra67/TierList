@@ -10,6 +10,7 @@ import { getFieldErrors, translateError, translateFieldError } from '../errors/a
 import { AuthPageShell } from '../components/AuthPageShell';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
+import { TermsAcceptance } from '../components/TermsAcceptance';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
@@ -84,6 +85,7 @@ export function RegisterPage() {
         </Button>
       </form>
       <GoogleSignInLink />
+      <TermsAcceptance i18nKey="auth.acceptTerms.register" />
     </AuthPageShell>
   );
 }

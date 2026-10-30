@@ -12,6 +12,7 @@ import { translateGoogleError } from '../errors/googleError';
 import { AuthPageShell } from '../components/AuthPageShell';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
+import { TermsAcceptance } from '../components/TermsAcceptance';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
@@ -82,6 +83,8 @@ export function LoginPage() {
         {t('auth.login.forgotPassword')}
       </Link>
       <GoogleSignInLink />
+      {/* Continuer avec Google crée le compte s'il n'existe pas encore */}
+      <TermsAcceptance i18nKey="auth.acceptTerms.google" />
     </AuthPageShell>
   );
 }

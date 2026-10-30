@@ -1,13 +1,14 @@
 import { Settings } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
 import { DELETE_ACCOUNT_STEP } from '../constants/auth';
-import { CONFIRM_PARAM, ROUTES } from '../constants/routes';
+import { CONFIRM_PARAM } from '../constants/routes';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { LegalLinks } from './LegalLinks';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { Button } from './ui/button';
 import { textLinkClassName } from './ui/text-link';
@@ -80,9 +81,10 @@ export function SettingsPanel() {
         )}
         <section className="mt-6 flex flex-col items-start gap-3">
           <h3 className="font-medium">{t('settings.about')}</h3>
-          <Link to={ROUTES.PRIVACY} className={textLinkClassName}>
-            {t('footer.privacy')}
-          </Link>
+          <LegalLinks
+            className="flex flex-col items-start gap-2"
+            linkClassName={textLinkClassName}
+          />
         </section>
       </dialog>
     </>

@@ -7,6 +7,7 @@ import { ROUTES } from './constants/routes';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
+import { LegalNoticePage } from './pages/LegalNoticePage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
@@ -16,6 +17,7 @@ import { ResultsPage } from './pages/ResultsPage';
 import { RoomPage } from './pages/RoomPage';
 import { TemplateEditorPage } from './pages/TemplateEditorPage';
 import { TemplatesPage } from './pages/TemplatesPage';
+import { TermsPage } from './pages/TermsPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 
 export default function App() {
@@ -40,6 +42,8 @@ export default function App() {
         {/* Ouverte sans compte : le lien suffit à lire les résultats (US-5.3) */}
         <Route path={ROUTES.RESULTS} element={<ResultsPage />} />
         <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
+        <Route path={ROUTES.TERMS} element={<TermsPage />} />
+        <Route path={ROUTES.LEGAL_NOTICE} element={<LegalNoticePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

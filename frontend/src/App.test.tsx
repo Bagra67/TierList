@@ -180,6 +180,19 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["Conditions d'utilisation", "Conditions d'utilisation"],
+    ['Mentions légales', 'Mentions légales'],
+  ])('opens the %s page from the footer, without a session', async (linkName, title) => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+    renderAppAt('/login');
+    await screen.findByRole('heading', { name: 'Connexion' });
+
+    fireEvent.click(within(screen.getByRole('contentinfo')).getByRole('link', { name: linkName }));
+
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
+  });
+
   it('opens the privacy policy from the footer, without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
     renderAppAt('/login');
