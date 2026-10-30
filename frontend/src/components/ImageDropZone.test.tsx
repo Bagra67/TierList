@@ -182,4 +182,56 @@ describe('ImageDropZone', () => {
     expect(zone()).toBeDisabled();
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  describe('several files at once', () => {
+    const secondFile: File = new File(['png'], 'second.png', { type: 'image/png' });
+
+    function renderManyZone(): Handlers & { onSelectMany: Mock<(files: File[]) => void> } {
+      const handlers = {
+        onSelect: vi.fn(),
+        onRemove: vi.fn(),
+        onRefuse: vi.fn(),
+        onSelectMany: vi.fn<(files: File[]) => void>(),
+      };
+      render(
+        <ImageDropZone
+          label="Ajouter une image"
+          size="large"
+          imageUrl={null}
+          isUploading={false}
+          {...handlers}
+        />,
+      );
+      return handlers;
+    }
+
+    it('passes every dropped file to onSelectMany, and says it accepts several', () => {
+      const handlers = renderManyZone();
+
+      fireEvent.drop(zone(), { dataTransfer: fileDataTransfer(pngFile, secondFile) });
+
+      expect(handlers.onSelectMany).toHaveBeenCalledWith([pngFile, secondFile]);
+      expect(handlers.onSelect).not.toHaveBeenCalled();
+      expect(fileInput()).toHaveAttribute('multiple');
+      expect(zone()).toHaveTextContent('Glisser une ou plusieurs images, ou cliquer');
+    });
+
+    it('keeps the single file path for one file', () => {
+      const handlers = renderManyZone();
+
+      fireEvent.change(fileInput(), { target: { files: [pngFile] } });
+
+      expect(handlers.onSelect).toHaveBeenCalledWith(pngFile);
+      expect(handlers.onSelectMany).not.toHaveBeenCalled();
+    });
+
+    it('takes only the first file without onSelectMany', () => {
+      const handlers: Handlers = renderZone();
+
+      fireEvent.drop(zone(), { dataTransfer: fileDataTransfer(pngFile, secondFile) });
+
+      expect(handlers.onSelect).toHaveBeenCalledExactlyOnceWith(pngFile);
+      expect(fileInput()).not.toHaveAttribute('multiple');
+    });
+  });
 });

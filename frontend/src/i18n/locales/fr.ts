@@ -423,13 +423,23 @@ export const fr = {
       tiles: 'Tuiles',
       tileCount: '{{count}} / {{max}} tuiles',
       newTileText: 'Texte de la nouvelle tuile',
-      newTileHint: 'Un texte, une image, ou les deux.',
+      newTileHint:
+        "Un texte, une image, ou les deux. Plusieurs images d'un coup : une tuile par image.",
       addTile: 'Ajouter la tuile',
       addingTile: 'Ajout…',
       tileText: 'Texte de la tuile {{position}}',
       // Nom d'une tuile qui n'a qu'une image, dans les libellés des boutons
       tileName: 'Tuile {{position}}',
       // Vignette d'image : clic pour choisir un fichier, ou glisser-déposer
+      bulk: {
+        progress: 'Envoi des images : {{done}} / {{total}}',
+        added_one: '{{count}} tuile ajoutée.',
+        added_other: '{{count}} tuiles ajoutées.',
+        skipped_one: '{{count}} image ignorée :',
+        skipped_other: '{{count}} images ignorées :',
+        skippedImage: '{{name}} : {{reason}}',
+        noRoom: 'plus de place dans le modèle ({{max_tiles}} tuiles au maximum).',
+      },
       image: {
         addToNew: 'Ajouter une image à la nouvelle tuile',
         replaceNew: "Remplacer l'image de la nouvelle tuile",
@@ -438,6 +448,7 @@ export const fr = {
         replace: "Remplacer l'image de {{name}}",
         remove: "Retirer l'image de {{name}}",
         hint: 'Glisser une image ou cliquer',
+        hintMany: 'Glisser une ou plusieurs images, ou cliquer',
         drop: 'Déposer',
         uploading: "Envoi de l'image…",
       },

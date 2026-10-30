@@ -1,7 +1,8 @@
 import { rectSortingStrategy } from '@dnd-kit/sortable';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, GripVertical, Trash2 } from 'lucide-react';
-import { type FormEvent, type RefObject, useId, useRef, useState } from 'react';
+import { cn } from 'cn';
+import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { type UploadedImage, useUploadImage } from '../api/images';
@@ -17,12 +18,14 @@ import {
 } from '../api/templates';
 import { TILE_TEXT_MAX_LENGTH } from '../constants/templates';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import { EMPHASIZED_BORDER_CLASS } from './boardStyles';
 import { ErrorMessage } from './ErrorMessage';
 import { ImageDropZone } from './ImageDropZone';
 import { InlineEditField } from './InlineEditField';
 import { SortableList } from './SortableList';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
+import { type BulkImageTiles, type SkippedImage, useBulkImageTiles } from './useBulkImageTiles';
 
 interface TileEditorProps {
   template: Template;
@@ -35,11 +38,16 @@ interface TileEditorProps {
 export function TileEditor({ template }: TileEditorProps) {
   const titleId: string = useId();
   const addFormRef: RefObject<HTMLFormElement | null> = useRef<HTMLFormElement>(null);
+  const tileListRef: RefObject<HTMLOListElement | null> = useRef<HTMLOListElement>(null);
   const addMutation: TemplateChange<NewTile> = useAddTile(template.id);
   const updateMutation: TemplateChange<TileUpdate> = useUpdateTile(template.id);
   const deleteMutation: TemplateChange<string> = useDeleteTile(template.id);
   const newImageUpload: UseMutationResult<UploadedImage, Error, File> = useUploadImage();
   const tileImageUpload: UseMutationResult<UploadedImage, Error, File> = useUploadImage();
+  // Plusieurs images déposées d'un coup sur la vignette de la nouvelle tuile (#242)
+  const bulk = useBulkImageTiles(template);
+  // Tuiles du dernier ajout (une seule, ou tout un lot) : mises en avant jusqu'au suivant
+  const [lastAddedTileIds, setLastAddedTileIds] = useState<string[]>([]);
   // Image envoyée pour la tuile en cours d'ajout, rattachée à l'ajout
   const [newImage, setNewImage] = useState<UploadedImage | null>(null);
   // Tuile dont l'image est en cours d'envoi puis d'enregistrement
@@ -51,6 +59,7 @@ export function TileEditor({ template }: TileEditorProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiles: Tile[] = template.tiles;
   const isFull: boolean = tiles.length >= template.max_tiles;
+  const isAddingImages: boolean = bulk.state?.isRunning ?? false;
   // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
   const isChangingOrder: boolean = updateMutation.isPending || deleteMutation.isPending;
   const failedTileId: string | undefined = updateMutation.variables?.tileId;
@@ -69,6 +78,16 @@ export function TileEditor({ template }: TileEditorProps) {
     lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
   const newTileError: Error | null = addMutation.error ?? newImageUpload.error;
   const unsupportedImageMessage: string = t('errors.api.image_unsupported_format');
+
+  // La dernière tuile ajoutée défile dans la vue quand la grille défile (grand écran)
+  useEffect(() => {
+    const lastTileId: string | undefined = lastAddedTileIds.at(-1);
+    if (lastTileId === undefined) return;
+    const card: Element | null | undefined = tileListRef.current?.querySelector(
+      `[data-tile-id="${lastTileId}"]`,
+    );
+    card?.scrollIntoView?.({ block: 'nearest' });
+  }, [lastAddedTileIds]);
 
   function tileLabel(tile: Tile): string {
     return tile.text ?? t('templates.editor.tileName', { position: tile.position + 1 });
@@ -116,7 +135,16 @@ export function TileEditor({ template }: TileEditorProps) {
   function chooseNewImage(file: File) {
     setNewTileLocalError(null);
     addMutation.reset();
+    bulk.clear();
     newImageUpload.mutate(file, { onSuccess: setNewImage });
+  }
+
+  // Plusieurs images d'un coup : une tuile par image, sans passer par le formulaire
+  async function addManyImages(files: File[]) {
+    setNewTileLocalError(null);
+    addMutation.reset();
+    setLastAddedTileIds([]);
+    setLastAddedTileIds(await bulk.addImages(files));
   }
 
   // Retire aussi l'erreur d'un envoi précédent : elle ne concerne plus l'image affichée
@@ -134,15 +162,21 @@ export function TileEditor({ template }: TileEditorProps) {
       return;
     }
     setNewTileLocalError(null);
+    bulk.clear();
+    setLastAddedTileIds([]);
     // Seuls les champs renseignés sont envoyés
     const newTile: NewTile = {};
     if (text !== '') newTile.text = text;
     if (newImage !== null) newTile.image_id = newImage.id;
+    let updated: Template;
     try {
-      await addMutation.mutateAsync(newTile);
+      updated = await addMutation.mutateAsync(newTile);
     } catch {
       return; // l'erreur est affichée depuis addMutation.error
     }
+    // Une tuile ajoutée va en dernier
+    const added: Tile | undefined = updated.tiles.at(-1);
+    if (added !== undefined) setLastAddedTileIds([added.id]);
     addFormRef.current?.reset();
     setNewImage(null);
     newImageUpload.reset();
@@ -161,7 +195,10 @@ export function TileEditor({ template }: TileEditorProps) {
       {tiles.length > 0 && (
         // Grand écran : seule la grille défile, le compteur et le formulaire d'ajout restent
         // visibles. content-start : les rangées gardent leur hauteur au lieu de s'étirer
-        <ol className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-h-0 lg:flex-1 lg:content-start lg:overflow-y-auto lg:p-1 xl:grid-cols-4">
+        <ol
+          ref={tileListRef}
+          className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-h-0 lg:flex-1 lg:content-start lg:overflow-y-auto lg:p-1 xl:grid-cols-4"
+        >
           <SortableList
             items={tiles}
             strategy={rectSortingStrategy}
@@ -173,7 +210,11 @@ export function TileEditor({ template }: TileEditorProps) {
               <li
                 ref={setNodeRef}
                 style={style}
-                className="flex flex-col gap-2 rounded-md border bg-card p-2"
+                data-tile-id={tile.id}
+                className={cn(
+                  'flex flex-col gap-2 rounded-md border bg-card p-2',
+                  lastAddedTileIds.includes(tile.id) && EMPHASIZED_BORDER_CLASS,
+                )}
               >
                 <ImageDropZone
                   size="fill"
@@ -267,9 +308,10 @@ export function TileEditor({ template }: TileEditorProps) {
           }
           imageUrl={newImage?.url ?? null}
           isUploading={newImageUpload.isPending}
-          disabled={isFull}
+          disabled={isFull || isAddingImages}
           removeLabel={t('templates.editor.image.removeNew')}
           onSelect={chooseNewImage}
+          onSelectMany={(files) => void addManyImages(files)}
           onRemove={removeNewImage}
           onRefuse={() => setNewTileLocalError(unsupportedImageMessage)}
         />
@@ -286,11 +328,12 @@ export function TileEditor({ template }: TileEditorProps) {
         <Button
           type="submit"
           variant="outline"
-          disabled={isFull || addMutation.isPending || newImageUpload.isPending}
+          disabled={isFull || addMutation.isPending || newImageUpload.isPending || isAddingImages}
         >
           {addMutation.isPending ? t('templates.editor.addingTile') : t('templates.editor.addTile')}
         </Button>
       </form>
+      {bulk.state !== null && <BulkImageTilesReport report={bulk.state} />}
       {/* La limite est vérifiée par le backend ; l'interface l'annonce avant qu'on essaie */}
       {isFull && (
         <p className="text-sm text-muted-foreground">
@@ -302,5 +345,44 @@ export function TileEditor({ template }: TileEditorProps) {
         <ErrorMessage>{translateError(t, newTileError)}</ErrorMessage>
       )}
     </section>
+  );
+}
+
+// Progression puis bilan d'un ajout de plusieurs images : combien de tuiles ont été ajoutées, et
+// chaque image ignorée avec sa raison. Un seul status : les lecteurs d'écran lisent l'avancée
+function BulkImageTilesReport({ report }: { report: BulkImageTiles }) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const progress: number = report.total === 0 ? 100 : (report.done / report.total) * 100;
+
+  return (
+    <div role="status" className="flex w-full flex-col gap-2 text-sm">
+      {report.isRunning ? (
+        <>
+          <p>{t('templates.editor.bulk.progress', { done: report.done, total: report.total })}</p>
+          <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+          </div>
+        </>
+      ) : (
+        <p className="font-medium">
+          {t('templates.editor.bulk.added', { count: report.addedCount })}
+        </p>
+      )}
+      {report.skipped.length > 0 && (
+        <div className="flex flex-col gap-1 text-destructive">
+          <p>{t('templates.editor.bulk.skipped', { count: report.skipped.length })}</p>
+          <ul className="list-disc pl-5">
+            {report.skipped.map((skippedImage: SkippedImage, index: number) => (
+              <li key={`${skippedImage.fileName}-${index}`}>
+                {t('templates.editor.bulk.skippedImage', {
+                  name: skippedImage.fileName,
+                  reason: skippedImage.reason,
+                })}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
