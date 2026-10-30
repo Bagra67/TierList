@@ -12,7 +12,12 @@
           "secretKey": "tierlist-dev-not-a-secret"
         }
       ],
-      "actions": ["Read:tierlist-images", "Write:tierlist-images", "List:tierlist-images"]
+      "actions": [
+        "Read:tierlist-images",
+        "Write:tierlist-images",
+        "WriteAcp:tierlist-images",
+        "List:tierlist-images"
+      ]
     }
   ]
 }
