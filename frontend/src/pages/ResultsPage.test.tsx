@@ -149,6 +149,32 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
+  it('keeps the chosen player when the reveal is replayed', async () => {
+    stubResults();
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
+
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue('1');
+    expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
+  });
+
+  it('does not reveal again when the absent votes box is toggled', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('group', { name: 'S' });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+    // Pendant la lecture de l'autre variante, rien à rejouer
+    expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
+
+    expect(await screen.findByRole('group', { name: 'S' })).not.toHaveClass(
+      'motion-safe:animate-reveal',
+    );
+  });
+
   it('shows the votes of the first item by default, with the players', async () => {
     stubResults();
     renderResultsPage();
