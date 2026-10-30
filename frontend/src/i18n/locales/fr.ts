@@ -416,6 +416,8 @@ export const fr = {
       title: 'Partie en cours',
       itemProgress: 'Élément {{number}} sur {{total}}',
       timeLeft: 'Temps restant',
+      progress: 'Progression de la partie',
+      hostControls: "Commandes de l'hôte",
       currentItemImage: "Image de l'élément en cours",
       placedItemImage: "Image d'un élément placé",
       placedCount_one: 'Placé {{placed}} / {{count}} connecté',

@@ -403,6 +403,8 @@ export const en: Translation = {
       title: 'Game in progress',
       itemProgress: 'Item {{number}} of {{total}}',
       timeLeft: 'Time left',
+      progress: 'Game progress',
+      hostControls: 'Host controls',
       currentItemImage: 'Image of the current item',
       placedItemImage: 'Image of a placed item',
       placedCount_one: 'Placed {{placed}} / {{count}} connected',

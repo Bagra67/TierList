@@ -22,7 +22,8 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
-import { EMPHASIZED_BORDER_CLASS, ITEM_CHIP_CLASS } from './boardStyles';
+import { CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS, ITEM_CHIP_CLASS } from './boardStyles';
+import { CurrentItemCard } from './CurrentItemCard';
 import {
   type DragPreviewContent,
   DragPreview,
@@ -32,7 +33,6 @@ import {
 } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
-import { panelVariants } from './ui/panel';
 
 // Clés de focus de l'item en cours (useFocusAfterUpdate)
 const CURRENT_FOCUS = { drag: 'current:drag', earlier: 'current:earlier', later: 'current:later' };
@@ -42,9 +42,10 @@ interface GameBoardProps {
   game: CurrentGame;
 }
 
-// Le plateau privé du lecteur (US-3.3) : ses tiers, les items qu'il a déjà placés (ils ne bougent
-// plus avant le cooldown) et l'item en cours, à déposer dans un tier à la position voulue. À la
-// souris ou au doigt par glisser-déposer ; au clavier par les boutons « Placer dans » et ←/→.
+// Le plateau privé du lecteur (US-3.3) : à gauche, la carte de l'élément en cours ; à droite, ses
+// tiers et les items qu'il a déjà placés (ils ne bougent plus avant le cooldown). L'élément en cours
+// se dépose dans un tier à la position voulue : à la souris ou au doigt en glissant sa carte ; au
+// clavier par les boutons « Placer dans » et ←/→.
 export function GameBoard({ room, game }: GameBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
@@ -150,8 +151,10 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   return (
-    <section ref={sectionRef} className="flex w-full flex-col gap-3">
-      <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+    <section
+      ref={sectionRef}
+      className="grid w-full items-start gap-x-6 gap-y-3 lg:grid-cols-[12rem_minmax(0,1fr)]"
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -161,10 +164,10 @@ export function GameBoard({ room, game }: GameBoardProps) {
           screenReaderInstructions: { draggable: t('rooms.game.dnd.instructions') },
         }}
       >
-        {currentPlacement === undefined && (
-          <div className={cn(panelVariants({ variant: 'dashed' }), 'items-start')}>
-            <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
-            {/* L'item est affiché en grand au-dessus : ici, seulement la poignée à glisser */}
+        <div className="flex flex-col items-center gap-3 lg:row-span-2">
+          {/* Pas encore placé : la carte elle-même se glisse ; placé, elle reste en vue et c'est sa
+              puce, dans le tier, qui bouge */}
+          {currentPlacement === undefined ? (
             <DraggableItem
               id={draggableId}
               label={itemLabel}
@@ -172,12 +175,19 @@ export function GameBoard({ room, game }: GameBoardProps) {
               focusKey={CURRENT_FOCUS.drag}
               disabled={pending}
               emphasized
+              className={CURRENT_CARD_CLASS}
             >
-              <span className="px-2 font-medium">{t('rooms.game.dragHandle')}</span>
+              <GameItemView item={currentItem} imageLabel={itemLabel} size="large" />
             </DraggableItem>
-          </div>
-        )}
-        <ol className="flex w-full flex-col gap-2">
+          ) : (
+            <CurrentItemCard item={currentItem} />
+          )}
+          {currentPlacement === undefined && (
+            <p className="text-sm text-muted-foreground">{t('rooms.game.dock')}</p>
+          )}
+        </div>
+        <h2 className="text-lg font-semibold">{t('rooms.game.board')}</h2>
+        <ol className="flex w-full flex-col gap-2 lg:col-start-2">
           {game.tiers.map((tier) => (
             <TierRow
               key={tier.id}
@@ -197,7 +207,9 @@ export function GameBoard({ room, game }: GameBoardProps) {
         <DragPreview previewOf={previewOf} />
       </DndContext>
       {placeMutation.isError && (
-        <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
+        <div className="lg:col-start-2">
+          <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
+        </div>
       )}
     </section>
   );

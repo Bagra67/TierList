@@ -86,6 +86,8 @@ interface DraggableItemProps {
   disabled: boolean;
   // L'item à placer maintenant (tour en cours) : bordure de l'accent, pour le repérer
   emphasized?: boolean;
+  // Autre forme que la puce (carte de l'élément en cours)
+  className?: string;
   children: ReactNode;
 }
 
@@ -98,6 +100,7 @@ export function DraggableItem({
   focusKey,
   disabled,
   emphasized = false,
+  className,
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -117,6 +120,7 @@ export function DraggableItem({
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && EMPHASIZED_BORDER_CLASS,
         isDragging && 'opacity-40',
+        className,
       )}
     >
       {children}
