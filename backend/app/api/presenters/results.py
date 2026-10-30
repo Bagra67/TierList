@@ -28,6 +28,8 @@ def game_results_response(closed: ClosedGameResults, storage: ImageStorage) -> G
                 item_id=tile.id,
                 votes_per_tier=list(item.votes_per_tier),
                 absent_count=item.absent_count,
+                player_indexes_per_tier=[list(voters) for voters in item.voters_per_tier],
+                absent_player_indexes=list(item.absent_player_indexes),
                 median_tier_id=median_tier_id,
             )
         )

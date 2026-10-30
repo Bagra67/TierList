@@ -3992,6 +3992,23 @@
             "type": "integer",
             "title": "Absent Count"
           },
+          "player_indexes_per_tier": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Player Indexes Per Tier"
+          },
+          "absent_player_indexes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Absent Player Indexes"
+          },
           "median_tier_id": {
             "anyOf": [
               {
@@ -4010,6 +4027,8 @@
           "item_id",
           "votes_per_tier",
           "absent_count",
+          "player_indexes_per_tier",
+          "absent_player_indexes",
           "median_tier_id"
         ],
         "title": "ItemDistributionResponse",
