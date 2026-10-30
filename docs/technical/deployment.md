@@ -215,7 +215,7 @@ Settings → Environments: the environments, secrets and variables of §4. The `
 
 1. Merge a PR into `develop`: CI, then Deploy (§6). Or re-run the last Deploy run (Actions → Deploy → run → **Re-run all jobs**): a re-run reads the **current** secrets and variables. Running Deploy by hand only accepts a `vX.Y.Z` tag, not `develop`.
 2. After changing a secret or a variable, redeploy: the pod `.env` is only written by the deployment.
-3. Checks: `/api/health` reports the deployed version; `/api/health/db` answers; the home page shows the sign-in screen; "Continuer avec Google" opens the Google account chooser; sign-up sends the verification email (Scaleway: Email activity); an image upload shows the image; a game between two browsers (WebSocket).
+3. Checks: `/api/health` reports the deployed version; `/api/health/db` answers; the home page shows the visitor home; "Continuer avec Google" opens the Google account chooser; sign-up sends the verification email (Scaleway: Email activity); an image upload shows the image; a game between two browsers (WebSocket).
 4. The panel console can stop refreshing after "Creating virtual environment": trust `/api/health`, not the console.
 
 ### 5.9 Production

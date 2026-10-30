@@ -85,6 +85,6 @@ describe('changeLanguage', () => {
   it('interpolates values', async () => {
     await changeLanguage('en');
 
-    expect(i18n.t('auth.signedInAs', { name: 'Alice' })).toBe('Signed in as Alice');
+    expect(i18n.t('home.signedIn.title', { name: 'Alice' })).toBe('Ready for a game, Alice?');
   });
 });

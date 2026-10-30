@@ -29,12 +29,15 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('redirects to the login page without a session', async () => {
+  it('shows the public home page without a session', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Classez ensemble, en direct.' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
   it('restores the session and shows the home page', async () => {
@@ -42,8 +45,9 @@ describe('App', () => {
 
     renderAppAt('/');
 
-    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
-    expect(screen.getByText(/Connecté en tant que Alice/)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Prêt pour une partie, Alice ?' }),
+    ).toBeInTheDocument();
   });
 
   it('shows an alert when the backend cannot be reached', async () => {
@@ -101,7 +105,9 @@ describe('App', () => {
 
     renderAppAt('/login');
 
-    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Prêt pour une partie, Alice ?' }),
+    ).toBeInTheDocument();
   });
 
   it('returns to the requested page, query string included, after signing in', async () => {
@@ -109,15 +115,17 @@ describe('App', () => {
       'POST /auth/refresh': unauthorized,
       'POST /auth/login': tokenResponse('login-token'),
       'GET /auth/me': () => Response.json(alice),
+      'GET /history': () => Response.json({ games: [], has_more: false }),
     });
-    renderAppAt('/?confirm=delete-account');
+    // Une page privée : sans session, elle mène à la connexion, puis y revient
+    renderAppAt('/history?confirm=delete-account');
     await screen.findByRole('heading', { name: 'Connexion' });
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
     fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
 
-    // ?confirm=delete-account rouvre le dialogue de suppression sur la page d'accueil
+    // ?confirm=delete-account rouvre le dialogue de suppression, sur n'importe quelle page
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 
