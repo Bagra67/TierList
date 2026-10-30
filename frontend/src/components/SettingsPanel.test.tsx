@@ -92,7 +92,7 @@ describe('SettingsPanel', () => {
       'DELETE /auth/me': () => new Response(null, { status: 204 }),
     });
     renderAppAt('/');
-    await screen.findByText(/Connecté en tant que Alice/);
+    await screen.findByRole('heading', { level: 1, name: 'Prêt pour une partie, Alice ?' });
     const panel: HTMLElement = await openPanel();
     expect(within(panel).getByRole('heading', { name: 'Compte' })).toBeInTheDocument();
 

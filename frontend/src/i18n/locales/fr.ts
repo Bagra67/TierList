@@ -8,9 +8,31 @@ export const fr = {
     theme: 'Thème',
   },
   home: {
-    title: 'Accueil',
-    intro:
-      'Classez ensemble, en direct : chacun place les mêmes éléments dans sa tier list, puis vous comparez les résultats.',
+    visitor: {
+      title: 'Classez ensemble, en direct.',
+      intro:
+        'Chacun place les mêmes éléments dans sa tier list, sans voir celle des autres. À la fin, vous comparez qui a mis quoi, et où.',
+      register: 'Créer un compte',
+      signIn: "J'ai déjà un compte",
+    },
+    signedIn: {
+      title: 'Prêt pour une partie, {{name}} ?',
+      intro: "Entrez le code d'une salle, ou ouvrez-en une avec un de vos modèles.",
+    },
+    board: {
+      description:
+        'Exemple de tier list : trois joueurs ont classé des plats dans les tiers S, A, B et C ; la pizza est en S pour tous les trois.',
+      items: {
+        pizza: 'Pizza',
+        crepes: 'Crêpes',
+        sushi: 'Sushi',
+        tacos: 'Tacos',
+        ramen: 'Ramen',
+        croissant: 'Croissant',
+        burger: 'Burger',
+        salad: 'Salade',
+      },
+    },
     steps: {
       title: 'Comment ça marche',
       template: 'Préparez un modèle : ses tiers et ses tuiles, en texte ou en image.',
@@ -22,6 +44,17 @@ export const fr = {
       title: 'Rejoindre une salle',
       code: 'Code de la salle',
       submit: 'Rejoindre',
+    },
+    recentTemplates: {
+      title: 'Vos modèles',
+      all: 'Tous mes modèles',
+      empty: "Aucun modèle pour l'instant : préparez le premier pour ouvrir une salle.",
+    },
+    recentGames: {
+      title: 'Vos dernières parties',
+      all: "Tout l'historique",
+      empty:
+        'Aucune partie terminée pour le moment : les résultats de vos parties apparaîtront ici.',
     },
   },
   nav: {
@@ -274,7 +307,6 @@ export const fr = {
     password: 'Mot de passe',
     displayName: 'Nom affiché',
     continueWithGoogle: 'Continuer avec Google',
-    signedInAs: 'Connecté en tant que {{name}}',
     logout: 'Se déconnecter',
     acceptTerms: {
       register:

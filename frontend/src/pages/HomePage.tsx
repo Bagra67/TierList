@@ -1,65 +1,77 @@
-import { cn } from 'cn';
-import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
 import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
+import { ErrorMessage } from '../components/ErrorMessage';
+import { HomeBoard } from '../components/home/HomeBoard';
+import { HomeSteps } from '../components/home/HomeSteps';
+import { RecentGames } from '../components/home/RecentGames';
+import { RecentTemplates } from '../components/home/RecentTemplates';
 import { JoinRoomForm } from '../components/JoinRoomForm';
-import { Button } from '../components/ui/button';
-import { LOGO_BARS } from '../constants/brand';
-import { ROUTES } from '../constants/routes';
-import { readableTextColor } from '../theme/contrast';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
-import { CONTENT_COLUMN_CLASS } from '../constants/layout';
+import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
+import { ROUTES } from '../constants/routes';
 
-// Les étapes d'une partie, dans l'ordre (home.steps.*), numérotées aux couleurs du logo : une
-// étape de plus doit choisir sa couleur
-const HOME_STEPS = [
-  { key: 'template', color: LOGO_BARS[0].color },
-  { key: 'room', color: LOGO_BARS[1].color },
-  { key: 'play', color: LOGO_BARS[2].color },
-] as const;
-
+// Page d'accueil, publique : le visiteur y voit ce qu'est une partie, peut rejoindre une salle
+// avec son code (en invité) ou créer un compte ; le joueur connecté y rejoint une salle, ou en
+// ouvre une avec un de ses modèles récents, et retrouve ses dernières parties
 export function HomePage() {
-  const { data: user } = useCurrentUser();
+  const { data: user, isPending, isError } = useCurrentUser();
   const { t } = useTranslation();
-  const stepsHeadingId: string = useId();
+
+  if (isPending) {
+    return (
+      <PageContainer width="app">
+        <LoadingSkeleton shape="list" />
+      </PageContainer>
+    );
+  }
+  if (isError) {
+    return (
+      <PageContainer width="app">
+        <ErrorMessage>{t('common.backendUnreachable')}</ErrorMessage>
+      </PageContainer>
+    );
+  }
 
   return (
-    <PageContainer width="app">
-      <div className={cn(CONTENT_COLUMN_CLASS, 'flex flex-col items-start gap-6')}>
-        {user && <p className="text-sm">{t('auth.signedInAs', { name: user.display_name })}</p>}
-        {user && <EmailVerificationBanner user={user} />}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold">{t('home.title')}</h1>
-          <p className="text-lg">{t('home.intro')}</p>
+    <PageContainer width="app" className="flex flex-col gap-14">
+      {user !== null && <EmailVerificationBanner user={user} />}
+      <section className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
+        <div className="flex flex-col items-start gap-6">
+          <h1 className="text-5xl leading-[0.95] font-black tracking-tight text-balance font-stretch-125% sm:text-6xl">
+            {user === null
+              ? t('home.visitor.title')
+              : t('home.signedIn.title', { name: user.display_name })}
+          </h1>
+          <p className="max-w-xl text-lg text-muted-foreground">
+            {user === null ? t('home.visitor.intro') : t('home.signedIn.intro')}
+          </p>
+          <JoinRoomForm className="max-w-md" />
+          {user === null && (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Button asChild size="lg">
+                <Link to={ROUTES.REGISTER}>{t('home.visitor.register')}</Link>
+              </Button>
+              <Link to={ROUTES.LOGIN} className={textLinkClassName}>
+                {t('home.visitor.signIn')}
+              </Link>
+            </div>
+          )}
         </div>
-        <section aria-labelledby={stepsHeadingId} className="flex w-full flex-col gap-3">
-          <h2 id={stepsHeadingId} className="text-lg font-semibold">
-            {t('home.steps.title')}
-          </h2>
-          <ol className="flex flex-col gap-2">
-            {HOME_STEPS.map((step, index: number) => (
-              <li key={step.key} className="flex items-center gap-3">
-                {/* La liste numérotée annonce déjà le rang : le chiffre affiché est décoratif */}
-                <span
-                  aria-hidden="true"
-                  style={{ backgroundColor: step.color, color: readableTextColor(step.color) }}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md font-heading font-black"
-                >
-                  {index + 1}
-                </span>
-                {t(`home.steps.${step.key}`)}
-              </li>
-            ))}
-          </ol>
-          <Button asChild className="self-start">
-            <Link to={ROUTES.TEMPLATES}>{t('home.prepareTemplate')}</Link>
-          </Button>
-        </section>
-        <JoinRoomForm />
-      </div>
+        <HomeBoard />
+      </section>
+      {user === null ? (
+        <HomeSteps />
+      ) : (
+        <div className="grid gap-10 md:grid-cols-2">
+          <RecentTemplates />
+          <RecentGames />
+        </div>
+      )}
     </PageContainer>
   );
 }

@@ -8,9 +8,31 @@ export const en: Translation = {
     theme: 'Theme',
   },
   home: {
-    title: 'Home',
-    intro:
-      'Rank together, live: everyone places the same items in their own tier list, then you compare the results.',
+    visitor: {
+      title: 'Rank together, live.',
+      intro:
+        "Everyone places the same items in their own tier list, without seeing the others'. At the end, you compare who put what, and where.",
+      register: 'Create an account',
+      signIn: 'I already have an account',
+    },
+    signedIn: {
+      title: 'Ready for a game, {{name}}?',
+      intro: 'Enter the code of a room, or open one with one of your templates.',
+    },
+    board: {
+      description:
+        'Example tier list: three players ranked dishes in the tiers S, A, B and C; pizza is in S for all three.',
+      items: {
+        pizza: 'Pizza',
+        crepes: 'Crêpes',
+        sushi: 'Sushi',
+        tacos: 'Tacos',
+        ramen: 'Ramen',
+        croissant: 'Croissant',
+        burger: 'Burger',
+        salad: 'Salad',
+      },
+    },
     steps: {
       title: 'How it works',
       template: 'Prepare a template: its tiers and its tiles, as text or images.',
@@ -22,6 +44,16 @@ export const en: Translation = {
       title: 'Join a room',
       code: 'Room code',
       submit: 'Join',
+    },
+    recentTemplates: {
+      title: 'Your templates',
+      all: 'All my templates',
+      empty: 'No template yet: prepare the first one to open a room.',
+    },
+    recentGames: {
+      title: 'Your latest games',
+      all: 'All history',
+      empty: 'No finished game yet: the results of your games will show up here.',
     },
   },
   nav: {
@@ -266,7 +298,6 @@ export const en: Translation = {
     password: 'Password',
     displayName: 'Display name',
     continueWithGoogle: 'Continue with Google',
-    signedInAs: 'Signed in as {{name}}',
     logout: 'Sign out',
     acceptTerms: {
       register:

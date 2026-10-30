@@ -31,8 +31,9 @@ export default function App() {
         <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+        {/* Publique : une vitrine pour le visiteur, son accueil pour le joueur connecté */}
+        <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route element={<RequireAuth />}>
-          <Route path={ROUTES.HOME} element={<HomePage />} />
           <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
           <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />

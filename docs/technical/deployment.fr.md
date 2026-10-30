@@ -215,7 +215,7 @@ Settings → Environments : les environnements, secrets et variables du §4. L'e
 
 1. Merger une PR dans `develop` : CI, puis Deploy (§6). Ou relancer la dernière exécution de Deploy (Actions → Deploy → exécution → **Re-run all jobs**) : une relance lit les secrets et variables **actuels**. Lancer Deploy à la main n'accepte qu'un tag `vX.Y.Z`, pas `develop`.
 2. Après avoir changé un secret ou une variable, redéployer : le `.env` du pod n'est écrit que par le déploiement.
-3. Vérifications : `/api/health` annonce la version déployée ; `/api/health/db` répond ; la page d'accueil affiche l'écran de connexion ; « Continuer avec Google » ouvre le choix de compte Google ; l'inscription envoie l'email de vérification (Scaleway : Email activity) ; un envoi d'image affiche l'image ; une partie entre deux navigateurs (WebSocket).
+3. Vérifications : `/api/health` annonce la version déployée ; `/api/health/db` répond ; la page d'accueil affiche l'accueil visiteur ; « Continuer avec Google » ouvre le choix de compte Google ; l'inscription envoie l'email de vérification (Scaleway : Email activity) ; un envoi d'image affiche l'image ; une partie entre deux navigateurs (WebSocket).
 4. La console du panel peut cesser de se rafraîchir après « Creating virtual environment » : se fier à `/api/health`, pas à la console.
 
 ### 5.9 Production
