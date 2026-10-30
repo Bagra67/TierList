@@ -21,3 +21,9 @@ export interface ResultItem {
 }
 
 export type ResultItems = ReadonlyMap<string, ResultItem>;
+
+// L'élément dont le panneau des votes est ouvert, partagé par les vues : cliquer une tuile le choisit
+export interface ItemSelection {
+  selectedItemId: string | null;
+  onSelect: (itemId: string) => void;
+}

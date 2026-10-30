@@ -4,13 +4,15 @@ import type { ItemDistribution } from '../api/results';
 import type { GameTier } from '../api/rooms';
 import { tierColorStyle } from './boardStyles';
 import { GameItemView } from './GameItemView';
-import type { ResultItem, ResultItems } from './resultsViews';
+import { ResultItemButton } from './ResultItemButton';
+import type { ItemSelection, ResultItem, ResultItems } from './resultsViews';
 
 interface ResultsDistributionTableProps {
   tiers: GameTier[];
   items: ResultItems;
   distribution: ItemDistribution[];
   includeAbsentVotes: boolean;
+  selection: ItemSelection;
 }
 
 // Vue globale (US-5.2) : pour chaque item, combien de joueurs l'ont mis dans chaque tier, et
@@ -20,6 +22,7 @@ export function ResultsDistributionTable({
   items,
   distribution,
   includeAbsentVotes,
+  selection,
 }: ResultsDistributionTableProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -56,11 +59,18 @@ export function ResultsDistributionTable({
             return (
               <tr key={entry.item_id} className="border-b last:border-0">
                 <th scope="row" className="px-3 py-2 text-left font-normal">
-                  <GameItemView
-                    item={resultItem.item}
-                    imageLabel={resultItem.imageLabel}
-                    size="small"
-                  />
+                  <ResultItemButton
+                    itemId={entry.item_id}
+                    name={resultItem.item.text ?? resultItem.imageLabel}
+                    selection={selection}
+                    className="rounded-md p-1"
+                  >
+                    <GameItemView
+                      item={resultItem.item}
+                      imageLabel={resultItem.imageLabel}
+                      size="small"
+                    />
+                  </ResultItemButton>
                 </th>
                 {entry.votes_per_tier.map((votes: number, index: number) => (
                   <td

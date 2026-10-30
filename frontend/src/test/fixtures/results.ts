@@ -29,9 +29,31 @@ export const closedGameResults: GameResults = {
   ],
   unranked_item_ids: [CURRY],
   distribution: [
-    { item_id: PAPRIKA, votes_per_tier: [1, 1], absent_count: 0, median_tier_id: A },
-    { item_id: CHORIZO, votes_per_tier: [0, 1], absent_count: 1, median_tier_id: A },
-    { item_id: CURRY, votes_per_tier: [0, 0], absent_count: 2, median_tier_id: null },
+    // Indices des joueurs : 0 = Alice, 1 = Lou
+    {
+      item_id: PAPRIKA,
+      votes_per_tier: [1, 1],
+      absent_count: 0,
+      player_indexes_per_tier: [[0], [1]],
+      absent_player_indexes: [],
+      median_tier_id: A,
+    },
+    {
+      item_id: CHORIZO,
+      votes_per_tier: [0, 1],
+      absent_count: 1,
+      player_indexes_per_tier: [[], [0]],
+      absent_player_indexes: [1],
+      median_tier_id: A,
+    },
+    {
+      item_id: CURRY,
+      votes_per_tier: [0, 0],
+      absent_count: 2,
+      player_indexes_per_tier: [[], []],
+      absent_player_indexes: [0, 1],
+      median_tier_id: null,
+    },
   ],
   players: [
     {
@@ -57,5 +79,9 @@ export const closedGameResults: GameResults = {
 export const closedGameResultsWithoutAbsents: GameResults = {
   ...closedGameResults,
   include_absent_votes: false,
-  distribution: closedGameResults.distribution.map((entry) => ({ ...entry, absent_count: 0 })),
+  distribution: closedGameResults.distribution.map((entry) => ({
+    ...entry,
+    absent_count: 0,
+    absent_player_indexes: [],
+  })),
 };
