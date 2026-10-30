@@ -24,7 +24,8 @@ interface ItemVotesPanelProps {
 }
 
 // Détail d'un item : pour chaque tier, combien de joueurs l'y ont mis et lesquels, puis les absents.
-// Le même décompte que la vue globale, avec les noms (le serveur dit qui est compté, case comprise)
+// Le même décompte que la vue globale. Les noms ne viennent qu'avec les votes absents : le serveur
+// ne les donne pas sans, pour ne pas dire qui a raté l'item au tour puis l'a rattrapé
 export function ItemVotesPanel({
   tiers,
   resultItem,
@@ -34,7 +35,6 @@ export function ItemVotesPanel({
 }: ItemVotesPanelProps) {
   const { t, i18n }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
-  const itemName: string = resultItem.item.text ?? resultItem.imageLabel;
   // Une barre pleine = tous les joueurs
   const playerCount: number = Math.max(playerNames.length, 1);
   const nameList: Intl.ListFormat = new Intl.ListFormat(i18n.language, {
@@ -42,7 +42,9 @@ export function ItemVotesPanel({
     type: 'conjunction',
   });
 
-  function namesOf(indexes: number[]): string {
+  // Les noms de ces joueurs, ou rien quand le serveur ne les donne pas
+  function namesOf(indexes: number[] | undefined): string | undefined {
+    if (indexes === undefined || indexes.length === 0) return undefined;
     return nameList.format(indexes.map((index: number) => playerNames[index] ?? ''));
   }
 
@@ -54,79 +56,74 @@ export function ItemVotesPanel({
         </span>
         {/* Annoncé quand un autre item est choisi */}
         <h2 id={headingId} aria-live="polite" className="font-semibold">
-          {t('results.votes.title', { item: itemName })}
+          {t('results.votes.title', { item: resultItem.name })}
         </h2>
       </div>
-      <ul className="flex flex-col gap-3">
-        {tiers.map((tier: GameTier, index: number) => {
-          const voters: number[] = distribution.player_indexes_per_tier[index] ?? [];
-          return (
-            <li key={tier.id} className="flex flex-col gap-1">
-              <VoteBar
-                label={
-                  <span
-                    style={tierColorStyle(tier.color)}
-                    className="inline-flex min-w-8 justify-center rounded-md px-1.5 font-heading font-black"
-                  >
-                    {tier.name}
-                  </span>
-                }
-                count={voters.length}
-                ratio={voters.length / playerCount}
-                barStyle={{ backgroundColor: tier.color }}
-              />
-              {voters.length > 0 && (
-                <p className="pl-11 text-sm text-muted-foreground">{namesOf(voters)}</p>
-              )}
-            </li>
-          );
-        })}
+      {/* Une grille pour toutes les lignes (subgrid) : les barres commencent au même endroit,
+          après le nom de tier le plus long */}
+      <ul className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
+        {tiers.map((tier: GameTier, index: number) => (
+          <VoteLine
+            key={tier.id}
+            label={
+              <span
+                title={tier.name}
+                style={tierColorStyle(tier.color)}
+                className="inline-block max-w-24 min-w-8 truncate rounded-md px-1.5 text-center font-heading font-black"
+              >
+                {tier.name}
+              </span>
+            }
+            count={distribution.votes_per_tier[index] ?? 0}
+            playerCount={playerCount}
+            names={namesOf(distribution.player_indexes_per_tier?.[index])}
+            barStyle={{ backgroundColor: tier.color }}
+          />
+        ))}
         {includeAbsentVotes && (
-          <li className="flex flex-col gap-1">
-            <VoteBar
-              label={<span className="text-sm font-semibold">{t('results.votes.absent')}</span>}
-              count={distribution.absent_player_indexes.length}
-              ratio={distribution.absent_player_indexes.length / playerCount}
-              barStyle={ABSENT_BAR_STYLE}
-              barClassName="border border-muted-foreground text-muted-foreground"
-            />
-            {distribution.absent_player_indexes.length > 0 && (
-              <p className="pl-11 text-sm text-muted-foreground">
-                {namesOf(distribution.absent_player_indexes)}
-              </p>
-            )}
-          </li>
+          <VoteLine
+            label={<span className="text-sm font-semibold">{t('results.votes.absent')}</span>}
+            count={distribution.absent_count}
+            playerCount={playerCount}
+            names={namesOf(distribution.absent_player_indexes ?? undefined)}
+            barStyle={ABSENT_BAR_STYLE}
+            barClassName="border border-muted-foreground text-muted-foreground"
+          />
         )}
       </ul>
     </section>
   );
 }
 
-interface VoteBarProps {
+interface VoteLineProps {
   label: ReactNode;
   count: number;
-  // Part des joueurs, de 0 à 1
-  ratio: number;
+  playerCount: number;
+  // Les joueurs comptés, quand ils sont connus
+  names: string | undefined;
   barStyle: CSSProperties;
   barClassName?: string;
 }
 
-// Une ligne : le tier, une barre proportionnelle au nombre de votes, et ce nombre en texte (la
-// barre seule ne suffirait pas)
-function VoteBar({ label, count, ratio, barStyle, barClassName }: VoteBarProps) {
+// Une ligne : le tier, une barre proportionnelle au nombre de votes, ce nombre en texte (la barre
+// seule ne suffirait pas), puis les noms en dessous
+function VoteLine({ label, count, playerCount, names, barStyle, barClassName }: VoteLineProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (
-    <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2">
+    <li className="col-span-3 grid grid-cols-subgrid items-center gap-y-1">
       {label}
       <span className="h-3.5 w-full" aria-hidden="true">
         {count > 0 && (
           <span
             className={cn('block h-full min-w-1 rounded-sm', barClassName)}
-            style={{ ...barStyle, width: `${ratio * 100}%` }}
+            style={{ ...barStyle, width: `${(count / playerCount) * 100}%` }}
           />
         )}
       </span>
       <span className="text-sm tabular-nums">{t('results.votes.count', { count })}</span>
-    </div>
+      {names !== undefined && (
+        <p className="col-span-2 col-start-2 text-sm text-muted-foreground">{names}</p>
+      )}
+    </li>
   );
 }

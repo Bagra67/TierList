@@ -191,11 +191,10 @@ def test_without_absent_votes_the_caught_up_votes_and_the_absents_are_ignored(
         "Tile 1": ([1, 0, 0, 0, 0, 0], 0, "S"),
         "Tile 2": ([0, 0, 0, 0, 0, 0], 0, None),
     }
-    assert voters(body) == {
-        "Tile 0": ({"S": ["alice"], "A": ["bob"]}, []),
-        "Tile 1": ({"S": ["alice"]}, []),
-        "Tile 2": ({}, []),
-    }
+    # Pas de noms sans les votes absents : on saurait qui a rattrapé un item (results.md §2.6)
+    for entry in body["distribution"]:
+        assert entry["player_indexes_per_tier"] is None
+        assert entry["absent_player_indexes"] is None
     # Les classements des joueurs ne changent pas
     assert boards(body)["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
 

@@ -3993,20 +3993,34 @@
             "title": "Absent Count"
           },
           "player_indexes_per_tier": {
-            "items": {
-              "items": {
-                "type": "integer"
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
               },
-              "type": "array"
-            },
-            "type": "array",
+              {
+                "type": "null"
+              }
+            ],
             "title": "Player Indexes Per Tier"
           },
           "absent_player_indexes": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Absent Player Indexes"
           },
           "median_tier_id": {

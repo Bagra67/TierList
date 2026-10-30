@@ -88,10 +88,10 @@ function ItemList({ itemIds, items, selection }: ItemListProps) {
         return (
           <li key={itemId}>
             <ResultItemButton
-              itemId={itemId}
-              name={resultItem.item.text ?? resultItem.imageLabel}
+              resultItem={resultItem}
               selection={selection}
-              className={ITEM_CHIP_CLASS}
+              labelled
+              className={cn(ITEM_CHIP_CLASS, 'hover:border-primary')}
             >
               <GameItemView
                 item={resultItem.item}

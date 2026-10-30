@@ -22,10 +22,11 @@ class ItemDistributionResponse(BaseModel):
     # Toujours 0 sans les votes absents
     absent_count: int
     # Qui a voté : un élément par tier (dans l'ordre des tiers), les indices des joueurs dans
-    # `players` ; même décompte que votes_per_tier
-    player_indexes_per_tier: list[list[int]]
-    # Indices dans `players` des joueurs comptés absents ; toujours vide sans les votes absents
-    absent_player_indexes: list[int]
+    # `players` ; même décompte que votes_per_tier. None sans les votes absents : comparer les deux
+    # variantes montrerait qui a raté l'item au tour puis l'a rattrapé
+    player_indexes_per_tier: list[list[int]] | None
+    # Indices dans `players` des joueurs comptés absents ; None sans les votes absents
+    absent_player_indexes: list[int] | None
     # Tier du classement médian ; None si aucun vote n'est compté (item non classé)
     median_tier_id: uuid.UUID | None
 

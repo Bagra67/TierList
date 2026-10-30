@@ -60,11 +60,17 @@ export function ResultsPage() {
 
   const known: GameResults = state.anyVariant;
   const items: ResultItems = new Map(
-    known.items.map((item: GameItem, index: number): [string, ResultItem] => [
-      item.id,
-      { item, imageLabel: t('results.itemImage', { number: index + 1 }) },
-    ]),
+    known.items.map((item: GameItem, index: number): [string, ResultItem] => {
+      const imageLabel: string = t('results.itemImage', { number: index + 1 });
+      return [item.id, { item, imageLabel, name: item.text ?? imageLabel }];
+    }),
   );
+
+  // La vue montre des items, donc des boutons
+  const panelHasItems: boolean =
+    state.results !== undefined &&
+    known.items.length > 0 &&
+    !(view === 'players' && state.results.players.length === 0);
 
   const selection: ItemSelection = {
     selectedItemId: chosenItemId ?? known.items[0]?.id ?? null,
@@ -107,13 +113,14 @@ export function ResultsPage() {
       <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <ResultsTabs selected={view} onSelect={setView} />
-          {/* Focalisable : la plupart des vues n'ont aucun élément interactif (motif ARIA tabs) */}
+          {/* Motif ARIA tabs : le panneau n'est focalisable que s'il n'a aucun élément interactif
+              (chargement, erreur, partie sans joueur) ; sinon ses items, des boutons, suffisent */}
           <div
             role="tabpanel"
             id={resultsPanelId(view)}
             aria-labelledby={resultsTabId(view)}
             aria-busy={state.isPending}
-            tabIndex={0}
+            tabIndex={panelHasItems ? undefined : 0}
             className="w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
           >
             {/* Les statistiques montrées correspondent toujours à la case : pendant une lecture ou

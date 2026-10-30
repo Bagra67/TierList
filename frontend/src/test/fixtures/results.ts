@@ -75,13 +75,16 @@ export const closedGameResults: GameResults = {
   ],
 };
 
-// Les mêmes résultats sans les votes absents : plus de colonne des absents
+// Les mêmes résultats sans les votes absents : plus de colonne des absents, et Lou avait rattrapé
+// Paprika (raté au tour) : son vote ne compte plus. Le serveur ne donne alors aucun nom de votant
 export const closedGameResultsWithoutAbsents: GameResults = {
   ...closedGameResults,
   include_absent_votes: false,
   distribution: closedGameResults.distribution.map((entry) => ({
     ...entry,
+    votes_per_tier: entry.item_id === PAPRIKA ? [1, 0] : entry.votes_per_tier,
     absent_count: 0,
-    absent_player_indexes: [],
+    player_indexes_per_tier: null,
+    absent_player_indexes: null,
   })),
 };

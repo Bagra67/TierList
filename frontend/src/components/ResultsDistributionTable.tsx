@@ -59,11 +59,12 @@ export function ResultsDistributionTable({
             return (
               <tr key={entry.item_id} className="border-b last:border-0">
                 <th scope="row" className="px-3 py-2 text-left font-normal">
+                  {/* Le bouton garde le nom de l'item : il nomme aussi la ligne du tableau */}
                   <ResultItemButton
-                    itemId={entry.item_id}
-                    name={resultItem.item.text ?? resultItem.imageLabel}
+                    resultItem={resultItem}
                     selection={selection}
-                    className="rounded-md p-1"
+                    labelled={false}
+                    className="rounded-md p-1 hover:bg-muted"
                   >
                     <GameItemView
                       item={resultItem.item}

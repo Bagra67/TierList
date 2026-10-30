@@ -887,9 +887,9 @@ export interface components {
             /** Absent Count */
             absent_count: number;
             /** Player Indexes Per Tier */
-            player_indexes_per_tier: number[][];
+            player_indexes_per_tier: number[][] | null;
             /** Absent Player Indexes */
-            absent_player_indexes: number[];
+            absent_player_indexes: number[] | null;
             /** Median Tier Id */
             median_tier_id: string | null;
         };

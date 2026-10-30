@@ -134,11 +134,11 @@ describe('ResultsPage', () => {
     const chorizo: HTMLElement = await screen.findByRole('button', {
       name: 'Voir les votes : Chorizo',
     });
-    expect(chorizo).toHaveAttribute('aria-pressed', 'false');
+    expect(chorizo).not.toHaveAttribute('aria-current');
 
     fireEvent.click(chorizo);
 
-    expect(chorizo).toHaveAttribute('aria-pressed', 'true');
+    expect(chorizo).toHaveAttribute('aria-current', 'true');
     expect(voteLines('Chorizo')).toEqual(['S0 vote', 'A1 voteAlice', 'Absents1 voteLou']);
     // Le choix reste d'une vue à l'autre
     fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
@@ -151,9 +151,10 @@ describe('ResultsPage', () => {
     await screen.findByRole('region', { name: 'Votes : Paprika' });
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Voir les votes : Curry' }));
 
-    expect(voteLines('Curry')).toEqual(['S0 vote', 'A0 vote']);
+    // Le vote rattrapé de Lou ne compte plus, et aucun nom n'est affiché : il dirait qui a
+    // rattrapé l'item
+    await vi.waitFor(() => expect(voteLines('Paprika')).toEqual(['S1 vote', 'A0 vote']));
   });
 
   it('shows the ranking of each player and the items they never placed', async () => {
@@ -180,8 +181,8 @@ describe('ResultsPage', () => {
     expect(overall).toHaveFocus();
     const panel: HTMLElement = screen.getByRole('tabpanel');
     expect(panel).toHaveAttribute('aria-labelledby', overall.id);
-    // Focalisable : la vue n'a pas toujours d'élément interactif
-    expect(panel).toHaveAttribute('tabindex', '0');
+    // Ses items sont des boutons : le panneau lui-même n'est pas un arrêt de tabulation
+    expect(panel).not.toHaveAttribute('tabindex');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
   });
