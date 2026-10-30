@@ -122,7 +122,7 @@ SeaweedFS in development:
 
 - Image pinned to an exact version (`chrislusf/seaweedfs:4.48`), ports published on `127.0.0.1` only: the **S3 API** on `8333` and the **filer web UI** on **http://localhost:8888**, which shows the images in `buckets/tierlist-images/` and opens them. `dev.sh` / `dev.ps1` open it on the bucket.
 - The bucket is created at startup (`-bucket=tierlist-images`); the container is healthy once it exists.
-- `seaweedfs/s3.json` gives two identities: the backend (`tierlist-dev` key, read, write and list on the bucket only) and `anonymous` (**read** only, so that the image URLs work without authentication; listing, writing and deleting are refused). `seaweedfs/security.toml` holds a filer signing key, development only: without it SeaweedFS refuses to load the identities.
+- `seaweedfs/s3.json` gives two identities: the backend (`tierlist-dev` key, read, write, list and setting the ACL of its objects, on the bucket only: each image is sent `public-read`) and `anonymous` (**read** only, so that the image URLs work without authentication; listing, writing and deleting are refused). `seaweedfs/security.toml` holds a filer signing key, development only: without it SeaweedFS refuses to load the identities.
 - Data is kept in the `seaweedfs-data` Docker volume.
 
 - Each object is written with the `public-read` ACL (at Scaleway, an object stays private even in a public bucket), `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`: **one day**. The content of a key never changes, so a year with `immutable` would be possible; one day is chosen (#81 review) so that an image hidden by the moderation or erased leaves the browser caches within 24 hours. The CDN cache, for its part, is purged at once (§2.9).
