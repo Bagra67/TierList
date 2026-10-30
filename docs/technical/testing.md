@@ -1490,6 +1490,15 @@ The skeleton rendered alone.
 | --------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `writes the loading text once the status region is in the page` | Renders the `list` shape. | A `role="status"` region is announced reliably only when its text arrives after it. | The `status` region is first empty, then holds `Chargement…`. |
 
+### 2.40 Tests: `src/components/PageContainer.test.tsx`
+
+The root of every page ([architecture, page widths](architecture.md#frontend-frontendsrc)). jsdom computes no layout: the tests check the classes, the screenshots check the result.
+
+| Test                                                | What it does                                               | Purpose                                                                   | Expected result                                                                                      |
+| --------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `renders the %s width as a centered main` (3 cases) | Renders a `PageContainer` for `app`, `reading` and `form`. | Each page gets one of the three widths from `PAGE_WIDTH_CLASS`, centered. | A `main` with `mx-auto`, `w-full` and the class of the width (`max-w-6xl`, `max-w-3xl`, `max-w-sm`). |
+| `adds the layout of the page to the shared classes` | Passes `flex flex-col gap-6` as `className`.               | A page keeps its own layout on top of the shared width.                   | `max-w-6xl`, `flex`, `flex-col` and `gap-6` together.                                                |
+
 ## 3. Reading the results
 
 | Result              | Meaning                                                                                                                                                                                              |

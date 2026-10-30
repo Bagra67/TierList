@@ -25,6 +25,7 @@ import { Button } from '../components/ui/button';
 import { isResultsLinkState, type ResultsLinkState, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { PageContainer } from '../components/PageContainer';
 
 // Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
 // classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
@@ -59,13 +60,13 @@ export function ResultsPage() {
   // Rien de lu encore : chargement, ou échec de la première lecture
   if (state.anyVariant === undefined) {
     return (
-      <main className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-10">
+      <PageContainer width="app" className="flex flex-col items-start gap-6">
         {state.error === null ? (
           <LoadingSkeleton shape="board" />
         ) : (
           <ErrorMessage>{translateError(t, state.error)}</ErrorMessage>
         )}
-      </main>
+      </PageContainer>
     );
   }
 
@@ -107,7 +108,7 @@ export function ResultsPage() {
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-10">
+    <PageContainer width="app" className="flex flex-col items-start gap-6">
       {fromRoom !== null && <ResultsRoomActions fromRoom={fromRoom} />}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">
@@ -185,7 +186,7 @@ export function ResultsPage() {
             />
           )}
       </div>
-    </main>
+    </PageContainer>
   );
 }
 

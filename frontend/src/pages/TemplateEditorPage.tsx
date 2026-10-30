@@ -14,6 +14,7 @@ import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { PageContainer } from '../components/PageContainer';
 
 // Éditeur d'un template : son nom, ses tiers (US-1.4) et ses tuiles (US-1.2, US-1.3). Sur grand
 // écran, les tiers sont à gauche et la grille des tuiles à droite, pour profiter de la largeur
@@ -49,7 +50,10 @@ export function TemplateEditorPage() {
   return (
     // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile
     // pas, ce sont la colonne des tiers et la grille des tuiles qui défilent (chacune de son côté)
-    <main className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 py-10 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6">
+    <PageContainer
+      width="app"
+      className="flex flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6"
+    >
       <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
         {t('templates.editor.back')}
       </Link>
@@ -72,6 +76,6 @@ export function TemplateEditorPage() {
           </div>
         </>
       )}
-    </main>
+    </PageContainer>
   );
 }
