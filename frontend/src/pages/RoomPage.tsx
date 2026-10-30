@@ -1,4 +1,5 @@
 import { type QueryClient, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
+import { cn } from 'cn';
 import { useCallback, useEffect, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import {
@@ -130,8 +131,14 @@ export function RoomPage() {
     );
   }
 
+  // Pendant une partie, la page s'élargit pour le plateau en trois colonnes (GameScreen)
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
+    <main
+      className={cn(
+        'mx-auto flex w-full flex-col items-start gap-6 px-4 py-10',
+        room?.game ? 'max-w-6xl' : 'max-w-2xl',
+      )}
+    >
       {isPending && error === null && <LoadingSkeleton shape="board" />}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}

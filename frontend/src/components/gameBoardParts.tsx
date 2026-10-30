@@ -79,13 +79,15 @@ interface DraggableItemProps {
   // Identifiant du glisser-déposer : event.active.id à la fin
   id: string;
   label: string;
-  // Nom accessible, quand le texte visible n'est pas l'item lui-même (poignée du dock)
+  // Nom accessible, quand le texte visible ne suffit pas (carte de l'élément en cours)
   ariaLabel?: string;
   // Clé pour useFocusAfterUpdate (boardHooks.ts)
   focusKey: string;
   disabled: boolean;
   // L'item à placer maintenant (tour en cours) : bordure de l'accent, pour le repérer
   emphasized?: boolean;
+  // Autre forme que la puce (carte de l'élément en cours)
+  className?: string;
   children: ReactNode;
 }
 
@@ -98,6 +100,7 @@ export function DraggableItem({
   focusKey,
   disabled,
   emphasized = false,
+  className,
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -117,6 +120,7 @@ export function DraggableItem({
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && EMPHASIZED_BORDER_CLASS,
         isDragging && 'opacity-40',
+        className,
       )}
     >
       {children}
@@ -128,9 +132,10 @@ export function DraggableItem({
 export interface DragPreviewContent {
   item: GameItem;
   label: string;
-  // Forme de la source (puce, puce d'accent) : l'aperçu a sa taille, qui est aussi celle du
+  // Forme de la source (puce, puce d'accent, carte) : l'aperçu a sa taille, qui est aussi celle du
   // rectangle dont dnd-kit se sert pour viser le dépôt
   className: string;
+  size: 'small' | 'large';
 }
 
 interface DragPreviewProps {
@@ -153,7 +158,7 @@ export function DragPreview({ previewOf }: DragPreviewProps) {
           aria-hidden="true"
           className={cn(content.className, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}
         >
-          <GameItemView item={content.item} imageLabel={content.label} size="small" />
+          <GameItemView item={content.item} imageLabel={content.label} size={content.size} />
         </div>
       )}
     </DragOverlay>

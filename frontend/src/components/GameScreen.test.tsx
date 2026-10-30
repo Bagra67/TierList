@@ -69,6 +69,28 @@ describe('GameScreen', () => {
     );
   });
 
+  it('shows the progress of the game', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+
+    const progress: HTMLElement = await screen.findByRole('progressbar', {
+      name: 'Progression de la partie',
+    });
+    expect(progress).toHaveAttribute('aria-valuenow', '1');
+    expect(progress).toHaveAttribute('aria-valuemax', '3');
+    expect(progress).toHaveAttribute('aria-valuetext', 'Élément 1 sur 3');
+  });
+
+  it('turns the timer to the accent color in the last seconds', async () => {
+    const endsAt: string = new Date(Date.now() + 3_000).toISOString();
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inGame({ ends_at: endsAt })) });
+    renderRoomPage();
+
+    const timer: HTMLElement = await screen.findByRole('timer', { name: 'Temps restant' });
+    expect(timer).toHaveClass('bg-primary');
+    expect(timer).not.toHaveClass('bg-spotlight');
+  });
+
   it('places the current item at the end of a tier with its button', async () => {
     let body: unknown;
     const fetchMock = stubBackend({
@@ -159,6 +181,7 @@ describe('GameScreen', () => {
     renderRoomPage();
 
     expect(await screen.findByText('Passage automatique : désactivé')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: "Commandes de l'hôte" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Élément suivant' }));
 
     expect(await screen.findByText('Élément 2 sur 3')).toBeInTheDocument();
