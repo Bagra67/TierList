@@ -331,7 +331,7 @@ describe('GameScreen', () => {
     it('shows a preview of a tile dragged on the final board', async () => {
       stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
       renderRoomPage();
-      const chorizo: HTMLElement = await screen.findByRole('button', { name: 'Déplacer Chorizo' });
+      const chorizo: HTMLElement = await screen.findByRole('button', { name: 'Choisir Chorizo' });
       expect(screen.getAllByText('Chorizo')).toHaveLength(1);
 
       fireEvent.keyDown(chorizo, { code: 'Space', key: ' ' });
@@ -341,7 +341,7 @@ describe('GameScreen', () => {
       await waitFor(() => expect(screen.getAllByText('Chorizo')).toHaveLength(1));
     });
 
-    it('moves any tile with the arrow buttons', async () => {
+    it('moves a chosen tile to the end of a tier', async () => {
       const bodies: unknown[] = [];
       stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
@@ -352,26 +352,41 @@ describe('GameScreen', () => {
       });
       renderRoomPage();
 
-      fireEvent.click(
-        await screen.findByRole('button', { name: 'Descendre Paprika au tier du dessous' }),
+      // Rien n'est choisi : pas de « Déplacer ici »
+      expect(await screen.findByRole('button', { name: 'Choisir Paprika' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
       );
-      await vi.waitFor(() => expect(bodies).toHaveLength(1));
-      const later: HTMLElement = screen.getByRole('button', {
-        name: 'Reculer Paprika dans son tier',
-      });
-      await vi.waitFor(() => expect(later).toHaveAttribute('aria-disabled', 'false'));
-      fireEvent.click(later);
+      expect(screen.queryByRole('button', { name: /^Déplacer Paprika/ })).not.toBeInTheDocument();
 
-      await vi.waitFor(() =>
-        expect(bodies).toEqual([
-          { tier_id: tierA.id, position: 0 },
-          { tier_id: tierS.id, position: 1 },
-        ]),
+      fireEvent.click(screen.getByRole('button', { name: 'Choisir Paprika' }));
+      expect(screen.getByRole('button', { name: 'Choisir Paprika' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
       );
-      // S est le premier tier : rien au-dessus
-      expect(
-        screen.getByRole('button', { name: 'Monter Paprika au tier du dessus' }),
-      ).toBeDisabled();
+      expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }));
+
+      await vi.waitFor(() => expect(bodies).toEqual([{ tier_id: tierA.id, position: 0 }]));
+      // Une fois déplacée, la tuile n'est plus choisie
+      expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
+    });
+
+    it('cancels the choice of a tile', async () => {
+      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown()) });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Chorizo' }));
+      expect(screen.getAllByRole('button', { name: /^Déplacer Chorizo à la fin de/ })).toHaveLength(
+        game.tiers.length,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Annuler le choix' }));
+
+      expect(screen.queryByRole('button', { name: /^Déplacer Chorizo/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Choisir Chorizo' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
     });
 
     it('places a missed item at the end of the chosen tier', async () => {
@@ -385,12 +400,8 @@ describe('GameScreen', () => {
       });
       renderRoomPage();
 
-      fireEvent.change(await screen.findByLabelText('Tier où placer Barbecue'), {
-        target: { value: tierA.id },
-      });
-      fireEvent.click(
-        screen.getByRole('button', { name: 'Placer Barbecue à la fin du tier choisi' }),
-      );
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Barbecue' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Barbecue à la fin de A' }));
 
       await vi.waitFor(() => expect(body).toEqual({ tier_id: tierA.id, position: 0 }));
     });
@@ -440,23 +451,23 @@ describe('GameScreen', () => {
     });
 
     it('keeps the keyboard focus on the moved tile', async () => {
+      let body: unknown;
       let answer: (room: Room) => void = () => {};
       stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
-        [paprikaPut]: () =>
-          new Promise<Response>((resolve) => {
+        [paprikaPut]: async (request) => {
+          body = await request.json();
+          return new Promise<Response>((resolve) => {
             answer = (room: Room) => resolve(Response.json(room));
-          }),
+          });
+        },
       });
       renderRoomPage();
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Reculer Paprika dans son tier' }));
-      // Pendant l'envoi, les contrôles restent focalisables mais inactifs
-      await vi.waitFor(() =>
-        expect(
-          screen.getByRole('button', { name: 'Avancer Paprika dans son tier' }),
-        ).toHaveAttribute('aria-disabled', 'true'),
-      );
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Paprika' }));
+      // Déjà en S : « Déplacer ici » la met à la dernière place du tier
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Paprika à la fin de S' }));
+      await vi.waitFor(() => expect(body).toEqual({ tier_id: tierS.id, position: 1 }));
       const cooldown: Room = inCooldown();
       answer({
         ...cooldown,
@@ -469,11 +480,8 @@ describe('GameScreen', () => {
         },
       });
 
-      // Paprika est maintenant dernier : → est désactivé, le focus passe à ←
-      const earlier: HTMLElement = await screen.findByRole('button', {
-        name: 'Avancer Paprika dans son tier',
-      });
-      await vi.waitFor(() => expect(earlier).toHaveFocus());
+      const paprika: HTMLElement = await screen.findByRole('button', { name: 'Choisir Paprika' });
+      await vi.waitFor(() => expect(paprika).toHaveFocus());
     });
 
     it('gives a player the final board without the end button', async () => {

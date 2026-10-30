@@ -1,4 +1,6 @@
 import {
+  KeyboardCode,
+  type KeyboardCodes,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
@@ -17,14 +19,30 @@ const MOUSE_DRAG_DISTANCE = 8;
 const TOUCH_DRAG_DELAY_MS = 200;
 const TOUCH_DRAG_TOLERANCE = 5;
 
+// Au clavier, Espace ou Entrée saisit l'item, les flèches le déplacent, Espace ou Entrée le dépose
+const DEFAULT_KEYBOARD_CODES: KeyboardCodes = {
+  start: [KeyboardCode.Space, KeyboardCode.Enter],
+  cancel: [KeyboardCode.Esc],
+  end: [KeyboardCode.Space, KeyboardCode.Enter],
+};
+
+// Sur le plateau final, Entrée (le clic) choisit la tuile pour « Déplacer ici » : seul Espace la
+// saisit pour la glisser
+export const COOLDOWN_KEYBOARD_CODES: KeyboardCodes = {
+  ...DEFAULT_KEYBOARD_CODES,
+  start: [KeyboardCode.Space],
+};
+
 // Capteurs des plateaux : souris, doigt et clavier
-export function useBoardSensors(): SensorDescriptor<SensorOptions>[] {
+export function useBoardSensors(
+  keyboardCodes: KeyboardCodes = DEFAULT_KEYBOARD_CODES,
+): SensorDescriptor<SensorOptions>[] {
   return useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: MOUSE_DRAG_DISTANCE } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: TOUCH_DRAG_DELAY_MS, tolerance: TOUCH_DRAG_TOLERANCE },
     }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { keyboardCodes }),
   );
 }
 

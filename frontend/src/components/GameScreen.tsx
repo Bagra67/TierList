@@ -52,8 +52,17 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
             {readerPlaces ? t('rooms.game.cooldown.hint') : t('rooms.game.cooldown.waiting')}
           </p>
         </section>
-        {readerPlaces && <CooldownBoard room={room} game={game} />}
-        {room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />}
+        {/* Le lecteur qui place a le plateau, avec « Terminer maintenant » dans son panneau ;
+            l'hôte qui ne joue pas n'a que ce bouton */}
+        {readerPlaces ? (
+          <CooldownBoard
+            room={room}
+            game={game}
+            aside={room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />}
+          />
+        ) : (
+          room.is_admin && <EndCooldownDialog code={room.code} onEnded={onGameEnded} />
+        )}
       </div>
     );
   }

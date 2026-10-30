@@ -88,6 +88,10 @@ interface DraggableItemProps {
   emphasized?: boolean;
   // Autre forme que la puce (carte de l'élément en cours)
   className?: string;
+  // Clic (ou Entrée, quand Entrée ne saisit pas l'item) : choisir la tuile, pressed dit si elle
+  // l'est (plateau final)
+  onClick?: () => void;
+  pressed?: boolean;
   children: ReactNode;
 }
 
@@ -101,6 +105,8 @@ export function DraggableItem({
   disabled,
   emphasized = false,
   className,
+  onClick,
+  pressed,
   children,
 }: DraggableItemProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -114,11 +120,14 @@ export function DraggableItem({
       {...listeners}
       data-focus-key={focusKey}
       aria-label={ariaLabel ?? t('rooms.game.dragLabel', { item: label })}
+      aria-pressed={pressed}
+      onClick={onClick}
       className={cn(
         ITEM_CHIP_CLASS,
         // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && EMPHASIZED_BORDER_CLASS,
+        pressed && 'ring-3 ring-primary',
         isDragging && 'opacity-40',
         className,
       )}
