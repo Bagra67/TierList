@@ -339,6 +339,13 @@ export const fr = {
       unplaced: 'Jamais placés',
       none: "Personne n'a joué cette partie.",
     },
+    votes: {
+      title: 'Votes : {{item}}',
+      open: 'Voir les votes : {{item}}',
+      count_one: '{{count}} vote',
+      count_other: '{{count}} votes',
+      absent: 'Absents',
+    },
   },
   rooms: {
     create: {

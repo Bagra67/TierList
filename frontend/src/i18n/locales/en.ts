@@ -327,6 +327,13 @@ export const en: Translation = {
       unplaced: 'Never placed',
       none: 'Nobody played this game.',
     },
+    votes: {
+      title: 'Votes: {{item}}',
+      open: 'See the votes: {{item}}',
+      count_one: '{{count}} vote',
+      count_other: '{{count}} votes',
+      absent: 'Absent',
+    },
   },
   rooms: {
     create: {

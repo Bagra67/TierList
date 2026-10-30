@@ -51,6 +51,13 @@ function rowItems(label: string): string[] {
     .map((item: HTMLElement) => item.textContent ?? '');
 }
 
+// Les lignes du panneau des votes d'un item : nom du tier (ou « Absents »), nombre de votes, noms
+function voteLines(item: string): string[] {
+  return within(screen.getByRole('region', { name: `Votes : ${item}` }))
+    .getAllByRole('listitem')
+    .map((line: HTMLElement) => line.textContent ?? '');
+}
+
 // Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -113,6 +120,43 @@ describe('ResultsPage', () => {
     expect(includeAbsentVotes).toEqual(['true', 'false']);
   });
 
+  it('shows the votes of the first item by default, with the players', async () => {
+    stubResults();
+    renderResultsPage();
+
+    await screen.findByRole('region', { name: 'Votes : Paprika' });
+    expect(voteLines('Paprika')).toEqual(['S1 voteAlice', 'A1 voteLou', 'Absents0 vote']);
+  });
+
+  it('shows the votes of the item clicked in a view', async () => {
+    stubResults();
+    renderResultsPage();
+    const chorizo: HTMLElement = await screen.findByRole('button', {
+      name: 'Voir les votes : Chorizo',
+    });
+    expect(chorizo).not.toHaveAttribute('aria-current');
+
+    fireEvent.click(chorizo);
+
+    expect(chorizo).toHaveAttribute('aria-current', 'true');
+    expect(voteLines('Chorizo')).toEqual(['S0 vote', 'A1 voteAlice', 'Absents1 voteLou']);
+    // Le choix reste d'une vue à l'autre
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    expect(screen.getByRole('region', { name: 'Votes : Chorizo' })).toBeInTheDocument();
+  });
+
+  it('leaves the absent players out of the votes without the absent votes', async () => {
+    stubResults();
+    renderResultsPage();
+    await screen.findByRole('region', { name: 'Votes : Paprika' });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+
+    // Le vote rattrapé de Lou ne compte plus, et aucun nom n'est affiché : il dirait qui a
+    // rattrapé l'item
+    await vi.waitFor(() => expect(voteLines('Paprika')).toEqual(['S1 vote', 'A0 vote']));
+  });
+
   it('shows the ranking of each player and the items they never placed', async () => {
     stubResults();
     renderResultsPage();
@@ -137,8 +181,8 @@ describe('ResultsPage', () => {
     expect(overall).toHaveFocus();
     const panel: HTMLElement = screen.getByRole('tabpanel');
     expect(panel).toHaveAttribute('aria-labelledby', overall.id);
-    // Focalisable : la vue n'a pas toujours d'élément interactif
-    expect(panel).toHaveAttribute('tabindex', '0');
+    // Ses items sont des boutons : le panneau lui-même n'est pas un arrêt de tabulation
+    expect(panel).not.toHaveAttribute('tabindex');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
   });
@@ -268,12 +312,16 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     await screen.findByRole('heading', { name: 'Résultats : Épices' });
-    // Seuls les onglets et le bouton de copie sont des boutons : ni « Rejouer », ni commande de salle
+    // En dehors des onglets, seuls le bouton de copie et les éléments (qui ouvrent leurs votes)
+    // sont des boutons : ni « Rejouer », ni commande de salle
     expect(
       screen
         .getAllByRole('button')
-        .map((button: HTMLElement) => button.textContent)
-        .filter((name) => name !== 'Copier le lien'),
+        .filter(
+          (button: HTMLElement) =>
+            button.textContent !== 'Copier le lien' &&
+            !(button.getAttribute('aria-label') ?? '').startsWith('Voir les votes : '),
+        ),
     ).toEqual([]);
   });
 

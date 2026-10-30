@@ -4,18 +4,19 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import type { PlayerResults } from '../api/results';
 import type { GameTier } from '../api/rooms';
 import { ResultsTierList } from './ResultsTierList';
-import type { ResultItems } from './resultsViews';
+import type { ItemSelection, ResultItems } from './resultsViews';
 import { NativeSelect } from './ui/native-select';
 
 interface ResultsPlayerViewProps {
   tiers: GameTier[];
   players: PlayerResults[];
   items: ResultItems;
+  selection: ItemSelection;
 }
 
 // Vue « par joueur » (US-5.2) : le classement final du joueur choisi, avec les items qu'il n'a
 // jamais placés
-export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewProps) {
+export function ResultsPlayerView({ tiers, players, items, selection }: ResultsPlayerViewProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const selectId: string = useId();
   const [playerIndex, setPlayerIndex] = useState<number>(0);
@@ -51,6 +52,7 @@ export function ResultsPlayerView({ tiers, players, items }: ResultsPlayerViewPr
         rows={player.tiers}
         items={items}
         extraRow={{ label: t('results.players.unplaced'), itemIds: player.unplaced_item_ids }}
+        selection={selection}
       />
     </div>
   );

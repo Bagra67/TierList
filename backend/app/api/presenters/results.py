@@ -28,6 +28,16 @@ def game_results_response(closed: ClosedGameResults, storage: ImageStorage) -> G
                 item_id=tile.id,
                 votes_per_tier=list(item.votes_per_tier),
                 absent_count=item.absent_count,
+                # Sans les votes absents, pas de noms : comparés à l'autre variante, ils diraient
+                # qui a raté l'item au tour puis l'a rattrapé (results.md §2.6)
+                player_indexes_per_tier=(
+                    [list(voters) for voters in item.voters_per_tier]
+                    if closed.include_absent_votes
+                    else None
+                ),
+                absent_player_indexes=(
+                    list(item.absent_player_indexes) if closed.include_absent_votes else None
+                ),
                 median_tier_id=median_tier_id,
             )
         )
