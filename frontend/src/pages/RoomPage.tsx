@@ -1,5 +1,4 @@
 import { type QueryClient, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
-import { cn } from 'cn';
 import { useCallback, useEffect, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import {
@@ -24,6 +23,7 @@ import { canonicalRoomCode, GUEST_LINK_FRAGMENT, roomQueryKey } from '../constan
 import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { PageContainer } from '../components/PageContainer';
 
 // Jeton du lien perso d'un invité (#guest=<jeton>), absent d'un lien ordinaire
 function guestTokenFrom(hash: string): string | null {
@@ -113,7 +113,7 @@ export function RoomPage() {
 
   if (removal !== null) {
     return (
-      <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-6 px-4 py-10">
+      <PageContainer width="app" className="flex flex-col items-start gap-6">
         <p role="status" className="font-medium">
           {t(REMOVAL_MESSAGES[removal.reason])}
         </p>
@@ -127,18 +127,14 @@ export function RoomPage() {
             <Link to={ROUTES.HOME}>{t('rooms.lobby.backHome')}</Link>
           </Button>
         )}
-      </main>
+      </PageContainer>
     );
   }
 
-  // Pendant une partie, la page s'élargit pour le plateau en trois colonnes (GameScreen)
+  // Même largeur avant et pendant la partie : le plateau en trois colonnes (GameScreen) tient
+  // dans la largeur app, et rien ne saute au démarrage
   return (
-    <main
-      className={cn(
-        'mx-auto flex w-full flex-col items-start gap-6 px-4 py-10',
-        room?.game ? 'max-w-6xl' : 'max-w-2xl',
-      )}
-    >
+    <PageContainer width="app" className="flex flex-col items-start gap-6">
       {isPending && error === null && <LoadingSkeleton shape="board" />}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
@@ -154,6 +150,6 @@ export function RoomPage() {
         </p>
       )}
       {room !== undefined && <RoomLobby room={room} />}
-    </main>
+    </PageContainer>
   );
 }

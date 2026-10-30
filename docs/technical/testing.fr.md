@@ -1490,6 +1490,15 @@ Le squelette rendu seul.
 | --------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | `writes the loading text once the status region is in the page` | Rend la forme `list`. | Une zone `role="status"` n'est annoncée de façon fiable que si son texte arrive après elle. | La zone `status` est d'abord vide, puis contient `Chargement…`. |
 
+### 2.40 Tests : `src/components/PageContainer.test.tsx`
+
+La racine de chaque page ([architecture, largeurs des pages](architecture.fr.md#frontend-frontendsrc)). jsdom ne calcule aucune mise en page : les tests vérifient les classes, les captures vérifient le résultat.
+
+| Test                                                | Ce qu'il fait                                               | But                                                                        | Résultat attendu                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `renders the %s width as a centered main` (3 cas)   | Affiche un `PageContainer` pour `app`, `reading` et `form`. | Chaque page prend l'une des trois largeurs de `PAGE_WIDTH_CLASS`, centrée. | Un `main` avec `mx-auto`, `w-full` et la classe de la largeur (`max-w-6xl`, `max-w-3xl`, `max-w-sm`). |
+| `adds the layout of the page to the shared classes` | Passe `flex flex-col gap-6` en `className`.                 | Une page garde sa propre mise en page en plus de la largeur commune.       | `max-w-6xl`, `flex`, `flex-col` et `gap-6` ensemble.                                                  |
+
 ## 3. Lire les résultats
 
 | Résultat            | Signification                                                                                                                                                                                                         |

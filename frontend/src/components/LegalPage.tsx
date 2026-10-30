@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PageContainer } from './PageContainer';
 
 // Mise en page commune des pages légales (politique de confidentialité, conditions
 // d'utilisation, mentions légales) : titre, date de la dernière mise à jour, introduction, puis
@@ -16,7 +17,7 @@ export function LegalPage({ title, updatedAt, intro, children }: LegalPageProps)
   const { t } = useTranslation();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-10 text-sm leading-relaxed">
+    <PageContainer width="reading" className="flex flex-col gap-8 text-sm leading-relaxed">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="text-muted-foreground">
@@ -25,7 +26,7 @@ export function LegalPage({ title, updatedAt, intro, children }: LegalPageProps)
         <p>{intro}</p>
       </header>
       {children}
-    </main>
+    </PageContainer>
   );
 }
 

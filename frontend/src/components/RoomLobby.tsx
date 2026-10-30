@@ -1,7 +1,9 @@
+import { cn } from 'cn';
 import { useRef } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { Room } from '../api/rooms';
+import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 import { CloseRoomDialog } from './CloseRoomDialog';
 import { ErrorMessage } from './ErrorMessage';
 import { GameScreen } from './GameScreen';
@@ -42,8 +44,8 @@ export function RoomLobby({ room }: RoomLobbyProps) {
       {room.game !== null && (
         <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
       )}
-      {/* Pendant une partie la page s'élargit pour le plateau : le salon garde sa largeur */}
-      <div className="flex w-full max-w-2xl flex-col items-start gap-6">
+      {/* Le plateau prend toute la largeur de la page ; le salon reste une colonne étroite */}
+      <div className={cn(CONTENT_COLUMN_CLASS, 'flex flex-col items-start gap-6')}>
         {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
         {room.is_admin && room.game === null && room.template !== null && (
           <StartGameButton code={room.code} replay={room.past_games.length > 0} />
