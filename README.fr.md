@@ -159,7 +159,7 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 
 ### Intégration continue (GitHub Actions)
 
-`.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
+`.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` (enchaînement des workflows, choix pour la vitesse et comment garder la CI rapide : [docs/technical/ci.fr.md](docs/technical/ci.fr.md)) :
 
 | Job          | Étapes                                                                                                                                                                                  |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
