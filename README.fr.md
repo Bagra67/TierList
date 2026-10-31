@@ -161,11 +161,11 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 
 `.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
 
-| Job          | Étapes                                                                                                                                   |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml` |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                             |
-| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                         |
+| Job          | Étapes                                                                                                                                                                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**  | Python 3.11 (développement) et 3.13 (production) en parallèle : `uv sync --locked` et pytest sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml` ; en 3.11, aussi Ruff (lint + format), Pyright et la couverture. `Backend` réussit quand les deux versions réussissent |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                                                                                                                                                                       |
+| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                                                                                                                                                                   |
 
 `.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
 
