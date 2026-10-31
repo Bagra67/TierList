@@ -2,7 +2,7 @@
 
 [English](screens.md) | Français
 
-Les wireframes basse fidélité des écrans du [jalon 1](README.fr.md). Ils montrent **ce que contient et fait chaque écran**, pas son apparence finale : uniquement du gris, sans couleurs ni charte. La charte graphique se décide plus tard, sur de vrais écrans ([TODO](../../../TODO.fr.md)). Stories : [user-stories.fr.md](user-stories.fr.md).
+Les wireframes des écrans du [jalon 1](README.fr.md), dessinés sur l'[identité visuelle](../../technical/visual-identity.fr.md) « Le Plateau » avec les mots de l'interface. Ils montrent **ce que contient et fait chaque écran** ; les écrans livrés peuvent différer dans le détail, et l'application fait foi. Stories : [user-stories.fr.md](user-stories.fr.md).
 
 Chaque image existe en français (affichée ici) et en anglais ([screens.md](screens.md)), dans [screens/](screens/).
 
@@ -11,17 +11,17 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 ![Éditeur de template : nom, tiers, tuiles](screens/template-editor.fr.svg)
 
 - **Stories** : US-1.1 à US-1.4.
-- Tiers S à E par défaut ; chacun peut être renommé, recoloré (pastille ronde), réordonné (poignée à gauche) ou supprimé.
+- Tiers S à E par défaut ; chacun peut être renommé, recoloré (pastille de couleur), réordonné (poignée à gauche) ou supprimé.
 - Les tuiles avec image montrent un emplacement d'image ; les tuiles texte seul affichent leur texte. Le compteur montre la limite de **32 tuiles**.
-- « Créer une room » mène aux réglages de la room. La liste des templates (US-1.5) est une simple liste avec un état vide ; elle n'est pas dessinée.
+- « Créer une room » crée la room et ouvre son salon (écran 4), où ses réglages se changent (écran 2). La liste des templates (US-1.5) est une simple liste avec un état vide ; elle n'est pas dessinée.
 
 ## 2. Réglages de la room
 
 ![Réglages de la room : ordre des items, item suivant, cooldown, je joue](screens/room-settings.fr.svg)
 
 - **Stories** : US-2.1, US-2.2.
-- Les cinq réglages du jalon. La note rappelle que l'admin de la room peut **toujours** passer à la main.
-- Le même formulaire sert à changer les réglages depuis le salon, entre deux parties.
+- Les cinq réglages du jalon, dans le dialogue ouvert par « Modifier » dans le salon, entre deux parties. La note rappelle que l'admin de la room (l'**hôte** dans l'interface) peut **toujours** passer à la main.
+- Pendant une partie, seules les arrivées peuvent changer.
 
 ## 3. Rejoindre une room
 
@@ -38,7 +38,7 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 
 - **Stories** : US-2.3, US-2.6, US-2.7, US-2.9, US-3.1.
 - La vue de l'**admin de la room** : code, lien, participants sur 10, résumé des réglages, lancer, fermer, parties passées de la room.
-- Les participants voient le même écran sans les actions « Modifier », « Lancer » et « Fermer », et attendent le début de la partie.
+- Les participants voient le même écran sans les actions « Modifier », « Lancer la partie » et « Fermer la salle », et attendent le début de la partie.
 
 ## 5. Tour — participant
 
@@ -59,12 +59,12 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 
 ## 7. Cooldown final
 
-![Cooldown final : compte à rebours, toutes les tuiles déplaçables, items manqués](screens/cooldown.fr.svg)
+![Retouches finales : compte à rebours, toutes les tuiles déplaçables, éléments manqués](screens/cooldown.fr.svg)
 
 - **Stories** : US-4.1, US-4.2, US-4.6.
-- Un bandeau sombre et un compte à rebours donnent l'effet « sous pression ». Toutes les tuiles se déplacent.
+- Le cooldown final (« retouches finales » dans l'interface) se joue sur un **plateau sombre** quel que soit le thème, avec un compte à rebours : l'effet « sous pression ». Toutes les tuiles se déplacent.
 - Les items manqués s'affichent à part, marqués **absent**, à placer avant la fin.
-- L'admin de la room a aussi un bouton « Terminer » (non dessiné).
+- L'admin de la room a aussi un bouton « Terminer maintenant ».
 
 ## 8. Résultats
 
@@ -73,4 +73,4 @@ Chaque image existe en français (affichée ici) et en anglais ([screens.md](scr
 - **Stories** : US-5.2, US-5.3, US-2.9.
 - Trois vues : classement **médian** (affiché), **global** (répartition par item), **par joueur** (le classement de chaque participant).
 - Le panneau de droite montre la répartition de l'item sélectionné, votes **absents** compris ; la case les inclut ou les exclut.
-- « Copier le lien public » partage les résultats. La **page publique** montre les mêmes vues, en lecture seule, sans « Rejouer ».
+- « Copier le lien », à côté du lien public des résultats, partage les résultats. La **page publique** montre les mêmes vues, en lecture seule, sans « Rejouer » ni « Retour à la salle ».
