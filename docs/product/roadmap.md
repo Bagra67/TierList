@@ -28,9 +28,11 @@ Detailed design (user stories, domain model, lifecycles, game flow, wireframes):
 
 The next milestone: templates that everyone can see and play. Public content needs moderation first.
 
-- **Moderation foundation**: super admin role checked server-side ([#123](https://github.com/Bagra67/TierList/issues/123)), reports with a super admin queue, which is also the notice mechanism for illegal content ([#126](https://github.com/Bagra67/TierList/issues/126)), hide or delete an image ([#124](https://github.com/Bagra67/TierList/issues/124)), review of the recent uploads ([#125](https://github.com/Bagra67/TierList/issues/125)). See [permissions.md](permissions.md#moderation).
+- **Moderation foundation**: super admin role checked server-side ([#123](https://github.com/Bagra67/TierList/issues/123)), reports with a super admin queue, which is also the notice mechanism for illegal content ([#126](https://github.com/Bagra67/TierList/issues/126)), hide or delete an image ([#124](https://github.com/Bagra67/TierList/issues/124)), review of the recent uploads ([#125](https://github.com/Bagra67/TierList/issues/125)), user page and account bans ([#127](https://github.com/Bagra67/TierList/issues/127)). See [permissions.md](permissions.md#moderation).
 - **Marketplace**: public templates, search by tags and keywords, sort by popularity or newest, likes, favorites, forks; a paginated list ([#105](https://github.com/Bagra67/TierList/issues/105)). See [game-rules.md](game-rules.md#8-templates-and-marketplace).
 - The **privacy policy** changes with it: other users see public templates and their images.
+
+Detailed design (user stories, domain model, lifecycles): [milestone-2/](milestone-2/README.md).
 
 ## Milestone 3 — Open mode and home page
 
@@ -51,7 +53,7 @@ Blind templates, hidden tiles, admin view with the answers, reveal after each ro
 - **Animated reveal** of the results, item by item, with who placed it where (the MVP already shows the tier list appearing tier by tier).
 - **Image export** of the results.
 - **Friends**, then profile statistics, badges and fun facts.
-- **Moderation**, beyond the milestone 2 foundation: sanctions, admin panel, founder views.
+- **Moderation**, beyond the milestone 2 foundation: super admin view of deleted templates, automatic NSFW detection, removing a purchased plan.
 - **Special rank** requests.
 - **Plans** and room size limits, then **payment**.
 - **Notifications** (emails and in-app).
