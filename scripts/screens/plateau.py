@@ -178,8 +178,14 @@ def wrap(svg: Svg, x, y, text, width, size=13, line_h=18, fill=MUTED_FG, weight=
 # --- Pièces de l'interface ----------------------------------------------------------------------
 
 
-def header(svg: Svg, t: Translator, user: str | None) -> None:
-    """En-tête : logo (trois barres S, A, B), navigation, avatar ou « Connexion »."""
+def header(
+    svg: Svg, t: Translator, user: str | None, extra: tuple[tuple[str, str | None], ...] = ()
+) -> None:
+    """En-tête : logo (trois barres S, A, B), navigation, avatar ou « Connexion ».
+
+    extra : liens ajoutés après ceux du jalon 1, (libellé, pastille ou None) ; un lien avec une
+    pastille (un compteur) est en gras.
+    """
     svg.rect(0, 0, svg.width, 56, CARD)
     svg.add(f'<line x1="0" y1="56" x2="{svg.width}" y2="56" stroke="{BORDER}"/>')
     for index, (width, color) in enumerate(
@@ -192,6 +198,12 @@ def header(svg: Svg, t: Translator, user: str | None) -> None:
         label: str = t(key)
         svg.text(x, 33, label, 14, 500, MUTED_FG)
         x += text_width(label) + 28
+    for label, badge in extra:
+        svg.text(x, 33, label, 14, 600 if badge else 500, INK if badge else MUTED_FG)
+        x += text_width(label, 14, 600 if badge else 500) + 6
+        if badge:
+            x += tag(svg, x, 18, badge, PRIMARY, "#FFFFFF")
+        x += 22
     if user is None:
         label = t("auth.login.title")
         button(svg, svg.width - 24 - button_width(label), 12, label, "outline")
@@ -336,6 +348,28 @@ def segmented(svg: Svg, x, y, labels, selected=0) -> None:
             anchor="middle",
         )
         cx += w
+
+
+# Icônes Lucide (lucide-react, celles de l'application), au trait, dessinées sur 24 unités
+ICONS: dict[str, str] = {
+    "heart": '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2'
+    '-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/>',
+    "star": '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+    "copy": '<rect x="9" y="9" width="13" height="13" rx="2"/>'
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    "flag": '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>'
+    '<line x1="4" y1="22" x2="4" y2="15"/>',
+    "search": '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+}
+
+
+def icon(svg: Svg, x, y, name, size=16, color=INK) -> None:
+    """Icône au trait, coin haut gauche en (x, y)."""
+    scale: float = size / 24
+    svg.add(
+        f'<g transform="translate({x} {y}) scale({scale})" fill="none" stroke="{color}" '
+        f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{ICONS[name]}</g>'
+    )
 
 
 # --- Construction -------------------------------------------------------------------------------

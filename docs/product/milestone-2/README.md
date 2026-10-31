@@ -10,13 +10,14 @@ This is **business design**, not technical documentation: no tables, endpoints o
 
 ## Pages
 
-| Page                            | Content                                                                          |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| [User stories](user-stories.md) | What each actor can do, with acceptance criteria, grouped by epic.               |
-| [Domain model](domain-model.md) | The new business concepts, their relations and their invariants (class diagram). |
-| [Lifecycles](lifecycles.md)     | The states of a template, an image, a report and an account (state diagrams).    |
+| Page                            | Content                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------- |
+| [User stories](user-stories.md) | What each actor can do, with acceptance criteria, grouped by epic.                 |
+| [Domain model](domain-model.md) | The new business concepts, their relations and their invariants (class diagram).   |
+| [Lifecycles](lifecycles.md)     | The states of a template, an image, a report and an account (state diagrams).      |
+| [Screens](screens.md)           | Wireframes of the new screens on the visual identity, with the stories they cover. |
 
-The mockups of the new screens are on the [design canvas "TierList — Écrans"](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, private to its owner, shared on request), page "Jalon 2", in French, on the visual identity "Le Plateau". They are drafts: the stories above are the reference.
+The same screens, as editable mockups, are on the [design canvas "TierList — Écrans"](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, private to its owner, shared on request), page "Jalon 2". They are drafts: the stories are the reference.
 
 ## Scope
 
