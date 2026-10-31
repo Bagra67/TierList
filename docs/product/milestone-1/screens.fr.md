@@ -6,6 +6,14 @@ Les wireframes des écrans du [jalon 1](README.fr.md), dessinés sur l'[identit�
 
 Chaque image existe en français (affichée ici) et en anglais ([screens.md](screens.md)), dans [screens/](screens/).
 
+Les images sont générées par [`scripts/screens/milestone_1.py`](../../../scripts/screens/milestone_1.py) : ne jamais modifier un SVG à la main, changer le script et le relancer. Ses textes viennent des traductions de l'interface : un libellé modifié est redessiné au lancement suivant. Depuis la racine du dépôt, une fois `pnpm install` lancé dans `frontend/` (les polices viennent de là), avec Node et uv :
+
+```bash
+uv run --project backend python scripts/screens/milestone_1.py
+```
+
+Le kit de dessin, [`scripts/screens/plateau.py`](../../../scripts/screens/plateau.py), regroupe les couleurs, les polices et les pièces de la charte (en-tête, boutons, panneaux, lignes de tier…), pour les écrans des jalons suivants. Il embarque Anybody et Geist dans chaque SVG, réduites aux caractères utilisés, pour que GitHub les affiche.
+
 ## 1. Éditeur de template
 
 ![Éditeur de template : nom, tiers, tuiles](screens/template-editor.fr.svg)
