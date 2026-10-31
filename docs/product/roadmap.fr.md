@@ -2,7 +2,7 @@
 
 [English](roadmap.md) | Français
 
-Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Le jalon 1 (MVP) est **terminé** : il tourne sur le staging, et arrive en production avec la prochaine release ([guide de déploiement](../technical/deployment.fr.md)). Le jalon 2 vient ensuite.
+Dans quel ordre le [produit](product.fr.md) est construit, et les questions techniques à trancher en chemin. Le jalon 1 (MVP) est **terminé** : il est en production depuis la v1.0.0 ([guide de déploiement](../technical/deployment.fr.md)). Le contenu public vient ensuite (jalons 2 et 3), puis le mode à l'aveugle (jalon 4).
 
 Les jalons ne sont pas des numéros de version : les releases suivent toujours [releasing.fr.md](../technical/releasing.fr.md). Une fonctionnalité reçoit sa documentation technique (dans [architecture.fr.md](../technical/architecture.fr.md) ou sa propre page dans `docs/technical/`) une fois **implémentée**, pas avant.
 
@@ -24,23 +24,34 @@ La première version jouable : une room en direct entre amis.
 
 Conception détaillée (user stories, modèle de domaine, cycles de vie, déroulé, wireframes) : [milestone-1/](milestone-1/README.fr.md).
 
-## Jalon 2 — Mode à l'aveugle
+## Jalon 2 — Templates publics
 
-Le prochain jalon : templates à l'aveugle, tuiles cachées, vue admin avec les réponses, révélation après chaque tour ou à la fin, devinette avec points (trois modes de réponse, réponse libre jugée collectivement). Voir [game-rules.fr.md](game-rules.fr.md#4-mode-à-laveugle).
+Le prochain jalon : des templates que tout le monde peut voir et jouer. Le contenu public demande d'abord de la modération.
+
+- **Socle de modération** : rôle super admin vérifié côté serveur ([#123](https://github.com/Bagra67/TierList/issues/123)), signalements avec une file de traitement super admin, qui sert aussi de mécanisme de notification des contenus illicites ([#126](https://github.com/Bagra67/TierList/issues/126)), masquer ou supprimer une image ([#124](https://github.com/Bagra67/TierList/issues/124)), revue des derniers envois ([#125](https://github.com/Bagra67/TierList/issues/125)). Voir [permissions.fr.md](permissions.fr.md#modération).
+- **Marketplace** : templates publics, recherche par tags et mots-clés, tri par popularité ou nouveauté, likes, favoris, forks ; une liste paginée ([#105](https://github.com/Bagra67/TierList/issues/105)). Voir [game-rules.fr.md](game-rules.fr.md#8-templates-et-marketplace).
+- La **politique de confidentialité** change avec : les autres utilisateurs voient les templates publics et leurs images.
+
+## Jalon 3 — Mode ouvert et page d'accueil
+
+- **Mode ouvert** (asynchrone) : chacun classe un template seul, pendant une durée fixée, avec un compte. Voir [game-rules.fr.md](game-rules.fr.md#2-mode-ouvert).
+- **Mise en avant sur la page d'accueil**, avec les résultats et les statistiques de tous les participants, mis à jour en direct.
+- Plus de **statistiques** ([#133](https://github.com/Bagra67/TierList/issues/133), [game-rules.fr.md](game-rules.fr.md#6-statistiques)).
+
+## Jalon 4 — Mode à l'aveugle
+
+Templates à l'aveugle, tuiles cachées, vue admin avec les réponses, révélation après chaque tour ou à la fin, devinette avec points (trois modes de réponse, réponse libre jugée collectivement). Voir [game-rules.fr.md](game-rules.fr.md#4-mode-à-laveugle).
 
 ## Ensuite (ordre à décider)
 
 - Board public avec **hologrammes**.
-- **Mode ouvert** (asynchrone), puis mise en avant sur la page d'accueil.
-- **Marketplace** : templates publics, recherche, likes, favoris, forks.
 - **Partage de templates** : contributeurs et lecture seule.
 - Mode **solo**.
 - Tuiles **son et vidéo**.
 - **Révélation animée** des résultats, item par item, avec qui l'a placé où (le MVP montre déjà la tier list apparaître tier par tier).
 - **Export en image** des résultats.
-- Plus de **statistiques** (voir [game-rules.fr.md](game-rules.fr.md#6-statistiques)).
 - **Amis**, puis stats de profil, badges et fun facts.
-- **Modération** : signalements, panel admin, sanctions, vues fondateurs.
+- **Modération**, au-delà du socle du jalon 2 : sanctions, panel admin, vues fondateurs.
 - Demandes de **grade spécial**.
 - **Offres** et limites de taille des rooms, puis **paiement**.
 - **Notifications** (emails et dans l'appli).
