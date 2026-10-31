@@ -7,8 +7,9 @@ en production. Changer de fournisseur ne demande que des réglages IMAGE_S3_*.
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-import boto3
-from botocore.config import Config
+# Différés (PEP 810) : boto3 coûte ~0,3 s au démarrage, il n'est chargé qu'au premier usage
+lazy import boto3
+lazy from botocore.config import Config
 
 from app.constants.images import IMAGE_ACL, IMAGE_CACHE_CONTROL, IMAGE_CONTENT_TYPE
 from app.core.config import Settings
