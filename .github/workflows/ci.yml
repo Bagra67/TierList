@@ -97,7 +97,7 @@ jobs:
 
       - name: Tests (unit + PostgreSQL and S3 integration)
         if: ${{ matrix.python != '3.11' }}
-        run: uv run pytest -q -p no:cacheprovider
+        run: exit 1 # throwaway: check that Backend fails
 
       # Runs even when tests fail, so the summary shows which ones and why.
       - name: Test report
