@@ -10,13 +10,14 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 
 ## Pages
 
-| Page                                    | Contenu                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [User stories](user-stories.fr.md)      | Ce que chaque acteur peut faire, avec ses critères d'acceptation, regroupé par épopée.      |
-| [Modèle de domaine](domain-model.fr.md) | Les nouveaux concepts métier, leurs relations et leurs invariants (diagramme de classes).   |
-| [Cycles de vie](lifecycles.fr.md)       | Les états d'un template, d'une image, d'un signalement et d'un compte (diagrammes d'états). |
+| Page                                    | Contenu                                                                                       |
+| --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [User stories](user-stories.fr.md)      | Ce que chaque acteur peut faire, avec ses critères d'acceptation, regroupé par épopée.        |
+| [Modèle de domaine](domain-model.fr.md) | Les nouveaux concepts métier, leurs relations et leurs invariants (diagramme de classes).     |
+| [Cycles de vie](lifecycles.fr.md)       | Les états d'un template, d'une image, d'un signalement et d'un compte (diagrammes d'états).   |
+| [Écrans](screens.fr.md)                 | Les wireframes des nouveaux écrans sur l'identité visuelle, avec les stories qu'ils couvrent. |
 
-Les maquettes des nouveaux écrans sont sur le [canevas « TierList — Écrans »](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, privé à son propriétaire, partagé sur demande), page « Jalon 2 », en français, sur l'identité visuelle « Le Plateau ». Ce sont des ébauches : les stories ci-dessus font foi.
+Les mêmes écrans, en maquettes modifiables, sont sur le [canevas « TierList — Écrans »](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, privé à son propriétaire, partagé sur demande), page « Jalon 2 ». Ce sont des ébauches : les stories font foi.
 
 ## Périmètre
 
