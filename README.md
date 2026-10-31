@@ -206,3 +206,5 @@ More details in [backend/README.md](backend/README.md) and [frontend/README.md](
 ## 7. License
 
 Proprietary code, **all rights reserved**: no reuse, copying, modification or redistribution without the author's written permission. See [LICENSE](LICENSE).
+
+<!-- throwaway: CI skip check -->

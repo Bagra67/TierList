@@ -206,3 +206,5 @@ Plus de détails dans [backend/README.fr.md](backend/README.fr.md) et [frontend/
 ## 7. Licence
 
 Code propriétaire, **tous droits réservés** : aucune réutilisation, copie, modification ni redistribution sans autorisation écrite de l'auteur. Voir [LICENSE](LICENSE).
+
+<!-- throwaway: CI skip check -->
