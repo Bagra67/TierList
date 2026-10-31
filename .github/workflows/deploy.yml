@@ -10,6 +10,9 @@ on:
   workflow_run:
     workflows: [CI, Release]
     types: [completed]
+    # Branch of the run that completed: develop for a CI push and for Release (a workflow_run runs
+    # on the default branch). Leaves out the CI runs of work branches, which the job would skip.
+    branches: [develop, main]
   workflow_dispatch:
     inputs:
       tag:
