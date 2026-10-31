@@ -10,7 +10,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TypedDict, TypeVar
+from typing import TypedDict
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -41,17 +41,16 @@ from app.repositories import templates as template_repository
 logger = logging.getLogger(__name__)
 
 
-# Les tiers et les tuiles sont ordonnés de la même façon, par leur position
-Positioned = TypeVar("Positioned", Tier, Tile)
-
-
-def _renumber(items: list[Positioned]) -> None:
+# Les tiers et les tuiles sont ordonnés de la même façon, par leur position (Positioned)
+def _renumber[Positioned: (Tier, Tile)](items: list[Positioned]) -> None:
     """Positions continues 0..n-1 dans l'ordre de la liste (aucune contrainte d'unicité en base)."""
     for position, item in enumerate(items):
         item.position = position
 
 
-def _move(items: list[Positioned], item: Positioned, position: int) -> None:
+def _move[Positioned: (Tier, Tile)](
+    items: list[Positioned], item: Positioned, position: int
+) -> None:
     """Déplace l'élément à cette position ; au-delà de la fin, il passe en dernier."""
     items.remove(item)
     items.insert(min(position, len(items)), item)
