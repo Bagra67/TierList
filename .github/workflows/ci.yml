@@ -57,9 +57,13 @@ jobs:
 
       # The same S3 storage as in development (compose.yaml), for the image storage tests. Not a
       # service container: those cannot mount configuration files, which only exist after checkout.
-      - name: Start the S3 image storage (SeaweedFS)
+      # Started in the background (image pull, start-up) while the dependencies install and the
+      # checks run; "Wait for the S3 image storage" waits for it before the tests.
+      - name: Start the S3 image storage (SeaweedFS) in the background
         working-directory: .
-        run: docker compose up -d --wait seaweedfs
+        run: |
+          (docker compose up -d --wait seaweedfs; echo $? > "$RUNNER_TEMP/seaweedfs.status") \
+            > "$RUNNER_TEMP/seaweedfs.log" 2>&1 &
 
       # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
       - uses: astral-sh/setup-uv@v10.3.2
@@ -80,6 +84,15 @@ jobs:
 
       - name: Type check (Pyright)
         run: uv run pyright
+
+      - name: Wait for the S3 image storage
+        run: |
+          for _ in $(seq 120); do
+            [ -f "$RUNNER_TEMP/seaweedfs.status" ] && break
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/seaweedfs.log"
+          exit "$(cat "$RUNNER_TEMP/seaweedfs.status" 2>/dev/null || echo 1)"
 
       - name: Tests (unit + PostgreSQL and S3 integration) with coverage
         run: >-
