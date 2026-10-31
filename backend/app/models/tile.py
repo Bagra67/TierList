@@ -31,7 +31,7 @@ class Tile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Ordre du template, 0 = première ; sans contrainte d'unicité, comme Tier.position
     position: Mapped[int]
 
-    template: Mapped["Template"] = relationship(back_populates="tiles")
+    template: Mapped[Template] = relationship(back_populates="tiles")
     # selectin : les images des tuiles d'un template se chargent en une requête (URL de la
     # réponse), pas une par tuile
-    image: Mapped["Image | None"] = relationship(lazy="selectin")
+    image: Mapped[Image | None] = relationship(lazy="selectin")

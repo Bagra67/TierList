@@ -87,7 +87,7 @@ class ImageService:
         for storage_key in storage_keys:
             try:
                 self._storage.delete(storage_key)
-            except (BotoCoreError, ClientError):
+            except BotoCoreError, ClientError:
                 # La clé permet d'effacer le fichier à la main ; le prochain passage ne le
                 # retrouvera pas, sa ligne n'existant plus
                 logger.exception("Fichier d'image non effacé : storage_key=%s", storage_key)
@@ -117,7 +117,7 @@ class ImageService:
         données, la vraie cause, reste celle qui remonte."""
         try:
             self._storage.delete(storage_key)
-        except (BotoCoreError, ClientError):
+        except BotoCoreError, ClientError:
             logger.exception("Fichier d'image orphelin non effacé : storage_key=%s", storage_key)
 
     def _read_within_limit(self, file: BinaryIO) -> bytes:

@@ -27,4 +27,4 @@ class Tier(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # décaler les autres tiers ; le service garde les positions continues.
     position: Mapped[int]
 
-    template: Mapped["Template"] = relationship(back_populates="tiers")
+    template: Mapped[Template] = relationship(back_populates="tiers")

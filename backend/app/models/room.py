@@ -59,25 +59,25 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # sait qu'il a manqué un événement et relit la salle (docs/technical/realtime.md)
     version: Mapped[int] = mapped_column(default=0, server_default=text("0"))
 
-    template: Mapped["Template | None"] = relationship()
-    participants: Mapped[list["Participant"]] = relationship(
+    template: Mapped[Template | None] = relationship()
+    participants: Mapped[list[Participant]] = relationship(
         back_populates="room", cascade="all, delete-orphan", order_by="Participant.created_at"
     )
     # Visibles du room admin seulement (US-2.12)
-    bans: Mapped[list["RoomBan"]] = relationship(
+    bans: Mapped[list[RoomBan]] = relationship(
         cascade="all, delete-orphan", order_by="RoomBan.created_at"
     )
     # La partie en cours, s'il y en a une (au plus une, invariant 3). Lecture seule : une partie
     # se crée par le service des parties, et la base la détache (SET NULL) quand la salle est
     # supprimée
-    current_game: Mapped["Game | None"] = relationship(
+    current_game: Mapped[Game | None] = relationship(
         primaryjoin=f"and_(Game.room_id == Room.id, Game.status != '{GameStatus.CLOSED}')",
         viewonly=True,
         uselist=False,
     )
     # Les parties closes de la salle, de la plus récente à la plus ancienne : leurs liens de
     # résultats (US-5.2), montrés aux places de la salle
-    closed_games: Mapped[list["Game"]] = relationship(
+    closed_games: Mapped[list[Game]] = relationship(
         primaryjoin=f"and_(Game.room_id == Room.id, Game.status == '{GameStatus.CLOSED}')",
         viewonly=True,
         order_by="Game.closed_at.desc()",

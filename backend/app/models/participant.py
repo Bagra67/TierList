@@ -71,8 +71,8 @@ class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # change (connexion, fin du délai de grâce), pas à chaque battement de cœur
     connected: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
 
-    room: Mapped["Room"] = relationship(back_populates="participants")
-    user: Mapped["User | None"] = relationship()
+    room: Mapped[Room] = relationship(back_populates="participants")
+    user: Mapped[User | None] = relationship()
 
     @property
     def is_guest(self) -> bool:

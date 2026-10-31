@@ -155,7 +155,7 @@ class ConnectionRegistry:
             self.remove(room_id, websocket)
             try:
                 await websocket.close(code=close_code, reason=reason)
-            except (RuntimeError, OSError):
+            except RuntimeError, OSError:
                 logger.debug("Fermeture impossible d'un socket déjà fermé : room_id=%s", room_id)
 
     def _schedule_broadcast(self, room_id: uuid.UUID, message: str) -> None:
@@ -165,7 +165,7 @@ class ConnectionRegistry:
         for websocket in list(self._sockets.get(room_id, {})):
             try:
                 await websocket.send_text(message)
-            except (RuntimeError, OSError):
+            except RuntimeError, OSError:
                 # Socket déjà fermé côté client : sa route le retirera du registre
                 logger.debug("Envoi impossible sur un socket fermé : room_id=%s", room_id)
 

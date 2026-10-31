@@ -128,7 +128,7 @@ def s3_image_storage() -> ImageStorage:
     try:
         # Supprimer une clé absente ne fait rien, mais vérifie l'adresse, les clés et le bucket
         storage.delete("connectivity-check")
-    except (BotoCoreError, ClientError):
+    except BotoCoreError, ClientError:
         _service_unavailable(
             "S3 image storage is not reachable: start it with `docker compose up -d --wait` "
             "and set the IMAGE_S3_* settings (backend/.env.example)"

@@ -29,5 +29,5 @@ class SnapshotTile(UUIDPrimaryKeyMixin, Base):
     # Ordre du template au moment de la copie, 0 = première
     position: Mapped[int]
 
-    snapshot: Mapped["TemplateSnapshot"] = relationship(back_populates="tiles")
-    image: Mapped["Image | None"] = relationship(lazy="selectin")
+    snapshot: Mapped[TemplateSnapshot] = relationship(back_populates="tiles")
+    image: Mapped[Image | None] = relationship(lazy="selectin")
