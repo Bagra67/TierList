@@ -236,24 +236,20 @@ def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice
             assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
 
 
-# Identifiant fixe : les noms des tests paramétrés doivent être les mêmes à chaque collecte
-UNKNOWN_ID = uuid.UUID("00000000-0000-4000-8000-000000000000")
-
-
 @pytest.mark.parametrize(
     ("method", "path"),
     [
         ("POST", "/templates"),
         ("GET", "/templates"),
-        ("GET", f"/templates/{UNKNOWN_ID}"),
-        ("PATCH", f"/templates/{UNKNOWN_ID}"),
-        ("DELETE", f"/templates/{UNKNOWN_ID}"),
-        ("POST", f"/templates/{UNKNOWN_ID}/tiers"),
-        ("PATCH", f"/templates/{UNKNOWN_ID}/tiers/{UNKNOWN_ID}"),
-        ("DELETE", f"/templates/{UNKNOWN_ID}/tiers/{UNKNOWN_ID}"),
-        ("POST", f"/templates/{UNKNOWN_ID}/tiles"),
-        ("PATCH", f"/templates/{UNKNOWN_ID}/tiles/{UNKNOWN_ID}"),
-        ("DELETE", f"/templates/{UNKNOWN_ID}/tiles/{UNKNOWN_ID}"),
+        ("GET", f"/templates/{uuid.uuid4()}"),
+        ("PATCH", f"/templates/{uuid.uuid4()}"),
+        ("DELETE", f"/templates/{uuid.uuid4()}"),
+        ("POST", f"/templates/{uuid.uuid4()}/tiers"),
+        ("PATCH", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
+        ("DELETE", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
+        ("POST", f"/templates/{uuid.uuid4()}/tiles"),
+        ("PATCH", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
+        ("DELETE", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
     ],
 )
 def test_template_routes_require_authentication(auth_client: TestClient, method: str, path: str):
