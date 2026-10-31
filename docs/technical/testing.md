@@ -871,6 +871,14 @@ A new application serves a fake build from a temporary folder (`index.html`, `as
 | `test_a_websocket_that_bypasses_the_proxy_is_refused`                | Opens `/ws` from `91.197.6.107`.                                                                  | The real-time channel is closed to direct connections too.              | `WebSocketDisconnect` with code `1008` (uvicorn answers `403` to the handshake).          |
 | `test_a_websocket_through_the_proxy_is_served`                       | Opens `/ws` from `10.0.0.7`.                                                                      | The WebSocket still works through the tunnel.                           | Receives `hello`.                                                                         |
 
+### 1.23 Unit test: `tests/test_startup_imports.py` (imports at startup)
+
+`boto3` and `botocore` are imported with `lazy import` (PEP 810, Python 3.15) in `app/services/image_storage.py` and `app/services/images.py`: they cost ~0.3 s and are only needed when an image is stored.
+
+| Test                                                | What it does                                                                        | Purpose                                                                                    | Expected result                                                                     |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `test_starting_the_app_does_not_load_the_s3_client` | Imports `app.main` in a new Python process and lists the packages in `sys.modules`. | A direct `import boto3` added elsewhere would silently bring the cost back to every start. | Neither `boto3` nor `botocore` loaded. Otherwise the test names them and the files. |
+
 ## 2. Frontend (Vitest)
 
 ### 2.1 How Vitest works

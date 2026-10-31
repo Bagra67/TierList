@@ -871,6 +871,14 @@ Une application neuve sert un faux build depuis un dossier temporaire (`index.ht
 | `test_a_websocket_that_bypasses_the_proxy_is_refused`              | Ouvre `/ws` depuis `91.197.6.107`.                                                                 | Le canal temps réel est fermé aux connexions directes aussi.                        | `WebSocketDisconnect` avec le code `1008` (uvicorn répond `403` à la poignée de main).    |
 | `test_a_websocket_through_the_proxy_is_served`                     | Ouvre `/ws` depuis `10.0.0.7`.                                                                     | Le WebSocket fonctionne toujours par le tunnel.                                     | Reçoit `hello`.                                                                           |
 
+### 1.23 Test unitaire : `tests/test_startup_imports.py` (imports au démarrage)
+
+`boto3` et `botocore` sont importés avec `lazy import` (PEP 810, Python 3.15) dans `app/services/image_storage.py` et `app/services/images.py` : ils coûtent ~0,3 s et ne servent qu'à l'enregistrement d'une image.
+
+| Test                                                | Ce qu'il fait                                                                              | But                                                                                        | Résultat attendu                                                              |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `test_starting_the_app_does_not_load_the_s3_client` | Importe `app.main` dans un nouveau processus Python et liste les paquets de `sys.modules`. | Un `import boto3` direct ajouté ailleurs ramènerait sans bruit ce coût à chaque démarrage. | Ni `boto3` ni `botocore` chargés. Sinon le test les nomme, avec les fichiers. |
+
 ## 2. Frontend (Vitest)
 
 ### 2.1 Fonctionnement de Vitest

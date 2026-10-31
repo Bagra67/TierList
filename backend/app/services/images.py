@@ -10,9 +10,11 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import BinaryIO
 
-from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+
+# Différé (PEP 810) : botocore n'est chargé que si une erreur de stockage survient
+lazy from botocore.exceptions import BotoCoreError, ClientError
 
 from app.constants.images import IMAGE_FILE_EXTENSION
 from app.core.config import Settings

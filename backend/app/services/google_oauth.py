@@ -69,7 +69,7 @@ class GoogleLoginAttempt:
     @property
     def code_challenge(self) -> str:
         digest = hashlib.sha256(self.code_verifier.encode()).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+        return base64.urlsafe_b64encode(digest, padded=False).decode()
 
     def to_cookie(self, secret_key: str, ttl: timedelta) -> str:
         # Signé (JWT HS256) : le navigateur le garde, mais ne peut pas le modifier
