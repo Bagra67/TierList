@@ -30,6 +30,10 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Fichiers non isolés : chaque worker garde son jsdom et ses modules d'un fichier à l'autre,
+    // au lieu de les recréer (près de la moitié du temps des tests). src/test/setup.ts remet
+    // l'état partagé à zéro après chaque test.
+    isolate: false,
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
