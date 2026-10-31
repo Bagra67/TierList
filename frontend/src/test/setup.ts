@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
@@ -12,6 +12,12 @@ import { installMatchMedia, resetSystemTheme } from './matchMedia';
 
 // Avant tout import de src/theme, qui appelle matchMedia dès son chargement
 installMatchMedia();
+
+// Attente maximale des findBy… et waitFor (1 s par défaut) : une machine chargée, comme un runner
+// de CI, peut dépasser 1 s alors que la page se comporte bien. Un test qui réussit n'attend pas
+// plus longtemps : il repart dès que l'élément apparaît. Reste sous la limite d'un test de
+// Vitest (5 s), pour qu'un échec montre l'élément introuvable plutôt qu'un dépassement de délai.
+configure({ asyncUtilTimeout: 3000 });
 
 // Les tests vérifient les textes français : chaque test démarre en français, quelle que soit
 // la langue de jsdom, et sans choix de langue mémorisé par un test précédent.
