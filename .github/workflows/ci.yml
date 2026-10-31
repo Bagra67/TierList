@@ -15,16 +15,10 @@ permissions:
   contents: read
 
 jobs:
-  # The pods run Python 3.13 (docs/technical/deployment.md), the development 3.11: the suite runs
-  # on both, in parallel. Lint, type check, coverage and reports only on 3.11.
-  backend-tests:
-    name: Backend (Python ${{ matrix.python }})
+  # Python of backend/.python-version: the same version as the pods (docs/technical/deployment.md).
+  backend:
+    name: Backend
     runs-on: ubuntu-latest
-    strategy:
-      # A failure on one version still lets the other finish, to see whether both fail.
-      fail-fast: false
-      matrix:
-        python: ["3.11", "3.13"]
     defaults:
       run:
         working-directory: backend
@@ -71,37 +65,27 @@ jobs:
           enable-cache: true
           # Relative to working-directory (backend/).
           cache-dependency-glob: uv.lock
-          # Sets UV_PYTHON: uv sync and uv run below use this version.
-          python-version: ${{ matrix.python }}
 
       - name: Install dependencies
         run: uv sync --locked
 
       - name: Lint (Ruff)
-        if: ${{ matrix.python == '3.11' }}
         run: uv run ruff check .
 
       - name: Check formatting (Ruff)
-        if: ${{ matrix.python == '3.11' }}
         run: uv run ruff format --check .
 
       - name: Type check (Pyright)
-        if: ${{ matrix.python == '3.11' }}
         run: uv run pyright
 
       - name: Tests (unit + PostgreSQL and S3 integration) with coverage
-        if: ${{ matrix.python == '3.11' }}
         run: >-
           uv run pytest --cov=app --cov-report=term --cov-report=xml
           --junitxml=reports/junit.xml
 
-      - name: Tests (unit + PostgreSQL and S3 integration)
-        if: ${{ matrix.python != '3.11' }}
-        run: uv run pytest -q -p no:cacheprovider
-
       # Runs even when tests fail, so the summary shows which ones and why.
       - name: Test report
-        if: ${{ !cancelled() && matrix.python == '3.11' }}
+        if: ${{ !cancelled() }}
         run: |
           uv run python ../.github/scripts/junit_summary.py Backend reports/junit.xml >> "$GITHUB_STEP_SUMMARY"
           echo "### Backend coverage" >> "$GITHUB_STEP_SUMMARY"
@@ -109,7 +93,7 @@ jobs:
             || echo "No coverage data." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test reports
-        if: ${{ !cancelled() && matrix.python == '3.11' }}
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: backend-test-reports
@@ -118,20 +102,6 @@ jobs:
             backend/coverage.xml
           if-no-files-found: ignore
           retention-days: 14
-
-  # The required check of the rulesets: it passes only if every backend job passed, so that the
-  # jobs above can change (versions, split) without touching the rulesets.
-  backend:
-    name: Backend
-    needs: backend-tests
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Every backend job passed
-        if: ${{ needs.backend-tests.result != 'success' }}
-        run: |
-          echo "::error::A backend job did not pass (result: ${{ needs.backend-tests.result }})."
-          exit 1
 
   frontend:
     name: Frontend
