@@ -49,6 +49,9 @@ jobs:
       IMAGE_S3_ENDPOINT_URL: http://127.0.0.1:8333
       IMAGE_S3_ACCESS_KEY_ID: tierlist-dev
       IMAGE_S3_SECRET_ACCESS_KEY: tierlist-dev-not-a-secret
+      # Coverage through sys.monitoring (Python 3.12+) instead of a trace function on every line:
+      # a line costs only its first execution. Line coverage only (no branch coverage configured).
+      COVERAGE_CORE: sysmon
     steps:
       - uses: actions/checkout@v7
 
