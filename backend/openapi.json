@@ -3,7 +3,7 @@
   "info": {
     "title": "TierList API",
     "description": "Backend FastAPI de l'application TierList",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "paths": {
     "/auth/register": {
