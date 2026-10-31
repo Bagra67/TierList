@@ -6,7 +6,7 @@ Application TierList composée de deux projets dans un seul dépôt git :
 
 | Dossier                              | Contenu                                                  | Outils                                |
 | ------------------------------------ | -------------------------------------------------------- | ------------------------------------- |
-| [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.11+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
+| [`backend/`](backend/README.fr.md)   | API **FastAPI** (Python 3.13+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.fr.md) | **React + TypeScript** avec Vite                         | pnpm, ESLint, Prettier                |
 
 Le produit et comment on y joue : [docs/product/product.fr.md](docs/product/product.fr.md), avec ses [règles du jeu](docs/product/game-rules.fr.md), ses [permissions](docs/product/permissions.fr.md) et sa [roadmap](docs/product/roadmap.fr.md). Organisation du code et emplacement du nouveau code : [docs/technical/architecture.fr.md](docs/technical/architecture.fr.md). Comptes et connexion : [docs/technical/authentication.fr.md](docs/technical/authentication.fr.md). Templates (modèle, API, purge) : [docs/technical/templates.fr.md](docs/technical/templates.fr.md). Temps réel des rooms (décision : WebSocket, reconnexion, timers, montée en charge) : [docs/technical/realtime.fr.md](docs/technical/realtime.fr.md). Images des tuiles (formats, compression, stockage S3, SeaweedFS, modération) : [docs/technical/images.fr.md](docs/technical/images.fr.md). Calcul des résultats (classement médian, votes absents, exemples chiffrés) : [docs/technical/results.fr.md](docs/technical/results.fr.md). Traductions (français / anglais) : [docs/technical/i18n.fr.md](docs/technical/i18n.fr.md). Emails (SMTP, Mailpit) : [docs/technical/emails.fr.md](docs/technical/emails.fr.md). Pages légales (politique de confidentialité) : [docs/technical/legal-pages.fr.md](docs/technical/legal-pages.fr.md). Versions et releases (`develop` → `main`) : [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md), changements dans [CHANGELOG.fr.md](CHANGELOG.fr.md).
@@ -161,16 +161,17 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 
 `.github/workflows/ci.yml` tourne sur chaque pull request (y compris les PR empilées sur une autre branche de travail) et chaque push sur `develop` et `main` :
 
-| Job          | Étapes                                                                                                                                   |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml` |
-| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                             |
-| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                         |
+| Job          | Étapes                                                                                                                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml`, en Python 3.13 (celui des pods de production) |
+| **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                                                                            |
+| **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                                                                        |
 
 `.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
 
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
+- Sur une PR, `Backend` et `Frontend` ne tournent que si la PR touche leur partie (job `Changed parts`) : `frontend/` et `docs/` (vérifié par Prettier) pour Frontend, `backend/` pour Backend, les deux pour `backend/openapi.json` et pour tout autre fichier sauf le Markdown. Un job sauté compte comme réussi. Un push sur `develop` ou `main` lance toujours tout, puisqu'il déploie ou publie une version.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
 
