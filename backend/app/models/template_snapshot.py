@@ -35,9 +35,9 @@ class TemplateSnapshot(UUIDPrimaryKeyMixin, Base):
         DateTime(timezone=True), server_default=func.clock_timestamp()
     )
 
-    tiers: Mapped[list["SnapshotTier"]] = relationship(
+    tiers: Mapped[list[SnapshotTier]] = relationship(
         back_populates="snapshot", cascade="all, delete-orphan", order_by="SnapshotTier.position"
     )
-    tiles: Mapped[list["SnapshotTile"]] = relationship(
+    tiles: Mapped[list[SnapshotTile]] = relationship(
         back_populates="snapshot", cascade="all, delete-orphan", order_by="SnapshotTile.position"
     )

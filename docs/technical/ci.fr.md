@@ -56,7 +56,6 @@ Gardés tels quels, volontairement :
 - **Docs sur les événements de label** : créer une PR avec des labels lance `Docs` plusieurs fois (≈ 10 s chacun). Sauter ces runs afficherait un contrôle `Docs` _sauté_, donc réussi, sur un commit dont un run précédent a échoué.
 - **CI sur le push après un merge** : il refait tourner l'arbre déjà testé par la PR, mais sa réussite autorise le déploiement staging et la release.
 - **Jobs frontend en parallèle** (lint, `tsc`, knip, build) : chaque nouveau job paie sa propre installation (≈ 20 s) pour gagner environ 5 s.
-- **Python 3.14** : la suite passe, mais il n'est pas plus rapide que la 3.13 avec `sysmon`, et il dépend du Python des pods.
 
 ## 4. La garder rapide et fiable
 

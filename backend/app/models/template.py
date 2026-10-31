@@ -30,10 +30,10 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(TEMPLATE_NAME_MAX_LENGTH))
 
-    tiers: Mapped[list["Tier"]] = relationship(
+    tiers: Mapped[list[Tier]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tier.position"
     )
-    tiles: Mapped[list["Tile"]] = relationship(
+    tiles: Mapped[list[Tile]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tile.position"
     )
 

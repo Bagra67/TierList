@@ -58,7 +58,7 @@ class GoogleLoginAttempt:
     next_step: str | None
 
     @classmethod
-    def start(cls, next_step: str | None) -> "GoogleLoginAttempt":
+    def start(cls, next_step: str | None) -> GoogleLoginAttempt:
         return cls(
             state=secrets.token_urlsafe(GOOGLE_STATE_BYTES),
             nonce=secrets.token_urlsafe(GOOGLE_NONCE_BYTES),
@@ -86,7 +86,7 @@ class GoogleLoginAttempt:
         return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
 
     @classmethod
-    def from_cookie(cls, value: str, secret_key: str) -> "GoogleLoginAttempt":
+    def from_cookie(cls, value: str, secret_key: str) -> GoogleLoginAttempt:
         try:
             claims = jwt.decode(
                 value,
