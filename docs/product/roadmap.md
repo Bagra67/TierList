@@ -2,7 +2,7 @@
 
 English | [Français](roadmap.fr.md)
 
-In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**: it runs on staging, and reaches production with the next release ([deployment guide](../technical/deployment.md)). Milestone 2 comes next.
+In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**: it is in production since v1.0.0 ([deployment guide](../technical/deployment.md)). Public content comes next (milestones 2 and 3), then blind mode (milestone 4).
 
 Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.
 
@@ -24,23 +24,34 @@ The first playable version: a live room with friends.
 
 Detailed design (user stories, domain model, lifecycles, game flow, wireframes): [milestone-1/](milestone-1/README.md).
 
-## Milestone 2 — Blind mode
+## Milestone 2 — Public templates
 
-The next milestone: blind templates, hidden tiles, admin view with the answers, reveal after each round or at the end, guessing with points (three answer modes, free text judged collectively). See [game-rules.md](game-rules.md#4-blind-mode).
+The next milestone: templates that everyone can see and play. Public content needs moderation first.
+
+- **Moderation foundation**: super admin role checked server-side ([#123](https://github.com/Bagra67/TierList/issues/123)), reports with a super admin queue, which is also the notice mechanism for illegal content ([#126](https://github.com/Bagra67/TierList/issues/126)), hide or delete an image ([#124](https://github.com/Bagra67/TierList/issues/124)), review of the recent uploads ([#125](https://github.com/Bagra67/TierList/issues/125)). See [permissions.md](permissions.md#moderation).
+- **Marketplace**: public templates, search by tags and keywords, sort by popularity or newest, likes, favorites, forks; a paginated list ([#105](https://github.com/Bagra67/TierList/issues/105)). See [game-rules.md](game-rules.md#8-templates-and-marketplace).
+- The **privacy policy** changes with it: other users see public templates and their images.
+
+## Milestone 3 — Open mode and home page
+
+- **Open mode** (asynchronous): each person ranks a template alone, during a set duration, with an account. See [game-rules.md](game-rules.md#2-open-mode).
+- **Featuring on the home page**, with the results and statistics of the whole crowd, updated live.
+- More **statistics** ([#133](https://github.com/Bagra67/TierList/issues/133), [game-rules.md](game-rules.md#6-statistics)).
+
+## Milestone 4 — Blind mode
+
+Blind templates, hidden tiles, admin view with the answers, reveal after each round or at the end, guessing with points (three answer modes, free text judged collectively). See [game-rules.md](game-rules.md#4-blind-mode).
 
 ## Next (order to decide)
 
 - Public board with **holograms**.
-- **Open mode** (asynchronous), then featuring on the home page.
-- **Marketplace**: public templates, search, likes, favorites, forks.
 - **Template sharing**: contributors and read-only.
 - **Solo** mode.
 - **Sound and video** tiles.
 - **Animated reveal** of the results, item by item, with who placed it where (the MVP already shows the tier list appearing tier by tier).
 - **Image export** of the results.
-- More **statistics** (see [game-rules.md](game-rules.md#6-statistics)).
 - **Friends**, then profile statistics, badges and fun facts.
-- **Moderation**: reports, admin panel, sanctions, founder views.
+- **Moderation**, beyond the milestone 2 foundation: sanctions, admin panel, founder views.
 - **Special rank** requests.
 - **Plans** and room size limits, then **payment**.
 - **Notifications** (emails and in-app).
