@@ -28,6 +28,10 @@ from tests.integration.conftest import FAKE_IMAGE_BASE_URL
 # les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
+# Modèle, tier ou tuile qui n'existe pas. Fixe, pas uuid4() : les noms des tests paramétrés
+# doivent être les mêmes à chaque collecte, sinon les workers de pytest-xdist refusent de démarrer
+UNKNOWN_ID: uuid.UUID = uuid.UUID("00000000-0000-4000-8000-000000000000")
+
 PASSWORD = "correct horse battery staple"
 
 # Objet JSON renvoyé par l'API (template, tier, tuile…) : sa forme est vérifiée par les tests
@@ -241,15 +245,15 @@ def test_unknown_or_deleted_template_is_not_found(auth_client: TestClient, alice
     [
         ("POST", "/templates"),
         ("GET", "/templates"),
-        ("GET", f"/templates/{uuid.uuid4()}"),
-        ("PATCH", f"/templates/{uuid.uuid4()}"),
-        ("DELETE", f"/templates/{uuid.uuid4()}"),
-        ("POST", f"/templates/{uuid.uuid4()}/tiers"),
-        ("PATCH", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
-        ("DELETE", f"/templates/{uuid.uuid4()}/tiers/{uuid.uuid4()}"),
-        ("POST", f"/templates/{uuid.uuid4()}/tiles"),
-        ("PATCH", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
-        ("DELETE", f"/templates/{uuid.uuid4()}/tiles/{uuid.uuid4()}"),
+        ("GET", f"/templates/{UNKNOWN_ID}"),
+        ("PATCH", f"/templates/{UNKNOWN_ID}"),
+        ("DELETE", f"/templates/{UNKNOWN_ID}"),
+        ("POST", f"/templates/{UNKNOWN_ID}/tiers"),
+        ("PATCH", f"/templates/{UNKNOWN_ID}/tiers/{UNKNOWN_ID}"),
+        ("DELETE", f"/templates/{UNKNOWN_ID}/tiers/{UNKNOWN_ID}"),
+        ("POST", f"/templates/{UNKNOWN_ID}/tiles"),
+        ("PATCH", f"/templates/{UNKNOWN_ID}/tiles/{UNKNOWN_ID}"),
+        ("DELETE", f"/templates/{UNKNOWN_ID}/tiles/{UNKNOWN_ID}"),
     ],
 )
 def test_template_routes_require_authentication(auth_client: TestClient, method: str, path: str):
