@@ -28,9 +28,11 @@ Conception détaillée (user stories, modèle de domaine, cycles de vie, déroul
 
 Le prochain jalon : des templates que tout le monde peut voir et jouer. Le contenu public demande d'abord de la modération.
 
-- **Socle de modération** : rôle super admin vérifié côté serveur ([#123](https://github.com/Bagra67/TierList/issues/123)), signalements avec une file de traitement super admin, qui sert aussi de mécanisme de notification des contenus illicites ([#126](https://github.com/Bagra67/TierList/issues/126)), masquer ou supprimer une image ([#124](https://github.com/Bagra67/TierList/issues/124)), revue des derniers envois ([#125](https://github.com/Bagra67/TierList/issues/125)). Voir [permissions.fr.md](permissions.fr.md#modération).
+- **Socle de modération** : rôle super admin vérifié côté serveur ([#123](https://github.com/Bagra67/TierList/issues/123)), signalements avec une file de traitement super admin, qui sert aussi de mécanisme de notification des contenus illicites ([#126](https://github.com/Bagra67/TierList/issues/126)), masquer ou supprimer une image ([#124](https://github.com/Bagra67/TierList/issues/124)), revue des derniers envois ([#125](https://github.com/Bagra67/TierList/issues/125)), page utilisateur et bannissement de comptes ([#127](https://github.com/Bagra67/TierList/issues/127)). Voir [permissions.fr.md](permissions.fr.md#modération).
 - **Marketplace** : templates publics, recherche par tags et mots-clés, tri par popularité ou nouveauté, likes, favoris, forks ; une liste paginée ([#105](https://github.com/Bagra67/TierList/issues/105)). Voir [game-rules.fr.md](game-rules.fr.md#8-templates-et-marketplace).
 - La **politique de confidentialité** change avec : les autres utilisateurs voient les templates publics et leurs images.
+
+Conception détaillée (user stories, modèle de domaine, cycles de vie) : [milestone-2/](milestone-2/README.fr.md).
 
 ## Jalon 3 — Mode ouvert et page d'accueil
 
@@ -51,7 +53,7 @@ Templates à l'aveugle, tuiles cachées, vue admin avec les réponses, révélat
 - **Révélation animée** des résultats, item par item, avec qui l'a placé où (le MVP montre déjà la tier list apparaître tier par tier).
 - **Export en image** des résultats.
 - **Amis**, puis stats de profil, badges et fun facts.
-- **Modération**, au-delà du socle du jalon 2 : sanctions, panel admin, vues fondateurs.
+- **Modération**, au-delà du socle du jalon 2 : vue super admin des templates supprimés, détection automatique NSFW, retrait d'une offre achetée.
 - Demandes de **grade spécial**.
 - **Offres** et limites de taille des rooms, puis **paiement**.
 - **Notifications** (emails et dans l'appli).
