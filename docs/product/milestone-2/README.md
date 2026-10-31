@@ -16,7 +16,7 @@ This is **business design**, not technical documentation: no tables, endpoints o
 | [Domain model](domain-model.md) | The new business concepts, their relations and their invariants (class diagram). |
 | [Lifecycles](lifecycles.md)     | The states of a template, an image, a report and an account (state diagrams).    |
 
-The wireframes of the new screens come with the visual identity ("Le Plateau"), in a later change.
+The mockups of the new screens are on the [design canvas "TierList — Écrans"](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, private to its owner, shared on request), page "Jalon 2", in French, on the visual identity "Le Plateau". They are drafts: the stories above are the reference.
 
 ## Scope
 
@@ -47,6 +47,7 @@ Product decisions taken when designing this milestone (2026-10-31):
 - **Moderation after publication**: a template is public as soon as its owner publishes it, if the account email is confirmed. Reports and the review of uploads are the safety net.
 - **Visitors** without an account can browse the marketplace and open a public template; liking, adding to favorites, forking and starting a room need an account.
 - **Account sanctions** (temporary and permanent ban) are part of this milestone.
+- **Wording** (validated on the mockups): the marketplace is called _modèles publics_ / _public templates_ in the interface, and a fork _copier dans mes modèles_ / _copy to my templates_ ([i18n guide](../../technical/i18n.md#vocabulary)). The header gets a _Modèles publics_ link for everyone, and a _Modération_ link with the number of open reports for super admins only.
 
 ## Assumptions
 

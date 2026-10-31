@@ -16,7 +16,7 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 | [Modèle de domaine](domain-model.fr.md) | Les nouveaux concepts métier, leurs relations et leurs invariants (diagramme de classes).   |
 | [Cycles de vie](lifecycles.fr.md)       | Les états d'un template, d'une image, d'un signalement et d'un compte (diagrammes d'états). |
 
-Les wireframes des nouveaux écrans viendront avec l'identité visuelle (« Le Plateau »), dans un changement ultérieur.
+Les maquettes des nouveaux écrans sont sur le [canevas « TierList — Écrans »](https://claude.ai/artifact/EYMsS8K3Yj5fAjXGgj9t5d) (claude.ai, privé à son propriétaire, partagé sur demande), page « Jalon 2 », en français, sur l'identité visuelle « Le Plateau ». Ce sont des ébauches : les stories ci-dessus font foi.
 
 ## Périmètre
 
@@ -47,6 +47,7 @@ Décisions produit prises en concevant ce jalon (2026-10-31) :
 - **Modération après publication** : un template est public dès que son propriétaire le publie, si l'e-mail du compte est confirmé. Les signalements et la revue des envois servent de filet.
 - Les **visiteurs** sans compte peuvent parcourir la marketplace et ouvrir un template public ; liker, mettre en favori, forker et lancer une room demandent un compte.
 - Les **sanctions de compte** (bannissement temporaire et définitif) font partie de ce jalon.
+- **Vocabulaire** (validé sur les maquettes) : la marketplace s'appelle _modèles publics_ / _public templates_ dans l'interface, et un fork _copier dans mes modèles_ / _copy to my templates_ ([guide i18n](../../technical/i18n.fr.md#vocabulaire)). L'en-tête gagne un lien _Modèles publics_ pour tous, et un lien _Modération_ avec le nombre de signalements ouverts, pour les super admins seulement.
 
 ## Hypothèses
 
