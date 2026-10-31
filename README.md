@@ -159,7 +159,7 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 
 ### Continuous integration (GitHub Actions)
 
-`.github/workflows/ci.yml` runs on every pull request (including stacked PRs based on another work branch) and every push to `develop` and `main`:
+`.github/workflows/ci.yml` runs on every pull request (including stacked PRs based on another work branch) and every push to `develop` and `main` (how the workflows chain, speed choices and how to keep the CI fast: [docs/technical/ci.md](docs/technical/ci.md)):
 
 | Job          | Steps                                                                                                                                                                                     |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
