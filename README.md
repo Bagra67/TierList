@@ -171,6 +171,7 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/technical/testing.md](docs/technical/testing.md#31-test-report-on-ci).
 - The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
+- On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
 

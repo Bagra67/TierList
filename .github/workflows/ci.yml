@@ -15,9 +15,57 @@ permissions:
   contents: read
 
 jobs:
+  # On a PR, the parts its files touch: Backend and Frontend run only for their part. A push to
+  # develop or main always runs everything, since it deploys (staging) or releases (production).
+  # When in doubt (unknown file, API error), both parts run.
+  changes:
+    name: Changed parts
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.parts.outputs.backend }}
+      frontend: ${{ steps.parts.outputs.frontend }}
+    steps:
+      - name: List the parts touched by the PR
+        id: parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          backend=true
+          frontend=true
+          if [ "$EVENT_NAME" = pull_request ] \
+            && files=$(gh api --paginate "repos/$REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename'); then
+            backend=false
+            frontend=false
+            while IFS= read -r file; do
+              case "$file" in
+                # The frontend generates its API types from it (pnpm gen:api)
+                backend/openapi.json) backend=true frontend=true ;;
+                backend/*) backend=true ;;
+                # Prettier of the frontend also checks docs/
+                frontend/* | docs/*) frontend=true ;;
+                # Other Markdown files (README, AGENTS.md...): no job checks them
+                *.md) ;;
+                *) backend=true frontend=true ;;
+              esac
+            done <<< "$files"
+            echo "Files of the PR:"
+            echo "$files"
+          fi
+          echo "backend=$backend frontend=$frontend"
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+
   # Python of backend/.python-version: the same version as the pods (docs/technical/deployment.md).
+  # A skipped job counts as passed for the required checks; it still runs if "changes" failed.
   backend:
     name: Backend
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -121,6 +169,8 @@ jobs:
 
   frontend:
     name: Frontend
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.frontend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:

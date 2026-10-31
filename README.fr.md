@@ -171,6 +171,7 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#31-rapport-de-tests-en-ci).
 - Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
+- Sur une PR, `Backend` et `Frontend` ne tournent que si la PR touche leur partie (job `Changed parts`) : `frontend/` et `docs/` (vérifié par Prettier) pour Frontend, `backend/` pour Backend, les deux pour `backend/openapi.json` et pour tout autre fichier sauf le Markdown. Un job sauté compte comme réussi. Un push sur `develop` ou `main` lance toujours tout, puisqu'il déploie ou publie une version.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
 
