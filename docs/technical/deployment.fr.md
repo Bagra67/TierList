@@ -18,7 +18,7 @@ GitHub Actions ──SFTP──> pod TierList          GitHub Actions ──pg_d
 
 | Composant      | Ce que c'est                                                                                                                                                                                                                                    |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pod TierList   | Pod « python generic », Python 3.13, 1 cœur / 2 Go, dossier de travail `/home/container`. Il lance **une seule commande** (`bash start.sh`). Pas de Docker, pas de shell SSH, pas de root, pas de cron : les fichiers s'échangent par **SFTP**. |
+| Pod TierList   | Pod « python generic », Python 3.15, 1 cœur / 2 Go, dossier de travail `/home/container`. Il lance **une seule commande** (`bash start.sh`). Pas de Docker, pas de shell SSH, pas de root, pas de cron : les fichiers s'échangent par **SFTP**. |
 | Pod PostgreSQL | PostgreSQL 17, sur une autre IP, joint par le réseau public (`POSTGRES_HOST`, `POSTGRES_PORT`).                                                                                                                                                 |
 | Cloudflare     | Le tunnel (pod `cloudflared`) termine le TLS et transmet HTTP et WebSocket à `<IP du pod>:<SERVER_PORT>`. Domaines : `tierlist-staging.ladwein.dev` et `tierlist.ladwein.dev`.                                                                  |
 | Scaleway       | Object Storage : un bucket public d'images par environnement ([guide des images](images.fr.md)) et un bucket privé de sauvegardes. Transactional Email pour les emails ([guide des emails](emails.fr.md)).                                      |
@@ -102,7 +102,7 @@ Il n'y a pas de cron dans les pods. Le lifespan lance un petit planificateur à 
 SFTP ne sait ni extraire une archive ni toujours créer un lien symbolique : d'où `CURRENT` et le lanceur. À chaque démarrage :
 
 1. le lanceur lit `CURRENT`, extrait `releases/tierlist-<version>.tar.gz` si besoin (dans un dossier temporaire, puis renommé), supprime les versions plus anciennes que les 3 dernières, puis lance le `start.sh` du bundle ;
-2. `start.sh` installe `uv` dans `bin/` s'il manque (installeur officiel, ou PyPI sans `curl`), charge `.env`, puis lance `uv sync --frozen --no-dev` avec le Python du pod ;
+2. `start.sh` installe `uv` dans `bin/` s'il manque (installeur officiel, ou PyPI sans `curl`), charge `.env`, puis lance `uv sync --frozen --no-dev` avec le Python du pod. Le pod n'a pas de compilateur C : chaque dépendance compilée doit avoir une wheel pour ce Python dans `uv.lock`, à vérifier quand les pods changent de Python (#259). PyYAML (via `uvicorn[standard]`, l'application ne lit aucun YAML) n'a pas encore de wheel Python 3.15 : `extra-build-variables` (`pyproject.toml`) construit sa version pur Python ;
 3. `alembic upgrade head` : **en cas d'échec, le script s'arrête et uvicorn ne démarre pas** ;
 4. `uvicorn app.main:app --host 0.0.0.0 --port $SERVER_PORT --workers 1 --no-proxy-headers` (`SERVER_PORT` vient du panel ; 8000 sinon ; l'application lit `TRUSTED_PROXY_IPS`, §2.2) ;
 5. pendant ce temps, une petite boucle en arrière-plan (Python `urllib`, sans `curl`) attend que `http://127.0.0.1:$SERVER_PORT/api/health` réponde `200`, puis affiche **une seule fois** la ligne exacte `change this part` : le panel MineStrator (egg Pterodactyl « python generic ») considère le pod démarré quand sa console affiche cette ligne. Après 5 minutes sans réponse, elle abandonne avec une ligne de log, sans arrêter l'application (le panel montre alors toujours le pod en démarrage).
@@ -155,7 +155,7 @@ Dans le panel MineStrator, MyBox → **Créer un serveur**, localisation **Toulo
 
 | Pod                                           | Type du catalogue               | Allocation       | Commande de démarrage                                                                |
 | --------------------------------------------- | ------------------------------- | ---------------- | ------------------------------------------------------------------------------------ |
-| TierList (un par environnement)               | `python generic`, Python 3.13   | 1 cœur, 2 Go     | `bash start.sh` (Paramètres → Paramètres de démarrage du serveur)                    |
+| TierList (un par environnement)               | `python generic`, Python 3.15   | 1 cœur, 2 Go     | `bash start.sh` (Paramètres → Paramètres de démarrage du serveur)                    |
 | PostgreSQL (un pour les deux environnements)  | `PostgreSQL 17` (expérimental)  | 1 cœur, 2 à 4 Go | fournie par le type                                                                  |
 | cloudflared (un pour les deux environnements) | `golang generic` (expérimental) | 1 cœur, 2 Go     | `chmod +x ./cloudflared && ./cloudflared tunnel --no-autoupdate run --token <token>` |
 

@@ -56,7 +56,6 @@ Kept as they are, on purpose:
 - **Docs on label events**: creating a PR with labels runs `Docs` several times (≈ 10 s each). Skipping those runs would report a _skipped_, so passed, `Docs` check on a commit whose earlier run failed.
 - **CI on the push after a merge**: it re-runs the tree the PR already tested, but its success gates the staging deployment and the release.
 - **Parallel frontend jobs** (lint, `tsc`, knip, build): each new job pays its own setup (≈ 20 s) to save about 5 s.
-- **Python 3.14**: the suite passes on it, but it is not faster than 3.13 with `sysmon`, and it depends on the Python of the pods.
 
 ## 4. Keeping it fast and reliable
 

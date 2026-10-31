@@ -6,7 +6,7 @@ TierList application made of two projects in a single git repository:
 
 | Folder                            | Content                                                  | Tools                                 |
 | --------------------------------- | -------------------------------------------------------- | ------------------------------------- |
-| [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.13+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
+| [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.15+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
 What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Tile images (formats, compression, S3 storage, SeaweedFS, moderation): [docs/technical/images.md](docs/technical/images.md). Results computation (median ranking, absent votes, worked examples): [docs/technical/results.md](docs/technical/results.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Legal pages (privacy policy): [docs/technical/legal-pages.md](docs/technical/legal-pages.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
@@ -163,7 +163,7 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 
 | Job          | Steps                                                                                                                                                                                     |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service and the SeaweedFS of `compose.yaml`, on Python 3.13 (that of the production pods) |
+| **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service and the SeaweedFS of `compose.yaml`, on Python 3.15 (that of the production pods) |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build                                                                                   |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                                                                                                       |
 

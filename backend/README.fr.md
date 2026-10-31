@@ -11,7 +11,7 @@ Backend Python basé sur [FastAPI](https://fastapi.tiangolo.com/), géré avec l
 ## 1. Prérequis
 
 - **uv** (il installe et gère lui-même Python si besoin)
-- Python **3.13+**, celle des pods de production (fixée dans `.python-version`)
+- Python **3.15+**, celle des pods de production (fixée dans `.python-version`)
 
 ### Installer uv
 
