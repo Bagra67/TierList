@@ -36,5 +36,5 @@ class Round(UUIDPrimaryKeyMixin, Base):
     # Rempli quand le tour se termine (#93)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    game: Mapped["Game"] = relationship(back_populates="rounds")
-    tile: Mapped["SnapshotTile"] = relationship()
+    game: Mapped[Game] = relationship(back_populates="rounds")
+    tile: Mapped[SnapshotTile] = relationship()

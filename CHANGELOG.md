@@ -5,6 +5,29 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.0.1] - 2026-10-31
+
+### Bug fixes
+
+- frontend: give the test waits a timeout a busy machine can meet (#257)
+
+### Build & CI
+
+- speed up the ci, backend first (#249)
+- backend: run the tests in parallel with pytest-xdist (#253)
+
+### Documentation
+
+- add the continuous integration guide (#258)
+
+### Tests
+
+- frontend: run the vitest files without isolation (#255)
+
+### Chores
+
+- backend: move to python 3.15, the python of the new pods (#260)
+
 ## [1.0.0] - 2026-10-30
 
 ### Features

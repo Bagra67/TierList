@@ -156,7 +156,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 api_app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
-    version="1.0.0",
+    version="1.0.1",
     # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
@@ -182,11 +182,14 @@ def _openapi_with_room_messages() -> dict[str, Any]:
         routes=api_app.routes,
     )
     components: dict[str, Any] = schema.setdefault("components", {}).setdefault("schemas", {})
-    for name, message_type in (
-        ("RoomServerMessage", RoomServerMessage),
-        ("RoomClientMessage", RoomClientMessage),
-    ):
-        message_schema: dict[str, Any] = TypeAdapter(message_type).json_schema(
+    # Adaptateurs créés un par un : parcourus dans un tuple, les alias Annotated perdent leur
+    # forme de type, que TypeAdapter exige (pydantic 2.14)
+    message_adapters: dict[str, TypeAdapter[Any]] = {
+        "RoomServerMessage": TypeAdapter(RoomServerMessage),
+        "RoomClientMessage": TypeAdapter(RoomClientMessage),
+    }
+    for name, message_adapter in message_adapters.items():
+        message_schema: dict[str, Any] = message_adapter.json_schema(
             ref_template="#/components/schemas/{model}"
         )
         components.update(message_schema.pop("$defs", {}))

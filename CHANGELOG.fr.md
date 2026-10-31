@@ -5,6 +5,29 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [1.0.1] - 2026-10-31
+
+### Corrections
+
+- frontend : délai d'attente des tests tenable sur une machine chargée (#257)
+
+### Build & CI
+
+- CI plus rapide, backend d'abord (#249)
+- backend : tests lancés en parallèle avec pytest-xdist (#253)
+
+### Documentation
+
+- guide de l'intégration continue (#258)
+
+### Tests
+
+- frontend : fichiers Vitest lancés sans isolation (#255)
+
+### Maintenance
+
+- backend : passage à Python 3.15, celui des nouveaux pods (#260)
+
 ## [1.0.0] - 2026-10-30
 
 ### Fonctionnalités

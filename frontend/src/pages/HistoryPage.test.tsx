@@ -129,6 +129,6 @@ describe('HistoryPage', () => {
 
     renderHistoryPage();
 
-    expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 });

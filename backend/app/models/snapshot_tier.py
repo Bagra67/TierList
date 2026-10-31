@@ -26,4 +26,4 @@ class SnapshotTier(UUIDPrimaryKeyMixin, Base):
     # 0 = en haut, positions continues recopiées du template
     position: Mapped[int]
 
-    snapshot: Mapped["TemplateSnapshot"] = relationship(back_populates="tiers")
+    snapshot: Mapped[TemplateSnapshot] = relationship(back_populates="tiers")

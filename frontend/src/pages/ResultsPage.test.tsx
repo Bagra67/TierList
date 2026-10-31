@@ -308,9 +308,7 @@ describe('ResultsPage', () => {
 
     // L'erreur prend la place des statistiques, jamais celles de l'autre variante ; une erreur
     // serveur est réessayée une fois avant d'être montrée
-    expect(
-      await within(screen.getByRole('tabpanel')).findByRole('alert', {}, { timeout: 3000 }),
-    ).toBeInTheDocument();
+    expect(await within(screen.getByRole('tabpanel')).findByRole('alert')).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'A' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
     // Recocher remontre tout de suite la variante déjà lue

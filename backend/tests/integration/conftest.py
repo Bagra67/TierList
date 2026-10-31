@@ -41,14 +41,22 @@ def _service_unavailable(reason: str) -> None:
 
 
 def _test_database_url(suffix: str) -> URL:
-    """URL de la base `<POSTGRES_DB><suffix>`, créée si besoin (jamais la base de dev)."""
+    """URL de la base `<POSTGRES_DB><suffix>`, créée si besoin (jamais la base de dev).
+
+    Avec pytest-xdist (`pytest -n auto`), chaque worker a sa propre base
+    (`<POSTGRES_DB><suffix>_gw0`…) : il la migre seul et ses transactions ne croisent pas
+    celles des autres workers.
+    """
     try:
         settings = get_settings()
     except ValidationError:
         _service_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
         raise
 
-    test_database = f"{settings.postgres_db}{suffix}"
+    test_database: str = f"{settings.postgres_db}{suffix}"
+    xdist_worker: str | None = os.environ.get("PYTEST_XDIST_WORKER")
+    if xdist_worker is not None:
+        test_database = f"{test_database}_{xdist_worker}"
     admin_engine = create_engine(
         settings.database_url.set(database="postgres"),
         isolation_level="AUTOCOMMIT",
@@ -120,7 +128,7 @@ def s3_image_storage() -> ImageStorage:
     try:
         # Supprimer une clé absente ne fait rien, mais vérifie l'adresse, les clés et le bucket
         storage.delete("connectivity-check")
-    except (BotoCoreError, ClientError):
+    except BotoCoreError, ClientError:
         _service_unavailable(
             "S3 image storage is not reachable: start it with `docker compose up -d --wait` "
             "and set the IMAGE_S3_* settings (backend/.env.example)"

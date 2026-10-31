@@ -20,7 +20,7 @@ EMAIL = Email(
 class FakeSMTP:
     """Remplace smtplib.SMTP : garde les appels au lieu de contacter un serveur."""
 
-    instances: list["FakeSMTP"] = []
+    instances: list[FakeSMTP] = []
 
     def __init__(self, host: str, port: int, timeout: float) -> None:
         self.host, self.port, self.timeout = host, port, timeout

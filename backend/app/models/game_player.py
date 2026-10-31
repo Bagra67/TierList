@@ -33,4 +33,4 @@ class GamePlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # Nom au moment de la clôture, pour les résultats (un invité n'en a pas d'autre)
     display_name: Mapped[str] = mapped_column(String(DISPLAY_NAME_MAX_LENGTH))
 
-    game: Mapped["Game"] = relationship(back_populates="players")
+    game: Mapped[Game] = relationship(back_populates="players")

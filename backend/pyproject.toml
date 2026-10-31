@@ -1,9 +1,9 @@
 [project]
 name = "tierlist-backend"
-version = "1.0.0"
+version = "1.0.1"
 description = "Backend FastAPI de l'application TierList"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.15"
 dependencies = [
     "alembic>=1.20.0",
     "boto3>=1.43.111",
@@ -24,11 +24,15 @@ dev = [
     "pyright>=1.1.414",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.16.10",
 ]
 
 [tool.uv]
 package = false
+# PyYAML (through uvicorn[standard]) has no Python 3.15 wheel yet, and the pods have no C
+# compiler: build its pure Python version. The app does not read YAML.
+extra-build-variables = { pyyaml = { PYYAML_FORCE_LIBYAML = "0" } }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -39,7 +43,7 @@ markers = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py315"
 
 [tool.ruff.lint]
 # E/W: pycodestyle, F: pyflakes, I: tri des imports, B: bugbear,

@@ -63,10 +63,10 @@ class Placement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # positions continues
     position: Mapped[int | None]
 
-    game: Mapped["Game"] = relationship(back_populates="placements")
-    participant: Mapped["Participant | None"] = relationship()
-    player: Mapped["GamePlayer | None"] = relationship()
-    tile: Mapped["SnapshotTile"] = relationship()
+    game: Mapped[Game] = relationship(back_populates="placements")
+    participant: Mapped[Participant | None] = relationship()
+    player: Mapped[GamePlayer | None] = relationship()
+    tile: Mapped[SnapshotTile] = relationship()
 
     @property
     def is_absent(self) -> bool:

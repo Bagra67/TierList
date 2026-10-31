@@ -14,7 +14,7 @@
 set -eu
 
 # Version d'uv installée dans le pod ; celle du développement (uv --version)
-UV_VERSION="0.12.22"
+UV_VERSION="0.13.6"
 
 RELEASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Dossier persistant du pod (/home/container) : uv, l'environnement Python et son cache y restent

@@ -15,8 +15,57 @@ permissions:
   contents: read
 
 jobs:
+  # On a PR, the parts its files touch: Backend and Frontend run only for their part. A push to
+  # develop or main always runs everything, since it deploys (staging) or releases (production).
+  # When in doubt (unknown file, API error), both parts run.
+  changes:
+    name: Changed parts
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.parts.outputs.backend }}
+      frontend: ${{ steps.parts.outputs.frontend }}
+    steps:
+      - name: List the parts touched by the PR
+        id: parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          backend=true
+          frontend=true
+          if [ "$EVENT_NAME" = pull_request ] \
+            && files=$(gh api --paginate "repos/$REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename'); then
+            backend=false
+            frontend=false
+            while IFS= read -r file; do
+              case "$file" in
+                # The frontend generates its API types from it (pnpm gen:api)
+                backend/openapi.json) backend=true frontend=true ;;
+                backend/*) backend=true ;;
+                # Prettier of the frontend also checks docs/
+                frontend/* | docs/*) frontend=true ;;
+                # Other Markdown files (README, AGENTS.md...): no job checks them
+                *.md) ;;
+                *) backend=true frontend=true ;;
+              esac
+            done <<< "$files"
+            echo "Files of the PR:"
+            echo "$files"
+          fi
+          echo "backend=$backend frontend=$frontend"
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+
+  # Python of backend/.python-version: the same version as the pods (docs/technical/deployment.md).
+  # A skipped job counts as passed for the required checks; it still runs if "changes" failed.
   backend:
     name: Backend
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,14 +97,21 @@ jobs:
       IMAGE_S3_ENDPOINT_URL: http://127.0.0.1:8333
       IMAGE_S3_ACCESS_KEY_ID: tierlist-dev
       IMAGE_S3_SECRET_ACCESS_KEY: tierlist-dev-not-a-secret
+      # Coverage through sys.monitoring (Python 3.12+) instead of a trace function on every line:
+      # a line costs only its first execution. Line coverage only (no branch coverage configured).
+      COVERAGE_CORE: sysmon
     steps:
       - uses: actions/checkout@v7
 
       # The same S3 storage as in development (compose.yaml), for the image storage tests. Not a
       # service container: those cannot mount configuration files, which only exist after checkout.
-      - name: Start the S3 image storage (SeaweedFS)
+      # Started in the background (image pull, start-up) while the dependencies install and the
+      # checks run; "Wait for the S3 image storage" waits for it before the tests.
+      - name: Start the S3 image storage (SeaweedFS) in the background
         working-directory: .
-        run: docker compose up -d --wait seaweedfs
+        run: |
+          (docker compose up -d --wait seaweedfs; echo $? > "$RUNNER_TEMP/seaweedfs.status") \
+            > "$RUNNER_TEMP/seaweedfs.log" 2>&1 &
 
       # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
       - uses: astral-sh/setup-uv@v10.3.2
@@ -77,9 +133,19 @@ jobs:
       - name: Type check (Pyright)
         run: uv run pyright
 
+      - name: Wait for the S3 image storage
+        run: |
+          for _ in $(seq 120); do
+            [ -f "$RUNNER_TEMP/seaweedfs.status" ] && break
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/seaweedfs.log"
+          exit "$(cat "$RUNNER_TEMP/seaweedfs.status" 2>/dev/null || echo 1)"
+
+      # In parallel (pytest-xdist): one process and one test database per vCPU of the runner.
       - name: Tests (unit + PostgreSQL and S3 integration) with coverage
         run: >-
-          uv run pytest --cov=app --cov-report=term --cov-report=xml
+          uv run pytest -n auto --cov=app --cov-report=term --cov-report=xml
           --junitxml=reports/junit.xml
 
       # Runs even when tests fail, so the summary shows which ones and why.
@@ -102,17 +168,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # The pods run Python 3.13 (docs/technical/deployment.md), the development 3.11: the suite
-      # also runs on 3.13, in its own environment, so that an incompatibility shows up here.
-      - name: Tests on Python 3.13 (production)
-        env:
-          UV_PROJECT_ENVIRONMENT: .venv-py313
-        run: |
-          uv sync --locked --python 3.13
-          uv run --python 3.13 pytest -q -p no:cacheprovider
-
   frontend:
     name: Frontend
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.frontend == 'true') }}
     runs-on: ubuntu-latest
     defaults:
       run:

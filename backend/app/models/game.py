@@ -70,16 +70,16 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         String(PUBLIC_RESULTS_TOKEN_MAX_LENGTH), unique=True
     )
 
-    snapshot: Mapped["TemplateSnapshot"] = relationship()
-    rounds: Mapped[list["Round"]] = relationship(
+    snapshot: Mapped[TemplateSnapshot] = relationship()
+    rounds: Mapped[list[Round]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="Round.number"
     )
     # Les placements de tous les participants : jamais envoyés tels quels (plateau privé)
-    placements: Mapped[list["Placement"]] = relationship(
+    placements: Mapped[list[Placement]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="Placement.created_at"
     )
     # Les joueurs figés à la clôture ; vide tant que la partie est en cours
-    players: Mapped[list["GamePlayer"]] = relationship(
+    players: Mapped[list[GamePlayer]] = relationship(
         back_populates="game", cascade="all, delete-orphan", order_by="GamePlayer.created_at"
     )
     # Nombre de joueurs figés, calculé par la requête qui le demande (with_expression) : le lobby
@@ -87,5 +87,5 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     player_count: Mapped[int | None] = query_expression()
 
     @property
-    def current_round(self) -> "Round":
+    def current_round(self) -> Round:
         return self.rounds[self.current_round_number - 1]
