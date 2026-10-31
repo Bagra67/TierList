@@ -96,7 +96,7 @@ jobs:
 
       - name: Tests (unit + PostgreSQL and S3 integration) with coverage
         run: >-
-          uv run pytest --cov=app --cov-report=term --cov-report=xml
+          uv run --with pytest-xdist pytest -n auto --cov=app --cov-report=term --cov-report=xml
           --junitxml=reports/junit.xml
 
       # Runs even when tests fail, so the summary shows which ones and why.

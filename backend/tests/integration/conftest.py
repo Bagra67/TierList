@@ -49,6 +49,9 @@ def _test_database_url(suffix: str) -> URL:
         raise
 
     test_database = f"{settings.postgres_db}{suffix}"
+    xdist_worker = os.environ.get("PYTEST_XDIST_WORKER")
+    if xdist_worker is not None:
+        test_database = f"{test_database}_{xdist_worker}"
     admin_engine = create_engine(
         settings.database_url.set(database="postgres"),
         isolation_level="AUTOCOMMIT",
