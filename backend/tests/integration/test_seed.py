@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import timedelta
 
 import pytest
@@ -8,7 +9,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.models.enums import GameStatus, PlacementPhase, RoomStatus, UserRole
+from app.models.enums import (
+    GameStatus,
+    PlacementPhase,
+    RoomStatus,
+    TemplateModeration,
+    UserRole,
+)
 from app.models.game import Game
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
@@ -32,7 +39,10 @@ SEED_PASSWORD = "seed-test-password"
 SMALL_SEED_MAX_QUERIES = 500
 # Le journal daté dans le passé, plus une entrée par image masquée ou supprimée
 MODERATION_ACTIONS = (
-    SMALL_SIZE.moderation_actions + SMALL_SIZE.hidden_images + SMALL_SIZE.deleted_images
+    SMALL_SIZE.moderation_actions
+    + SMALL_SIZE.hidden_images
+    + SMALL_SIZE.deleted_images
+    + SMALL_SIZE.hidden_templates
 )
 
 
@@ -133,6 +143,18 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
             .where(ModerationAction.target_id.in_(select(Image.id)))
         )
         == SMALL_SIZE.hidden_images + SMALL_SIZE.deleted_images
+    )
+    # Des modèles masqués, dont celui d'une salle restée ouverte : son lobby le dit
+    hidden_template_ids: list[uuid.UUID] = list(
+        db_session.scalars(
+            select(Template.id).where(Template.moderation == TemplateModeration.HIDDEN)
+        ).all()
+    )
+    assert len(hidden_template_ids) == SMALL_SIZE.hidden_templates
+    assert db_session.scalar(
+        select(func.count())
+        .select_from(Room)
+        .where(Room.status == RoomStatus.OPEN, Room.template_id.in_(hidden_template_ids))
     )
 
 

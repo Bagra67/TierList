@@ -4,6 +4,7 @@ terminées, salles ouvertes et journal de modération."""
 import logging
 import random
 import time
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
 from app.seed.games import SeedGames, create_closed_games
-from app.seed.moderation import create_moderation_log, moderate_images
+from app.seed.moderation import create_moderation_log, moderate_images, moderate_templates
 from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.rooms import SeedRooms, create_open_rooms
 from app.seed.sizes import SeedSize
@@ -100,6 +101,13 @@ def run_seed(
             size.deleted_images,
             rng,
         )
+        moderated_templates: int = moderate_templates(
+            session,
+            settings,
+            accounts.super_admins,
+            _templates_to_hide(played, templates, size.hidden_templates),
+            rng,
+        )
     return SeedSummary(
         removed=removed,
         accounts=len(accounts.super_admins)
@@ -110,5 +118,15 @@ def run_seed(
         images=size.image_templates * size.image_tiles_per_template,
         closed_games=len(played.closed),
         open_rooms=len(played.lobby_rooms) + len(open_rooms.full) + len(open_rooms.with_bans),
-        moderation_actions=size.moderation_actions + moderated_images,
+        moderation_actions=size.moderation_actions + moderated_images + moderated_templates,
     )
+
+
+def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:
+    """Les modèles à masquer : d'abord ceux des salles restées ouvertes, puis les autres modèles
+    jouables, sans doublon."""
+    candidates: list[uuid.UUID] = [
+        room.template_id for room in played.lobby_rooms if room.template_id is not None
+    ]
+    candidates.extend(template.id for template in templates.playable)
+    return list(dict.fromkeys(candidates))[:count]
