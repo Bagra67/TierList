@@ -22,7 +22,6 @@ from app.seed.sizes import SeedSize
 from app.seed.templates import SeedTemplates, create_templates
 from app.services.image_storage import ImageStorage
 from app.services.rooms import RoomService
-from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +68,8 @@ def run_seed(
     with _step("4/6 Parties terminées"):
         played: SeedGames = create_closed_games(
             session,
+            settings,
             rooms,
-            TemplateService(session, settings),
             size,
             accounts.players,
             templates.playable,
@@ -78,14 +77,13 @@ def run_seed(
         )
     with _step("5/6 Salles ouvertes"):
         open_rooms: SeedRooms = create_open_rooms(
-            rooms, size, accounts.players, templates.playable, rng
+            session, settings, rooms, size, accounts.players, templates.playable, rng
         )
 
     moderation_targets: list[User] = [*accounts.players, *accounts.unverified, *accounts.google]
     with _step("6/6 Journal de modération"):
         create_moderation_log(
             session,
-            settings,
             size.moderation_actions,
             accounts.super_admins,
             moderation_targets,

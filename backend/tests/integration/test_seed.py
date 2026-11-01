@@ -20,11 +20,14 @@ from app.seed.accounts import seed_email
 from app.seed.run import SeedSummary, run_seed
 from app.seed.sizes import SMALL_SIZE
 from tests.integration.conftest import FakeImageStorage
-from tests.integration.helpers import JsonObject
+from tests.integration.helpers import JsonObject, counted_queries
 
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
+# Requêtes du petit jeu de données (375 mesurées) : la borne repère un retour aux écritures
+# une à une, des dizaines de requêtes par tuile, par partie ou par place
+SMALL_SEED_MAX_QUERIES = 500
 
 
 def seed(db_session: Session, stored_images: dict[str, bytes]) -> SeedSummary:
@@ -177,3 +180,12 @@ def test_the_seed_logs_each_step_and_its_progress(
         )
     last_game: str = f"Partie terminée {SMALL_SIZE.closed_games}/{SMALL_SIZE.closed_games}"
     assert any(message.startswith(last_game) for message in messages)
+
+
+def test_the_seed_needs_few_queries(db_session: Session, stored_images: dict[str, bytes]):
+    # Sur staging, chaque requête traverse Internet (environ 0,2 s) : jouer les parties ou
+    # ajouter les tuiles une à une par les services coûtait des milliers de requêtes
+    with counted_queries(db_session) as statements:
+        seed(db_session, stored_images)
+
+    assert len(statements) <= SMALL_SEED_MAX_QUERIES
