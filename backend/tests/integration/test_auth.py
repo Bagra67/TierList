@@ -132,6 +132,8 @@ def test_me_returns_the_authenticated_user(auth_client: TestClient):
     body = response.json()
     assert body["email"] == "alice@example.com"
     assert body["display_name"] == "Alice"
+    # Un nouveau compte n'est jamais super admin
+    assert body["role"] == "user"
     assert "password_hash" not in body
 
 

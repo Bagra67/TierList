@@ -19,6 +19,8 @@ class ErrorCode(StrEnum):
 
     # --- Authentification ------------------------------------------------------------------
     NOT_AUTHENTICATED = "not_authenticated"
+    # Route de modération demandée par un compte qui n'est pas super admin
+    SUPER_ADMIN_REQUIRED = "super_admin_required"
     EMAIL_ALREADY_REGISTERED = "email_already_registered"
     INVALID_CREDENTIALS = "invalid_credentials"
     SESSION_EXPIRED = "session_expired"

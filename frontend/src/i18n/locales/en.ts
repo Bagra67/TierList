@@ -700,6 +700,7 @@ export const en: Translation = {
       http_error: 'The request failed.',
       database_unavailable: 'Database unavailable.',
       not_authenticated: 'Authentication required.',
+      super_admin_required: 'Only a super admin can do this.',
       email_already_registered: 'This email is already registered',
       invalid_credentials: 'Incorrect email or password',
       session_expired: 'Session expired, please sign in again.',

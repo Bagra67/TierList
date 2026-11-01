@@ -171,6 +171,19 @@ def get_current_user(
     return session.user
 
 
+def get_current_super_admin(user: Annotated[User, Depends(get_current_user)]) -> User:
+    """Super admin authentifié : la dépendance des routes de modération. 403 et non 401 pour un
+    autre compte : il est bien connecté, une 401 ferait rafraîchir sa session pour rien
+    (docs/technical/authentication.md)."""
+    if not user.is_super_admin:
+        raise AppHTTPException(
+            status_code=403,
+            code=ErrorCode.SUPER_ADMIN_REQUIRED,
+            detail=messages.SUPER_ADMIN_REQUIRED,
+        )
+    return user
+
+
 def get_room_viewer(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     service: Annotated[AuthService, Depends(get_auth_service)],
@@ -190,6 +203,8 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 CurrentSessionDep = Annotated[AuthenticatedSession, Depends(get_current_session)]
 # La dépendance à utiliser pour protéger une route
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+# La dépendance à utiliser pour protéger une route de modération (avec SUPER_ADMIN_RESPONSES)
+SuperAdminDep = Annotated[User, Depends(get_current_super_admin)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
