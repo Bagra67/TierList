@@ -30,7 +30,7 @@ uv run python scripts/seed.py
 
 **Sur staging** : GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). Le pod de staging n'a pas de shell : le script tourne sur un runner GitHub, avec les réglages de base et de stockage d'images de l'environnement `staging`. Avant le premier lancement, ajoutez le secret `SEED_PASSWORD` à cet environnement. Si l'adresse de la base vue d'un runner diffère de celle du pod de l'application, remplissez les variables `SEED_POSTGRES_HOST` et `SEED_POSTGRES_PORT`.
 
-Le script affiche ce qu'il a supprimé, ce qu'il a créé, et le temps passé.
+Le script journalise chacune de ses 6 étapes avec sa durée, et sa progression dans les plus longues (chaque modèle, chaque image, chaque partie terminée, toutes les 30 entrées du journal) : le journal du workflow montre où il en est. Il finit par ce qu'il a supprimé et créé, et le temps passé.
 
 ## 3. Règles
 
