@@ -135,6 +135,50 @@ describe('ModerationAccountPage', () => {
     ]);
   });
 
+  it('shows an active ban, which can be lifted with a reason', async () => {
+    const calls: Calls = { imageQueries: [], logQueries: [], posts: [] };
+    stubBackend({
+      'GET /moderation/accounts/max-id': () =>
+        Response.json({
+          ...maxAccount,
+          ban: {
+            created_at: '2026-10-30T12:00:00Z',
+            ends_at: null,
+            reason: 'Harcèlement répété',
+            actor_name: 'Nina',
+          },
+        }),
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'POST /moderation/accounts/max-id/lift-ban': async (request: Request) => {
+        calls.posts.push({ path: new URL(request.url).pathname, body: await request.json() });
+        return new Response(null, { status: 204 });
+      },
+    });
+    renderAccountPage();
+
+    expect(await screen.findByText('Banni définitivement')).toBeInTheDocument();
+    expect(screen.getByText('Motif : Harcèlement répété')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Lever le bannissement' }));
+    const dialog = screen.getByRole('dialog', { name: 'Lever le bannissement de Max' });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Recours' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Lever le bannissement' }));
+
+    await waitFor(() =>
+      expect(calls.posts).toEqual([
+        { path: '/api/moderation/accounts/max-id/lift-ban', body: { reason: 'Recours' } },
+      ]),
+    );
+  });
+
+  it('offers to ban a user but never a super admin', async () => {
+    stubAccount({ ...maxAccount, role: 'super_admin' });
+    renderAccountPage();
+
+    expect(await screen.findByText('Un super admin ne peut pas être banni.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Bannir ce compte' })).not.toBeInTheDocument();
+  });
+
   it('says when the account does not exist', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({

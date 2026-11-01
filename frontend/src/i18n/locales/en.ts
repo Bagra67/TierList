@@ -98,6 +98,7 @@ export const en: Translation = {
       games: 'Games: the rooms you join, your placements and the results of the games.',
       reports:
         'Reports: the email address of the person who reports content, and what their message contains.',
+      bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
       moderation:
         'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
       technical:
@@ -128,6 +129,7 @@ export const en: Translation = {
       backups: 'Database backups: 14 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
+      bans: 'Bans: until the account is deleted, to spot repeated abuse.',
       moderation: 'Moderation log: 3 years after each decision.',
     },
     visibility: {
@@ -136,7 +138,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author. The owner of a template hidden by the moderation sees the reason for the decision.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -419,6 +421,33 @@ export const en: Translation = {
         submit: 'Delete',
         submitting: 'Deleting…',
       },
+    },
+    ban: {
+      section: 'Ban',
+      none: 'This account is not banned.',
+      superAdmin: 'A super admin cannot be banned.',
+      open: 'Ban this account',
+      change: 'Change the ban',
+      lift: 'Lift the ban',
+      activePermanent: 'Banned for good',
+      activeUntil: 'Banned until {{date, datetime(dateStyle: long; timeStyle: short)}}',
+      activeReason: 'Reason: {{reason}}',
+      activeBy: 'By {{name}}, on {{date, datetime(dateStyle: medium)}}',
+      title: 'Ban {{name}}',
+      hint: 'The account is signed out everywhere and cannot sign in before the end of the ban.',
+      duration: 'Duration',
+      temporary: 'Temporarily',
+      until: 'Until (included)',
+      permanent: 'For good',
+      reason: 'Reason (shown to the person)',
+      submit: 'Ban',
+      submitting: 'Banning…',
+    },
+    liftDialog: {
+      title: 'Lift the ban of {{name}}',
+      description: 'The account will be able to sign in again.',
+      submit: 'Lift the ban',
+      submitting: 'Lifting…',
     },
     hideAllDialog: {
       title: 'Hide all the images of {{name}}',

@@ -60,6 +60,22 @@ describe('LoginPage', () => {
     expect(screen.getByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
+  it('shows the reason and the end of a ban', async () => {
+    stubBackend({
+      'POST /auth/login': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage();
+
+    fillAndSubmit('alice@example.com', 'correct horse battery staple');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
+  });
+
   it('shows the page and the backend error in English', async () => {
     await i18n.changeLanguage('en');
     stubBackend({ 'POST /auth/login': () => errorResponse(401, 'invalid_credentials') });
@@ -141,6 +157,7 @@ describe('LoginPage', () => {
     ['google_email_not_verified', "Votre adresse Google n'est pas vérifiée"],
     ['google_unavailable', "La connexion avec Google n'est pas disponible"],
     ['google_failed', 'La connexion avec Google a échoué'],
+    ['google_account_banned', 'Ce compte est banni : connectez-vous avec votre mot de passe'],
     ['unknown_code', 'La connexion avec Google a échoué'],
   ])('explains the Google error %s', (code, message) => {
     stubBackend({});

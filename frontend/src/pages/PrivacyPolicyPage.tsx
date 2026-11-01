@@ -38,6 +38,7 @@ export function PrivacyPolicyPage() {
             t('privacy.data.content'),
             t('privacy.data.games'),
             t('privacy.data.reports'),
+            t('privacy.data.bans'),
             t('privacy.data.moderation'),
             t('privacy.data.technical'),
           ]}
@@ -67,6 +68,7 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.moderatedImages'),
             t('privacy.retention.backups'),
             t('privacy.retention.reports'),
+            t('privacy.retention.bans'),
             t('privacy.retention.moderation'),
           ]}
         />

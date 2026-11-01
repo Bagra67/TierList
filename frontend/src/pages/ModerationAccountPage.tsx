@@ -7,9 +7,11 @@ import {
   type TemplateModerationAction,
   useAccount,
   useHideAllImages,
+  useLiftBan,
   useModerateTemplate,
 } from '../api/moderation';
 import type { TemplateSummary } from '../api/templates';
+import { BanAccountDialog } from '../components/BanAccountDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -35,6 +37,7 @@ export function ModerationAccountPage() {
       {account !== undefined && (
         <>
           <AccountDetails account={account} />
+          <AccountBan account={account} />
           <AccountTemplates account={account} />
           <AccountImages account={account} />
           <section className="flex w-full flex-col items-start gap-3">
@@ -82,6 +85,91 @@ function AccountDetails({ account }: { account: Account }) {
         ))}
       </dl>
     </div>
+  );
+}
+
+// Le bannissement en cours, ou de quoi bannir le compte (US-1.8) ; un super admin ne peut pas l'être
+function AccountBan({ account }: { account: Account }) {
+  const { t } = useTranslation();
+  const banDialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
+  const liftDialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
+  const liftMutation = useLiftBan();
+
+  async function lift(reason: string): Promise<boolean> {
+    try {
+      await liftMutation.mutateAsync({ accountId: account.id, reason });
+    } catch {
+      return false; // l'erreur est affichée depuis liftMutation.error
+    }
+    return true;
+  }
+
+  if (account.role === 'super_admin') {
+    return <p className="text-sm text-muted-foreground">{t('moderation.ban.superAdmin')}</p>;
+  }
+  const ban = account.ban;
+  return (
+    <section className="flex w-full flex-col items-start gap-3">
+      <h2 className="text-lg font-semibold">{t('moderation.ban.section')}</h2>
+      {ban === null ? (
+        <>
+          <p className="text-sm text-muted-foreground">{t('moderation.ban.none')}</p>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => banDialogRef.current?.showModal()}
+          >
+            {t('moderation.ban.open')}
+          </Button>
+        </>
+      ) : (
+        <div className="flex w-full flex-col items-start gap-2 rounded-lg border border-destructive/40 p-4 text-sm">
+          <p className="font-semibold">
+            {ban.ends_at === null
+              ? t('moderation.ban.activePermanent')
+              : t('moderation.ban.activeUntil', { date: new Date(ban.ends_at) })}
+          </p>
+          <p>{t('moderation.ban.activeReason', { reason: ban.reason })}</p>
+          <p className="text-muted-foreground">
+            {t('moderation.ban.activeBy', { name: ban.actor_name, date: new Date(ban.created_at) })}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => liftDialogRef.current?.showModal()}
+            >
+              {t('moderation.ban.lift')}
+            </Button>
+            {/* Bannir de nouveau remplace le bannissement : de temporaire à définitif, par exemple */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => banDialogRef.current?.showModal()}
+            >
+              {t('moderation.ban.change')}
+            </Button>
+          </div>
+        </div>
+      )}
+      <BanAccountDialog
+        dialogRef={banDialogRef}
+        accountId={account.id}
+        displayName={account.display_name}
+      />
+      <ModerationReasonDialog
+        dialogRef={liftDialogRef}
+        title={t('moderation.liftDialog.title', { name: account.display_name })}
+        description={t('moderation.liftDialog.description')}
+        submitLabel={t('moderation.liftDialog.submit')}
+        submittingLabel={t('moderation.liftDialog.submitting')}
+        destructive={false}
+        isPending={liftMutation.isPending}
+        error={liftMutation.isError ? translateError(t, liftMutation.error) : null}
+        onSubmit={lift}
+        onClose={() => liftMutation.reset()}
+      />
+    </section>
   );
 }
 
