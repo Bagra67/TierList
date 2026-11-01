@@ -722,6 +722,7 @@ export const fr = {
       http_error: 'La requête a échoué.',
       database_unavailable: 'Base de données indisponible.',
       not_authenticated: 'Authentification requise.',
+      super_admin_required: 'Seul un super admin peut faire cela.',
       email_already_registered: 'Cet e-mail est déjà utilisé',
       invalid_credentials: 'E-mail ou mot de passe incorrect',
       session_expired: 'Session expirée, veuillez vous reconnecter.',

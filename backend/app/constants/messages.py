@@ -15,6 +15,7 @@ DATABASE_UNAVAILABLE = "Database unavailable"
 
 # --- Authentification ----------------------------------------------------------------------
 NOT_AUTHENTICATED = "Authentication required"
+SUPER_ADMIN_REQUIRED = "Only a super admin can do this"
 EMAIL_ALREADY_REGISTERED = "This email is already registered"
 # Même message que l'email existe ou non : ne révèle pas quels comptes existent
 INVALID_CREDENTIALS = "Incorrect email or password"
@@ -71,6 +72,7 @@ IMAGE_NOT_FOUND = "Image not found"
 
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
+SUPER_ADMIN_REQUIRED_DESCRIPTION = "Not a super admin"
 EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
 DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION = "Incorrect password, or Google sign-in too old"
 INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
