@@ -64,6 +64,7 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.links'),
             t('privacy.retention.guests'),
             t('privacy.retention.deleted'),
+            t('privacy.retention.moderatedImages'),
             t('privacy.retention.backups'),
             t('privacy.retention.reports'),
             t('privacy.retention.moderation'),

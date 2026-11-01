@@ -6,6 +6,7 @@ export const en: Translation = {
     backendUnreachable: 'The server is not responding. Try again in a moment.',
     language: 'Language',
     theme: 'Theme',
+    imageRemoved: 'Image removed',
   },
   home: {
     visitor: {
@@ -93,7 +94,7 @@ export const en: Translation = {
       guest:
         'Guests: the display name chosen to join a room, and a cookie that recognises you in that room.',
       content:
-        'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position).',
+        'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position). The fingerprint of each uploaded file is kept, to refuse an image deleted by the moderation if it is uploaded again.',
       games: 'Games: the rooms you join, your placements and the results of the games.',
       reports:
         'Reports: the email address of the person who reports content, and what their message contains.',
@@ -110,7 +111,7 @@ export const en: Translation = {
         'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
       reports: 'Handling the reports of illegal content (legal obligation).',
       moderation:
-        "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, and finding an account's past sanctions.",
+        "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, finding an account's past sanctions, and refusing an image deleted by the moderation if it is uploaded again.",
       noAds: 'Your data is neither sold nor used for advertising or profiling.',
     },
     retention: {
@@ -122,6 +123,8 @@ export const en: Translation = {
       guests: "A guest's personal link: 30 days. An inactive room is closed after 24 hours.",
       deleted:
         'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
+      moderatedImages:
+        'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again.',
       backups: 'Database backups: 14 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
