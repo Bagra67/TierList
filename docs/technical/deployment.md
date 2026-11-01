@@ -248,6 +248,18 @@ Run the Backup workflow by hand once, then try a restore on staging (§8, #162).
 - Google: [Cloud console, credentials](https://console.cloud.google.com/apis/credentials)
 - GitHub: repository Settings → Environments, Actions → Deploy / Backup
 
+### 5.12 Super admins
+
+Super admins moderate the application ([authentication guide](authentication.md#super-admins)). The role is never granted by the app, and the TierList pod has no shell: grant it in the console of the **PostgreSQL pod** (`psql` as superuser, §5.2), once the account exists (the person has registered):
+
+```sql
+\c tierlist_staging   -- or tierlist_prod
+UPDATE users SET role = 'super_admin' WHERE email = lower('<email>');
+SELECT email, role FROM users WHERE role = 'super_admin';
+```
+
+`UPDATE 1` confirms it; `UPDATE 0` means no account has this email. To revoke, run the same command with `'user'`. It applies to the next request; the person reloads the page to see the moderation link. `scripts/set_super_admin.py` does the same in local development only: it is not in the bundle.
+
 ## 6. Deploying
 
 | Event                                                       | Target         | Version (`APP_RELEASE`) | Approval        |
@@ -301,6 +313,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 - The pod restart, as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it (set up on staging: the restart is automatic there).
 - Redeploying after a change of a secret or a variable (§5.8).
 - Approving each production deployment.
+- Granting or revoking the super admin role (§5.12).
 - Testing a restore (#162), then after each major PostgreSQL upgrade.
 
 ## 10. Trying the production layout locally
