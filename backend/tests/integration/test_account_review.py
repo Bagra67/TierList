@@ -112,8 +112,8 @@ def test_the_search_finds_an_account_by_name_or_email(
     assert response.status_code == 200
     assert names(response) == ["alice"]
     [found] = response.json()["accounts"]
-    assert set(found) == {"id", "display_name", "email", "created_at", "role"}
-    assert (found["email"], found["role"]) == ("alice@example.com", "user")
+    assert set(found) == {"id", "display_name", "email", "created_at", "role", "banned"}
+    assert (found["email"], found["role"], found["banned"]) == ("alice@example.com", "user", False)
 
 
 def test_the_search_without_text_lists_every_account_by_name_page_by_page(

@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
 from app.main import api_app
+from app.models.account_ban import AccountBan
 from app.models.oauth_account import OAuthAccount
 from app.models.user import User
 from app.repositories import oauth_accounts as oauth_account_repository
@@ -265,6 +266,22 @@ def test_unverified_google_email_is_refused(
     assert response.headers["location"] == "/login?error=google_email_not_verified"
     assert "refresh_token" not in google_client.cookies
     assert db_session.scalars(select(OAuthAccount)).all() == []
+
+
+def test_a_banned_account_is_refused_with_a_message_without_its_reason(
+    google_client: TestClient, db_session: Session
+):
+    sign_in_with_google(google_client)
+    user: User = db_session.scalars(select(User).where(User.email == "alice@gmail.com")).one()
+    db_session.add(AccountBan(user_id=user.id, actor_name="Nina", reason="Spam"))
+    db_session.flush()
+    google_client.cookies.clear()
+
+    response = sign_in_with_google(google_client)
+
+    # Le motif ne passe pas dans une URL : le frontend montre un message général
+    assert response.headers["location"] == "/login?error=google_account_banned"
+    assert "refresh_token" not in google_client.cookies
 
 
 def test_callback_with_another_state_is_refused(google_client: TestClient):

@@ -23,6 +23,7 @@ from app.constants.auth import (
     FRONTEND_LOGIN,
     GOOGLE_ACCESS_DENIED,
     GOOGLE_COOKIE_SUBPATH,
+    GOOGLE_ERROR_ACCOUNT_BANNED,
     GOOGLE_ERROR_CANCELLED,
     GOOGLE_ERROR_EMAIL_NOT_VERIFIED,
     GOOGLE_ERROR_FAILED,
@@ -36,6 +37,7 @@ from app.constants.error_codes import ErrorCode
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import (
+    AccountBannedError,
     EmailAlreadyRegisteredError,
     GoogleEmailNotVerifiedError,
     IncorrectPasswordError,
@@ -91,6 +93,25 @@ def _clear_refresh_cookie(response: Response, settings: Settings) -> None:
     )
 
 
+def _account_banned(exc: AccountBannedError) -> AppHTTPException:
+    """Connexion d'un compte banni (US-1.8) : 403, avec le motif et, pour un bannissement
+    temporaire, sa fin, que le frontend montre à la personne."""
+    if exc.ends_at is None:
+        return AppHTTPException(
+            status_code=403,
+            code=ErrorCode.ACCOUNT_BANNED,
+            detail=messages.ACCOUNT_BANNED.format(reason=exc.reason),
+            params={"reason": exc.reason},
+        )
+    ends_at: str = exc.ends_at.isoformat()
+    return AppHTTPException(
+        status_code=403,
+        code=ErrorCode.ACCOUNT_BANNED_UNTIL,
+        detail=messages.ACCOUNT_BANNED_UNTIL.format(ends_at=ends_at, reason=exc.reason),
+        params={"reason": exc.reason, "ends_at": ends_at},
+    )
+
+
 def _session_expired(settings: Settings) -> AppHTTPException:
     # Les en-têtes de la réponse injectée sont perdus quand une exception est levée :
     # l'effacement du cookie invalide passe par les en-têtes de l'exception.
@@ -141,7 +162,13 @@ def register(
     return _token_response(response, registration.tokens, settings)
 
 
-@router.post("/login", responses=UNAUTHORIZED_RESPONSE)
+@router.post(
+    "/login",
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        403: {"model": ErrorResponse, "description": messages.ACCOUNT_BANNED_DESCRIPTION},
+    },
+)
 def login(
     payload: LoginRequest, response: Response, service: AuthServiceDep, settings: SettingsDep
 ) -> TokenResponse:
@@ -153,6 +180,8 @@ def login(
             code=ErrorCode.INVALID_CREDENTIALS,
             detail=messages.INVALID_CREDENTIALS,
         ) from exc
+    except AccountBannedError as exc:
+        raise _account_banned(exc) from exc
     return _token_response(response, tokens, settings)
 
 
@@ -349,6 +378,8 @@ def google_callback(
     except GoogleEmailNotVerifiedError:
         logger.info("Connexion Google refusée : email non vérifié par Google")
         return _google_failure(GOOGLE_ERROR_EMAIL_NOT_VERIFIED, settings)
+    except AccountBannedError:
+        return _google_failure(GOOGLE_ERROR_ACCOUNT_BANNED, settings)
 
     location = FRONTEND_HOME
     if attempt.next_step == DELETE_ACCOUNT_STEP:

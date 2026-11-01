@@ -7,6 +7,7 @@ from fastapi import APIRouter, Query
 from pydantic import AwareDatetime
 
 from app.api.dependencies import (
+    AccountBanServiceDep,
     AccountReviewServiceDep,
     ImageModerationServiceDep,
     ImageStorageDep,
@@ -34,12 +35,20 @@ from app.core.errors import ErrorResponse
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
+from app.exceptions.moderation import (
+    AccountNotBannedError,
+    BanEndInPastError,
+    CannotBanSuperAdminError,
+)
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
+from app.models.account_ban import AccountBan
 from app.models.image import ImageStatus
 from app.schemas.moderation import (
+    AccountBanResponse,
     AccountResponse,
     AccountSearchResponse,
     AccountSummaryResponse,
+    BanAccountRequest,
     HiddenImagesResponse,
     ModerationActionResponse,
     ModerationLogResponse,
@@ -78,6 +87,17 @@ def _account_not_found() -> AppHTTPException:
         code=ErrorCode.ACCOUNT_NOT_FOUND,
         detail=messages.ACCOUNT_NOT_FOUND,
     )
+
+
+BAN_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **ACCOUNT_RESPONSES,
+    409: {"model": ErrorResponse, "description": messages.BAN_CONFLICT_DESCRIPTION},
+    422: {"model": ErrorResponse, "description": messages.BAN_END_IN_PAST_DESCRIPTION},
+}
+
+
+def _ban_response(ban: AccountBan | None) -> AccountBanResponse | None:
+    return AccountBanResponse.model_validate(ban) if ban is not None else None
 
 
 def _template_not_found() -> AppHTTPException:
@@ -290,6 +310,7 @@ def delete_template(
 def search_accounts(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
+    bans: AccountBanServiceDep,
     # Texte cherché dans le nom ou l'e-mail, sans casse ; sans texte, tous les comptes
     query: Annotated[str | None, Query(max_length=ACCOUNT_SEARCH_QUERY_MAX_LENGTH)] = None,
     limit: Annotated[
@@ -299,15 +320,29 @@ def search_accounts(
 ) -> AccountSearchResponse:
     # Trouver un compte (US-1.8), par exemple après un signalement reçu par e-mail
     page: AccountSearchPage = service.search(query, limit, offset)
+    banned: set[uuid.UUID] = bans.banned_user_ids([user.id for user in page.accounts])
     return AccountSearchResponse(
-        accounts=[AccountSummaryResponse.model_validate(user) for user in page.accounts],
+        accounts=[
+            AccountSummaryResponse(
+                id=user.id,
+                display_name=user.display_name,
+                email=user.email,
+                created_at=user.created_at,
+                role=user.role,
+                banned=user.id in banned,
+            )
+            for user in page.accounts
+        ],
         has_more=page.has_more,
     )
 
 
 @router.get("/accounts/{user_id}", responses=ACCOUNT_RESPONSES)
 def get_account(
-    user_id: uuid.UUID, super_admin: SuperAdminDep, service: AccountReviewServiceDep
+    user_id: uuid.UUID,
+    super_admin: SuperAdminDep,
+    service: AccountReviewServiceDep,
+    bans: AccountBanServiceDep,
 ) -> AccountResponse:
     # La page d'un compte (US-1.8) : ses détails et ses templates
     try:
@@ -321,6 +356,7 @@ def get_account(
         created_at=details.user.created_at,
         email_verified=details.user.email_verified,
         role=details.user.role,
+        ban=_ban_response(bans.active_ban(details.user.id)),
         templates=[
             TemplateSummaryResponse.model_validate(summary) for summary in details.templates
         ],
@@ -341,3 +377,49 @@ def hide_account_images(
     except UserNotFoundError as exc:
         raise _account_not_found() from exc
     return HiddenImagesResponse(hidden_count=hidden_count)
+
+
+@router.post("/accounts/{user_id}/ban", status_code=204, responses=BAN_RESPONSES)
+def ban_account(
+    user_id: uuid.UUID,
+    body: BanAccountRequest,
+    super_admin: SuperAdminDep,
+    service: AccountBanServiceDep,
+) -> None:
+    # Bannit un compte (US-1.8) jusqu'à une date ou définitivement : il est déconnecté partout
+    try:
+        service.ban(super_admin, user_id, body.reason, body.ends_at)
+    except UserNotFoundError as exc:
+        raise _account_not_found() from exc
+    except CannotBanSuperAdminError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.CANNOT_BAN_SUPER_ADMIN,
+            detail=messages.CANNOT_BAN_SUPER_ADMIN,
+        ) from exc
+    except BanEndInPastError as exc:
+        raise AppHTTPException(
+            status_code=422,
+            code=ErrorCode.BAN_END_IN_PAST,
+            detail=messages.BAN_END_IN_PAST,
+        ) from exc
+
+
+@router.post("/accounts/{user_id}/lift-ban", status_code=204, responses=BAN_RESPONSES)
+def lift_account_ban(
+    user_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: AccountBanServiceDep,
+) -> None:
+    # Lève le bannissement actif : le compte peut de nouveau se connecter
+    try:
+        service.lift(super_admin, user_id, body.reason)
+    except UserNotFoundError as exc:
+        raise _account_not_found() from exc
+    except AccountNotBannedError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.ACCOUNT_NOT_BANNED,
+            detail=messages.ACCOUNT_NOT_BANNED,
+        ) from exc

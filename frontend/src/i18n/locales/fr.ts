@@ -845,6 +845,12 @@ export const fr = {
       not_authenticated: 'Authentification requise.',
       super_admin_required: 'Seul un super admin peut faire cela.',
       account_not_found: 'Ce compte est introuvable.',
+      account_banned: 'Ce compte est banni définitivement : {{reason}}.',
+      account_banned_until:
+        "Ce compte est banni jusqu'au {{ends_at, datetime(dateStyle: long; timeStyle: short)}} : {{reason}}.",
+      cannot_ban_super_admin: 'Un super admin ne peut pas être banni.',
+      account_not_banned: "Ce compte n'est pas banni.",
+      ban_end_in_past: 'La fin du bannissement doit être dans le futur.',
       email_already_registered: 'Cet e-mail est déjà utilisé',
       invalid_credentials: 'E-mail ou mot de passe incorrect',
       session_expired: 'Session expirée, veuillez vous reconnecter.',
@@ -916,6 +922,8 @@ export const fr = {
         "Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.",
       google_unavailable: "La connexion avec Google n'est pas disponible pour le moment.",
       google_failed: 'La connexion avec Google a échoué, veuillez réessayer.',
+      google_account_banned:
+        'Ce compte est banni : connectez-vous avec votre mot de passe pour en connaître le motif, ou écrivez-nous.',
     },
   },
 } as const;

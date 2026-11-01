@@ -69,5 +69,7 @@ GOOGLE_ERROR_CANCELLED = "google_cancelled"
 GOOGLE_ERROR_EMAIL_NOT_VERIFIED = "google_email_not_verified"
 GOOGLE_ERROR_UNAVAILABLE = "google_unavailable"
 GOOGLE_ERROR_FAILED = "google_failed"
+# Compte banni : le motif et la date ne passent pas dans une URL, le message reste général
+GOOGLE_ERROR_ACCOUNT_BANNED = "google_account_banned"
 # Erreur OAuth renvoyée par Google quand l'utilisateur refuse ou ferme sa page
 GOOGLE_ACCESS_DENIED = "access_denied"

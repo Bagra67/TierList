@@ -115,6 +115,16 @@
               }
             }
           },
+          "403": {
+            "description": "Account banned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4533,6 +4543,208 @@
         }
       }
     },
+    "/moderation/accounts/{user_id}/ban": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Ban Account",
+        "operationId": "ban_account_moderation_accounts__user_id__ban_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BanAccountRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Super admin, or account not banned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ban end in the past, or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/accounts/{user_id}/lift-ban": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Lift Account Ban",
+        "operationId": "lift_account_ban_moderation_accounts__user_id__lift_ban_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Super admin, or account not banned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Ban end in the past, or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -4602,6 +4814,44 @@
   },
   "components": {
     "schemas": {
+      "AccountBanResponse": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "ends_at",
+          "reason",
+          "actor_name"
+        ],
+        "title": "AccountBanResponse",
+        "description": "Le bannissement actif d'un compte."
+      },
       "AccountResponse": {
         "properties": {
           "id": {
@@ -4629,6 +4879,16 @@
           "role": {
             "$ref": "#/components/schemas/UserRole"
           },
+          "ban": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountBanResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "templates": {
             "items": {
               "$ref": "#/components/schemas/TemplateSummaryResponse"
@@ -4645,6 +4905,7 @@
           "created_at",
           "email_verified",
           "role",
+          "ban",
           "templates"
         ],
         "title": "AccountResponse",
@@ -4694,6 +4955,10 @@
           },
           "role": {
             "$ref": "#/components/schemas/UserRole"
+          },
+          "banned": {
+            "type": "boolean",
+            "title": "Banned"
           }
         },
         "type": "object",
@@ -4702,7 +4967,8 @@
           "display_name",
           "email",
           "created_at",
-          "role"
+          "role",
+          "banned"
         ],
         "title": "AccountSummaryResponse",
         "description": "Un compte dans la recherche des super admins (US-1.8)."
@@ -4716,6 +4982,34 @@
         ],
         "title": "AutoAdvance",
         "description": "Passage automatique à l'item suivant."
+      },
+      "BanAccountRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "BanAccountRequest",
+        "description": "Bannir un compte (US-1.8) : jusqu'à ends_at, ou définitivement sans date."
       },
       "Body_upload_image_images_post": {
         "properties": {

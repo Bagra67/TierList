@@ -821,6 +821,12 @@ export const en: Translation = {
       not_authenticated: 'Authentication required.',
       super_admin_required: 'Only a super admin can do this.',
       account_not_found: 'This account could not be found.',
+      account_banned: 'This account is banned for good: {{reason}}.',
+      account_banned_until:
+        'This account is banned until {{ends_at, datetime(dateStyle: long; timeStyle: short)}}: {{reason}}.',
+      cannot_ban_super_admin: 'A super admin cannot be banned.',
+      account_not_banned: 'This account is not banned.',
+      ban_end_in_past: 'The end of the ban must be in the future.',
       email_already_registered: 'This email is already registered',
       invalid_credentials: 'Incorrect email or password',
       session_expired: 'Session expired, please sign in again.',
@@ -888,6 +894,8 @@ export const en: Translation = {
         'Your Google address is not verified: it cannot be used to sign in.',
       google_unavailable: 'Google sign-in is not available at the moment.',
       google_failed: 'Google sign-in failed, please try again.',
+      google_account_banned:
+        'This account is banned: sign in with your password to see why, or write to us.',
     },
   },
 };
