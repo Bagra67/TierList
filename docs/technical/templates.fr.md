@@ -99,7 +99,7 @@ La commande `scripts/purge_deleted_templates.py` efface ensuite définitivement 
 uv run python scripts/purge_deleted_templates.py
 ```
 
-Elle doit être planifiée une fois par jour sur le serveur (cron ou tâche planifiée de l'hébergeur) : voir la [TODO](../../TODO.fr.md). Sans elle, les templates supprimés restent en base.
+Elle tourne chaque nuit dans le processus de l'application, avec les autres purges ([guide de déploiement](deployment.fr.md#23-tâches-de-nuit), #192) ; la commande ci-dessus la lance à la main.
 
 ### 2.4 Instantanés (versions de template)
 

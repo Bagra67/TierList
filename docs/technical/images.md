@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-The garbage collection is a command that still has to be scheduled on the server ([TODO](../../TODO.md)). The moderation actions exist as API routes (§2.9), but no page calls them yet: the super admin pages that list images come with their own issues (#125, #126, #127). Until then, the routes can be tried from Swagger (`/docs`).
+The moderation actions exist as API routes (§2.9), but no page calls them yet: the super admin pages that list images come with their own issues (#125, #126, #127). Until then, the routes can be tried from Swagger (`/docs`).
 
 ## 2. Technical design
 
@@ -135,7 +135,7 @@ SeaweedFS in development:
 
 ### 2.8 Cleanup
 
-No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It is a command run next to `scripts/purge_deleted_templates.py`:
+No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192), and can also be run from the command line, like `scripts/purge_deleted_templates.py`:
 
 ```bash
 cd backend
@@ -144,7 +144,7 @@ uv run python scripts/purge_unused_images.py   # prints "Unused images purged: n
 
 - It erases the **visible** images created more than `UNUSED_IMAGE_RETENTION_DAYS` days ago that no tile and no snapshot tile uses. The images hidden or deleted by the moderation keep their row (#124).
 - The rows are deleted first, in a single query, then the files: a tile can never point to an erased file. A tile that attaches one of these images at the same moment waits for the deletion, then fails on the foreign key. A file that cannot be erased (storage down) is logged with its key, to be erased by hand.
-- It can be run again safely: it only erases what has expired. It must be scheduled once a day on the server ([TODO](../../TODO.md)).
+- It can be run again safely: it only erases what has expired.
 
 ### 2.9 Moderation
 

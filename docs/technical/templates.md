@@ -99,7 +99,7 @@ The command `scripts/purge_deleted_templates.py` then erases permanently the tem
 uv run python scripts/purge_deleted_templates.py
 ```
 
-It must be scheduled once a day on the server (cron or the host's scheduled task): see the [TODO](../../TODO.md). Without it, deleted templates stay in the database.
+It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192); the command above runs it by hand.
 
 ### 2.4 Snapshots (template versions)
 

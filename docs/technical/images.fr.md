@@ -18,7 +18,7 @@ Comment les images des tuiles sont reçues, compressées, stockées, servies, ne
 
 ### Pas encore disponible
 
-Le ramasse-miettes est une commande qui reste à planifier sur le serveur ([TODO](../../TODO.fr.md)). Les actions de modération existent sous forme de routes de l'API (§2.9), mais aucune page ne les appelle encore : les pages super admin qui listent les images arrivent avec leurs propres issues (#125, #126, #127). D'ici là, les routes s'essaient depuis Swagger (`/docs`).
+Les actions de modération existent sous forme de routes de l'API (§2.9), mais aucune page ne les appelle encore : les pages super admin qui listent les images arrivent avec leurs propres issues (#125, #126, #127). D'ici là, les routes s'essaient depuis Swagger (`/docs`).
 
 ## 2. Conception technique
 
@@ -135,7 +135,7 @@ SeaweedFS en développement :
 
 ### 2.8 Nettoyage
 
-Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). C'est une commande lancée à côté de `scripts/purge_deleted_templates.py` :
+Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). Il tourne chaque nuit dans le processus de l'application, avec les autres purges ([guide de déploiement](deployment.fr.md#23-tâches-de-nuit), #192), et peut aussi être lancé en ligne de commande, comme `scripts/purge_deleted_templates.py` :
 
 ```bash
 cd backend
@@ -144,7 +144,7 @@ uv run python scripts/purge_unused_images.py   # affiche "Unused images purged: 
 
 - Elle efface les images **visibles** créées il y a plus de `UNUSED_IMAGE_RETENTION_DAYS` jours qu'aucune tuile ni aucune tuile d'instantané n'utilise. Les images masquées ou supprimées par la modération gardent leur ligne (#124).
 - Les lignes sont supprimées d'abord, en une seule requête, puis les fichiers : une tuile ne pointe jamais vers un fichier effacé. Une tuile qui rattache l'une de ces images au même moment attend la fin de la suppression, puis échoue sur la clé étrangère. Un fichier qu'on n'arrive pas à effacer (stockage en panne) est journalisé avec sa clé, pour l'effacer à la main.
-- La relancer ne pose aucun problème : elle n'efface que ce qui a expiré. Elle doit être planifiée une fois par jour sur le serveur ([TODO](../../TODO.fr.md)).
+- La relancer ne pose aucun problème : elle n'efface que ce qui a expiré.
 
 ### 2.9 Modération
 
