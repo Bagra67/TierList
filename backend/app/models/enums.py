@@ -1,6 +1,7 @@
 """Énumérations partagées par plusieurs modèles, schémas ou services : les statuts de la salle
 et de la partie, et les réglages de jeu que la salle configure et que la partie garde au
-démarrage (docs/technical/rooms.md, docs/technical/games.md), et le rôle d'un compte."""
+démarrage (docs/technical/rooms.md, docs/technical/games.md), le rôle d'un compte et le journal de
+modération."""
 
 from enum import StrEnum
 
@@ -60,3 +61,26 @@ class UserRole(StrEnum):
     USER = "user"
     # Fondateur de l'application : modère tout
     SUPER_ADMIN = "super_admin"
+
+
+class ModerationActionKind(StrEnum):
+    """Action d'un super admin, écrite au journal de modération (US-1.9)."""
+
+    # Classer un signalement sans suite
+    DISMISS = "dismiss"
+    HIDE = "hide"
+    UNHIDE = "unhide"
+    DELETE = "delete"
+    BAN = "ban"
+    LIFT_BAN = "lift_ban"
+
+
+class ModerationTargetType(StrEnum):
+    """Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le
+    compte."""
+
+    TEMPLATE = "template"
+    IMAGE = "image"
+    ACCOUNT = "account"
+    NICKNAME = "nickname"
+    GAME = "game"
