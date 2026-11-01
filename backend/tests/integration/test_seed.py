@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -95,6 +96,11 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         == SMALL_SIZE.deleted_images
     )
     assert len(stored_images) == summary.images - SMALL_SIZE.deleted_images
+    # Les envois sont étalés sur plusieurs jours : les derniers envois ont des dates à filtrer
+    first_upload, last_upload = db_session.execute(
+        select(func.min(Image.created_at), func.max(Image.created_at))
+    ).one()
+    assert last_upload - first_upload > timedelta(days=1)
     assert count(db_session, Game) == SMALL_SIZE.closed_games
     assert (
         db_session.scalar(

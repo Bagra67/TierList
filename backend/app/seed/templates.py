@@ -6,11 +6,13 @@ import random
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from itertools import cycle
 
 from PIL import Image as PillowImage
 from PIL import ImageDraw
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.constants.templates import FREE_PLAN_MAX_TILES
@@ -25,6 +27,9 @@ from app.services.images import ImageService
 from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
+
+# Les images envoyées sont redatées sur cette durée : les derniers envois ont des dates à filtrer
+UPLOAD_SPAN_DAYS = 30
 
 TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -237,6 +242,7 @@ def create_templates(
                 "Image %d/%d envoyée (modèle %s)", tile_number, size.image_tiles_per_template, name
             )
         playable.append(with_tiles(owner, name, image_tiles))
+    _spread_upload_dates(session, uploaded, rng)
     for index in range(size.full_templates):
         full_words: list[str] = rng.sample(WORD_POOL, FREE_PLAN_MAX_TILES)
         playable.append(
@@ -283,3 +289,20 @@ def _generated_image(number: int, rng: random.Random) -> bytes:
     buffer: BytesIO = BytesIO()
     image.save(buffer, format="PNG" if number % 2 else "JPEG")
     return buffer.getvalue()
+
+
+def _spread_upload_dates(session: Session, images: list[Image], rng: random.Random) -> None:
+    """Redate les images envoyées sur les UPLOAD_SPAN_DAYS derniers jours : les derniers envois
+    des super admins ont des dates à filtrer. Une seule requête, groupée par clé primaire. Les
+    envois sont déjà faits : la limite d'envois par heure n'en dépend plus."""
+    if not images:
+        return
+    now: datetime = datetime.now(UTC)
+    session.execute(
+        update(Image),
+        [
+            {"id": image.id, "created_at": now - timedelta(days=rng.uniform(0, UPLOAD_SPAN_DAYS))}
+            for image in images
+        ],
+    )
+    session.commit()
