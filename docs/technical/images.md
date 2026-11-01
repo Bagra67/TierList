@@ -2,7 +2,7 @@
 
 English | [Français](images.fr.md)
 
-How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, **built in #81** (§3): upload, compression, storage, image tiles in the template editor, upload limit per account and garbage collection. **Moderation actions built in #124** (§2.9): hide, unhide or delete an image, refusal of a deleted file uploaded again. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
+How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, **built in #81** (§3): upload, compression, storage, image tiles in the template editor, upload limit per account and garbage collection. **Moderation actions built in #124** (§2.9): hide, unhide or delete an image, refusal of a deleted file uploaded again. **Recent uploads page built in #125** (§2.9): the first super admin page that lists images and calls those actions. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
 
@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-The moderation actions exist as API routes (§2.9), but no page calls them yet: the super admin pages that list images come with their own issues (#125, #126, #127). Until then, the routes can be tried from Swagger (`/docs`).
+The moderation actions (§2.9) are called from the recent uploads page (#125) only: the reports queue (#269) and the user page (#127) come with their own issues.
 
 ## 2. Technical design
 
@@ -114,7 +114,7 @@ All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`,
 
 ### 2.7 Storage and serving
 
-The **S3 API is used everywhere**, through a single `ImageStorage` service (`save`, `delete`, `url`, and for the moderation `copy_to_quarantine`, `copy_from_quarantine`) built on **boto3**: development and CI run exactly the production code.
+The **S3 API is used everywhere**, through a single `ImageStorage` service (`save`, `delete`, `url`, and for the moderation `copy_to_quarantine`, `copy_from_quarantine`, `presigned_url`) built on **boto3**: development and CI run exactly the production code.
 
 | Environment        | S3 service                                                                                                                                                                                                                                         |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -130,7 +130,7 @@ SeaweedFS in development:
 
 - Each object is written with the `public-read` ACL (at Scaleway, an object stays private even in a public bucket), `Content-Type: image/webp` and `Cache-Control: public, max-age=86400`: **one day**. The content of a key never changes, so a year with `immutable` would be possible; one day is chosen (#81 review) so that an image hidden by the moderation or erased leaves the browser caches within 24 hours. There is no CDN yet, so nothing to purge; a CDN will have to purge the URL of a hidden image at once (§2.9).
 - **Access model**: image URLs are public but **impossible to guess** (random UUID). Anyone holding a URL can see the image, which the public results link requires anyway: an image used in a game becomes public through it.
-- **Quarantine**: the file of an image hidden by the moderation is copied under the `quarantine/` prefix (`IMAGE_QUARANTINE_PREFIX`) with the `private` ACL, then removed from its public key (§2.9). `quarantine_key(key)` gives that location; the storage key in the database does not change. The quarantine key is never sent to a client.
+- **Quarantine**: the file of an image hidden by the moderation is copied under the `quarantine/` prefix (`IMAGE_QUARANTINE_PREFIX`) with the `private` ACL, then removed from its public key (§2.9). `quarantine_key(key)` gives that location; the storage key in the database does not change. The quarantine key is never sent to a client as such: super admins see a hidden image through a presigned URL (§2.9).
 - **Development limitation**: the `anonymous` identity of SeaweedFS reads the whole bucket, whatever the ACL of the object, so a quarantined file can be read locally by whoever knows its key. The quarantine is private at Scaleway, where object ACLs apply.
 
 ### 2.8 Cleanup
@@ -148,16 +148,16 @@ uv run python scripts/purge_unused_images.py   # prints "Unused images purged: n
 
 ### 2.9 Moderation
 
-Everything is done **inside the application**, in super admin pages, without any external tool. #81 prepared it (the `sha256` and status columns, the upload limit per account); #124 built the **actions** below. The pages that list images are separate issues:
+Everything is done **inside the application**, in super admin pages, without any external tool. #81 prepared it (the `sha256` and status columns, the upload limit per account); #124 built the **actions** below; #125 the recent uploads page. The other pages that list images are separate issues:
 
 - **Traceability**: every image has an author, a date, and the tiles and snapshots that use it are found through the foreign keys. A super admin goes from an image to its author and to the games concerned.
 - **Super admin pages**:
   - **role and authorization** checked server-side (#123);
-  - **recent uploads**: a grid of the latest images with author, date and number of uses, for a proactive review, cheap since images are at most 512 px (#125);
+  - **recent uploads**: a grid of the latest images with author, date and number of uses, for a proactive review, cheap since images are at most 512 px (#125, built: `GET /moderation/images` and `/moderation/uploads`, [moderation guide](moderation.md));
   - **reports queue**: images, templates, nicknames and games reported by users, guests included, with reason and decision; it is also the notice mechanism for illegal content (#126);
   - **user page**: all the images of an account, bulk hiding, account sanctions (#127).
 
-  These pages will call the routes below; until then, no button does (the routes can be tried from Swagger, `/docs`).
+  The recent uploads page calls the routes below; the reports queue and the user page will too.
 
 **Actions** (#124, US-1.4, US-1.6). Three routes, protected by `SuperAdminDep` and declaring `SUPER_ADMIN_RESPONSES` ([moderation guide](moderation.md)), each with the body `{reason}` (`ModerationReasonRequest`: 1 to 500 characters, surrounding spaces removed) and the answer `204`:
 
@@ -174,6 +174,7 @@ Everything is done **inside the application**, in super admin pages, without any
   - **unhide**: copy the file back to its key (`copy_from_quarantine`: `public-read`, the same `Content-Type` and `Cache-Control` as at upload, `MetadataDirective=REPLACE`) → status `visible` and log entry → commit → delete the quarantine copy. If the commit fails, the public copy is deleted;
   - **delete**: status `deleted` and log entry → commit → delete the file where it is (its key, or `quarantine/{key}` for a hidden image).
 - A file that cannot be erased **after** the commit is logged with its key, to be erased by hand, like in the garbage collection: the decision stands, and the API no longer gives the image's address. A storage error **before** the commit (storage down) is not caught and gives a `500`, like the upload; nothing has changed then.
+- **Preview for super admins** (#125): the recent uploads (`GET /moderation/images`) list the visible and hidden images, never the deleted ones (no file left). A visible image is given at its public address; a hidden one through a **presigned URL** of its quarantine file (`ImageStorage.presigned_url`, valid `IMAGE_PREVIEW_URL_EXPIRES_SECONDS` = 900 s, 15 minutes, computed locally by boto3 without calling the storage). The backend serves no bytes and the quarantine stays private; whoever holds the link can read the file for 15 minutes. Only super admins receive these links.
 - **Display**: a hidden or deleted image has `image_url: null` and `image_removed: true` in every response (§2.6). The frontend shows an "image removed" visual (`RemovedImage`) in its place everywhere: template editor, game and results screens, public results link included. In the editor, the owner can still replace or remove it, and a tile whose image is removed counts as having an image (its text stays optional).
 - **No re-upload**: the upload computes the SHA-256 of the received file, before compressing it, and refuses it when a `deleted` image has the same one (`is_fingerprint_banned`). The refusal is the usual `415` `image_unsupported_format`, without saying why; the server logs it. Hiding does not ban: a hidden image can still be unhidden. Later, a perceptual fingerprint (dHash, computed with Pillow, no new dependency) can catch re-encoded variants.
 - The [privacy policy](legal-pages.md) says that the fingerprint of an image is kept, and how long moderated images are kept.
@@ -197,7 +198,8 @@ Added with #81:
 - The blind mode answer images and future profile pictures will reuse this pipeline; their sizes are decided with them.
 - Browsers that already displayed a hidden image may keep it in their cache **for up to one day** (`max-age`). There is no CDN yet: once there is one, hiding must purge its cache too (§2.9).
 - In development and CI, the quarantine is not private: SeaweedFS lets anyone read the whole bucket (§2.7).
-- No page calls the moderation actions yet (#125, #126, #127): they are tried from Swagger (`/docs`).
+- Only the recent uploads page calls the moderation actions for now: the reports queue (#269) and the user page (#127) are still to come.
+- The presigned URL of a hidden image can be read by whoever holds it, until it expires (15 minutes).
 - Only the exact file is refused after a deletion: a re-encoded or resized copy passes until a perceptual fingerprint exists.
 
 ## 3. In the code
@@ -208,17 +210,17 @@ Backend (tests: [testing guide](testing.md)):
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/api/routes/images.py`         | `POST /images`: turns the errors into `415`, `413` (param `max_bytes`), `422` and `429` (param `max_uploads`).                                                                                                                                                                                                                                                                          |
 | `app/services/images.py`           | `ImageService.upload`: checks the hourly limit, reads the file without going over the size limit, refuses a banned fingerprint, compresses it, writes it under a new key, then saves the row (the file is removed if that fails; a failure of that removal is logged with the key). `purge_unused`: the garbage collection of §2.8.                                                     |
-| `app/repositories/images.py`       | Visible image of an owner, image locked for the moderation (`get_image_for_update`), banned fingerprint (`is_fingerprint_banned`), number of recent uploads, deletion of the unused images.                                                                                                                                                                                             |
+| `app/repositories/images.py`       | Visible image of an owner, image locked for the moderation (`get_image_for_update`), banned fingerprint (`is_fingerprint_banned`), number of recent uploads, deletion of the unused images; for the recent uploads page, `list_recent_images`, `template_names_by_image`, `game_counts_by_image`.                                                                                       |
 | `app/services/image_moderation.py` | `ImageModerationService`: `hide`, `unhide`, `delete` (§2.9).                                                                                                                                                                                                                                                                                                                            |
-| `app/api/routes/moderation.py`     | `POST /moderation/images/{image_id}/hide`, `/unhide`, `/delete`: turn the errors into `404` and `409`. Body `ModerationReasonRequest` (`app/schemas/moderation.py`).                                                                                                                                                                                                                    |
+| `app/api/routes/moderation.py`     | `POST /moderation/images/{image_id}/hide`, `/unhide`, `/delete`: turn the errors into `404` and `409`. Body `ModerationReasonRequest` (`app/schemas/moderation.py`). `GET /moderation/images`: the recent uploads (`RecentUploadsService`, `app/services/recent_uploads.py`), each built by `recent_upload_response` (`app/api/presenters/images.py`).                                  |
 | `app/services/templates.py`        | Tiles with an image: `_check_owned_image`, rule "a text or an image" (`TileEmptyError`).                                                                                                                                                                                                                                                                                                |
 | `app/schemas/templates.py`         | `TileResponse.image_url` and `image_removed` (same fields in `CurrentItemResponse`, `app/schemas/rooms.py`). The URL itself comes from `image_url` or, for a tile that may have no image or a removed one, `optional_image_url`; `is_image_removed` gives `image_removed` (`app/api/presenters/images.py`, the only place that builds a public image URL: tiles, current item, upload). |
 | `app/models/tile.py`               | `Tile.image_id` and `Tile.image`; migration `a2ee58bb5b26_add_image_id_to_tiles.py`.                                                                                                                                                                                                                                                                                                    |
 | `scripts/purge_unused_images.py`   | Command of the garbage collection.                                                                                                                                                                                                                                                                                                                                                      |
 | `app/services/image_processing.py` | `compress_image`: the Pillow pipeline of §2.3, a pure function.                                                                                                                                                                                                                                                                                                                         |
-| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`, `copy_to_quarantine`, `copy_from_quarantine`) on a boto3 client, shared between requests; `quarantine_key`.                                                                                                                                                                                                                                    |
-| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`.                                                                                                                                                                                                                                                                                                             |
-| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type`, `Cache-Control` and ACL of the objects, quarantine prefix and ACL (`IMAGE_QUARANTINE_PREFIX`, `IMAGE_QUARANTINE_ACL`).                                                                                                                                                                                                              |
+| `app/services/image_storage.py`    | `ImageStorage` (`save`, `delete`, `url`, `copy_to_quarantine`, `copy_from_quarantine`, `presigned_url`) on a boto3 client, shared between requests; `quarantine_key`.                                                                                                                                                                                                                   |
+| `app/models/image.py`              | `Image` model and `ImageStatus`; migration `ef5839ce8066_create_images.py`; index `ix_images_created_at`, migration `4840e3c37d23_add_created_at_index_to_images.py`.                                                                                                                                                                                                                   |
+| `app/constants/images.py`          | Formats, output size, WebP quality, `Content-Type`, `Cache-Control` and ACL of the objects, quarantine prefix and ACL (`IMAGE_QUARANTINE_PREFIX`, `IMAGE_QUARANTINE_ACL`), lifetime of the presigned preview (`IMAGE_PREVIEW_URL_EXPIRES_SECONDS`).                                                                                                                                     |
 | `app/core/config.py`               | `IMAGE_*` settings (§2.4).                                                                                                                                                                                                                                                                                                                                                              |
 
 Development: `compose.yaml` and `seaweedfs/` (§2.7).
@@ -229,4 +231,5 @@ Frontend (details in the [templates guide](templates.md#3-in-the-code)):
 - `components/TileEditor.tsx`: the image of each tile can be replaced (click or drop) or removed; the new tile takes a text, an image or both; an image removed by the moderation still counts as an image, so the text stays optional. An image is uploaded as soon as it is chosen, then attached by `image_id`. Several images at once (#242, `useBulkImageTiles`): each one goes through the same `POST /images`, three at a time (`BULK_IMAGE_UPLOAD_CONCURRENCY`), and counts in the hourly limit; the tiles are then created in the order of the selection. A file of a refused type and what exceeds the free slots of the template are skipped before any upload.
 - `api/images.ts`: `useUploadImage` (`POST /images`, `multipart/form-data`).
 - `components/RemovedImage.tsx`: the "image removed" visual (an icon, with the text `common.imageRemoved` when there is room, and that text as accessible name), the size of the image it replaces. Used by `ImageDropZone` and `GameItemView` (current item, board and results screens).
+- `pages/RecentUploadsPage.tsx`, `components/UploadCard.tsx`, `components/ModerationReasonDialog.tsx`: the recent uploads page of the super admins and its actions ([moderation guide](moderation.md)).
 - The error codes are translated in `src/i18n/locales/`, and `src/i18n/index.ts` defines the `megabytes` formatter.

@@ -2,7 +2,7 @@
 
 English | [Français](moderation.fr.md)
 
-How the moderation of public content is built: the **moderation log** (#267) and the first actions, on **images** (#124). The super admin role and how it is checked are in the [authentication guide](authentication.md#super-admins); what moderation does for the user: [user stories](../product/milestone-2/user-stories.md) (epic E1), [lifecycles](../product/milestone-2/lifecycles.md).
+How the moderation of public content is built: the **moderation log** (#267), the first actions, on **images** (#124), and the **recent uploads** page that calls them (#125). The super admin role and how it is checked are in the [authentication guide](authentication.md#super-admins); what moderation does for the user: [user stories](../product/milestone-2/user-stories.md) (epic E1), [lifecycles](../product/milestone-2/lifecycles.md).
 
 ## 1. Functional overview
 
@@ -13,6 +13,8 @@ Every decision of a super admin (dismiss a report, hide, unhide or delete a cont
 - An entry stays readable after the target or the super admin's account is deleted: it keeps a copy of their names.
 
 The first actions that write to the log are those on images (#124): hide, unhide or delete an image (§2.2). The other targets come with their issues (#268: hide or delete a template).
+
+Super admins also review the **recent uploads** (US-1.7, #125), the first page of the moderation area (`/moderation/uploads`): the latest images, newest first, with their author, date and use (templates, games), filtered by author, upload days and status (§2.6). Each image can be hidden, unhidden or deleted from there, with a reason. A hidden image stays visible to super admins only, through a temporary link. The [privacy policy](legal-pages.md) says that super admins see the uploaded images with their author's name.
 
 ## 2. Technical design
 
@@ -61,7 +63,7 @@ Actions that exist:
 - Body `{reason}` (`ModerationReasonRequest`: the reason, 1 to 500 characters, surrounding spaces removed); answer `204`; `404` `image_not_found`, `409` `image_moderation_conflict` when the action does not apply to the current status. Protected like the log (§2.3).
 - `POST` rather than `DELETE`: the action carries a reason in its body, and the row of the image stays.
 - The image is locked (`SELECT … FOR UPDATE`) during the action; its file moves to or from a private quarantine, or is erased, in an order that fails on the safe side. Details: [images guide](images.md#29-moderation).
-- No page calls these routes yet: the super admin pages that list images (#125, #126, #127) will. Until then, they can be tried from Swagger (`/docs`).
+- The recent uploads page (§2.6) calls them; the reports queue (#269) and the user page (#127) will too.
 
 A new action or target type is a new enum value: `text_enum` stores text with a CHECK constraint, so the migration only updates the constraint (no `ALTER TYPE`).
 
@@ -82,11 +84,38 @@ A new action or target type is a new enum value: `text_enum` stores text with a 
 
 ### 2.5 The page
 
-`/moderation` leads to `/moderation/log` as long as the log is the only page of the moderation area. `ModerationLayout` shows the side menu of the area (only "Journal" for now; the reports and the recent uploads come with their issues) inside `RequireSuperAdmin`.
+`/moderation` leads to the first page of the menu, the recent uploads (`/moderation/uploads`, §2.6). `ModerationLayout` shows the side menu of the area, "Derniers envois" then "Journal" (the reports come with their issue), inside `RequireSuperAdmin`.
 
 `ModerationLogPage` shows a table (when, who, action, target, reason) that scrolls on its own on a small screen. The **Cible** filter is applied when the search is sent (button or Enter): one request per search, not one per key; the **Super admin** filter is applied at once. The filters are part of the query key of `useModerationLog`, so changing them starts again from the first page.
 
-### 2.6 Settings
+### 2.6 Recent uploads
+
+The first page of the moderation area (US-1.7, #125): the latest uploaded images, to spot a problem before anyone reports it, and act on it at once.
+
+| Method | Path                 | Answer                                                                           |
+| ------ | -------------------- | -------------------------------------------------------------------------------- |
+| `GET`  | `/moderation/images` | `{ images, has_more }`: one page of the visible and hidden images, newest first. |
+
+- Protected by `SuperAdminDep` and declares `SUPER_ADMIN_RESPONSES`, like the log (§2.3).
+- Parameters:
+  - `limit` (24 by default, a grid of 3 columns; 96 at most) and `offset`;
+  - `author`: a text searched in the display name **or** the email of the author, case-insensitive, with `%` and `_` read as plain characters (`icontains(..., autoescape=True)`); at most the maximum length of an email;
+  - `created_after` (included) and `created_before` (excluded): the upload period, as `AwareDatetime`. The time zone is required: a date without it is refused with `422`, since it would be ambiguous;
+  - `status`: `visible` or `hidden`; without it, both. A `deleted` image has no file left and is **never listed**.
+- Each image: `{ id, url, status, created_at, author_name, template_names, game_count }`. `author_name` is `null` once the author deleted their account; `template_names` are the templates, not deleted, whose tiles show the image, in alphabetical order; `game_count` is the number of distinct games, ongoing or closed, played on a snapshot that shows it.
+- Order `created_at desc, id` (the id breaks the ties) and `limit + 1` images read to fill `has_more`, like the log. The `ix_images_created_at` index (migration `4840e3c37d23`) serves the sort.
+- A page costs **3 queries**, whatever its size (no N+1), put together by `RecentUploadsService` (`app/services/recent_uploads.py`): the images with their author's name (`list_recent_images`, outer join on `users`), then the template names of all the images of the page (`template_names_by_image`, tiles joined to the templates without `deleted_at`), then their number of games (`game_counts_by_image`, `snapshot_tiles` joined to `games` on `snapshot_id`, distinct games counted).
+- **Address of a hidden image**: its file is no longer at its public address. `recent_upload_response` (`app/api/presenters/images.py`) gives a **presigned URL** of its quarantine file instead (`ImageStorage.presigned_url`, valid for 15 minutes). The backend serves no bytes and the quarantine stays private; whoever holds the link can read the file for 15 minutes. Details: [images guide](images.md#29-moderation).
+
+The page, `RecentUploadsPage` (`/moderation/uploads`):
+
+- **Filters**: **Auteur** is applied when the search is sent (button or Enter), like **Cible** in the log. **Du** and **Au** are days, in the super admin's time zone, sent as the start of the first day and the start of the day after the last one (ISO dates with time zone): the last day is included. **Statut**: all, visible or hidden. The filters are part of the query key of `useRecentUploads` (`useInfiniteQuery`), so changing them starts again from the first page; "Voir plus" reads the next page, from the number of images already shown.
+- **Cards** (`UploadCard`): the image (its alternative text gives the author and the date); a **Masquée** badge written in text on a hidden image, not only a color; the author, or "Compte supprimé"; the date; the number of templates and of games (i18next plurals); the template names (i18next `list` formatter). The author and template names are plain text: links will come with the user page (#127) and a template page.
+- **Actions**, according to the status: **Masquer** and **Supprimer** on a visible image, **Réafficher** and **Supprimer** on a hidden one. Their accessible names give the author and the date of the image.
+- Each action opens **`ModerationReasonDialog`**, a generic dialog (title, description, button labels, destructive or not) meant for the next moderation pages too (#269, #127). The reason is required and cannot be only spaces, at most 500 characters (`MODERATION_REASON_MAX_LENGTH`, mirrored in `frontend/src/constants/moderation.ts`; the backend stays the authority). The button is red for a deletion and disabled while the action runs (no double submission); a failure shows its translated error in the dialog, which closes once the action succeeded.
+- `useModerateImage` calls the action route (§2.2), then invalidates the recent uploads and the log, which are read again.
+
+### 2.7 Settings
 
 | Variable                        | Meaning                                     | Default |
 | ------------------------------- | ------------------------------------------- | ------- |
@@ -96,16 +125,19 @@ Changing it means changing the privacy policy too ([legal pages](legal-pages.md)
 
 ## 3. In the code
 
-| Layer        | File                                                                                  | Content                                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Routes       | `backend/app/api/routes/moderation.py`                                                | `GET /moderation/log`, `GET /moderation/super-admins`, `POST /moderation/images/{image_id}/hide`, `/unhide`, `/delete`. |
-| Schemas      | `backend/app/schemas/moderation.py`                                                   | `ModerationActionResponse`, `ModerationLogResponse`, `SuperAdminResponse`, `ModerationReasonRequest`.                   |
-| Service      | `backend/app/services/moderation_log.py`                                              | `ModerationLogService`: `record`, `page`, `super_admins`, `purge_expired`.                                              |
-| Service      | `backend/app/services/image_moderation.py`                                            | `ImageModerationService`: `hide`, `unhide`, `delete` ([images guide](images.md)).                                       |
-| Repositories | `repositories/moderation_actions.py`, `repositories/users.py`                         | Queries: add, list with filters, delete before a date; the super admins by name.                                        |
-| Model        | `backend/app/models/moderation_action.py`                                             | `ModerationAction` (`moderation_actions`); enums in `models/enums.py`.                                                  |
-| Constants    | `backend/app/constants/moderation.py`                                                 | Lengths of the reason and the label, page sizes.                                                                        |
-| Migration    | `migrations/versions/1c5aea95404b_create_moderation_actions.py`                       | Creates the table, its CHECK constraints and indexes.                                                                   |
-| Frontend     | `api/moderation.ts`, `components/ModerationLayout.tsx`, `pages/ModerationLogPage.tsx` | Hooks, area menu, log page.                                                                                             |
+| Layer        | File                                                                                                                                                                                                                  | Content                                                                                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes       | `backend/app/api/routes/moderation.py`                                                                                                                                                                                | `GET /moderation/log`, `GET /moderation/super-admins`, `GET /moderation/images`, `POST /moderation/images/{image_id}/hide`, `/unhide`, `/delete`.         |
+| Schemas      | `backend/app/schemas/moderation.py`                                                                                                                                                                                   | `ModerationActionResponse`, `ModerationLogResponse`, `SuperAdminResponse`, `ModerationReasonRequest`, `RecentUploadResponse`, `RecentUploadsResponse`.    |
+| Presenter    | `backend/app/api/presenters/images.py`                                                                                                                                                                                | `recent_upload_response`: public URL, or presigned quarantine URL for a hidden image.                                                                     |
+| Service      | `backend/app/services/moderation_log.py`                                                                                                                                                                              | `ModerationLogService`: `record`, `page`, `super_admins`, `purge_expired`.                                                                                |
+| Service      | `backend/app/services/image_moderation.py`                                                                                                                                                                            | `ImageModerationService`: `hide`, `unhide`, `delete` ([images guide](images.md)).                                                                         |
+| Service      | `backend/app/services/recent_uploads.py`                                                                                                                                                                              | `RecentUploadsService.page`: a page of recent uploads with their use.                                                                                     |
+| Repositories | `repositories/moderation_actions.py`, `repositories/users.py`, `repositories/images.py`                                                                                                                               | Queries: add, list with filters, delete before a date; the super admins by name; the recent images, their templates and games.                            |
+| Model        | `backend/app/models/moderation_action.py`                                                                                                                                                                             | `ModerationAction` (`moderation_actions`); enums in `models/enums.py`.                                                                                    |
+| Constants    | `backend/app/constants/moderation.py`, `constants/images.py`                                                                                                                                                          | Lengths of the reason, the label and the author filter, page sizes; `IMAGE_PREVIEW_URL_EXPIRES_SECONDS` (900).                                            |
+| Migration    | `migrations/versions/1c5aea95404b_create_moderation_actions.py`                                                                                                                                                       | Creates the table, its CHECK constraints and indexes.                                                                                                     |
+| Migration    | `migrations/versions/4840e3c37d23_add_created_at_index_to_images.py`                                                                                                                                                  | `ix_images_created_at`, the sort of the recent uploads.                                                                                                   |
+| Frontend     | `api/moderation.ts`, `components/ModerationLayout.tsx`, `pages/ModerationLogPage.tsx`, `pages/RecentUploadsPage.tsx`, `components/UploadCard.tsx`, `components/ModerationReasonDialog.tsx`, `constants/moderation.ts` | Hooks (`useModerationLog`, `useRecentUploads`, `useModerateImage`), area menu, log page, recent uploads page and its cards, reason dialog, reason length. |
 
-Tests: [testing guide](testing.md) (`test_moderation_log.py`, `test_moderation_routes.py`, `test_image_moderation.py`, `ModerationLogPage.test.tsx`).
+Tests: [testing guide](testing.md) (`test_moderation_log.py`, `test_moderation_routes.py`, `test_image_moderation.py`, `test_recent_uploads.py`, `ModerationLogPage.test.tsx`, `RecentUploadsPage.test.tsx`, `ModerationReasonDialog.test.tsx`).
