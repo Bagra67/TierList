@@ -26,6 +26,10 @@ class SeedSize:
     full_rooms: int
     rooms_with_bans: int
     moderation_actions: int
+    # Images des modèles à images masquées, puis supprimées, par le vrai service de modération :
+    # le visuel « image retirée » dans les modèles, les parties terminées et les résultats
+    hidden_images: int
+    deleted_images: int
 
 
 FULL_SIZE: SeedSize = SeedSize(
@@ -45,6 +49,8 @@ FULL_SIZE: SeedSize = SeedSize(
     full_rooms=3,
     rooms_with_bans=3,
     moderation_actions=180,
+    hidden_images=3,
+    deleted_images=1,
 )
 
 # Assez pour tous les cas, dont un historique de deux pages (plus de 20 parties)
@@ -65,4 +71,6 @@ SMALL_SIZE: SeedSize = SeedSize(
     full_rooms=1,
     rooms_with_bans=1,
     moderation_actions=60,
+    hidden_images=1,
+    deleted_images=1,
 )

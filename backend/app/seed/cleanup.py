@@ -13,13 +13,13 @@ from sqlalchemy.orm import Session
 
 from app.models.game import Game
 from app.models.game_player import GamePlayer
-from app.models.image import Image
+from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import SEED_EMAIL_DOMAIN, SEED_EMAIL_PREFIX
-from app.services.image_storage import ImageStorage
+from app.services.image_storage import ImageStorage, quarantine_key
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +70,14 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
         delete(TemplateSnapshot).where(TemplateSnapshot.template_id.in_(seed_template_ids))
     )
     # 4. Les images, relevées avant les comptes (leur propriétaire passerait à NULL), supprimées
-    # après les modèles et leurs tuiles qui les désignent
-    images: list[tuple[uuid.UUID, str]] = [
-        (image_id, storage_key)
-        for image_id, storage_key in session.execute(
-            select(Image.id, Image.storage_key).where(Image.owner_id.in_(seed_user_ids))
+    # après les modèles et leurs tuiles qui les désignent. Le fichier d'une image masquée est en
+    # quarantaine ; celui d'une image supprimée est déjà effacé
+    images: list[tuple[uuid.UUID, str | None]] = [
+        (image_id, _file_key(storage_key, status))
+        for image_id, storage_key, status in session.execute(
+            select(Image.id, Image.storage_key, Image.status).where(
+                Image.owner_id.in_(seed_user_ids)
+            )
         ).all()
     ]
     # 5. Les comptes : leurs modèles, salles, places, bannissements et sessions partent en cascade
@@ -83,8 +86,21 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     session.commit()
     # Les fichiers après le commit : une erreur de stockage ne laisse pas d'image sans fichier
     logger.info("Données seed supprimées en base : %d parties, %d images", games, len(images))
-    for number, (_, storage_key) in enumerate(images, start=1):
-        storage.delete(storage_key)
+    for number, (_, file_key) in enumerate(images, start=1):
+        if file_key is not None:
+            storage.delete(file_key)
         if number % 25 == 0 or number == len(images):
             logger.info("Fichiers d'images effacés : %d/%d", number, len(images))
     return SeedCleanup(accounts=len(seed_user_ids), games=games, images=len(images))
+
+
+def _file_key(storage_key: str, status: ImageStatus) -> str | None:
+    """Emplacement du fichier d'une image selon son statut de modération, None s'il n'existe
+    plus."""
+    match status:
+        case ImageStatus.VISIBLE:
+            return storage_key
+        case ImageStatus.HIDDEN:
+            return quarantine_key(storage_key)
+        case ImageStatus.DELETED:
+            return None

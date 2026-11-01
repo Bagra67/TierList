@@ -1,9 +1,13 @@
-"""Entrées du journal de modération du jeu de données, datées dans le passé. Leurs cibles sont des
-modèles, des comptes et des pseudos du jeu de données.
+"""Modération du jeu de données : le journal, et quelques images masquées ou supprimées.
 
-Écrites directement, comme ModerationLogService.record les écrirait (auteur et libellé de la cible
-copiés), mais avec leur date d'emblée : record écrit chaque entrée à part, et la redater ensuite
-coûterait deux requêtes par entrée, à travers Internet sur staging."""
+Les entrées du journal sont datées dans le passé. Leurs cibles sont des modèles, des comptes et des
+pseudos du jeu de données. Elles sont écrites directement, comme ModerationLogService.record les
+écrirait (auteur et libellé de la cible copiés), mais avec leur date d'emblée : record écrit chaque
+entrée à part, et la redater ensuite coûterait deux requêtes par entrée, à travers Internet sur
+staging.
+
+Les images, peu nombreuses, passent par le vrai service : leur fichier va en quarantaine ou est
+effacé, et leur entrée du journal désigne la vraie image."""
 
 import logging
 import random
@@ -12,11 +16,16 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
 from app.seed.seats import GUEST_NICKNAMES
+from app.services.image_moderation import ImageModerationService
+from app.services.image_storage import ImageStorage
+from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +35,10 @@ REASONS: tuple[str, ...] = (
     "Harcèlement", "Contenu à caractère sexuel", "Propos haineux", "Spam", "Droit d'auteur",
     "Pseudo insultant", "Aucun manquement", "Signalement abusif", "Récidive",
     "Image sans rapport avec le modèle", "Données personnelles visibles", "Contenu violent",
+)  # fmt: skip
+IMAGE_REASONS: tuple[str, ...] = (
+    "Contenu violent", "Contenu à caractère sexuel", "Droit d'auteur",
+    "Données personnelles visibles", "Image sans rapport avec le modèle",
 )  # fmt: skip
 
 
@@ -84,3 +97,27 @@ def _target(
             return None, f"image-{rng.randint(1, 999)}.png"
         case ModerationTargetType.GAME:
             return None, f"Partie « {rng.choice(templates).name} »"
+
+
+def moderate_images(
+    session: Session,
+    settings: Settings,
+    storage: ImageStorage,
+    super_admins: list[User],
+    images: list[Image],
+    hidden: int,
+    deleted: int,
+    rng: random.Random,
+) -> int:
+    """Masque hidden images et en supprime deleted autres, prises au hasard parmi celles des
+    modèles à images ; renvoie le nombre d'actions écrites au journal."""
+    service: ImageModerationService = ImageModerationService(
+        session, storage, ModerationLogService(session, settings)
+    )
+    chosen: list[Image] = rng.sample(images, hidden + deleted)
+    for image in chosen[:hidden]:
+        service.hide(rng.choice(super_admins), image.id, rng.choice(IMAGE_REASONS))
+    for image in chosen[hidden:]:
+        service.delete(rng.choice(super_admins), image.id, rng.choice(IMAGE_REASONS))
+    logger.info("Images modérées : %d masquées, %d supprimées", hidden, deleted)
+    return len(chosen)

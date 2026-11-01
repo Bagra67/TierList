@@ -171,6 +171,8 @@ class SeedTemplates:
     playable: list[Template]
     empty: list[Template]
     deleted: list[Template]
+    # Images envoyées pour les modèles à images, que la modération du jeu de données retire
+    images: list[Image]
 
 
 def create_templates(
@@ -217,6 +219,7 @@ def create_templates(
         return template
 
     playable: list[Template] = []
+    uploaded: list[Image] = []
     for index in range(size.text_templates):
         theme, words = TEXT_THEMES[index % len(TEXT_THEMES)]
         playable.append(with_tiles(next_owner(), theme, [(word, None) for word in words]))
@@ -227,6 +230,7 @@ def create_templates(
         image_tiles: list[tuple[str | None, uuid.UUID | None]] = []
         for tile_number in range(1, size.image_tiles_per_template + 1):
             image: Image = images.upload(owner, BytesIO(_generated_image(tile_number, rng)))
+            uploaded.append(image)
             # Une tuile sur trois a aussi un texte
             image_tiles.append((f"Image {tile_number}" if tile_number % 3 == 0 else None, image.id))
             logger.info(
@@ -256,7 +260,7 @@ def create_templates(
         # Supprimé maintenant : la purge de nuit ne l'efface qu'après 30 jours
         templates.delete(owner, template.id)
         deleted.append(template)
-    return SeedTemplates(playable=playable, empty=empty, deleted=deleted)
+    return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
 
 
 def _generated_image(number: int, rng: random.Random) -> bytes:

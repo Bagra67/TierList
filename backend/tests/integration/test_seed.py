@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.models.enums import GameStatus, PlacementPhase, RoomStatus, UserRole
 from app.models.game import Game
-from app.models.image import Image
+from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.placement import Placement
 from app.models.room import Room
@@ -19,6 +19,7 @@ from app.models.user import User
 from app.seed.accounts import seed_email
 from app.seed.run import SeedSummary, run_seed
 from app.seed.sizes import SMALL_SIZE
+from app.services.image_storage import quarantine_key
 from tests.integration.conftest import FakeImageStorage
 from tests.integration.helpers import JsonObject, counted_queries
 
@@ -28,6 +29,10 @@ SEED_PASSWORD = "seed-test-password"
 # Requêtes du petit jeu de données (375 mesurées) : la borne repère un retour aux écritures
 # une à une, des dizaines de requêtes par tuile, par partie ou par place
 SMALL_SEED_MAX_QUERIES = 500
+# Le journal daté dans le passé, plus une entrée par image masquée ou supprimée
+MODERATION_ACTIONS = (
+    SMALL_SIZE.moderation_actions + SMALL_SIZE.hidden_images + SMALL_SIZE.deleted_images
+)
 
 
 def seed(db_session: Session, stored_images: dict[str, bytes]) -> SeedSummary:
@@ -74,7 +79,22 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         )
         == SMALL_SIZE.deleted_templates
     )
-    assert count(db_session, Image) == len(stored_images) == summary.images
+    assert count(db_session, Image) == summary.images
+    # Des images retirées par la modération : en quarantaine, ou effacées
+    hidden_keys: list[str] = list(
+        db_session.scalars(
+            select(Image.storage_key).where(Image.status == ImageStatus.HIDDEN)
+        ).all()
+    )
+    assert len(hidden_keys) == SMALL_SIZE.hidden_images
+    assert all(quarantine_key(key) in stored_images for key in hidden_keys)
+    assert (
+        db_session.scalar(
+            select(func.count()).select_from(Image).where(Image.status == ImageStatus.DELETED)
+        )
+        == SMALL_SIZE.deleted_images
+    )
+    assert len(stored_images) == summary.images - SMALL_SIZE.deleted_images
     assert count(db_session, Game) == SMALL_SIZE.closed_games
     assert (
         db_session.scalar(
@@ -98,7 +118,16 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     )
     # Un compte et un invité bannis par salle à bannissements
     assert count(db_session, RoomBan) == 2 * SMALL_SIZE.rooms_with_bans
-    assert count(db_session, ModerationAction) == SMALL_SIZE.moderation_actions
+    assert count(db_session, ModerationAction) == MODERATION_ACTIONS == summary.moderation_actions
+    # Les actions sur les images désignent la vraie image
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(ModerationAction)
+            .where(ModerationAction.target_id.in_(select(Image.id)))
+        )
+        == SMALL_SIZE.hidden_images + SMALL_SIZE.deleted_images
+    )
 
 
 def test_running_the_seed_again_replaces_its_data_only(
@@ -122,12 +151,13 @@ def test_running_the_seed_again_replaces_its_data_only(
     )
     assert count(db_session, User) == accounts + 1
     assert count(db_session, Game) == SMALL_SIZE.closed_games
-    assert count(db_session, ModerationAction) == SMALL_SIZE.moderation_actions
+    assert count(db_session, ModerationAction) == MODERATION_ACTIONS
     assert db_session.scalars(
         select(Template.name).where(Template.owner_id == real_user.id)
     ).all() == ["Mine"]
-    # Les fichiers des anciennes images sont effacés, les nouvelles les remplacent
-    assert count(db_session, Image) == len(stored_images)
+    # Les fichiers des anciennes images sont effacés, quarantaine comprise, les nouvelles les
+    # remplacent ; une image supprimée n'a plus de fichier
+    assert count(db_session, Image) == len(stored_images) + SMALL_SIZE.deleted_images
     assert first_keys.isdisjoint(stored_images)
 
 

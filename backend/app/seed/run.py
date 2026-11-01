@@ -15,7 +15,7 @@ from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
 from app.seed.games import SeedGames, create_closed_games
-from app.seed.moderation import create_moderation_log
+from app.seed.moderation import create_moderation_log, moderate_images
 from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.rooms import SeedRooms, create_open_rooms
 from app.seed.sizes import SeedSize
@@ -90,6 +90,16 @@ def run_seed(
             [*templates.playable, *templates.deleted],
             rng,
         )
+        moderated_images: int = moderate_images(
+            session,
+            settings,
+            storage,
+            accounts.super_admins,
+            templates.images,
+            size.hidden_images,
+            size.deleted_images,
+            rng,
+        )
     return SeedSummary(
         removed=removed,
         accounts=len(accounts.super_admins)
@@ -100,5 +110,5 @@ def run_seed(
         images=size.image_templates * size.image_tiles_per_template,
         closed_games=len(played.closed),
         open_rooms=len(played.lobby_rooms) + len(open_rooms.full) + len(open_rooms.with_bans),
-        moderation_actions=size.moderation_actions,
+        moderation_actions=size.moderation_actions + moderated_images,
     )
