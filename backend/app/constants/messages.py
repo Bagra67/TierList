@@ -28,6 +28,8 @@ PASSWORD_TOO_SHORT = "The password must be at least {min_length} characters long
 
 # --- Templates -----------------------------------------------------------------------------
 TEMPLATE_NOT_FOUND = "Template not found"
+TEMPLATE_HIDDEN = "The template is hidden by the moderation: no game can start with it"
+TEMPLATE_MODERATION_CONFLICT = "This action does not apply to the current state of the template"
 TIER_NOT_FOUND = "Tier not found"
 LAST_TIER = "A template keeps at least one tier"
 TILE_NOT_FOUND = "Tile not found"
@@ -78,6 +80,8 @@ EMAIL_ALREADY_REGISTERED_DESCRIPTION = "Email already registered"
 DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION = "Incorrect password, or Google sign-in too old"
 INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
 TEMPLATE_NOT_FOUND_DESCRIPTION = "Template not found"
+TEMPLATE_MODERATION_CONFLICT_DESCRIPTION = "Template already hidden, not hidden, or deleted"
+TEMPLATE_CANNOT_START_DESCRIPTION = "Template without tiles, or hidden by the moderation"
 TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION = "Template or tier not found"
 LAST_TIER_DESCRIPTION = "The last tier of a template cannot be deleted"
 TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION = "Template or tile not found"
@@ -107,7 +111,8 @@ CANNOT_PLACE_DESCRIPTION = (
 COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
 RESULTS_NOT_FOUND_DESCRIPTION = "Unknown results link"
 GAME_CANNOT_START_DESCRIPTION = (
-    "Game already in progress, no participant who places, or template deleted or without tiles"
+    "Game already in progress, no participant who places, or template deleted, without tiles "
+    "or hidden by the moderation"
 )
 NICKNAME_TAKEN_OR_ROOM_FULL_OR_LOCKED_DESCRIPTION = (
     "Nickname already used, room full, or room locked during a game"

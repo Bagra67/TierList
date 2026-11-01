@@ -30,6 +30,8 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
     tiers: tiers.map((tier, position) => ({ ...tier, position })),
     tiles: tiles.map((tile, position) => ({ ...tile, position })),
     max_tiles: 32,
+    moderation: 'none',
+    moderation_reason: null,
   };
 }
 

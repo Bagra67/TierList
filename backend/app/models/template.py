@@ -1,12 +1,15 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.constants.templates import FREE_PLAN_MAX_TILES, TEMPLATE_NAME_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
+from app.db.types import text_enum
+from app.models.enums import TemplateModeration
 
 if TYPE_CHECKING:
     from app.models.tier import Tier
@@ -29,6 +32,15 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(TEMPLATE_NAME_MAX_LENGTH))
+    # Décision d'un super admin (#268) : un modèle masqué ne lance plus de partie
+    moderation: Mapped[TemplateModeration] = mapped_column(
+        text_enum(TemplateModeration, "template_moderation"),
+        default=TemplateModeration.NONE,
+        server_default=text("'none'"),
+    )
+    # Motif du masquage, montré au propriétaire. Copié ici : le journal de modération est purgé
+    # après 3 ans, un modèle peut rester masqué plus longtemps
+    moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
 
     tiers: Mapped[list[Tier]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tier.position"

@@ -6,7 +6,7 @@ export const aliceRoom: Room = {
   version: 3,
   link: 'http://localhost:5173/r/K7P2QX',
   status: 'open',
-  template: { id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', name: 'Chips' },
+  template: { id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', name: 'Chips', hidden: false },
   settings: {
     item_order: 'template',
     auto_advance: 'none',

@@ -12,6 +12,7 @@ from app.api.dependencies import (
     ModerationLogServiceDep,
     RecentUploadsServiceDep,
     SuperAdminDep,
+    TemplateModerationServiceDep,
 )
 from app.api.presenters.images import recent_upload_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
@@ -28,6 +29,7 @@ from app.constants.moderation import (
 from app.core.errors import ErrorResponse
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
+from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
 from app.models.image import ImageStatus
 from app.schemas.moderation import (
     ModerationActionResponse,
@@ -46,6 +48,28 @@ IMAGE_MODERATION_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"model": ErrorResponse, "description": messages.IMAGE_NOT_FOUND_DESCRIPTION},
     409: {"model": ErrorResponse, "description": messages.IMAGE_MODERATION_CONFLICT_DESCRIPTION},
 }
+
+TEMPLATE_MODERATION_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **SUPER_ADMIN_RESPONSES,
+    404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
+    409: {"model": ErrorResponse, "description": messages.TEMPLATE_MODERATION_CONFLICT_DESCRIPTION},
+}
+
+
+def _template_not_found() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=404,
+        code=ErrorCode.TEMPLATE_NOT_FOUND,
+        detail=messages.TEMPLATE_NOT_FOUND,
+    )
+
+
+def _template_moderation_conflict() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.TEMPLATE_MODERATION_CONFLICT,
+        detail=messages.TEMPLATE_MODERATION_CONFLICT,
+    )
 
 
 def _image_not_found() -> AppHTTPException:
@@ -175,3 +199,59 @@ def list_recent_uploads(
         images=[recent_upload_response(storage, upload) for upload in page.uploads],
         has_more=page.has_more,
     )
+
+
+@router.post(
+    "/templates/{template_id}/hide", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
+)
+def hide_template(
+    template_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+) -> None:
+    # Masque un template (US-1.5) : plus de nouvelle salle ni de partie, le propriétaire voit le
+    # motif
+    try:
+        service.hide(super_admin, template_id, body.reason)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    except TemplateModerationConflictError as exc:
+        raise _template_moderation_conflict() from exc
+
+
+@router.post(
+    "/templates/{template_id}/unhide", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
+)
+def unhide_template(
+    template_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+) -> None:
+    # Réaffiche un template masqué : il retrouve l'état choisi par son propriétaire
+    try:
+        service.unhide(super_admin, template_id, body.reason)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    except TemplateModerationConflictError as exc:
+        raise _template_moderation_conflict() from exc
+
+
+# POST et non DELETE, comme pour les images : l'action porte un motif dans son corps
+@router.post(
+    "/templates/{template_id}/delete", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
+)
+def delete_template(
+    template_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+) -> None:
+    # Supprime un template comme son propriétaire le ferait (suppression logique, puis purge)
+    try:
+        service.delete(super_admin, template_id, body.reason)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    except TemplateModerationConflictError as exc:
+        raise _template_moderation_conflict() from exc

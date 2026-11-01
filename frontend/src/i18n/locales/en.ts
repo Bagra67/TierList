@@ -820,6 +820,9 @@ export const en: Translation = {
       invalid_token: 'This link is invalid or has expired.',
       template_not_found: 'This template could not be found.',
       template_has_no_tiles: 'Add at least one tile to this template to play with it.',
+      template_hidden: 'This template is hidden by the moderation: no game can start with it.',
+      template_moderation_conflict:
+        'This action does not apply to the template as it is now: it may already be hidden, visible or deleted.',
       room_not_found: 'This room could not be found or has been closed.',
       room_admin_required: 'Only the host can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',

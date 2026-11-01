@@ -84,3 +84,12 @@ class ModerationTargetType(StrEnum):
     ACCOUNT = "account"
     NICKNAME = "nickname"
     GAME = "game"
+
+
+class TemplateModeration(StrEnum):
+    """Décision de la modération sur un modèle (US-1.5), séparée de la visibilité choisie par
+    son propriétaire : réafficher un modèle lui rend son état d'avant."""
+
+    NONE = "none"
+    # Plus de nouvelle salle ni de nouvelle partie ; le propriétaire le voit encore, avec le motif
+    HIDDEN = "hidden"

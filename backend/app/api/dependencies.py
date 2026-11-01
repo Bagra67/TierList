@@ -28,6 +28,7 @@ from app.services.recent_uploads import RecentUploadsService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
+from app.services.template_moderation import TemplateModerationService
 from app.services.templates import TemplateService
 
 # auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
@@ -88,6 +89,14 @@ def get_moderation_log_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ModerationLogService:
     return ModerationLogService(session, settings)
+
+
+def get_template_moderation_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+) -> TemplateModerationService:
+    # Même session par requête : l'action et son entrée du journal partagent la transaction
+    return TemplateModerationService(session, moderation_log)
 
 
 def get_recent_uploads_service(
@@ -240,6 +249,9 @@ GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_s
 HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+TemplateModerationServiceDep = Annotated[
+    TemplateModerationService, Depends(get_template_moderation_service)
+]
 RecentUploadsServiceDep = Annotated[RecentUploadsService, Depends(get_recent_uploads_service)]
 ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]
 # Donne l'adresse publique des images (api/presenters/images.py)
