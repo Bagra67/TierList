@@ -21,14 +21,14 @@ Un jeu de données de test réaliste (comptes, modèles, images, parties termin�
 
 ## 2. Le lancer
 
-**En local**, avec la base et le stockage d'images de `compose.yaml` démarrés (environ 15 secondes) :
+**En local**, avec la base et le stockage d'images de `compose.yaml` démarrés (environ 10 secondes) :
 
 ```bash
 cd backend
 uv run python scripts/seed.py
 ```
 
-**Sur staging** : GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). Le pod de staging n'a pas de shell : le script tourne sur un runner GitHub, avec les réglages de base et de stockage d'images de l'environnement `staging`. Avant le premier lancement, ajoutez le secret `SEED_PASSWORD` à cet environnement. Si l'adresse de la base vue d'un runner diffère de celle du pod de l'application, remplissez les variables `SEED_POSTGRES_HOST` et `SEED_POSTGRES_PORT`.
+**Sur staging** : GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). Le pod de staging n'a pas de shell : le script tourne sur un runner GitHub, avec les réglages de base et de stockage d'images de l'environnement `staging`. Il prend environ 5 minutes : chaque requête traverse Internet (§4). Avant le premier lancement, ajoutez le secret `SEED_PASSWORD` à cet environnement. Si l'adresse de la base vue d'un runner diffère de celle du pod de l'application, remplissez les variables `SEED_POSTGRES_HOST` et `SEED_POSTGRES_PORT`.
 
 Le script journalise chacune de ses 6 étapes avec sa durée, et sa progression dans les plus longues (chaque modèle, chaque image, chaque partie terminée, toutes les 30 entrées du journal) : le journal du workflow montre où il en est. Il finit par ce qu'il a supprimé et créé, et le temps passé.
 
@@ -44,18 +44,30 @@ Le script journalise chacune de ses 6 étapes avec sa durée, et sa progression 
 
 `backend/app/seed/`, un module par domaine, enchaînés par `run.py` :
 
-| Module          | Contenu                                                                                                                                                                                                        |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sizes.py`      | `FULL_SIZE` (le jeu ci-dessus) et `SMALL_SIZE` (les mêmes cas, en moins grand nombre, pour les tests).                                                                                                         |
-| `guard.py`      | La vérification de la base et la règle de `SEED_PASSWORD`.                                                                                                                                                     |
-| `cleanup.py`    | Supprime les données seed dans un ordre qui ne laisse aucune ligne orpheline (journal, parties, instantanés, images et leurs fichiers, puis comptes), car plusieurs liens vers les comptes sont en `SET NULL`. |
-| `accounts.py`   | `AuthService.register`, puis le rôle et l'adresse confirmée ; les comptes Google comme une première connexion avec Google.                                                                                     |
-| `templates.py`  | `TemplateService` et `ImageService.upload` (un propriétaire d'images par modèle à images : au plus 120 envois par heure et par compte).                                                                        |
-| `games.py`      | Les parties terminées, écrites directement dans leur état de clôture (ci-dessous), et les salles ouvertes qui gardent leurs parties.                                                                           |
-| `rooms.py`      | Les salles pleines et les salles avec bannissements, par `RoomService` (avec un publisher qui n'envoie rien : personne n'est connecté).                                                                        |
-| `moderation.py` | `ModerationLogService.record`, puis daté dans le passé.                                                                                                                                                        |
+| Module          | Contenu                                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sizes.py`      | `FULL_SIZE` (le jeu ci-dessus) et `SMALL_SIZE` (les mêmes cas, en moins grand nombre, pour les tests).                                                                                                                                |
+| `guard.py`      | La vérification de la base et la règle de `SEED_PASSWORD`.                                                                                                                                                                            |
+| `cleanup.py`    | Supprime les données seed dans un ordre qui ne laisse aucune ligne orpheline (journal, parties, instantanés, images et leurs fichiers, puis comptes), car plusieurs liens vers les comptes sont en `SET NULL`.                        |
+| `accounts.py`   | `AuthService.register`, puis le rôle et l'adresse confirmée ; les comptes Google comme une première connexion avec Google.                                                                                                            |
+| `templates.py`  | `TemplateService.create` (le modèle et ses tiers par défaut), puis ses tuiles écrites en une fois ; les images par `ImageService.upload` (un propriétaire d'images par modèle à images : au plus 120 envois par heure et par compte). |
+| `seats.py`      | Les places (comptes, invités) et les bannissements des salles seed, écrits en une fois.                                                                                                                                               |
+| `games.py`      | Les parties terminées et leurs instantanés, écrits directement (ci-dessous) par lots de 10, et les salles ouvertes qui gardent leurs parties.                                                                                         |
+| `rooms.py`      | Les salles pleines et les salles avec bannissements : créées par `RoomService` (code, place du room admin, réglages ; avec un publisher qui n'envoie rien, personne n'est connecté).                                                  |
+| `moderation.py` | Les entrées du journal écrites avec leur date en une fois, comme `ModerationLogService.record` les écrit (noms de l'auteur et de la cible copiés).                                                                                    |
 
-Tout passe par les vrais services, sauf les **parties terminées** : les jouer par `GameService`, un placement à la fois, recharge la salle à chaque appel (245 000 requêtes pour 75 parties : 5 minutes en local, bien plus sur staging à travers Internet). Elles sont écrites dans l'état que laisse `GameService._close_game` : un instantané pris par `TemplateService.take_snapshot`, un tour par tuile, un joueur figé par personne qui joue, un placement de tour par élément (sans tier pour un vote absent) et un placement final au même endroit pour chaque élément placé, des positions continues dans chaque tier, et un lien de résultats.
+**Pourquoi des écritures directes.** Sur staging, chaque requête traverse Internet, du runner GitHub à la base (environ 0,2 s). Tout faire par les services coûtait 7 500 requêtes (24 minutes) : `TemplateService.add_tile` recharge et valide le modèle à chaque tuile, `RoomService.join` recharge toute la salle à chaque arrivée, `take_snapshot` relit le modèle à chaque partie, et jouer une partie par `GameService`, un placement à la fois, recharge la salle à chaque appel. Donc :
+
+- **Par les services** : les comptes (`AuthService.register`), les modèles et leurs tiers par défaut (`TemplateService.create`), les envois d'images (`ImageService.upload`), les salles (`RoomService.create`, `update_settings`), la suppression des modèles.
+- **Écrits directement, selon les règles du service qu'ils remplacent** :
+  - les tuiles : un texte ou une image chacune, 32 au plus, des positions continues, des images du propriétaire ;
+  - les instantanés : une copie du nom, des tiers et des tuiles, avec les mêmes images ;
+  - les places et les bannissements : un compte au plus une fois par salle, des pseudos d'invités uniques sans tenir compte de la casse, 10 places au plus, le jeton d'un invité gardé par sa seule empreinte, un bannissement qui remplace la place ;
+  - les parties terminées : l'état que laisse `GameService._close_game` (un tour par tuile, un joueur figé par personne qui joue, un placement de tour par élément, sans tier pour un vote absent, un placement final au même endroit pour chaque élément placé, des positions continues dans chaque tier, un lien de résultats) ;
+  - les entrées du journal : les noms de l'auteur et de la cible copiés.
+- Les comptes sont lus une fois : après chaque commit, SQLAlchemy oublie les lignes chargées et relirait chaque compte.
+
+Un lancement complet fait maintenant environ 1 400 requêtes (environ 5 minutes sur staging). `test_seed.py` vérifie que le petit jeu reste sous 500 requêtes, pour qu'un retour aux écritures une à une ne passe pas inaperçu.
 
 ### Le garder à jour
 
