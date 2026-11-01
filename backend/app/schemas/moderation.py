@@ -1,9 +1,17 @@
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
+from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.models.enums import ModerationActionKind, ModerationTargetType
+
+# Motif écrit par le super admin : espaces de début et de fin retirés, 1 à 500 caractères
+ModerationReason = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=MODERATION_REASON_MAX_LENGTH),
+]
 
 
 class ModerationActionResponse(BaseModel):
@@ -40,3 +48,9 @@ class SuperAdminResponse(BaseModel):
 
     id: uuid.UUID
     display_name: str
+
+
+class ModerationReasonRequest(BaseModel):
+    """Le motif d'une action de modération, écrit au journal (US-1.9)."""
+
+    reason: ModerationReason

@@ -26,3 +26,8 @@ class ImageNotFoundError(Exception):
 class ImageTooManyPixelsError(Exception):
     """L'image décodée dépasserait IMAGE_MAX_SOURCE_PIXELS (protection contre les bombes de
     décompression : un petit fichier qui se décode en une image immense)."""
+
+
+class ImageModerationConflictError(Exception):
+    """L'action de modération ne s'applique pas au statut actuel de l'image : masquer une image
+    déjà masquée, réafficher une image visible, ou toucher une image supprimée."""

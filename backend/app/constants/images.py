@@ -18,6 +18,10 @@ IMAGE_CACHE_CONTROL = "public, max-age=86400"
 # ACL de chaque image envoyée : chez certains fournisseurs (Scaleway), un objet reste privé même
 # dans un bucket public, et l'URL publique (IMAGE_PUBLIC_BASE_URL) répondrait 403
 IMAGE_ACL = "public-read"
+# Image masquée par la modération (#124) : son fichier est déplacé sous ce préfixe, privé, et
+# l'URL publique ne répond plus ; il est gardé tant que l'image est masquée
+IMAGE_QUARANTINE_PREFIX = "quarantine"
+IMAGE_QUARANTINE_ACL = "private"
 IMAGE_FILE_EXTENSION = "webp"
 # Longueur d'une clé de stockage : un UUID (36 caractères) suivi de « .webp »
 IMAGE_STORAGE_KEY_MAX_LENGTH = 64

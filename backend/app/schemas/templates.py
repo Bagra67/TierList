@@ -87,8 +87,11 @@ class TierResponse(BaseModel):
 class TileResponse(BaseModel):
     id: uuid.UUID
     text: str | None
-    # Adresse publique de l'image compressée, None pour une tuile sans image (api/presenters)
+    # Adresse publique de l'image compressée, None pour une tuile sans image ou dont l'image est
+    # retirée (api/presenters)
     image_url: str | None
+    # L'image est masquée ou supprimée par la modération : un visuel « image retirée » la remplace
+    image_removed: bool
     position: int
 
 

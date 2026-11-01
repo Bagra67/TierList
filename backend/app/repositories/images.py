@@ -15,6 +15,21 @@ def add_image(session: Session, image: Image) -> None:
     session.add(image)
 
 
+def get_image_for_update(session: Session, image_id: uuid.UUID) -> Image | None:
+    """Image de n'importe quel auteur, quel que soit son statut, verrouillée jusqu'à la fin de
+    la transaction : pour la modération."""
+    return session.get(Image, image_id, with_for_update=True)
+
+
+def is_fingerprint_banned(session: Session, sha256: str) -> bool:
+    """Une image supprimée par la modération avait cette empreinte : le même fichier est refusé.
+    Les lignes des images supprimées sont gardées pour cela (index ix_images_sha256)."""
+    statement: Select[bool] = select(
+        exists().where(Image.sha256 == sha256, Image.status == ImageStatus.DELETED)
+    )
+    return session.scalars(statement).one()
+
+
 def get_owned_image(session: Session, image_id: uuid.UUID, owner_id: uuid.UUID) -> Image | None:
     """Image visible de cet auteur : une image masquée par la modération ne peut plus être
     rattachée à une tuile."""

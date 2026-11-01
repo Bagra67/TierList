@@ -71,7 +71,9 @@ class CurrentItemResponse(BaseModel):
 
     id: uuid.UUID
     text: str | None
+    # None sans image, ou quand l'image est retirée par la modération (image_removed)
     image_url: str | None
+    image_removed: bool
 
 
 class GameTierResponse(BaseModel):

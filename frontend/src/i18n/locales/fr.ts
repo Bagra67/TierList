@@ -819,6 +819,8 @@ export const fr = {
       image_upload_limit_reached:
         "Vous avez envoyé {{max_uploads}} images dans l'heure : réessayez un peu plus tard.",
       image_not_found: 'Cette image est introuvable.',
+      image_moderation_conflict:
+        "Cette action ne s'applique pas à l'image dans son état actuel : elle est peut-être déjà masquée, visible ou supprimée.",
     },
     // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {

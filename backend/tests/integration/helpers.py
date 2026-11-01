@@ -11,10 +11,12 @@ from urllib.parse import parse_qs, urlparse
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import URL, Connection, event
+from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
+from app.models.enums import UserRole
 from app.models.tile import Tile
+from app.models.user import User
 from app.services.email import Email
 
 # Dossier backend/ : le premier dossier parent qui contient alembic.ini
@@ -56,6 +58,15 @@ def register(client: TestClient, email: str) -> dict[str, str]:
     )
     assert response.status_code == 201
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def register_super_admin(client: TestClient, db_session: Session, email: str) -> dict[str, str]:
+    """Crée un compte par l'API, puis lui donne le rôle comme le ferait la commande."""
+    headers: dict[str, str] = register(client, email)
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    user.role = UserRole.SUPER_ADMIN
+    db_session.flush()
+    return headers
 
 
 def create_template(

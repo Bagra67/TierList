@@ -19,7 +19,12 @@ function inGame(changes: Partial<CurrentGame>, roomChanges: Partial<Room> = {}):
 // Alice a placé l'item en cours, Paprika, en tête de S
 const paprikaInS: OwnPlacement = { item: game.current_item, tier_id: tierS.id, position: 0 };
 const chorizoInS: OwnPlacement = {
-  item: { id: '7c1d2e3f-0000-4000-8000-000000000009', text: 'Chorizo', image_url: null },
+  item: {
+    id: '7c1d2e3f-0000-4000-8000-000000000009',
+    text: 'Chorizo',
+    image_url: null,
+    image_removed: false,
+  },
   tier_id: tierS.id,
   position: 1,
 };
@@ -173,6 +178,7 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
     const fetchMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame),
@@ -268,6 +274,7 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
     stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(inGame({ round_number: 2, current_item: barbecue })),
@@ -302,6 +309,7 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
     const paprikaPut = `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`;
 

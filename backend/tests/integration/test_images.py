@@ -194,6 +194,45 @@ def test_upload_refuses_a_gif(
     assert stored_images == {}
 
 
+def test_upload_refuses_the_file_of_an_image_deleted_by_the_moderation(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    db_session: Session,
+    stored_images: dict[str, bytes],
+):
+    content: bytes = make_image_file((100, 100), "PNG")
+    first: Response = upload(auth_client, alice, content)
+    deleted: Image | None = db_session.get(Image, uuid.UUID(first.json()["id"]))
+    assert deleted is not None
+    deleted.status = ImageStatus.DELETED
+    db_session.flush()
+    files_before: dict[str, bytes] = dict(stored_images)
+
+    # Le même fichier, par n'importe qui : le refus habituel, sans dire pourquoi (US-1.6)
+    response: Response = upload(auth_client, bob, content)
+
+    assert response.status_code == 415
+    assert response.json()["code"] == ErrorCode.IMAGE_UNSUPPORTED_FORMAT
+    assert stored_images == files_before
+
+
+def test_a_hidden_image_does_not_ban_its_file(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    content: bytes = make_image_file((100, 100), "PNG")
+    first: Response = upload(auth_client, alice, content)
+    hidden: Image | None = db_session.get(Image, uuid.UUID(first.json()["id"]))
+    assert hidden is not None
+    hidden.status = ImageStatus.HIDDEN
+    db_session.flush()
+
+    # Seule la suppression bannit l'empreinte : un masquage peut encore être levé
+    response: Response = upload(auth_client, alice, content)
+
+    assert response.status_code == 201
+
+
 def test_upload_refuses_a_file_over_the_size_limit(
     auth_client: TestClient,
     alice: dict[str, str],

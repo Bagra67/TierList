@@ -52,6 +52,7 @@ export const aliceRoomInGame: Room = {
       id: '7c1d2e3f-0000-4000-8000-000000000001',
       text: 'Paprika',
       image_url: 'https://images.example.com/paprika.webp',
+      image_removed: false,
     },
     ends_at: null,
     tiers: [

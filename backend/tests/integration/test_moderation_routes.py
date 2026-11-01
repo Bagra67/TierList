@@ -8,23 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
-from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
+from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.moderation_action import ModerationAction
 from app.models.user import User
-from tests.integration.helpers import JsonObject, register
+from tests.integration.helpers import JsonObject, register, register_super_admin
 
 pytestmark = pytest.mark.integration
 
 MODERATION_ROUTES: tuple[str, ...] = ("/moderation/log", "/moderation/super-admins")
-
-
-def register_super_admin(client: TestClient, db_session: Session, email: str) -> dict[str, str]:
-    """Crée un compte par l'API, puis lui donne le rôle comme le ferait la commande."""
-    headers: dict[str, str] = register(client, email)
-    user: User = db_session.scalars(select(User).where(User.email == email)).one()
-    user.role = UserRole.SUPER_ADMIN
-    db_session.flush()
-    return headers
 
 
 def account(db_session: Session, email: str) -> User:
