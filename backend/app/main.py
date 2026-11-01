@@ -20,7 +20,16 @@ from app.api.dependencies import (
     build_game_service,
     get_session_factory,
 )
-from app.api.routes import auth, history, images, results, room_channel, rooms, templates
+from app.api.routes import (
+    auth,
+    history,
+    images,
+    moderation,
+    results,
+    room_channel,
+    rooms,
+    templates,
+)
 from app.constants import messages
 from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
@@ -179,6 +188,7 @@ api_app.include_router(rooms.router)
 api_app.include_router(room_channel.router)
 api_app.include_router(results.router)
 api_app.include_router(history.router)
+api_app.include_router(moderation.router)
 
 
 def _openapi_with_room_messages() -> dict[str, Any]:

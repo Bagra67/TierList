@@ -3,6 +3,7 @@ est écrite, dans la même transaction que l'action elle-même."""
 
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -12,8 +13,17 @@ from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.moderation_action import ModerationAction
 from app.models.user import User
 from app.repositories import moderation_actions as moderation_action_repository
+from app.repositories import users as user_repository
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ModerationLogPage:
+    # De la plus récente à la plus ancienne
+    entries: list[ModerationAction]
+    # Il reste des entrées après cette page
+    has_more: bool
 
 
 class ModerationLogService:
@@ -45,6 +55,20 @@ class ModerationLogService:
         moderation_action_repository.add_moderation_action(self._session, moderation_action)
         self._session.flush()
         return moderation_action
+
+    def page(
+        self, limit: int, offset: int, actor_id: uuid.UUID | None, target: str | None
+    ) -> ModerationLogPage:
+        """Les entrées à partir de offset, filtrées par super admin et par cible. Une entrée de
+        plus est lue pour savoir s'il en reste."""
+        entries: list[ModerationAction] = moderation_action_repository.list_moderation_actions(
+            self._session, limit + 1, offset, actor_id, target
+        )
+        return ModerationLogPage(entries=entries[:limit], has_more=len(entries) > limit)
+
+    def super_admins(self) -> list[User]:
+        """Les super admins, pour filtrer le journal par auteur."""
+        return user_repository.list_super_admins(self._session)
 
     def purge_expired(self) -> int:
         """Supprime les entrées plus anciennes que la durée de conservation ; renvoie leur
