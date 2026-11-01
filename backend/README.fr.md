@@ -203,7 +203,8 @@ backend/
 ├── migrations/            # Migrations Alembic (env.py, versions/)
 ├── scripts/
 │   ├── export_openapi.py  # Écrit le contrat d'API dans openapi.json
-│   └── set_super_admin.py # Donne ou retire le rôle super admin (développement local)
+│   ├── set_super_admin.py # Donne ou retire le rôle super admin (développement local)
+│   └── seed.py            # Remplit la base locale ou de staging avec des données de test (docs/technical/seed-data.fr.md)
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException, codes d'erreur)

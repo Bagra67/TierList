@@ -903,6 +903,20 @@ the guide always matches the actual tests. The `Docs` CI check enforces
 it; the `skip-docs-sync` PR label is reserved for justified exceptions,
 explained in the PR description.
 
+## Seed data
+
+`backend/app/seed/` creates a realistic set of test data for local
+development and staging (`scripts/seed.py`, the `Seed staging` workflow;
+`docs/technical/seed-data.md`).
+
+For every feature, when planning and again when reviewing, check whether
+the seed data has to cover its new data or cases (e.g. reports, public
+templates, likes). When it does, update `app/seed/` in the same stack:
+the new data in the matching module, its quantity in `sizes.py`, its
+deletion in `cleanup.py` when a new link to the accounts is `SET NULL`,
+and `tests/integration/test_seed.py`. Say in the plan and the final
+report whether the seed data changed or needed no change.
+
 ## MUST NOT
 
 -   Delete failing tests merely to make CI pass.
@@ -1576,6 +1590,8 @@ A task is considered complete only when:
     language (§50).
 -   [ ] The privacy policy was checked, and updated when the change
     affects what it describes (§51).
+-   [ ] The seed data was checked, and updated when the feature adds data
+    or cases worth trying for real (§28, "Seed data").
 -   [ ] Backend validation was executed when relevant.
 -   [ ] Final Git diff was reviewed.
 -   [ ] No unrelated changes were introduced.

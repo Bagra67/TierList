@@ -1,0 +1,64 @@
+# Seed data
+
+English | [Français](seed-data.fr.md)
+
+A realistic set of test data — accounts, templates, images, closed games, open rooms, moderation log — to try the application for real, in local development and on staging. Never in production.
+
+## 1. What is created
+
+| Data           | Quantity and cases                                                                                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accounts       | 36: 6 super admins (`seed-admin-1` to `-6`), 24 confirmed players (`seed-player-1` to `-24`), 3 unconfirmed addresses (`seed-unverified-…`), 3 Google accounts without password (`seed-google-…`) |
+| Templates      | 30: 3 empty, 9 text (6 to 10 tiles), 6 with images (12 tiles), 6 full (32 tiles, the maximum), 6 deleted                                                                                          |
+| Images         | 72, generated (a colour, a shape, a number), uploaded to the real image storage                                                                                                                   |
+| Closed games   | 75 over 90 days, 2 to 8 players with guests, absent votes and items nobody placed. `seed-player-1` is in 65 of them: a history of 4 pages                                                         |
+| Open rooms     | 9: 3 whose lobby shows their past games, 3 full (10 seats), 3 with a banned account and a banned guest, with varied settings                                                                      |
+| Moderation log | 180 entries of the 6 super admins over 120 days, every action and target: 4 pages                                                                                                                 |
+
+- Every address is `seed-…@seed.example.com`: a reserved domain, no email can arrive there.
+- Every account has the same password: `seed-password-local` locally, the `SEED_PASSWORD` secret on staging.
+- The data is the same at each run: the random choices use a fixed seed.
+
+## 2. Running it
+
+**Locally**, with the database and the image storage of `compose.yaml` started (about 15 seconds):
+
+```bash
+cd backend
+uv run python scripts/seed.py
+```
+
+**On staging**: GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). The staging pod has no shell, so the script runs on a GitHub runner, with the database and image storage settings of the `staging` environment. Before the first run, add the `SEED_PASSWORD` secret to that environment. If the database address seen from a runner differs from the app pod's one, set the `SEED_POSTGRES_HOST` and `SEED_POSTGRES_PORT` variables.
+
+The script prints what it removed and what it created, and how long it took.
+
+## 3. Rules
+
+- **It replaces its own data, and only it.** Each run first deletes everything owned by the `seed-…@seed.example.com` accounts, then creates a new set. Other accounts are never touched: on staging, real test accounts stay. Games of a seed room that a real account played are deleted with the seed data.
+- **Never in production.** The script refuses any database that is not `tierlist` (local) or `…_staging`, and the workflow is bound to the `staging` environment only.
+- **No known password on a public site.** On a `…_staging` database, `SEED_PASSWORD` is required: the local password is written in the repository and would give anyone a super admin account.
+- **Open rooms do not last.** A room nobody is connected to is closed after `ROOM_INACTIVITY_HOURS` (24 h). Run the seed again to get the rooms back; the closed games stay.
+- **Deleted templates** are deleted at seed time: the nightly purge erases them 30 days later.
+
+## 4. How it is built
+
+`backend/app/seed/`, one module per domain, chained by `run.py`:
+
+| Module          | Content                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sizes.py`      | `FULL_SIZE` (the set above) and `SMALL_SIZE` (the same cases, fewer of each, for the tests).                                                                                    |
+| `guard.py`      | The database check and the `SEED_PASSWORD` rule.                                                                                                                                |
+| `cleanup.py`    | Deletes the seed data in an order that leaves no orphan row (log, games, snapshots, image rows and files, then accounts), because several links to the accounts are `SET NULL`. |
+| `accounts.py`   | `AuthService.register`, then the role and the confirmed address; Google accounts like a first Google sign-in.                                                                   |
+| `templates.py`  | `TemplateService` and `ImageService.upload` (one image owner per template with images: at most 120 uploads per hour and per account).                                           |
+| `games.py`      | Closed games, written directly in their closed state (below), and the open rooms that keep their games.                                                                         |
+| `rooms.py`      | Full rooms and rooms with bans, through `RoomService` (with a publisher that sends nothing: nobody is connected).                                                               |
+| `moderation.py` | `ModerationLogService.record`, then dated in the past.                                                                                                                          |
+
+Everything goes through the real services, except the **closed games**: playing them through `GameService`, one placement at a time, reloads the room at every call (245,000 queries for 75 games: 5 minutes locally, far more on staging over the Internet). They are written in the state `GameService._close_game` leaves: a snapshot taken by `TemplateService.take_snapshot`, one round per tile, one frozen player per person who plays, a ROUND placement per item (without tier for an absent vote) and a FINAL placement at the same place for each placed item, continuous positions in each tier, and a results token.
+
+### Keeping it up to date
+
+When a feature adds data or cases worth trying for real (reports, public templates, likes…), the seed covers them in the same stack ([AGENTS.md](../../AGENTS.md)): a new module or new cases in an existing one, a quantity in `sizes.py`, the deletion in `cleanup.py` if a new link to the accounts is `SET NULL`, and the tests (`test_seed.py`).
+
+Tests: [testing guide](testing.md) (`test_seed.py`, `test_seed_guard.py`).
