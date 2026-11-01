@@ -21,14 +21,14 @@ A realistic set of test data — accounts, templates, images, closed games, open
 
 ## 2. Running it
 
-**Locally**, with the database and the image storage of `compose.yaml` started (about 15 seconds):
+**Locally**, with the database and the image storage of `compose.yaml` started (about 10 seconds):
 
 ```bash
 cd backend
 uv run python scripts/seed.py
 ```
 
-**On staging**: GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). The staging pod has no shell, so the script runs on a GitHub runner, with the database and image storage settings of the `staging` environment. Before the first run, add the `SEED_PASSWORD` secret to that environment. If the database address seen from a runner differs from the app pod's one, set the `SEED_POSTGRES_HOST` and `SEED_POSTGRES_PORT` variables.
+**On staging**: GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). The staging pod has no shell, so the script runs on a GitHub runner, with the database and image storage settings of the `staging` environment. It takes about 5 minutes: each query crosses the Internet (§4). Before the first run, add the `SEED_PASSWORD` secret to that environment. If the database address seen from a runner differs from the app pod's one, set the `SEED_POSTGRES_HOST` and `SEED_POSTGRES_PORT` variables.
 
 The script logs each of its 6 steps with its duration, and its progress inside the long ones (each template, each image, each closed game, every 30 log entries), so that the workflow log shows where it is. It ends with what it removed and created, and how long it took.
 
@@ -44,18 +44,30 @@ The script logs each of its 6 steps with its duration, and its progress inside t
 
 `backend/app/seed/`, one module per domain, chained by `run.py`:
 
-| Module          | Content                                                                                                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sizes.py`      | `FULL_SIZE` (the set above) and `SMALL_SIZE` (the same cases, fewer of each, for the tests).                                                                                    |
-| `guard.py`      | The database check and the `SEED_PASSWORD` rule.                                                                                                                                |
-| `cleanup.py`    | Deletes the seed data in an order that leaves no orphan row (log, games, snapshots, image rows and files, then accounts), because several links to the accounts are `SET NULL`. |
-| `accounts.py`   | `AuthService.register`, then the role and the confirmed address; Google accounts like a first Google sign-in.                                                                   |
-| `templates.py`  | `TemplateService` and `ImageService.upload` (one image owner per template with images: at most 120 uploads per hour and per account).                                           |
-| `games.py`      | Closed games, written directly in their closed state (below), and the open rooms that keep their games.                                                                         |
-| `rooms.py`      | Full rooms and rooms with bans, through `RoomService` (with a publisher that sends nothing: nobody is connected).                                                               |
-| `moderation.py` | `ModerationLogService.record`, then dated in the past.                                                                                                                          |
+| Module          | Content                                                                                                                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sizes.py`      | `FULL_SIZE` (the set above) and `SMALL_SIZE` (the same cases, fewer of each, for the tests).                                                                                                                                    |
+| `guard.py`      | The database check and the `SEED_PASSWORD` rule.                                                                                                                                                                                |
+| `cleanup.py`    | Deletes the seed data in an order that leaves no orphan row (log, games, snapshots, image rows and files, then accounts), because several links to the accounts are `SET NULL`.                                                 |
+| `accounts.py`   | `AuthService.register`, then the role and the confirmed address; Google accounts like a first Google sign-in.                                                                                                                   |
+| `templates.py`  | `TemplateService.create` (the template and its default tiers), then its tiles written in one go; images through `ImageService.upload` (one image owner per template with images: at most 120 uploads per hour and per account). |
+| `seats.py`      | The seats (accounts, guests) and bans of the seed rooms, written in one go.                                                                                                                                                     |
+| `games.py`      | Closed games and their snapshots, written directly (below) by batches of 10, and the open rooms that keep their games.                                                                                                          |
+| `rooms.py`      | Full rooms and rooms with bans: created by `RoomService` (code, room admin's seat, settings; with a publisher that sends nothing, nobody is connected).                                                                         |
+| `moderation.py` | Log entries written with their date in one go, as `ModerationLogService.record` writes them (actor and target names copied).                                                                                                    |
 
-Everything goes through the real services, except the **closed games**: playing them through `GameService`, one placement at a time, reloads the room at every call (245,000 queries for 75 games: 5 minutes locally, far more on staging over the Internet). They are written in the state `GameService._close_game` leaves: a snapshot taken by `TemplateService.take_snapshot`, one round per tile, one frozen player per person who plays, a ROUND placement per item (without tier for an absent vote) and a FINAL placement at the same place for each placed item, continuous positions in each tier, and a results token.
+**Why direct writes.** On staging every query crosses the Internet, from the GitHub runner to the database (about 0.2 s). Going through the services everywhere took 7,500 queries (24 minutes): `TemplateService.add_tile` reloads and commits the template for each tile, `RoomService.join` reloads the whole room for each arrival, `take_snapshot` reloads the template for each game, and playing a game through `GameService`, one placement at a time, reloads the room at every call. So:
+
+- **Through the services**: accounts (`AuthService.register`), templates and their default tiers (`TemplateService.create`), image uploads (`ImageService.upload`), rooms (`RoomService.create`, `update_settings`), template deletion.
+- **Written directly, following the rules of the service they replace**:
+  - tiles: a text or an image each, at most 32, continuous positions, images of the owner;
+  - snapshots: a copy of the name, the tiers and the tiles, with the same images;
+  - seats and bans: an account at most once per room, unique guest nicknames whatever the case, at most 10 seats, a guest token kept as its hash only, a ban that replaces the seat;
+  - closed games: the state `GameService._close_game` leaves (one round per tile, one frozen player per person who plays, a ROUND placement per item, without tier for an absent vote, a FINAL placement at the same place for each placed item, continuous positions in each tier, a results token);
+  - log entries: the actor and target names copied.
+- The accounts are read once: after each commit, SQLAlchemy forgets the loaded rows and would read each account again.
+
+A full run now makes about 1,400 queries (about 5 minutes on staging). `test_seed.py` checks that the small set stays under 500 queries, so that a return to one-by-one writes does not go unnoticed.
 
 ### Keeping it up to date
 
