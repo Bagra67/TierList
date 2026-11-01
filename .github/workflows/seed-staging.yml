@@ -1,0 +1,63 @@
+name: Seed staging
+
+# Fills the staging database with the seed data (docs/technical/seed-data.md): accounts, templates,
+# images, closed games, open rooms and moderation log entries. Run by hand only. Each run replaces
+# the previous seed data (seed-…@seed.example.com accounts) and never touches other accounts.
+# The staging pod has no shell: the script runs here, against the staging database and image
+# storage. It is bound to the `staging` environment only, and the script itself refuses any
+# database whose name does not end with _staging (production can never be seeded).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    name: Seed the staging database
+    runs-on: ubuntu-latest
+    environment: staging
+    # Two runs at once would delete each other's data
+    concurrency:
+      group: seed-staging
+      cancel-in-progress: false
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # The address of the database pod as seen from a GitHub runner, when it differs from the one
+      # the app pod uses (SEED_POSTGRES_HOST / SEED_POSTGRES_PORT, optional)
+      POSTGRES_HOST: ${{ vars.SEED_POSTGRES_HOST || vars.POSTGRES_HOST }}
+      POSTGRES_PORT: ${{ vars.SEED_POSTGRES_PORT || vars.POSTGRES_PORT }}
+      POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+      POSTGRES_USER: ${{ vars.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      IMAGE_S3_ENDPOINT_URL: ${{ vars.IMAGE_S3_ENDPOINT_URL }}
+      IMAGE_S3_BUCKET: ${{ vars.IMAGE_S3_BUCKET }}
+      IMAGE_S3_REGION: ${{ vars.IMAGE_S3_REGION }}
+      IMAGE_S3_ACCESS_KEY_ID: ${{ secrets.IMAGE_S3_ACCESS_KEY_ID }}
+      IMAGE_S3_SECRET_ACCESS_KEY: ${{ secrets.IMAGE_S3_SECRET_ACCESS_KEY }}
+      IMAGE_PUBLIC_BASE_URL: ${{ vars.IMAGE_PUBLIC_BASE_URL }}
+      # Password of the seed accounts: required on staging (public site)
+      SEED_PASSWORD: ${{ secrets.SEED_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked --no-dev
+
+      - name: Seed the database
+        run: |
+          # Settings requires a JWT secret, which the seed never uses (it signs no token): a
+          # throwaway value, never the real one
+          JWT_SECRET_KEY="$(openssl rand -base64 48)"
+          export JWT_SECRET_KEY
+          uv run --no-dev python scripts/seed.py
