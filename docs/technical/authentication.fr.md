@@ -165,6 +165,7 @@ Les fondateurs de l'application modèrent tout ([permissions](../product/permiss
 - **Vérifié sur chaque route de modération** par `get_current_super_admin` (`SuperAdminDep`) : un autre compte reçoit `403` `super_admin_required`. `403` et non `401`, pour la même raison que la suppression de compte : l'utilisateur est authentifié.
 - **Relu à chaque requête** : la dépendance charge l'utilisateur depuis la base, donc donner ou retirer le rôle vaut dès la requête suivante, sans se reconnecter. L'interface (lien « Modération », `/moderation`) l'affiche après un rechargement de la page, car l'utilisateur courant est gardé en cache pour la session.
 - L'espace de modération du frontend est caché aux autres comptes (`RequireSuperAdmin` affiche la page introuvable), par confort seulement.
+- Chaque décision de modération est écrite au journal de modération ([guide de la modération](moderation.fr.md)).
 
 ### Connexion avec Google (OpenID Connect)
 

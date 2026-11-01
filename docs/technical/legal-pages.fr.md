@@ -38,7 +38,7 @@ Un contenu illicite se signale par e-mail à `LEGAL_CONTACT_EMAIL`, en attendant
 **Mettre à jour la politique de confidentialité dans la même PR** que tout changement de ce qu'elle décrit (AGENTS.md §51 : vérifié à chaque changement) :
 
 - un nouveau type de donnée personnelle collectée, ou une donnée collectée pour une nouvelle finalité ;
-- une durée de conservation (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, la durée des liens envoyés par email) ;
+- une durée de conservation (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `MODERATION_LOG_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, la durée des liens envoyés par email) ;
 - un nouveau prestataire, ou un prestataire dans un nouveau pays ([guide du déploiement](deployment.fr.md)) ;
 - un nouveau cookie ou une nouvelle clé de stockage local (un cookie de mesure d'audience demanderait aussi un bandeau de consentement) ;
 - ce que les autres utilisateurs peuvent voir (salles, liens de résultats, historique).
