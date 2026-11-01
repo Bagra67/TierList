@@ -136,7 +136,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author. The owner of a template hidden by the moderation sees the reason for the decision.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -478,6 +478,12 @@ export const en: Translation = {
   },
   templates: {
     title: 'My templates',
+    hidden: {
+      badge: 'Hidden',
+      title: 'Hidden by the moderation',
+      reason: 'Reason: {{reason}}',
+      hint: 'You can still edit it, but no game can start with it any more.',
+    },
     empty: 'You have no template yet: create one to get started.',
     tileCount_one: '{{count}} tile',
     tileCount_other: '{{count}} tiles',
@@ -608,6 +614,8 @@ export const en: Translation = {
     lobby: {
       title: 'Room {{code}}',
       template: 'Template: {{name}}',
+      templateHidden:
+        'The template of this room is hidden by the moderation: no new game can start in it.',
       templateDeleted: 'The template of this room was deleted: no new game can start in it.',
       code: 'Room code',
       link: 'Room link',

@@ -106,6 +106,28 @@ describe('TemplateEditorPage', () => {
     consoleError.mockRestore();
   });
 
+  it('says why a template hidden by the moderation can no longer start a room', async () => {
+    stubBackend({
+      [`GET ${templateUrl}`]: () =>
+        Response.json({ ...chips, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+    });
+
+    renderEditor();
+
+    const title: HTMLElement = await screen.findByRole('heading', {
+      name: 'Masqué par la modération',
+    });
+    const notice: HTMLElement = title.closest('section') as HTMLElement;
+    expect(notice).toHaveAttribute('role', 'status');
+    expect(notice).toHaveTextContent('Motif : Harcèlement');
+    expect(notice).toHaveTextContent('Vous pouvez encore le modifier');
+    // Toujours modifiable, mais plus de salle à lancer avec
+    expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'Créer une salle avec Chips' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('creates a room from the open template and opens its lobby', async () => {
     const fetchMock: BackendMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(chips),

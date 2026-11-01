@@ -262,6 +262,20 @@ describe('RoomPage', () => {
     expect(screen.queryByText(/Template :/)).not.toBeInTheDocument();
   });
 
+  it('warns when the template of the room is hidden by the moderation', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({ ...aliceRoom, template: { ...aliceRoom.template, hidden: true } }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Le modèle de cette salle est masqué par la modération',
+    );
+    expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
+  });
+
   it('lists the past games of the room with a link to their results', async () => {
     stubBackend({
       'GET /rooms/K7P2QX': () =>

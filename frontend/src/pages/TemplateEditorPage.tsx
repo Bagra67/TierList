@@ -6,6 +6,7 @@ import { cn } from 'cn';
 
 import { type Template, useTemplate } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
+import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
@@ -63,8 +64,14 @@ export function TemplateEditorPage() {
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-semibold">{template.name}</h1>
-            <CreateRoomButton templateId={template.id} templateName={template.name} />
+            {/* Masqué par la modération : plus de partie possible, le bandeau dit pourquoi */}
+            {template.moderation !== 'hidden' && (
+              <CreateRoomButton templateId={template.id} templateName={template.name} />
+            )}
           </div>
+          {template.moderation === 'hidden' && (
+            <TemplateHiddenNotice reason={template.moderation_reason} />
+          )}
           {/* Un nom n'a pas besoin de toute la largeur de la page */}
           <div className="w-full max-w-xl">
             <TemplateNameField template={template} />
