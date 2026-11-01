@@ -3,6 +3,7 @@
 from app.models.game import Game
 from app.models.game_player import GamePlayer
 from app.models.image import Image
+from app.models.moderation_action import ModerationAction
 from app.models.oauth_account import OAuthAccount
 from app.models.participant import Participant
 from app.models.placement import Placement
@@ -22,6 +23,7 @@ __all__ = [
     "Game",
     "GamePlayer",
     "Image",
+    "ModerationAction",
     "OAuthAccount",
     "Participant",
     "Placement",

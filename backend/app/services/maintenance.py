@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.services.image_storage import ImageStorage
 from app.services.images import ImageService
+from app.services.moderation_log import ModerationLogService
 from app.services.templates import TemplateService
 
 # Ouvre une session de base de données (Session(engine) en production, celle du test sinon)
@@ -33,3 +34,10 @@ def purge_unused_images(
     renvoie leur nombre."""
     with session_factory() as session:
         return ImageService(session, settings, storage).purge_unused()
+
+
+def purge_moderation_log(session_factory: MaintenanceSessionFactory, settings: Settings) -> int:
+    """Supprime les entrées du journal de modération plus anciennes que
+    MODERATION_LOG_RETENTION_DAYS ; renvoie leur nombre."""
+    with session_factory() as session:
+        return ModerationLogService(session, settings).purge_expired()

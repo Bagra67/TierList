@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     # reste en base avant d'être purgé définitivement
     deleted_template_retention_days: int = Field(default=30, gt=0)
 
+    # Modération (docs/technical/moderation.md) : jours pendant lesquels une entrée du journal de
+    # modération est gardée (3 ans, annoncés dans la politique de confidentialité)
+    moderation_log_retention_days: int = Field(default=3 * 365, gt=0)
+
     # Salles (docs/technical/rooms.md) : durées données à une nouvelle salle, que le room admin
     # change ensuite dans ses réglages, entre les mêmes bornes
     room_default_timer_seconds: int = Field(default=30, ge=TIMER_SECONDS_MIN, le=TIMER_SECONDS_MAX)

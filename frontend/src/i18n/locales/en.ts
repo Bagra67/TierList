@@ -97,6 +97,8 @@ export const en: Translation = {
       games: 'Games: the rooms you join, your placements and the results of the games.',
       reports:
         'Reports: the email address of the person who reports content, and what their message contains.',
+      moderation:
+        'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
       technical:
         'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
     },
@@ -107,6 +109,8 @@ export const en: Translation = {
       security:
         'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
       reports: 'Handling the reports of illegal content (legal obligation).',
+      moderation:
+        "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, and finding an account's past sanctions.",
       noAds: 'Your data is neither sold nor used for advertising or profiling.',
     },
     retention: {
@@ -121,14 +125,16 @@ export const en: Translation = {
       backups: 'Database backups: 14 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
+      moderation: 'Moderation log: 3 years after each decision.',
     },
     visibility: {
       title: 'Who sees your data',
       room: 'The participants of a room see the template used, the display names and the placements of the game.',
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
+      moderation: 'Only the super admins (the founders of TierList) see the moderation log.',
       deletedAccount:
-        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. You can ask by email for your display name to be erased.",
+        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
     processors: {
       title: 'Service providers',

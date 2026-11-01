@@ -38,6 +38,7 @@ export function PrivacyPolicyPage() {
             t('privacy.data.content'),
             t('privacy.data.games'),
             t('privacy.data.reports'),
+            t('privacy.data.moderation'),
             t('privacy.data.technical'),
           ]}
         />
@@ -49,6 +50,7 @@ export function PrivacyPolicyPage() {
             t('privacy.purposes.service'),
             t('privacy.purposes.security'),
             t('privacy.purposes.reports'),
+            t('privacy.purposes.moderation'),
           ]}
         />
         <p>{t('privacy.purposes.noAds')}</p>
@@ -64,6 +66,7 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.deleted'),
             t('privacy.retention.backups'),
             t('privacy.retention.reports'),
+            t('privacy.retention.moderation'),
           ]}
         />
       </LegalSection>
@@ -73,6 +76,7 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.visibility.room'),
             t('privacy.visibility.results'),
+            t('privacy.visibility.moderation'),
             t('privacy.visibility.deletedAccount'),
           ]}
         />

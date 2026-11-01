@@ -34,7 +34,11 @@ from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
 from app.services.games import GameService
 from app.services.image_storage import create_image_storage
-from app.services.maintenance import purge_deleted_templates, purge_unused_images
+from app.services.maintenance import (
+    purge_deleted_templates,
+    purge_moderation_log,
+    purge_unused_images,
+)
 from app.services.nightly_scheduler import nightly_scheduler
 from app.services.room_channel import room_connections
 from app.services.room_sweeper import room_sweeper
@@ -136,13 +140,20 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             purge_unused_images, session_factory, settings, create_image_storage(settings)
         )
 
+    async def purge_log() -> int:
+        return await run_in_threadpool(purge_moderation_log, session_factory, settings)
+
     round_timers.start(asyncio.get_running_loop(), on_deadline, on_cooldown_deadline)
     await run_in_threadpool(_reschedule_rounds, session_factory)
     room_sweeper.start(settings.room_inactivity_sweep_minutes * 60, sweep_inactive_rooms)
     if settings.maintenance_enabled:
         nightly_scheduler.start(
             settings.maintenance_hour_utc,
-            {"purge_deleted_templates": purge_templates, "purge_unused_images": purge_images},
+            {
+                "purge_deleted_templates": purge_templates,
+                "purge_unused_images": purge_images,
+                "purge_moderation_log": purge_log,
+            },
         )
     yield
     await nightly_scheduler.stop()
