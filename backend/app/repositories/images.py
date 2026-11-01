@@ -84,12 +84,13 @@ def list_recent_images(
     created_after: datetime | None,
     created_before: datetime | None,
     status: ImageStatus | None,
+    owner_id: uuid.UUID | None = None,
 ) -> list[tuple[Image, str | None]]:
     """Images visibles ou masquées, des plus récentes aux plus anciennes, avec le nom de leur
     auteur (None une fois son compte supprimé). Filtres : un texte cherché sans casse dans le nom
     ou l'e-mail de l'auteur (% et _ y sont des caractères ordinaires), une période d'envoi et un
-    statut. Les images supprimées n'ont plus de fichier : elles n'y sont jamais (index
-    ix_images_created_at)."""
+    statut, ou un auteur précis (la page de son compte). Les images supprimées n'ont plus de
+    fichier : elles n'y sont jamais (index ix_images_created_at)."""
     statement: Select[Image, str] = (
         select(Image, User.display_name)
         .outerjoin(User, User.id == Image.owner_id)
@@ -97,6 +98,8 @@ def list_recent_images(
     )
     if status is not None:
         statement = statement.where(Image.status == status)
+    if owner_id is not None:
+        statement = statement.where(Image.owner_id == owner_id)
     if author:
         statement = statement.where(
             or_(
@@ -151,3 +154,14 @@ def game_counts_by_image(session: Session, image_ids: list[uuid.UUID]) -> dict[u
         for image_id, count in session.execute(statement).all()
         if image_id is not None
     }
+
+
+def list_visible_image_ids_of_owner(session: Session, owner_id: uuid.UUID) -> list[uuid.UUID]:
+    """Images visibles de cet auteur, des plus anciennes aux plus récentes : celles que « masquer
+    toutes ses images » masque (index ix_images_owner_id_created_at)."""
+    statement: Select[uuid.UUID] = (
+        select(Image.id)
+        .where(Image.owner_id == owner_id, Image.status == ImageStatus.VISIBLE)
+        .order_by(Image.created_at, Image.id)
+    )
+    return list(session.scalars(statement).all())

@@ -41,6 +41,7 @@ def recent_upload_response(storage: ImageStorage, upload: RecentUpload) -> Recen
         url=url,
         status=image.status,
         created_at=image.created_at,
+        author_id=image.owner_id,
         author_name=upload.author_name,
         template_names=upload.template_names,
         game_count=upload.game_count,

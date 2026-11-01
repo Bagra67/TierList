@@ -21,6 +21,7 @@ function upload(overrides: Partial<RecentUpload>): RecentUpload {
     url: 'https://images.example.com/image-1.webp',
     status: 'visible',
     created_at: '2026-10-31T18:42:00Z',
+    author_id: 'camille-id',
     author_name: 'Camille',
     template_names: ['Desserts', 'Food'],
     game_count: 3,

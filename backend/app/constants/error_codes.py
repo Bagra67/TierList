@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     NOT_AUTHENTICATED = "not_authenticated"
     # Route de modération demandée par un compte qui n'est pas super admin
     SUPER_ADMIN_REQUIRED = "super_admin_required"
+    # Compte inconnu ou supprimé, sur une page de modération
+    ACCOUNT_NOT_FOUND = "account_not_found"
     EMAIL_ALREADY_REGISTERED = "email_already_registered"
     INVALID_CREDENTIALS = "invalid_credentials"
     SESSION_EXPIRED = "session_expired"

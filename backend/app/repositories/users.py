@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import Select, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
@@ -33,3 +33,19 @@ def list_super_admins(session: Session) -> list[User]:
             select(User).where(User.role == UserRole.SUPER_ADMIN).order_by(User.display_name)
         ).all()
     )
+
+
+def search_users(session: Session, query: str | None, limit: int, offset: int) -> list[User]:
+    """Comptes dont le nom ou l'e-mail contient query (sans casse ; % et _ y sont des caractères
+    ordinaires), par nom ; tous les comptes sans query. L'identifiant départage deux noms égaux :
+    une page ne saute rien."""
+    statement: Select[User] = select(User)
+    if query:
+        statement = statement.where(
+            or_(
+                User.display_name.icontains(query, autoescape=True),
+                User.email.icontains(query, autoescape=True),
+            )
+        )
+    statement = statement.order_by(User.display_name, User.id).limit(limit).offset(offset)
+    return list(session.scalars(statement).all())

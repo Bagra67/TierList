@@ -57,12 +57,17 @@ class ModerationLogService:
         return moderation_action
 
     def page(
-        self, limit: int, offset: int, actor_id: uuid.UUID | None, target: str | None
+        self,
+        limit: int,
+        offset: int,
+        actor_id: uuid.UUID | None,
+        target: str | None,
+        account_id: uuid.UUID | None = None,
     ) -> ModerationLogPage:
-        """Les entrées à partir de offset, filtrées par super admin et par cible. Une entrée de
-        plus est lue pour savoir s'il en reste."""
+        """Les entrées à partir de offset, filtrées par super admin, par cible et par compte. Une
+        entrée de plus est lue pour savoir s'il en reste."""
         entries: list[ModerationAction] = moderation_action_repository.list_moderation_actions(
-            self._session, limit + 1, offset, actor_id, target
+            self._session, limit + 1, offset, actor_id, target, account_id
         )
         return ModerationLogPage(entries=entries[:limit], has_more=len(entries) > limit)
 

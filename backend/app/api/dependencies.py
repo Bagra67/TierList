@@ -14,6 +14,7 @@ from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
+from app.services.account_review import AccountReviewService
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
 from app.services.game_results import GameResultsService
@@ -158,6 +159,14 @@ def get_image_moderation_service(
     return ImageModerationService(session, storage, moderation_log)
 
 
+def get_account_review_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    templates: Annotated[TemplateService, Depends(get_template_service)],
+    image_moderation: Annotated[ImageModerationService, Depends(get_image_moderation_service)],
+) -> AccountReviewService:
+    return AccountReviewService(session, templates, image_moderation)
+
+
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
     # Remplacé par un faux dans les tests : aucun email n'est réellement envoyé
     return EmailSender(settings)
@@ -252,6 +261,7 @@ ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
 TemplateModerationServiceDep = Annotated[
     TemplateModerationService, Depends(get_template_moderation_service)
 ]
+AccountReviewServiceDep = Annotated[AccountReviewService, Depends(get_account_review_service)]
 RecentUploadsServiceDep = Annotated[RecentUploadsService, Depends(get_recent_uploads_service)]
 ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]
 # Donne l'adresse publique des images (api/presenters/images.py)

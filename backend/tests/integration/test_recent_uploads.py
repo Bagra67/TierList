@@ -98,6 +98,7 @@ def test_the_images_are_listed_newest_first_with_their_author(
         "url": f"{FAKE_IMAGE_BASE_URL}/{newer.storage_key}",
         "status": "visible",
         "created_at": first["created_at"],
+        "author_id": str(alice_account.id),
         "author_name": "alice",
         "template_names": [],
         "game_count": 0,
