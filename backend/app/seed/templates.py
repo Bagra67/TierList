@@ -1,6 +1,7 @@
 """Modèles du jeu de données : vides, en texte, avec images, pleins (32 tuiles) et supprimés.
 Les images sont générées (une couleur, une forme, un numéro) et envoyées par le vrai service."""
 
+import logging
 import random
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ from app.seed.sizes import SeedSize
 from app.services.image_storage import ImageStorage
 from app.services.images import ImageService
 from app.services.templates import TemplateService
+
+logger = logging.getLogger(__name__)
 
 TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -184,10 +187,26 @@ def create_templates(
     def next_owner() -> User:
         return next(owner_turns)
 
+    created: list[int] = [0]
+    total: int = (
+        size.text_templates
+        + size.image_templates
+        + size.full_templates
+        + size.empty_templates
+        + size.deleted_templates
+    )
+
+    def log_created(template: Template) -> None:
+        created[0] += 1
+        logger.info(
+            "Modèle %d/%d : %s (%d tuiles)", created[0], total, template.name, len(template.tiles)
+        )
+
     def with_texts(owner: User, name: str, words: list[str]) -> Template:
         template: Template = templates.create(owner, name)
         for word in words:
             template = templates.add_tile(owner, template.id, word, None)
+        log_created(template)
         return template
 
     playable: list[Template] = []
@@ -203,15 +222,23 @@ def create_templates(
             # Une tuile sur trois a aussi un texte
             text: str | None = f"Image {tile_number}" if tile_number % 3 == 0 else None
             template = templates.add_tile(owner, template.id, text, image.id)
+            logger.info(
+                "Image %d/%d envoyée (modèle %s)",
+                tile_number,
+                size.image_tiles_per_template,
+                template.name,
+            )
+        log_created(template)
         playable.append(template)
     for index in range(size.full_templates):
         full_words: list[str] = rng.sample(WORD_POOL, FREE_PLAN_MAX_TILES)
         playable.append(with_texts(next_owner(), FULL_THEMES[index % len(FULL_THEMES)], full_words))
 
-    empty: list[Template] = [
-        templates.create(next_owner(), f"Brouillon {number}")
-        for number in range(1, size.empty_templates + 1)
-    ]
+    empty: list[Template] = []
+    for number in range(1, size.empty_templates + 1):
+        empty_template: Template = templates.create(next_owner(), f"Brouillon {number}")
+        log_created(empty_template)
+        empty.append(empty_template)
     deleted: list[Template] = []
     for number in range(1, size.deleted_templates + 1):
         owner = next_owner()

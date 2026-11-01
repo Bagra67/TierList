@@ -4,6 +4,7 @@ L'ordre compte : plusieurs liens vers les comptes sont en SET NULL (l'hôte d'un
 joueur, l'auteur d'une entrée du journal, le propriétaire d'une image), et supprimer les comptes en
 premier laisserait ces lignes orphelines. Les autres comptes ne sont jamais touchés."""
 
+import logging
 import uuid
 from dataclasses import dataclass
 
@@ -19,6 +20,8 @@ from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import SEED_EMAIL_DOMAIN, SEED_EMAIL_PREFIX
 from app.services.image_storage import ImageStorage
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -38,7 +41,9 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
         ).all()
     )
     if not seed_user_ids:
+        logger.info("Aucune donnée seed à supprimer")
         return SeedCleanup(accounts=0, games=0, images=0)
+    logger.info("Suppression des données seed : %d comptes", len(seed_user_ids))
 
     # 1. Le journal : l'auteur passerait à NULL
     session.execute(delete(ModerationAction).where(ModerationAction.actor_id.in_(seed_user_ids)))
@@ -77,6 +82,9 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     session.execute(delete(Image).where(Image.id.in_([image_id for image_id, _ in images])))
     session.commit()
     # Les fichiers après le commit : une erreur de stockage ne laisse pas d'image sans fichier
-    for _, storage_key in images:
+    logger.info("Données seed supprimées en base : %d parties, %d images", games, len(images))
+    for number, (_, storage_key) in enumerate(images, start=1):
         storage.delete(storage_key)
+        if number % 25 == 0 or number == len(images):
+            logger.info("Fichiers d'images effacés : %d/%d", number, len(images))
     return SeedCleanup(accounts=len(seed_user_ids), games=games, images=len(images))

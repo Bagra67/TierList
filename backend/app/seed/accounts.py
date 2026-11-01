@@ -1,6 +1,7 @@
 """Comptes du jeu de données : super admins, joueurs confirmés, adresses non confirmées et comptes
 Google. Leurs adresses sont seed-…@seed.example.com (domaine réservé : aucun e-mail n'y arrive)."""
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -15,6 +16,8 @@ from app.models.user import User
 from app.repositories import users as user_repository
 from app.seed.sizes import SeedSize
 from app.services.auth import AuthService
+
+logger = logging.getLogger(__name__)
 
 SEED_EMAIL_PREFIX = "seed-"
 SEED_EMAIL_DOMAIN = "@seed.example.com"
@@ -55,6 +58,13 @@ def create_accounts(
             user.email_verified_at = datetime.now(UTC)
         return user
 
+    logger.info(
+        "Comptes : %d super admins, %d joueurs, %d non confirmés, %d Google",
+        size.super_admins,
+        size.players,
+        size.unverified_accounts,
+        size.google_accounts,
+    )
     super_admins: list[User] = []
     for number in range(1, size.super_admins + 1):
         name: str = SUPER_ADMIN_NAMES[(number - 1) % len(SUPER_ADMIN_NAMES)]
@@ -74,6 +84,7 @@ def create_accounts(
         _create_google_account(session, number) for number in range(1, size.google_accounts + 1)
     ]
     session.commit()
+    logger.info("Comptes créés")
     return SeedAccounts(
         super_admins=super_admins, players=players, unverified=unverified, google=google
     )
