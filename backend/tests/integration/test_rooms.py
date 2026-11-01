@@ -81,7 +81,7 @@ def test_create_room_makes_the_creator_its_admin_with_the_default_settings(
     assert set(code) <= set(ROOM_CODE_ALPHABET)
     assert body["link"] == f"{get_settings().frontend_base_url}/r/{code}"
     assert body["status"] == "open"
-    assert body["template"] == {"id": template_id, "name": "Food"}
+    assert body["template"] == {"id": template_id, "name": "Food", "hidden": False}
     assert body["settings"] == {
         "item_order": "template",
         "auto_advance": "none",

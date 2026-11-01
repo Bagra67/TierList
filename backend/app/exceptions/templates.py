@@ -7,6 +7,16 @@ class TemplateHasNoTilesError(Exception):
     """Template sans tuile : une partie jouée avec n'aurait aucun item à classer."""
 
 
+class TemplateHiddenError(Exception):
+    """Template masqué par la modération (#268) : aucune nouvelle salle ni nouvelle partie ne
+    peut être lancée avec."""
+
+
+class TemplateModerationConflictError(Exception):
+    """L'action de modération ne s'applique pas à l'état du template : masquer un template déjà
+    masqué, réafficher un template qui ne l'est pas, ou toucher un template supprimé."""
+
+
 class TierNotFoundError(Exception):
     """Tier inexistant dans ce template (le template, lui, appartient bien à l'utilisateur)."""
 

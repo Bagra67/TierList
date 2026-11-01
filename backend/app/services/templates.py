@@ -21,12 +21,14 @@ from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     LastTierError,
     TemplateHasNoTilesError,
+    TemplateHiddenError,
     TemplateNotFoundError,
     TierNotFoundError,
     TileEmptyError,
     TileLimitReachedError,
     TileNotFoundError,
 )
+from app.models.enums import TemplateModeration
 from app.models.image import Image
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
@@ -65,6 +67,9 @@ class TemplateSummary:
     name: str
     tile_count: int
     updated_at: datetime
+    moderation: TemplateModeration
+    # Motif du masquage, montré au propriétaire ; None si le template n'est pas masqué
+    moderation_reason: str | None
 
 
 class TierChanges(TypedDict, total=False):
@@ -120,6 +125,8 @@ class TemplateService:
                 name=template.name,
                 tile_count=tile_count,
                 updated_at=template.updated_at,
+                moderation=template.moderation,
+                moderation_reason=template.moderation_reason,
             )
             summaries.append(summary)
         return summaries
@@ -250,12 +257,15 @@ class TemplateService:
 
         Un template supprimé ne permet plus de démarrer de partie : il est introuvable, comme
         celui d'un autre utilisateur. Un template sans tuile est refusé. Les images ne sont pas
-        dupliquées : la snapshot désigne les mêmes, qui sont immuables.
+        dupliquées : la snapshot désigne les mêmes, qui sont immuables. Un template masqué par
+        la modération est refusé (TemplateHiddenError).
 
         Pas de commit : l'appelant valide la snapshot avec la partie qui l'utilise, dans la même
         transaction. Le template reste verrouillé jusque-là, la copie ne peut donc pas croiser
         une modification simultanée."""
         template: Template = self._get_for_change(owner, template_id)
+        if template.moderation == TemplateModeration.HIDDEN:
+            raise TemplateHiddenError
         if not template.tiles:
             raise TemplateHasNoTilesError
         snapshot: TemplateSnapshot = TemplateSnapshot(

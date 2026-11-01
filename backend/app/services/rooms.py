@@ -46,8 +46,18 @@ from app.exceptions.rooms import (
     RoomNotFoundError,
     RoomSettingsLockedError,
 )
-from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
-from app.models.enums import AutoAdvance, ItemOrder, PlacementPhase, RoomStatus
+from app.exceptions.templates import (
+    TemplateHasNoTilesError,
+    TemplateHiddenError,
+    TemplateNotFoundError,
+)
+from app.models.enums import (
+    AutoAdvance,
+    ItemOrder,
+    PlacementPhase,
+    RoomStatus,
+    TemplateModeration,
+)
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
@@ -129,13 +139,15 @@ class RoomService:
 
     def create(self, owner: User, template_id: uuid.UUID) -> Room:
         """Crée une salle ouverte à partir d'un template du propriétaire qui a au moins une
-        tuile ; le propriétaire en devient le room admin, avec sa place, et les réglages par
-        défaut s'appliquent."""
+        tuile, et que la modération n'a pas masqué ; le propriétaire en devient le room admin,
+        avec sa place, et les réglages par défaut s'appliquent."""
         template: Template | None = template_repository.get_owned_template(
             self._session, template_id, owner.id
         )
         if template is None:
             raise TemplateNotFoundError
+        if template.moderation == TemplateModeration.HIDDEN:
+            raise TemplateHiddenError
         if not template.tiles:
             raise TemplateHasNoTilesError
 

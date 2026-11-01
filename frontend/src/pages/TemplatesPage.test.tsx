@@ -14,12 +14,16 @@ const chips: TemplateSummary = {
   tile_count: 12,
   // Midi UTC : la même date quel que soit le fuseau de la machine de test
   updated_at: '2026-10-05T12:00:00Z',
+  moderation: 'none',
+  moderation_reason: null,
 };
 const sodas: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02',
   name: 'Sodas',
   tile_count: 1,
   updated_at: '2026-10-04T12:00:00Z',
+  moderation: 'none',
+  moderation_reason: null,
 };
 
 const createdTemplate: Template = {
@@ -30,6 +34,8 @@ const createdTemplate: Template = {
   tiers: [],
   tiles: [],
   max_tiles: 32,
+  moderation: 'none',
+  moderation_reason: null,
 };
 
 // L'éditeur et le lobby sont remplacés par un simple titre : seule la navigation vers eux est

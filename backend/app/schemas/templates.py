@@ -15,6 +15,7 @@ from app.constants.templates import (
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
+from app.models.enums import TemplateModeration
 
 # Espaces de début et de fin retirés : un nom fait seulement d'espaces est un nom vide
 TemplateName = Annotated[
@@ -104,6 +105,10 @@ class TemplateResponse(BaseModel):
     tiles: list[TileResponse]
     # Nombre maximal de tuiles du template, affiché par l'éditeur
     max_tiles: int
+    # hidden : masqué par la modération, plus aucune partie ne peut être lancée avec
+    moderation: TemplateModeration
+    # Motif du masquage, montré au propriétaire ; None si le template n'est pas masqué
+    moderation_reason: str | None
 
 
 class TemplateSummaryResponse(BaseModel):
@@ -113,6 +118,8 @@ class TemplateSummaryResponse(BaseModel):
     name: str
     tile_count: int
     updated_at: datetime
+    moderation: TemplateModeration
+    moderation_reason: str | None
 
 
 class TemplateListResponse(BaseModel):

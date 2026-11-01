@@ -36,6 +36,11 @@ class ErrorCode(StrEnum):
     TEMPLATE_NOT_FOUND = "template_not_found"
     # Template sans tuile : pas de partie possible avec
     TEMPLATE_HAS_NO_TILES = "template_has_no_tiles"
+    # Template masqué par la modération : pas de nouvelle salle ni de nouvelle partie avec
+    TEMPLATE_HIDDEN = "template_hidden"
+    # Action de modération impossible dans l'état du template (déjà masqué, pas masqué, ou
+    # supprimé)
+    TEMPLATE_MODERATION_CONFLICT = "template_moderation_conflict"
     # Tier inexistant dans ce template
     TIER_NOT_FOUND = "tier_not_found"
     # Suppression du dernier tier refusée : une tier list a au moins un tier

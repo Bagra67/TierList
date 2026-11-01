@@ -844,6 +844,10 @@ export const fr = {
       invalid_token: 'Ce lien est invalide ou a expiré.',
       template_not_found: 'Ce modèle est introuvable.',
       template_has_no_tiles: 'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
+      template_hidden:
+        'Ce modèle est masqué par la modération : plus aucune partie ne peut être lancée avec.',
+      template_moderation_conflict:
+        "Cette action ne s'applique pas au modèle dans son état actuel : il est peut-être déjà masqué, visible ou supprimé.",
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: "Seul l'hôte peut faire cela.",
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',

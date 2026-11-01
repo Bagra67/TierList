@@ -16,6 +16,8 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_tile_response(tile, storage) for tile in template.tiles],
         max_tiles=template.max_tiles,
+        moderation=template.moderation,
+        moderation_reason=template.moderation_reason,
     )
 
 

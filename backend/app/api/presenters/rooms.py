@@ -5,7 +5,7 @@ import uuid
 
 from app.api.presenters.games import past_games_response
 from app.api.presenters.items import item_response, tier_response
-from app.models.enums import GameStatus, PlacementPhase
+from app.models.enums import GameStatus, PlacementPhase, TemplateModeration
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
@@ -44,7 +44,13 @@ def room_response(
         participants.append(participant_response)
     # None une fois le template purgé
     template: RoomTemplateResponse | None = (
-        RoomTemplateResponse.model_validate(room.template) if room.template is not None else None
+        RoomTemplateResponse(
+            id=room.template.id,
+            name=room.template.name,
+            hidden=room.template.moderation == TemplateModeration.HIDDEN,
+        )
+        if room.template is not None
+        else None
     )
     settings: RoomSettingsResponse = RoomSettingsResponse.model_validate(room)
     link: str = service.link(room)

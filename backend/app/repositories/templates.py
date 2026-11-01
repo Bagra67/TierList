@@ -40,6 +40,12 @@ def get_owned_template(
     return session.scalars(statement).one_or_none()
 
 
+def get_template_for_update(session: Session, template_id: uuid.UUID) -> Template | None:
+    """Template de n'importe quel propriétaire, supprimé ou non, verrouillé jusqu'à la fin de la
+    transaction : pour la modération."""
+    return session.get(Template, template_id, with_for_update=True)
+
+
 def list_owned_templates_with_tile_count(
     session: Session, owner_id: uuid.UUID
 ) -> list[tuple[Template, int]]:

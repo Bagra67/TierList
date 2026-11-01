@@ -47,10 +47,10 @@ class RoomSettingsResponse(BaseModel):
 
 
 class RoomTemplateResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     name: str
+    # Masqué par la modération : plus aucune partie ne peut être lancée dans la salle
+    hidden: bool
 
 
 class ParticipantResponse(BaseModel):
