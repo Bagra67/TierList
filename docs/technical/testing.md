@@ -237,6 +237,17 @@ The `google` fixture is a `FakeGoogleOAuthClient`: the real Google client (autho
 | `test_the_log_is_filtered_by_target` (2 cases)               | Labels `Template "Top 10 teachers"`, `Account 100%`, `Account 1000`; searches `top 10`, then `100%`. | Search in the target label, case-insensitive; `%` is not a wildcard. | `Template "Top 10 teachers"`; then `Account 100%` only.                          |
 | `test_the_super_admins_are_listed_by_name`                   | Super admins Nina and Adam, and Alice (`user`).                                                      | The options of the "Super admin" filter.                             | `adam`, `nina`.                                                                  |
 
+#### `tests/integration/test_seed.py` (seed data)
+
+`run_seed` (`app/seed/run.py`, [seed data guide](seed-data.md)) on the test database, with the small set `SMALL_SIZE` (the same cases as the full set, fewer of each) and `FakeImageStorage`. `seed` runs it with the password `seed-test-password`; `sign_in` signs a seed account in through the API.
+
+| Test                                                       | What it does                                                                     | Purpose                                                                          | Expected result                                                                                                                                                                                                                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_the_seed_creates_every_kind_of_data`                 | Runs the seed once.                                                              | Every family of data exists in the expected quantity.                            | Accounts (super admins, unverified), templates (deleted ones), images (in the database and in the storage), closed games only, absent votes, open rooms, 2 bans per room with bans, moderation log entries: the counts of `SMALL_SIZE` and of the summary. |
+| `test_running_the_seed_again_replaces_its_data_only`       | A real account with a template, then the seed twice.                             | Running again replaces the seed data and never touches other accounts.           | Same counts plus the real account; its template `Mine` stays; the files of the first run are erased and replaced.                                                                                                                                          |
+| `test_the_seeded_history_and_results_work_through_the_api` | Signs in as `seed-player-1`, reads `/history` twice, then the results of a game. | The seeded games are valid for the real API (history of several pages, results). | 20 games with `has_more`, a second page, results `200` with players.                                                                                                                                                                                       |
+| `test_a_seeded_super_admin_reads_the_moderation_log`       | Signs in as `seed-admin-1`, reads `/moderation/log`.                             | The seeded log fills more than one page.                                         | `200`, 50 entries, `has_more` true.                                                                                                                                                                                                                        |
+
 #### `tests/integration/test_templates.py` (templates)
 
 These tests go through the real routes, service, repository and migrations, with the `auth_client` fixture. Fixtures `alice` and `bob` register a user and return the `Authorization` header of their access token. Helpers: `create_template` (`POST /templates`), `add_tile` (`POST /templates/{id}/tiles`) and `add_tiles`, which inserts many tiles directly in the database (faster, e.g. to reach the limit). Every local variable is typed: API JSON as `JsonObject` (`dict[str, Any]`), responses as `httpx2.Response` (the client of `TestClient`), rows read from the database with their model.
@@ -928,6 +939,17 @@ A new application serves a fake build from a temporary folder (`index.html`, `as
 | -------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | `test_a_super_admin_is_let_through`          | Calls the dependency with a `super_admin` account. | US-1.1: a super admin reaches the moderation routes.                                                                                | The same account is returned.                    |
 | `test_another_account_is_refused_with_a_403` | Calls it with a `user` account.                    | US-1.1: the server refuses moderation to everyone else; `403` and not `401`, so that the frontend does not refresh a valid session. | `AppHTTPException` `403` `super_admin_required`. |
+
+### 1.25 Unit tests: `tests/test_seed_guard.py` (seed data guards)
+
+`app/seed/guard.py` ([seed data guide](seed-data.md)): the seed never runs on production, and never with the password written in the repository on a public site.
+
+| Test                                                           | What it does                                         | Purpose                                 | Expected result                              |
+| -------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------- | -------------------------------------------- |
+| `test_the_local_and_staging_databases_can_be_seeded` (2 cases) | `tierlist`, `tierlist_staging`.                      | The two allowed targets.                | No error.                                    |
+| `test_every_other_database_is_refused` (4 cases)               | `tierlist_prod`, `tierlist_test`, `postgres`, empty. | Production especially, even by mistake. | `SeedRefusedError`.                          |
+| `test_the_local_password_is_used_without_seed_password`        | Local database, no `SEED_PASSWORD`.                  | Local development needs no setting.     | The local password.                          |
+| `test_seed_password_is_required_on_staging`                    | Staging database without, then with `SEED_PASSWORD`. | The staging site is public.             | `SeedRefusedError`, then the given password. |
 
 ## 2. Frontend (Vitest)
 
