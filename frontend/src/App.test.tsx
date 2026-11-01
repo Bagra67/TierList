@@ -158,13 +158,21 @@ describe('App', () => {
   });
 
   it('shows the moderation link to a super admin and opens the moderation area', async () => {
-    stubBackend(superAdminSession);
+    stubBackend({
+      ...superAdminSession,
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'GET /moderation/super-admins': () => Response.json([]),
+    });
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
     fireEvent.click(within(nav).getByRole('link', { name: 'Modération' }));
 
-    expect(await screen.findByRole('heading', { name: 'Modération' })).toBeInTheDocument();
+    // /moderation mène au journal, seule page de l'espace pour l'instant
+    expect(
+      await screen.findByRole('heading', { name: 'Journal de modération' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Espace de modération' })).toBeInTheDocument();
   });
 
   it('hides the moderation link from other accounts', async () => {
@@ -183,7 +191,9 @@ describe('App', () => {
 
     // L'espace reste invisible : rien ne dit qu'il existe
     expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Modération' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Journal de modération' }),
+    ).not.toBeInTheDocument();
   });
 
   it('protects the moderation area without a session', async () => {
