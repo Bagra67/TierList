@@ -61,6 +61,7 @@ export const en: Translation = {
     home: 'Home',
     templates: 'My templates',
     history: 'History',
+    moderation: 'Moderation',
   },
   settings: {
     open: 'Settings',
@@ -276,6 +277,10 @@ export const en: Translation = {
     open: 'See the results',
     openLabel: 'See the results of the {{name}} game',
     more: 'See more',
+  },
+  moderation: {
+    title: 'Moderation',
+    intro: 'Moderation tools will show here: reports, log and recent uploads.',
   },
   renderError: {
     title: 'Something went wrong',

@@ -15,6 +15,8 @@ export const ROUTES = {
   TEMPLATE_EDITOR: '/templates/:templateId',
   // Parties closes du compte (US-5.5)
   HISTORY: '/history',
+  // Espace de modération, réservé aux super admins (US-1.1)
+  MODERATION: '/moderation',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
   // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)

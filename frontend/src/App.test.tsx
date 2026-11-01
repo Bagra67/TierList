@@ -10,6 +10,7 @@ import {
   alice,
   signedInSession,
   stubBackend,
+  superAdminSession,
   tokenResponse,
   unauthorized,
 } from './test/stubBackend';
@@ -154,6 +155,43 @@ describe('App', () => {
     fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
 
     expect(await screen.findByRole('heading', { name: 'Historique' })).toBeInTheDocument();
+  });
+
+  it('shows the moderation link to a super admin and opens the moderation area', async () => {
+    stubBackend(superAdminSession);
+    renderAppAt('/');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    fireEvent.click(within(nav).getByRole('link', { name: 'Modération' }));
+
+    expect(await screen.findByRole('heading', { name: 'Modération' })).toBeInTheDocument();
+  });
+
+  it('hides the moderation link from other accounts', async () => {
+    stubBackend(signedInSession);
+    renderAppAt('/');
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
+    expect(within(nav).getByRole('link', { name: 'Historique' })).toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'Modération' })).not.toBeInTheDocument();
+  });
+
+  it('shows a not found page to other accounts on the moderation area', async () => {
+    stubBackend(signedInSession);
+
+    renderAppAt('/moderation');
+
+    // L'espace reste invisible : rien ne dit qu'il existe
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Modération' })).not.toBeInTheDocument();
+  });
+
+  it('protects the moderation area without a session', async () => {
+    stubBackend({ 'POST /auth/refresh': unauthorized });
+
+    renderAppAt('/moderation');
+
+    expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
   it('protects my history without a session', async () => {

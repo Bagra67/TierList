@@ -62,6 +62,7 @@ export const fr = {
     home: 'Accueil',
     templates: 'Mes modèles',
     history: 'Historique',
+    moderation: 'Modération',
   },
   settings: {
     open: 'Paramètres',
@@ -285,6 +286,10 @@ export const fr = {
     open: 'Voir les résultats',
     openLabel: 'Voir les résultats de la partie {{name}}',
     more: 'Voir plus',
+  },
+  moderation: {
+    title: 'Modération',
+    intro: 'Les outils de modération arriveront ici : signalements, journal et derniers envois.',
   },
   renderError: {
     title: 'Une erreur est survenue',
