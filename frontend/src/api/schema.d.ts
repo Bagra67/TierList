@@ -1233,12 +1233,21 @@ export interface components {
             has_password: boolean;
             /** Email Verified */
             email_verified: boolean;
+            role: components["schemas"]["UserRole"];
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
         };
+        /**
+         * UserRole
+         * @description Rôle d'un compte (docs/product/milestone-2/domain-model.md). Jamais attribué par
+         *     l'application : seulement hors de l'API (scripts/set_super_admin.py en local, une requête SQL
+         *     en staging et en production).
+         * @enum {string}
+         */
+        UserRole: "user" | "super_admin";
         /** ValidationError */
         ValidationError: {
             /** Location */

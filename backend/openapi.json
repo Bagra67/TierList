@@ -4893,6 +4893,9 @@
             "type": "boolean",
             "title": "Email Verified"
           },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4906,9 +4909,19 @@
           "display_name",
           "has_password",
           "email_verified",
+          "role",
           "created_at"
         ],
         "title": "UserResponse"
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "super_admin"
+        ],
+        "title": "UserRole",
+        "description": "Rôle d'un compte (docs/product/milestone-2/domain-model.md). Jamais attribué par\nl'application : seulement hors de l'API (scripts/set_super_admin.py en local, une requête SQL\nen staging et en production)."
       },
       "ValidationError": {
         "properties": {

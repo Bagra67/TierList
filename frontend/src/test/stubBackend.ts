@@ -47,6 +47,7 @@ export const alice: User = {
   display_name: 'Alice',
   has_password: true,
   email_verified: true,
+  role: 'user',
   created_at: '2026-10-03T10:00:00Z',
 };
 

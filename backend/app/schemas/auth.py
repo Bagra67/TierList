@@ -12,6 +12,7 @@ from app.constants.auth import (
 )
 from app.constants.i18n import DEFAULT_LANGUAGE, Language
 from app.core.config import get_settings
+from app.models.enums import UserRole
 from app.schemas.common import DisplayName
 
 
@@ -66,6 +67,8 @@ class UserResponse(BaseModel):
     has_password: bool
     # Adresse confirmée par le lien reçu par email (ou par Google)
     email_verified: bool
+    # Le frontend affiche l'espace de modération aux super admins (le serveur vérifie toujours)
+    role: UserRole
     created_at: datetime
 
 

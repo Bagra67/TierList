@@ -1,6 +1,6 @@
 """Énumérations partagées par plusieurs modèles, schémas ou services : les statuts de la salle
 et de la partie, et les réglages de jeu que la salle configure et que la partie garde au
-démarrage (docs/technical/rooms.md, docs/technical/games.md)."""
+démarrage (docs/technical/rooms.md, docs/technical/games.md), et le rôle d'un compte."""
 
 from enum import StrEnum
 
@@ -50,3 +50,13 @@ class PlacementPhase(StrEnum):
     ROUND = "round"
     # Pendant le cooldown final (#96) : jamais absent, sert aux résultats
     FINAL = "final"
+
+
+class UserRole(StrEnum):
+    """Rôle d'un compte (docs/product/milestone-2/domain-model.md). Jamais attribué par
+    l'application : seulement hors de l'API (scripts/set_super_admin.py en local, une requête SQL
+    en staging et en production)."""
+
+    USER = "user"
+    # Fondateur de l'application : modère tout
+    SUPER_ADMIN = "super_admin"
