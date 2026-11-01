@@ -1,14 +1,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Select, delete, exists, func, select
+from sqlalchemy import Select, delete, exists, func, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.dml import ReturningDelete
 from sqlalchemy.sql.expression import Exists
 
+from app.models.game import Game
 from app.models.image import Image, ImageStatus
 from app.models.snapshot_tile import SnapshotTile
+from app.models.template import Template
 from app.models.tile import Tile
+from app.models.user import User
 
 
 def add_image(session: Session, image: Image) -> None:
@@ -71,3 +74,80 @@ def delete_unused_images_created_before(session: Session, limit: datetime) -> li
         .returning(Image.storage_key)
     )
     return list(session.scalars(statement).all())
+
+
+def list_recent_images(
+    session: Session,
+    limit: int,
+    offset: int,
+    author: str | None,
+    created_after: datetime | None,
+    created_before: datetime | None,
+    status: ImageStatus | None,
+) -> list[tuple[Image, str | None]]:
+    """Images visibles ou masquées, des plus récentes aux plus anciennes, avec le nom de leur
+    auteur (None une fois son compte supprimé). Filtres : un texte cherché sans casse dans le nom
+    ou l'e-mail de l'auteur (% et _ y sont des caractères ordinaires), une période d'envoi et un
+    statut. Les images supprimées n'ont plus de fichier : elles n'y sont jamais (index
+    ix_images_created_at)."""
+    statement: Select[Image, str] = (
+        select(Image, User.display_name)
+        .outerjoin(User, User.id == Image.owner_id)
+        .where(Image.status != ImageStatus.DELETED)
+    )
+    if status is not None:
+        statement = statement.where(Image.status == status)
+    if author:
+        statement = statement.where(
+            or_(
+                User.display_name.icontains(author, autoescape=True),
+                User.email.icontains(author, autoescape=True),
+            )
+        )
+    if created_after is not None:
+        statement = statement.where(Image.created_at >= created_after)
+    if created_before is not None:
+        statement = statement.where(Image.created_at < created_before)
+    statement = (
+        # L'identifiant départage deux images du même instant : une page ne saute rien
+        statement.order_by(Image.created_at.desc(), Image.id).limit(limit).offset(offset)
+    )
+    # Jointure externe : le nom est None pour une image dont l'auteur a supprimé son compte
+    return [(image, display_name) for image, display_name in session.execute(statement).all()]
+
+
+def template_names_by_image(
+    session: Session, image_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, list[str]]:
+    """Noms des modèles, non supprimés, dont une tuile montre chacune de ces images, par ordre
+    alphabétique ; une image sans modèle n'a pas de clé."""
+    statement: Select[uuid.UUID | None, str] = (
+        select(Tile.image_id, Template.name)
+        .join(Template, Template.id == Tile.template_id)
+        .where(Tile.image_id.in_(image_ids), Template.deleted_at.is_(None))
+        .distinct()
+        .order_by(Tile.image_id, Template.name)
+    )
+    names: dict[uuid.UUID, list[str]] = {}
+    for image_id, name in session.execute(statement).all():
+        # Jamais None : le filtre ne garde que les tuiles de ces images
+        if image_id is not None:
+            names.setdefault(image_id, []).append(name)
+    return names
+
+
+def game_counts_by_image(session: Session, image_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    """Nombre de parties (en cours ou terminées) jouées sur une version figée qui montre chacune de
+    ces images ; une image jamais jouée n'a pas de clé."""
+    statement: Select[uuid.UUID | None, int] = (
+        select(SnapshotTile.image_id, func.count(func.distinct(Game.id)))
+        .join(Game, Game.snapshot_id == SnapshotTile.snapshot_id)
+        .where(SnapshotTile.image_id.in_(image_ids))
+        .group_by(SnapshotTile.image_id)
+    )
+    # Jamais None : le filtre ne garde que les tuiles de ces images
+    return {
+        image_id: count
+        for image_id, count in session.execute(statement).all()
+        if image_id is not None
+    }

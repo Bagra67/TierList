@@ -3740,6 +3740,168 @@
         }
       }
     },
+    "/moderation/images": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "List Recent Uploads",
+        "operationId": "list_recent_uploads_moderation_images_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 96,
+              "minimum": 1,
+              "default": 24,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 320
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Author"
+            }
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created After"
+            }
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created Before"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "visible",
+                    "hidden"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentUploadsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -4438,6 +4600,16 @@
         "title": "HistoryResponse",
         "description": "Une page de l'historique d'un compte (US-5.5)."
       },
+      "ImageStatus": {
+        "type": "string",
+        "enum": [
+          "visible",
+          "hidden",
+          "deleted"
+        ],
+        "title": "ImageStatus",
+        "description": "Statut de modération (#124) : toute image envoyée est visible."
+      },
       "ImageUploadResponse": {
         "properties": {
           "id": {
@@ -4862,6 +5034,83 @@
         ],
         "title": "PlayerResultsResponse",
         "description": "Le classement final d'un joueur."
+      },
+      "RecentUploadResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImageStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "author_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Name"
+          },
+          "template_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Template Names"
+          },
+          "game_count": {
+            "type": "integer",
+            "title": "Game Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "status",
+          "created_at",
+          "author_name",
+          "template_names",
+          "game_count"
+        ],
+        "title": "RecentUploadResponse",
+        "description": "Une image des derniers envois (US-1.7)."
+      },
+      "RecentUploadsResponse": {
+        "properties": {
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/RecentUploadResponse"
+            },
+            "type": "array",
+            "title": "Images"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "images",
+          "has_more"
+        ],
+        "title": "RecentUploadsResponse",
+        "description": "Une page des derniers envois."
       },
       "RegisterRequest": {
         "properties": {

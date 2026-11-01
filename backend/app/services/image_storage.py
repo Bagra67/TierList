@@ -15,6 +15,7 @@ from app.constants.images import (
     IMAGE_ACL,
     IMAGE_CACHE_CONTROL,
     IMAGE_CONTENT_TYPE,
+    IMAGE_PREVIEW_URL_EXPIRES_SECONDS,
     IMAGE_QUARANTINE_ACL,
     IMAGE_QUARANTINE_PREFIX,
 )
@@ -67,6 +68,15 @@ class ImageStorage:
             CacheControl=IMAGE_CACHE_CONTROL,
             MetadataDirective="REPLACE",
             ACL=IMAGE_ACL,
+        )
+
+    def presigned_url(self, key: str) -> str:
+        """Adresse temporaire d'un fichier privé (une image en quarantaine), valable
+        IMAGE_PREVIEW_URL_EXPIRES_SECONDS. Calculée localement, sans appel au stockage."""
+        return self._client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self._bucket, "Key": key},
+            ExpiresIn=IMAGE_PREVIEW_URL_EXPIRES_SECONDS,
         )
 
     def url(self, key: str) -> str:
