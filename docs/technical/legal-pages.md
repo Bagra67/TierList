@@ -38,7 +38,7 @@ Illegal content is reported by email to `LEGAL_CONTACT_EMAIL`, until the in-app 
 **Update the privacy policy in the same PR** as any change to what it describes (AGENTS.md §51: checked for every change):
 
 - a new kind of personal data collected, or data collected for a new purpose;
-- a retention period (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, the email link lifetimes);
+- a retention period (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `MODERATION_LOG_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, the email link lifetimes);
 - a new service provider, or a provider in a new country ([deployment guide](deployment.md));
 - a new cookie or a new local storage key (an audience measurement cookie would also need a consent banner);
 - what other users can see (rooms, results links, history).

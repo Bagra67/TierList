@@ -165,6 +165,7 @@ The application founders moderate everything ([permissions](../product/permissio
 - **Checked on every moderation route** by `get_current_super_admin` (`SuperAdminDep`): another account gets `403` `super_admin_required`. `403` and not `401`, for the same reason as the account deletion: the user is authenticated.
 - **Read again at each request**: the dependency loads the user from the database, so granting or revoking applies to the next request, without signing in again. The interface (moderation link, `/moderation`) shows it after a page reload, since the current user is cached for the session.
 - The moderation area of the frontend is hidden from other accounts (`RequireSuperAdmin` shows the not found page), for comfort only.
+- Every moderation decision is written to the moderation log ([moderation guide](moderation.md)).
 
 ### Google sign-in (OpenID Connect)
 
