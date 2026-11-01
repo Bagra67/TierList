@@ -202,7 +202,8 @@ backend/
 │       └── session.py     # Engine, session (dépendance FastAPI), ping de la base
 ├── migrations/            # Migrations Alembic (env.py, versions/)
 ├── scripts/
-│   └── export_openapi.py  # Écrit le contrat d'API dans openapi.json
+│   ├── export_openapi.py  # Écrit le contrat d'API dans openapi.json
+│   └── set_super_admin.py # Donne ou retire le rôle super admin (développement local)
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException, codes d'erreur)
@@ -302,6 +303,17 @@ Les modèles doivent hériter de `app.db.base.Base` et être importés par `migr
 Les noms des contraintes et des index suivent la convention de `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…) : une migration peut les désigner par leur nom sans deviner celui choisi par PostgreSQL.
 
 `tests/integration/test_migrations.py` échoue quand les modèles et les migrations ne décrivent plus le même schéma, ou quand une migration ne peut pas être annulée.
+
+### Rôle super admin en local
+
+Les super admins modèrent l'application ([guide de l'authentification](../docs/technical/authentication.fr.md#super-admins)). Le rôle n'est jamais donné par l'API : en développement local, donnez-le à un compte existant avec
+
+```bash
+uv run python scripts/set_super_admin.py alice@example.com            # donne le rôle
+uv run python scripts/set_super_admin.py alice@example.com --revoke   # le retire
+```
+
+L'e-mail ignore la casse ; un e-mail inconnu sort avec le code `1`. Rechargez la page pour voir le lien « Modération ». En staging et en production, utilisez la requête SQL du [guide du déploiement](../docs/technical/deployment.fr.md#512-super-admins).
 
 ---
 

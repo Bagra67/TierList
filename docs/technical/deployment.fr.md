@@ -248,6 +248,18 @@ Lancer une fois le workflow Backup à la main, puis essayer une restauration sur
 - Google : [console Cloud, identifiants](https://console.cloud.google.com/apis/credentials)
 - GitHub : Settings → Environments du dépôt, Actions → Deploy / Backup
 
+### 5.12 Super admins
+
+Les super admins modèrent l'application ([guide de l'authentification](authentication.fr.md#super-admins)). Le rôle n'est jamais donné par l'application, et le pod TierList n'a pas de shell : donnez-le dans la console du **pod PostgreSQL** (`psql` en superutilisateur, §5.2), une fois le compte créé (la personne s'est inscrite) :
+
+```sql
+\c tierlist_staging   -- ou tierlist_prod
+UPDATE users SET role = 'super_admin' WHERE email = lower('<e-mail>');
+SELECT email, role FROM users WHERE role = 'super_admin';
+```
+
+`UPDATE 1` le confirme ; `UPDATE 0` veut dire qu'aucun compte n'a cet e-mail. Pour retirer le rôle, même requête avec `'user'`. Le changement vaut dès la requête suivante ; la personne recharge la page pour voir le lien « Modération ». `scripts/set_super_admin.py` fait la même chose en développement local seulement : il n'est pas dans le bundle.
+
 ## 6. Déployer
 
 | Événement                                                          | Cible          | Version (`APP_RELEASE`) | Approbation           |
@@ -301,6 +313,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 - Le redémarrage du pod, tant que `PANEL_SERVER_ID` et `PANEL_API_KEY` ne sont pas définis, ou quand le panel le refuse (en place sur le staging : le redémarrage y est automatique).
 - Redéployer après le changement d'un secret ou d'une variable (§5.8).
 - Approuver chaque déploiement en production.
+- Donner ou retirer le rôle super admin (§5.12).
 - Tester une restauration (#162), puis après chaque montée de version majeure de PostgreSQL.
 
 ## 10. Essayer l'organisation de production en local
