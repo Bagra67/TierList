@@ -1,6 +1,6 @@
 """Réponses de l'API pour les templates, construites à partir des modèles."""
 
-from app.api.presenters.images import optional_image_url
+from app.api.presenters.images import is_image_removed, optional_image_url
 from app.models.template import Template
 from app.models.tile import Tile
 from app.schemas.templates import TemplateResponse, TierResponse, TileResponse
@@ -24,5 +24,6 @@ def _tile_response(tile: Tile, storage: ImageStorage) -> TileResponse:
         id=tile.id,
         text=tile.text,
         image_url=optional_image_url(storage, tile.image),
+        image_removed=is_image_removed(tile.image),
         position=tile.position,
     )

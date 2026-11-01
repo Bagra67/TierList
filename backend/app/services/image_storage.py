@@ -11,7 +11,13 @@ from typing import TYPE_CHECKING
 lazy import boto3
 lazy from botocore.config import Config
 
-from app.constants.images import IMAGE_ACL, IMAGE_CACHE_CONTROL, IMAGE_CONTENT_TYPE
+from app.constants.images import (
+    IMAGE_ACL,
+    IMAGE_CACHE_CONTROL,
+    IMAGE_CONTENT_TYPE,
+    IMAGE_QUARANTINE_ACL,
+    IMAGE_QUARANTINE_PREFIX,
+)
 from app.core.config import Settings
 
 if TYPE_CHECKING:
@@ -40,9 +46,38 @@ class ImageStorage:
     def delete(self, key: str) -> None:
         self._client.delete_object(Bucket=self._bucket, Key=key)
 
+    def copy_to_quarantine(self, key: str) -> None:
+        """Copie l'image hors du chemin public, sous quarantine_key(key), en privé. L'original
+        reste en place : l'appelant l'efface une fois le masquage enregistré."""
+        self._client.copy_object(
+            Bucket=self._bucket,
+            Key=quarantine_key(key),
+            CopySource={"Bucket": self._bucket, "Key": key},
+            ACL=IMAGE_QUARANTINE_ACL,
+        )
+
+    def copy_from_quarantine(self, key: str) -> None:
+        """Remet une copie publique de l'image sous sa clé, avec le même type et la même durée de
+        cache qu'à l'envoi. La copie en quarantaine reste : l'appelant l'efface ensuite."""
+        self._client.copy_object(
+            Bucket=self._bucket,
+            Key=key,
+            CopySource={"Bucket": self._bucket, "Key": quarantine_key(key)},
+            ContentType=IMAGE_CONTENT_TYPE,
+            CacheControl=IMAGE_CACHE_CONTROL,
+            MetadataDirective="REPLACE",
+            ACL=IMAGE_ACL,
+        )
+
     def url(self, key: str) -> str:
         """Adresse publique de l'image, lisible sans authentification."""
         return f"{self._public_base_url}/{key}"
+
+
+def quarantine_key(key: str) -> str:
+    """Emplacement du fichier d'une image masquée : la clé en base ne change pas, l'emplacement se
+    déduit du statut."""
+    return f"{IMAGE_QUARANTINE_PREFIX}/{key}"
 
 
 def create_image_storage(settings: Settings) -> ImageStorage:

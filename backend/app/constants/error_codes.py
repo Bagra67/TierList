@@ -109,3 +109,6 @@ class ErrorCode(StrEnum):
     IMAGE_UPLOAD_LIMIT_REACHED = "image_upload_limit_reached"
     # Image inexistante ou d'un autre utilisateur (indiscernables)
     IMAGE_NOT_FOUND = "image_not_found"
+    # Action de modération impossible dans le statut actuel de l'image (déjà masquée, visible,
+    # ou supprimée)
+    IMAGE_MODERATION_CONFLICT = "image_moderation_conflict"

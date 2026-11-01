@@ -18,7 +18,11 @@ lazy from botocore.exceptions import BotoCoreError, ClientError
 
 from app.constants.images import IMAGE_FILE_EXTENSION
 from app.core.config import Settings
-from app.exceptions.images import ImageTooLargeError, ImageUploadLimitReachedError
+from app.exceptions.images import (
+    ImageTooLargeError,
+    ImageUnsupportedFormatError,
+    ImageUploadLimitReachedError,
+)
 from app.models.image import Image
 from app.models.user import User
 from app.repositories import images as image_repository
@@ -37,11 +41,16 @@ class ImageService:
     def upload(self, owner: User, file: BinaryIO) -> Image:
         """Compresse l'image envoyée et la stocke sous une nouvelle clé aléatoire.
 
-        Lève ImageUploadLimitReachedError, ImageTooLargeError, ImageUnsupportedFormatError ou
-        ImageTooManyPixelsError.
+        Lève ImageUploadLimitReachedError, ImageTooLargeError, ImageUnsupportedFormatError (aussi
+        pour un fichier dont l'empreinte est bannie) ou ImageTooManyPixelsError.
         """
         self._check_upload_limit(owner)
         content: bytes = self._read_within_limit(file)
+        sha256: str = hashlib.sha256(content).hexdigest()
+        if image_repository.is_fingerprint_banned(self._session, sha256):
+            # Le refus habituel, sans dire pourquoi (US-1.6) ; seul le journal du serveur le sait
+            logger.info("Image refusée, empreinte bannie : owner_id=%s", owner.id)
+            raise ImageUnsupportedFormatError
         compressed: CompressedImage = compress_image(
             content, self._settings.image_max_source_pixels
         )
@@ -51,7 +60,7 @@ class ImageService:
             width=compressed.width,
             height=compressed.height,
             size_bytes=len(compressed.data),
-            sha256=hashlib.sha256(content).hexdigest(),
+            sha256=sha256,
         )
         self._storage.save(image.storage_key, compressed.data)
         image_repository.add_image(self._session, image)

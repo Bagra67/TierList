@@ -4,9 +4,12 @@ vue globale avec les absents, classement médian, avec ou sans les votes absents
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.models.image import Image, ImageStatus
+from app.models.snapshot_tile import SnapshotTile
 from tests.integration.helpers import (
     PASSWORD,
     JsonObject,
@@ -212,6 +215,31 @@ def test_the_room_admin_who_does_not_play_is_not_in_the_results(
 
     assert [player["display_name"] for player in body["players"]] == ["bob"]
     assert distribution(body)["Tile 0"] == ([1, 0, 0, 0, 0, 0], 0, "S")
+
+
+def test_the_results_link_replaces_an_image_removed_by_the_moderation(
+    auth_client: TestClient, db_session: Session, public_token: str
+):
+    image: Image = Image(
+        storage_key="tile-2.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="0" * 64,
+        status=ImageStatus.DELETED,
+    )
+    db_session.add(image)
+    tile: SnapshotTile = db_session.scalars(
+        select(SnapshotTile).where(SnapshotTile.text == "Tile 2")
+    ).one()
+    tile.image = image
+    db_session.flush()
+
+    body: JsonObject = results(auth_client, public_token).json()
+
+    # Le lien public, lu sans compte, ne donne plus l'adresse du fichier effacé
+    removed: JsonObject = next(item for item in body["items"] if item["text"] == "Tile 2")
+    assert (removed["image_url"], removed["image_removed"]) == (None, True)
 
 
 def test_an_unknown_results_link_is_not_found(auth_client: TestClient):

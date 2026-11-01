@@ -794,6 +794,8 @@ export const en: Translation = {
       image_upload_limit_reached:
         'You uploaded {{max_uploads}} images in the last hour: try again a little later.',
       image_not_found: 'This image could not be found.',
+      image_moderation_conflict:
+        'This action does not apply to the image as it is now: it may already be hidden, visible or deleted.',
     },
     field: {
       invalid: 'Invalid value.',

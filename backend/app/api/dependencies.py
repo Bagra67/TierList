@@ -20,6 +20,7 @@ from app.services.game_results import GameResultsService
 from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.history import HistoryService
+from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
@@ -131,6 +132,16 @@ def get_image_service(
     return ImageService(session, settings, storage)
 
 
+def get_image_moderation_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    storage: Annotated[ImageStorage, Depends(get_image_storage)],
+    moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+) -> ImageModerationService:
+    # FastAPI met la session en cache par requête : l'action et son entrée du journal partagent
+    # la même transaction
+    return ImageModerationService(session, storage, moderation_log)
+
+
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
     # Remplacé par un faux dans les tests : aucun email n'est réellement envoyé
     return EmailSender(settings)
@@ -222,6 +233,7 @@ GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_s
 HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]
 # Donne l'adresse publique des images (api/presenters/images.py)
 ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
 EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]

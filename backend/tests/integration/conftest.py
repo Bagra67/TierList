@@ -28,7 +28,7 @@ from app.db.session import get_db_session
 from app.main import api_app, app
 from app.schemas.room_events import RoomEvent
 from app.services.email import Email, EmailSender
-from app.services.image_storage import ImageStorage, create_image_storage
+from app.services.image_storage import ImageStorage, create_image_storage, quarantine_key
 from tests.integration.helpers import alembic_config
 
 
@@ -169,6 +169,12 @@ class FakeImageStorage(ImageStorage):
 
     def delete(self, key: str) -> None:
         self.stored.pop(key, None)
+
+    def copy_to_quarantine(self, key: str) -> None:
+        self.stored[quarantine_key(key)] = self.stored[key]
+
+    def copy_from_quarantine(self, key: str) -> None:
+        self.stored[key] = self.stored[quarantine_key(key)]
 
 
 class FailingImageStorage(FakeImageStorage):

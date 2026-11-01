@@ -69,6 +69,7 @@ IMAGE_TOO_MANY_PIXELS = "The image has too many pixels"
 # {max_uploads} est remplacé par IMAGE_UPLOADS_PER_HOUR_MAX
 IMAGE_UPLOAD_LIMIT_REACHED = "At most {max_uploads} images can be uploaded per hour"
 IMAGE_NOT_FOUND = "Image not found"
+IMAGE_MODERATION_CONFLICT = "This action does not apply to the current status of the image"
 
 # --- Descriptions des réponses dans le schéma OpenAPI --------------------------------------
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
@@ -85,6 +86,8 @@ IMAGE_UNSUPPORTED_FORMAT_DESCRIPTION = "Not a JPEG, PNG or WebP image"
 IMAGE_TOO_LARGE_DESCRIPTION = "File too large"
 IMAGE_TOO_MANY_PIXELS_DESCRIPTION = "Image with too many pixels"
 IMAGE_UPLOAD_LIMIT_REACHED_DESCRIPTION = "Too many images uploaded in the last hour"
+IMAGE_NOT_FOUND_DESCRIPTION = "Image not found"
+IMAGE_MODERATION_CONFLICT_DESCRIPTION = "Image already hidden, not hidden, or deleted"
 TILE_EMPTY_DESCRIPTION = "Tile without text nor image, or invalid request"
 TEMPLATE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template or image not found"
 TEMPLATE_TILE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template, tile or image not found"

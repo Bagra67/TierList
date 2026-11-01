@@ -17,6 +17,7 @@ from app.constants.templates import (
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
+from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.tier import Tier
 from app.models.tile import Tile
@@ -667,6 +668,29 @@ def test_add_an_image_only_tile(auth_client: TestClient, alice: dict[str, str]):
     assert tile["text"] is None
     assert tile["image_url"] == image["url"]
     assert tile["image_url"].startswith(FAKE_IMAGE_BASE_URL)
+    assert tile["image_removed"] is False
+
+
+@pytest.mark.parametrize("status", [ImageStatus.HIDDEN, ImageStatus.DELETED])
+def test_a_tile_whose_image_is_removed_by_the_moderation_has_no_image_url(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    status: ImageStatus,
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+    auth_client.post(tiles_url(template), json={"image_id": image["id"]}, headers=alice)
+    stored_image: Image | None = db_session.get(Image, uuid.UUID(image["id"]))
+    assert stored_image is not None
+    stored_image.status = status
+    db_session.flush()
+
+    response: Response = auth_client.get(f"/templates/{template['id']}", headers=alice)
+
+    # Le fichier n'est plus à son adresse : le frontend montre « image retirée » à la place
+    [tile] = response.json()["tiles"]
+    assert (tile["image_url"], tile["image_removed"]) == (None, True)
 
 
 def test_add_a_tile_with_a_text_and_an_image(auth_client: TestClient, alice: dict[str, str]):

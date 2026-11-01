@@ -19,9 +19,9 @@ export const closedGameResults: GameResults = {
     { id: A, name: 'A', color: '#FFBF7F' },
   ],
   items: [
-    { id: PAPRIKA, text: 'Paprika', image_url: null },
-    { id: CHORIZO, text: 'Chorizo', image_url: null },
-    { id: CURRY, text: 'Curry', image_url: null },
+    { id: PAPRIKA, text: 'Paprika', image_url: null, image_removed: false },
+    { id: CHORIZO, text: 'Chorizo', image_url: null, image_removed: false },
+    { id: CURRY, text: 'Curry', image_url: null, image_removed: false },
   ],
   median_ranking: [
     { tier_id: S, item_ids: [] },

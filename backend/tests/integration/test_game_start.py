@@ -11,7 +11,7 @@ from app.constants.error_codes import ErrorCode
 from app.constants.templates import DEFAULT_TIERS
 from app.models.enums import GameStatus
 from app.models.game import Game
-from app.models.image import Image
+from app.models.image import Image, ImageStatus
 from app.models.room import Room
 from app.models.round import Round
 from app.models.snapshot_tile import SnapshotTile
@@ -90,6 +90,7 @@ def test_the_admin_starts_a_game_on_the_first_item(
             "id": body["game"]["current_item"]["id"],
             "text": "Tile 0",
             "image_url": None,
+            "image_removed": False,
         },
         "ends_at": None,
         "tiers": body["game"]["tiers"],
@@ -159,6 +160,33 @@ def test_the_current_item_shows_its_image(
 
     current_item: JsonObject = response.json()["game"]["current_item"]
     assert current_item["image_url"] == f"{FAKE_IMAGE_BASE_URL}/first-tile.webp"
+    assert current_item["image_removed"] is False
+
+
+def test_an_image_hidden_during_the_game_is_replaced_for_everyone(
+    auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
+):
+    owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    image: Image = Image(
+        owner_id=owner.id,
+        storage_key="first-tile.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="0" * 64,
+    )
+    db_session.add(image)
+    db_session.scalars(select(Tile).where(Tile.text == "Tile 0")).one().image = image
+    db_session.flush()
+    start(auth_client, alice_room["code"], alice)
+    image.status = ImageStatus.HIDDEN
+    db_session.flush()
+
+    room: JsonObject = auth_client.get(f"/rooms/{alice_room['code']}", headers=alice).json()
+
+    # La partie garde sa version figée, mais l'image masquée n'est plus servie (US-1.4)
+    current_item: JsonObject = room["game"]["current_item"]
+    assert (current_item["image_url"], current_item["image_removed"]) == (None, True)
 
 
 def test_random_order_shuffles_the_items(
