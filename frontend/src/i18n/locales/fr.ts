@@ -99,6 +99,8 @@ export const fr = {
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       reports:
         "Signalements : l'adresse e-mail de la personne qui signale un contenu, et ce que contient son message.",
+      moderation:
+        "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
       technical:
         'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
     },
@@ -109,6 +111,8 @@ export const fr = {
       security:
         'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
       reports: 'Traiter les signalements de contenus illicites (obligation légale).',
+      moderation:
+        "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, et retrouver les sanctions passées d'un compte.",
       noAds: 'Vos données ne sont ni vendues, ni utilisées pour de la publicité ou du profilage.',
     },
     retention: {
@@ -125,14 +129,17 @@ export const fr = {
       backups: 'Sauvegardes de la base de données : 14 jours.',
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
+      moderation: 'Journal de modération : 3 ans après chaque décision.',
     },
     visibility: {
       title: 'Qui voit vos données',
       room: "Les participants d'une salle voient le modèle utilisé, les pseudos et les placements de la partie.",
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
+      moderation:
+        'Seuls les super admins (les fondateurs de TierList) voient le journal de modération.',
       deletedAccount:
-        "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
+        "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
     processors: {
       title: 'Prestataires',

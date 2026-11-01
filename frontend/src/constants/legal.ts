@@ -14,7 +14,7 @@ export const LEGAL_HOST_ADDRESS = '17B Rue Jacques Limouzy, 81100 Castres, Franc
 export const LEGAL_HOST_PHONE = '09 70 72 74 42';
 
 // Dates de la dernière mise à jour de fond de chaque page (AAAA-MM-JJ)
-export const PRIVACY_POLICY_UPDATED_AT = '2026-10-30';
+export const PRIVACY_POLICY_UPDATED_AT = '2026-11-01';
 export const TERMS_UPDATED_AT = '2026-10-30';
 export const LEGAL_NOTICE_UPDATED_AT = '2026-10-30';
 
