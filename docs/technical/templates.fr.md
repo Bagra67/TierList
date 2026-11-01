@@ -175,7 +175,7 @@ Un super admin peut **masquer**, **réafficher** ou **supprimer** le modèle de 
 - **Ce que garde le propriétaire** : un modèle masqué est encore lu, listé et modifié par son propriétaire. `TemplateResponse` et les éléments de `TemplateListResponse` portent `moderation` et `moderation_reason` ; la salle d'un modèle masqué l'indique par `template.hidden` dans `RoomResponse` ([guide des salles](rooms.fr.md)). La [politique de confidentialité](legal-pages.fr.md) dit que le propriétaire voit le motif.
 - **Frontend** : l'éditeur affiche un bandeau (`TemplateHiddenNotice`, `role="status"`) avec le motif, qui dit que le modèle reste modifiable mais qu'aucune partie ne peut être lancée avec, et n'a pas de bouton « Créer une salle » ; _Mes templates_ et les modèles récents de l'accueil affichent un badge « Masqué » (`TemplateHiddenBadge`, un statut écrit, pas seulement une couleur) à la place de ce bouton ; le salon d'une salle dont le modèle est masqué affiche un message à la place du bouton « Lancer la partie ».
 - **Séparée de la visibilité du propriétaire** : la modération a sa propre colonne, à part de la visibilité que choisira le propriétaire (#271). Réafficher un modèle lui rend le choix de son propriétaire.
-- **Pas encore d'écran super admin** : les boutons viendront avec la page utilisateur (#127) et la file des signalements (#269) ; d'ici là, les routes s'appellent depuis Swagger (`/docs`).
+- **Écran super admin** : la page d'un compte (#127, [guide de modération](moderation.fr.md#28-comptes)) liste les modèles du compte avec ces actions ; la file des signalements (#269) les appellera aussi.
 
 ### 2.8 Limites connues
 

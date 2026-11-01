@@ -18,7 +18,7 @@ How tile images are received, compressed, stored, served, cleaned up and moderat
 
 ### Not available yet
 
-The moderation actions (§2.9) are called from the recent uploads page (#125) only: the reports queue (#269) and the user page (#127) come with their own issues.
+The moderation actions (§2.9) are called from the recent uploads page (#125) and from the account page (#127); the reports queue (#269) comes with its own issue.
 
 ## 2. Technical design
 
@@ -155,9 +155,9 @@ Everything is done **inside the application**, in super admin pages, without any
   - **role and authorization** checked server-side (#123);
   - **recent uploads**: a grid of the latest images with author, date and number of uses, for a proactive review, cheap since images are at most 512 px (#125, built: `GET /moderation/images` and `/moderation/uploads`, [moderation guide](moderation.md));
   - **reports queue**: images, templates, nicknames and games reported by users, guests included, with reason and decision; it is also the notice mechanism for illegal content (#126);
-  - **user page**: all the images of an account, bulk hiding, account sanctions (#127).
+  - **account page**: all the images of an account, bulk hiding, account sanctions (#127, built: `/moderation/accounts/{id}`, [moderation guide](moderation.md#28-accounts)).
 
-  The recent uploads page calls the routes below; the reports queue and the user page will too.
+  The recent uploads page and the account page call the routes below; the reports queue will too.
 
 **Actions** (#124, US-1.4, US-1.6). Three routes, protected by `SuperAdminDep` and declaring `SUPER_ADMIN_RESPONSES` ([moderation guide](moderation.md)), each with the body `{reason}` (`ModerationReasonRequest`: 1 to 500 characters, surrounding spaces removed) and the answer `204`:
 
@@ -198,7 +198,7 @@ Added with #81:
 - The blind mode answer images and future profile pictures will reuse this pipeline; their sizes are decided with them.
 - Browsers that already displayed a hidden image may keep it in their cache **for up to one day** (`max-age`). There is no CDN yet: once there is one, hiding must purge its cache too (§2.9).
 - In development and CI, the quarantine is not private: SeaweedFS lets anyone read the whole bucket (§2.7).
-- Only the recent uploads page calls the moderation actions for now: the reports queue (#269) and the user page (#127) are still to come.
+- Only the recent uploads page and the account page call the moderation actions for now: the reports queue (#269) is still to come.
 - The presigned URL of a hidden image can be read by whoever holds it, until it expires (15 minutes).
 - Only the exact file is refused after a deletion: a re-encoded or resized copy passes until a perceptual fingerprint exists.
 
