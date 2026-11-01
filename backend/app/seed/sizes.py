@@ -30,6 +30,9 @@ class SeedSize:
     # le visuel « image retirée » dans les modèles, les parties terminées et les résultats
     hidden_images: int
     deleted_images: int
+    # Modèles masqués par le vrai service de modération, en priorité ceux d'une salle restée
+    # ouverte : son lobby le dit à la place du bouton de lancement
+    hidden_templates: int
 
 
 FULL_SIZE: SeedSize = SeedSize(
@@ -51,6 +54,7 @@ FULL_SIZE: SeedSize = SeedSize(
     moderation_actions=180,
     hidden_images=3,
     deleted_images=1,
+    hidden_templates=2,
 )
 
 # Assez pour tous les cas, dont un historique de deux pages (plus de 20 parties)
@@ -73,4 +77,5 @@ SMALL_SIZE: SeedSize = SeedSize(
     moderation_actions=60,
     hidden_images=1,
     deleted_images=1,
+    hidden_templates=1,
 )

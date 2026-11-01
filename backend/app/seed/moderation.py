@@ -6,8 +6,9 @@ pseudos du jeu de données. Elles sont écrites directement, comme ModerationLog
 entrée à part, et la redater ensuite coûterait deux requêtes par entrée, à travers Internet sur
 staging.
 
-Les images, peu nombreuses, passent par le vrai service : leur fichier va en quarantaine ou est
-effacé, et leur entrée du journal désigne la vraie image."""
+Les images et les modèles modérés, peu nombreux, passent par les vrais services : le fichier d'une
+image va en quarantaine ou est effacé, un modèle masqué ne lance plus de partie, et leur entrée du
+journal désigne la vraie cible."""
 
 import logging
 import random
@@ -26,6 +27,7 @@ from app.seed.seats import GUEST_NICKNAMES
 from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage
 from app.services.moderation_log import ModerationLogService
+from app.services.template_moderation import TemplateModerationService
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,9 @@ REASONS: tuple[str, ...] = (
     "Harcèlement", "Contenu à caractère sexuel", "Propos haineux", "Spam", "Droit d'auteur",
     "Pseudo insultant", "Aucun manquement", "Signalement abusif", "Récidive",
     "Image sans rapport avec le modèle", "Données personnelles visibles", "Contenu violent",
+)  # fmt: skip
+TEMPLATE_REASONS: tuple[str, ...] = (
+    "Harcèlement", "Propos haineux", "Données personnelles visibles", "Droit d'auteur",
 )  # fmt: skip
 IMAGE_REASONS: tuple[str, ...] = (
     "Contenu violent", "Contenu à caractère sexuel", "Droit d'auteur",
@@ -121,3 +126,20 @@ def moderate_images(
         service.delete(rng.choice(super_admins), image.id, rng.choice(IMAGE_REASONS))
     logger.info("Images modérées : %d masquées, %d supprimées", hidden, deleted)
     return len(chosen)
+
+
+def moderate_templates(
+    session: Session,
+    settings: Settings,
+    super_admins: list[User],
+    template_ids: list[uuid.UUID],
+    rng: random.Random,
+) -> int:
+    """Masque ces modèles ; renvoie le nombre d'actions écrites au journal."""
+    service: TemplateModerationService = TemplateModerationService(
+        session, ModerationLogService(session, settings)
+    )
+    for template_id in template_ids:
+        service.hide(rng.choice(super_admins), template_id, rng.choice(TEMPLATE_REASONS))
+    logger.info("Modèles masqués : %d", len(template_ids))
+    return len(template_ids)
