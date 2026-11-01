@@ -6,14 +6,15 @@ Comment les workflows GitHub Actions s'enchaînent, pourquoi la CI est construit
 
 ## 1. Les workflows et leur enchaînement
 
-| Workflow      | Se lance                                                                       | Fait                                                                                                                |
-| ------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`      | sur chaque PR ; sur un push sur `develop` ou `main`                            | `Changed parts`, `Backend`, `Frontend`, `Secrets`                                                                   |
-| `docs.yml`    | sur chaque PR (aussi quand un label change) ; sur un push sur `develop`/`main` | `Docs` : docs bilingues et guide des tests synchronisés                                                             |
-| `deploy.yml`  | après un run `CI` ou `Release` terminé de `develop` ou `main` ; à la main      | le staging après un push CI sur `develop`, la production après `Release` ([guide du déploiement](deployment.fr.md)) |
-| `release.yml` | après un push CI terminé sur `main`                                            | crée le tag `vX.Y.Z` et publie la GitHub Release ([guide des versions](releasing.fr.md))                            |
-| `bundle.yml`  | appelé par `deploy.yml`                                                        | construit l'archive déployée sur les pods                                                                           |
-| `backup.yml`  | chaque nuit ; à la main                                                        | sauvegarde de la base                                                                                               |
+| Workflow           | Se lance                                                                       | Fait                                                                                                                |
+| ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`           | sur chaque PR ; sur un push sur `develop` ou `main`                            | `Changed parts`, `Backend`, `Frontend`, `Secrets`                                                                   |
+| `docs.yml`         | sur chaque PR (aussi quand un label change) ; sur un push sur `develop`/`main` | `Docs` : docs bilingues et guide des tests synchronisés                                                             |
+| `deploy.yml`       | après un run `CI` ou `Release` terminé de `develop` ou `main` ; à la main      | le staging après un push CI sur `develop`, la production après `Release` ([guide du déploiement](deployment.fr.md)) |
+| `release.yml`      | après un push CI terminé sur `main`                                            | crée le tag `vX.Y.Z` et publie la GitHub Release ([guide des versions](releasing.fr.md))                            |
+| `bundle.yml`       | appelé par `deploy.yml`                                                        | construit l'archive déployée sur les pods                                                                           |
+| `backup.yml`       | chaque nuit ; à la main                                                        | sauvegarde de la base                                                                                               |
+| `seed-staging.yml` | à la main                                                                      | remplit la base de staging avec le jeu de données de test ([guide du jeu de données](seed-data.fr.md))              |
 
 ```text
 PR ──> CI + Docs (contrôles requis) ──squash──> push develop ──> CI ──> Deploy (staging)

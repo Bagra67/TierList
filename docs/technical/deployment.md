@@ -314,6 +314,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 - Redeploying after a change of a secret or a variable (§5.8).
 - Approving each production deployment.
 - Granting or revoking the super admin role (§5.12).
+- Filling staging with the seed data, by hand (Actions → Seed staging, [seed data guide](seed-data.md)).
 - Testing a restore (#162), then after each major PostgreSQL upgrade.
 
 ## 10. Trying the production layout locally
