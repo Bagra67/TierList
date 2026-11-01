@@ -1,0 +1,37 @@
+import { useTranslation } from 'react-i18next';
+import { NavLink, Outlet } from 'react-router';
+import { cn } from 'cn';
+
+import { PageContainer } from './PageContainer';
+import { ROUTES } from '../constants/routes';
+
+// Espace de modération des super admins : le menu de gauche et la page choisie
+// (docs/product/milestone-2/screens.md). Les signalements et les derniers envois s'ajouteront au
+// menu avec leurs issues
+export function ModerationLayout() {
+  const { t } = useTranslation();
+
+  function linkClassName({ isActive }: { isActive: boolean }) {
+    return cn(
+      'block rounded-lg px-3 py-2 text-sm hover:bg-muted',
+      isActive ? 'bg-muted font-semibold' : 'text-muted-foreground',
+    );
+  }
+
+  return (
+    <PageContainer width="app" className="flex flex-col gap-6 md:flex-row">
+      <nav aria-label={t('moderation.nav.label')} className="shrink-0 md:w-48">
+        <ul className="flex gap-1 md:flex-col">
+          <li>
+            <NavLink to={ROUTES.MODERATION_LOG} className={linkClassName}>
+              {t('moderation.nav.log')}
+            </NavLink>
+          </li>
+        </ul>
+      </nav>
+      <div className="min-w-0 flex-1">
+        <Outlet />
+      </div>
+    </PageContainer>
+  );
+}

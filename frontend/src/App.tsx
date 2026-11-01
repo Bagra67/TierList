@@ -1,16 +1,17 @@
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 
 import { RedirectIfSignedIn } from './auth/RedirectIfSignedIn';
 import { RequireAuth } from './auth/RequireAuth';
 import { RequireSuperAdmin } from './auth/RequireSuperAdmin';
 import { Layout } from './components/Layout';
+import { ModerationLayout } from './components/ModerationLayout';
 import { ROUTES } from './constants/routes';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
 import { LegalNoticePage } from './pages/LegalNoticePage';
 import { LoginPage } from './pages/LoginPage';
-import { ModerationPage } from './pages/ModerationPage';
+import { ModerationLogPage } from './pages/ModerationLogPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -40,7 +41,14 @@ export default function App() {
           <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
           <Route element={<RequireSuperAdmin />}>
-            <Route path={ROUTES.MODERATION} element={<ModerationPage />} />
+            <Route element={<ModerationLayout />}>
+              {/* Le journal est la seule page de l'espace pour l'instant */}
+              <Route
+                path={ROUTES.MODERATION}
+                element={<Navigate to={ROUTES.MODERATION_LOG} replace />}
+              />
+              <Route path={ROUTES.MODERATION_LOG} element={<ModerationLogPage />} />
+            </Route>
           </Route>
         </Route>
         {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}

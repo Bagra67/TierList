@@ -17,6 +17,8 @@ export const ROUTES = {
   HISTORY: '/history',
   // Espace de modération, réservé aux super admins (US-1.1)
   MODERATION: '/moderation',
+  // Journal de modération (US-1.9)
+  MODERATION_LOG: '/moderation/log',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
   // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)
