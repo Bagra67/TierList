@@ -21,16 +21,25 @@ export type RecentUpload = components['schemas']['RecentUploadResponse'];
 // Statuts listés par les derniers envois : une image supprimée n'a plus de fichier
 export type ListedImageStatus = 'visible' | 'hidden';
 export type ImageModerationAction = 'hide' | 'unhide' | 'delete';
+// Les mêmes actions pour un modèle (US-1.5)
+export type TemplateModerationAction = ImageModerationAction;
+export type AccountSearchPage = components['schemas']['AccountSearchResponse'];
+export type AccountSummary = components['schemas']['AccountSummaryResponse'];
+export type Account = components['schemas']['AccountResponse'];
 
-// Filtres du journal : un super admin (son id) et un texte cherché dans le libellé de la cible
+// Filtres du journal : un super admin (son id), un texte cherché dans le libellé de la cible, et
+// un compte (les décisions sur lui, ses modèles et ses images)
 export interface ModerationLogFilters {
   actorId?: string;
   target?: string;
+  accountId?: string;
 }
 
 const MODERATION_LOG_QUERY_KEY = ['moderation', 'log'] as const;
 const SUPER_ADMINS_QUERY_KEY = ['moderation', 'super-admins'] as const;
 const RECENT_UPLOADS_QUERY_KEY = ['moderation', 'images'] as const;
+const ACCOUNT_SEARCH_QUERY_KEY = ['moderation', 'accounts', 'search'] as const;
+const ACCOUNT_QUERY_KEY = ['moderation', 'accounts', 'detail'] as const;
 
 // Filtres des derniers envois : un texte cherché dans le nom ou l'e-mail de l'auteur, une période
 // d'envoi (dates ISO avec fuseau : début inclus, fin exclue) et un statut
@@ -39,6 +48,8 @@ export interface RecentUploadsFilters {
   createdAfter?: string;
   createdBefore?: string;
   status?: ListedImageStatus;
+  // Un auteur précis : les images de la page de son compte
+  ownerId?: string;
 }
 
 // Une page du journal de modération à partir de offset (US-1.9). La taille de page est celle du
@@ -50,7 +61,14 @@ async function getModerationLog(
 ): Promise<ModerationLogPage> {
   return dataOrThrow(
     await apiClient.GET('/moderation/log', {
-      params: { query: { offset, actor_id: filters.actorId, target: filters.target } },
+      params: {
+        query: {
+          offset,
+          actor_id: filters.actorId,
+          target: filters.target,
+          account_id: filters.accountId,
+        },
+      },
       signal,
     }),
   );
@@ -98,6 +116,7 @@ async function getRecentUploads(
           created_after: filters.createdAfter,
           created_before: filters.createdBefore,
           status: filters.status,
+          owner_id: filters.ownerId,
         },
       },
       signal,
@@ -149,6 +168,111 @@ export function useModerateImage(): UseMutationResult<void, Error, ImageModerati
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: moderateImage,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+      ]);
+    },
+  });
+}
+
+// Une page de la recherche de comptes, par nom (US-1.8)
+async function searchAccounts(
+  query: string | undefined,
+  offset: number,
+  signal: AbortSignal,
+): Promise<AccountSearchPage> {
+  return dataOrThrow(
+    await apiClient.GET('/moderation/accounts', { params: { query: { query, offset } }, signal }),
+  );
+}
+
+// Les comptes dont le nom ou l'e-mail contient query, page par page ; tous sans query
+export function useAccountSearch(
+  query: string | undefined,
+): UseInfiniteQueryResult<InfiniteData<AccountSearchPage, number>> {
+  return useInfiniteQuery({
+    queryKey: [...ACCOUNT_SEARCH_QUERY_KEY, query],
+    queryFn: ({ pageParam, signal }) => searchAccounts(query, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: AccountSearchPage, pages: AccountSearchPage[]) =>
+      lastPage.has_more
+        ? pages.reduce((count: number, page: AccountSearchPage) => count + page.accounts.length, 0)
+        : undefined,
+    retry: retryUnlessClientError,
+  });
+}
+
+// La page d'un compte : ses détails et ses modèles
+export function useAccount(accountId: string): UseQueryResult<Account> {
+  return useQuery({
+    queryKey: [...ACCOUNT_QUERY_KEY, accountId],
+    queryFn: async ({ signal }) =>
+      dataOrThrow(
+        await apiClient.GET('/moderation/accounts/{user_id}', {
+          params: { path: { user_id: accountId } },
+          signal,
+        }),
+      ),
+    retry: retryUnlessClientError,
+  });
+}
+
+export interface TemplateModeration {
+  templateId: string;
+  action: TemplateModerationAction;
+  reason: string;
+}
+
+// Masque, réaffiche ou supprime un modèle (US-1.5), avec le motif écrit au journal
+async function moderateTemplate({ templateId, action, reason }: TemplateModeration): Promise<void> {
+  const options = { params: { path: { template_id: templateId } }, body: { reason } };
+  switch (action) {
+    case 'hide':
+      throwIfError(await apiClient.POST('/moderation/templates/{template_id}/hide', options));
+      return;
+    case 'unhide':
+      throwIfError(await apiClient.POST('/moderation/templates/{template_id}/unhide', options));
+      return;
+    case 'delete':
+      throwIfError(await apiClient.POST('/moderation/templates/{template_id}/delete', options));
+      return;
+  }
+}
+
+// Une action sur un modèle : la page du compte et le journal sont relus
+export function useModerateTemplate(): UseMutationResult<void, Error, TemplateModeration> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: moderateTemplate,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+      ]);
+    },
+  });
+}
+
+export interface HideAllImages {
+  accountId: string;
+  reason: string;
+}
+
+// Masque toutes les images visibles d'un compte ; renvoie leur nombre
+export function useHideAllImages(): UseMutationResult<number, Error, HideAllImages> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ accountId, reason }: HideAllImages): Promise<number> => {
+      const result = dataOrThrow(
+        await apiClient.POST('/moderation/accounts/{user_id}/hide-images', {
+          params: { path: { user_id: accountId } },
+          body: { reason },
+        }),
+      );
+      return result.hidden_count;
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),

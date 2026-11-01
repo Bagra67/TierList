@@ -27,6 +27,11 @@ export function ModerationLayout() {
             </NavLink>
           </li>
           <li>
+            <NavLink to={ROUTES.MODERATION_ACCOUNTS} className={linkClassName}>
+              {t('moderation.nav.accounts')}
+            </NavLink>
+          </li>
+          <li>
             <NavLink to={ROUTES.MODERATION_LOG} className={linkClassName}>
               {t('moderation.nav.log')}
             </NavLink>

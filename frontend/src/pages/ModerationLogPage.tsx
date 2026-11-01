@@ -1,21 +1,12 @@
 import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  type ModerationLogEntry,
-  type ModerationLogFilters,
-  type SuperAdmin,
-  useModerationLog,
-  useSuperAdmins,
-} from '../api/moderation';
-import { EmptyState } from '../components/EmptyState';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { type ModerationLogFilters, type SuperAdmin, useSuperAdmins } from '../api/moderation';
+import { ModerationLogTable } from '../components/ModerationLogTable';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
-import { translateError } from '../errors/apiError';
 
 // Journal de modération (US-1.9) : chaque action d'un super admin, de la plus récente à la plus
 // ancienne, filtrable par cible et par super admin. Rien ne s'y modifie ni ne s'y supprime
@@ -27,9 +18,6 @@ export function ModerationLogPage() {
   const [targetDraft, setTargetDraft] = useState('');
   const [filters, setFilters] = useState<ModerationLogFilters>({});
   const superAdmins = useSuperAdmins();
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useModerationLog(filters);
-  const entries: ModerationLogEntry[] = data?.pages.flatMap((page) => page.entries) ?? [];
   const isFiltered = filters.actorId !== undefined || filters.target !== undefined;
 
   function applyTarget(event: FormEvent<HTMLFormElement>) {
@@ -77,68 +65,10 @@ export function ModerationLogPage() {
         </div>
       </form>
 
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && entries.length === 0 && (
-        <EmptyState
-          message={isFiltered ? t('moderation.log.emptyFiltered') : t('moderation.log.empty')}
-        />
-      )}
-      {entries.length > 0 && (
-        // Le tableau défile seul sur un petit écran, pas la page
-        <div className="w-full overflow-x-auto rounded-panel border bg-card">
-          <table className="w-full text-sm">
-            <caption className="sr-only">{t('moderation.log.title')}</caption>
-            <thead>
-              <tr className="border-b bg-muted/50 text-left">
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t('moderation.log.columns.at')}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t('moderation.log.columns.actor')}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t('moderation.log.columns.action')}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t('moderation.log.columns.target')}
-                </th>
-                <th scope="col" className="px-3 py-2 font-medium">
-                  {t('moderation.log.columns.reason')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {entries.map((entry: ModerationLogEntry) => (
-                <tr key={entry.id} className="align-top">
-                  <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
-                    {t('moderation.log.at', { date: new Date(entry.created_at) })}
-                  </td>
-                  <td className="px-3 py-2">{entry.actor_name}</td>
-                  <td className="px-3 py-2">{t(`moderation.actions.${entry.action}`)}</td>
-                  <td className="px-3 py-2">
-                    {t('moderation.log.targetCell', {
-                      type: t(`moderation.targets.${entry.target_type}`),
-                      label: entry.target_label,
-                    })}
-                  </td>
-                  <td className="px-3 py-2">{entry.reason}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.log.more')}
-        </Button>
-      )}
+      <ModerationLogTable
+        filters={filters}
+        emptyMessage={isFiltered ? t('moderation.log.emptyFiltered') : t('moderation.log.empty')}
+      />
     </div>
   );
 }

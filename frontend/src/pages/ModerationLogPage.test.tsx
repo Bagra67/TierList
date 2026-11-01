@@ -72,6 +72,28 @@ describe('ModerationLogPage', () => {
     expect(screen.queryByRole('button', { name: 'Voir plus' })).not.toBeInTheDocument();
   });
 
+  it('links an account target to its page', async () => {
+    stubLog({
+      '0': {
+        entries: [
+          entry({
+            target_type: 'account',
+            target_id: 'max-id',
+            target_label: 'Max',
+            action: 'ban',
+          }),
+        ],
+        has_more: false,
+      },
+    });
+    renderLogPage();
+
+    expect(await screen.findByRole('link', { name: 'Compte « Max »' })).toHaveAttribute(
+      'href',
+      '/moderation/accounts/max-id',
+    );
+  });
+
   it('says when the log is empty', async () => {
     stubLog({});
     renderLogPage();
