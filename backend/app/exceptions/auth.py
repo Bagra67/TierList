@@ -28,3 +28,7 @@ class InvalidEmailTokenError(Exception):
 
 class ReauthenticationRequiredError(Exception):
     """Compte sans mot de passe dont la dernière connexion est trop ancienne pour confirmer."""
+
+
+class UserNotFoundError(Exception):
+    """Aucun compte avec cette adresse."""

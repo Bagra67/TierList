@@ -23,6 +23,7 @@ from app.constants.auth import (
 )
 from app.constants.i18n import Language
 from app.core.config import Settings
+from app.core.email_addresses import normalize_email
 from app.core.security import (
     create_access_token,
     create_email_verification_token,
@@ -79,10 +80,6 @@ class Registration:
     tokens: IssuedTokens
     # Envoyé par la route en tâche de fond, après la réponse
     verification_email: Email
-
-
-def normalize_email(email: str) -> str:
-    return email.strip().lower()
 
 
 def _revoke_access_tokens(user: User) -> None:

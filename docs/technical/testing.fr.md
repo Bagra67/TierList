@@ -200,6 +200,18 @@ La fixture `google` est un `FakeGoogleOAuthClient` : le vrai client Google (URL 
 | `test_new_password_must_be_long_enough`                     | Nouveau mot de passe `short`.                                                                               | Même règle qu'à l'inscription.                                    | `422`, erreur de champ `password_too_short` sur `body.password`.                                                           |
 | `test_account_without_password_can_set_one`                 | Compte sans mot de passe (Google), puis tout le parcours.                                                   | Un compte Google peut définir un mot de passe.                    | `204` ; connexion avec le nouveau mot de passe `200`.                                                                      |
 
+#### `tests/integration/test_super_admins.py` (rôle super admin)
+
+`set_super_admin` (`app/services/super_admins.py`), ce que lance `scripts/set_super_admin.py`, avec la session du test comme fabrique de sessions. La fixture `alice` ajoute un compte `user` `alice@example.com`.
+
+| Test                                            | Ce qu'il fait                                                                                     | But                                                               | Résultat attendu                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------ |
+| `test_granting_makes_the_account_a_super_admin` | Donne le rôle à `alice@example.com`.                                                              | US-1.1 : le rôle est donné hors de l'application.                 | Renvoie `super_admin` ; Alice est super admin en base. |
+| `test_revoking_gives_the_user_role_back`        | Alice est super admin ; retire le rôle.                                                           | Le rôle peut être retiré.                                         | Renvoie `user` ; Alice est de nouveau `user`.          |
+| `test_the_email_is_found_whatever_its_case`     | Donne le rôle à ` Alice@Example.COM`.                                                             | L'adresse est normalisée comme à l'inscription.                   | Alice est super admin.                                 |
+| `test_an_unknown_email_is_refused`              | Donne le rôle à `bob@example.com`, qui n'a pas de compte.                                         | La commande doit dire que le compte n'existe pas.                 | `UserNotFoundError` ; Alice est toujours `user`.       |
+| `test_me_shows_the_role_once_granted`           | Inscrit Carol par l'API, lui donne le rôle, puis appelle `GET /auth/me` avec son token déjà émis. | Le rôle est relu à chaque requête : pas besoin de se reconnecter. | `200`, `role` `super_admin`.                           |
+
 #### `tests/integration/test_templates.py` (templates)
 
 Ces tests passent par les vraies routes, le service, le repository et les migrations, avec la fixture `auth_client`. Les fixtures `alice` et `bob` inscrivent un utilisateur et renvoient l'en-tête `Authorization` de son access token. Outils : `create_template` (`POST /templates`), `add_tile` (`POST /templates/{id}/tiles`) et `add_tiles`, qui insère de nombreuses tuiles directement en base (plus rapide, par exemple pour atteindre la limite). Chaque variable locale est typée : le JSON de l'API en `JsonObject` (`dict[str, Any]`), les réponses en `httpx2.Response` (le client de `TestClient`), les lignes lues en base avec leur modèle.
