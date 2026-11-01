@@ -103,6 +103,16 @@ Define:
 -   How frontend and backend changes interact.
 -   What tests are required.
 -   Potential compatibility or migration concerns.
+-   How the change is split into pull requests (see "Splitting a
+    feature" in §40).
+
+A non-trivial plan MUST also contain:
+
+-   A **Deliverable** section: what exists once the work is merged, and
+    what is explicitly out of scope.
+-   A **Deployment** section: migrations, the staging then production
+    rollout, manual steps (e.g. a SQL command run by hand), new
+    environment variables or secrets, or "nothing to do".
 
 For significant tasks, present the plan before implementation when
 practical.
@@ -1246,6 +1256,36 @@ The PR description should explain:
 Do not create a PR claiming successful validation if validation was not
 actually performed.
 
+## Draft and ready
+
+-   Push the work branch and open the PR as a **draft** right after its
+    first commit, so that progress (diff, CI) can be followed on GitHub.
+-   A draft only means "work in progress". As soon as the work of the PR
+    is finished (code, tests, documentation, final diff reviewed) and its
+    CI is green, mark it **ready for review** (`gh pr ready <N>`) without
+    waiting to be asked, and tick its CI checkbox.
+-   In a stack, each PR is marked ready once its own work is finished.
+-   Ready does not mean merged: merging still waits for an explicit
+    request.
+
+## Splitting a feature
+
+A feature that spans several layers is split into **one PR per layer**
+(e.g. backend, backend scripts, frontend; more PRs when a layer is large),
+so that each one can be reviewed on its own:
+
+-   The PRs are **always stacked** with `gh stack` (`--base develop`) and
+    **merged together** with `gh stack merge` (see Merging), never one by
+    one.
+-   The technical and product documentation goes into a **final PR that
+    only contains documentation**, at the top of the stack. It carries
+    `Closes #N`.
+-   Exception: the testing guide (§28) stays in the PR that changes the
+    tests, since the `Docs` CI check requires both in the same PR. The
+    same goes for the translations of a new `ErrorCode` (§50).
+-   Each PR must pass the CI on its own (lint, types, tests, generated
+    API types).
+
 ## Merging
 
 Pull requests MUST be merged with a **squash merge**: each PR becomes a
@@ -1286,7 +1326,7 @@ gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<sh
 These merge methods are also enforced by the GitHub rulesets: `develop`
 only allows squash merges, `main` only allows merge commits.
 
-**Exception — stacked PRs (`gh stack`)** MAY be merged in one go with
+**Exception — stacked PRs (`gh stack`)** are merged in one go with
 `gh stack merge`, which merges the whole stack atomically but cannot set
 the squash message. GitHub's default message is then accepted:
 
