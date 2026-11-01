@@ -57,3 +57,9 @@ export const signedInSession: Record<string, StubbedRoute> = {
   'POST /auth/refresh': tokenResponse('alice-token'),
   'GET /auth/me': () => Response.json(alice),
 };
+
+// La même session, pour un compte super admin (rôle donné hors de l'application, US-1.1)
+export const superAdminSession: Record<string, StubbedRoute> = {
+  ...signedInSession,
+  'GET /auth/me': () => Response.json({ ...alice, role: 'super_admin' } satisfies User),
+};

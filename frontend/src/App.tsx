@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router';
 
 import { RedirectIfSignedIn } from './auth/RedirectIfSignedIn';
 import { RequireAuth } from './auth/RequireAuth';
+import { RequireSuperAdmin } from './auth/RequireSuperAdmin';
 import { Layout } from './components/Layout';
 import { ROUTES } from './constants/routes';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -9,6 +10,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
 import { LegalNoticePage } from './pages/LegalNoticePage';
 import { LoginPage } from './pages/LoginPage';
+import { ModerationPage } from './pages/ModerationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -37,6 +39,9 @@ export default function App() {
           <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
           <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
+          <Route element={<RequireSuperAdmin />}>
+            <Route path={ROUTES.MODERATION} element={<ModerationPage />} />
+          </Route>
         </Route>
         {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}
         <Route path={ROUTES.ROOM} element={<RoomPage />} />

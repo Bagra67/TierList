@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
+import { isSuperAdmin } from '../auth/superAdmin';
 import { ROUTES } from '../constants/routes';
 import { cn } from 'cn';
 
@@ -38,6 +39,14 @@ export function MainNav() {
             {t('nav.history')}
           </NavLink>
         </li>
+        {/* Seulement pour les super admins ; le backend refuse la modération aux autres */}
+        {isSuperAdmin(user) && (
+          <li>
+            <NavLink to={ROUTES.MODERATION} className={linkClassName}>
+              {t('nav.moderation')}
+            </NavLink>
+          </li>
+        )}
       </ul>
     </nav>
   );
