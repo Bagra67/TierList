@@ -30,7 +30,7 @@ uv run python scripts/seed.py
 
 **On staging**: GitHub → Actions → **Seed staging** → Run workflow (`seed-staging.yml`). The staging pod has no shell, so the script runs on a GitHub runner, with the database and image storage settings of the `staging` environment. Before the first run, add the `SEED_PASSWORD` secret to that environment. If the database address seen from a runner differs from the app pod's one, set the `SEED_POSTGRES_HOST` and `SEED_POSTGRES_PORT` variables.
 
-The script prints what it removed and what it created, and how long it took.
+The script logs each of its 6 steps with its duration, and its progress inside the long ones (each template, each image, each closed game, every 30 log entries), so that the workflow log shows where it is. It ends with what it removed and created, and how long it took.
 
 ## 3. Rules
 
