@@ -6,8 +6,7 @@ import { PageContainer } from './PageContainer';
 import { ROUTES } from '../constants/routes';
 
 // Espace de modération des super admins : le menu de gauche et la page choisie
-// (docs/product/milestone-2/screens.md). Les signalements et les derniers envois s'ajouteront au
-// menu avec leurs issues
+// (docs/product/milestone-2/screens.md). Les signalements s'ajouteront au menu avec leur issue
 export function ModerationLayout() {
   const { t } = useTranslation();
 
@@ -22,6 +21,11 @@ export function ModerationLayout() {
     <PageContainer width="app" className="flex flex-col gap-6 md:flex-row">
       <nav aria-label={t('moderation.nav.label')} className="shrink-0 md:w-48">
         <ul className="flex gap-1 md:flex-col">
+          <li>
+            <NavLink to={ROUTES.MODERATION_UPLOADS} className={linkClassName}>
+              {t('moderation.nav.uploads')}
+            </NavLink>
+          </li>
           <li>
             <NavLink to={ROUTES.MODERATION_LOG} className={linkClassName}>
               {t('moderation.nav.log')}

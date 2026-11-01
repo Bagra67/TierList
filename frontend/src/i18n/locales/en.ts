@@ -135,7 +135,8 @@ export const en: Translation = {
       room: 'The participants of a room see the template used, the display names and the placements of the game.',
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
-      moderation: 'Only the super admins (the founders of TierList) see the moderation log.',
+      moderation:
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -290,6 +291,7 @@ export const en: Translation = {
   moderation: {
     nav: {
       label: 'Moderation area',
+      uploads: 'Recent uploads',
       log: 'Log',
     },
     log: {
@@ -327,6 +329,63 @@ export const en: Translation = {
       account: 'Account',
       nickname: 'Nickname',
       game: 'Game',
+    },
+    uploads: {
+      title: 'Recent uploads',
+      intro: 'Uploaded images, newest first, to spot a problem before anyone reports it.',
+      author: 'Author',
+      authorPlaceholder: 'Name or email',
+      search: 'Search',
+      from: 'From',
+      to: 'To',
+      status: 'Status',
+      allStatuses: 'All',
+      visible: 'Visible',
+      hidden: 'Hidden',
+      hiddenBadge: 'Hidden',
+      empty: 'No image has been uploaded yet.',
+      emptyFiltered: 'No image matches these filters.',
+      more: 'Show more',
+      deletedAccount: 'Deleted account',
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      imageAlt:
+        'Image uploaded by {{author}} on {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      templates_one: '{{count}} template',
+      templates_other: '{{count}} templates',
+      games_one: '{{count}} game',
+      games_other: '{{count}} games',
+      templateNames: 'Templates: {{names, list}}',
+      actionLabel: {
+        hide: "Hide {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        unhide:
+          "Unhide {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        delete:
+          "Delete {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+      },
+    },
+    reasonDialog: {
+      reason: 'Reason',
+      cancel: 'Cancel',
+      hide: {
+        title: 'Hide this image',
+        description:
+          'It will be replaced by "Image removed" everywhere it appears. You can unhide it later.',
+        submit: 'Hide',
+        submitting: 'Hiding…',
+      },
+      unhide: {
+        title: 'Unhide this image',
+        description: 'It will be shown again everywhere it is used.',
+        submit: 'Unhide',
+        submitting: 'Unhiding…',
+      },
+      delete: {
+        title: 'Delete this image',
+        description:
+          'Its file will be erased for good, and the same file can no longer be uploaded. This cannot be undone.',
+        submit: 'Delete',
+        submitting: 'Deleting…',
+      },
     },
   },
   renderError: {

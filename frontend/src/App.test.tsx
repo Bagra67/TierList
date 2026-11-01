@@ -160,6 +160,7 @@ describe('App', () => {
   it('shows the moderation link to a super admin and opens the moderation area', async () => {
     stubBackend({
       ...superAdminSession,
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
       'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
       'GET /moderation/super-admins': () => Response.json([]),
     });
@@ -168,11 +169,13 @@ describe('App', () => {
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
     fireEvent.click(within(nav).getByRole('link', { name: 'Modération' }));
 
-    // /moderation mène au journal, seule page de l'espace pour l'instant
+    // /moderation mène à la première page du menu de l'espace : les derniers envois
+    expect(await screen.findByRole('heading', { name: 'Derniers envois' })).toBeInTheDocument();
+    const moderationNav = screen.getByRole('navigation', { name: 'Espace de modération' });
+    fireEvent.click(within(moderationNav).getByRole('link', { name: 'Journal' }));
     expect(
       await screen.findByRole('heading', { name: 'Journal de modération' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'Espace de modération' })).toBeInTheDocument();
   });
 
   it('hides the moderation link from other accounts', async () => {

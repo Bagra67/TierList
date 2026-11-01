@@ -140,7 +140,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        'Seuls les super admins (les fondateurs de TierList) voient le journal de modération.',
+        'Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur.',
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -300,6 +300,7 @@ export const fr = {
   moderation: {
     nav: {
       label: 'Espace de modération',
+      uploads: 'Derniers envois',
       log: 'Journal',
     },
     log: {
@@ -338,6 +339,64 @@ export const fr = {
       account: 'Compte',
       nickname: 'Pseudo',
       game: 'Partie',
+    },
+    uploads: {
+      title: 'Derniers envois',
+      intro:
+        "Les images envoyées, des plus récentes aux plus anciennes, pour repérer un problème avant qu'on le signale.",
+      author: 'Auteur',
+      authorPlaceholder: 'Nom ou e-mail',
+      search: 'Rechercher',
+      from: 'Du',
+      to: 'Au',
+      status: 'Statut',
+      allStatuses: 'Toutes',
+      visible: 'Visibles',
+      hidden: 'Masquées',
+      hiddenBadge: 'Masquée',
+      empty: "Aucune image n'a encore été envoyée.",
+      emptyFiltered: 'Aucune image ne correspond à ces filtres.',
+      more: 'Voir plus',
+      deletedAccount: 'Compte supprimé',
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      imageAlt:
+        'Image envoyée par {{author}} le {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      templates_one: '{{count}} modèle',
+      templates_other: '{{count}} modèles',
+      games_one: '{{count}} partie',
+      games_other: '{{count}} parties',
+      templateNames: 'Modèles : {{names, list}}',
+      actionLabel: {
+        hide: "Masquer l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        unhide:
+          "Réafficher l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        delete:
+          "Supprimer l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+      },
+    },
+    reasonDialog: {
+      reason: 'Motif',
+      cancel: 'Annuler',
+      hide: {
+        title: 'Masquer cette image',
+        description:
+          'Elle sera remplacée par « Image retirée » partout où elle apparaît. Vous pourrez la réafficher.',
+        submit: 'Masquer',
+        submitting: 'Masquage…',
+      },
+      unhide: {
+        title: 'Réafficher cette image',
+        description: 'Elle sera de nouveau affichée partout où elle est utilisée.',
+        submit: 'Réafficher',
+        submitting: 'Réaffichage…',
+      },
+      delete: {
+        title: 'Supprimer cette image',
+        description:
+          'Son fichier sera effacé définitivement, et le même fichier ne pourra plus être envoyé. Cette action ne peut pas être annulée.',
+        submit: 'Supprimer',
+        submitting: 'Suppression…',
+      },
     },
   },
   renderError: {

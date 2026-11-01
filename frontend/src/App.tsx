@@ -12,6 +12,7 @@ import { HomePage } from './pages/HomePage';
 import { LegalNoticePage } from './pages/LegalNoticePage';
 import { LoginPage } from './pages/LoginPage';
 import { ModerationLogPage } from './pages/ModerationLogPage';
+import { RecentUploadsPage } from './pages/RecentUploadsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -42,11 +43,12 @@ export default function App() {
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
           <Route element={<RequireSuperAdmin />}>
             <Route element={<ModerationLayout />}>
-              {/* Le journal est la seule page de l'espace pour l'instant */}
+              {/* L'espace s'ouvre sur la première page de son menu */}
               <Route
                 path={ROUTES.MODERATION}
-                element={<Navigate to={ROUTES.MODERATION_LOG} replace />}
+                element={<Navigate to={ROUTES.MODERATION_UPLOADS} replace />}
               />
+              <Route path={ROUTES.MODERATION_UPLOADS} element={<RecentUploadsPage />} />
               <Route path={ROUTES.MODERATION_LOG} element={<ModerationLogPage />} />
             </Route>
           </Route>
