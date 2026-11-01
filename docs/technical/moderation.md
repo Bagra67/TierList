@@ -2,7 +2,7 @@
 
 English | [Français](moderation.fr.md)
 
-How the moderation of public content is built: for now the **moderation log** (#267). The super admin role and how it is checked are in the [authentication guide](authentication.md#super-admins); what moderation does for the user: [user stories](../product/milestone-2/user-stories.md) (epic E1), [lifecycles](../product/milestone-2/lifecycles.md).
+How the moderation of public content is built: the **moderation log** (#267) and the first actions, on **images** (#124). The super admin role and how it is checked are in the [authentication guide](authentication.md#super-admins); what moderation does for the user: [user stories](../product/milestone-2/user-stories.md) (epic E1), [lifecycles](../product/milestone-2/lifecycles.md).
 
 ## 1. Functional overview
 
@@ -12,7 +12,7 @@ Every decision of a super admin (dismiss a report, hide, unhide or delete a cont
 - Nobody can edit or delete an entry: there is no route for it. Only the nightly purge deletes the entries older than **3 years** (the retention announced by the [privacy policy](legal-pages.md)).
 - An entry stays readable after the target or the super admin's account is deleted: it keeps a copy of their names.
 
-The log is empty until the first moderation action exists (#268: hide or delete a template).
+The first actions that write to the log are those on images (#124): hide, unhide or delete an image (§2.2). The other targets come with their issues (#268: hide or delete a template).
 
 ## 2. Technical design
 
@@ -35,21 +35,33 @@ Copying the names follows the closed games (`game_players.display_name`): the lo
 
 Every moderation action calls `ModerationLogService.record(actor, action, target_type, target_id, target_label, reason)` **inside its own transaction**. `record` adds the entry and flushes, but **does not commit**: the action commits, so that the action and its trace succeed or fail together (never a hidden template without its entry, nor an entry for an action that failed).
 
-The shape an action will take (no action exists yet; `TemplateModeration` comes with #268):
+`ImageModerationService` (`app/services/image_moderation.py`) is the example to follow. It receives `ModerationLogService` by injection (`get_image_moderation_service`), with the same session as the request, and each action changes the status and records the entry before one commit:
 
 ```python
-def hide_template(self, super_admin: User, template: Template, reason: str) -> None:
-    template.moderation = TemplateModeration.HIDDEN
-    self._moderation_log.record(
-        super_admin,
-        ModerationActionKind.HIDE,
-        ModerationTargetType.TEMPLATE,
-        template.id,
-        template.name,
-        reason,
-    )
-    self._session.commit()
+image.status = ImageStatus.HIDDEN
+self._moderation_log.record(
+    super_admin,
+    ModerationActionKind.HIDE,
+    ModerationTargetType.IMAGE,
+    image.id,
+    image.storage_key,  # no file name is stored: the key is unique
+    reason,
+)
+self._session.commit()
 ```
+
+Actions that exist:
+
+| Method | Path                                   | Action and target | Allowed from        |
+| ------ | -------------------------------------- | ----------------- | ------------------- |
+| `POST` | `/moderation/images/{image_id}/hide`   | `hide`, `image`   | `visible`           |
+| `POST` | `/moderation/images/{image_id}/unhide` | `unhide`, `image` | `hidden`            |
+| `POST` | `/moderation/images/{image_id}/delete` | `delete`, `image` | `visible`, `hidden` |
+
+- Body `{reason}` (`ModerationReasonRequest`: the reason, 1 to 500 characters, surrounding spaces removed); answer `204`; `404` `image_not_found`, `409` `image_moderation_conflict` when the action does not apply to the current status. Protected like the log (§2.3).
+- `POST` rather than `DELETE`: the action carries a reason in its body, and the row of the image stays.
+- The image is locked (`SELECT … FOR UPDATE`) during the action; its file moves to or from a private quarantine, or is erased, in an order that fails on the safe side. Details: [images guide](images.md#29-moderation).
+- No page calls these routes yet: the super admin pages that list images (#125, #126, #127) will. Until then, they can be tried from Swagger (`/docs`).
 
 A new action or target type is a new enum value: `text_enum` stores text with a CHECK constraint, so the migration only updates the constraint (no `ALTER TYPE`).
 
@@ -84,15 +96,16 @@ Changing it means changing the privacy policy too ([legal pages](legal-pages.md)
 
 ## 3. In the code
 
-| Layer        | File                                                                                  | Content                                                                          |
-| ------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Routes       | `backend/app/api/routes/moderation.py`                                                | `GET /moderation/log`, `GET /moderation/super-admins`.                           |
-| Schemas      | `backend/app/schemas/moderation.py`                                                   | `ModerationActionResponse`, `ModerationLogResponse`, `SuperAdminResponse`.       |
-| Service      | `backend/app/services/moderation_log.py`                                              | `ModerationLogService`: `record`, `page`, `super_admins`, `purge_expired`.       |
-| Repositories | `repositories/moderation_actions.py`, `repositories/users.py`                         | Queries: add, list with filters, delete before a date; the super admins by name. |
-| Model        | `backend/app/models/moderation_action.py`                                             | `ModerationAction` (`moderation_actions`); enums in `models/enums.py`.           |
-| Constants    | `backend/app/constants/moderation.py`                                                 | Lengths of the reason and the label, page sizes.                                 |
-| Migration    | `migrations/versions/1c5aea95404b_create_moderation_actions.py`                       | Creates the table, its CHECK constraints and indexes.                            |
-| Frontend     | `api/moderation.ts`, `components/ModerationLayout.tsx`, `pages/ModerationLogPage.tsx` | Hooks, area menu, log page.                                                      |
+| Layer        | File                                                                                  | Content                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Routes       | `backend/app/api/routes/moderation.py`                                                | `GET /moderation/log`, `GET /moderation/super-admins`, `POST /moderation/images/{image_id}/hide`, `/unhide`, `/delete`. |
+| Schemas      | `backend/app/schemas/moderation.py`                                                   | `ModerationActionResponse`, `ModerationLogResponse`, `SuperAdminResponse`, `ModerationReasonRequest`.                   |
+| Service      | `backend/app/services/moderation_log.py`                                              | `ModerationLogService`: `record`, `page`, `super_admins`, `purge_expired`.                                              |
+| Service      | `backend/app/services/image_moderation.py`                                            | `ImageModerationService`: `hide`, `unhide`, `delete` ([images guide](images.md)).                                       |
+| Repositories | `repositories/moderation_actions.py`, `repositories/users.py`                         | Queries: add, list with filters, delete before a date; the super admins by name.                                        |
+| Model        | `backend/app/models/moderation_action.py`                                             | `ModerationAction` (`moderation_actions`); enums in `models/enums.py`.                                                  |
+| Constants    | `backend/app/constants/moderation.py`                                                 | Lengths of the reason and the label, page sizes.                                                                        |
+| Migration    | `migrations/versions/1c5aea95404b_create_moderation_actions.py`                       | Creates the table, its CHECK constraints and indexes.                                                                   |
+| Frontend     | `api/moderation.ts`, `components/ModerationLayout.tsx`, `pages/ModerationLogPage.tsx` | Hooks, area menu, log page.                                                                                             |
 
-Tests: [testing guide](testing.md) (`test_moderation_log.py`, `test_moderation_routes.py`, `ModerationLogPage.test.tsx`).
+Tests: [testing guide](testing.md) (`test_moderation_log.py`, `test_moderation_routes.py`, `test_image_moderation.py`, `ModerationLogPage.test.tsx`).
