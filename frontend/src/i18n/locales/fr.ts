@@ -140,7 +140,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        'Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur.',
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -491,6 +491,12 @@ export const fr = {
   },
   templates: {
     title: 'Mes modèles',
+    hidden: {
+      badge: 'Masqué',
+      title: 'Masqué par la modération',
+      reason: 'Motif : {{reason}}',
+      hint: 'Vous pouvez encore le modifier, mais plus lancer de partie avec.',
+    },
     empty: "Vous n'avez encore aucun modèle : créez-en un pour commencer.",
     tileCount_one: '{{count}} tuile',
     tileCount_other: '{{count}} tuiles',
@@ -626,6 +632,8 @@ export const fr = {
     lobby: {
       title: 'Salle {{code}}',
       template: 'Modèle : {{name}}',
+      templateHidden:
+        'Le modèle de cette salle est masqué par la modération : aucune nouvelle partie ne peut y être lancée.',
       templateDeleted:
         'Le modèle de cette salle a été supprimé : aucune nouvelle partie ne peut y démarrer.',
       code: 'Code de la salle',

@@ -9,6 +9,7 @@ import { translateError } from '../../errors/apiError';
 import { CreateRoomButton } from '../CreateRoomButton';
 import { EmptyState } from '../EmptyState';
 import { ErrorMessage } from '../ErrorMessage';
+import { TemplateHiddenBadge } from '../TemplateHiddenBadge';
 import { LoadingSkeleton } from '../LoadingSkeleton';
 import { Button } from '../ui/button';
 import { panelVariants } from '../ui/panel';
@@ -60,7 +61,11 @@ export function RecentTemplates() {
                   {t('templates.tileCount', { count: template.tile_count })}
                 </span>
               </div>
-              <CreateRoomButton templateId={template.id} templateName={template.name} />
+              {template.moderation === 'hidden' ? (
+                <TemplateHiddenBadge />
+              ) : (
+                <CreateRoomButton templateId={template.id} templateName={template.name} />
+              )}
             </li>
           ))}
         </ul>

@@ -6,6 +6,7 @@ import { useTemplates } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
+import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
@@ -48,7 +49,11 @@ export function TemplatesPage() {
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <CreateRoomButton templateId={template.id} templateName={template.name} />
+                  {template.moderation === 'hidden' ? (
+                    <TemplateHiddenBadge />
+                  ) : (
+                    <CreateRoomButton templateId={template.id} templateName={template.name} />
+                  )}
                   <DeleteTemplateDialog template={template} />
                 </div>
               </li>

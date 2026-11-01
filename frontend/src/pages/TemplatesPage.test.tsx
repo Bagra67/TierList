@@ -80,6 +80,27 @@ describe('TemplatesPage', () => {
     expect(items[1]).toHaveTextContent('1 tuile');
   });
 
+  it('marks a template hidden by the moderation instead of offering a room', async () => {
+    stubBackend({
+      'GET /templates': listOf([
+        { ...chips, moderation: 'hidden', moderation_reason: 'Harcèlement' },
+        sodas,
+      ]),
+    });
+
+    renderTemplatesPage();
+
+    const [hidden, visible] = await screen.findAllByRole('listitem');
+    expect(within(hidden).getByText('Masqué')).toBeInTheDocument();
+    expect(
+      within(hidden).queryByRole('button', { name: /Créer une salle/ }),
+    ).not.toBeInTheDocument();
+    expect(within(visible).queryByText('Masqué')).not.toBeInTheDocument();
+    expect(
+      within(visible).getByRole('button', { name: 'Créer une salle avec Sodas' }),
+    ).toBeVisible();
+  });
+
   it('invites to create a template when there is none', async () => {
     stubBackend({ 'GET /templates': listOf([]) });
 

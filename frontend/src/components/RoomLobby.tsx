@@ -41,13 +41,17 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
+      {room.template?.hidden === true && (
+        <ErrorMessage>{t('rooms.lobby.templateHidden')}</ErrorMessage>
+      )}
       {room.game !== null && (
         <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
       )}
       {/* Le plateau prend toute la largeur de la page ; le salon reste une colonne étroite */}
       <div className={cn(CONTENT_COLUMN_CLASS, 'flex flex-col items-start gap-6')}>
-        {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
-        {room.is_admin && room.game === null && room.template !== null && (
+        {/* Sans template (purgé), ou masqué par la modération, le démarrage serait refusé :
+            l'avertissement ci-dessus suffit */}
+        {room.is_admin && room.game === null && room.template !== null && !room.template.hidden && (
           <StartGameButton code={room.code} replay={room.past_games.length > 0} />
         )}
         <RoomInvite room={room} />
