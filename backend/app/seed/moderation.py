@@ -24,6 +24,7 @@ from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
 from app.seed.seats import GUEST_NICKNAMES
+from app.services.account_bans import AccountBanService
 from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage
 from app.services.moderation_log import ModerationLogService
@@ -38,6 +39,11 @@ REASONS: tuple[str, ...] = (
     "Pseudo insultant", "Aucun manquement", "Signalement abusif", "Récidive",
     "Image sans rapport avec le modèle", "Données personnelles visibles", "Contenu violent",
 )  # fmt: skip
+BAN_REASONS: tuple[str, ...] = (
+    "Harcèlement répété", "Spam", "Propos haineux", "Usurpation d'identité",
+)  # fmt: skip
+# Un bannissement temporaire finit dans ce nombre de jours
+TEMPORARY_BAN_DAYS = 14
 TEMPLATE_REASONS: tuple[str, ...] = (
     "Harcèlement", "Propos haineux", "Données personnelles visibles", "Droit d'auteur",
 )  # fmt: skip
@@ -143,3 +149,25 @@ def moderate_templates(
         service.hide(rng.choice(super_admins), template_id, rng.choice(TEMPLATE_REASONS))
     logger.info("Modèles masqués : %d", len(template_ids))
     return len(template_ids)
+
+
+def ban_accounts(
+    session: Session,
+    settings: Settings,
+    super_admins: list[User],
+    temporarily: list[User],
+    permanently: list[User],
+    rng: random.Random,
+) -> int:
+    """Bannit ces comptes, les premiers jusqu'à dans TEMPORARY_BAN_DAYS jours, les autres
+    définitivement ; renvoie le nombre d'actions écrites au journal."""
+    service: AccountBanService = AccountBanService(session, ModerationLogService(session, settings))
+    ends_at: datetime = datetime.now(UTC) + timedelta(days=TEMPORARY_BAN_DAYS)
+    for user in temporarily:
+        service.ban(rng.choice(super_admins), user.id, rng.choice(BAN_REASONS), ends_at)
+    for user in permanently:
+        service.ban(rng.choice(super_admins), user.id, rng.choice(BAN_REASONS), None)
+    logger.info(
+        "Comptes bannis : %d temporairement, %d définitivement", len(temporarily), len(permanently)
+    )
+    return len(temporarily) + len(permanently)

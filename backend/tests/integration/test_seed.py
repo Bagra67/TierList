@@ -8,7 +8,9 @@ from httpx2 import Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
+from app.models.account_ban import AccountBan
 from app.models.enums import (
     GameStatus,
     PlacementPhase,
@@ -43,6 +45,8 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.hidden_images
     + SMALL_SIZE.deleted_images
     + SMALL_SIZE.hidden_templates
+    + SMALL_SIZE.temporarily_banned_accounts
+    + SMALL_SIZE.permanently_banned_accounts
 )
 
 
@@ -207,6 +211,32 @@ def test_the_seeded_history_and_results_work_through_the_api(
     assert results.status_code == 200
     body: JsonObject = results.json()
     assert body["players"]
+
+
+def test_the_seeded_banned_accounts_cannot_sign_in(
+    client: TestClient, db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+    banned: list[uuid.UUID] = list(db_session.scalars(select(AccountBan.user_id)).all())
+    emails: list[str] = list(
+        db_session.scalars(select(User.email).where(User.id.in_(banned))).all()
+    )
+
+    responses: list[Response] = [
+        client.post("/auth/login", json={"email": email, "password": SEED_PASSWORD})
+        for email in emails
+    ]
+
+    # Un bannissement temporaire et un définitif, chacun avec son message
+    assert len(emails) == (
+        SMALL_SIZE.temporarily_banned_accounts + SMALL_SIZE.permanently_banned_accounts
+    )
+    assert sorted(response.json()["code"] for response in responses) == [
+        ErrorCode.ACCOUNT_BANNED,
+        ErrorCode.ACCOUNT_BANNED_UNTIL,
+    ]
+    # Les comptes avec lesquels les tests se connectent ne sont pas bannis
+    assert seed_email("player", 1) not in emails
 
 
 def test_a_seeded_super_admin_reads_the_moderation_log(

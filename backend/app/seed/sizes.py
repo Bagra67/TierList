@@ -33,6 +33,10 @@ class SeedSize:
     # Modèles masqués par le vrai service de modération, en priorité ceux d'une salle restée
     # ouverte : son lobby le dit à la place du bouton de lancement
     hidden_templates: int
+    # Comptes bannis par le vrai service, pris parmi les derniers joueurs (les tests se
+    # connectent avec le premier)
+    temporarily_banned_accounts: int
+    permanently_banned_accounts: int
 
 
 FULL_SIZE: SeedSize = SeedSize(
@@ -55,6 +59,8 @@ FULL_SIZE: SeedSize = SeedSize(
     hidden_images=3,
     deleted_images=1,
     hidden_templates=2,
+    temporarily_banned_accounts=1,
+    permanently_banned_accounts=1,
 )
 
 # Assez pour tous les cas, dont un historique de deux pages (plus de 20 parties)
@@ -78,4 +84,6 @@ SMALL_SIZE: SeedSize = SeedSize(
     hidden_images=1,
     deleted_images=1,
     hidden_templates=1,
+    temporarily_banned_accounts=1,
+    permanently_banned_accounts=1,
 )
