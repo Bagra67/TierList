@@ -8,6 +8,7 @@ clôture sont donc reprises ici : un joueur figé par personne qui place ; un vo
 placement de tour sans tier ; seuls les items placés ont un placement final ; les positions
 restent continues dans chaque tier."""
 
+import logging
 import random
 import uuid
 from dataclasses import dataclass
@@ -30,6 +31,8 @@ from app.models.user import User
 from app.seed.sizes import SeedSize
 from app.services.rooms import RoomService
 from app.services.templates import TemplateService
+
+logger = logging.getLogger(__name__)
 
 GUEST_NICKNAMES: tuple[str, ...] = (
     "Lou", "Max", "Tom", "Eva", "Noé", "Mia", "Léo", "Jade", "Ana", "Kim", "Ugo", "Liv",
@@ -99,8 +102,19 @@ def create_closed_games(
             days=days_ago, minutes=rng.randint(0, 600)
         )
         snapshot: TemplateSnapshot = templates.take_snapshot(admin, template.id)
-        closed.append(_closed_game(session, room, admin, snapshot, game_players, closed_at, rng))
+        game: Game = _closed_game(session, room, admin, snapshot, game_players, closed_at, rng)
         session.commit()
+        closed.append(game)
+        logger.info(
+            "Partie terminée %d/%d : %s, %d joueurs, %d tours, le %s%s",
+            index + 1,
+            size.closed_games,
+            snapshot.name,
+            len(game_players),
+            len(game.rounds),
+            closed_at.date().isoformat(),
+            "" if room is None else f" (salle ouverte {room.code})",
+        )
     return SeedGames(closed=closed, lobby_rooms=lobby_rooms)
 
 

@@ -4,6 +4,7 @@ pleines, et des salles avec un compte et un invité bannis, aux réglages varié
 Une salle ouverte où personne n'est connecté depuis ROOM_INACTIVITY_HOURS est fermée par le
 balayage : elles disparaissent donc au bout d'un jour, il suffit de relancer le jeu de données."""
 
+import logging
 import random
 from dataclasses import dataclass
 
@@ -15,6 +16,8 @@ from app.models.user import User
 from app.seed.games import GUEST_NICKNAMES
 from app.seed.sizes import SeedSize
 from app.services.rooms import RoomService
+
+logger = logging.getLogger(__name__)
 
 # Invités d'une salle pleine : les autres places vont à des comptes
 GUESTS_IN_A_FULL_ROOM = 4
@@ -57,8 +60,16 @@ def create_open_rooms(
             for nickname in rng.sample(GUEST_NICKNAMES, GUESTS_IN_A_FULL_ROOM):
                 room = rooms.join_as_guest(room.code, nickname, None).room
             full.append(room)
+            logger.info("Salle pleine %s : %d places", room.code, len(room.participants))
         else:
-            with_bans.append(_room_with_bans(rooms, room, admin, others, rng))
+            room = _room_with_bans(rooms, room, admin, others, rng)
+            with_bans.append(room)
+            logger.info(
+                "Salle avec bannis %s : %d places, %d bannis",
+                room.code,
+                len(room.participants),
+                len(room.bans),
+            )
     return SeedRooms(full=full, with_bans=with_bans)
 
 

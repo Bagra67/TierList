@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -157,3 +159,21 @@ def test_a_seeded_super_admin_reads_the_moderation_log(
     assert response.status_code == 200
     assert len(response.json()["entries"]) == 50
     assert response.json()["has_more"] is True
+
+
+def test_the_seed_logs_each_step_and_its_progress(
+    db_session: Session, stored_images: dict[str, bytes], caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level(logging.INFO, logger="app.seed")
+
+    seed(db_session, stored_images)
+
+    messages: list[str] = [record.getMessage() for record in caplog.records]
+    for step in range(1, 7):
+        assert any(message.startswith(f"Étape {step}/6") for message in messages)
+        assert any(
+            message.startswith(f"Étape {step}/6") and " terminée en " in message
+            for message in messages
+        )
+    last_game: str = f"Partie terminée {SMALL_SIZE.closed_games}/{SMALL_SIZE.closed_games}"
+    assert any(message.startswith(last_game) for message in messages)

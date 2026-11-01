@@ -1,6 +1,7 @@
 """Entrées du journal de modération du jeu de données, écrites par le vrai service, puis datées
 dans le passé. Leurs cibles sont des modèles, des comptes et des pseudos du jeu de données."""
 
+import logging
 import random
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -14,6 +15,8 @@ from app.models.template import Template
 from app.models.user import User
 from app.seed.games import GUEST_NICKNAMES
 from app.services.moderation_log import ModerationLogService
+
+logger = logging.getLogger(__name__)
 
 # Les entrées sont étalées sur cette durée
 LOG_SPAN_DAYS = 120
@@ -50,6 +53,8 @@ def create_moderation_log(
         days_ago: float = LOG_SPAN_DAYS * (count - index) / count
         entry.created_at = datetime.now(UTC) - timedelta(days=days_ago, minutes=rng.randint(0, 600))
         entries.append(entry)
+        if (index + 1) % 30 == 0 or index + 1 == count:
+            logger.info("Journal de modération : %d/%d entrées", index + 1, count)
     # record ne valide pas la transaction : c'est l'appelant qui la valide, comme une action
     session.commit()
     return entries

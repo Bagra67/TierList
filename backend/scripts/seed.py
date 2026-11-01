@@ -8,6 +8,7 @@ en production. Sur staging, SEED_PASSWORD donne le mot de passe des comptes ; le
 « Seed staging » le lance.
 """
 
+import logging
 import os
 import sys
 import time
@@ -34,8 +35,10 @@ def main() -> int:
     from app.seed.sizes import FULL_SIZE
     from app.services.image_storage import create_image_storage
 
-    # Les services journalisent chaque placement : seuls les avertissements sont utiles ici
+    # Les services journalisent chaque opération : seuls leurs avertissements sont utiles ici. Le
+    # jeu de données, lui, annonce chaque étape et sa progression (plusieurs minutes sur staging)
     configure_logging("WARNING")
+    logging.getLogger("app.seed").setLevel(logging.INFO)
     settings: Settings = get_settings()
     try:
         check_database(settings.postgres_db)
@@ -44,6 +47,7 @@ def main() -> int:
         print(error, file=sys.stderr)
         return 1
 
+    print(f"Seeding the database {settings.postgres_db!r} on {settings.postgres_host}", flush=True)
     started: float = time.monotonic()
     with Session(get_engine()) as session:
         summary: SeedSummary = run_seed(
