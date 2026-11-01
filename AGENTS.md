@@ -1256,6 +1256,18 @@ The PR description should explain:
 Do not create a PR claiming successful validation if validation was not
 actually performed.
 
+## Draft and ready
+
+-   Push the work branch and open the PR as a **draft** right after its
+    first commit, so that progress (diff, CI) can be followed on GitHub.
+-   A draft only means "work in progress". As soon as the work of the PR
+    is finished (code, tests, documentation, final diff reviewed) and its
+    CI is green, mark it **ready for review** (`gh pr ready <N>`) without
+    waiting to be asked, and tick its CI checkbox.
+-   In a stack, each PR is marked ready once its own work is finished.
+-   Ready does not mean merged: merging still waits for an explicit
+    request.
+
 ## Splitting a feature
 
 A feature that spans several layers is split into **one PR per layer**
