@@ -24,6 +24,7 @@ from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
+from app.services.recent_uploads import RecentUploadsService
 from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
@@ -87,6 +88,12 @@ def get_moderation_log_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ModerationLogService:
     return ModerationLogService(session, settings)
+
+
+def get_recent_uploads_service(
+    session: Annotated[Session, Depends(get_db_session)],
+) -> RecentUploadsService:
+    return RecentUploadsService(session)
 
 
 def get_history_service(session: Annotated[Session, Depends(get_db_session)]) -> HistoryService:
@@ -233,6 +240,7 @@ GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_s
 HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+RecentUploadsServiceDep = Annotated[RecentUploadsService, Depends(get_recent_uploads_service)]
 ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]
 # Donne l'adresse publique des images (api/presenters/images.py)
 ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]

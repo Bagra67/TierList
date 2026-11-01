@@ -29,6 +29,9 @@ class Image(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         # Limite d'envois par compte et par heure : compte les images récentes d'un auteur
         Index("ix_images_owner_id_created_at", "owner_id", "created_at"),
+        # Derniers envois des super admins (#125) : toutes les images, des plus récentes aux
+        # plus anciennes
+        Index("ix_images_created_at", "created_at"),
     )
 
     # Toute image a un auteur connu : seuls les comptes en envoient. SET NULL et non CASCADE :

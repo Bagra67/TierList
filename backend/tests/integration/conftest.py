@@ -154,6 +154,8 @@ def sent_emails() -> list[Email]:
 
 
 FAKE_IMAGE_BASE_URL = "https://images.example.com"
+# Adresse des URL signées du faux stockage (aperçu d'une image masquée)
+FAKE_PRESIGNED_BASE_URL = "https://signed.example.com"
 
 
 class FakeImageStorage(ImageStorage):
@@ -175,6 +177,9 @@ class FakeImageStorage(ImageStorage):
 
     def copy_from_quarantine(self, key: str) -> None:
         self.stored[key] = self.stored[quarantine_key(key)]
+
+    def presigned_url(self, key: str) -> str:
+        return f"{FAKE_PRESIGNED_BASE_URL}/{key}"
 
 
 class FailingImageStorage(FakeImageStorage):

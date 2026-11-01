@@ -4,17 +4,23 @@ from app.services.image_storage import ImageStorage
 
 
 class RecordingS3Client:
-    """Client S3 factice : garde les arguments de chaque put_object et copy_object."""
+    """Client S3 factice : garde les arguments de chaque put_object et copy_object, et ceux de
+    generate_presigned_url."""
 
     def __init__(self) -> None:
         self.put_calls: list[dict[str, Any]] = []
         self.copy_calls: list[dict[str, Any]] = []
+        self.presign_calls: list[tuple[str, dict[str, Any]]] = []
 
     def put_object(self, **kwargs: Any) -> None:
         self.put_calls.append(kwargs)
 
     def copy_object(self, **kwargs: Any) -> None:
         self.copy_calls.append(kwargs)
+
+    def generate_presigned_url(self, client_method: str, **kwargs: Any) -> str:
+        self.presign_calls.append((client_method, kwargs))
+        return "https://s3.example.com/signed"
 
 
 def test_a_saved_image_is_sent_public_with_its_type_and_cache():
@@ -70,4 +76,19 @@ def test_an_unhidden_image_is_copied_back_public_with_its_type_and_cache():
             "MetadataDirective": "REPLACE",
             "ACL": "public-read",
         }
+    ]
+
+
+def test_a_preview_url_signs_a_read_of_the_key_for_fifteen_minutes():
+    client: RecordingS3Client = RecordingS3Client()
+    storage: ImageStorage = ImageStorage(cast(Any, client), "images", "https://cdn.example.com/")
+
+    url: str = storage.presigned_url("quarantine/abc.webp")
+
+    assert url == "https://s3.example.com/signed"
+    assert client.presign_calls == [
+        (
+            "get_object",
+            {"Params": {"Bucket": "images", "Key": "quarantine/abc.webp"}, "ExpiresIn": 900},
+        )
     ]

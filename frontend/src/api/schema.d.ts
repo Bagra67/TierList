@@ -681,6 +681,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recent Uploads */
+        get: operations["list_recent_uploads_moderation_images_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -945,6 +962,12 @@ export interface components {
             /** Has More */
             has_more: boolean;
         };
+        /**
+         * ImageStatus
+         * @description Statut de modération (#124) : toute image envoyée est visible.
+         * @enum {string}
+         */
+        ImageStatus: "visible" | "hidden" | "deleted";
         /** ImageUploadResponse */
         ImageUploadResponse: {
             /**
@@ -1132,6 +1155,41 @@ export interface components {
             tiers: components["schemas"]["TierItemsResponse"][];
             /** Unplaced Item Ids */
             unplaced_item_ids: string[];
+        };
+        /**
+         * RecentUploadResponse
+         * @description Une image des derniers envois (US-1.7).
+         */
+        RecentUploadResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+            status: components["schemas"]["ImageStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Author Name */
+            author_name: string | null;
+            /** Template Names */
+            template_names: string[];
+            /** Game Count */
+            game_count: number;
+        };
+        /**
+         * RecentUploadsResponse
+         * @description Une page des derniers envois.
+         */
+        RecentUploadsResponse: {
+            /** Images */
+            images: components["schemas"]["RecentUploadResponse"][];
+            /** Has More */
+            has_more: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -4361,6 +4419,69 @@ export interface operations {
             };
             /** @description Image already hidden, not hidden, or deleted */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_recent_uploads_moderation_images_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                author?: string | null;
+                created_after?: string | null;
+                created_before?: string | null;
+                status?: ("visible" | "hidden") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentUploadsResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

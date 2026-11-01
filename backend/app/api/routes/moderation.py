@@ -1,15 +1,19 @@
 """Espace de modération des super admins (docs/technical/moderation.md)."""
 
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Query
+from pydantic import AwareDatetime
 
 from app.api.dependencies import (
     ImageModerationServiceDep,
+    ImageStorageDep,
     ModerationLogServiceDep,
+    RecentUploadsServiceDep,
     SuperAdminDep,
 )
+from app.api.presenters.images import recent_upload_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -17,17 +21,23 @@ from app.constants.moderation import (
     MODERATION_LOG_PAGE_SIZE_DEFAULT,
     MODERATION_LOG_PAGE_SIZE_MAX,
     MODERATION_TARGET_LABEL_MAX_LENGTH,
+    RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH,
+    RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
+    RECENT_UPLOADS_PAGE_SIZE_MAX,
 )
 from app.core.errors import ErrorResponse
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
+from app.models.image import ImageStatus
 from app.schemas.moderation import (
     ModerationActionResponse,
     ModerationLogResponse,
     ModerationReasonRequest,
+    RecentUploadsResponse,
     SuperAdminResponse,
 )
 from app.services.moderation_log import ModerationLogPage
+from app.services.recent_uploads import RecentUploadsPage
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -132,3 +142,36 @@ def delete_image(
         raise _image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
+
+
+@router.get("/images", responses=SUPER_ADMIN_RESPONSES)
+def list_recent_uploads(
+    super_admin: SuperAdminDep,
+    service: RecentUploadsServiceDep,
+    storage: ImageStorageDep,
+    limit: Annotated[
+        int, Query(ge=1, le=RECENT_UPLOADS_PAGE_SIZE_MAX)
+    ] = RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    # Texte cherché dans le nom ou l'e-mail de l'auteur, sans casse
+    author: Annotated[str | None, Query(max_length=RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH)] = None,
+    # Période d'envoi : à partir de created_after, avant created_before. Le fuseau horaire est
+    # exigé : le frontend envoie les bornes des jours choisis dans le fuseau du super admin
+    created_after: AwareDatetime | None = None,
+    created_before: AwareDatetime | None = None,
+    # Sans statut : les images visibles et masquées
+    status: Literal["visible", "hidden"] | None = None,
+) -> RecentUploadsResponse:
+    # Les derniers envois (US-1.7), des plus récents aux plus anciens
+    page: RecentUploadsPage = service.page(
+        limit,
+        offset,
+        author,
+        created_after,
+        created_before,
+        ImageStatus(status) if status is not None else None,
+    )
+    return RecentUploadsResponse(
+        images=[recent_upload_response(storage, upload) for upload in page.uploads],
+        has_more=page.has_more,
+    )

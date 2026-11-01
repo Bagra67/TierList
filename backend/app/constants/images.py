@@ -22,6 +22,9 @@ IMAGE_ACL = "public-read"
 # l'URL publique ne répond plus ; il est gardé tant que l'image est masquée
 IMAGE_QUARANTINE_PREFIX = "quarantine"
 IMAGE_QUARANTINE_ACL = "private"
+# Aperçu d'une image masquée pour les super admins (#125) : une URL signée, valable 15 minutes,
+# lit le fichier en quarantaine sans le rendre public
+IMAGE_PREVIEW_URL_EXPIRES_SECONDS = 900
 IMAGE_FILE_EXTENSION = "webp"
 # Longueur d'une clé de stockage : un UUID (36 caractères) suivi de « .webp »
 IMAGE_STORAGE_KEY_MAX_LENGTH = 64
