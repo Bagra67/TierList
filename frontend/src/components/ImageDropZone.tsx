@@ -12,12 +12,16 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { cn } from 'cn';
 import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
 import { isAcceptedImageFile } from './imageFiles';
+import { RemovedImage } from './RemovedImage';
 
 interface ImageDropZoneProps {
   // Nom accessible de la vignette : ce que fait un clic (ajouter ou remplacer l'image)
   label: string;
-  // Image enregistrée, null s'il n'y en a pas
+  // Image enregistrée, null s'il n'y en a pas ou si elle est retirée par la modération
   imageUrl: string | null;
+  // L'image est masquée ou supprimée par la modération : un visuel « image retirée » la remplace,
+  // et le propriétaire peut toujours la remplacer ou la retirer
+  imageRemoved?: boolean;
   isUploading: boolean;
   disabled?: boolean;
   // large : vignette du formulaire d'ajout ; fill : carré sur toute la largeur du parent (carte
@@ -67,6 +71,7 @@ function draggedFiles(event: DragEvent<HTMLElement>): boolean {
 export function ImageDropZone({
   label,
   imageUrl,
+  imageRemoved = false,
   isUploading,
   disabled = false,
   size,
@@ -85,6 +90,7 @@ export function ImageDropZone({
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const sizeClasses: (typeof SIZE_CLASSES)[ImageDropZoneProps['size']] = SIZE_CLASSES[size];
   const shownUrl: string | null = isUploading && previewUrl !== null ? previewUrl : imageUrl;
+  const showRemovedImage: boolean = shownUrl === null && imageRemoved;
 
   // L'aperçu local occupe de la mémoire tant que son URL existe : libérée quand il change
   useEffect(() => {
@@ -146,7 +152,10 @@ export function ImageDropZone({
   }
 
   const showRemove: boolean =
-    removeLabel !== undefined && onRemove !== undefined && imageUrl !== null && !isUploading;
+    removeLabel !== undefined &&
+    onRemove !== undefined &&
+    (imageUrl !== null || imageRemoved) &&
+    !isUploading;
 
   return (
     <div
@@ -167,13 +176,17 @@ export function ImageDropZone({
           'hover:border-primary/60 hover:bg-muted/60 hover:text-foreground',
           'focus-visible:ring-3 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          shownUrl === null ? 'border-dashed border-border bg-muted/30' : 'border-border bg-card',
+          shownUrl === null && !showRemovedImage
+            ? 'border-dashed border-border bg-muted/30'
+            : 'border-border bg-card',
           isDraggingOver && 'border-solid border-primary bg-primary/10 ring-3 ring-primary/30',
         )}
       >
         {shownUrl !== null ? (
           // contain : l'image entière est visible, sans recadrage, sur le fond de la vignette
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
+        ) : showRemovedImage ? (
+          <RemovedImage className="size-full" showLabel />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
             <ImageIcon className={sizeClasses.icon} />

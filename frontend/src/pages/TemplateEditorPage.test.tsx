@@ -539,6 +539,20 @@ describe('TemplateEditorPage', () => {
       expect(zone.querySelector('img')).toHaveAttribute('src', pizzaWithImage.image_url);
     });
 
+    it('shows an image removed by the moderation, that the owner can replace', async () => {
+      const removedImageTile: Tile = { ...imageOnlyTile, image_url: null, image_removed: true };
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([removedImageTile])) });
+
+      renderEditor();
+
+      // La tuile garde son image côté serveur : on la remplace, on ne l'ajoute pas
+      const zone: HTMLElement = await screen.findByRole('button', {
+        name: "Remplacer l'image de Tuile 1",
+      });
+      expect(within(zone).getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+      expect(zone.querySelector('img')).toBeNull();
+    });
+
     it('adds a tile with an image chosen with the file picker', async () => {
       const uploads: boolean[] = [];
       const fetchMock: BackendMock = stubBackend({

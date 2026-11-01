@@ -13,7 +13,12 @@ interface Handlers {
 }
 
 function renderZone(
-  props: Partial<{ imageUrl: string | null; isUploading: boolean; disabled: boolean }> = {},
+  props: Partial<{
+    imageUrl: string | null;
+    imageRemoved: boolean;
+    isUploading: boolean;
+    disabled: boolean;
+  }> = {},
 ): Handlers {
   const handlers: Handlers = { onSelect: vi.fn(), onRemove: vi.fn(), onRefuse: vi.fn() };
   render(
@@ -22,6 +27,7 @@ function renderZone(
       removeLabel="Retirer l'image"
       size="large"
       imageUrl={props.imageUrl ?? null}
+      imageRemoved={props.imageRemoved ?? false}
       isUploading={props.isUploading ?? false}
       disabled={props.disabled ?? false}
       {...handlers}
@@ -45,6 +51,15 @@ describe('ImageDropZone', () => {
     renderZone();
     expect(zone()).toHaveTextContent('Glisser une image ou cliquer');
     expect(zone().querySelector('img')).toBeNull();
+  });
+
+  it('shows an image removed by the moderation, which can still be replaced or removed', () => {
+    const handlers: Handlers = renderZone({ imageRemoved: true });
+
+    expect(screen.getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+    expect(zone()).not.toHaveTextContent('Glisser une image ou cliquer');
+    fireEvent.click(screen.getByRole('button', { name: "Retirer l'image" }));
+    expect(handlers.onRemove).toHaveBeenCalledOnce();
   });
 
   it('opens the file picker on click, which only proposes JPEG, PNG and WebP', () => {

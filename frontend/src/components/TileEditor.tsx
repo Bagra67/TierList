@@ -31,6 +31,12 @@ interface TileEditorProps {
   template: Template;
 }
 
+// La tuile a une image, même retirée par la modération : le backend la lui garde, elle peut donc
+// se passer de texte
+function hasImage(tile: Tile): boolean {
+  return tile.image_url !== null || tile.image_removed;
+}
+
 // Tuiles d'un template (US-1.2, US-1.3), dans l'ordre du template : un texte, une image, ou les
 // deux. Chaque action est enregistrée tout de suite ; une image est envoyée dès qu'elle est
 // choisie (le backend la compresse), puis rattachée à la tuile. Le nombre maximal vient du
@@ -106,7 +112,7 @@ export function TileEditor({ template }: TileEditorProps) {
   // Une tuile qui a une image peut perdre son texte : un texte vidé part en null. Sans image, le
   // texte est envoyé tel quel : le backend le refuse, et l'erreur s'affiche sous le champ
   function saveTileText(tile: Tile, text: string) {
-    const removesTheText: boolean = text.trim() === '' && tile.image_url !== null;
+    const removesTheText: boolean = text.trim() === '' && hasImage(tile);
     setTilesLocalError(null);
     updateMutation.mutate({
       tileId: tile.id,
@@ -219,11 +225,12 @@ export function TileEditor({ template }: TileEditorProps) {
                 <ImageDropZone
                   size="fill"
                   label={
-                    tile.image_url === null
+                    !hasImage(tile)
                       ? t('templates.editor.image.addTo', { name: tileLabel(tile) })
                       : t('templates.editor.image.replace', { name: tileLabel(tile) })
                   }
                   imageUrl={tile.image_url}
+                  imageRemoved={tile.image_removed}
                   isUploading={imageTileId === tile.id}
                   disabled={imageTileId !== null}
                   // Sans texte, retirer l'image laisserait la tuile vide : pas de bouton
@@ -242,7 +249,7 @@ export function TileEditor({ template }: TileEditorProps) {
                   hideLabel
                   value={tile.text ?? ''}
                   maxLength={TILE_TEXT_MAX_LENGTH}
-                  required={tile.image_url === null}
+                  required={!hasImage(tile)}
                   multiline
                   error={failedTileId === tile.id ? textError : undefined}
                   onSave={(text) => saveTileText(tile, text)}

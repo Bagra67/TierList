@@ -291,6 +291,23 @@ describe('ResultsPage', () => {
     ).toEqual(["Image de l'élément 1", "Image de l'élément 2", "Image de l'élément 3"]);
   });
 
+  it('shows an image removed by the moderation instead of the image', async () => {
+    const removedImage: GameResults = {
+      ...closedGameResults,
+      items: closedGameResults.items.map((item, index: number) =>
+        index === 0 ? { ...item, text: null, image_url: null, image_removed: true } : item,
+      ),
+    };
+    stubBackend({ [resultsRoute]: () => Response.json(removedImage) });
+    renderResultsPage();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Global' }));
+
+    const [firstHeader] = screen.getAllByRole('rowheader');
+    expect(within(firstHeader).getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+    expect(firstHeader.querySelector('img')).toBeNull();
+  });
+
   it('keeps the box and says so when reading the other variant fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({

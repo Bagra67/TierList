@@ -6,6 +6,7 @@ export const fr = {
     backendUnreachable: 'Le serveur ne répond pas. Réessayez dans un instant.',
     language: 'Langue',
     theme: 'Thème',
+    imageRemoved: 'Image retirée',
   },
   home: {
     visitor: {
@@ -94,7 +95,7 @@ export const fr = {
       guest:
         'Invités : le pseudo choisi pour rejoindre une salle, et un cookie qui vous reconnaît dans cette salle.',
       content:
-        'Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS).',
+        "Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS). L'empreinte de chaque fichier envoyé est gardée, pour refuser le renvoi d'une image supprimée par la modération.",
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       reports:
@@ -112,7 +113,7 @@ export const fr = {
         'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
       reports: 'Traiter les signalements de contenus illicites (obligation légale).',
       moderation:
-        "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, et retrouver les sanctions passées d'un compte.",
+        "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, retrouver les sanctions passées d'un compte, et refuser qu'une image supprimée par la modération soit envoyée à nouveau.",
       noAds: 'Vos données ne sont ni vendues, ni utilisées pour de la publicité ou du profilage.',
     },
     retention: {
@@ -126,6 +127,8 @@ export const fr = {
         "Lien personnel d'un invité : 30 jours. Une salle inactive est fermée après 24 heures.",
       deleted:
         'Modèles supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
+      moderatedImages:
+        "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
