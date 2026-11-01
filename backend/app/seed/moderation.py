@@ -1,5 +1,9 @@
-"""Entrées du journal de modération du jeu de données, écrites par le vrai service, puis datées
-dans le passé. Leurs cibles sont des modèles, des comptes et des pseudos du jeu de données."""
+"""Entrées du journal de modération du jeu de données, datées dans le passé. Leurs cibles sont des
+modèles, des comptes et des pseudos du jeu de données.
+
+Écrites directement, comme ModerationLogService.record les écrirait (auteur et libellé de la cible
+copiés), mais avec leur date d'emblée : record écrit chaque entrée à part, et la redater ensuite
+coûterait deux requêtes par entrée, à travers Internet sur staging."""
 
 import logging
 import random
@@ -8,13 +12,11 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
 from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
-from app.seed.games import GUEST_NICKNAMES
-from app.services.moderation_log import ModerationLogService
+from app.seed.seats import GUEST_NICKNAMES
 
 logger = logging.getLogger(__name__)
 
@@ -29,33 +31,35 @@ REASONS: tuple[str, ...] = (
 
 def create_moderation_log(
     session: Session,
-    settings: Settings,
     count: int,
     super_admins: list[User],
     accounts: list[User],
     templates: list[Template],
     rng: random.Random,
 ) -> list[ModerationAction]:
-    log: ModerationLogService = ModerationLogService(session, settings)
     entries: list[ModerationAction] = []
     for index in range(count):
         target_type: ModerationTargetType = rng.choice(list(ModerationTargetType))
         target_id, target_label = _target(target_type, accounts, templates, rng)
-        entry: ModerationAction = log.record(
-            rng.choice(super_admins),
-            rng.choice(list(ModerationActionKind)),
-            target_type,
-            target_id,
-            target_label,
-            rng.choice(REASONS),
-        )
+        actor: User = rng.choice(super_admins)
         # De la plus ancienne à la plus récente, sur LOG_SPAN_DAYS
         days_ago: float = LOG_SPAN_DAYS * (count - index) / count
-        entry.created_at = datetime.now(UTC) - timedelta(days=days_ago, minutes=rng.randint(0, 600))
-        entries.append(entry)
+        entries.append(
+            ModerationAction(
+                created_at=datetime.now(UTC)
+                - timedelta(days=days_ago, minutes=rng.randint(0, 600)),
+                actor_id=actor.id,
+                actor_name=actor.display_name,
+                action=rng.choice(list(ModerationActionKind)),
+                target_type=target_type,
+                target_id=target_id,
+                target_label=target_label,
+                reason=rng.choice(REASONS),
+            )
+        )
         if (index + 1) % 30 == 0 or index + 1 == count:
             logger.info("Journal de modération : %d/%d entrées", index + 1, count)
-    # record ne valide pas la transaction : c'est l'appelant qui la valide, comme une action
+    session.add_all(entries)
     session.commit()
     return entries
 

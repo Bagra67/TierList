@@ -3,6 +3,7 @@ Les images sont générées (une couleur, une forme, un numéro) et envoyées pa
 
 import logging
 import random
+import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
 from io import BytesIO
@@ -16,6 +17,7 @@ from app.constants.templates import FREE_PLAN_MAX_TILES
 from app.core.config import Settings
 from app.models.image import Image
 from app.models.template import Template
+from app.models.tile import Tile
 from app.models.user import User
 from app.seed.sizes import SeedSize
 from app.services.image_storage import ImageStorage
@@ -196,53 +198,61 @@ def create_templates(
         + size.deleted_templates
     )
 
-    def log_created(template: Template) -> None:
-        created[0] += 1
-        logger.info(
-            "Modèle %d/%d : %s (%d tuiles)", created[0], total, template.name, len(template.tiles)
-        )
-
-    def with_texts(owner: User, name: str, words: list[str]) -> Template:
+    def with_tiles(
+        owner: User, name: str, tiles: list[tuple[str | None, uuid.UUID | None]]
+    ) -> Template:
+        """Un modèle et ses tuiles (texte, image), en une seule écriture : TemplateService.add_tile
+        recharge et valide le modèle à chaque tuile, des centaines d'allers-retours sur staging.
+        Les règles d'add_tile sont tenues ici : un texte ou une image par tuile, au plus 32
+        tuiles, des positions continues, des images du propriétaire."""
+        assert len(tiles) <= FREE_PLAN_MAX_TILES
         template: Template = templates.create(owner, name)
-        for word in words:
-            template = templates.add_tile(owner, template.id, word, None)
-        log_created(template)
+        template.tiles.extend(
+            Tile(text=text, image_id=image_id, position=position)
+            for position, (text, image_id) in enumerate(tiles)
+        )
+        session.commit()
+        created[0] += 1
+        logger.info("Modèle %d/%d : %s (%d tuiles)", created[0], total, name, len(tiles))
         return template
 
     playable: list[Template] = []
     for index in range(size.text_templates):
         theme, words = TEXT_THEMES[index % len(TEXT_THEMES)]
-        playable.append(with_texts(next_owner(), theme, list(words)))
+        playable.append(with_tiles(next_owner(), theme, [(word, None) for word in words]))
     for index in range(size.image_templates):
         # Un propriétaire par modèle à images : au plus 120 envois par heure et par compte
         owner: User = owners[index % len(owners)]
-        template: Template = templates.create(owner, IMAGE_THEMES[index % len(IMAGE_THEMES)])
+        name: str = IMAGE_THEMES[index % len(IMAGE_THEMES)]
+        image_tiles: list[tuple[str | None, uuid.UUID | None]] = []
         for tile_number in range(1, size.image_tiles_per_template + 1):
             image: Image = images.upload(owner, BytesIO(_generated_image(tile_number, rng)))
             # Une tuile sur trois a aussi un texte
-            text: str | None = f"Image {tile_number}" if tile_number % 3 == 0 else None
-            template = templates.add_tile(owner, template.id, text, image.id)
+            image_tiles.append((f"Image {tile_number}" if tile_number % 3 == 0 else None, image.id))
             logger.info(
-                "Image %d/%d envoyée (modèle %s)",
-                tile_number,
-                size.image_tiles_per_template,
-                template.name,
+                "Image %d/%d envoyée (modèle %s)", tile_number, size.image_tiles_per_template, name
             )
-        log_created(template)
-        playable.append(template)
+        playable.append(with_tiles(owner, name, image_tiles))
     for index in range(size.full_templates):
         full_words: list[str] = rng.sample(WORD_POOL, FREE_PLAN_MAX_TILES)
-        playable.append(with_texts(next_owner(), FULL_THEMES[index % len(FULL_THEMES)], full_words))
+        playable.append(
+            with_tiles(
+                next_owner(),
+                FULL_THEMES[index % len(FULL_THEMES)],
+                [(word, None) for word in full_words],
+            )
+        )
 
-    empty: list[Template] = []
-    for number in range(1, size.empty_templates + 1):
-        empty_template: Template = templates.create(next_owner(), f"Brouillon {number}")
-        log_created(empty_template)
-        empty.append(empty_template)
+    empty: list[Template] = [
+        with_tiles(next_owner(), f"Brouillon {number}", [])
+        for number in range(1, size.empty_templates + 1)
+    ]
     deleted: list[Template] = []
     for number in range(1, size.deleted_templates + 1):
         owner = next_owner()
-        template = with_texts(owner, f"Ancien modèle {number}", rng.sample(WORD_POOL, 4))
+        template = with_tiles(
+            owner, f"Ancien modèle {number}", [(word, None) for word in rng.sample(WORD_POOL, 4)]
+        )
         # Supprimé maintenant : la purge de nuit ne l'efface qu'après 30 jours
         templates.delete(owner, template.id)
         deleted.append(template)
