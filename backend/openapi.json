@@ -3252,6 +3252,191 @@
         }
       }
     },
+    "/moderation/log": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Get Moderation Log",
+        "operationId": "get_moderation_log_moderation_log_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Id"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationLogResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/super-admins": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "List Super Admins",
+        "operationId": "list_super_admins_moderation_super_admins_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SuperAdminResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Super Admins Moderation Super Admins Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -4093,6 +4278,123 @@
         ],
         "title": "LoginRequest"
       },
+      "ModerationActionKind": {
+        "type": "string",
+        "enum": [
+          "dismiss",
+          "hide",
+          "unhide",
+          "delete",
+          "ban",
+          "lift_ban"
+        ],
+        "title": "ModerationActionKind",
+        "description": "Action d'un super admin, écrite au journal de modération (US-1.9)."
+      },
+      "ModerationActionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          },
+          "action": {
+            "$ref": "#/components/schemas/ModerationActionKind"
+          },
+          "target_type": {
+            "$ref": "#/components/schemas/ModerationTargetType"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "target_label": {
+            "type": "string",
+            "title": "Target Label"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "actor_id",
+          "actor_name",
+          "action",
+          "target_type",
+          "target_id",
+          "target_label",
+          "reason"
+        ],
+        "title": "ModerationActionResponse",
+        "description": "Une entrée du journal de modération (US-1.9)."
+      },
+      "ModerationLogResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ModerationActionResponse"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "has_more"
+        ],
+        "title": "ModerationLogResponse",
+        "description": "Une page du journal de modération."
+      },
+      "ModerationTargetType": {
+        "type": "string",
+        "enum": [
+          "template",
+          "image",
+          "account",
+          "nickname",
+          "game"
+        ],
+        "title": "ModerationTargetType",
+        "description": "Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le\ncompte."
+      },
       "OwnPlacementResponse": {
         "properties": {
           "item": {
@@ -4491,6 +4793,26 @@
           "name"
         ],
         "title": "RoomTemplateResponse"
+      },
+      "SuperAdminResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "SuperAdminResponse",
+        "description": "Un super admin, pour filtrer le journal par auteur."
       },
       "TemplateListResponse": {
         "properties": {

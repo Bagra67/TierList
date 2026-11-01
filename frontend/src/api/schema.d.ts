@@ -596,6 +596,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Moderation Log */
+        get: operations["get_moderation_log_moderation_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/super-admins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Super Admins */
+        get: operations["list_super_admins_moderation_super_admins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -915,6 +949,57 @@ export interface components {
             password: string;
         };
         /**
+         * ModerationActionKind
+         * @description Action d'un super admin, écrite au journal de modération (US-1.9).
+         * @enum {string}
+         */
+        ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban";
+        /**
+         * ModerationActionResponse
+         * @description Une entrée du journal de modération (US-1.9).
+         */
+        ModerationActionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Name */
+            actor_name: string;
+            action: components["schemas"]["ModerationActionKind"];
+            target_type: components["schemas"]["ModerationTargetType"];
+            /** Target Id */
+            target_id: string | null;
+            /** Target Label */
+            target_label: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * ModerationLogResponse
+         * @description Une page du journal de modération.
+         */
+        ModerationLogResponse: {
+            /** Entries */
+            entries: components["schemas"]["ModerationActionResponse"][];
+            /** Has More */
+            has_more: boolean;
+        };
+        /**
+         * ModerationTargetType
+         * @description Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le
+         *     compte.
+         * @enum {string}
+         */
+        ModerationTargetType: "template" | "image" | "account" | "nickname" | "game";
+        /**
          * OwnPlacementResponse
          * @description Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
          *     pendant les tours, placement final pendant le cooldown.
@@ -1084,6 +1169,19 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /**
+         * SuperAdminResponse
+         * @description Un super admin, pour filtrer le journal par auteur.
+         */
+        SuperAdminResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Display Name */
+            display_name: string;
         };
         /** TemplateListResponse */
         TemplateListResponse: {
@@ -3872,6 +3970,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_moderation_log_moderation_log_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                actor_id?: string | null;
+                target?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModerationLogResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_super_admins_moderation_super_admins_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuperAdminResponse"][];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */
