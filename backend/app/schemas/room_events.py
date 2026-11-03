@@ -1,17 +1,8 @@
-"""Messages du canal temps réel d'une salle (docs/technical/realtime.md).
-
-Le serveur pousse des événements ({type, room_version, data}) ; le client n'envoie que son
-message d'authentification et la réponse au battement de cœur. Ces modèles sont ajoutés au
-schéma OpenAPI (app/main.py) pour que le frontend en génère les types.
-"""
-
 import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
-
-# --- Événements de la salle (serveur → client) ------------------------------------------------
 
 
 class ParticipantJoinedData(BaseModel):
@@ -52,10 +43,8 @@ class ParticipantRemovedEvent(BaseModel):
 
 
 class GameStartedData(BaseModel):
-    # Le premier tour : le client relit la salle pour son item
     round_number: int
     round_count: int
-    # Fin du timer du tour, si la salle en a un
     ends_at: datetime | None
 
 
@@ -69,7 +58,6 @@ class GameStartedEvent(BaseModel):
 
 class ParticipantPlacedData(BaseModel):
     participant_id: uuid.UUID
-    # Le tour de l'item placé ; jamais le tier ni la position (plateau privé)
     round_number: int
 
 
@@ -82,10 +70,8 @@ class ParticipantPlacedEvent(BaseModel):
 
 
 class RoundStartedData(BaseModel):
-    # Le nouveau tour : le précédent est fini, ses votes absents sont enregistrés
     round_number: int
     round_count: int
-    # Fin du timer du tour, si la salle en a un
     ends_at: datetime | None
 
 
@@ -99,7 +85,6 @@ class RoundStartedEvent(BaseModel):
 
 
 class CooldownStartedData(BaseModel):
-    # Fin du cooldown final
     ends_at: datetime
 
 
@@ -112,7 +97,6 @@ class CooldownStartedEvent(BaseModel):
 
 
 class GameClosedData(BaseModel):
-    # La partie close (ses résultats viendront avec #99)
     game_id: uuid.UUID
 
 
@@ -137,7 +121,6 @@ class RoomSettingsUpdatedEvent(BaseModel):
     data: RoomSettingsUpdatedData = Field(default_factory=RoomSettingsUpdatedData)
 
 
-# Union discriminée sur type : les événements qui changent la salle (et sa version)
 RoomEvent = Annotated[
     ParticipantJoinedEvent
     | ParticipantPresenceEvent
@@ -150,9 +133,6 @@ RoomEvent = Annotated[
     | GameClosedEvent,
     Field(discriminator="type"),
 ]
-
-
-# --- Messages techniques du canal ---------------------------------------------------------------
 
 
 class PingMessage(BaseModel):
@@ -173,7 +153,6 @@ class AuthMessage(BaseModel):
     access_token: str | None = None
 
 
-# Ce que le serveur envoie, et ce que le client peut envoyer
 RoomServerMessage = Annotated[
     ParticipantJoinedEvent
     | ParticipantPresenceEvent

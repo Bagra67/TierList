@@ -1,5 +1,3 @@
-"""Parties closes montrées en liste : les parties passées du lobby, l'historique d'un compte."""
-
 from app.models.game import Game
 from app.schemas.rooms import PastGameResponse
 

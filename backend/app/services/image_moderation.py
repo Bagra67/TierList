@@ -13,8 +13,6 @@ import uuid
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-
-# Différé (PEP 810) : botocore n'est chargé que si une erreur de stockage survient
 lazy from botocore.exceptions import BotoCoreError, ClientError
 
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
@@ -37,16 +35,12 @@ class ImageModerationService:
         self._moderation_log = moderation_log
 
     def hide(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        """Masque une image visible : son fichier passe en quarantaine, privé, et un visuel
-        « image retirée » la remplace partout. Lève ImageNotFoundError ou
-        ImageModerationConflictError."""
         image: Image = self._get_image(image_id)
         if image.status != ImageStatus.VISIBLE:
             raise ImageModerationConflictError
         storage_key: str = image.storage_key
         self._storage.copy_to_quarantine(storage_key)
         image.status = ImageStatus.HIDDEN
-        # Sans le masquage en base, la copie en quarantaine ne servirait à rien : elle est retirée
         self._commit_action(
             super_admin, ModerationActionKind.HIDE, image, reason, quarantine_key(storage_key)
         )
@@ -54,23 +48,17 @@ class ImageModerationService:
         logger.info("Image masquée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
 
     def unhide(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        """Réaffiche une image masquée : son fichier revient à son adresse publique. Lève
-        ImageNotFoundError ou ImageModerationConflictError."""
         image: Image = self._get_image(image_id)
         if image.status != ImageStatus.HIDDEN:
             raise ImageModerationConflictError
         storage_key: str = image.storage_key
         self._storage.copy_from_quarantine(storage_key)
         image.status = ImageStatus.VISIBLE
-        # Sans le réaffichage en base, la copie publique montrerait une image encore masquée
         self._commit_action(super_admin, ModerationActionKind.UNHIDE, image, reason, storage_key)
         self._delete_file(quarantine_key(storage_key))
         logger.info("Image réaffichée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
 
     def delete(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        """Supprime une image visible ou masquée, définitivement : son fichier est effacé, sa
-        ligne garde le statut et l'empreinte, qui refuse le renvoi du même fichier. Lève
-        ImageNotFoundError ou ImageModerationConflictError."""
         image: Image = self._get_image(image_id)
         if image.status == ImageStatus.DELETED:
             raise ImageModerationConflictError
@@ -100,15 +88,12 @@ class ImageModerationService:
         reason: str,
         copied_key: str | None,
     ) -> None:
-        """Écrit l'action au journal et valide le nouveau statut avec elle. Si la base échoue,
-        la copie faite juste avant (copied_key) est retirée, et l'erreur remonte."""
         try:
             self._moderation_log.record(
                 super_admin,
                 action,
                 ModerationTargetType.IMAGE,
                 image.id,
-                # Aucun nom de fichier n'est gardé : la clé est unique et se lit dans l'URL
                 image.storage_key,
                 reason,
             )
@@ -120,8 +105,6 @@ class ImageModerationService:
             raise
 
     def _delete_file(self, key: str) -> None:
-        """Efface un fichier devenu inutile. Si le stockage échoue, la clé est journalisée pour un
-        effacement à la main : la décision, déjà validée, reste."""
         try:
             self._storage.delete(key)
         except BotoCoreError, ClientError:

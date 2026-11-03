@@ -6535,7 +6535,7 @@
           "hidden"
         ],
         "title": "TemplateModeration",
-        "description": "Décision de la modération sur un modèle (US-1.5), séparée de la visibilité choisie par\nson propriétaire : réafficher un modèle lui rend son état d'avant."
+        "description": "Décision de la modération sur un modèle (US-1.5)."
       },
       "TemplateResponse": {
         "properties": {

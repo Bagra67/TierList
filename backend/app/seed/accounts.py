@@ -1,6 +1,3 @@
-"""Comptes du jeu de données : super admins, joueurs confirmés, adresses non confirmées et comptes
-Google. Leurs adresses sont seed-…@seed.example.com (domaine réservé : aucun e-mail n'y arrive)."""
-
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -37,7 +34,6 @@ def seed_email(kind: str, number: int) -> str:
 @dataclass(frozen=True)
 class SeedAccounts:
     super_admins: list[User]
-    # Le premier a le long historique : il joue history_games parties
     players: list[User]
     unverified: list[User]
     google: list[User]
@@ -69,7 +65,6 @@ def create_accounts(
     for number in range(1, size.super_admins + 1):
         name: str = SUPER_ADMIN_NAMES[(number - 1) % len(SUPER_ADMIN_NAMES)]
         super_admin: User = register("admin", number, name, verified=True)
-        # Comme scripts/set_super_admin.py : le rôle n'est jamais donné par l'API
         super_admin.role = UserRole.SUPER_ADMIN
         super_admins.append(super_admin)
     players: list[User] = [
@@ -91,8 +86,6 @@ def create_accounts(
 
 
 def _create_google_account(session: Session, number: int) -> User:
-    """Comme une première connexion avec Google (AuthService.login_with_google) : pas de mot de
-    passe, une adresse confirmée par Google et l'identité Google reliée."""
     email: str = seed_email("google", number)
     user: User = User(
         email=email,

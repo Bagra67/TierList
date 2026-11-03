@@ -1,6 +1,3 @@
-"""Modèles du jeu de données : vides, en texte, avec images, pleins (32 tuiles) et supprimés.
-Les images sont générées (une couleur, une forme, un numéro) et envoyées par le vrai service."""
-
 import logging
 import random
 import uuid
@@ -28,7 +25,6 @@ from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
 
-# Les images envoyées sont redatées sur cette durée : les derniers envois ont des dates à filtrer
 UPLOAD_SPAN_DAYS = 30
 
 TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -172,11 +168,9 @@ SHAPES: tuple[str, ...] = ("circle", "square", "triangle")
 
 @dataclass(frozen=True)
 class SeedTemplates:
-    # Modèles avec au moins une tuile : les parties et les salles en sont faites
     playable: list[Template]
     empty: list[Template]
     deleted: list[Template]
-    # Images envoyées pour les modèles à images, que la modération du jeu de données retire
     images: list[Image]
 
 
@@ -190,7 +184,6 @@ def create_templates(
 ) -> SeedTemplates:
     templates: TemplateService = TemplateService(session, settings)
     images: ImageService = ImageService(session, settings, storage)
-    # Les modèles sont répartis entre les joueurs, à tour de rôle
     owner_turns: Iterator[User] = cycle(owners)
 
     def next_owner() -> User:
@@ -208,10 +201,6 @@ def create_templates(
     def with_tiles(
         owner: User, name: str, tiles: list[tuple[str | None, uuid.UUID | None]]
     ) -> Template:
-        """Un modèle et ses tuiles (texte, image), en une seule écriture : TemplateService.add_tile
-        recharge et valide le modèle à chaque tuile, des centaines d'allers-retours sur staging.
-        Les règles d'add_tile sont tenues ici : un texte ou une image par tuile, au plus 32
-        tuiles, des positions continues, des images du propriétaire."""
         assert len(tiles) <= FREE_PLAN_MAX_TILES
         template: Template = templates.create(owner, name)
         template.tiles.extend(
@@ -236,7 +225,6 @@ def create_templates(
         for tile_number in range(1, size.image_tiles_per_template + 1):
             image: Image = images.upload(owner, BytesIO(_generated_image(tile_number, rng)))
             uploaded.append(image)
-            # Une tuile sur trois a aussi un texte
             image_tiles.append((f"Image {tile_number}" if tile_number % 3 == 0 else None, image.id))
             logger.info(
                 "Image %d/%d envoyée (modèle %s)", tile_number, size.image_tiles_per_template, name
@@ -263,14 +251,12 @@ def create_templates(
         template = with_tiles(
             owner, f"Ancien modèle {number}", [(word, None) for word in rng.sample(WORD_POOL, 4)]
         )
-        # Supprimé maintenant : la purge de nuit ne l'efface qu'après 30 jours
         templates.delete(owner, template.id)
         deleted.append(template)
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
 
 
 def _generated_image(number: int, rng: random.Random) -> bytes:
-    """Une image de 640×480 : un fond, une forme et un numéro, en PNG ou en JPEG."""
     background: tuple[int, int, int] = rng.choice(COLORS)
     foreground: tuple[int, int, int] = rng.choice(
         [color for color in COLORS if color != background]
@@ -292,9 +278,6 @@ def _generated_image(number: int, rng: random.Random) -> bytes:
 
 
 def _spread_upload_dates(session: Session, images: list[Image], rng: random.Random) -> None:
-    """Redate les images envoyées sur les UPLOAD_SPAN_DAYS derniers jours : les derniers envois
-    des super admins ont des dates à filtrer. Une seule requête, groupée par clé primaire. Les
-    envois sont déjà faits : la limite d'envois par heure n'en dépend plus."""
     if not images:
         return
     now: datetime = datetime.now(UTC)

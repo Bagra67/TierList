@@ -1,11 +1,3 @@
-"""Canal temps réel d'une salle : WS /rooms/{code}/ws (docs/technical/realtime.md).
-
-Le socket ne sert qu'à pousser les événements de la salle et à savoir qui est connecté ; toute
-action reste une route REST. Déroulé : contrôle de l'origine, authentification par le premier
-message (compte) ou par le cookie (invité), vérification de la place, puis battements de cœur
-jusqu'à la fermeture. La base est synchrone : ses appels passent par le threadpool.
-"""
-
 import asyncio
 import logging
 import uuid
@@ -57,8 +49,6 @@ _PING: str = PingMessage().model_dump_json()
 
 @dataclass(frozen=True)
 class ChannelSeat:
-    """La place qui a ouvert le socket."""
-
     room_id: uuid.UUID
     participant_id: uuid.UUID
 
@@ -74,8 +64,6 @@ async def room_channel(
     scheduler: RoundSchedulerDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> None:
-    # Le cookie d'un invité part avec toute poignée de main vers ce chemin, même lancée par un
-    # autre site : sans ce contrôle, une page tierce ouvrirait le canal en son nom
     if websocket.headers.get("origin") != settings.app_origin:
         logger.warning("Canal refusé, origine inattendue : %s", websocket.headers.get("origin"))
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -96,8 +84,6 @@ async def room_channel(
 async def _receive_auth(
     websocket: WebSocket, settings: Settings, guest_token: str | None
 ) -> str | None:
-    """Premier message du client : l'access token d'un compte, ou rien pour un invité reconnu par
-    son cookie. Le token ne passe jamais dans l'URL (journaux, historique)."""
     try:
         text: str = await asyncio.wait_for(
             _receive_text(websocket), settings.room_auth_timeout_seconds
@@ -157,7 +143,6 @@ async def _serve(
     registry: ConnectionRegistry,
     scheduler: RoundScheduler,
 ) -> None:
-    """Socket enregistré dans la salle : présence, puis battements de cœur jusqu'à la fermeture."""
 
     async def set_presence(connected: bool) -> None:
         await run_in_threadpool(
@@ -165,7 +150,6 @@ async def _serve(
         )
 
     first_socket: bool = registry.add(seat.room_id, seat.participant_id, websocket)
-    # Revenu avant la fin du délai de grâce (rechargement de la page) : il reste connecté
     registry.cancel_pending_disconnect(seat.participant_id)
     try:
         if first_socket:
@@ -195,8 +179,6 @@ def _set_presence(
 
 
 async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
-    """Attend les messages du client ; sans message pendant l'intervalle, envoie un ping et exige
-    un pong dans le délai. Une fermeture du client est vue tout de suite (WebSocketDisconnect)."""
     while True:
         try:
             text: str = await asyncio.wait_for(
@@ -216,14 +198,11 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
                 raise ChannelClosedError(
                     CHANNEL_CLOSE_HEARTBEAT_TIMEOUT, ErrorCode.HEARTBEAT_TIMEOUT
                 ) from exc
-        # Après l'authentification, le client ne dit plus que pong
         if not isinstance(_parse_client_message(text), PongMessage):
             raise ChannelClosedError(CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
 
 
 async def _receive_text(websocket: WebSocket) -> str:
-    """Prochain message texte du client. Une trame binaire n'a pas de sens ici : message
-    invalide (receive_text() lèverait une KeyError, soit une erreur interne)."""
     message: Message = await websocket.receive()
     if message["type"] == "websocket.disconnect":
         raise WebSocketDisconnect(message.get("code", status.WS_1000_NORMAL_CLOSURE))

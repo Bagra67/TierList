@@ -1,8 +1,3 @@
-"""Primitives cryptographiques de l'authentification : mots de passe, tokens, liens par email.
-
-Fonctions pures : la configuration (clé, durées) est passée en paramètre par le service.
-"""
-
 import hashlib
 import hmac
 import secrets
@@ -32,18 +27,14 @@ from app.exceptions.auth import (
     InvalidEmailTokenError,
 )
 
-# Argon2id avec les paramètres recommandés par pwdlib
 _password_hash = PasswordHash.recommended()
-# Haché une seule fois : sert à égaliser le temps de réponse quand l'email est inconnu
 _DUMMY_PASSWORD_HASH = _password_hash.hash(secrets.token_urlsafe(DUMMY_PASSWORD_BYTES))
 
 
 @dataclass(frozen=True)
 class AccessTokenClaims:
     user_id: uuid.UUID
-    # Heure de la dernière vraie connexion (mot de passe), conservée à travers les rafraîchissements
     auth_time: datetime
-    # users.token_version à l'émission : le token ne vaut plus rien une fois ce compteur incrémenté
     token_version: int
 
 
@@ -86,7 +77,6 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
         claims = jwt.decode(
             token,
             secret_key,
-            # Liste explicite : empêche les attaques par changement d'algorithme (ex. « none »)
             algorithms=[JWT_ALGORITHM],
             options={"require": ["sub", "type", "iat", "exp", "auth_time", "token_version"]},
         )
@@ -104,7 +94,6 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
 def create_ban_notice_token(
     *, user_id: uuid.UUID, secret_key: str, ttl: timedelta, now: datetime | None = None
 ) -> str:
-    # Désigne le compte, sans le motif : celui-ci est relu en base, à jour, quand il est montré
     issued_at = now or datetime.now(UTC)
     claims = {
         "sub": str(user_id),
@@ -133,16 +122,10 @@ def decode_ban_notice_token(token: str, *, secret_key: str) -> uuid.UUID:
 @dataclass(frozen=True)
 class EmailVerificationClaims:
     user_id: uuid.UUID
-    # Empreinte de l'adresse à confirmer : si l'email du compte a changé, le lien ne vaut plus rien
     email_fingerprint: str
 
 
 def email_fingerprint(email: str) -> str:
-    """Empreinte d'une adresse, mise dans les liens à sa place.
-
-    Un JWT se lit sans la clé : l'adresse en clair dans un lien finirait dans les logs (proxy,
-    serveur web), qui ne doivent contenir aucun email.
-    """
     return hashlib.sha256(email.encode()).hexdigest()[:EMAIL_FINGERPRINT_LENGTH]
 
 
@@ -154,7 +137,6 @@ def create_email_verification_token(
     ttl: timedelta,
     now: datetime | None = None,
 ) -> str:
-    # Signé et non stocké : un lien utilisé deux fois confirme simplement une adresse déjà confirmée
     issued_at = now or datetime.now(UTC)
     claims = {
         "sub": str(user_id),
@@ -187,7 +169,6 @@ def decode_email_verification_token(token: str, *, secret_key: str) -> EmailVeri
 @dataclass(frozen=True)
 class PasswordResetClaims:
     user_id: uuid.UUID
-    # Empreinte du mot de passe au moment de la demande : le lien ne sert plus une fois changé
     password_fingerprint: str
 
 
@@ -242,21 +223,16 @@ def generate_refresh_token() -> str:
 
 
 def hash_refresh_token(refresh_token: str) -> str:
-    # SHA-256 suffit : le token est aléatoire (256 bits), un hachage lent n'apporterait rien.
     return hashlib.sha256(refresh_token.encode()).hexdigest()
 
 
 def generate_guest_token() -> str:
-    """Jeton de la place d'un invité : porté par son cookie et son lien perso."""
     return secrets.token_urlsafe(GUEST_TOKEN_BYTES)
 
 
 def generate_public_results_token() -> str:
-    """Jeton du lien des résultats d'une partie close (US-5.3) : gardé en clair, il ne donne que
-    la lecture des résultats."""
     return secrets.token_urlsafe(PUBLIC_RESULTS_TOKEN_BYTES)
 
 
 def hash_guest_token(guest_token: str) -> str:
-    # Seule l'empreinte est gardée en base, comme pour un refresh token (jeton de 256 bits)
     return hashlib.sha256(guest_token.encode()).hexdigest()

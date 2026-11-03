@@ -1,5 +1,3 @@
-"""Connexion avec Google (OpenID Connect, flux « authorization code » avec PKCE)."""
-
 import base64
 import hashlib
 import secrets
@@ -35,7 +33,6 @@ from app.exceptions.google import GoogleAuthError
 
 @dataclass(frozen=True)
 class GoogleIdentity:
-    # Identifiant stable du compte Google (claim « sub »)
     subject: str
     email: str
     email_verified: bool
@@ -44,17 +41,9 @@ class GoogleIdentity:
 
 @dataclass(frozen=True)
 class GoogleLoginAttempt:
-    """Secrets d'une tentative de connexion, conservés entre le départ vers Google et le retour.
-
-    - state : protège le retour contre le CSRF (il doit revenir à l'identique) ;
-    - nonce : lie l'id_token reçu à cette tentative (contre le rejeu) ;
-    - code_verifier : PKCE, rend inutilisable un code d'autorisation intercepté.
-    """
-
     state: str
     nonce: str
     code_verifier: str
-    # Étape à reprendre après la connexion (ex. « delete-account »), ou None
     next_step: str | None
 
     @classmethod
@@ -72,7 +61,6 @@ class GoogleLoginAttempt:
         return base64.urlsafe_b64encode(digest, padded=False).decode()
 
     def to_cookie(self, secret_key: str, ttl: timedelta) -> str:
-        # Signé (JWT HS256) : le navigateur le garde, mais ne peut pas le modifier
         now = datetime.now(UTC)
         claims = {
             "type": GOOGLE_LOGIN_TOKEN_TYPE,
@@ -111,7 +99,6 @@ class GoogleLoginAttempt:
 
 @lru_cache
 def _google_jwk_client(timeout_seconds: int) -> jwt.PyJWKClient:
-    # Partagé entre les requêtes : garde en cache les clés publiques de Google
     return jwt.PyJWKClient(GOOGLE_JWKS_URL, cache_keys=True, timeout=timeout_seconds)
 
 
@@ -130,7 +117,6 @@ class GoogleOAuthClient:
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         self._http_timeout_seconds = http_timeout_seconds
-        # Remplaçables dans les tests : aucun appel réseau vers Google
         self._transport = transport
         self._jwk_client = jwk_client
 

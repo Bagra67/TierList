@@ -19,6 +19,5 @@ def get_history(
     limit: Annotated[int, Query(ge=1, le=HISTORY_PAGE_SIZE_MAX)] = HISTORY_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> HistoryResponse:
-    # Les parties closes du compte (US-5.5) ; un invité n'a pas d'historique
     page: HistoryPage = service.history(user, limit, offset)
     return HistoryResponse(games=past_games_response(page.games), has_more=page.has_more)

@@ -1,8 +1,6 @@
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
-# Noms des contraintes et index générés par SQLAlchemy, plutôt que choisis par PostgreSQL :
-# une migration peut ainsi les désigner (ex. op.drop_constraint) sans les deviner.
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_N_name)s",
@@ -13,6 +11,4 @@ NAMING_CONVENTION = {
 
 
 class Base(DeclarativeBase):
-    """Classe de base des modèles ORM ; sa metadata est la cible des migrations Alembic."""
-
     metadata = MetaData(naming_convention=NAMING_CONVENTION)

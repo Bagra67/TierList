@@ -1,10 +1,3 @@
-"""Salles ouvertes du jeu de données (en plus de celles où des parties ont été jouées) : des salles
-pleines, et des salles avec un compte et un invité bannis, aux réglages variés. Créées par
-RoomService (code, place du room admin, réglages), leurs places écrites par app/seed/seats.py.
-
-Une salle ouverte où personne n'est connecté depuis ROOM_INACTIVITY_HOURS est fermée par le
-balayage : elles disparaissent donc au bout d'un jour, il suffit de relancer le jeu de données."""
-
 import logging
 import random
 from dataclasses import dataclass
@@ -22,7 +15,6 @@ from app.services.rooms import RoomService
 
 logger = logging.getLogger(__name__)
 
-# Invités d'une salle pleine : les autres places vont à des comptes
 GUESTS_IN_A_FULL_ROOM = 4
 # Une salle à bannissements : trois comptes et un invité assis, un compte et un invité bannis
 SEATED_ACCOUNTS_BEFORE_BANS = 3

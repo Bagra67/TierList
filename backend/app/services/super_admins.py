@@ -16,13 +16,10 @@ from app.repositories import users as user_repository
 
 logger = logging.getLogger(__name__)
 
-# Ouvre une session de base de données (Session(engine) dans la commande, celle du test sinon)
 SessionFactory = Callable[[], AbstractContextManager[Session]]
 
 
 def set_super_admin(session_factory: SessionFactory, email: str, *, granted: bool) -> UserRole:
-    """Donne (granted=True) ou retire le rôle super admin au compte de cette adresse ; renvoie
-    son nouveau rôle. Relancer la commande ne change rien."""
     role: UserRole = UserRole.SUPER_ADMIN if granted else UserRole.USER
     with session_factory() as session:
         user: User | None = user_repository.get_user_by_email(session, normalize_email(email))
@@ -30,6 +27,5 @@ def set_super_admin(session_factory: SessionFactory, email: str, *, granted: boo
             raise UserNotFoundError
         user.role = role
         session.commit()
-        # L'identifiant et pas l'adresse : pas de donnée personnelle dans les logs
         logger.info("Rôle changé : user_id=%s role=%s", user.id, role)
         return role

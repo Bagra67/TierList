@@ -1,10 +1,3 @@
-"""Bannissement des comptes par les super admins (US-1.8, docs/technical/moderation.md).
-
-Un compte banni est déconnecté partout, comme après une réinitialisation du mot de passe : ses
-sessions sont révoquées et ses jetons d'accès refusés. Il ne peut plus se connecter tant que le
-bannissement est actif (AuthService). Un super admin ne peut jamais être banni.
-"""
-
 import logging
 import uuid
 from datetime import UTC, datetime
@@ -34,19 +27,14 @@ class AccountBanService:
         self._moderation_log = moderation_log
 
     def active_ban(self, user_id: uuid.UUID) -> AccountBan | None:
-        """Le bannissement actif du compte, None s'il n'en a pas."""
         return account_ban_repository.get_active_ban(self._session, user_id, datetime.now(UTC))
 
     def banned_user_ids(self, user_ids: list[uuid.UUID]) -> set[uuid.UUID]:
-        """Parmi ces comptes, ceux qui sont bannis en ce moment."""
         return account_ban_repository.banned_user_ids(self._session, user_ids, datetime.now(UTC))
 
     def ban(
         self, super_admin: User, user_id: uuid.UUID, reason: str, ends_at: datetime | None
     ) -> AccountBan:
-        """Bannit le compte jusqu'à ends_at, ou définitivement sans date, et le déconnecte
-        partout. Un bannissement en cours est remplacé (de temporaire à définitif, ou une autre
-        date). Lève UserNotFoundError, CannotBanSuperAdminError ou BanEndInPastError."""
         now: datetime = datetime.now(UTC)
         user: User = self._get_user_for_update(user_id)
         if user.is_super_admin:
@@ -66,7 +54,6 @@ class AccountBanService:
             ends_at=ends_at,
         )
         account_ban_repository.add_ban(self._session, ban)
-        # Déconnecté partout : sessions révoquées, jetons d'accès déjà émis refusés
         refresh_token_repository.revoke_user_refresh_tokens(self._session, user.id, revoked_at=now)
         user.token_version += 1
         self._moderation_log.record(
@@ -87,8 +74,6 @@ class AccountBanService:
         return ban
 
     def lift(self, super_admin: User, user_id: uuid.UUID, reason: str) -> None:
-        """Lève le bannissement actif : le compte peut de nouveau se connecter. Lève
-        UserNotFoundError ou AccountNotBannedError."""
         now: datetime = datetime.now(UTC)
         user: User = self._get_user_for_update(user_id)
         current: AccountBan | None = account_ban_repository.get_active_ban(

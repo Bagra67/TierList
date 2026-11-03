@@ -73,8 +73,6 @@ RefreshTokenCookie = Annotated[str | None, Cookie(alias=REFRESH_TOKEN_COOKIE)]
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str, settings: Settings) -> None:
-    # HttpOnly : illisible par JavaScript (XSS). SameSite=Strict + chemin limité à /api/auth :
-    # le navigateur ne l'envoie qu'aux routes d'authentification, et jamais depuis un autre site.
     response.set_cookie(
         REFRESH_TOKEN_COOKIE,
         refresh_token,
@@ -97,8 +95,6 @@ def _clear_refresh_cookie(response: Response, settings: Settings) -> None:
 
 
 def _account_banned(exc: AccountBannedError) -> AppHTTPException:
-    """Connexion d'un compte banni (US-1.8) : 403, avec le motif et, pour un bannissement
-    temporaire, sa fin, que le frontend montre à la personne."""
     if exc.ends_at is None:
         return AppHTTPException(
             status_code=403,
@@ -116,8 +112,6 @@ def _account_banned(exc: AccountBannedError) -> AppHTTPException:
 
 
 def _session_expired(settings: Settings) -> AppHTTPException:
-    # Les en-têtes de la réponse injectée sont perdus quand une exception est levée :
-    # l'effacement du cookie invalide passe par les en-têtes de l'exception.
     cleared = Response()
     _clear_refresh_cookie(cleared, settings)
     return AppHTTPException(
@@ -160,7 +154,6 @@ def register(
             code=ErrorCode.EMAIL_ALREADY_REGISTERED,
             detail=messages.EMAIL_ALREADY_REGISTERED,
         ) from exc
-    # Après la réponse : l'inscription n'attend pas le serveur SMTP
     background_tasks.add_task(email_sender.send, registration.verification_email)
     return _token_response(response, registration.tokens, settings)
 
@@ -257,7 +250,6 @@ def verify_email(payload: VerifyEmailRequest, service: AuthServiceDep) -> None:
     status_code=204,
     responses={
         **UNAUTHORIZED_RESPONSE,
-        # 403 et non 401 : l'utilisateur est bien authentifié, seule la confirmation est fausse
         403: {"model": ErrorResponse, "description": messages.DELETE_ACCOUNT_FORBIDDEN_DESCRIPTION},
     },
 )
@@ -270,8 +262,6 @@ def delete_me(
     settings: SettingsDep,
 ) -> None:
     try:
-        # Ses salles sont fermées comme par lui (US-2.7) : la base les emporterait sinon avec
-        # leur partie en cours, sans prévenir personne
         service.delete_account(session, payload.password, before_delete=games.close_rooms_of_admin)
     except IncorrectPasswordError as exc:
         raise AppHTTPException(
@@ -293,7 +283,6 @@ def _google_cookie_path(settings: Settings) -> str:
 
 
 def _google_redirect(location: str, settings: Settings) -> RedirectResponse:
-    # La tentative de connexion ne sert qu'une fois : son cookie est effacé dans tous les cas
     response = RedirectResponse(location, status_code=302)
     response.delete_cookie(
         GOOGLE_LOGIN_COOKIE,
@@ -310,8 +299,6 @@ def _google_failure(error_code: str, settings: Settings) -> RedirectResponse:
 
 
 def _google_account_banned(exc: AccountBannedError, settings: Settings) -> RedirectResponse:
-    # Le motif et la date n'ont pas leur place dans une URL (logs, historique) : un cookie HttpOnly
-    # de courte durée permet à la page de connexion de les demander (/auth/google/ban-notice).
     response = _google_failure(GOOGLE_ERROR_ACCOUNT_BANNED, settings)
     ttl = timedelta(minutes=settings.google_login_attempt_ttl_minutes)
     response.set_cookie(
@@ -342,8 +329,6 @@ def google_login(
     attempt = GoogleLoginAttempt.start(next_step)
     attempt_ttl = timedelta(minutes=settings.google_login_attempt_ttl_minutes)
     response = RedirectResponse(google.authorization_url(attempt), status_code=302)
-    # SameSite=Lax et non Strict : le retour depuis Google est une navigation venant d'un autre
-    # site, pour laquelle le navigateur n'enverrait pas un cookie Strict.
     response.set_cookie(
         GOOGLE_LOGIN_COOKIE,
         attempt.to_cookie(settings.jwt_secret_key.get_secret_value(), attempt_ttl),
@@ -370,7 +355,6 @@ def google_callback(
     if google is None:
         return _google_failure(GOOGLE_ERROR_UNAVAILABLE, settings)
     if error is not None:
-        # access_denied : l'utilisateur a refusé ou fermé la page de Google
         logger.info("Connexion Google interrompue : %s", error)
         cancelled = error == GOOGLE_ACCESS_DENIED
         return _google_failure(
@@ -388,7 +372,6 @@ def google_callback(
         logger.warning("Échec de la connexion Google : %s", exc)
         return _google_failure(GOOGLE_ERROR_FAILED, settings)
     if not attempt.matches_state(state):
-        # Retour qui ne correspond pas à la tentative de ce navigateur : possible CSRF
         logger.warning("Échec de la connexion Google : state inattendu")
         return _google_failure(GOOGLE_ERROR_FAILED, settings)
     try:

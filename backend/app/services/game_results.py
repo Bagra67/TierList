@@ -1,10 +1,3 @@
-"""Résultats d'une partie close, lus par son lien (US-5.2, US-5.3 ; docs/technical/results.md).
-
-Le service lit la partie et ses joueurs figés, construit le classement de chaque joueur et
-appelle le calcul pur (services/results.py). Seuls les joueurs comptent : le room admin qui ne
-joue pas n'a aucun placement, donc aucun joueur figé.
-"""
-
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,10 +15,7 @@ from app.services.results import FinalPlacement, GameResults, PlayerRanking, com
 
 @dataclass(frozen=True)
 class PlayerBoard:
-    """Le classement final d'un joueur, tel qu'il l'a laissé."""
-
     player: GamePlayer
-    # Un tuple par tier, de haut en bas : ses items par position
     tiers: tuple[tuple[uuid.UUID, ...], ...]
     # Items qu'il n'a jamais placés (absent, non rattrapé), dans l'ordre du template
     unplaced_tile_ids: tuple[uuid.UUID, ...]
@@ -34,7 +24,6 @@ class PlayerBoard:
 @dataclass(frozen=True)
 class ClosedGameResults:
     game: Game
-    # Toujours rempli pour une partie close ; repris ici pour le typage
     closed_at: datetime
     include_absent_votes: bool
     results: GameResults
@@ -46,8 +35,6 @@ class GameResultsService:
         self._session = session
 
     def results(self, public_token: str, include_absent_votes: bool) -> ClosedGameResults:
-        """Résultats de la partie close de ce lien, avec ou sans les votes absents (US-5.2).
-        Recalculés à chaque lecture : 10 joueurs et 32 items au plus (results.md)."""
         game: Game | None = game_repository.get_closed_game_by_token(self._session, public_token)
         if game is None or game.closed_at is None:
             raise GameResultsNotFoundError
@@ -81,7 +68,6 @@ class GameResultsService:
 
 
 def _ranking_of(placements: list[Placement], tier_indexes: dict[uuid.UUID, int]) -> PlayerRanking:
-    """Le classement d'un joueur pour le calcul : ses placements finaux et ses votes absents."""
     final_placements: dict[uuid.UUID, FinalPlacement] = {}
     absent_tile_ids: set[uuid.UUID] = set()
     for placement in placements:

@@ -1,9 +1,3 @@
-"""Suppression de tout ce que le jeu de données a créé, avant d'en créer un nouveau.
-
-L'ordre compte : plusieurs liens vers les comptes sont en SET NULL (l'hôte d'une partie, son
-joueur, l'auteur d'une entrée du journal, le propriétaire d'une image), et supprimer les comptes en
-premier laisserait ces lignes orphelines. Les autres comptes ne sont jamais touchés."""
-
 import logging
 import uuid
 from dataclasses import dataclass
@@ -45,10 +39,7 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
         return SeedCleanup(accounts=0, games=0, images=0)
     logger.info("Suppression des données seed : %d comptes", len(seed_user_ids))
 
-    # 1. Le journal : l'auteur passerait à NULL
     session.execute(delete(ModerationAction).where(ModerationAction.actor_id.in_(seed_user_ids)))
-    # 2. Les parties animées ou jouées par un compte seed (tours, joueurs et placements partent
-    # avec elles) : l'hôte et les joueurs passeraient à NULL
     games: int = len(
         session.scalars(
             delete(Game)
@@ -69,9 +60,6 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     session.execute(
         delete(TemplateSnapshot).where(TemplateSnapshot.template_id.in_(seed_template_ids))
     )
-    # 4. Les images, relevées avant les comptes (leur propriétaire passerait à NULL), supprimées
-    # après les modèles et leurs tuiles qui les désignent. Le fichier d'une image masquée est en
-    # quarantaine ; celui d'une image supprimée est déjà effacé
     images: list[tuple[uuid.UUID, str | None]] = [
         (image_id, _file_key(storage_key, status))
         for image_id, storage_key, status in session.execute(
@@ -80,7 +68,6 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
             )
         ).all()
     ]
-    # 5. Les comptes : leurs modèles, salles, places, bannissements et sessions partent en cascade
     session.execute(delete(User).where(User.id.in_(seed_user_ids)))
     session.execute(delete(Image).where(Image.id.in_([image_id for image_id, _ in images])))
     session.commit()
@@ -95,8 +82,6 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
 
 
 def _file_key(storage_key: str, status: ImageStatus) -> str | None:
-    """Emplacement du fichier d'une image selon son statut de modération, None s'il n'existe
-    plus."""
     match status:
         case ImageStatus.VISIBLE:
             return storage_key

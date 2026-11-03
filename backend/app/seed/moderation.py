@@ -1,15 +1,3 @@
-"""Modération du jeu de données : le journal, et quelques images masquées ou supprimées.
-
-Les entrées du journal sont datées dans le passé. Leurs cibles sont des modèles, des comptes et des
-pseudos du jeu de données. Elles sont écrites directement, comme ModerationLogService.record les
-écrirait (auteur et libellé de la cible copiés), mais avec leur date d'emblée : record écrit chaque
-entrée à part, et la redater ensuite coûterait deux requêtes par entrée, à travers Internet sur
-staging.
-
-Les images et les modèles modérés, peu nombreux, passent par les vrais services : le fichier d'une
-image va en quarantaine ou est effacé, un modèle masqué ne lance plus de partie, et leur entrée du
-journal désigne la vraie cible."""
-
 import logging
 import random
 import uuid
@@ -32,7 +20,6 @@ from app.services.template_moderation import TemplateModerationService
 
 logger = logging.getLogger(__name__)
 
-# Les entrées sont étalées sur cette durée
 LOG_SPAN_DAYS = 120
 REASONS: tuple[str, ...] = (
     "Harcèlement", "Contenu à caractère sexuel", "Propos haineux", "Spam", "Droit d'auteur",
@@ -42,7 +29,6 @@ REASONS: tuple[str, ...] = (
 BAN_REASONS: tuple[str, ...] = (
     "Harcèlement répété", "Spam", "Propos haineux", "Usurpation d'identité",
 )  # fmt: skip
-# Un bannissement temporaire finit dans ce nombre de jours
 TEMPORARY_BAN_DAYS = 14
 TEMPLATE_REASONS: tuple[str, ...] = (
     "Harcèlement", "Propos haineux", "Données personnelles visibles", "Droit d'auteur",
@@ -66,7 +52,6 @@ def create_moderation_log(
         target_type: ModerationTargetType = rng.choice(list(ModerationTargetType))
         target_id, target_label = _target(target_type, accounts, templates, rng)
         actor: User = rng.choice(super_admins)
-        # De la plus ancienne à la plus récente, sur LOG_SPAN_DAYS
         days_ago: float = LOG_SPAN_DAYS * (count - index) / count
         entries.append(
             ModerationAction(
@@ -94,7 +79,6 @@ def _target(
     templates: list[Template],
     rng: random.Random,
 ) -> tuple[uuid.UUID | None, str]:
-    """Identifiant et libellé d'une cible du jeu de données, de ce type."""
     match target_type:
         case ModerationTargetType.TEMPLATE:
             template: Template = rng.choice(templates)
@@ -120,8 +104,6 @@ def moderate_images(
     deleted: int,
     rng: random.Random,
 ) -> int:
-    """Masque hidden images et en supprime deleted autres, prises au hasard parmi celles des
-    modèles à images ; renvoie le nombre d'actions écrites au journal."""
     service: ImageModerationService = ImageModerationService(
         session, storage, ModerationLogService(session, settings)
     )
@@ -141,7 +123,6 @@ def moderate_templates(
     template_ids: list[uuid.UUID],
     rng: random.Random,
 ) -> int:
-    """Masque ces modèles ; renvoie le nombre d'actions écrites au journal."""
     service: TemplateModerationService = TemplateModerationService(
         session, ModerationLogService(session, settings)
     )
@@ -159,8 +140,6 @@ def ban_accounts(
     permanently: list[User],
     rng: random.Random,
 ) -> int:
-    """Bannit ces comptes, les premiers jusqu'à dans TEMPORARY_BAN_DAYS jours, les autres
-    définitivement ; renvoie le nombre d'actions écrites au journal."""
     service: AccountBanService = AccountBanService(session, ModerationLogService(session, settings))
     ends_at: datetime = datetime.now(UTC) + timedelta(days=TEMPORARY_BAN_DAYS)
     for user in temporarily:

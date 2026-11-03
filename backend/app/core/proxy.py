@@ -1,5 +1,3 @@
-"""Accès par le proxy seulement (docs/technical/deployment.md, §2.2)."""
-
 from collections.abc import Sequence
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import cast
@@ -30,7 +28,6 @@ class TrustedProxyMiddleware:
     def __init__(self, app: ASGIApp, trusted_networks: Sequence[IPvAnyNetwork]) -> None:
         self.trusted_networks: tuple[IPvAnyNetwork, ...] = tuple(trusted_networks)
         trusted_hosts: list[str] = [str(network) for network in self.trusted_networks]
-        # uvicorn et Starlette typent l'ASGI chacun à leur façon, pour la même interface
         proxy_headers: object = ProxyHeadersMiddleware(
             cast(ASGI3Application, app), trusted_hosts=trusted_hosts
         )
@@ -47,13 +44,11 @@ class TrustedProxyMiddleware:
             await response(scope, receive, send)
             return
         if scope["type"] == "websocket" and not self._from_trusted_peer(scope):
-            # Fermé avant d'être accepté : uvicorn répond 403 à la poignée de main
             await WebSocketClose(code=status.WS_1008_POLICY_VIOLATION)(scope, receive, send)
             return
         await self.app(scope, receive, send)
 
     def _from_trusted_peer(self, scope: Scope) -> bool:
-        """Adresse de la connexion TCP, pas celle d'un en-tête que le client peut écrire."""
         client: tuple[str, int] | None = scope.get("client")
         if client is None:
             return False

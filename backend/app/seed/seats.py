@@ -1,12 +1,3 @@
-"""Places et bannissements des salles du jeu de données, écrits directement.
-
-RoomService.join recharge toute la salle (places, comptes, bannissements, parties) à chaque
-arrivée : près de vingt requêtes par place, des minutes sur staging, à travers Internet. Les
-salles sont donc créées par le service (code, place du room admin, réglages), puis leurs places
-écrites ici, en une fois, avec les mêmes règles : un compte au plus une fois par salle, un pseudo
-d'invité unique sans tenir compte de la casse, au plus FREE_PLAN_MAX_PARTICIPANTS places, le jeton
-d'un invité gardé seulement par son empreinte, et un bannissement qui remplace la place."""
-
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -27,14 +18,11 @@ GUEST_NICKNAMES: tuple[str, ...] = (
 
 @dataclass(frozen=True)
 class Seats:
-    """Qui prend place dans une salle, en plus de son room admin."""
-
     accounts: list[User]
     guest_nicknames: list[str]
 
 
 def seat(session: Session, settings: Settings, room: Room, seats: Seats) -> None:
-    """Donne leur place aux comptes et aux invités, puis valide la transaction."""
     taken: set[str] = {participant.display_name.lower() for participant in room.participants}
     seated: list[Participant] = [Participant(user_id=account.id) for account in seats.accounts]
     taken |= {account.display_name.lower() for account in seats.accounts}
@@ -62,8 +50,6 @@ def ban(session: Session, room: Room, account: User, nickname: str) -> None:
 
 
 def _guest(settings: Settings, nickname: str) -> Participant:
-    """Une place d'invité, comme RoomService.join_as_guest : seule l'empreinte du jeton est
-    gardée (personne n'utilisera ce lien perso)."""
     return Participant(
         nickname=nickname,
         guest_token_hash=hash_guest_token(generate_guest_token()),

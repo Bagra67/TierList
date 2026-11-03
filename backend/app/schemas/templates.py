@@ -17,7 +17,6 @@ from app.constants.templates import (
 )
 from app.models.enums import TemplateModeration
 
-# Espaces de début et de fin retirés : un nom fait seulement d'espaces est un nom vide
 TemplateName = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=TEMPLATE_NAME_MAX_LENGTH),
@@ -37,39 +36,30 @@ TierName = Annotated[
     StringConstraints(strip_whitespace=True, min_length=1, max_length=TIER_NAME_MAX_LENGTH),
 ]
 
-# Couleur #RRGGBB, enregistrée en majuscules : #ff7f7f et #FF7F7F sont la même couleur
 TierColor = Annotated[
     str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$"), AfterValidator(str.upper)
 ]
 
-# 0 = en haut de la liste ; une position au-delà de la fin place le tier en dernier
 Position = Annotated[int, Field(ge=0)]
 
 
-# Champs à changer : ceux qui sont absents restent tels quels
 class UpdateTierRequest(BaseModel):
     name: TierName | None = None
     color: TierColor | None = None
     position: Position | None = None
 
 
-# Texte d'une tuile ; un texte fait seulement d'espaces est refusé (envoyer null pour n'en
-# mettre aucun)
 TileText = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=TILE_TEXT_MAX_LENGTH),
 ]
 
 
-# Un texte, une image (envoyée avant par POST /images), ou les deux : sans aucun des deux, le
-# service refuse la tuile (tile_empty)
 class CreateTileRequest(BaseModel):
     text: TileText | None = None
     image_id: uuid.UUID | None = None
 
 
-# Champs à changer : ceux qui sont absents restent tels quels. null retire le texte ou l'image
-# (la tuile doit garder l'un des deux) ; une position null est ignorée
 class UpdateTileRequest(BaseModel):
     text: TileText | None = None
     image_id: uuid.UUID | None = None
@@ -88,10 +78,7 @@ class TierResponse(BaseModel):
 class TileResponse(BaseModel):
     id: uuid.UUID
     text: str | None
-    # Adresse publique de l'image compressée, None pour une tuile sans image ou dont l'image est
-    # retirée (api/presenters)
     image_url: str | None
-    # L'image est masquée ou supprimée par la modération : un visuel « image retirée » la remplace
     image_removed: bool
     position: int
 
@@ -103,11 +90,8 @@ class TemplateResponse(BaseModel):
     updated_at: datetime
     tiers: list[TierResponse]
     tiles: list[TileResponse]
-    # Nombre maximal de tuiles du template, affiché par l'éditeur
     max_tiles: int
-    # hidden : masqué par la modération, plus aucune partie ne peut être lancée avec
     moderation: TemplateModeration
-    # Motif du masquage, montré au propriétaire ; None si le template n'est pas masqué
     moderation_reason: str | None
 
 

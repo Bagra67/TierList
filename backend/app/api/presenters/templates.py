@@ -1,5 +1,3 @@
-"""Réponses de l'API pour les templates, construites à partir des modèles."""
-
 from app.api.presenters.images import is_image_removed, optional_image_url
 from app.models.template import Template
 from app.models.tile import Tile

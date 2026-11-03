@@ -53,7 +53,6 @@ def upload_image(
             params={"max_uploads": exc.max_uploads},
         ) from exc
     except ImageTooLargeError as exc:
-        # La limite part en param : le frontend l'affiche sans la recopier dans ses traductions
         raise AppHTTPException(
             status_code=413,
             code=ErrorCode.IMAGE_TOO_LARGE,

@@ -39,17 +39,12 @@ from app.services.rooms import RoomService
 
 logger = logging.getLogger(__name__)
 
-# Part des placements manqués (votes absents), et part des items que personne ne place
 ABSENT_RATE = 0.12
 NOBODY_PLACES_RATE = 0.04
-# Les parties sont étalées sur cette durée, de la plus ancienne à aujourd'hui
 HISTORY_SPAN_DAYS = 90
-# Durée d'un tour et du cooldown final, pour dater les tours
 ROUND_SECONDS = 30
 COOLDOWN_SECONDS = 60
-# Parties terminées de chaque salle qui reste ouverte : son lobby montre leurs résultats
 GAMES_PER_LOBBY_ROOM = 2
-# Parties écrites par transaction
 GAMES_PER_COMMIT = 10
 
 
@@ -62,10 +57,6 @@ class SeedGames:
 
 @dataclass(frozen=True)
 class _Account:
-    """Un compte et ce qu'on en lit, noté une fois : après chaque commit, SQLAlchemy oublie les
-    objets chargés et relirait chaque compte en base au moindre attribut (une requête par compte
-    et par partie, des milliers sur staging)."""
-
     user: User
     id: uuid.UUID
     name: str
@@ -73,7 +64,6 @@ class _Account:
 
 @dataclass(frozen=True)
 class _Player:
-    # None pour un invité
     account: _Account | None
     name: str
 
@@ -94,8 +84,6 @@ class _FrozenTile:
 
 @dataclass(frozen=True)
 class _Playable:
-    """Un modèle jouable et sa copie, lue une fois : chaque partie en prend un instantané."""
-
     template: Template
     id: uuid.UUID
     owner_id: uuid.UUID
@@ -120,10 +108,6 @@ def create_closed_games(
     playable: list[Template],
     rng: random.Random,
 ) -> SeedGames:
-    """Crée size.closed_games parties terminées, dont size.history_games avec le premier joueur
-    (le long historique). Les premières appartiennent par deux à size.lobby_rooms salles qui
-    restent ouvertes, avec leurs joueurs assis ; les autres n'ont plus de salle, comme une
-    partie dont la salle a été fermée."""
     accounts: list[_Account] = [
         _Account(user=player, id=player.id, name=player.display_name) for player in players
     ]
@@ -148,7 +132,6 @@ def create_closed_games(
             if in_lobby_room:
                 room = _seat_in_new_room(session, settings, rooms, admin, template, game_players)
                 lobby_rooms.append(room.room)
-        # Les plus anciennes d'abord : la dernière partie est d'aujourd'hui
         days_ago: float = HISTORY_SPAN_DAYS * (size.closed_games - 1 - index) / size.closed_games
         closed_at: datetime = datetime.now(UTC) - timedelta(
             days=days_ago, minutes=rng.randint(0, 600)
@@ -166,8 +149,6 @@ def create_closed_games(
         # Lus avant le commit, qui les oublierait
         name: str = snapshot.name
         round_count: int = len(game.rounds)
-        # Un commit toutes les GAMES_PER_COMMIT parties : leurs lignes sont écrites par lots, une
-        # requête par table au lieu d'une par partie
         if (index + 1) % GAMES_PER_COMMIT == 0 or index + 1 == size.closed_games:
             session.commit()
         closed.append(game)
@@ -198,9 +179,6 @@ def _playable(template: Template) -> _Playable:
 
 
 def _snapshot(template: _Playable) -> TemplateSnapshot:
-    """Un instantané du modèle, comme take_snapshot : ses tiers et ses tuiles copiés, les mêmes
-    images (immuables). Les identifiants sont tirés tout de suite : les tours et les placements
-    les désignent avant l'écriture."""
     return TemplateSnapshot(
         template_id=template.id,
         name=template.name,
@@ -220,8 +198,6 @@ def _snapshot(template: _Playable) -> TemplateSnapshot:
 def _pick_players(
     admin: _Account, accounts: list[_Account], with_history_player: bool, rng: random.Random
 ) -> list[_Player]:
-    """Le room admin (s'il joue), 1 à 5 autres comptes, le premier joueur s'il le faut, et 0 à 2
-    invités : de 2 à 8 joueurs, assez pour une salle de 10 places."""
     picked: list[_Account] = []
     if rng.random() < 0.8:
         picked.append(admin)
@@ -251,7 +227,6 @@ def _seat_in_new_room(
     template: _Playable,
     game_players: list[_Player],
 ) -> _OpenRoom:
-    """Une salle ouverte où les joueurs de ses parties ont leur place."""
     room: Room = rooms.create(admin.user, template.id)
     code: str = room.code
     room_id: uuid.UUID = room.id
@@ -316,7 +291,6 @@ def _closed_game(
                 ended_at=round_start + timedelta(seconds=ROUND_SECONDS),
             )
         )
-    # Les items que personne ne place, tirés une fois pour toute la partie
     nobody_places: set[uuid.UUID] = {tile.id for tile in tiles if rng.random() < NOBODY_PLACES_RATE}
     for player in game_players:
         frozen: GamePlayer = GamePlayer(
@@ -335,8 +309,6 @@ def _place_every_item(
     nobody_places: set[uuid.UUID],
     rng: random.Random,
 ) -> None:
-    """Les placements d'un joueur : chaque item placé a un placement de tour et un placement
-    final au même endroit (le cooldown les recopie) ; un item manqué n'a qu'un vote absent."""
     next_position: dict[uuid.UUID, int] = {}
     for tile in tiles:
         if tile.id in nobody_places or rng.random() < ABSENT_RATE:

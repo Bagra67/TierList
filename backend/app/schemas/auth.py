@@ -17,12 +17,9 @@ from app.schemas.common import DisplayName
 
 
 def _check_password_length(password: str) -> str:
-    # Lue à chaque requête : changer PASSWORD_MIN_LENGTH ne demande qu'un redémarrage.
-    # Le param min_length (repris dans la 422) permet au frontend d'afficher le minimum exact.
     min_length = get_settings().password_min_length
     if len(password) < min_length:
         raise PydanticCustomError(
-            # Pydantic exige un littéral : c'est la valeur de ErrorCode.PASSWORD_TOO_SHORT
             "password_too_short",
             messages.PASSWORD_TOO_SHORT,
             {"min_length": min_length},
@@ -30,8 +27,6 @@ def _check_password_length(password: str) -> str:
     return password
 
 
-# Nouveau mot de passe (inscription, réinitialisation) : longueur minimale configurable
-# (PASSWORD_MIN_LENGTH), longueur maximale fixe
 NewPassword = Annotated[
     str, Field(max_length=PASSWORD_MAX_LENGTH), AfterValidator(_check_password_length)
 ]
@@ -41,7 +36,6 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: NewPassword
     display_name: DisplayName
-    # Langue de l'email de vérification : celle de l'interface
     language: Language = DEFAULT_LANGUAGE
 
 
@@ -53,7 +47,6 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
-    # Durée de validité de l'access token, en secondes
     expires_in: int
 
 
@@ -63,18 +56,13 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     display_name: str
-    # False pour un compte créé avec Google : la suppression demande alors de se reconnecter
     has_password: bool
-    # Adresse confirmée par le lien reçu par email (ou par Google)
     email_verified: bool
-    # Le frontend affiche l'espace de modération aux super admins (le serveur vérifie toujours)
     role: UserRole
     created_at: datetime
 
 
 class DeleteAccountRequest(BaseModel):
-    # Confirmation : un access token volé ne suffit pas pour supprimer le compte.
-    # Absent pour un compte Google, qui confirme par une connexion récente.
     password: str | None = Field(default=None, min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
@@ -83,17 +71,14 @@ class EmailVerificationRequest(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    # Token du lien reçu par email ; sa validité est vérifiée par le service
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
 
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-    # Langue de l'email de réinitialisation : celle de l'interface
     language: Language = DEFAULT_LANGUAGE
 
 
 class ResetPasswordRequest(BaseModel):
-    # Token du lien reçu par email ; sa validité est vérifiée par le service
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
     password: NewPassword

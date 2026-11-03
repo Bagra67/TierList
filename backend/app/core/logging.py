@@ -29,11 +29,9 @@ def get_logging_settings() -> LoggingSettings:
 
 
 def configure_logging(level: LogLevel) -> None:
-    """Envoie les logs de l'application sur stderr, au même format que ceux d'uvicorn."""
     logging.config.dictConfig(
         {
             "version": 1,
-            # Ne pas désactiver les loggers déjà configurés (uvicorn, SQLAlchemy…).
             "disable_existing_loggers": False,
             "formatters": {
                 "default": {

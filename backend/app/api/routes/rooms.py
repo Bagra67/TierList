@@ -77,8 +77,6 @@ ROOM_BANNED_RESPONSE: dict[int | str, dict[str, Any]] = {
 
 
 def _set_guest_cookie(response: Response, seat: GuestSeat, settings: Settings) -> None:
-    """Fait reconnaître l'invité par son navigateur (US-5.4) : cookie HttpOnly limité aux routes
-    de sa salle, jusqu'à l'expiration de son lien perso."""
     max_age: int = int((seat.expires_at - datetime.now(UTC)).total_seconds())
     response.set_cookie(
         GUEST_COOKIE,
@@ -175,7 +173,6 @@ def create_room(
     return room_response(room, service.seat_in(room, user), service, storage)
 
 
-# Compte (access token) ou invité (cookie de sa salle) ; sans place, 404 comme un code inconnu
 @router.get("/{code}", responses=ROOM_NOT_FOUND_RESPONSES)
 def get_room(
     code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
@@ -208,8 +205,6 @@ def join_as_guest(
     settings: SettingsDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> GuestRoomResponse:
-    # Sans compte : un pseudo suffit (US-2.5). Le cookie d'une place précédente fait reconnaître
-    # le navigateur d'un invité banni (US-2.12)
     try:
         seat: GuestSeat = service.join_as_guest(code, payload.nickname, guest_token)
     except RoomNotFoundError as exc:
@@ -244,7 +239,6 @@ def restore_guest_session(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
-    # Lien perso ouvert sur un autre appareil (US-5.4) : le cookie y est posé à son tour
     try:
         seat: GuestSeat = service.restore_guest(code, payload.token)
     except GuestLinkInvalidError as exc:
@@ -266,7 +260,6 @@ def renew_guest_link(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
-    # Invité reconnu par son cookie qui a perdu son lien perso : l'ancien cesse de marcher
     try:
         seat: GuestSeat = service.renew_guest_link(viewer, code)
     except RoomNotFoundError as exc:
@@ -286,7 +279,6 @@ def renew_guest_link(
 def join_room(
     code: str, user: CurrentUserDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
-    # Rejoint comme joueur, ou retrouve sa place : appeler deux fois ne crée pas de seconde place
     try:
         room: Room = service.join(user, code)
     except RoomNotFoundError as exc:
@@ -315,7 +307,6 @@ def update_room_settings(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    # Seuls les réglages envoyés (non nuls) changent
     changes: RoomSettingsChanges = RoomSettingsChanges(**payload.model_dump(exclude_none=True))
     try:
         room: Room = service.update_settings(user, code, changes)
@@ -338,7 +329,6 @@ def update_room_settings(
     responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_ADMIN_REQUIRED_RESPONSE},
 )
 def close_room(code: str, user: CurrentUserDep, games: GameServiceDep) -> None:
-    # Ferme la salle (US-2.7) : la partie en cours est close d'abord, ses parties lui survivent
     try:
         games.close_room(user, code)
     except RoomNotFoundError as exc:
@@ -368,7 +358,6 @@ def remove_participant(
     storage: ImageStorageDep,
     ban: bool = False,
 ) -> RoomResponse:
-    # Supprime la place (US-2.11) ; avec ban=true, la personne ne peut plus revenir (US-2.12)
     try:
         room: Room = games.remove_participant(user, code, participant_id, ban)
     except RoomNotFoundError as exc:
@@ -436,7 +425,6 @@ def start_game(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    # Le room admin lance une partie (US-3.1) : le premier item est montré à tous
     try:
         room: Room = games.start(user, code)
     except RoomNotFoundError as exc:
@@ -493,7 +481,6 @@ def place_item(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    # Compte ou invité : place l'item en cours dans son propre plateau (US-3.3)
     try:
         seat: Participant = games.place(viewer, code, tile_id, payload.tier_id, payload.position)
     except RoomNotFoundError as exc:
@@ -552,7 +539,6 @@ def next_round(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    # Le room admin passe à l'item suivant, quel que soit le réglage automatique (US-3.4)
     try:
         room: Room = games.next_round(user, code)
     except RoomNotFoundError as exc:
@@ -583,7 +569,6 @@ def end_cooldown(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    # Le room admin termine le cooldown final avant la fin de son timer (US-4.1)
     try:
         room: Room = games.end_cooldown(user, code)
     except RoomNotFoundError as exc:

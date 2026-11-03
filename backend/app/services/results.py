@@ -1,11 +1,3 @@
-"""Calcul des résultats d'une partie close (docs/technical/results.md) : répartition des votes par
-tier, votes absents et classement médian.
-
-Fonctions pures, sans base de données : l'appelant fournit les tiers du snapshot, l'ordre des
-tuiles et le classement final de chaque joueur. L'admin qui ne joue pas n'est pas un joueur : il
-n'est pas passé ici.
-"""
-
 import math
 import uuid
 from collections.abc import Mapping, Sequence
@@ -15,17 +7,13 @@ from fractions import Fraction
 
 @dataclass(frozen=True)
 class FinalPlacement:
-    # 0 = tier du haut, le meilleur
     tier_index: int
-    # Seul l'ordre des positions dans un tier compte, pas leur valeur
     position: int
 
 
 @dataclass(frozen=True)
 class PlayerRanking:
-    # Classement final du joueur ; une tuile jamais placée (absente, non rattrapée) n'y figure pas
     final_placements: Mapping[uuid.UUID, FinalPlacement]
-    # Tuiles pour lesquelles le joueur a un vote absent au tour, rattrapées ou non au cooldown
     absent_tile_ids: frozenset[uuid.UUID]
 
 
@@ -33,11 +21,8 @@ class PlayerRanking:
 class ItemResults:
     votes_per_tier: tuple[int, ...]
     absent_count: int
-    # Qui a voté : pour chaque tier, les indices (dans l'ordre de players) des joueurs comptés
     voters_per_tier: tuple[tuple[int, ...], ...]
-    # Indices des joueurs comptés absents ; toujours vide sans les votes absents
     absent_player_indexes: tuple[int, ...]
-    # None quand aucun vote n'est compté pour l'item : il n'est alors pas classé
     median_score: Fraction | None
     mean_score: Fraction | None
     median_tier_index: int | None
@@ -46,7 +31,6 @@ class ItemResults:
 @dataclass(frozen=True)
 class GameResults:
     items: Mapping[uuid.UUID, ItemResults]
-    # Un tuple par tier du snapshot, de haut en bas ; un tier peut être vide
     median_ranking: tuple[tuple[uuid.UUID, ...], ...]
     unranked_tile_ids: tuple[uuid.UUID, ...]
 
@@ -57,7 +41,6 @@ def compute_results(
     players: Sequence[PlayerRanking],
     include_absent_votes: bool,
 ) -> GameResults:
-    """Calcule les résultats ; tile_ids est dans l'ordre du template (dernier départage)."""
     scores_per_player: list[dict[uuid.UUID, Fraction]] = []
     for player in players:
         scores_per_player.append(_scores_of(player))
@@ -81,12 +64,6 @@ def compute_results(
 
 
 def _scores_of(player: PlayerRanking) -> dict[uuid.UUID, Fraction]:
-    """Score fin de chaque tuile du joueur : t + (k + 1/2) / n, entre t et t + 1.
-
-    t = indice du tier, k = rang de la tuile dans ce tier (0 = première), n = nombre de tuiles du
-    joueur dans ce tier. Diviser par n rend comparables des joueurs dont les tiers n'ont pas la
-    même taille.
-    """
     tiles_per_tier: dict[int, list[tuple[int, uuid.UUID]]] = {}
     for tile_id, placement in player.final_placements.items():
         tiles_per_tier.setdefault(placement.tier_index, []).append((placement.position, tile_id))
@@ -113,7 +90,6 @@ def _item_results(
     for player_index, (player, player_scores) in enumerate(
         zip(players, scores_per_player, strict=True)
     ):
-        # Sans les votes absents, seuls comptent les joueurs qui ont voté pendant le tour
         if not include_absent_votes and tile_id in player.absent_tile_ids:
             continue
         placement: FinalPlacement | None = player.final_placements.get(tile_id)
@@ -149,10 +125,6 @@ def _item_results(
 
 
 def _median_score(scores: Sequence[Fraction]) -> Fraction:
-    """Score du milieu ; pour un nombre pair de votes, le moins bon des deux du milieu.
-
-    Une majorité stricte des joueurs a donc mis l'item à ce niveau ou mieux (jugement majoritaire).
-    """
     sorted_scores: list[Fraction] = sorted(scores)
     return sorted_scores[len(sorted_scores) // 2]
 
@@ -162,10 +134,6 @@ def _median_ranking(
     tile_ids: Sequence[uuid.UUID],
     items: Mapping[uuid.UUID, ItemResults],
 ) -> tuple[tuple[uuid.UUID, ...], ...]:
-    """Tier list médiane : chaque item dans le tier de son score médian.
-
-    Dans un tier : score médian, puis score moyen, puis ordre du template.
-    """
     sort_keys_per_tier: list[list[tuple[Fraction, Fraction, int, uuid.UUID]]] = []
     for _tier_index in range(tier_count):
         sort_keys_per_tier.append([])
