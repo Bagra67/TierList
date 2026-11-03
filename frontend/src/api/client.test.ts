@@ -12,7 +12,6 @@ import { getMe, login } from './auth';
 import { ApiError } from '../errors/apiError';
 import { onSessionEnded, refreshAccessToken, setAccessToken } from './client';
 
-// Réponse de GET /auth/me qui n'accepte que l'access token donné
 const meAcceptingOnly = (accessToken: string) => (request: Request) =>
   request.headers.get('Authorization') === `Bearer ${accessToken}`
     ? Response.json(alice)

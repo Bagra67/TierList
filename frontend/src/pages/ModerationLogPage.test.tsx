@@ -35,7 +35,6 @@ const superAdmins = [
   { id: 'sam-id', display_name: 'Samuel' },
 ];
 
-// Le faux backend renvoie la page selon l'offset demandé, et garde les paramètres reçus
 function stubLog(pages: Record<string, LogPage>): URLSearchParams[] {
   const queries: URLSearchParams[] = [];
   stubBackend({

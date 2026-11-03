@@ -89,7 +89,6 @@ describe('translateError', () => {
       params: { max_bytes: 10485760 },
     });
 
-    // Intl sépare le nombre et l'unité par une espace insécable, selon la langue
     expect(translateError(i18n.t, error)).toMatch(
       /^L'image est trop lourde : 10\sMo au maximum\.$/,
     );

@@ -7,9 +7,6 @@ import { aliceRoom } from './fixtures/rooms';
 import { LocationHash } from './LocationHash';
 import { renderWithQueryClient } from './renderWithQueryClient';
 
-// Page de la salle ouverte par son lien (path peut porter un fragment, ex. le lien perso) ;
-// /login et l'accueil affichent un simple titre ; les résultats ouverts depuis le lobby sont la
-// vraie page
 export function renderRoomPage(path: string = aliceRoom.code) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[`/r/${path}`]}>
@@ -31,7 +28,6 @@ export function renderRoomPage(path: string = aliceRoom.code) {
   );
 }
 
-// Résumé des réglages du lobby (le formulaire, fermé, contient les mêmes libellés)
 export function settingsSummary(): HTMLElement {
   const section: HTMLElement | null = screen
     .getByRole('heading', { name: 'Réglages' })

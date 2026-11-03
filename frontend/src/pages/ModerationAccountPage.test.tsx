@@ -99,7 +99,6 @@ describe('ModerationAccountPage', () => {
     expect(
       within(teachers).getByRole('button', { name: 'Réafficher le modèle Teachers' }),
     ).toBeVisible();
-    // Les images et l'historique sont lus filtrés sur ce compte
     await waitFor(() => expect(calls.imageQueries.at(-1)?.get('owner_id')).toBe('max-id'));
     await waitFor(() => expect(calls.logQueries.at(-1)?.get('account_id')).toBe('max-id'));
   });

@@ -12,7 +12,6 @@ const chips: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01',
   name: 'Chips',
   tile_count: 12,
-  // Midi UTC : la même date quel que soit le fuseau de la machine de test
   updated_at: '2026-10-05T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
@@ -38,8 +37,6 @@ const createdTemplate: Template = {
   moderation_reason: null,
 };
 
-// L'éditeur et le lobby sont remplacés par un simple titre : seule la navigation vers eux est
-// vérifiée ici
 function renderTemplatesPage() {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={['/templates']}>
@@ -52,7 +49,6 @@ function renderTemplatesPage() {
   );
 }
 
-// Route simulée de GET /templates, qui renvoie ces templates
 function listOf(templates: TemplateSummary[]): () => Response {
   return () => Response.json({ items: templates });
 }
@@ -67,7 +63,6 @@ describe('TemplatesPage', () => {
 
     renderTemplatesPage();
 
-    // Le squelette de chargement (son texte « Chargement… » arrive au rendu suivant)
     expect(screen.getByRole('status')).toBeInTheDocument();
     const items: HTMLElement[] = await screen.findAllByRole('listitem');
     expect(items).toHaveLength(2);
