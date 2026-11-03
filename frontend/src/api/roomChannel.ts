@@ -10,11 +10,8 @@ type RoomServerMessage = components['schemas']['RoomServerMessage'];
 type RoomEvent = Exclude<RoomServerMessage, components['schemas']['PingMessage']>;
 type RoomClientMessage = components['schemas']['RoomClientMessage'];
 
-// Codes de fermeture du serveur (backend : app/constants/rooms.py). Après NOT_AUTHENTICATED, un
-// compte retente une fois avec un token rafraîchi (le sien a pu expirer pendant que le lobby était
-// ouvert) ; sinon, comme après ROOM_NOT_FOUND, se reconnecter ne servirait à rien. Retiré ou banni
-// par le room admin, ou salle fermée, le participant n'a plus de place : la page le lui dit.
 const CLOSE_NOT_AUTHENTICATED: number = 4401;
+const CLOSE_ROOM_NOT_FOUND: number = 4404;
 const CLOSE_REMOVED: number = 4410;
 const CLOSE_BANNED: number = 4411;
 const CLOSE_ROOM_CLOSED: number = 4412;
@@ -24,7 +21,10 @@ const REMOVAL_REASONS: ReadonlyMap<number, RemovalReason> = new Map([
   [CLOSE_BANNED, 'banned'],
   [CLOSE_ROOM_CLOSED, 'closed'],
 ]);
-const NO_RETRY_CLOSE_CODES: ReadonlySet<number> = new Set([CLOSE_NOT_AUTHENTICATED, 4404]);
+const NO_RETRY_CLOSE_CODES: ReadonlySet<number> = new Set([
+  CLOSE_NOT_AUTHENTICATED,
+  CLOSE_ROOM_NOT_FOUND,
+]);
 const MAX_FAILED_OPENINGS: number = 5;
 const RECONNECT_MIN_DELAY_MS: number = 500;
 const RECONNECT_MAX_DELAY_MS: number = 10_000;
@@ -35,10 +35,10 @@ function roomChannelUrl(code: string): string {
   return `${protocol}//${window.location.host}/api/rooms/${encodeURIComponent(code)}/ws`;
 }
 
-// Backoff exponentiel avec gigue : des clients coupés ensemble ne reviennent pas tous à l'instant
-function reconnectDelay(attempt: number): number {
+function exponentialBackoffWithJitterMs(attempt: number): number {
   const ceiling: number = Math.min(RECONNECT_MAX_DELAY_MS, RECONNECT_MIN_DELAY_MS * 2 ** attempt);
-  return ceiling / 2 + Math.random() * (ceiling / 2);
+  const jitter: number = Math.random() * (ceiling / 2);
+  return ceiling / 2 + jitter;
 }
 
 async function channelAccessToken(viewer: RoomViewer): Promise<string | null> {
@@ -95,22 +95,17 @@ export interface RoomEventsState {
   unavailable: boolean;
 }
 
-// Suit la salle en direct (docs/technical/realtime.md) : ouvre le canal, s'authentifie, répond au
-// battement de cœur, applique les événements, se reconnecte, et ferme le canal au démontage. Les
-// composants ne touchent jamais le socket. enabled : le lecteur a une place (salle chargée).
-// onRemoved : le lecteur n'a plus de place (retiré, banni, ou salle fermée) ; il doit garder la
-// même identité d'un rendu à l'autre, sinon le canal serait rouvert.
 export function useRoomEvents(
   code: string,
   viewer: RoomViewer | undefined,
-  enabled: boolean,
-  onRemoved: (reason: RemovalReason) => void,
+  viewerHasSeat: boolean,
+  stableOnRemoved: (reason: RemovalReason) => void,
 ): RoomEventsState {
   const queryClient: QueryClient = useQueryClient();
   const [abandonedRoom, setAbandonedRoom] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || viewer === undefined) return undefined;
+    if (!viewerHasSeat || viewer === undefined) return undefined;
     const channelViewer: RoomViewer = viewer;
     const roomCode: string = canonicalRoomCode(code);
     let socket: WebSocket | null = null;
@@ -124,6 +119,10 @@ export function useRoomEvents(
       target.send(JSON.stringify(message));
     }
 
+    function readRoomAgainAfterMissedEvents(): void {
+      void queryClient.invalidateQueries({ queryKey: roomQueryKey(roomCode) });
+    }
+
     function connect(): void {
       const current: WebSocket = new WebSocket(roomChannelUrl(roomCode));
       socket = current;
@@ -134,8 +133,7 @@ export function useRoomEvents(
         void channelAccessToken(channelViewer).then((accessToken: string | null) => {
           if (stopped || current.readyState !== WebSocket.OPEN) return;
           send(current, { type: 'auth', access_token: accessToken });
-          // Ce qui a changé pendant la coupure n'est pas rejoué : la salle est relue
-          void queryClient.invalidateQueries({ queryKey: roomQueryKey(roomCode) });
+          readRoomAgainAfterMissedEvents();
         });
       });
       current.addEventListener('message', (event: MessageEvent<string>) => {
@@ -163,7 +161,7 @@ export function useRoomEvents(
         }
         const removalReason: RemovalReason | undefined = REMOVAL_REASONS.get(event.code);
         if (removalReason !== undefined) {
-          onRemoved(removalReason);
+          stableOnRemoved(removalReason);
           return;
         }
         if (NO_RETRY_CLOSE_CODES.has(event.code)) return;
@@ -174,7 +172,7 @@ export function useRoomEvents(
             return;
           }
         }
-        retryTimer = setTimeout(connect, reconnectDelay(attempt));
+        retryTimer = setTimeout(connect, exponentialBackoffWithJitterMs(attempt));
         attempt += 1;
       });
     }
@@ -185,7 +183,7 @@ export function useRoomEvents(
       clearTimeout(retryTimer);
       socket?.close(NORMAL_CLOSURE);
     };
-  }, [code, viewer, enabled, onRemoved, queryClient]);
+  }, [code, viewer, viewerHasSeat, stableOnRemoved, queryClient]);
 
-  return { unavailable: enabled && abandonedRoom === canonicalRoomCode(code) };
+  return { unavailable: viewerHasSeat && abandonedRoom === canonicalRoomCode(code) };
 }

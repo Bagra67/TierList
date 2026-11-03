@@ -12,15 +12,16 @@ import {
 
 import { apiClient, dataOrThrow, throwIfError } from './client';
 import { retryUnlessClientError } from './queryClient';
-import type { components } from './schema';
+import type { components, paths } from './schema';
 
 export type ModerationLogPage = components['schemas']['ModerationLogResponse'];
 export type ModerationLogEntry = components['schemas']['ModerationActionResponse'];
 export type SuperAdmin = components['schemas']['SuperAdminResponse'];
 export type RecentUploadsPage = components['schemas']['RecentUploadsResponse'];
 export type RecentUpload = components['schemas']['RecentUploadResponse'];
-// Statuts listés par les derniers envois : une image supprimée n'a plus de fichier
-export type ListedImageStatus = 'visible' | 'hidden';
+export type ListedImageStatus = NonNullable<
+  NonNullable<paths['/moderation/images']['get']['parameters']['query']>['status']
+>;
 export type ImageModerationAction = 'hide' | 'unhide' | 'delete';
 export type TemplateModerationAction = ImageModerationAction;
 export type AccountSearchPage = components['schemas']['AccountSearchResponse'];

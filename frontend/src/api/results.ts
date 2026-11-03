@@ -1,5 +1,6 @@
 import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { CLOSED_GAME_RESULTS_NEVER_STALE } from '../constants/results';
 import { apiClient, dataOrThrow } from './client';
 import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
@@ -42,8 +43,7 @@ export function useGameResults(token: string, includeAbsentVotes: boolean): Game
     queryKey: resultsQueryKey(token, includeAbsentVotes),
     queryFn: ({ signal }) => getGameResults(token, includeAbsentVotes, signal),
     retry: retryUnlessClientError,
-    // Les résultats d'une partie close ne changent plus (invariant 9)
-    staleTime: Infinity,
+    staleTime: CLOSED_GAME_RESULTS_NEVER_STALE,
   });
   const otherVariant: GameResults | undefined = queryClient.getQueryData<GameResults>(
     resultsQueryKey(token, !includeAbsentVotes),

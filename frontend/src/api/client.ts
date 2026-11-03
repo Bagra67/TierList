@@ -29,20 +29,18 @@ export function throwIfError({ error, response }: ApiResult<unknown>): void {
   }
 }
 
-// Access token (JWT, ~15 min) gardé en mémoire seulement : jamais dans localStorage, lisible
-// par un script injecté. Le refresh token, lui, est un cookie HttpOnly géré par le navigateur.
-let accessToken: string | null = null;
+let inMemoryAccessToken: string | null = null;
 
 export function setAccessToken(token: string | null): void {
-  accessToken = token;
+  inMemoryAccessToken = token;
 }
 
 export function getAccessToken(): string | null {
-  return accessToken;
+  return inMemoryAccessToken;
 }
 
 export function hasAccessToken(): boolean {
-  return accessToken !== null;
+  return inMemoryAccessToken !== null;
 }
 
 const sessionEndedListeners = new Set<() => void>();
@@ -57,7 +55,7 @@ export function onSessionEnded(listener: () => void): () => void {
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function refreshAccessToken(): Promise<boolean> {
-  const hadSession: boolean = accessToken !== null;
+  const hadSession: boolean = inMemoryAccessToken !== null;
   refreshInFlight ??= apiClient
     .POST('/auth/refresh')
     .then(({ data, error, response }) => {
@@ -76,21 +74,19 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshInFlight;
 }
 
-// Copies des requêtes en cours : le corps d'une Request ne peut être lu qu'une fois,
-// il en faut une copie intacte pour la renvoyer après un rafraîchissement.
-const pendingRequests = new Map<string, Request>();
+const requestCopiesForRetry = new Map<string, Request>();
 
 apiClient.use({
   onRequest({ request, id }) {
-    if (accessToken !== null) {
-      request.headers.set('Authorization', `Bearer ${accessToken}`);
+    if (inMemoryAccessToken !== null) {
+      request.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
     }
-    pendingRequests.set(id, request.clone());
+    requestCopiesForRetry.set(id, request.clone());
     return request;
   },
   async onResponse({ response, schemaPath, id }) {
-    const original = pendingRequests.get(id);
-    pendingRequests.delete(id);
+    const original = requestCopiesForRetry.get(id);
+    requestCopiesForRetry.delete(id);
     if (
       response.status !== HTTP_STATUS.UNAUTHORIZED ||
       SESSION_PATHS.has(schemaPath) ||
@@ -101,10 +97,10 @@ apiClient.use({
     if (!(await refreshAccessToken())) {
       return response;
     }
-    original.headers.set('Authorization', `Bearer ${accessToken}`);
+    original.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
     return fetch(original);
   },
   onError({ id }) {
-    pendingRequests.delete(id);
+    requestCopiesForRetry.delete(id);
   },
 });
