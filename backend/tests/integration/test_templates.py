@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -138,6 +139,25 @@ def test_list_shows_the_last_modified_template_first(
     response: Response = auth_client.get("/templates", headers=alice)
 
     assert [item["name"] for item in response.json()["items"]] == ["First, renamed", "Second"]
+
+
+def test_list_orders_the_templates_of_the_same_instant_by_their_id(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    same_instant: datetime = datetime(2026, 1, 1, tzinfo=UTC)
+    ids_in_insertion_order: list[uuid.UUID] = [uuid.UUID(int=number) for number in (3, 2, 1)]
+    for template_id in ids_in_insertion_order:
+        db_session.add(
+            Template(id=template_id, owner_id=owner.id, name="Same", updated_at=same_instant)
+        )
+        db_session.flush()
+
+    response: Response = auth_client.get("/templates", headers=alice)
+
+    assert [item["id"] for item in response.json()["items"]] == [
+        str(template_id) for template_id in reversed(ids_in_insertion_order)
+    ]
 
 
 def test_get_template_returns_its_tiers_and_tiles(

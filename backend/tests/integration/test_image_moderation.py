@@ -2,6 +2,7 @@ import logging
 import uuid
 
 import pytest
+from botocore.exceptions import ClientError
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from sqlalchemy import select
@@ -17,7 +18,7 @@ from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.user import User
 from app.services.image_storage import quarantine_key
-from tests.integration.conftest import FailingImageStorage
+from tests.integration.conftest import FailingImageStorage, FakeImageStorage
 from tests.integration.helpers import register, register_super_admin
 
 pytestmark = pytest.mark.integration
@@ -227,6 +228,32 @@ def test_an_action_needs_a_reason_of_at_most_500_characters(
     assert response.status_code == 422
     db_session.refresh(image)
     assert image.status == ImageStatus.VISIBLE
+
+
+class FailingQuarantineCopyStorage(FakeImageStorage):
+    def copy_to_quarantine(self, key: str) -> None:
+        raise ClientError({"Error": {"Code": "InternalError"}}, "CopyObject")
+
+
+def test_a_failed_quarantine_copy_leaves_the_image_visible(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    image: Image = add_image(db_session, stored_images, ImageStatus.VISIBLE)
+    storage_key: str = image.storage_key
+    failing_storage: FailingQuarantineCopyStorage = FailingQuarantineCopyStorage(stored_images)
+    api_app.dependency_overrides[get_image_storage] = lambda: failing_storage
+
+    response: Response = moderate(auth_client, nina, "hide", image.id)
+
+    assert response.status_code == 500
+    db_session.expire_all()
+    assert db_session.get_one(Image, image.id).status == ImageStatus.VISIBLE
+    assert stored_images == {storage_key: FILE_CONTENT}
+    assert db_session.scalars(select(ModerationAction)).all() == []
 
 
 def test_a_failed_database_save_leaves_the_image_public_without_a_quarantine_copy(

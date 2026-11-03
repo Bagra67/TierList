@@ -10,16 +10,24 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from PIL import Image as PillowImage
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_image_storage
 from app.constants.error_codes import ErrorCode
+from app.core.config import Settings, get_settings
+from app.exceptions.images import ImageTooLargeError
 from app.main import api_app
 from app.models.image import Image, ImageStatus
+from app.models.user import User
+from app.services.images import ImageService
 from tests.image_files import make_image_file
-from tests.integration.conftest import FAKE_IMAGE_BASE_URL, FailingImageStorage
+from tests.integration.conftest import (
+    FAKE_IMAGE_BASE_URL,
+    FailingImageStorage,
+    FakeImageStorage,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -45,6 +53,16 @@ def alice(auth_client: TestClient) -> dict[str, str]:
 @pytest.fixture
 def bob(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, "bob@example.com")
+
+
+class ReadSizeRecordingFile(BytesIO):
+    def __init__(self, content: bytes) -> None:
+        super().__init__(content)
+        self.requested_sizes: list[int | None] = []
+
+    def read(self, size: int | None = -1, /) -> bytes:
+        self.requested_sizes.append(size)
+        return super().read(size)
 
 
 def upload(
@@ -224,6 +242,22 @@ def test_a_hidden_image_does_not_ban_its_file(
     response: Response = upload(auth_client, alice, content)
 
     assert response.status_code == 201
+
+
+def test_an_oversized_upload_is_read_only_up_to_the_limit(
+    db_session: Session, alice: dict[str, str], stored_images: dict[str, bytes]
+):
+    max_bytes: int = 10
+    settings: Settings = get_settings().model_copy(update={"image_upload_max_bytes": max_bytes})
+    owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    oversized_file: ReadSizeRecordingFile = ReadSizeRecordingFile(b"x" * 1000)
+
+    with pytest.raises(ImageTooLargeError):
+        ImageService(db_session, settings, FakeImageStorage(stored_images)).upload(
+            owner, oversized_file
+        )
+
+    assert oversized_file.requested_sizes == [max_bytes + 1]
 
 
 def test_upload_refuses_a_file_over_the_size_limit(

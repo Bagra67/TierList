@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings, get_settings
 from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
 from app.models.moderation_action import ModerationAction
+from app.models.template import Template
 from app.models.user import User
 from app.services.maintenance import purge_moderation_log
 from app.services.moderation_log import ModerationLogService
@@ -81,6 +82,28 @@ def test_deleting_the_super_admin_account_keeps_the_entry_and_the_name(
     [entry] = logged_actions(db_session)
     assert entry.actor_id is None
     assert entry.actor_name == "Nina"
+
+
+def test_deleting_the_target_keeps_the_entry_and_its_label(db_session: Session, nina: User):
+    template: Template = Template(owner_id=nina.id, name="Top 10")
+    db_session.add(template)
+    db_session.flush()
+    template_id = template.id
+    ModerationLogService(db_session, get_settings()).record(
+        nina,
+        ModerationActionKind.HIDE,
+        ModerationTargetType.TEMPLATE,
+        template_id,
+        "Top 10",
+        "Harassment",
+    )
+
+    db_session.delete(template)
+    db_session.flush()
+    db_session.expire_all()
+
+    [entry] = logged_actions(db_session)
+    assert (entry.target_id, entry.target_label) == (template_id, "Top 10")
 
 
 def test_the_purge_deletes_the_entries_older_than_the_retention_only(

@@ -53,8 +53,10 @@ def add_image(
     owner: User | None,
     hours_ago: float,
     status: ImageStatus = ImageStatus.VISIBLE,
+    image_id: uuid.UUID | None = None,
 ) -> Image:
     image: Image = Image(
+        id=image_id,
         owner_id=owner.id if owner is not None else None,
         storage_key=f"{uuid.uuid4()}.webp",
         width=512,
@@ -196,6 +198,40 @@ def test_the_dates_keep_the_images_uploaded_in_the_period(
     )
 
     assert listed_ids(response) == [str(in_period.id)]
+
+
+def test_the_period_includes_its_start_and_excludes_its_end(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    at_the_start: Image = add_image(db_session, alice_account, hours_ago=48)
+    add_image(db_session, alice_account, hours_ago=24)
+
+    response: Response = recent_uploads(
+        auth_client,
+        nina,
+        created_after=(NOW - timedelta(hours=48)).isoformat(),
+        created_before=(NOW - timedelta(hours=24)).isoformat(),
+    )
+
+    assert listed_ids(response) == [str(at_the_start.id)]
+
+
+def test_images_of_the_same_instant_are_ordered_by_their_id_across_the_pages(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    ids_in_insertion_order: list[uuid.UUID] = [uuid.UUID(int=number) for number in (3, 2, 1)]
+    for image_id in ids_in_insertion_order:
+        add_image(db_session, alice_account, hours_ago=1, image_id=image_id)
+
+    listed: list[str] = [
+        *listed_ids(recent_uploads(auth_client, nina, limit=1, offset=0)),
+        *listed_ids(recent_uploads(auth_client, nina, limit=1, offset=1)),
+        *listed_ids(recent_uploads(auth_client, nina, limit=1, offset=2)),
+    ]
+
+    assert listed == [str(image_id) for image_id in reversed(ids_in_insertion_order)]
 
 
 def test_a_date_without_time_zone_is_refused(auth_client: TestClient, nina: dict[str, str]):

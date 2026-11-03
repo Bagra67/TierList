@@ -31,7 +31,6 @@ class ModerationAction(UUIDPrimaryKeyMixin, Base):
     target_type: Mapped[ModerationTargetType] = mapped_column(
         text_enum(ModerationTargetType, "moderation_target_type")
     )
-    # Pas de clé étrangère : la cible (modèle, image, compte…) peut être supprimée, l'entrée reste
     target_id: Mapped[uuid.UUID | None]
     target_label: Mapped[str] = mapped_column(String(MODERATION_TARGET_LABEL_MAX_LENGTH))
     reason: Mapped[str] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))

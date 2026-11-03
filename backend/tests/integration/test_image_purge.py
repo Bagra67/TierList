@@ -1,9 +1,12 @@
 import logging
+import threading
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Engine, delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -13,6 +16,7 @@ from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories import images as image_repository
 from app.services.images import ImageService
 from tests.integration.conftest import FailingImageStorage, FakeImageStorage
 
@@ -174,3 +178,56 @@ def test_a_file_that_cannot_be_erased_is_logged_and_the_others_are_still_erased(
     assert stored_image_ids(db_session) == set()
     assert set(stored_images) == {failing_key}
     assert failing_key in caplog.text
+
+
+def test_a_tile_attached_during_the_purge_fails_on_the_foreign_key(migrated_engine: Engine):
+    with Session(migrated_engine) as setup:
+        owner: User = User(email=f"purge-{uuid.uuid4()}@example.com", display_name="Purge")
+        setup.add(owner)
+        setup.flush()
+        template: Template = Template(owner_id=owner.id, name="Food")
+        image: Image = Image(
+            owner_id=owner.id,
+            storage_key=f"{uuid.uuid4()}.webp",
+            width=512,
+            height=512,
+            size_bytes=4,
+            sha256="0" * 64,
+            created_at=datetime.now(UTC) - timedelta(days=30),
+        )
+        setup.add_all([template, image])
+        setup.commit()
+        owner_id: uuid.UUID = owner.id
+        template_id: uuid.UUID = template.id
+        image_id: uuid.UUID = image.id
+    errors: list[Exception] = []
+
+    def attach_the_image_to_a_tile() -> None:
+        with Session(migrated_engine) as attach_request:
+            attach_request.add(Tile(template_id=template_id, image_id=image_id, position=0))
+            try:
+                attach_request.commit()
+            except IntegrityError as error:
+                errors.append(error)
+
+    try:
+        with Session(migrated_engine) as purge_request:
+            purged_keys: list[str] = image_repository.delete_unused_images_created_before(
+                purge_request, datetime.now(UTC)
+            )
+            assert len(purged_keys) == 1
+            attach_thread: threading.Thread = threading.Thread(target=attach_the_image_to_a_tile)
+            attach_thread.start()
+            time.sleep(0.3)
+            purge_request.commit()
+            attach_thread.join(timeout=10)
+
+        assert len(errors) == 1
+        with Session(migrated_engine) as session:
+            assert session.scalars(select(Tile).where(Tile.template_id == template_id)).all() == []
+    finally:
+        with Session(migrated_engine) as cleanup:
+            cleanup.execute(delete(Tile).where(Tile.template_id == template_id))
+            cleanup.execute(delete(Image).where(Image.id == image_id))
+            cleanup.execute(delete(User).where(User.id == owner_id))
+            cleanup.commit()

@@ -216,8 +216,6 @@ def list_recent_uploads(
     ] = RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
     author: Annotated[str | None, Query(max_length=RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH)] = None,
-    # Période d'envoi : à partir de created_after, avant created_before. Le fuseau horaire est
-    # exigé : le frontend envoie les bornes des jours choisis dans le fuseau du super admin
     created_after: AwareDatetime | None = None,
     created_before: AwareDatetime | None = None,
     status: Literal["visible", "hidden"] | None = None,
