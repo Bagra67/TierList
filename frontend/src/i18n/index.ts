@@ -16,8 +16,6 @@ export function isSupportedLanguage(value: unknown): value is Language {
   return SUPPORTED_LANGUAGES.includes(value as Language);
 }
 
-// localStorage peut être indisponible (navigation privée, stockage bloqué) : le choix de
-// langue n'est alors simplement pas mémorisé.
 function readStoredLanguage(): string | null {
   try {
     return localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -30,7 +28,7 @@ function storeLanguage(language: Language): void {
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   } catch {
-    // choix non mémorisé, la langue change quand même pour cette visite
+    return;
   }
 }
 
