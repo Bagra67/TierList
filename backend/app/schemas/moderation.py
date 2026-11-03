@@ -5,8 +5,9 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, StringConstraints
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
-from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
 from app.models.image import ImageStatus
+from app.schemas.templates import TemplateSummaryResponse
 
 # Motif écrit par le super admin : espaces de début et de fin retirés, 1 à 500 caractères
 ModerationReason = Annotated[
@@ -67,6 +68,8 @@ class RecentUploadResponse(BaseModel):
     # visible ou hidden : une image supprimée n'a plus de fichier et n'est jamais listée
     status: ImageStatus
     created_at: datetime
+    # Mène à la page du compte de l'auteur ; None une fois son compte supprimé
+    author_id: uuid.UUID | None
     # None une fois le compte de l'auteur supprimé
     author_name: str | None
     # Modèles non supprimés qui montrent l'image, par ordre alphabétique
@@ -82,3 +85,45 @@ class RecentUploadsResponse(BaseModel):
     images: list[RecentUploadResponse]
     # Il reste des images après cette page : la suivante commence à offset + limit
     has_more: bool
+
+
+class AccountSummaryResponse(BaseModel):
+    """Un compte dans la recherche des super admins (US-1.8)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    display_name: str
+    email: str
+    created_at: datetime
+    role: UserRole
+
+
+class AccountSearchResponse(BaseModel):
+    """Une page de la recherche de comptes, par nom."""
+
+    accounts: list[AccountSummaryResponse]
+    # Il reste des comptes après cette page : la suivante commence à offset + limit
+    has_more: bool
+
+
+class AccountResponse(BaseModel):
+    """La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
+    envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
+    (account_id)."""
+
+    id: uuid.UUID
+    display_name: str
+    email: str
+    created_at: datetime
+    email_verified: bool
+    # Un super admin ne peut pas être sanctionné
+    role: UserRole
+    # Ses templates actifs, avec leur état de modération
+    templates: list[TemplateSummaryResponse]
+
+
+class HiddenImagesResponse(BaseModel):
+    """Résultat de « masquer toutes ses images »."""
+
+    hidden_count: int

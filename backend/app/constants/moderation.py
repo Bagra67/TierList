@@ -19,3 +19,11 @@ RECENT_UPLOADS_PAGE_SIZE_DEFAULT = 24
 RECENT_UPLOADS_PAGE_SIZE_MAX = 96
 # Texte cherché dans le nom ou l'e-mail de l'auteur : au plus une adresse entière
 RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH = EMAIL_MAX_LENGTH
+
+# --- Comptes (US-1.8) ---------------------------------------------------------------------
+# Comptes par page de la recherche : la première page par défaut, et la plus grande qu'un client
+# peut demander
+ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT = 50
+ACCOUNT_SEARCH_PAGE_SIZE_MAX = 100
+# Texte cherché dans le nom ou l'e-mail d'un compte : au plus une adresse entière
+ACCOUNT_SEARCH_QUERY_MAX_LENGTH = EMAIL_MAX_LENGTH

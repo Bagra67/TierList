@@ -7,6 +7,7 @@ from fastapi import APIRouter, Query
 from pydantic import AwareDatetime
 
 from app.api.dependencies import (
+    AccountReviewServiceDep,
     ImageModerationServiceDep,
     ImageStorageDep,
     ModerationLogServiceDep,
@@ -19,6 +20,9 @@ from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.moderation import (
+    ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
+    ACCOUNT_SEARCH_PAGE_SIZE_MAX,
+    ACCOUNT_SEARCH_QUERY_MAX_LENGTH,
     MODERATION_LOG_PAGE_SIZE_DEFAULT,
     MODERATION_LOG_PAGE_SIZE_MAX,
     MODERATION_TARGET_LABEL_MAX_LENGTH,
@@ -27,17 +31,24 @@ from app.constants.moderation import (
     RECENT_UPLOADS_PAGE_SIZE_MAX,
 )
 from app.core.errors import ErrorResponse
+from app.exceptions.auth import UserNotFoundError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
 from app.models.image import ImageStatus
 from app.schemas.moderation import (
+    AccountResponse,
+    AccountSearchResponse,
+    AccountSummaryResponse,
+    HiddenImagesResponse,
     ModerationActionResponse,
     ModerationLogResponse,
     ModerationReasonRequest,
     RecentUploadsResponse,
     SuperAdminResponse,
 )
+from app.schemas.templates import TemplateSummaryResponse
+from app.services.account_review import AccountDetails, AccountSearchPage
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
 
@@ -54,6 +65,19 @@ TEMPLATE_MODERATION_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
     409: {"model": ErrorResponse, "description": messages.TEMPLATE_MODERATION_CONFLICT_DESCRIPTION},
 }
+
+ACCOUNT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **SUPER_ADMIN_RESPONSES,
+    404: {"model": ErrorResponse, "description": messages.ACCOUNT_NOT_FOUND_DESCRIPTION},
+}
+
+
+def _account_not_found() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=404,
+        code=ErrorCode.ACCOUNT_NOT_FOUND,
+        detail=messages.ACCOUNT_NOT_FOUND,
+    )
 
 
 def _template_not_found() -> AppHTTPException:
@@ -100,9 +124,11 @@ def get_moderation_log(
     actor_id: uuid.UUID | None = None,
     # Texte cherché dans le libellé de la cible, sans casse
     target: Annotated[str | None, Query(max_length=MODERATION_TARGET_LABEL_MAX_LENGTH)] = None,
+    # Un compte : les décisions sur lui, ses templates et ses images (la page de son compte)
+    account_id: uuid.UUID | None = None,
 ) -> ModerationLogResponse:
     # Le journal de modération (US-1.9), de l'action la plus récente à la plus ancienne
-    page: ModerationLogPage = service.page(limit, offset, actor_id, target)
+    page: ModerationLogPage = service.page(limit, offset, actor_id, target, account_id)
     return ModerationLogResponse(
         entries=[ModerationActionResponse.model_validate(entry) for entry in page.entries],
         has_more=page.has_more,
@@ -185,6 +211,8 @@ def list_recent_uploads(
     created_before: AwareDatetime | None = None,
     # Sans statut : les images visibles et masquées
     status: Literal["visible", "hidden"] | None = None,
+    # Un auteur précis : les images de la page de son compte
+    owner_id: uuid.UUID | None = None,
 ) -> RecentUploadsResponse:
     # Les derniers envois (US-1.7), des plus récents aux plus anciens
     page: RecentUploadsPage = service.page(
@@ -194,6 +222,7 @@ def list_recent_uploads(
         created_after,
         created_before,
         ImageStatus(status) if status is not None else None,
+        owner_id,
     )
     return RecentUploadsResponse(
         images=[recent_upload_response(storage, upload) for upload in page.uploads],
@@ -255,3 +284,60 @@ def delete_template(
         raise _template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
+
+
+@router.get("/accounts", responses=SUPER_ADMIN_RESPONSES)
+def search_accounts(
+    super_admin: SuperAdminDep,
+    service: AccountReviewServiceDep,
+    # Texte cherché dans le nom ou l'e-mail, sans casse ; sans texte, tous les comptes
+    query: Annotated[str | None, Query(max_length=ACCOUNT_SEARCH_QUERY_MAX_LENGTH)] = None,
+    limit: Annotated[
+        int, Query(ge=1, le=ACCOUNT_SEARCH_PAGE_SIZE_MAX)
+    ] = ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> AccountSearchResponse:
+    # Trouver un compte (US-1.8), par exemple après un signalement reçu par e-mail
+    page: AccountSearchPage = service.search(query, limit, offset)
+    return AccountSearchResponse(
+        accounts=[AccountSummaryResponse.model_validate(user) for user in page.accounts],
+        has_more=page.has_more,
+    )
+
+
+@router.get("/accounts/{user_id}", responses=ACCOUNT_RESPONSES)
+def get_account(
+    user_id: uuid.UUID, super_admin: SuperAdminDep, service: AccountReviewServiceDep
+) -> AccountResponse:
+    # La page d'un compte (US-1.8) : ses détails et ses templates
+    try:
+        details: AccountDetails = service.details(user_id)
+    except UserNotFoundError as exc:
+        raise _account_not_found() from exc
+    return AccountResponse(
+        id=details.user.id,
+        display_name=details.user.display_name,
+        email=details.user.email,
+        created_at=details.user.created_at,
+        email_verified=details.user.email_verified,
+        role=details.user.role,
+        templates=[
+            TemplateSummaryResponse.model_validate(summary) for summary in details.templates
+        ],
+    )
+
+
+# def et non async def : chaque image masquée appelle le stockage S3, de façon bloquante
+@router.post("/accounts/{user_id}/hide-images", responses=ACCOUNT_RESPONSES)
+def hide_account_images(
+    user_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: AccountReviewServiceDep,
+) -> HiddenImagesResponse:
+    # Masque toutes les images visibles d'un compte, chacune comme en US-1.4
+    try:
+        hidden_count: int = service.hide_all_images(super_admin, user_id, body.reason)
+    except UserNotFoundError as exc:
+        raise _account_not_found() from exc
+    return HiddenImagesResponse(hidden_count=hidden_count)

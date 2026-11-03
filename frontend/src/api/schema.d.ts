@@ -749,6 +749,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Accounts */
+        get: operations["search_accounts_moderation_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/accounts/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Account */
+        get: operations["get_account_moderation_accounts__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/accounts/{user_id}/hide-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hide Account Images */
+        post: operations["hide_account_images_moderation_accounts__user_id__hide_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -787,6 +838,64 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AccountResponse
+         * @description La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
+         *     envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
+         *     (account_id).
+         */
+        AccountResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email Verified */
+            email_verified: boolean;
+            role: components["schemas"]["UserRole"];
+            /** Templates */
+            templates: components["schemas"]["TemplateSummaryResponse"][];
+        };
+        /**
+         * AccountSearchResponse
+         * @description Une page de la recherche de comptes, par nom.
+         */
+        AccountSearchResponse: {
+            /** Accounts */
+            accounts: components["schemas"]["AccountSummaryResponse"][];
+            /** Has More */
+            has_more: boolean;
+        };
+        /**
+         * AccountSummaryResponse
+         * @description Un compte dans la recherche des super admins (US-1.8).
+         */
+        AccountSummaryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            role: components["schemas"]["UserRole"];
+        };
         /**
          * AutoAdvance
          * @description Passage automatique à l'item suivant.
@@ -1002,6 +1111,14 @@ export interface components {
             status: string;
             /** Release */
             release: string;
+        };
+        /**
+         * HiddenImagesResponse
+         * @description Résultat de « masquer toutes ses images ».
+         */
+        HiddenImagesResponse: {
+            /** Hidden Count */
+            hidden_count: number;
         };
         /**
          * HistoryResponse
@@ -1225,6 +1342,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Author Id */
+            author_id: string | null;
             /** Author Name */
             author_name: string | null;
             /** Template Names */
@@ -4177,6 +4296,7 @@ export interface operations {
                 offset?: number;
                 actor_id?: string | null;
                 target?: string | null;
+                account_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -4521,6 +4641,7 @@ export interface operations {
                 created_after?: string | null;
                 created_before?: string | null;
                 status?: ("visible" | "hidden") | null;
+                owner_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -4782,6 +4903,204 @@ export interface operations {
             };
             /** @description Template already hidden, not hidden, or deleted */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    search_accounts_moderation_accounts_get: {
+        parameters: {
+            query?: {
+                query?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountSearchResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_account_moderation_accounts__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Account not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    hide_account_images_moderation_accounts__user_id__hide_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HiddenImagesResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Account not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

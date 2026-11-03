@@ -42,11 +42,19 @@ class RecentUploadsService:
         created_after: datetime | None,
         created_before: datetime | None,
         status: ImageStatus | None,
+        owner_id: uuid.UUID | None = None,
     ) -> RecentUploadsPage:
         """Les images à partir de offset, avec leur usage. Une image de plus est lue pour savoir
         s'il en reste ; les usages de toute la page sont lus en deux requêtes."""
         rows: list[tuple[Image, str | None]] = image_repository.list_recent_images(
-            self._session, limit + 1, offset, author, created_after, created_before, status
+            self._session,
+            limit + 1,
+            offset,
+            author,
+            created_after,
+            created_before,
+            status,
+            owner_id,
         )
         page_rows: list[tuple[Image, str | None]] = rows[:limit]
         image_ids: list[uuid.UUID] = [image.id for image, _ in page_rows]
