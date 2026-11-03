@@ -21,7 +21,7 @@ function renderDialog(
       submittingLabel="Suppression…"
       destructive
       isPending={props.isPending ?? false}
-      error={props.error ?? null}
+      translatedFailureMessage={props.error ?? null}
       onSubmit={props.onSubmit ?? (() => Promise.resolve(true))}
       onClose={() => {}}
     />,

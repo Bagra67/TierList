@@ -93,7 +93,9 @@ export function UploadGrid({ filters, emptyMessage }: UploadGridProps) {
         submittingLabel={t(`moderation.reasonDialog.${action}.submitting`)}
         destructive={action === 'delete'}
         isPending={moderateMutation.isPending}
-        error={moderateMutation.isError ? translateError(t, moderateMutation.error) : null}
+        translatedFailureMessage={
+          moderateMutation.isError ? translateError(t, moderateMutation.error) : null
+        }
         onSubmit={moderate}
         onClose={closeDialog}
       />

@@ -196,7 +196,7 @@ An account can be banned temporarily or permanently (US-1.8). Not to be confused
 
 The frontend:
 
-- **`BanAccountDialog`**: **Temporairement** (a day field, from today, "Jusqu'au (inclus)") or **Définitivement**, and the **reason**, with a label saying the person will see it. The chosen day is included: `ends_at` is the start of the next day in the super admin's time zone (`startOfNextDay`, `components/localDays.ts`). The button is red and disabled until the form is complete and while the request runs; an error shows its translated message in the dialog. The same dialog changes an active ban.
+- **`BanAccountDialog`**: **Temporairement** (a day field, from today, "Jusqu'au (inclus)") or **Définitivement**, and the **reason**, with a label saying the person will see it. The chosen day is included: `ends_at` is the start of the next day in the super admin's time zone (`exclusiveEndOfDay`, `components/localDays.ts`). The button is red and disabled until the form is complete and while the request runs; an error shows its translated message in the dialog. The same dialog changes an active ban.
 - **Lifting** goes through `ModerationReasonDialog`. `useBanAccount` and `useLiftBan` then read the account page, the search (its **Banni** badge) and the log again.
 - `translateError` (`errors/apiError.ts`) turns every error param whose name ends in `_at` into a `Date`, so that the i18next `datetime` formatter shows the `ends_at` of `account_banned_until` in the interface language.
 

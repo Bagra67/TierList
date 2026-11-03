@@ -2,8 +2,7 @@ export function startOfDay(day: string): string {
   return new Date(`${day}T00:00:00`).toISOString();
 }
 
-// Début du jour suivant : le jour choisi est inclus en entier
-export function startOfNextDay(day: string): string {
+export function exclusiveEndOfDay(day: string): string {
   const next: Date = new Date(`${day}T00:00:00`);
   next.setDate(next.getDate() + 1);
   return next.toISOString();

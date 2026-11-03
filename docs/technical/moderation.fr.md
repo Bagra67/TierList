@@ -196,7 +196,7 @@ Un compte peut être banni temporairement ou définitivement (US-1.8). À ne pas
 
 Le frontend :
 
-- **`BanAccountDialog`** : **Temporairement** (un champ jour, à partir d'aujourd'hui, « Jusqu'au (inclus) ») ou **Définitivement**, et le **motif**, dont le libellé dit que la personne le verra. Le jour choisi est inclus : `ends_at` est le début du jour suivant, dans le fuseau du super admin (`startOfNextDay`, `components/localDays.ts`). Le bouton est rouge et désactivé tant que le formulaire est incomplet et pendant la requête ; une erreur affiche son message traduit dans le dialogue. Le même dialogue modifie un bannissement actif.
+- **`BanAccountDialog`** : **Temporairement** (un champ jour, à partir d'aujourd'hui, « Jusqu'au (inclus) ») ou **Définitivement**, et le **motif**, dont le libellé dit que la personne le verra. Le jour choisi est inclus : `ends_at` est le début du jour suivant, dans le fuseau du super admin (`exclusiveEndOfDay`, `components/localDays.ts`). Le bouton est rouge et désactivé tant que le formulaire est incomplet et pendant la requête ; une erreur affiche son message traduit dans le dialogue. Le même dialogue modifie un bannissement actif.
 - **Lever le bannissement** passe par `ModerationReasonDialog`. `useBanAccount` et `useLiftBan` relisent ensuite la page du compte, la recherche (son badge **Banni**) et le journal.
 - `translateError` (`errors/apiError.ts`) change en `Date` chaque param d'erreur dont le nom finit par `_at`, pour que le formateur i18next `datetime` affiche le `ends_at` de `account_banned_until` dans la langue de l'interface.
 

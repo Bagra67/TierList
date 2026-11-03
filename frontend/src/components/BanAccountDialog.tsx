@@ -5,7 +5,7 @@ import { useBanAccount } from '../api/moderation';
 import { MODERATION_REASON_MAX_LENGTH } from '../constants/moderation';
 import { translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
-import { startOfNextDay, today } from './localDays';
+import { exclusiveEndOfDay, today } from './localDays';
 import { DialogActions, ModalDialog } from './ModalDialog';
 import { TextField } from './TextField';
 import { Input } from './ui/input';
@@ -33,7 +33,7 @@ export function BanAccountDialog({ dialogRef, accountId, displayName }: BanAccou
       await banMutation.mutateAsync({
         accountId,
         reason: reason.trim(),
-        endsAt: duration === 'temporary' ? startOfNextDay(until) : undefined,
+        endsAt: duration === 'temporary' ? exclusiveEndOfDay(until) : undefined,
       });
     } catch {
       return;

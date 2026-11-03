@@ -14,8 +14,7 @@ interface ModerationReasonDialogProps {
   submittingLabel: string;
   destructive: boolean;
   isPending: boolean;
-  // Message déjà traduit de l'échec de la dernière tentative
-  error: string | null;
+  translatedFailureMessage: string | null;
   onSubmit: (reason: string) => Promise<boolean>;
   onClose: () => void;
 }
@@ -28,7 +27,7 @@ export function ModerationReasonDialog({
   submittingLabel,
   destructive,
   isPending,
-  error,
+  translatedFailureMessage,
   onSubmit,
   onClose,
 }: ModerationReasonDialogProps) {
@@ -61,7 +60,9 @@ export function ModerationReasonDialog({
           value={reason}
           onChange={(event) => setReason(event.target.value)}
         />
-        {error !== null && <ErrorMessage>{error}</ErrorMessage>}
+        {translatedFailureMessage !== null && (
+          <ErrorMessage>{translatedFailureMessage}</ErrorMessage>
+        )}
         <DialogActions
           cancelLabel={t('moderation.reasonDialog.cancel')}
           onCancel={() => dialogRef.current?.close()}

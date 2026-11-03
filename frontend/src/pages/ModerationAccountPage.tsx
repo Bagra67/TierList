@@ -161,7 +161,9 @@ function AccountBan({ account }: { account: Account }) {
         submittingLabel={t('moderation.liftDialog.submitting')}
         destructive={false}
         isPending={liftMutation.isPending}
-        error={liftMutation.isError ? translateError(t, liftMutation.error) : null}
+        translatedFailureMessage={
+          liftMutation.isError ? translateError(t, liftMutation.error) : null
+        }
         onSubmit={lift}
         onClose={() => liftMutation.reset()}
       />
@@ -248,7 +250,9 @@ function AccountTemplates({ account }: { account: Account }) {
         submittingLabel={t(`moderation.templateDialog.${action}.submitting`)}
         destructive={action === 'delete'}
         isPending={moderateMutation.isPending}
-        error={moderateMutation.isError ? translateError(t, moderateMutation.error) : null}
+        translatedFailureMessage={
+          moderateMutation.isError ? translateError(t, moderateMutation.error) : null
+        }
         onSubmit={moderate}
         onClose={() => {
           moderateMutation.reset();
@@ -298,7 +302,9 @@ function AccountImages({ account }: { account: Account }) {
         submittingLabel={t('moderation.hideAllDialog.submitting')}
         destructive={false}
         isPending={hideAllMutation.isPending}
-        error={hideAllMutation.isError ? translateError(t, hideAllMutation.error) : null}
+        translatedFailureMessage={
+          hideAllMutation.isError ? translateError(t, hideAllMutation.error) : null
+        }
         onSubmit={hideAll}
         onClose={() => {
           if (hideAllMutation.isError) hideAllMutation.reset();
