@@ -7,11 +7,9 @@ import { GameItemView } from './GameItemView';
 
 interface CurrentItemCardProps {
   item: GameItem;
-  // Largeur selon l'endroit (colonne du plateau)
   className?: string;
 }
 
-// L'élément en cours, pour qui ne le place pas (l'hôte qui ne joue pas) ou l'a déjà placé
 export function CurrentItemCard({ item, className }: CurrentItemCardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (

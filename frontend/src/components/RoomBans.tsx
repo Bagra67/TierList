@@ -10,8 +10,6 @@ interface RoomBansProps {
   room: Room;
 }
 
-// Personnes bannies de la salle (US-2.12), que le room admin peut débannir. Le backend n'envoie
-// cette liste qu'au room admin ; vide, rien n'est affiché.
 export function RoomBans({ room }: RoomBansProps) {
   const unbanMutation = useUnban(room.code);
   const { t } = useTranslation();

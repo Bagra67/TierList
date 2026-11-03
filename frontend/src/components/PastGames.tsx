@@ -11,8 +11,6 @@ interface PastGamesProps {
   room: Room;
 }
 
-// Parties closes de la salle, de la plus récente à la plus ancienne (US-5.2) : chaque place de la
-// salle peut ouvrir leurs résultats. Sans partie close, rien n'est affiché
 export function PastGames({ room }: PastGamesProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -34,8 +32,6 @@ export function PastGames({ room }: PastGamesProps) {
               </span>
               <Link
                 to={resultsPath(pastGame.public_token)}
-                // La page des résultats propose alors de revenir à cette salle, et au room admin
-                // de rejouer
                 state={{ roomCode: room.code, isAdmin: room.is_admin } satisfies ResultsLinkState}
                 aria-label={t('rooms.lobby.pastGames.openLabel', { date: closedAt })}
                 className={cn(textLinkClassName, 'ml-auto text-sm')}

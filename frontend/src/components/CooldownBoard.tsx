@@ -42,14 +42,9 @@ import { panelVariants } from './ui/panel';
 interface CooldownBoardProps {
   room: Room;
   game: CurrentGame;
-  // Sous le panneau des éléments manqués : « Terminer maintenant » pour l'hôte
   aside?: ReactNode;
 }
 
-// Le plateau du lecteur pendant les retouches finales (US-4.1, US-4.6) : à gauche ses tiers, où
-// toutes les tuiles bougent ; à droite les éléments manqués. Une tuile se glisse à la position
-// voulue (souris, doigt, ou Espace puis les flèches au clavier), ou se choisit d'un clic (ou
-// Entrée) puis « Déplacer ici » la met à la fin d'un tier.
 export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
@@ -57,10 +52,8 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const pending: boolean = placeMutation.isPending;
-  // Tuile choisie pour « Déplacer ici »
   const [chosenId, setChosenId] = useState<string | null>(null);
 
-  // Les tuiles d'un tier, dans l'ordre (le serveur les trie)
   function inTier(tierId: string): OwnPlacement[] {
     return game.own_placements.filter((placement) => placement.tier_id === tierId);
   }
@@ -69,8 +62,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
   }
 
-  // Nom de chaque tuile, lu par les lecteurs d'écran ; une image seule est nommée par sa place,
-  // pour que ses boutons ne portent pas tous le même nom
   const labels: Map<string, string> = new Map();
   for (const tier of game.tiers) {
     inTier(tier.id).forEach((placement, index) => {
@@ -89,7 +80,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     return labels.get(String(itemId)) ?? '';
   }
 
-  // Une tuile du plateau ou un élément manqué
   function itemById(itemId: string): GameItem | undefined {
     return (
       game.own_placements.find((placement) => placement.item.id === itemId)?.item ??
@@ -102,7 +92,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     return dropPosition(tierItemIds, itemId, target, side);
   }
 
-  // Envoie le placement ; true s'il a réussi (rien n'est envoyé pendant un autre envoi)
   async function placeAt(itemId: string, tierId: string, position: number): Promise<boolean> {
     if (pending) return false;
     focus.request([tileFocusKey(itemId)]);
@@ -111,11 +100,10 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
       return true;
     } catch {
       focus.cancel();
-      return false; // l'erreur est affichée depuis placeMutation.error
+      return false;
     }
   }
 
-  // La tuile choisie, si elle est toujours là (une relecture de la salle a pu la retirer)
   const chosenItem: GameItem | undefined = chosenId === null ? undefined : itemById(chosenId);
 
   // « Déplacer ici » : la tuile choisie passe à la fin de ce tier (dernière place si elle y est
@@ -126,7 +114,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     const itemId: string = chosenItem.id;
     const tierItemIds: string[] = inTier(tierId).map((placement) => placement.item.id);
     const currentIndex: number = tierItemIds.indexOf(itemId);
-    // Déjà dernière de ce tier : rien à envoyer
     if (currentIndex !== -1 && currentIndex === tierItemIds.length - 1) {
       setChosenId(null);
       return;
@@ -177,7 +164,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
     onDragCancel: ({ active }) => t('rooms.game.dnd.cancelled', { item: itemLabel(active.id) }),
   };
 
-  // Aperçu de la tuile glissée, sur le plateau ou parmi les items manqués
   function previewOf(id: string): DragPreviewContent | undefined {
     const item: GameItem | undefined = itemById(id);
     if (item === undefined) return undefined;
@@ -193,9 +179,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
       target,
       dropSide(active.rect.current.translated, over.rect),
     );
-    // Déposée sur elle-même, ou là où elle est déjà : elle ne bouge pas
     if (position === null) return;
-    // Glisser la tuile choisie annule son choix ; glisser une autre tuile le garde
     if (itemId === chosenId) setChosenId(null);
     void placeAt(itemId, target.tierId, position);
   }
@@ -243,7 +227,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
             pending={pending}
             onChoose={toggleChosen}
           />
-          {/* La tuile choisie, annoncée aux lecteurs d'écran quand elle change */}
           <div aria-live="polite" className={panelVariants({ variant: 'muted' })}>
             {chosenItem === undefined ? (
               <p className="text-sm text-muted-foreground">{t('rooms.game.cooldown.chooseHint')}</p>
@@ -296,8 +279,6 @@ function CooldownTierRow({
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
-      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
@@ -343,8 +324,6 @@ interface CooldownTileProps {
   onChoose: (itemId: string) => void;
 }
 
-// Une tuile du plateau final : elle se glisse ou se choisit, et une autre tuile déposée dessus se
-// place avant ou après elle, selon le côté où elle tombe
 function CooldownTile({ item, label, tierId, chosen, pending, onChoose }: CooldownTileProps) {
   const target: BoardDropTarget = { tierId, itemId: item.id };
   const { setNodeRef, isOver, active }: ReturnType<typeof useDroppable> = useDroppable({

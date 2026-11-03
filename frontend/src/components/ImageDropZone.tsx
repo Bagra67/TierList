@@ -15,34 +15,21 @@ import { isAcceptedImageFile } from './imageFiles';
 import { RemovedImage } from './RemovedImage';
 
 interface ImageDropZoneProps {
-  // Nom accessible de la vignette : ce que fait un clic (ajouter ou remplacer l'image)
   label: string;
-  // Image enregistrée, null s'il n'y en a pas ou si elle est retirée par la modération
   imageUrl: string | null;
-  // L'image est masquée ou supprimée par la modération : un visuel « image retirée » la remplace,
-  // et le propriétaire peut toujours la remplacer ou la retirer
   imageRemoved?: boolean;
   isUploading: boolean;
   disabled?: boolean;
   // large : vignette du formulaire d'ajout ; fill : carré sur toute la largeur du parent (carte
   // d'une tuile). Les deux affichent la consigne quand il n'y a pas d'image.
   size: 'large' | 'fill';
-  // Bouton pour retirer l'image, affiché seulement s'il y a une image et un libellé
   removeLabel?: string;
   onSelect: (file: File) => void;
-  // Plusieurs fichiers d'un coup (sélecteur ou dépôt) : sans cette prop, seul le premier compte.
-  // Avec elle, deux fichiers ou plus lui sont passés tels quels (le parent les trie), un seul
-  // suit le chemin habituel (onSelect ou onRefuse)
   onSelectMany?: (files: File[]) => void;
   onRemove?: () => void;
-  // Fichier d'un type connu autre que JPEG, PNG ou WebP : refusé sans être envoyé (un type
-  // inconnu, vide, part au backend)
   onRefuse: () => void;
 }
 
-// Classes de chaque taille de vignette. Le bouton de retrait : sur la petite vignette (large), il
-// déborde de son coin ; sur la carte d'une tuile (fill), il est posé dans le coin de l'image, plus
-// grand pour être facile à viser
 const SIZE_CLASSES = {
   large: {
     zone: 'size-24',
@@ -64,10 +51,6 @@ function draggedFiles(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
 }
 
-// Vignette d'image d'une tuile : un clic (ou Entrée, Espace) ouvre le sélecteur de fichier, et
-// on peut y déposer un fichier. Pendant l'envoi, l'image choisie s'affiche aussitôt, voilée,
-// avec un indicateur ; l'image compressée par le backend la remplace ensuite. Le parent envoie
-// le fichier et affiche les erreurs.
 export function ImageDropZone({
   label,
   imageUrl,
@@ -92,7 +75,6 @@ export function ImageDropZone({
   const shownUrl: string | null = isUploading && previewUrl !== null ? previewUrl : imageUrl;
   const showRemovedImage: boolean = shownUrl === null && imageRemoved;
 
-  // L'aperçu local occupe de la mémoire tant que son URL existe : libérée quand il change
   useEffect(() => {
     return () => {
       if (previewUrl !== null) URL.revokeObjectURL(previewUrl);
@@ -183,7 +165,6 @@ export function ImageDropZone({
         )}
       >
         {shownUrl !== null ? (
-          // contain : l'image entière est visible, sans recadrage, sur le fond de la vignette
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
         ) : showRemovedImage ? (
           <RemovedImage className="size-full" showLabel />
@@ -228,7 +209,6 @@ export function ImageDropZone({
           <X className={sizeClasses.removeIcon} />
         </button>
       )}
-      {/* Le vrai champ fichier est caché : la vignette ci-dessus le remplace, au clavier aussi */}
       <input
         ref={inputRef}
         type="file"

@@ -9,10 +9,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
-// Champ « Rejoindre une salle » (US-2.4) : le code ouvre la salle, que l'utilisateur rejoint
-// alors avec son compte, ou en invité sans compte. Un mauvais code est signalé par la page de la
-// salle. Sur l'accueil, c'est l'action principale : un grand champ, en lettres espacées comme le
-// code affiché dans la salle
 export function JoinRoomForm({ className }: { className?: string }) {
   const codeId: string = useId();
   const navigate: NavigateFunction = useNavigate();
@@ -28,8 +24,6 @@ export function JoinRoomForm({ className }: { className?: string }) {
   return (
     <form onSubmit={handleSubmit} className={cn('flex w-full flex-col gap-2', className)}>
       <h2 className="text-base font-semibold">{t('home.joinRoom.title')}</h2>
-      {/* Le titre dit déjà l'action : le label reste pour les lecteurs d'écran, et la même phrase
-          s'affiche dans le champ vide */}
       <Label htmlFor={codeId} className="sr-only">
         {t('home.joinRoom.code')}
       </Label>

@@ -15,9 +15,6 @@ import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 
-// Page d'accueil, publique : le visiteur y voit ce qu'est une partie, peut rejoindre une salle
-// avec son code (en invité) ou créer un compte ; le joueur connecté y rejoint une salle, ou en
-// ouvre une avec un de ses modèles récents, et retrouve ses dernières parties
 export function HomePage() {
   const { data: user, isPending, isError } = useCurrentUser();
   const { t } = useTranslation();

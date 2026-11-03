@@ -832,7 +832,6 @@ export const en: Translation = {
           submitting: 'Ending…',
         },
       },
-      // Screen reader announcements during a drag and drop
       dnd: {
         instructions:
           'To place the item, press Space or Enter, use the arrow keys, then Space or Enter to drop it, or Escape to cancel.',

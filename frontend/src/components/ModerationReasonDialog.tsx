@@ -7,25 +7,19 @@ import { DialogActions, ModalDialog } from './ModalDialog';
 import { TextField } from './TextField';
 
 interface ModerationReasonDialogProps {
-  // Ouvert par le parent avec dialogRef.current.showModal()
   dialogRef: RefObject<HTMLDialogElement | null>;
   title: string;
-  // Ce que fait l'action, et si elle peut être annulée
   description: string;
   submitLabel: string;
   submittingLabel: string;
-  // Action définitive (suppression) : bouton rouge
   destructive: boolean;
   isPending: boolean;
   // Message déjà traduit de l'échec de la dernière tentative
   error: string | null;
-  // Lance l'action avec le motif ; résolue si elle a réussi (le dialogue se ferme alors)
   onSubmit: (reason: string) => Promise<boolean>;
   onClose: () => void;
 }
 
-// Motif d'une décision de modération (US-1.9), écrit au journal : demandé avant de masquer,
-// réafficher ou supprimer un contenu. Le même dialogue sert à toutes les pages de modération.
 export function ModerationReasonDialog({
   dialogRef,
   title,
@@ -73,7 +67,6 @@ export function ModerationReasonDialog({
           onCancel={() => dialogRef.current?.close()}
           submitLabel={isPending ? submittingLabel : submitLabel}
           submitVariant={destructive ? 'destructive' : 'default'}
-          // Un motif fait seulement d'espaces serait refusé par le backend
           submitDisabled={isPending || reason.trim() === ''}
         />
       </form>

@@ -9,8 +9,6 @@ interface RoomInviteProps {
   room: Room;
 }
 
-// Code et lien de la salle à partager (US-2.3) : le lien convient à un message, le code à une
-// lecture à voix haute
 export function RoomInvite({ room }: RoomInviteProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 

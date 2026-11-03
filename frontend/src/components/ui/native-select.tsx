@@ -1,8 +1,6 @@
 import * as React from 'react';
 import { cn } from 'cn';
 
-// Liste déroulante native (<select>) à l'apparence des champs : bordure, focus, mode sombre.
-// Native plutôt que Radix : le clavier, le mobile et les lecteurs d'écran sont gérés par le navigateur
 function NativeSelect({ className, ...props }: React.ComponentProps<'select'>) {
   return (
     <select

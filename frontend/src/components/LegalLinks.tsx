@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 
 import { ROUTES } from '../constants/routes';
 
-// Les trois pages légales, toujours accessibles : pied de page et panneau de paramètres
 interface LegalLinksProps {
   className: string;
   linkClassName: string;

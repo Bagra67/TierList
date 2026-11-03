@@ -6,8 +6,6 @@ import { isSuperAdmin } from '../auth/superAdmin';
 import { ROUTES } from '../constants/routes';
 import { cn } from 'cn';
 
-// Liens vers les pages privées, affichés seulement une fois connecté. NavLink pose
-// aria-current="page" sur le lien de la page affichée.
 export function MainNav() {
   const { data: user } = useCurrentUser();
   const { t } = useTranslation();
@@ -39,7 +37,6 @@ export function MainNav() {
             {t('nav.history')}
           </NavLink>
         </li>
-        {/* Seulement pour les super admins ; le backend refuse la modération aux autres */}
         {isSuperAdmin(user) && (
           <li>
             <NavLink to={ROUTES.MODERATION} className={linkClassName}>

@@ -4,7 +4,6 @@ import { ApiError } from '../errors/apiError';
 
 export function createQueryClient(defaultOptions?: DefaultOptions): QueryClient {
   return new QueryClient({
-    // Un seul endroit pour journaliser les échecs de requête, quel que soit le composant
     queryCache: new QueryCache({
       onError: (error, query) => {
         console.error(`Échec de la requête ${JSON.stringify(query.queryKey)}`, error);
@@ -18,8 +17,6 @@ export function createQueryClient(defaultOptions?: DefaultOptions): QueryClient 
   });
 }
 
-// Une erreur 4xx ne change pas en réessayant (salle introuvable, lien expiré…) : un seul nouvel
-// essai, et seulement pour une erreur réseau ou serveur
 export function retryUnlessClientError(failureCount: number, error: Error): boolean {
   return !(error instanceof ApiError && error.status < 500) && failureCount < 1;
 }

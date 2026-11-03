@@ -17,7 +17,6 @@ function relativeLuminance(hexColor: string): number {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
-// De 1 (aucun contraste) à 21 (noir sur blanc), dans n'importe quel ordre
 export function contrastRatio(firstColor: string, secondColor: string): number {
   const first: number = relativeLuminance(firstColor);
   const second: number = relativeLuminance(secondColor);
@@ -26,8 +25,6 @@ export function contrastRatio(firstColor: string, secondColor: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-// Couleur du texte posé sur un fond choisi par l'utilisateur : l'encre ou le blanc, selon
-// lequel se lit le mieux
 export function readableTextColor(backgroundColor: string): string {
   const inkContrast: number = contrastRatio(INK_TEXT_COLOR, backgroundColor);
   const whiteContrast: number = contrastRatio(WHITE_TEXT_COLOR, backgroundColor);

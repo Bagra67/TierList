@@ -7,12 +7,6 @@ import { MainNav } from './MainNav';
 import { SettingsPanel } from './SettingsPanel';
 import { SiteFooter } from './SiteFooter';
 
-// Cadre commun à toutes les pages : le panneau de paramètres (thème, langue, compte) et le pied de
-// page (pages légales) restent accessibles partout, la navigation et « Se déconnecter »
-// apparaissent une fois connecté. Le pied de page est en bas de la fenêtre même quand la page est
-// courte. Sur grand écran, le cadre fait la hauteur de la fenêtre et seul le contenu défile, entre
-// l'en-tête et le pied de page, toujours visibles : une page comme l'éditeur peut ainsi remplir
-// l'écran exactement et faire défiler ses colonnes plutôt que toute la page.
 export function Layout() {
   useForgetEndedSession();
   return (

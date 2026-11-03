@@ -11,15 +11,12 @@ import {
 } from '@dnd-kit/core';
 import { type RefObject, useEffect, useRef } from 'react';
 
-// Hooks communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
-
 // Distance (px) avant qu'un appui de souris devienne un glisser : un simple clic ne pose rien
 const MOUSE_DRAG_DISTANCE = 8;
 // Au doigt, un appui long saisit la tuile ; un balayage fait défiler la page
 const TOUCH_DRAG_DELAY_MS = 200;
 const TOUCH_DRAG_TOLERANCE = 5;
 
-// Au clavier, Espace ou Entrée saisit l'item, les flèches le déplacent, Espace ou Entrée le dépose
 const DEFAULT_KEYBOARD_CODES: KeyboardCodes = {
   start: [KeyboardCode.Space, KeyboardCode.Enter],
   cancel: [KeyboardCode.Esc],
@@ -33,7 +30,6 @@ export const COOLDOWN_KEYBOARD_CODES: KeyboardCodes = {
   start: [KeyboardCode.Space],
 };
 
-// Capteurs des plateaux : souris, doigt et clavier
 export function useBoardSensors(
   keyboardCodes: KeyboardCodes = DEFAULT_KEYBOARD_CODES,
 ): SensorDescriptor<SensorOptions>[] {
@@ -80,8 +76,6 @@ export function useFocusAfterUpdate(
   };
 }
 
-// Clé de focus d'une tuile du plateau final : elle garde le focus après un déplacement, même dans
-// une autre rangée (useFocusAfterUpdate)
 export function tileFocusKey(itemId: string): string {
   return `${itemId}:tile`;
 }

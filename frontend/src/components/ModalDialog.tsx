@@ -3,17 +3,13 @@ import { type ReactNode, type RefObject, useId } from 'react';
 import { Button } from './ui/button';
 
 interface ModalDialogProps {
-  // Ouvert par le parent avec dialogRef.current.showModal(), fermé avec close()
   dialogRef: RefObject<HTMLDialogElement | null>;
   title: string;
-  // Texte sous le titre (avertissement, conséquences)
   description?: string;
   onClose?: () => void;
   children: ReactNode;
 }
 
-// <dialog> natif ouvert avec showModal() : le navigateur piège le focus dedans et le ferme avec
-// Échap. Le titre nomme le dialogue pour les lecteurs d'écran.
 export function ModalDialog({
   dialogRef,
   title,
@@ -41,13 +37,11 @@ export function ModalDialog({
 interface DialogActionsProps {
   cancelLabel: string;
   onCancel: () => void;
-  // Libellé du bouton d'envoi, déjà choisi selon l'état (« Supprimer » / « Suppression… »)
   submitLabel: string;
   submitVariant?: 'default' | 'destructive';
   submitDisabled: boolean;
 }
 
-// Pied d'un formulaire de dialogue : Annuler à gauche, l'action à droite
 export function DialogActions({
   cancelLabel,
   onCancel,

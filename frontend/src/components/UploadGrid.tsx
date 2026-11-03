@@ -18,7 +18,6 @@ import { Button } from './ui/button';
 
 interface UploadGridProps {
   filters: RecentUploadsFilters;
-  // Message quand aucune image ne correspond (selon que des filtres sont choisis ou non)
   emptyMessage: string;
 }
 
@@ -27,9 +26,6 @@ interface PendingAction {
   action: ImageModerationAction;
 }
 
-// Grille des images envoyées, des plus récentes aux plus anciennes, pour ces filtres : chaque image
-// peut être masquée, réaffichée ou supprimée (US-1.4), avec un motif écrit au journal. Sert aux
-// derniers envois (US-1.7) et à la page d'un compte (US-1.8).
 export function UploadGrid({ filters, emptyMessage }: UploadGridProps) {
   const { t } = useTranslation();
   const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -54,7 +50,7 @@ export function UploadGrid({ filters, emptyMessage }: UploadGridProps) {
         reason,
       });
     } catch {
-      return false; // l'erreur est affichée depuis moderateMutation.error
+      return false;
     }
     return true;
   }

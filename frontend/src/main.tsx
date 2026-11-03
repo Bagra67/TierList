@@ -7,9 +7,7 @@ import { createQueryClient } from './api/queryClient';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
-// Initialise les traductions avant le premier rendu
 import './i18n';
-// Applique le thème mémorisé et suit celui du système en mode « system »
 import './theme';
 
 const queryClient = createQueryClient();

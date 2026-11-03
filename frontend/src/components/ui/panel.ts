@@ -1,10 +1,5 @@
 import { cva } from 'class-variance-authority';
 
-// Encadrés de l'interface, au rayon « panneau » de la charte (16 px) :
-// - solid : une section ou un formulaire (inviter, rejoindre, commandes de l'hôte) ;
-// - dashed : une zone à remplir ou vide (dépôt de l'élément, éléments manqués, liste vide) ;
-// - list : une liste de lignes séparées (participants, modèles, historique) ;
-// - muted : un bandeau d'information (élément en cours)
 export const panelVariants = cva('flex w-full flex-col rounded-panel', {
   variants: {
     variant: {

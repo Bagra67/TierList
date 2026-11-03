@@ -17,11 +17,7 @@ import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 
-// Éditeur d'un template : son nom, ses tiers (US-1.4) et ses tuiles (US-1.2, US-1.3). Sur grand
-// écran, les tiers sont à gauche et la grille des tuiles à droite, pour profiter de la largeur
-// plutôt que d'empiler toute la page.
 export function TemplateEditorPage() {
-  // Toujours présent : la route TEMPLATE_EDITOR déclare ce paramètre
   const { templateId = '' }: Readonly<Params> = useParams();
   const {
     data: template,
@@ -31,8 +27,6 @@ export function TemplateEditorPage() {
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // Un fichier lâché à côté d'une vignette d'image serait ouvert par le navigateur, qui quitterait
-  // l'éditeur : hors des vignettes (qui gèrent elles-mêmes le dépôt), il est ignoré
   useEffect(() => {
     function ignoreFileDropOutsideDropZones(event: DragEvent) {
       const carriesFiles: boolean = event.dataTransfer?.types.includes('Files') ?? false;
@@ -64,7 +58,6 @@ export function TemplateEditorPage() {
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-semibold">{template.name}</h1>
-            {/* Masqué par la modération : plus de partie possible, le bandeau dit pourquoi */}
             {template.moderation !== 'hidden' && (
               <CreateRoomButton templateId={template.id} templateName={template.name} />
             )}
@@ -72,7 +65,6 @@ export function TemplateEditorPage() {
           {template.moderation === 'hidden' && (
             <TemplateHiddenNotice reason={template.moderation_reason} />
           )}
-          {/* Un nom n'a pas besoin de toute la largeur de la page */}
           <div className="w-full max-w-xl">
             <TemplateNameField template={template} />
           </div>

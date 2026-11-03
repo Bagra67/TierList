@@ -13,13 +13,10 @@ interface ResultsPlayerViewProps {
   items: ResultItems;
   selection: ItemSelection;
   reveal: boolean;
-  // Change à chaque « Rejouer la révélation » : seule la tier list est montée à nouveau
   revealRun: number;
   onRevealStarted: () => void;
 }
 
-// Vue « par joueur » (US-5.2) : le classement final du joueur choisi, avec les items qu'il n'a
-// jamais placés
 export function ResultsPlayerView({
   tiers,
   players,
@@ -51,7 +48,6 @@ export function ResultsPlayerView({
             setPlayerIndex(Number(event.target.value))
           }
         >
-          {/* La réponse ne donne pas d'identifiant aux joueurs : leur rang, fixe, sert de valeur */}
           {players.map((candidate: PlayerResults, index: number) => (
             <option key={index} value={index}>
               {candidate.display_name}

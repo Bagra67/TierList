@@ -3,10 +3,8 @@ import { type UseMutationResult, useMutation } from '@tanstack/react-query';
 import { apiClient, dataOrThrow } from './client';
 import type { components } from './schema';
 
-// Image compressée par le backend : son id se donne ensuite à une tuile (image_id)
 export type UploadedImage = components['schemas']['ImageUploadResponse'];
 
-// Exportée pour l'ajout en masse (useBulkImageTiles), qui gère lui-même ses envois
 export async function uploadImage(file: File): Promise<UploadedImage> {
   return dataOrThrow(
     await apiClient.POST('/images', {

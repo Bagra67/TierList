@@ -13,10 +13,6 @@ import { ThemeSwitcher } from './ThemeSwitcher';
 import { Button } from './ui/button';
 import { textLinkClassName } from './ui/text-link';
 
-// Bouton engrenage de l'en-tête et panneau de paramètres qui glisse depuis la droite : thème et
-// langue pour tous, suppression du compte une fois connecté. <dialog> natif ouvert avec
-// showModal(), comme ModalDialog : le navigateur piège le focus dedans, le ferme avec Échap et
-// rend le focus à l'engrenage.
 export function SettingsPanel() {
   const panelRef = useRef<HTMLDialogElement>(null);
   const titleId: string = useId();
@@ -24,21 +20,16 @@ export function SettingsPanel() {
   const { pathname } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  // Retour d'une reconnexion Google demandée pour confirmer la suppression du compte
   const resumeDeletion: boolean = searchParams.get(CONFIRM_PARAM) === DELETE_ACCOUNT_STEP;
   const [deletionResumed, setDeletionResumed] = useState<boolean>(false);
 
   useEffect(() => {
-    // Une autre page s'affiche (ex. /login après la suppression du compte) : le panneau se ferme
     panelRef.current?.close();
   }, [pathname]);
 
   useEffect(() => {
     const panel: HTMLDialogElement | null = panelRef.current;
     if (!resumeDeletion || !user || panel === null) return;
-    // Le panneau s'ouvre d'abord : le dialogue de suppression, qu'il contient, ne peut s'ouvrir
-    // que dans un parent affiché. Le paramètre est ensuite retiré, pour qu'un rechargement de la
-    // page ne rouvre rien.
     if (!panel.open) panel.showModal();
     setDeletionResumed(true);
     setSearchParams({}, { replace: true });

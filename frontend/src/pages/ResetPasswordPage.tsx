@@ -11,7 +11,6 @@ import { PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES, TOKEN_PARAM } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 
-// Page du lien reçu par email : choisit un nouveau mot de passe
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get(TOKEN_PARAM);

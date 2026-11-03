@@ -10,15 +10,11 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
 
-// Derniers envois (US-1.7) : les images envoyées, des plus récentes aux plus anciennes, pour
-// repérer un problème avant qu'on le signale, avec leurs filtres ; la grille et ses actions sont
-// dans UploadGrid.
 export function RecentUploadsPage() {
   const { t } = useTranslation();
   const fromId: string = useId();
   const toId: string = useId();
   const statusId: string = useId();
-  // L'auteur cherché n'est appliqué qu'à l'envoi du formulaire : une requête par recherche
   const [authorDraft, setAuthorDraft] = useState<string>('');
   const [author, setAuthor] = useState<string | undefined>(undefined);
   const [fromDay, setFromDay] = useState<string>('');

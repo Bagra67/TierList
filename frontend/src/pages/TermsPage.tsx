@@ -5,8 +5,6 @@ import { ReportContentSection } from '../components/ReportContentSection';
 import { textLinkClassName } from '../components/ui/text-link';
 import { LEGAL_CONTACT_EMAIL, TERMS_UPDATED_AT } from '../constants/legal';
 
-// Conditions d'utilisation (#201), lisibles sans compte. Le texte vient des locales (terms.*) ;
-// les règles qu'il décrit sont celles du code (docs/technical/legal-pages.md)
 export function TermsPage() {
   const { t } = useTranslation();
 

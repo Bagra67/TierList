@@ -9,7 +9,6 @@ import { GameItemView } from './GameItemView';
 import type { ResultItem } from './resultsViews';
 import { panelVariants } from './ui/panel';
 
-// Hachures de la barre des absents : ils n'ont pas de tier, donc pas de couleur
 const ABSENT_BAR_STYLE: CSSProperties = {
   backgroundImage: 'repeating-linear-gradient(135deg, currentColor 0 3px, transparent 3px 7px)',
 };
@@ -18,14 +17,10 @@ interface ItemVotesPanelProps {
   tiers: GameTier[];
   resultItem: ResultItem;
   distribution: ItemDistribution;
-  // Noms des joueurs, dans l'ordre de la réponse (les indices de distribution y renvoient)
   playerNames: string[];
   includeAbsentVotes: boolean;
 }
 
-// Détail d'un item : pour chaque tier, combien de joueurs l'y ont mis et lesquels, puis les absents.
-// Le même décompte que la vue globale. Les noms ne viennent qu'avec les votes absents : le serveur
-// ne les donne pas sans, pour ne pas dire qui a raté l'item au tour puis l'a rattrapé
 export function ItemVotesPanel({
   tiers,
   resultItem,
@@ -35,14 +30,12 @@ export function ItemVotesPanel({
 }: ItemVotesPanelProps) {
   const { t, i18n }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
-  // Une barre pleine = tous les joueurs
   const playerCount: number = Math.max(playerNames.length, 1);
   const nameList: Intl.ListFormat = new Intl.ListFormat(i18n.language, {
     style: 'long',
     type: 'conjunction',
   });
 
-  // Les noms de ces joueurs, ou rien quand le serveur ne les donne pas
   function namesOf(indexes: number[] | undefined): string | undefined {
     if (indexes === undefined || indexes.length === 0) return undefined;
     return nameList.format(indexes.map((index: number) => playerNames[index] ?? ''));
@@ -54,13 +47,10 @@ export function ItemVotesPanel({
         <span className={ITEM_CHIP_CLASS}>
           <GameItemView item={resultItem.item} imageLabel={resultItem.imageLabel} size="small" />
         </span>
-        {/* Annoncé quand un autre item est choisi */}
         <h2 id={headingId} aria-live="polite" className="font-semibold">
           {t('results.votes.title', { item: resultItem.name })}
         </h2>
       </div>
-      {/* Une grille pour toutes les lignes (subgrid) : les barres commencent au même endroit,
-          après le nom de tier le plus long */}
       <ul className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
         {tiers.map((tier: GameTier, index: number) => (
           <VoteLine
@@ -99,14 +89,11 @@ interface VoteLineProps {
   label: ReactNode;
   count: number;
   playerCount: number;
-  // Les joueurs comptés, quand ils sont connus
   names: string | undefined;
   barStyle: CSSProperties;
   barClassName?: string;
 }
 
-// Une ligne : le tier, une barre proportionnelle au nombre de votes, ce nombre en texte (la barre
-// seule ne suffirait pas), puis les noms en dessous
 function VoteLine({ label, count, playerCount, names, barStyle, barClassName }: VoteLineProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (

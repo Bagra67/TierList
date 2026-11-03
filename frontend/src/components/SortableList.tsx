@@ -31,17 +31,13 @@ interface SortableItem {
   id: string;
 }
 
-// Props à poser sur la poignée de déplacement : souris, toucher et clavier (Espace, flèches)
 type DragHandleProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
 interface SortableListProps<Item extends SortableItem> {
   items: Item[];
   strategy: SortingStrategy;
-  // Nom de l'élément lu par les lecteurs d'écran pendant le déplacement
   getItemLabel: (item: Item) => string;
-  // Appelée quand un élément est déposé à une autre place (index dans la liste)
   onMove: (item: Item, newIndex: number) => void;
-  // Désactive le glisser-déposer, par exemple pendant l'enregistrement d'un déplacement
   disabled?: boolean;
   renderItem: (item: Item, sortable: SortableRender) => ReactNode;
 }
@@ -52,8 +48,6 @@ interface SortableRender {
   handleProps: DragHandleProps;
 }
 
-// Liste réordonnable par glisser-déposer (dnd-kit), à la souris comme au clavier, avec des
-// annonces traduites pour les lecteurs d'écran. Chaque élément fournit sa poignée.
 export function SortableList<Item extends SortableItem>({
   items,
   strategy,
@@ -63,8 +57,6 @@ export function SortableList<Item extends SortableItem>({
   renderItem,
 }: SortableListProps<Item>) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Vrai dès que l'élément saisi a quitté sa place. Au moment de la saisie, dnd-kit signale aussi
-  // un survol de l'élément par lui-même : l'annoncer remplacerait aussitôt l'annonce « saisi ».
   const hasLeftItsPlace: RefObject<boolean> = useRef<boolean>(false);
   const sensors: SensorDescriptor<SensorOptions>[] = useSensors(
     useSensor(PointerSensor),
@@ -75,7 +67,6 @@ export function SortableList<Item extends SortableItem>({
     return items.find((item) => item.id === id);
   }
 
-  // Position lue par l'utilisateur, à partir de 1
   function positionOf(id: UniqueIdentifier): number {
     return items.findIndex((item) => item.id === id) + 1;
   }
@@ -152,7 +143,6 @@ function SortableEntry<Item extends SortableItem>({ item, renderItem }: Sortable
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // L'élément déplacé passe au-dessus des autres
     zIndex: isDragging ? 1 : undefined,
     position: 'relative',
   };

@@ -10,8 +10,6 @@ interface ColorFieldProps {
   label: string;
   // Couleur enregistrée, #RRGGBB en majuscules
   value: string;
-  // Promesse rejetée si l'enregistrement échoue : la pastille revient alors à la couleur
-  // enregistrée
   onSave: (color: string) => Promise<unknown>;
 }
 
@@ -33,7 +31,6 @@ function toSixDigitHex(color: string): string {
 export function ColorField({ label, value, onSave }: ColorFieldProps) {
   const [open, setOpen] = useState<boolean>(false);
   const [draft, setDraft] = useState<string>(value);
-  // Vrai quand la fermeture vient d'Échap : on annule au lieu d'enregistrer
   const isCancelling: RefObject<boolean> = useRef<boolean>(false);
   // Nuancier affiché : le contenu du popover se monte après ce composant, d'où un état (le
   // changement relance l'effet de traduction) plutôt qu'une simple ref
@@ -68,7 +65,6 @@ export function ColorField({ label, value, onSave }: ColorFieldProps) {
   function save() {
     const color: string = toSixDigitHex(draft);
     if (color === value) return;
-    // L'erreur elle-même est affichée par le parent
     onSave(color).catch(() => setDraft(value));
   }
 

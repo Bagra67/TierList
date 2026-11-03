@@ -19,25 +19,16 @@ import {
 import { tileFocusKey } from './boardHooks';
 import { GameItemView } from './GameItemView';
 
-// Morceaux communs au plateau des tours (GameBoard) et au plateau du cooldown (CooldownBoard)
-
-// Ce que porte une zone de dépôt, lu à la fin du glisser-déposer
 type DropData = UseDroppableArguments['data'];
 
-// Un nom de tier jusqu'à cette longueur (S, A+…) s'affiche en grand dans son bloc
 const SHORT_TIER_NAME_LENGTH: number = 2;
 
 interface TierLabelProps {
   tier: GameTier;
-  // Pour nommer la ligne (aria-labelledby)
   id?: string;
-  // Arrondi du coin gauche, quand la ligne est un cadre à elle seule (plateau, cooldown)
   className?: string;
 }
 
-// Bloc-lettre d'un tier, collé à gauche de sa ligne : le nom sur la couleur du tier. Le nom suffit
-// à lui seul, la couleur l'accompagne. Un nom long est coupé après trois lignes (title le montre en
-// entier, et le lecteur d'écran le lit en entier)
 export function TierLabel({ tier, id, className }: TierLabelProps) {
   return (
     <span
@@ -61,7 +52,6 @@ interface EndSlotProps {
   data: DropData;
 }
 
-// Fin d'un tier : déposer un item ici le place en dernier
 export function EndSlot({ id, data }: EndSlotProps) {
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({ id, data });
   return (
@@ -77,27 +67,18 @@ export function EndSlot({ id, data }: EndSlotProps) {
 }
 
 interface DraggableItemProps {
-  // Identifiant du glisser-déposer : event.active.id à la fin
   id: string;
   label: string;
-  // Nom accessible, quand le texte visible ne suffit pas (carte de l'élément en cours)
   ariaLabel?: string;
-  // Clé pour useFocusAfterUpdate (boardHooks.ts)
   focusKey: string;
   disabled: boolean;
-  // L'item à placer maintenant (tour en cours) : bordure de l'accent, pour le repérer
   emphasized?: boolean;
-  // Autre forme que la puce (carte de l'élément en cours)
   className?: string;
-  // Clic (ou Entrée, quand Entrée ne saisit pas l'item) : choisir la tuile, pressed dit si elle
-  // l'est (plateau final)
   onClick?: () => void;
   pressed?: boolean;
   children: ReactNode;
 }
 
-// Un item à glisser vers un tier ; au clavier, Espace ou Entrée le saisit. Pendant le glisser, il
-// reste à sa place, estompé : c'est son aperçu (DragPreview) qui suit le pointeur
 export function DraggableItem({
   id,
   label,
@@ -125,7 +106,6 @@ export function DraggableItem({
       onClick={onClick}
       className={cn(
         ITEM_CHIP_CLASS,
-        // Le focus clavier (anneau) reste distinct de l'état au repos (bordure)
         'cursor-grab outline-none focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         emphasized && EMPHASIZED_BORDER_CLASS,
         pressed && 'ring-3 ring-primary',
@@ -138,7 +118,6 @@ export function DraggableItem({
   );
 }
 
-// Ce que montre l'aperçu d'un item glissé
 export interface DragPreviewContent {
   item: GameItem;
   label: string;
@@ -149,14 +128,9 @@ export interface DragPreviewContent {
 }
 
 interface DragPreviewProps {
-  // L'aperçu de l'item d'identifiant id, undefined s'il n'en a pas
   previewOf: (id: string) => DragPreviewContent | undefined;
 }
 
-// Aperçu de l'item glissé : une copie qui suit le pointeur (ou les flèches du clavier) au-dessus de
-// tout le reste, avec l'ombre « projecteur ». Cachée aux lecteurs d'écran, qui ont déjà l'item et
-// les annonces du glisser. Sans animation de dépôt : l'item apparaît à sa nouvelle place quand le
-// serveur a répondu
 export function DragPreview({ previewOf }: DragPreviewProps) {
   const { active }: ReturnType<typeof useDndContext> = useDndContext();
   const content: DragPreviewContent | undefined =
@@ -183,8 +157,6 @@ interface ChoosableTileProps {
   onChoose: (itemId: string) => void;
 }
 
-// Une tuile du plateau final ou un élément manqué : elle se glisse, ou se choisit d'un clic (ou
-// Entrée) pour « Déplacer ici »
 export function ChoosableTile({ item, label, chosen, pending, onChoose }: ChoosableTileProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (

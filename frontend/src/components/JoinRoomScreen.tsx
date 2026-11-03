@@ -23,8 +23,6 @@ interface JoinRoomScreenProps {
   onJoinedAsGuest: (guestRoom: GuestRoom) => void;
 }
 
-// Écran de qui ouvre le lien d'une salle sans compte connecté ni place (US-2.4, US-2.5) : se
-// connecter pour revenir ici avec son compte, ou entrer tout de suite en invité avec un pseudo
 export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
   const location: Location = useLocation();
   const joinMutation = useJoinAsGuest(code);
@@ -39,7 +37,7 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
     try {
       guestRoom = await joinMutation.mutateAsync({ nickname });
     } catch {
-      return; // l'erreur est affichée depuis joinMutation.error
+      return;
     }
     onJoinedAsGuest(guestRoom);
   }
@@ -56,7 +54,6 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
       <section className={cn(panelVariants(), 'items-start')}>
         <h2 className="font-semibold">{t('rooms.join.withAccount')}</h2>
         <p className="text-sm text-muted-foreground">{t('rooms.join.withAccountHint')}</p>
-        {/* Après la connexion, retour sur cette salle (RequireAuth fait de même) */}
         <Button asChild variant="outline">
           <Link to={ROUTES.LOGIN} state={signInRedirectState(location)}>
             {t('rooms.join.signIn')}
@@ -74,7 +71,6 @@ export function JoinRoomScreen({ code, onJoinedAsGuest }: JoinRoomScreenProps) {
             error={nicknameError}
           />
           <p className="text-sm text-muted-foreground">{t('rooms.join.asGuestHint')}</p>
-          {/* Pseudo déjà pris, salle introuvable… ; une erreur du champ est déjà sous lui */}
           {joinMutation.isError && nicknameError === undefined && (
             <ErrorMessage>{translateError(t, joinMutation.error)}</ErrorMessage>
           )}

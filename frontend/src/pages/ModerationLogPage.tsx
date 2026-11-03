@@ -8,13 +8,9 @@ import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
 
-// Journal de modération (US-1.9) : chaque action d'un super admin, de la plus récente à la plus
-// ancienne, filtrable par cible et par super admin. Rien ne s'y modifie ni ne s'y supprime
 export function ModerationLogPage() {
   const { t } = useTranslation();
   const superAdminSelectId = useId();
-  // Le texte cherché n'est appliqué qu'à l'envoi du formulaire : une requête par recherche, pas
-  // une par lettre tapée
   const [targetDraft, setTargetDraft] = useState('');
   const [filters, setFilters] = useState<ModerationLogFilters>({});
   const superAdmins = useSuperAdmins();

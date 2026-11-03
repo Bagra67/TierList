@@ -1,5 +1,3 @@
-// Langue de référence : ses clés définissent le type Translation, que chaque autre langue doit
-// respecter exactement (une clé absente ou en trop fait échouer pnpm typecheck).
 export const fr = {
   common: {
     loading: 'Chargement…',
@@ -621,7 +619,6 @@ export const fr = {
       addTier: 'Ajouter un tier',
       tierName: 'Nom du tier {{position}}',
       tierColor: 'Couleur du tier {{name}}',
-      // Sélecteur de couleur d'un tier (react-colorful)
       color: {
         area: 'Saturation et luminosité',
         areaValue: 'Saturation {{saturation}} %, luminosité {{brightness}} %',
@@ -643,9 +640,7 @@ export const fr = {
       addTile: 'Ajouter la tuile',
       addingTile: 'Ajout…',
       tileText: 'Texte de la tuile {{position}}',
-      // Nom d'une tuile qui n'a qu'une image, dans les libellés des boutons
       tileName: 'Tuile {{position}}',
-      // Vignette d'image : clic pour choisir un fichier, ou glisser-déposer
       bulk: {
         progress: 'Envoi des images : {{done}} / {{total}}',
         added_one: '{{count}} tuile ajoutée.',
@@ -670,7 +665,6 @@ export const fr = {
       moveBefore: 'Déplacer {{name}} avant',
       moveAfter: 'Déplacer {{name}} après',
       deleteTile: 'Supprimer la tuile {{name}}',
-      // Annonces des lecteurs d'écran pendant un glisser-déposer au clavier
       dnd: {
         instructions:
           'Pour déplacer un élément, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.',
@@ -854,7 +848,6 @@ export const fr = {
           submitting: 'Fin…',
         },
       },
-      // Annonces des lecteurs d'écran pendant un glisser-déposer
       dnd: {
         instructions:
           "Pour placer l'élément, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.",
@@ -911,7 +904,6 @@ export const fr = {
       cancel: 'Annuler',
       submit: 'Enregistrer',
       submitting: 'Enregistrement…',
-      // Résumé affiché dans le lobby, à tous les participants
       summary: {
         itemOrder: {
           template: 'Ordre du modèle',
@@ -932,7 +924,6 @@ export const fr = {
   },
   errors: {
     unknown: 'Une erreur est survenue, veuillez réessayer.',
-    // Une clé par code d'erreur de l'API (backend/app/constants/error_codes.py)
     api: {
       internal_error: 'Erreur interne du serveur, veuillez réessayer.',
       validation_error: 'Certains champs sont invalides.',
@@ -999,7 +990,6 @@ export const fr = {
       image_moderation_conflict:
         "Cette action ne s'applique pas à l'image dans son état actuel : elle est peut-être déjà masquée, visible ou supprimée.",
     },
-    // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {
       invalid: 'Valeur invalide.',
       missing: 'Ce champ est obligatoire.',
@@ -1011,7 +1001,6 @@ export const fr = {
       less_than_equal: 'Au plus {{le}}.',
       password_too_short: 'Le mot de passe doit contenir au moins {{min_length}} caractères',
     },
-    // Codes du retour de Google (backend : /auth/google/callback → /login?error=<code>)
     google: {
       google_cancelled: 'Connexion avec Google annulée.',
       google_email_not_verified:
@@ -1023,6 +1012,5 @@ export const fr = {
   },
 } as const;
 
-// Même forme que fr, avec des textes quelconques
 type Widen<T> = { readonly [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
 export type Translation = Widen<typeof fr>;

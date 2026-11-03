@@ -25,13 +25,11 @@ import { ApiError, translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 
-// Jeton du lien perso d'un invité (#guest=<jeton>), absent d'un lien ordinaire
 function guestTokenFrom(hash: string): string | null {
   const token: string | null = new URLSearchParams(hash.replace(/^#/, '')).get(GUEST_LINK_FRAGMENT);
   return token === '' ? null : token;
 }
 
-// Le lecteur n'a plus de place dans cette salle : retiré ou banni par le room admin, ou salle fermée
 interface Removal {
   roomCode: string;
   reason: RemovalReason;
@@ -43,14 +41,7 @@ const REMOVAL_MESSAGES = {
   closed: 'rooms.lobby.closed',
 } as const satisfies Record<RemovalReason, string>;
 
-// Page d'une salle, ouverte par son lien ou son code. Un compte connecté y entre comme joueur
-// (US-2.4). Sans compte, le navigateur d'un invité est reconnu par son cookie, ou par son lien
-// perso (US-5.4) ; un nouveau venu choisit de se connecter ou d'entrer en invité (US-2.5). Une fois
-// la salle chargée, son canal temps réel la tient à jour (arrivées, départs, réglages, présence).
-// Retiré par le room admin (US-2.11), ou la salle fermée (US-2.7), le lecteur en est prévenu et la
-// salle n'est plus lue : une relecture ferait rejoindre à nouveau un compte sans qu'il l'ait demandé.
 export function RoomPage() {
-  // Toujours présent : la route ROOM déclare ce paramètre
   const { code = '' }: Readonly<Params> = useParams();
   const location: Location = useLocation();
   const navigate: NavigateFunction = useNavigate();
@@ -60,7 +51,6 @@ export function RoomPage() {
   // Un retrait ne vaut que pour sa salle : en ouvrir une autre l'oublie
   const removal: Removal | null =
     lastRemoval?.roomCode === canonicalRoomCode(code) ? lastRemoval : null;
-  // Sans lecteur, la salle n'est ni lue ni suivie (undefined : session en attente, ou retiré)
   const viewer: RoomViewer | undefined =
     isUserPending || removal !== null
       ? undefined
@@ -78,7 +68,6 @@ export function RoomPage() {
     (reason: RemovalReason) => {
       const roomCode: string = canonicalRoomCode(code);
       setLastRemoval({ roomCode, reason });
-      // Sa place n'existe plus : la salle en cache ne le concerne plus
       queryClient.removeQueries({ queryKey: roomQueryKey(roomCode) });
     },
     [code, queryClient],
@@ -94,16 +83,12 @@ export function RoomPage() {
   const [guestRoom, setGuestRoom] = useState<GuestRoom | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // Le jeton du lien perso a servi (le cookie est posé) : il sort de l'adresse, pour ne pas
-  // rester dans l'historique ni se montrer à l'écran
   useEffect(() => {
     if (guestToken !== null && isSuccess) {
       void navigate({ pathname: location.pathname, hash: '' }, { replace: true });
     }
   }, [guestToken, isSuccess, location.pathname, navigate]);
 
-  // Sans place : un visiteur sans compte peut rejoindre ; lien perso expiré ou salle fermée,
-  // il est prévenu, puis peut entrer à nouveau en invité
   const errorCode: string | undefined = error instanceof ApiError ? error.code : undefined;
   const canJoinAsGuest: boolean =
     viewer === 'guest' && (errorCode === 'room_not_found' || errorCode === 'guest_link_invalid');
@@ -117,7 +102,6 @@ export function RoomPage() {
         <p role="status" className="font-medium">
           {t(REMOVAL_MESSAGES[removal.reason])}
         </p>
-        {/* Un banni serait refusé, une salle fermée n'existe plus : seul un retiré peut revenir */}
         {removal.reason === 'removed' ? (
           <Button type="button" onClick={() => setLastRemoval(null)}>
             {t('rooms.lobby.comeBack')}
@@ -131,8 +115,6 @@ export function RoomPage() {
     );
   }
 
-  // Même largeur avant et pendant la partie : le plateau en trois colonnes (GameScreen) tient
-  // dans la largeur app, et rien ne saute au démarrage
   return (
     <PageContainer width="app" className="flex flex-col items-start gap-6">
       {isPending && error === null && <LoadingSkeleton shape="board" />}

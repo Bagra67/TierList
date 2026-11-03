@@ -1,9 +1,5 @@
 import { TIER_COLOR_PRESETS } from './templates';
 
-// Plateau d'exemple de la page d'accueil (components/home/HomeBoard.tsx) : quatre tiers aux
-// couleurs par défaut, des éléments (textes dans home.board.items.*) et, sur certains, les
-// initiales des joueurs qui les ont mis là. Les éléments apparaissent dans l'ordre de la liste
-
 type HomeBoardItemKey =
   'pizza' | 'crepes' | 'sushi' | 'tacos' | 'ramen' | 'croissant' | 'burger' | 'salad';
 
@@ -48,7 +44,6 @@ export const HOME_BOARD: readonly HomeBoardRow[] = [
   { tier: 'C', color: TIER_COLOR_PRESETS[3], items: [{ key: 'salad', voters: [] }] },
 ];
 
-// Couleur de la pastille de chaque joueur (initiale), prise dans la fin de la rampe des tiers
 export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<string, string>> = {
   A: TIER_COLOR_PRESETS[4],
   B: TIER_COLOR_PRESETS[5],
@@ -60,5 +55,4 @@ export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<string, string>> = {
 export const HOME_BOARD_STEP_MS: number = 240;
 export const HOME_BOARD_ITEM_MS: number = 630;
 
-// Nombre de modèles et de parties récents montrés à un joueur connecté
 export const HOME_RECENT_COUNT: number = 3;

@@ -37,7 +37,6 @@ export default function App() {
         <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
-        {/* Publique : une vitrine pour le visiteur, son accueil pour le joueur connecté */}
         <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route element={<RequireAuth />}>
           <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
@@ -45,7 +44,6 @@ export default function App() {
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
           <Route element={<RequireSuperAdmin />}>
             <Route element={<ModerationLayout />}>
-              {/* L'espace s'ouvre sur la première page de son menu */}
               <Route
                 path={ROUTES.MODERATION}
                 element={<Navigate to={ROUTES.MODERATION_UPLOADS} replace />}
@@ -57,9 +55,7 @@ export default function App() {
             </Route>
           </Route>
         </Route>
-        {/* Ouverte aussi sans compte : le visiteur y entre en invité (RoomPage) */}
         <Route path={ROUTES.ROOM} element={<RoomPage />} />
-        {/* Ouverte sans compte : le lien suffit à lire les résultats (US-5.3) */}
         <Route path={ROUTES.RESULTS} element={<ResultsPage />} />
         <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />
         <Route path={ROUTES.TERMS} element={<TermsPage />} />

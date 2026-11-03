@@ -11,7 +11,6 @@ interface DeleteTemplateDialogProps {
   template: TemplateSummary;
 }
 
-// Confirmation avant suppression, dans un <dialog> natif (focus piégé, fermeture avec Échap)
 export function DeleteTemplateDialog({ template }: DeleteTemplateDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const deleteMutation = useDeleteTemplate();
@@ -22,9 +21,8 @@ export function DeleteTemplateDialog({ template }: DeleteTemplateDialogProps) {
     try {
       await deleteMutation.mutateAsync(template.id);
     } catch {
-      return; // l'erreur est affichée depuis deleteMutation.error
+      return;
     }
-    // La liste rafraîchie ne contient plus ce template : la ligne et son dialogue disparaissent
     dialogRef.current?.close();
   }
 

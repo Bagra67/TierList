@@ -23,8 +23,6 @@ import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
 import { translateError } from '../errors/apiError';
 
-// La page d'un compte pour les super admins (US-1.8) : ses détails, ses modèles et ses images
-// avec leurs actions de modération, et l'historique des décisions qui le concernent
 export function ModerationAccountPage() {
   const { t } = useTranslation();
   const { accountId = '' } = useParams();
@@ -88,7 +86,6 @@ function AccountDetails({ account }: { account: Account }) {
   );
 }
 
-// Le bannissement en cours, ou de quoi bannir le compte (US-1.8) ; un super admin ne peut pas l'être
 function AccountBan({ account }: { account: Account }) {
   const { t } = useTranslation();
   const banDialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
@@ -99,7 +96,7 @@ function AccountBan({ account }: { account: Account }) {
     try {
       await liftMutation.mutateAsync({ accountId: account.id, reason });
     } catch {
-      return false; // l'erreur est affichée depuis liftMutation.error
+      return false;
     }
     return true;
   }
@@ -141,7 +138,6 @@ function AccountBan({ account }: { account: Account }) {
             >
               {t('moderation.ban.lift')}
             </Button>
-            {/* Bannir de nouveau remplace le bannissement : de temporaire à définitif, par exemple */}
             <Button
               type="button"
               variant="outline"
@@ -178,7 +174,6 @@ interface PendingTemplateAction {
   action: TemplateModerationAction;
 }
 
-// Ses modèles actifs, avec Masquer ou Réafficher, et Supprimer (US-1.5)
 function AccountTemplates({ account }: { account: Account }) {
   const { t } = useTranslation();
   const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
@@ -200,7 +195,7 @@ function AccountTemplates({ account }: { account: Account }) {
         reason,
       });
     } catch {
-      return false; // l'erreur est affichée depuis moderateMutation.error
+      return false;
     }
     return true;
   }
@@ -264,7 +259,6 @@ function AccountTemplates({ account }: { account: Account }) {
   );
 }
 
-// Ses images, avec leurs actions, et « Masquer toutes ses images » (US-1.8)
 function AccountImages({ account }: { account: Account }) {
   const { t } = useTranslation();
   const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
@@ -274,7 +268,7 @@ function AccountImages({ account }: { account: Account }) {
     try {
       await hideAllMutation.mutateAsync({ accountId: account.id, reason });
     } catch {
-      return false; // l'erreur est affichée depuis hideAllMutation.error
+      return false;
     }
     return true;
   }

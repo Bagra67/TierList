@@ -15,8 +15,6 @@ interface GuestLinkSectionProps {
   onRenewed: (guestRoom: GuestRoom) => void;
 }
 
-// Lien perso d'un invité (US-5.4). Le serveur n'en garde que l'empreinte : après un rechargement,
-// il n'est plus affichable, mais l'invité, reconnu par son cookie, peut en demander un nouveau.
 export function GuestLinkSection({ code, guestRoom, onRenewed }: GuestLinkSectionProps) {
   const renewMutation = useRenewGuestLink(code);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
@@ -28,7 +26,7 @@ export function GuestLinkSection({ code, guestRoom, onRenewed }: GuestLinkSectio
     try {
       renewed = await renewMutation.mutateAsync();
     } catch {
-      return; // l'erreur est affichée depuis renewMutation.error
+      return;
     }
     onRenewed(renewed);
   }

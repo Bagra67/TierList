@@ -29,22 +29,17 @@ import {
 import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
-// La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
 type RegisterRequest = Omit<components['schemas']['RegisterRequest'], 'language'>;
 export type LoginRequest = components['schemas']['LoginRequest'];
 export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
 type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
-// Connexion avec Google : navigation complète (pas un appel fetch), le backend redirige vers
-// Google puis, au retour, vers le frontend avec le cookie de session posé.
 export function googleSignInUrl(next?: GoogleNextStep): string {
   const query = next === undefined ? '' : `?${new URLSearchParams({ next }).toString()}`;
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 
-// Après un refus de Google pour bannissement : le backend lit son cookie et répond comme à une
-// connexion par mot de passe refusée (403, avec le motif et la fin), que l'erreur de la requête porte
 export function useGoogleBanNotice(googleError: string | null) {
   return useQuery({
     queryKey: ['auth', 'google-ban-notice'],
@@ -70,7 +65,6 @@ export async function login(body: LoginRequest): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
-  // Le token en mémoire est oublié même si le backend est injoignable
   setAccessToken(null);
   throwIfError(await apiClient.POST('/auth/logout'));
 }
@@ -80,13 +74,10 @@ export async function deleteAccount(body: DeleteAccountRequest): Promise<void> {
   setAccessToken(null);
 }
 
-// Confirme l'adresse avec le token du lien reçu par email (sans session : le lien peut être
-// ouvert dans un autre navigateur)
 async function verifyEmail(token: string): Promise<void> {
   throwIfError(await apiClient.POST('/auth/email/verify', { body: { token } }));
 }
 
-// Renvoie l'email de vérification ; le backend l'ignore si le précédent est trop récent
 async function requestEmailVerification(): Promise<void> {
   throwIfError(
     await apiClient.POST('/auth/email/verification', {
@@ -95,7 +86,6 @@ async function requestEmailVerification(): Promise<void> {
   );
 }
 
-// Demande un lien de réinitialisation ; le backend répond pareil que le compte existe ou non
 async function forgotPassword(email: string): Promise<void> {
   throwIfError(
     await apiClient.POST('/auth/password/forgot', {
@@ -104,7 +94,6 @@ async function forgotPassword(email: string): Promise<void> {
   );
 }
 
-// Choisit un nouveau mot de passe avec le token du lien reçu ; le backend ferme toutes les sessions
 async function resetPassword(body: ResetPasswordRequest): Promise<void> {
   throwIfError(await apiClient.POST('/auth/password/reset', { body }));
 }
@@ -113,8 +102,6 @@ export async function getMe(signal?: AbortSignal): Promise<User> {
   return dataOrThrow(await apiClient.GET('/auth/me', { signal }));
 }
 
-// Utilisateur connecté, ou null. Au chargement de la page, aucun access token n'est en mémoire :
-// la session est restaurée grâce au cookie de refresh, s'il est encore valide.
 export async function getCurrentUser(signal?: AbortSignal): Promise<User | null> {
   if (!hasAccessToken() && !(await refreshAccessToken())) {
     return null;
@@ -133,14 +120,10 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: ({ signal }) => getCurrentUser(signal),
-    // L'utilisateur ne change qu'à la connexion / déconnexion, qui mettent ce cache à jour
     staleTime: Infinity,
   });
 }
 
-// Après une connexion ou une inscription : l'utilisateur est relu, et les salles lues comme
-// visiteur sont oubliées (une salle introuvable, ou sa vue d'invité, ne doit pas s'afficher au
-// compte le temps de la relire avec lui)
 function startSession(queryClient: QueryClient): Promise<void> {
   queryClient.removeQueries({ queryKey: ROOMS_QUERY_KEY });
   return queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
@@ -175,10 +158,6 @@ export function useRequestEmailVerification() {
   return useMutation({ mutationFn: requestEmailVerification });
 }
 
-// Après déconnexion ou suppression : aucune donnée de l'ancien utilisateur ne reste en cache.
-// L'utilisateur courant est mis à null dans sa requête existante, sans la retirer : les
-// composants qui restent affichés (l'en-tête de Layout, RequireAuth) l'observent, et une requête
-// retirée du cache ne les préviendrait plus. Ils garderaient alors l'ancien utilisateur.
 function forgetSession(queryClient: QueryClient): void {
   const currentUserHash: string = hashKey(CURRENT_USER_QUERY_KEY);
   queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
@@ -186,9 +165,6 @@ function forgetSession(queryClient: QueryClient): void {
   queryClient.getMutationCache().clear();
 }
 
-// Une session terminée sans « Se déconnecter » remet l'interface en mode déconnecté : sans cela,
-// l'utilisateur en cache (staleTime: Infinity) garderait les liens privés affichés. Monté une
-// seule fois, par Layout.
 export function useForgetEndedSession(): void {
   const queryClient: QueryClient = useQueryClient();
   useEffect(() => onSessionEnded(() => forgetSession(queryClient)), [queryClient]);
@@ -198,7 +174,6 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
-    // Même en cas d'échec réseau, l'interface repasse en mode déconnecté
     onSettled: () => forgetSession(queryClient),
   });
 }
@@ -211,7 +186,6 @@ export function useResetPassword() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: resetPassword,
-    // Le backend a fermé toutes les sessions, y compris celle de ce navigateur
     onSuccess: () => {
       setAccessToken(null);
       forgetSession(queryClient);

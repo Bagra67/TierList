@@ -9,8 +9,6 @@ import {
   PRIVACY_POLICY_UPDATED_AT,
 } from '../constants/legal';
 
-// Politique de confidentialité (#200), lisible sans compte. Le texte vient des locales
-// (privacy.*) ; ce qu'il décrit est l'inventaire de docs/technical/legal-pages.md.
 export function PrivacyPolicyPage() {
   const { t } = useTranslation();
 

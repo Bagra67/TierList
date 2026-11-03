@@ -10,13 +10,9 @@ import { Button } from './ui/button';
 import { textLinkClassName } from './ui/text-link';
 
 interface ResultsRoomActionsProps {
-  // La salle d'où viennent les résultats (état de navigation posé par le lobby)
   fromRoom: ResultsLinkState;
 }
 
-// Sur les résultats ouverts depuis le lobby : revenir à la salle, et pour le room admin rejouer
-// (US-2.9). Le serveur vérifie lui-même le rôle : le bouton n'est qu'un raccourci. Un visiteur du
-// lien public n'a pas de salle, il ne voit rien de tout ça
 export function ResultsRoomActions({ fromRoom }: ResultsRoomActionsProps) {
   const startMutation = useStartGame(fromRoom.roomCode);
   const navigate: NavigateFunction = useNavigate();
@@ -26,9 +22,8 @@ export function ResultsRoomActions({ fromRoom }: ResultsRoomActionsProps) {
     try {
       await startMutation.mutateAsync();
     } catch {
-      return; // l'erreur est affichée depuis startMutation.error
+      return;
     }
-    // La salle renvoyée porte la nouvelle partie : son écran de jeu s'affiche dans le lobby
     void navigate(roomPath(fromRoom.roomCode));
   }
 
