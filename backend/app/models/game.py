@@ -31,6 +31,11 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             f"status <> '{GameStatus.CLOSED}' OR public_token IS NOT NULL",
             name="closed_has_public_token",
         ),
+        Index(
+            "ix_games_hidden_at",
+            "hidden_at",
+            postgresql_where=text("hidden_at IS NOT NULL"),
+        ),
     )
 
     room_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("rooms.id", ondelete="SET NULL"))
@@ -50,6 +55,7 @@ class Game(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     public_token: Mapped[str | None] = mapped_column(
         String(PUBLIC_RESULTS_TOKEN_MAX_LENGTH), unique=True
     )
+    hidden_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     snapshot: Mapped[TemplateSnapshot] = relationship()
     rounds: Mapped[list[Round]] = relationship(

@@ -18,3 +18,15 @@ class ReportLimitReachedError(Exception):
 
 class ReportsNotOpenError(Exception):
     pass
+
+
+class NicknameNotFoundError(Exception):
+    pass
+
+
+class GameNotFoundError(Exception):
+    pass
+
+
+class GameModerationConflictError(Exception):
+    pass

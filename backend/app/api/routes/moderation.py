@@ -42,7 +42,12 @@ from app.exceptions.moderation import (
     BanEndInPastError,
     CannotBanSuperAdminError,
 )
-from app.exceptions.reports import ReportsNotOpenError
+from app.exceptions.reports import (
+    GameModerationConflictError,
+    GameNotFoundError,
+    NicknameNotFoundError,
+    ReportsNotOpenError,
+)
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
 from app.models.account_ban import AccountBan
 from app.models.image import ImageStatus
@@ -54,12 +59,15 @@ from app.schemas.moderation import (
     AccountSummaryResponse,
     BanAccountRequest,
     DismissReportsRequest,
+    HiddenGameResponse,
+    HiddenGamesResponse,
     HiddenImagesResponse,
     ModerationActionResponse,
     ModerationLogResponse,
     ModerationReasonRequest,
     OpenReportCountResponse,
     RecentUploadsResponse,
+    RemoveNicknameRequest,
     ReportQueueResponse,
     SuperAdminResponse,
 )
@@ -67,7 +75,7 @@ from app.schemas.templates import TemplateSummaryResponse
 from app.services.account_review import AccountDetails, AccountSearchPage
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
-from app.services.report_queue import ReportQueuePage
+from app.services.report_queue import HiddenGamesPage, ReportQueuePage
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -187,6 +195,99 @@ def dismiss_reports(
         raise AppHTTPException(
             status_code=404, code=ErrorCode.REPORTS_NOT_OPEN, detail=messages.REPORTS_NOT_OPEN
         ) from exc
+
+
+@router.post(
+    "/nicknames/remove",
+    status_code=204,
+    responses={
+        **SUPER_ADMIN_RESPONSES,
+        404: {"model": ErrorResponse, "description": messages.NICKNAME_NOT_FOUND_DESCRIPTION},
+    },
+)
+def remove_nickname(
+    body: RemoveNicknameRequest, super_admin: SuperAdminDep, service: ReportQueueServiceDep
+) -> None:
+    """Remplace un pseudo signalé par un code neutre, dans les salles et les résultats. Sans
+    retour : l'ancien pseudo ne reste que dans le journal."""
+    try:
+        service.remove_nickname(super_admin, body.target_id, body.reason)
+    except NicknameNotFoundError as exc:
+        raise AppHTTPException(
+            status_code=404, code=ErrorCode.NICKNAME_NOT_FOUND, detail=messages.NICKNAME_NOT_FOUND
+        ) from exc
+
+
+@router.get("/games/hidden", responses=SUPER_ADMIN_RESPONSES)
+def list_hidden_games(
+    super_admin: SuperAdminDep,
+    service: ReportQueueServiceDep,
+    limit: Annotated[
+        int, Query(ge=1, le=REPORT_QUEUE_PAGE_SIZE_MAX)
+    ] = REPORT_QUEUE_PAGE_SIZE_DEFAULT,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> HiddenGamesResponse:
+    page: HiddenGamesPage = service.hidden_games(limit, offset)
+    return HiddenGamesResponse(
+        games=[
+            HiddenGameResponse(id=game.id, template_name=game.snapshot.name, hidden_at=hidden_at)
+            for game in page.games
+            if (hidden_at := game.hidden_at) is not None
+        ],
+        has_more=page.has_more,
+    )
+
+
+def _game_not_found() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=404, code=ErrorCode.GAME_NOT_FOUND, detail=messages.GAME_NOT_FOUND
+    )
+
+
+def _game_moderation_conflict() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.GAME_MODERATION_CONFLICT,
+        detail=messages.GAME_MODERATION_CONFLICT,
+    )
+
+
+GAME_MODERATION_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **SUPER_ADMIN_RESPONSES,
+    404: {"model": ErrorResponse, "description": messages.GAME_NOT_FOUND_DESCRIPTION},
+    409: {"model": ErrorResponse, "description": messages.GAME_MODERATION_CONFLICT_DESCRIPTION},
+}
+
+
+@router.post("/games/{game_id}/hide", status_code=204, responses=GAME_MODERATION_RESPONSES)
+def hide_game(
+    game_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: ReportQueueServiceDep,
+) -> None:
+    """Masque une partie close : son lien de résultats répond comme un lien inconnu."""
+    try:
+        service.hide_game(super_admin, game_id, body.reason)
+    except GameNotFoundError as exc:
+        raise _game_not_found() from exc
+    except GameModerationConflictError as exc:
+        raise _game_moderation_conflict() from exc
+
+
+@router.post("/games/{game_id}/unhide", status_code=204, responses=GAME_MODERATION_RESPONSES)
+def unhide_game(
+    game_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: ReportQueueServiceDep,
+) -> None:
+    try:
+        service.unhide_game(super_admin, game_id, body.reason)
+    except GameNotFoundError as exc:
+        raise _game_not_found() from exc
+    except GameModerationConflictError as exc:
+        raise _game_moderation_conflict() from exc
 
 
 @router.get("/log", responses=SUPER_ADMIN_RESPONSES)

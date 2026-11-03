@@ -7,20 +7,38 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.exceptions.reports import ReportsNotOpenError
-from app.models.enums import ModerationActionKind, ModerationTargetType, ReportReason, ReportStatus
+from app.exceptions.reports import (
+    GameModerationConflictError,
+    GameNotFoundError,
+    NicknameNotFoundError,
+    ReportsNotOpenError,
+)
+from app.models.enums import (
+    GameStatus,
+    ModerationActionKind,
+    ModerationTargetType,
+    ReportReason,
+    ReportStatus,
+)
+from app.models.game import Game
+from app.models.game_player import GamePlayer
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
+from app.models.participant import Participant
 from app.models.report import Report
 from app.models.user import User
 from app.repositories import games as game_repository
 from app.repositories import images as image_repository
 from app.repositories import reports as report_repository
+from app.repositories import rooms as room_repository
 from app.repositories import users as user_repository
 from app.repositories.reports import OpenReportGroup
 from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
+
+REMOVED_NICKNAME_PREFIX = "#"
+REMOVED_NICKNAME_RANDOM_LENGTH = 8
 
 
 @dataclass(frozen=True)
@@ -36,6 +54,12 @@ class ReportedContent:
     first_reported_at: datetime
     image: Image | None
     public_token: str | None
+
+
+@dataclass(frozen=True)
+class HiddenGamesPage:
+    games: list[Game]
+    has_more: bool
 
 
 @dataclass(frozen=True)
@@ -133,6 +157,79 @@ class ReportQueueService:
             len(reports),
         )
 
+    def remove_nickname(self, super_admin: User, target_id: uuid.UUID, reason: str) -> None:
+        user: User | None = user_repository.get_user_by_id(self._session, target_id)
+        replacement: str = _removed_nickname()
+        nickname: str
+        closed_targets: list[uuid.UUID]
+        if user is not None:
+            nickname = user.display_name
+            closed_targets = [user.id]
+            user.display_name = replacement
+            game_repository.rename_players_of_account(self._session, user.id, replacement)
+        else:
+            nickname, closed_targets = self._rename_guest(target_id, replacement)
+        action: ModerationAction = self._moderation_log.record(
+            super_admin,
+            ModerationActionKind.DELETE,
+            ModerationTargetType.NICKNAME,
+            target_id,
+            nickname,
+            reason,
+        )
+        report_repository.close_open_reports(
+            self._session,
+            ModerationTargetType.NICKNAME,
+            closed_targets,
+            ReportStatus.ACTIONED,
+            action.id,
+        )
+        self._session.commit()
+        logger.info("Pseudo retiré : target_id=%s super_admin_id=%s", target_id, super_admin.id)
+
+    def hide_game(self, super_admin: User, game_id: uuid.UUID, reason: str) -> None:
+        game: Game = self._get_closed_game(game_id)
+        if game.hidden_at is not None:
+            raise GameModerationConflictError
+        game.hidden_at = datetime.now(UTC)
+        action: ModerationAction = self._moderation_log.record(
+            super_admin,
+            ModerationActionKind.HIDE,
+            ModerationTargetType.GAME,
+            game.id,
+            game.snapshot.name,
+            reason,
+        )
+        report_repository.close_open_reports(
+            self._session,
+            ModerationTargetType.GAME,
+            [game.id],
+            ReportStatus.ACTIONED,
+            action.id,
+        )
+        self._session.commit()
+        logger.info("Partie masquée : game_id=%s super_admin_id=%s", game_id, super_admin.id)
+
+    def unhide_game(self, super_admin: User, game_id: uuid.UUID, reason: str) -> None:
+        game: Game = self._get_closed_game(game_id)
+        if game.hidden_at is None:
+            raise GameModerationConflictError
+        game.hidden_at = None
+        self._moderation_log.record(
+            super_admin,
+            ModerationActionKind.UNHIDE,
+            ModerationTargetType.GAME,
+            game.id,
+            game.snapshot.name,
+            reason,
+        )
+        self._session.commit()
+        logger.info("Partie réaffichée : game_id=%s super_admin_id=%s", game_id, super_admin.id)
+
+    def hidden_games(self, limit: int, offset: int) -> HiddenGamesPage:
+        games: list[Game] = game_repository.list_hidden_games(self._session, limit + 1, offset)
+        return HiddenGamesPage(games=games[:limit], has_more=len(games) > limit)
+
     def purge_closed(self) -> int:
         limit: datetime = datetime.now(UTC) - timedelta(
             days=self._settings.closed_report_retention_days
@@ -141,6 +238,57 @@ class ReportQueueService:
         self._session.commit()
         logger.info("Signalements fermés purgés : %d (avant %s)", purged, limit.isoformat())
         return purged
+
+    def _rename_guest(self, target_id: uuid.UUID, replacement: str) -> tuple[str, list[uuid.UUID]]:
+        participant: Participant | None = room_repository.get_participant(self._session, target_id)
+        player: GamePlayer | None = (
+            game_repository.get_game_player(self._session, target_id)
+            if participant is None
+            else None
+        )
+        room_id: uuid.UUID | None
+        nickname: str | None
+        if participant is not None:
+            room_id, nickname = participant.room_id, participant.nickname
+        elif player is not None and player.user_id is None:
+            room_id, nickname = player.game.room_id, player.display_name
+        else:
+            raise NicknameNotFoundError
+        if nickname is None:
+            raise NicknameNotFoundError
+        guest: Participant | None = (
+            participant
+            if participant is not None
+            else (
+                room_repository.get_guest_of_room(self._session, room_id, nickname)
+                if room_id is not None
+                else None
+            )
+        )
+        players: list[GamePlayer] = (
+            game_repository.list_guest_players_of_room(self._session, room_id, nickname)
+            if room_id is not None
+            else [player]
+            if player is not None
+            else []
+        )
+        closed_targets: list[uuid.UUID] = [other.id for other in players]
+        if guest is not None:
+            guest.nickname = replacement
+            closed_targets.append(guest.id)
+        for other in players:
+            other.display_name = replacement
+        return nickname, closed_targets
+
+    def _get_closed_game(self, game_id: uuid.UUID) -> Game:
+        game: Game | None = game_repository.get_game_for_update(self._session, game_id)
+        if game is None or game.status is not GameStatus.CLOSED:
+            raise GameNotFoundError
+        return game
+
+
+def _removed_nickname() -> str:
+    return f"{REMOVED_NICKNAME_PREFIX}{uuid.uuid4().hex[:REMOVED_NICKNAME_RANDOM_LENGTH]}"
 
 
 def _targets_of_type(

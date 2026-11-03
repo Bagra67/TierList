@@ -1028,6 +1028,11 @@ export const fr = {
       report_details_required: 'Précisez votre signalement pour le motif « Autre ».',
       reports_not_open:
         "Ce contenu n'a plus de signalement ouvert : la file a peut-être déjà été traitée.",
+      nickname_not_found:
+        'Ce pseudo est introuvable : la personne a peut-être supprimé son compte.',
+      game_not_found: 'Cette partie est introuvable.',
+      game_moderation_conflict:
+        "Cette action ne s'applique pas à la partie dans son état actuel : elle est peut-être déjà masquée ou visible.",
       report_limit_reached:
         "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:
