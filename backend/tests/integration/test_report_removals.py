@@ -27,6 +27,7 @@ from tests.integration.helpers import (
 pytestmark = pytest.mark.integration
 
 REASON: dict[str, str] = {"reason": "Illicite"}
+ANY_GAME_ID: str = "00000000-0000-4000-8000-000000000001"
 
 
 @pytest.fixture
@@ -127,8 +128,8 @@ def log_entries(db_session: Session) -> list[ModerationAction]:
     ("method", "path"),
     [
         ("POST", "/moderation/nicknames/remove"),
-        ("POST", f"/moderation/games/{uuid.uuid4()}/hide"),
-        ("POST", f"/moderation/games/{uuid.uuid4()}/unhide"),
+        ("POST", f"/moderation/games/{ANY_GAME_ID}/hide"),
+        ("POST", f"/moderation/games/{ANY_GAME_ID}/unhide"),
         ("GET", "/moderation/games/hidden"),
     ],
 )
