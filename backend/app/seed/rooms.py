@@ -9,15 +9,16 @@ from app.core.config import Settings
 from app.models.room import Room
 from app.models.template import Template
 from app.models.user import User
-from app.seed.seats import GUEST_NICKNAMES, Seats, ban, seat
+from app.seed.seats import GUEST_NICKNAMES, Seats, ban_an_account_and_a_guest, seat
 from app.seed.sizes import SeedSize
 from app.services.rooms import RoomService
 
 logger = logging.getLogger(__name__)
 
 GUESTS_IN_A_FULL_ROOM = 4
-# Une salle à bannissements : trois comptes et un invité assis, un compte et un invité bannis
-SEATED_ACCOUNTS_BEFORE_BANS = 3
+ROOM_ADMIN_SEATS = 1
+ACCOUNTS_STILL_SEATED_AFTER_BANS = 3
+SEATED_GUESTS = 1
 BANNED_GUEST_NICKNAME = "Trublion"
 
 
@@ -68,17 +69,17 @@ def create_open_rooms(
             full.append(room)
             logger.info("Salle pleine %s : %d places", code, FREE_PLAN_MAX_PARTICIPANTS)
         else:
-            picked: list[User] = rng.sample(others, SEATED_ACCOUNTS_BEFORE_BANS + 1)
-            # Le premier compte tiré est banni ; les autres et un invité gardent leur place
+            picked: list[User] = rng.sample(others, ACCOUNTS_STILL_SEATED_AFTER_BANS + 1)
+            banned_account: User = picked[0]
+            seated_accounts: list[User] = picked[1:]
             seat(
                 session,
                 settings,
                 room,
-                Seats(accounts=picked[1:], guest_nicknames=[rng.choice(GUEST_NICKNAMES)]),
+                Seats(accounts=seated_accounts, guest_nicknames=[rng.choice(GUEST_NICKNAMES)]),
             )
-            ban(session, room, picked[0], BANNED_GUEST_NICKNAME)
+            ban_an_account_and_a_guest(session, room, banned_account, BANNED_GUEST_NICKNAME)
             with_bans.append(room)
-            # Le room admin, les comptes et l'invité restés
-            places: int = 1 + SEATED_ACCOUNTS_BEFORE_BANS + 1
+            places: int = ROOM_ADMIN_SEATS + ACCOUNTS_STILL_SEATED_AFTER_BANS + SEATED_GUESTS
             logger.info("Salle avec bannis %s : %d places, 2 bannis", code, places)
     return SeedRooms(full=full, with_bans=with_bans)

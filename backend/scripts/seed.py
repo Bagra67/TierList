@@ -14,19 +14,22 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 
+def _show_only_seed_progress_logs() -> None:
+    from app.core.logging import configure_logging
+
+    configure_logging("WARNING")
+    logging.getLogger("app.seed").setLevel(logging.INFO)
+
+
 def main() -> int:
     from app.core.config import Settings, get_settings
-    from app.core.logging import configure_logging
     from app.db.session import get_engine
     from app.seed.guard import SeedRefusedError, check_database, seed_password
     from app.seed.run import SeedSummary, run_seed
     from app.seed.sizes import FULL_SIZE
     from app.services.image_storage import create_image_storage
 
-    # Les services journalisent chaque opération : seuls leurs avertissements sont utiles ici. Le
-    # jeu de données, lui, annonce chaque étape et sa progression (plusieurs minutes sur staging)
-    configure_logging("WARNING")
-    logging.getLogger("app.seed").setLevel(logging.INFO)
+    _show_only_seed_progress_logs()
     settings: Settings = get_settings()
     try:
         check_database(settings.postgres_db)

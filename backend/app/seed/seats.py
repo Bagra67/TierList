@@ -37,10 +37,7 @@ def seat(session: Session, settings: Settings, room: Room, seats: Seats) -> None
     session.commit()
 
 
-def ban(session: Session, room: Room, account: User, nickname: str) -> None:
-    """Un compte et un invité bannis, comme après RoomService.remove_participant(ban=True) : le
-    bannissement garde le compte ou l'empreinte du jeton, et le nom affiché ; la place n'existe
-    plus."""
+def ban_an_account_and_a_guest(session: Session, room: Room, account: User, nickname: str) -> None:
     room.bans.append(RoomBan(user_id=account.id, display_name=account.display_name))
     room.bans.append(
         RoomBan(guest_token_hash=hash_guest_token(generate_guest_token()), display_name=nickname)

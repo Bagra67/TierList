@@ -17,8 +17,7 @@ class SeedSize:
     image_tiles_per_template: int
     closed_games: int
     history_games: int
-    # Salles où les parties ont été jouées et qui restent ouvertes, avec leurs résultats passés
-    lobby_rooms: int
+    open_rooms_with_past_games: int
     full_rooms: int
     rooms_with_bans: int
     moderation_actions: int
@@ -42,7 +41,7 @@ FULL_SIZE: SeedSize = SeedSize(
     image_tiles_per_template=12,
     closed_games=75,
     history_games=62,
-    lobby_rooms=3,
+    open_rooms_with_past_games=3,
     full_rooms=3,
     rooms_with_bans=3,
     moderation_actions=180,
@@ -66,7 +65,7 @@ SMALL_SIZE: SeedSize = SeedSize(
     image_tiles_per_template=3,
     closed_games=23,
     history_games=22,
-    lobby_rooms=1,
+    open_rooms_with_past_games=1,
     full_rooms=1,
     rooms_with_bans=1,
     moderation_actions=60,
