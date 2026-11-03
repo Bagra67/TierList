@@ -50,9 +50,10 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.temporarily_banned_accounts
     + SMALL_SIZE.permanently_banned_accounts
     + 2 * SMALL_SIZE.accounts_with_a_lifted_ban
+    + 2
 )
 REPORTED_CONTENTS = (
-    SMALL_SIZE.reported_images + SMALL_SIZE.reported_nicknames + SMALL_SIZE.reported_games
+    SMALL_SIZE.reported_images + SMALL_SIZE.reported_nicknames + SMALL_SIZE.reported_games + 1
 )
 REPORTS = REPORTED_CONTENTS - 1 + SMALL_SIZE.reports_on_most_reported_content
 
@@ -166,14 +167,23 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     )
 
 
-def test_the_seed_creates_open_reports_from_accounts_and_browsers(
+def test_the_seed_creates_reports_from_accounts_and_browsers(
     db_session: Session, stored_images: dict[str, bytes]
 ):
     summary: SeedSummary = seed(db_session, stored_images)
 
     reports: list[Report] = list(db_session.scalars(select(Report)).all())
     assert len(reports) == REPORTS == summary.reports
-    assert {report.status for report in reports} == {ReportStatus.OPEN}
+    assert Counter(report.status for report in reports) == {
+        ReportStatus.OPEN: REPORTS - 2,
+        ReportStatus.ACTIONED: 1,
+        ReportStatus.DISMISSED: 1,
+    }
+    hidden_game: Game = db_session.scalars(select(Game).where(Game.hidden_at.is_not(None))).one()
+    assert any(
+        report.target_id == hidden_game.id and report.status == ReportStatus.ACTIONED
+        for report in reports
+    )
     assert {report.target_type for report in reports} == {
         ModerationTargetType.IMAGE,
         ModerationTargetType.NICKNAME,

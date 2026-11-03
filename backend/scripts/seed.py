@@ -52,7 +52,7 @@ def main() -> int:
         f"Created: {summary.accounts} accounts, {summary.templates} templates, "
         f"{summary.images} images, {summary.closed_games} closed games, "
         f"{summary.open_rooms} open rooms, {summary.moderation_actions} moderation log entries, "
-        f"{summary.reports} open reports"
+        f"{summary.reports} reports"
     )
     print(f"Database {settings.postgres_db!r} seeded in {time.monotonic() - started:.0f} s")
     return 0

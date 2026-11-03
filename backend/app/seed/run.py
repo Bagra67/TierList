@@ -20,7 +20,7 @@ from app.seed.moderation import (
     moderate_templates,
 )
 from app.seed.no_op import NoOpRoomEventPublisher
-from app.seed.reports import create_reports
+from app.seed.reports import SeedReports, create_reports
 from app.seed.rooms import SeedRooms, create_open_rooms
 from app.seed.sizes import SeedSize
 from app.seed.templates import SeedTemplates, create_templates
@@ -121,7 +121,9 @@ def run_seed(
             rng,
         )
     with _step("7/7 Signalements"):
-        reports: int = create_reports(session, size, accounts.players, rng)
+        reports: SeedReports = create_reports(
+            session, settings, size, accounts.super_admins, accounts.players, rng
+        )
     return SeedSummary(
         removed=removed,
         accounts=len(accounts.super_admins)
@@ -137,8 +139,9 @@ def run_seed(
         moderation_actions=size.moderation_actions
         + moderated_images
         + moderated_templates
-        + banned_accounts,
-        reports=reports,
+        + banned_accounts
+        + reports.moderation_actions,
+        reports=reports.reports,
     )
 
 

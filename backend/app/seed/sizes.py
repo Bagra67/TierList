@@ -56,7 +56,7 @@ FULL_SIZE: SeedSize = SeedSize(
     accounts_with_a_lifted_ban=1,
     reported_images=6,
     reported_nicknames=3,
-    reported_games=3,
+    reported_games=4,
     reports_on_most_reported_content=5,
 )
 
@@ -85,6 +85,6 @@ SMALL_SIZE: SeedSize = SeedSize(
     accounts_with_a_lifted_ban=1,
     reported_images=1,
     reported_nicknames=1,
-    reported_games=1,
+    reported_games=2,
     reports_on_most_reported_content=3,
 )
