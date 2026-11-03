@@ -8,12 +8,16 @@ from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import CHANNEL_CLOSE_BANNED, CHANNEL_CLOSE_REMOVED
-from app.models.enums import RoomStatus
-from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.schemas.room_events import ParticipantRemovedEvent
 from tests.integration.conftest import RecordingRoomEventPublisher
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    create_room,
+    create_template,
+    mark_game_in_progress,
+    register,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -124,9 +128,7 @@ def test_the_admin_removes_a_participant_during_a_game(
 ):
     code: str = alice_room["code"]
     bob_id: str = seat_id(join(auth_client, code, bob).json(), "bob")
-    # Une partie est en cours (posé par le démarrage, #91)
-    db_session.scalars(select(Room).where(Room.code == code)).one().status = RoomStatus.PLAYING
-    db_session.flush()
+    mark_game_in_progress(db_session, code)
 
     response: Response = remove(auth_client, code, bob_id, alice)
 

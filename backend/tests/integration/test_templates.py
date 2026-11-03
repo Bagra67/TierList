@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,15 +23,13 @@ from app.models.tile import Tile
 from app.models.user import User
 from tests.image_files import make_image_file
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL
+from tests.integration.helpers import JsonObject
 
 pytestmark = pytest.mark.integration
 
 UNKNOWN_ID: uuid.UUID = uuid.UUID("00000000-0000-4000-8000-000000000000")
 
 PASSWORD = "correct horse battery staple"
-
-# Objet JSON renvoyé par l'API (template, tier, tuile…) : sa forme est vérifiée par les tests
-JsonObject = dict[str, Any]
 
 
 def register(client: TestClient, email: str) -> dict[str, str]:

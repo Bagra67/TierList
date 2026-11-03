@@ -79,8 +79,6 @@ def test_hiding_a_template_keeps_the_reason_for_its_owner_and_logs_the_action(
     alice: dict[str, str],
     template_id: str,
 ):
-    updated_at: datetime = stored_template(db_session, template_id).updated_at
-
     response: Response = moderate(auth_client, nina, "hide", template_id, "  Harassment  ")
 
     assert response.status_code == 204
@@ -89,8 +87,6 @@ def test_hiding_a_template_keeps_the_reason_for_its_owner_and_logs_the_action(
         TemplateModeration.HIDDEN,
         "Harassment",
     )
-    # Une décision de la modération n'est pas une modification du propriétaire
-    assert template.updated_at == updated_at
     [entry] = logged_actions(db_session)
     assert (entry.action, entry.target_type, entry.target_id, entry.target_label) == (
         ModerationActionKind.HIDE,
@@ -99,6 +95,16 @@ def test_hiding_a_template_keeps_the_reason_for_its_owner_and_logs_the_action(
         "Food",
     )
     assert (entry.actor_name, entry.reason) == ("nina", "Harassment")
+
+
+def test_hiding_a_template_does_not_count_as_a_change_by_its_owner(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], template_id: str
+):
+    updated_at: datetime = stored_template(db_session, template_id).updated_at
+
+    moderate(auth_client, nina, "hide", template_id, "Harassment")
+
+    assert stored_template(db_session, template_id).updated_at == updated_at
 
 
 def test_the_owner_still_reads_and_edits_a_hidden_template(

@@ -123,11 +123,16 @@ def test_an_invalid_nickname_is_refused(
     assert response.json()["errors"][0]["code"] == error_code
 
 
-@pytest.mark.parametrize("nickname", ["LOU", "ALICE"])
+@pytest.mark.parametrize(
+    "nickname",
+    [
+        pytest.param("LOU", id="a_guest_in_another_case"),
+        pytest.param("ALICE", id="the_room_admin_in_another_case"),
+    ],
+)
 def test_a_nickname_already_used_in_the_room_is_refused(
     auth_client: TestClient, alice_room: JsonObject, nickname: str
 ):
-    # « Lou » est un invité, « alice » le nom affiché du room admin : la casse ne compte pas
     join_as_guest(auth_client, alice_room["code"], "Lou")
     auth_client.cookies.clear()
 

@@ -135,8 +135,25 @@ def test_closing_during_a_round_closes_the_game_with_its_rankings(
             name: str = placement.player.display_name
             finals[name] = finals.get(name, 0) + 1
     assert finals == {"alice": 2, "bob": 1}
-    # L'item interrompu ne donne pas de vote absent à Bob
-    assert not any(placement.is_absent for placement in game.placements)
+
+
+def test_closing_during_a_round_gives_no_absent_vote_for_the_interrupted_item(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    started: JsonObject = start_game(auth_client, code, alice)
+    place_current_in_first_tier(auth_client, started, alice)
+    place_current_in_first_tier(auth_client, started, bob)
+    second: JsonObject = next_item(auth_client, code, alice)
+    place_current_in_first_tier(auth_client, second, alice)
+
+    assert close(auth_client, code, alice).status_code == 204
+
+    assert not any(placement.is_absent for placement in stored_game(db_session).placements)
 
 
 def test_closing_during_the_cooldown_keeps_the_final_boards(

@@ -12,12 +12,12 @@ REPO_ROOT = next(
 
 
 def test_versions_are_in_sync():
-    # Une seule version pour tout le dépôt (docs/technical/releasing.md) :
-    # scripts/prepare-release.sh met à jour ces trois valeurs, et le workflow Release crée le
-    # tag vX.Y.Z à partir d'elles.
     pyproject_path = REPO_ROOT / "backend" / "pyproject.toml"
     package_json_path = REPO_ROOT / "frontend" / "package.json"
     pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
     package_json = json.loads(package_json_path.read_text(encoding="utf-8"))
 
-    assert api_app.version == pyproject["project"]["version"] == package_json["version"]
+    assert api_app.version == pyproject["project"]["version"] == package_json["version"], (
+        "versions out of sync: run scripts/prepare-release.sh (docs/technical/releasing.md); "
+        "the Release workflow tags vX.Y.Z from these values"
+    )

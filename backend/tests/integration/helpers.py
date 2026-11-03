@@ -12,7 +12,8 @@ from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import UserRole
+from app.models.enums import RoomStatus, UserRole
+from app.models.room import Room
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
@@ -76,6 +77,12 @@ def create_room(client: TestClient, headers: dict[str, str], template_id: str) -
     response: Response = client.post("/rooms", json={"template_id": template_id}, headers=headers)
     assert response.status_code == 201
     return response.json()
+
+
+def mark_game_in_progress(db_session: Session, code: str) -> None:
+    room: Room = db_session.scalars(select(Room).where(Room.code == code)).one()
+    room.status = RoomStatus.PLAYING
+    db_session.flush()
 
 
 def start_game(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:

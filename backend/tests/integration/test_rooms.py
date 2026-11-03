@@ -18,7 +18,6 @@ from app.constants.rooms import (
     TIMER_SECONDS_MIN,
 )
 from app.core.config import get_settings
-from app.models.enums import RoomStatus
 from app.models.participant import Participant
 from app.models.room import Room
 from app.models.template import Template
@@ -27,7 +26,13 @@ from app.schemas.room_events import ParticipantJoinedEvent, RoomEvent
 from app.services import rooms as room_service_module
 from app.services.rooms import RoomService
 from tests.integration.conftest import RecordingRoomEventPublisher
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    create_room,
+    create_template,
+    mark_game_in_progress,
+    register,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -459,9 +464,7 @@ def test_a_user_without_a_seat_cannot_change_the_settings(
 def test_settings_are_locked_during_a_game_except_late_arrivals(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
-    # Une partie est en cours (posé par le démarrage, #91)
-    stored_room(db_session, alice_room["code"]).status = RoomStatus.PLAYING
-    db_session.flush()
+    mark_game_in_progress(db_session, alice_room["code"])
     settings_url: str = f"/rooms/{alice_room['code']}/settings"
 
     locked: Response = auth_client.patch(
