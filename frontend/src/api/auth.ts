@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 
 import {
   CURRENT_USER_QUERY_KEY,
+  GOOGLE_ACCOUNT_BANNED,
   GOOGLE_SIGN_IN_PATH,
   type GoogleNextStep,
 } from '../constants/auth';
@@ -25,6 +26,7 @@ import {
   setAccessToken,
   throwIfError,
 } from './client';
+import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
 // La langue de l'email de vérification est ajoutée ici : les pages n'ont pas à la fournir
@@ -39,6 +41,20 @@ type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 export function googleSignInUrl(next?: GoogleNextStep): string {
   const query = next === undefined ? '' : `?${new URLSearchParams({ next }).toString()}`;
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
+}
+
+// Après un refus de Google pour bannissement : le backend lit son cookie et répond comme à une
+// connexion par mot de passe refusée (403, avec le motif et la fin), que l'erreur de la requête porte
+export function useGoogleBanNotice(googleError: string | null) {
+  return useQuery({
+    queryKey: ['auth', 'google-ban-notice'],
+    queryFn: async ({ signal }): Promise<null> => {
+      throwIfError(await apiClient.GET('/auth/google/ban-notice', { signal }));
+      return null;
+    },
+    enabled: googleError === GOOGLE_ACCOUNT_BANNED,
+    retry: retryUnlessClientError,
+  });
 }
 
 async function register(body: RegisterRequest): Promise<void> {

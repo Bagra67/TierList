@@ -100,6 +100,7 @@ export const fr = {
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       reports:
         "Signalements : l'adresse e-mail de la personne qui signale un contenu, et ce que contient son message.",
+      bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
       moderation:
         "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
       technical:
@@ -132,6 +133,7 @@ export const fr = {
       backups: 'Sauvegardes de la base de données : 14 jours.',
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
+      bans: "Bannissements : jusqu'à la suppression du compte, pour repérer une récidive.",
       moderation: 'Journal de modération : 3 ans après chaque décision.',
     },
     visibility: {
@@ -140,7 +142,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -164,6 +166,8 @@ export const fr = {
         "TierList n'utilise que des cookies strictement nécessaires à son fonctionnement, sans mesure d'audience ni publicité : aucun consentement n'est donc demandé.",
       session: 'Cookie de session : garde votre connexion (30 jours).',
       google: 'Cookie de connexion avec Google : le temps de la connexion (10 minutes).',
+      banNotice:
+        'Cookie de bannissement : après une connexion avec Google refusée, permet de montrer le motif (10 minutes).',
       guest: "Cookie d'invité : vous reconnaît dans une salle (30 jours au plus).",
       local: 'Stockage local du navigateur : le thème et la langue choisis.',
     },
@@ -431,6 +435,33 @@ export const fr = {
         submit: 'Supprimer',
         submitting: 'Suppression…',
       },
+    },
+    ban: {
+      section: 'Bannissement',
+      none: "Ce compte n'est pas banni.",
+      superAdmin: 'Un super admin ne peut pas être banni.',
+      open: 'Bannir ce compte',
+      change: 'Modifier le bannissement',
+      lift: 'Lever le bannissement',
+      activePermanent: 'Banni définitivement',
+      activeUntil: "Banni jusqu'au {{date, datetime(dateStyle: long; timeStyle: short)}}",
+      activeReason: 'Motif : {{reason}}',
+      activeBy: 'Par {{name}}, le {{date, datetime(dateStyle: medium)}}',
+      title: 'Bannir {{name}}',
+      hint: 'Le compte est déconnecté partout et ne peut plus se connecter avant la fin du bannissement.',
+      duration: 'Durée',
+      temporary: 'Temporairement',
+      until: "Jusqu'au (inclus)",
+      permanent: 'Définitivement',
+      reason: 'Motif (visible par la personne)',
+      submit: 'Bannir',
+      submitting: 'Bannissement…',
+    },
+    liftDialog: {
+      title: 'Lever le bannissement de {{name}}',
+      description: 'Le compte pourra de nouveau se connecter.',
+      submit: 'Lever le bannissement',
+      submitting: 'Levée…',
     },
     hideAllDialog: {
       title: 'Masquer toutes les images de {{name}}',

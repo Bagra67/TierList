@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { cn } from 'cn';
 
-import { useLogin } from '../api/auth';
+import { useGoogleBanNotice, useLogin } from '../api/auth';
 import { pathAfterSignIn } from '../auth/signInRedirect';
 import { PASSWORD_MAX_LENGTH } from '../constants/auth';
+import { HTTP_STATUS } from '../constants/http';
 import { LOGIN_ERROR_PARAM, ROUTES } from '../constants/routes';
-import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { translateGoogleError } from '../errors/googleError';
 import { AuthPageShell } from '../components/AuthPageShell';
 import { ErrorMessage } from '../components/ErrorMessage';
@@ -16,6 +17,21 @@ import { TermsAcceptance } from '../components/TermsAcceptance';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
+
+// L'erreur du retour de Google. Pour un compte banni, le motif et la fin du bannissement, lus à
+// part car ils ne passent pas dans une URL ; à défaut (bannissement levé, backend injoignable), le
+// message général
+function GoogleErrorMessage({ code }: { code: string }) {
+  const { t } = useTranslation();
+  const { error, isLoading } = useGoogleBanNotice(code);
+  if (isLoading) return null;
+  const isBanNotice: boolean = error instanceof ApiError && error.status === HTTP_STATUS.FORBIDDEN;
+  return (
+    <ErrorMessage>
+      {isBanNotice ? translateError(t, error) : translateGoogleError(t, code)}
+    </ErrorMessage>
+  );
+}
 
 export function LoginPage() {
   const loginMutation = useLogin();
@@ -53,7 +69,7 @@ export function LoginPage() {
         </p>
       }
     >
-      {googleError !== null && <ErrorMessage>{translateGoogleError(t, googleError)}</ErrorMessage>}
+      {googleError !== null && <GoogleErrorMessage code={googleError} />}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <TextField
           label={t('auth.email')}

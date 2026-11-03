@@ -6,6 +6,8 @@ export const DISPLAY_NAME_MAX_LENGTH = 50;
 
 // Connexion avec Google : navigation complète vers le backend (via le proxy /api)
 export const GOOGLE_SIGN_IN_PATH = '/api/auth/google/login';
+// Retour de Google pour un compte banni : le motif se lit à part (useGoogleBanNotice)
+export const GOOGLE_ACCOUNT_BANNED = 'google_account_banned';
 // Étape reprise après une reconnexion Google (seule valeur acceptée par le backend)
 export const DELETE_ACCOUNT_STEP = 'delete-account';
 export type GoogleNextStep = typeof DELETE_ACCOUNT_STEP;

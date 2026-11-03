@@ -2,6 +2,7 @@ import {
   type InfiniteData,
   type UseInfiniteQueryResult,
   type UseQueryResult,
+  type QueryClient,
   type UseMutationResult,
   useInfiniteQuery,
   useMutation,
@@ -280,4 +281,57 @@ export function useHideAllImages(): UseMutationResult<number, Error, HideAllImag
       ]);
     },
   });
+}
+
+export interface AccountBanRequest {
+  accountId: string;
+  reason: string;
+  // Fin du bannissement (date ISO avec fuseau) ; absente pour un bannissement définitif
+  endsAt?: string;
+}
+
+// Bannit un compte (US-1.8) : il est déconnecté partout ; la page du compte et le journal sont
+// relus
+export function useBanAccount(): UseMutationResult<void, Error, AccountBanRequest> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ accountId, reason, endsAt }: AccountBanRequest): Promise<void> => {
+      throwIfError(
+        await apiClient.POST('/moderation/accounts/{user_id}/ban', {
+          params: { path: { user_id: accountId } },
+          body: { reason, ends_at: endsAt },
+        }),
+      );
+    },
+    onSuccess: () => invalidateAccount(queryClient),
+  });
+}
+
+// Lève le bannissement actif d'un compte
+export function useLiftBan(): UseMutationResult<
+  void,
+  Error,
+  { accountId: string; reason: string }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ accountId, reason }: { accountId: string; reason: string }) => {
+      throwIfError(
+        await apiClient.POST('/moderation/accounts/{user_id}/lift-ban', {
+          params: { path: { user_id: accountId } },
+          body: { reason },
+        }),
+      );
+    },
+    onSuccess: () => invalidateAccount(queryClient),
+  });
+}
+
+// Après une sanction : la page du compte, la recherche (badge « Banni ») et le journal
+async function invalidateAccount(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: ACCOUNT_SEARCH_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+  ]);
 }

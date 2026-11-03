@@ -2,24 +2,13 @@ import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ListedImageStatus, type RecentUploadsFilters } from '../api/moderation';
+import { startOfDay, startOfNextDay } from '../components/localDays';
 import { TextField } from '../components/TextField';
 import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
-
-// Début d'un jour choisi (AAAA-MM-JJ), dans le fuseau du super admin, en date ISO avec fuseau
-function startOfDay(day: string): string {
-  return new Date(`${day}T00:00:00`).toISOString();
-}
-
-// Début du jour suivant : le dernier jour choisi est inclus en entier
-function startOfNextDay(day: string): string {
-  const next: Date = new Date(`${day}T00:00:00`);
-  next.setDate(next.getDate() + 1);
-  return next.toISOString();
-}
 
 // Derniers envois (US-1.7) : les images envoyées, des plus récentes aux plus anciennes, pour
 // repérer un problème avant qu'on le signale, avec leurs filtres ; la grille et ses actions sont

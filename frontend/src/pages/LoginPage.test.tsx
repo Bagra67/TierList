@@ -60,6 +60,22 @@ describe('LoginPage', () => {
     expect(screen.getByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
   });
 
+  it('shows the reason and the end of a ban', async () => {
+    stubBackend({
+      'POST /auth/login': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage();
+
+    fillAndSubmit('alice@example.com', 'correct horse battery staple');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
+  });
+
   it('shows the page and the backend error in English', async () => {
     await i18n.changeLanguage('en');
     stubBackend({ 'POST /auth/login': () => errorResponse(401, 'invalid_credentials') });
@@ -133,6 +149,31 @@ describe('LoginPage', () => {
     expect(screen.getByRole('link', { name: 'Mot de passe oublié ?' })).toHaveAttribute(
       'href',
       '/forgot-password',
+    );
+  });
+
+  it('shows the reason and the end of a ban after a refused Google sign-in', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
+  });
+
+  it('shows the general message when there is no reason to read after Google', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () => new Response(null, { status: 204 }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ce compte est banni. Écrivez-nous pour en savoir plus.',
     );
   });
 
