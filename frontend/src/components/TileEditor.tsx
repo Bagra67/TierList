@@ -26,6 +26,7 @@ import {
 import { EMPHASIZED_BORDER_CLASS } from './boardStyles';
 import { ErrorMessage } from './ErrorMessage';
 import { ImageDropZone } from './ImageDropZone';
+import { RemovedImageDecision } from './RemovedImageDecision';
 import { InlineEditField } from './InlineEditField';
 import { SortableList } from './SortableList';
 import { TextField } from './TextField';
@@ -223,6 +224,12 @@ export function TileEditor({ template }: TileEditorProps) {
                   onRemove={() => removeTileImage(tile)}
                   onRefuse={() => setTilesLocalError(unsupportedImageMessage)}
                 />
+                {tile.image_removed && (
+                  <RemovedImageDecision
+                    status={tile.image_status === 'deleted' ? 'deleted' : 'hidden'}
+                    reason={tile.image_moderation_reason}
+                  />
+                )}
                 <InlineEditField
                   key={tile.text ?? ''}
                   label={t('templates.editor.tileText', { position: tile.position + 1 })}

@@ -5,7 +5,13 @@ import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { Template, TemplateSummary } from '../api/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoom } from '../test/fixtures/rooms';
-import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
+import {
+  calledRoutes,
+  errorResponse,
+  stubBackend,
+  type BackendMock,
+  type StubbedRoute,
+} from '../test/stubBackend';
 import { TemplatesPage } from './TemplatesPage';
 
 const chips: TemplateSummary = {
@@ -55,13 +61,21 @@ function listOf(templates: TemplateSummary[]): () => Response {
   return () => Response.json({ items: templates });
 }
 
+function stubTemplatesBackend(routes: Record<string, StubbedRoute>): BackendMock {
+  return stubBackend({ 'GET /templates/removed': () => Response.json({ items: [] }), ...routes });
+}
+
+function calledRoutesExceptRemovedList(fetchMock: BackendMock): string[] {
+  return calledRoutes(fetchMock).filter((route) => route !== 'GET /templates/removed');
+}
+
 describe('TemplatesPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it('lists the templates with their tile count and last change date', async () => {
-    stubBackend({ 'GET /templates': listOf([chips, sodas]) });
+    stubTemplatesBackend({ 'GET /templates': listOf([chips, sodas]) });
 
     renderTemplatesPage();
 
@@ -77,8 +91,110 @@ describe('TemplatesPage', () => {
     expect(items[1]).toHaveTextContent('1 tuile');
   });
 
+  it('shows the reason why a template was hidden', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([
+        { ...chips, moderation: 'hidden', moderation_reason: 'Harcèlement' },
+      ]),
+    });
+
+    renderTemplatesPage();
+
+    const hidden: HTMLElement = await screen.findByRole('listitem');
+    expect(hidden).toHaveTextContent('Motif : Harcèlement');
+  });
+
+  it('says which images of a template were removed, the decision and its reason', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([
+        {
+          ...chips,
+          removed_images: [
+            {
+              tile_id: 'tile-paprika',
+              tile_text: 'Paprika',
+              tile_position: 0,
+              status: 'hidden',
+              reason: 'Violence',
+            },
+            {
+              tile_id: 'tile-image',
+              tile_text: null,
+              tile_position: 2,
+              status: 'deleted',
+              reason: 'Contenu illicite',
+            },
+          ],
+        },
+      ]),
+    });
+
+    renderTemplatesPage();
+
+    const [paprika, imageOnly] = await screen.findAllByRole('listitem').then((items) => {
+      return items.filter((item) => item.tagName === 'LI' && item.querySelector('ul') === null);
+    });
+    expect(paprika).toHaveTextContent('Paprika');
+    expect(paprika).toHaveTextContent('Image masquée par la modération');
+    expect(paprika).toHaveTextContent('Motif : Violence');
+    expect(imageOnly).toHaveTextContent('Tuile 3');
+    expect(imageOnly).toHaveTextContent('Image supprimée par la modération');
+    expect(imageOnly).toHaveTextContent('Motif : Contenu illicite');
+  });
+
+  it('lists the templates deleted by the moderation with their reason', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([]),
+      'GET /templates/removed': () =>
+        Response.json({
+          items: [
+            {
+              id: 'removed-template',
+              name: 'Vieux modèle',
+              removed_at: '2026-10-07T12:00:00Z',
+              reason: 'Contenu illicite',
+            },
+          ],
+        }),
+    });
+
+    renderTemplatesPage();
+
+    const section: HTMLElement = (
+      await screen.findByRole('heading', { name: 'Supprimés par la modération' })
+    ).closest('section') as HTMLElement;
+    expect(section).toHaveTextContent('Vieux modèle');
+    expect(section).toHaveTextContent('Supprimé le 7 octobre 2026');
+    expect(section).toHaveTextContent('Motif : Contenu illicite');
+    expect(within(section).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('hides the section of the deleted templates when there are none', async () => {
+    const backend: BackendMock = stubTemplatesBackend({
+      'GET /templates': listOf([chips]),
+      'GET /templates/removed': () => Response.json({ items: [] }),
+    });
+
+    renderTemplatesPage();
+
+    await screen.findByRole('listitem');
+    await waitFor(() => expect(calledRoutes(backend)).toContain('GET /templates/removed'));
+    expect(screen.queryByText('Supprimés par la modération')).not.toBeInTheDocument();
+  });
+
+  it('shows an error when the deleted templates cannot be read', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([chips]),
+      'GET /templates/removed': () => errorResponse(500, 'internal_error'),
+    });
+
+    renderTemplatesPage();
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
   it('marks a template hidden by the moderation instead of offering a room', async () => {
-    stubBackend({
+    stubTemplatesBackend({
       'GET /templates': listOf([
         { ...chips, moderation: 'hidden', moderation_reason: 'Harcèlement' },
         sodas,
@@ -99,7 +215,7 @@ describe('TemplatesPage', () => {
   });
 
   it('invites to create a template when there is none', async () => {
-    stubBackend({ 'GET /templates': listOf([]) });
+    stubTemplatesBackend({ 'GET /templates': listOf([]) });
 
     renderTemplatesPage();
 
@@ -112,7 +228,7 @@ describe('TemplatesPage', () => {
     const consoleError: MockInstance<typeof console.error> = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {});
-    stubBackend({ 'GET /templates': () => errorResponse(500, 'internal_error') });
+    stubTemplatesBackend({ 'GET /templates': () => errorResponse(500, 'internal_error') });
 
     renderTemplatesPage();
 
@@ -121,7 +237,7 @@ describe('TemplatesPage', () => {
   });
 
   it('creates a template and opens it in the editor', async () => {
-    const fetchMock: BackendMock = stubBackend({
+    const fetchMock: BackendMock = stubTemplatesBackend({
       'GET /templates': listOf([]),
       'POST /templates': () => Response.json(createdTemplate, { status: 201 }),
     });
@@ -140,7 +256,7 @@ describe('TemplatesPage', () => {
   });
 
   it('shows the field error when the name is blank', async () => {
-    stubBackend({
+    stubTemplatesBackend({
       'GET /templates': listOf([]),
       'POST /templates': () =>
         errorResponse(422, 'validation_error', {
@@ -169,7 +285,7 @@ describe('TemplatesPage', () => {
 
   it('deletes a template after confirmation and refreshes the list', async () => {
     let templates: TemplateSummary[] = [chips, sodas];
-    const fetchMock: BackendMock = stubBackend({
+    const fetchMock: BackendMock = stubTemplatesBackend({
       'GET /templates': () => Response.json({ items: templates }),
       [`DELETE /templates/${chips.id}`]: () => {
         templates = [sodas];
@@ -184,7 +300,7 @@ describe('TemplatesPage', () => {
 
     await waitFor(() => expect(screen.queryByText('Chips')).not.toBeInTheDocument());
     expect(screen.getByText('Sodas')).toBeInTheDocument();
-    expect(calledRoutes(fetchMock)).toEqual([
+    expect(calledRoutesExceptRemovedList(fetchMock)).toEqual([
       'GET /templates',
       `DELETE /templates/${chips.id}`,
       'GET /templates',
@@ -192,7 +308,7 @@ describe('TemplatesPage', () => {
   });
 
   it('keeps the template when the deletion is cancelled', async () => {
-    const fetchMock: BackendMock = stubBackend({ 'GET /templates': listOf([chips]) });
+    const fetchMock: BackendMock = stubTemplatesBackend({ 'GET /templates': listOf([chips]) });
     renderTemplatesPage();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Supprimer Chips' }));
@@ -201,11 +317,11 @@ describe('TemplatesPage', () => {
 
     expect(dialog).not.toBeVisible();
     expect(screen.getByText('Chips')).toBeInTheDocument();
-    expect(calledRoutes(fetchMock)).toEqual(['GET /templates']);
+    expect(calledRoutesExceptRemovedList(fetchMock)).toEqual(['GET /templates']);
   });
 
   it('shows an error when the template to delete no longer exists', async () => {
-    stubBackend({
+    stubTemplatesBackend({
       'GET /templates': listOf([chips]),
       [`DELETE /templates/${chips.id}`]: () => errorResponse(404, 'template_not_found'),
     });
@@ -222,7 +338,7 @@ describe('TemplatesPage', () => {
 
   describe('create a room', () => {
     it('creates a room from a template and opens its lobby', async () => {
-      const fetchMock: BackendMock = stubBackend({
+      const fetchMock: BackendMock = stubTemplatesBackend({
         'GET /templates': listOf([chips]),
         'POST /rooms': () => Response.json(aliceRoom, { status: 201 }),
       });
@@ -236,7 +352,7 @@ describe('TemplatesPage', () => {
     });
 
     it('says why a template without tiles cannot be played', async () => {
-      stubBackend({
+      stubTemplatesBackend({
         'GET /templates': listOf([chips]),
         'POST /rooms': () => errorResponse(409, 'template_has_no_tiles'),
       });

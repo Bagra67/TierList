@@ -676,6 +676,25 @@ describe('TemplateEditorPage', () => {
       expect(zone.querySelector('img')).toBeNull();
     });
 
+    it.each([
+      ['hidden', 'Image masquée par la modération'],
+      ['deleted', 'Image supprimée par la modération'],
+    ] as const)('says why an image is %s on its tile', async (imageStatus, decision) => {
+      const removedImageTile: Tile = {
+        ...imageOnlyTile,
+        image_url: null,
+        image_removed: true,
+        image_status: imageStatus,
+        image_moderation_reason: 'Violence',
+      };
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([removedImageTile])) });
+
+      renderEditor();
+
+      expect(await screen.findByText(decision)).toBeInTheDocument();
+      expect(screen.getByText('Motif : Violence')).toBeInTheDocument();
+    });
+
     it('adds a tile with an image chosen with the file picker', async () => {
       const uploads: boolean[] = [];
       const fetchMock: BackendMock = stubBackend({

@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query';
 
 import {
+  REMOVED_TEMPLATES_QUERY_KEY,
   TEMPLATES_QUERY_KEY,
   type TemplateQueryKey,
   templateQueryKey,
@@ -18,6 +19,8 @@ import type { components } from './schema';
 export type TemplateSummary = components['schemas']['TemplateSummaryResponse'];
 export type Template = components['schemas']['TemplateResponse'];
 type TemplateList = components['schemas']['TemplateListResponse'];
+export type RemovedTemplate = components['schemas']['RemovedTemplateResponse'];
+type RemovedTemplateList = components['schemas']['RemovedTemplateListResponse'];
 type CreateTemplateRequest = components['schemas']['CreateTemplateRequest'];
 export type Tier = Template['tiers'][number];
 type TierChanges = components['schemas']['UpdateTierRequest'];
@@ -27,6 +30,13 @@ type TileChanges = components['schemas']['UpdateTileRequest'];
 
 async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
   const data: TemplateList = dataOrThrow(await apiClient.GET('/templates', { signal }));
+  return data.items;
+}
+
+async function listRemovedTemplates(signal?: AbortSignal): Promise<RemovedTemplate[]> {
+  const data: RemovedTemplateList = dataOrThrow(
+    await apiClient.GET('/templates/removed', { signal }),
+  );
   return data.items;
 }
 
@@ -123,6 +133,13 @@ export function useTemplates(): UseQueryResult<TemplateSummary[]> {
   return useQuery({
     queryKey: TEMPLATES_QUERY_KEY,
     queryFn: ({ signal }) => listTemplates(signal),
+  });
+}
+
+export function useRemovedTemplates(): UseQueryResult<RemovedTemplate[]> {
+  return useQuery({
+    queryKey: REMOVED_TEMPLATES_QUERY_KEY,
+    queryFn: ({ signal }) => listRemovedTemplates(signal),
   });
 }
 

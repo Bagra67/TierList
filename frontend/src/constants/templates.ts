@@ -19,6 +19,11 @@ export const TIER_COLOR_PRESETS: readonly string[] = [
 
 export const TEMPLATES_QUERY_KEY: readonly ['templates'] = ['templates'];
 
+export const REMOVED_TEMPLATES_QUERY_KEY: readonly ['templates', 'removed'] = [
+  ...TEMPLATES_QUERY_KEY,
+  'removed',
+];
+
 export type TemplateQueryKey = readonly ['templates', string];
 
 export function templateQueryKey(templateId: string): TemplateQueryKey {

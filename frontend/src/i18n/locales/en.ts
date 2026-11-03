@@ -127,7 +127,7 @@ export const en: Translation = {
       deleted:
         'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
       moderatedImages:
-        'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again.',
+        'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again. The reason for the decision is kept with the image so that its owner can read it, until their account is deleted.',
       backups: 'Database backups: 14 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
@@ -140,7 +140,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -514,7 +514,7 @@ export const en: Translation = {
       delete: {
         title: 'Delete the template "{{name}}"',
         description:
-          'It will be deleted as if its owner did it. The games already played keep their version.',
+          'It will be deleted as if its owner did it, except that they will see the decision and the reason. The games already played keep their version.',
         submit: 'Delete',
         submitting: 'Deleting…',
       },
@@ -555,7 +555,7 @@ export const en: Translation = {
     hideAllDialog: {
       title: 'Hide all the images of {{name}}',
       description:
-        'Each visible image will be replaced by "Image removed" everywhere it appears. You can unhide them one by one.',
+        'Each visible image will be replaced by "Image removed" everywhere it appears. Its owner will see the reason. You can unhide them one by one.',
       submit: 'Hide all',
       submitting: 'Hiding…',
     },
@@ -565,7 +565,7 @@ export const en: Translation = {
       hide: {
         title: 'Hide this image',
         description:
-          'It will be replaced by "Image removed" everywhere it appears. You can unhide it later.',
+          'It will be replaced by "Image removed" everywhere it appears. Its owner will see the reason. You can unhide it later.',
         submit: 'Hide',
         submitting: 'Hiding…',
       },
@@ -578,7 +578,7 @@ export const en: Translation = {
       delete: {
         title: 'Delete this image',
         description:
-          'Its file will be erased for good, and the same file can no longer be uploaded. This cannot be undone.',
+          'Its file will be erased for good, and the same file can no longer be uploaded. Its owner will see the reason. This cannot be undone.',
         submit: 'Delete',
         submitting: 'Deleting…',
       },
@@ -679,6 +679,14 @@ export const en: Translation = {
       title: 'Hidden by the moderation',
       reason: 'Reason: {{reason}}',
       hint: 'You can still edit it, but no game can start with it any more.',
+    },
+    removedImage: {
+      hidden: 'Image hidden by the moderation',
+      deleted: 'Image deleted by the moderation',
+    },
+    removed: {
+      title: 'Deleted by the moderation',
+      date: 'Deleted on {{date, datetime(dateStyle: long)}}',
     },
     empty: 'You have no template yet: create one to get started.',
     tileCount_one: '{{count}} tile',
