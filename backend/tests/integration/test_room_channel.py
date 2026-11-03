@@ -273,6 +273,18 @@ def test_a_user_without_a_seat_cannot_open_the_channel(
         assert_closed_with(socket, CHANNEL_CLOSE_ROOM_NOT_FOUND, ErrorCode.ROOM_NOT_FOUND)
 
 
+def test_an_account_is_served_before_a_guest_cookie_on_the_channel(
+    client_sharing_one_event_loop: TestClient, alice_room: JsonObject
+):
+    code: str = alice_room["code"]
+    client_sharing_one_event_loop.post(f"/rooms/{code}/guests", json={"nickname": "Lou"})
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
+
+    with channel(client_sharing_one_event_loop, code) as socket:
+        authenticate(socket, bob)
+        assert_closed_with(socket, CHANNEL_CLOSE_ROOM_NOT_FOUND, ErrorCode.ROOM_NOT_FOUND)
+
+
 def test_an_unknown_room_cannot_be_followed(
     client_sharing_one_event_loop: TestClient, alice: dict[str, str]
 ):

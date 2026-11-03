@@ -461,6 +461,18 @@ def test_a_user_without_a_seat_cannot_change_the_settings(
     assert response.json()["code"] == ErrorCode.ROOM_NOT_FOUND
 
 
+def test_the_participants_stay_in_arrival_order(
+    auth_client: TestClient, alice: dict[str, str], bob: dict[str, str], alice_room: JsonObject
+):
+    zoe: dict[str, str] = register(auth_client, "zoe@example.com")
+    join_url: str = f"/rooms/{alice_room['code']}/join"
+    auth_client.post(join_url, headers=zoe)
+
+    response: Response = auth_client.post(join_url, headers=bob)
+
+    assert [p["display_name"] for p in response.json()["participants"]] == ["alice", "zoe", "bob"]
+
+
 def test_settings_are_locked_during_a_game_except_late_arrivals(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):

@@ -128,7 +128,6 @@ class RoomResponse(BaseModel):
     status: RoomStatus
     template: RoomTemplateResponse | None
     settings: RoomSettingsResponse
-    # Dans l'ordre d'arrivée, le room admin d'abord
     participants: list[ParticipantResponse]
     is_admin: bool
     bans: list[RoomBanResponse]

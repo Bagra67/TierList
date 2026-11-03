@@ -223,9 +223,6 @@ def get_room_viewer(
     service: Annotated[AuthService, Depends(get_auth_service)],
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> RoomViewer:
-    """Lecteur d'une salle : un compte s'il envoie un access token (vérifié comme partout : un
-    token invalide répond 401, pour que le frontend rafraîchisse sa session), sinon peut-être un
-    invité, reconnu par le cookie de sa salle. Sans les deux, la salle répondra 404."""
     if credentials is not None:
         session: AuthenticatedSession = get_current_session(credentials, service)
         return RoomViewer(user=session.user, guest_token=None)

@@ -25,10 +25,6 @@ if TYPE_CHECKING:
 
 
 class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Une place dans une salle, gardée malgré les déconnexions : celle d'un compte (joueur ou
-    room admin) ou celle d'un invité, qui n'est jamais liée à un compte. Le room admin a la
-    sienne dès la création : il compte dans la limite de participants, même s'il ne joue pas."""
-
     __tablename__ = "participants"
     __table_args__ = (
         UniqueConstraint("room_id", "user_id"),
@@ -52,7 +48,6 @@ class Participant(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     nickname: Mapped[str | None] = mapped_column(String(DISPLAY_NAME_MAX_LENGTH))
-    # Empreinte SHA-256 du jeton porté par le cookie et le lien perso (jamais le jeton lui-même)
     guest_token_hash: Mapped[str | None] = mapped_column(
         String(GUEST_TOKEN_HASH_LENGTH), unique=True
     )

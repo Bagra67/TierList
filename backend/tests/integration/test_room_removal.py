@@ -6,10 +6,12 @@ from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_room_event_publisher
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import CHANNEL_CLOSE_BANNED, CHANNEL_CLOSE_REMOVED
+from app.main import api_app
 from app.models.room_ban import RoomBan
-from app.schemas.room_events import ParticipantRemovedEvent
+from app.schemas.room_events import ParticipantRemovedEvent, RoomEvent
 from tests.integration.conftest import RecordingRoomEventPublisher
 from tests.integration.helpers import (
     JsonObject,
@@ -88,6 +90,37 @@ def test_the_admin_removes_a_player(
     assert removed.room_version == body["version"]
     assert room_events.disconnections == [(uuid.UUID(bob_id), CHANNEL_CLOSE_REMOVED)]
     assert auth_client.get(f"/rooms/{code}", headers=bob).status_code == 404
+
+
+class CallOrderRecordingPublisher(RecordingRoomEventPublisher):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[str] = []
+
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+        self.calls.append(event.type)
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        self.calls.append("disconnect")
+
+
+def test_the_removed_participant_is_disconnected_before_the_room_is_told(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    code: str = alice_room["code"]
+    bob_id: str = seat_id(join(auth_client, code, bob).json(), "bob")
+    publisher: CallOrderRecordingPublisher = CallOrderRecordingPublisher()
+    api_app.dependency_overrides[get_room_event_publisher] = lambda: publisher
+
+    remove(auth_client, code, bob_id, alice)
+
+    assert publisher.calls == ["disconnect", ParticipantRemovedEvent.model_fields["type"].default]
 
 
 def test_a_removed_player_can_join_again(
