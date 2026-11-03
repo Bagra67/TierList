@@ -86,6 +86,7 @@ En tant que **super admin**, je veux voir les dernières images envoyées, pour 
 En tant que **super admin**, je veux une page par compte et des sanctions, pour arrêter les abus répétés.
 
 - _Étant donné_ un compte, _quand_ j'ouvre sa page, _alors_ je vois ses informations (nom affiché, e-mail, date de création, e-mail confirmé), ses templates, ses images envoyées, les signalements sur ses contenus et son historique de modération.
+- _Étant donné_ un template sur la page, même privé, _quand_ je l'ouvre, _alors_ je lis ses tiers et ses tuiles, images masquées comprises, sans pouvoir les modifier.
 - _Étant donné_ la page, _quand_ je **masque toutes ses images** d'un coup, _alors_ chacune est masquée comme dans US-1.4.
 - _Étant donné_ la page, _quand_ je **bannis** le compte **temporairement** (avec une date de fin) ou **définitivement**, avec un motif, _alors_ il est déconnecté partout, ne peut pas se connecter avant la fin du bannissement, et ses templates publics quittent la marketplace le temps du bannissement.
 - _Étant donné_ un compte banni, _quand_ il essaie de se connecter, _alors_ c'est refusé avec le motif et, pour un bannissement temporaire, sa date de fin.
