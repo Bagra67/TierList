@@ -34,9 +34,6 @@ interface SharedFieldProps {
   onBlur: () => void;
 }
 
-// Champ enregistré dès qu'on le valide (Entrée) ou qu'on le quitte, s'il a changé ; Échap
-// rétablit la valeur enregistrée. Le parent lui donne key={value} : une nouvelle valeur
-// enregistrée remplace le brouillon. Après un échec, valider à nouveau renvoie la valeur.
 export function InlineEditField({
   label,
   hideLabel = false,

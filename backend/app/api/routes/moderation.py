@@ -161,8 +161,6 @@ def list_super_admins(
     return [SuperAdminResponse.model_validate(user) for user in service.super_admins()]
 
 
-# def et non async def : les appels au stockage S3 sont bloquants, FastAPI exécute donc ces routes
-# dans son pool de threads
 @router.post("/images/{image_id}/hide", status_code=204, responses=IMAGE_MODERATION_RESPONSES)
 def hide_image(
     image_id: uuid.UUID,
@@ -218,8 +216,6 @@ def list_recent_uploads(
     ] = RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
     author: Annotated[str | None, Query(max_length=RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH)] = None,
-    # Période d'envoi : à partir de created_after, avant created_before. Le fuseau horaire est
-    # exigé : le frontend envoie les bornes des jours choisis dans le fuseau du super admin
     created_after: AwareDatetime | None = None,
     created_before: AwareDatetime | None = None,
     status: Literal["visible", "hidden"] | None = None,
@@ -345,7 +341,6 @@ def get_account(
     )
 
 
-# def et non async def : chaque image masquée appelle le stockage S3, de façon bloquante
 @router.post("/accounts/{user_id}/hide-images", responses=ACCOUNT_RESPONSES)
 def hide_account_images(
     user_id: uuid.UUID,

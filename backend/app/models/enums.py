@@ -34,7 +34,6 @@ class AutoAdvance(StrEnum):
 
 class PlacementPhase(StrEnum):
     ROUND = "round"
-    # Pendant le cooldown final (#96) : jamais absent, sert aux résultats
     FINAL = "final"
 
 

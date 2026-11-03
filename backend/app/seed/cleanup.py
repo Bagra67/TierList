@@ -54,8 +54,6 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
             .returning(Game.id)
         ).all()
     )
-    # 3. Les instantanés des modèles seed, que plus aucune partie n'utilise : leur modèle
-    # passerait à NULL
     seed_template_ids = select(Template.id).where(Template.owner_id.in_(seed_user_ids))
     session.execute(
         delete(TemplateSnapshot).where(TemplateSnapshot.template_id.in_(seed_template_ids))

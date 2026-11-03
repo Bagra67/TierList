@@ -45,7 +45,6 @@ class RoundTimers:
         on_deadline: EndRoundOnTimer,
         on_cooldown_deadline: EndCooldownOnTimer,
     ) -> None:
-        """Appelé au démarrage du processus, avant de reprogrammer les échéances en attente."""
         self._loop = loop
         self._on_deadline = on_deadline
         self._on_cooldown_deadline = on_cooldown_deadline
@@ -127,7 +126,6 @@ class RoundTimers:
                 await asyncio.sleep(delay_seconds)
             await self._run_with_retries(game_id, transition, phase)
         finally:
-            # Une tâche annulée puis remplacée ne doit pas retirer sa remplaçante
             if self._tasks.get(game_id) is asyncio.current_task():
                 self._tasks.pop(game_id, None)
                 self._ranks.pop(game_id, None)

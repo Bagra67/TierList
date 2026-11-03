@@ -3,10 +3,12 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants import messages
+from app.constants.auth import EMAIL_TOKEN_MAX_LENGTH
 from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import create_password_reset_token, password_fingerprint
@@ -201,3 +203,21 @@ def test_account_without_password_can_set_one(
 
     assert response.status_code == 204
     assert login(auth_client, NEW_PASSWORD) == 200
+
+
+@pytest.mark.parametrize(
+    ("url", "body"),
+    [
+        pytest.param("/auth/password/reset", {"password": NEW_PASSWORD}, id="password-reset"),
+        pytest.param("/auth/email/verify", {}, id="email-verification"),
+    ],
+)
+def test_an_oversized_link_token_is_refused_before_decoding(
+    auth_client: TestClient, url: str, body: dict[str, str]
+):
+    oversized_token: str = "x" * (EMAIL_TOKEN_MAX_LENGTH + 1)
+
+    response: Response = auth_client.post(url, json={**body, "token": oversized_token})
+
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["code"] == "string_too_long"

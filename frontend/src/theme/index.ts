@@ -25,7 +25,7 @@ function storeTheme(theme: Theme): void {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
-    // choix non mémorisé, le thème change quand même pour cette visite
+    return;
   }
 }
 

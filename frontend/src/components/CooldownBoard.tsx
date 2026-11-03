@@ -106,9 +106,6 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
 
   const chosenItem: GameItem | undefined = chosenId === null ? undefined : itemById(chosenId);
 
-  // « Déplacer ici » : la tuile choisie passe à la fin de ce tier (dernière place si elle y est
-  // déjà). Pendant un envoi, le bouton n'est qu'aria-disabled : le clic ne fait rien et garde le
-  // choix. Le choix reste jusqu'à la réponse : après un échec, les boutons et le focus restent
   async function moveChosenTo(tierId: string) {
     if (chosenItem === undefined || pending) return;
     const itemId: string = chosenItem.id;

@@ -47,13 +47,6 @@ def count_images_created_since(session: Session, owner_id: uuid.UUID, since: dat
 
 
 def delete_unused_images_created_before(session: Session, limit: datetime) -> list[str]:
-    """Supprime les images visibles créées avant limit qu'aucune tuile, de template ou de
-    snapshot, n'utilise, en une seule requête ; renvoie leurs clés de stockage, pour effacer
-    ensuite les fichiers.
-
-    Une tuile qui rattacherait l'une de ces images au même moment attend la fin de la
-    suppression, puis échoue sur la clé étrangère : aucune tuile ne pointe vers un fichier
-    effacé. Les images masquées ou supprimées par la modération gardent leur ligne (#124)."""
     used_by_a_tile: Exists = exists().where(Tile.image_id == Image.id)
     used_by_a_snapshot: Exists = exists().where(SnapshotTile.image_id == Image.id)
     statement: ReturningDelete[str] = (
@@ -99,10 +92,7 @@ def list_recent_images(
         statement = statement.where(Image.created_at >= created_after)
     if created_before is not None:
         statement = statement.where(Image.created_at < created_before)
-    statement = (
-        # L'identifiant départage deux images du même instant : une page ne saute rien
-        statement.order_by(Image.created_at.desc(), Image.id).limit(limit).offset(offset)
-    )
+    statement = statement.order_by(Image.created_at.desc(), Image.id).limit(limit).offset(offset)
     return [(image, display_name) for image, display_name in session.execute(statement).all()]
 
 

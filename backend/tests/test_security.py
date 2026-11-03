@@ -9,13 +9,15 @@ from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.core.security import (
     create_access_token,
     decode_access_token,
+    decode_email_verification_token,
     generate_public_results_token,
     generate_refresh_token,
     hash_password,
     hash_refresh_token,
+    password_fingerprint,
     verify_password,
 )
-from app.exceptions.auth import InvalidAccessTokenError
+from app.exceptions.auth import InvalidAccessTokenError, InvalidEmailTokenError
 
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
 OTHER_SECRET_KEY = "another-unit-test-secret-key-32-chars-min"
@@ -129,3 +131,30 @@ def test_public_results_tokens_are_random_and_fit_their_column():
     assert len(first) == 22
     assert len(first) <= PUBLIC_RESULTS_TOKEN_MAX_LENGTH
     assert all(character.isalnum() or character in "-_" for character in first)
+
+
+def test_a_token_of_another_type_with_every_claim_is_not_a_verification_link():
+    now: datetime = datetime.now(UTC)
+    token: str = jwt.encode(
+        {
+            "sub": str(uuid.uuid4()),
+            "type": "access",
+            "email": "fingerprint",
+            "iat": now,
+            "exp": now + timedelta(minutes=15),
+        },
+        SECRET_KEY,
+        algorithm=JWT_ALGORITHM,
+    )
+
+    with pytest.raises(InvalidEmailTokenError):
+        decode_email_verification_token(token, secret_key=SECRET_KEY)
+
+
+def test_the_password_fingerprint_depends_on_the_key_and_hides_the_hash():
+    password_hash: str = hash_password("correct horse battery staple")
+
+    fingerprint: str = password_fingerprint(password_hash, secret_key=SECRET_KEY)
+
+    assert fingerprint != password_fingerprint(password_hash, secret_key=OTHER_SECRET_KEY)
+    assert fingerprint not in password_hash

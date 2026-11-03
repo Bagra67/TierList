@@ -13,14 +13,26 @@ from app.services.nightly_scheduler import (
 @pytest.mark.parametrize(
     ("now", "expected_seconds"),
     [
-        # Avant l'heure : le jour même
-        (datetime(2026, 10, 17, 1, 30, tzinfo=UTC), 90 * 60),
-        # Après l'heure : le lendemain
-        (datetime(2026, 10, 17, 4, 0, tzinfo=UTC), 23 * 3600),
-        # Pile à l'heure (une exécution vient de commencer) : le lendemain, pas une seconde fois
-        (datetime(2026, 10, 17, 3, 0, tzinfo=UTC), 24 * 3600),
-        # Fin de mois : le passage au lendemain change de mois
-        (datetime(2026, 10, 31, 23, 0, tzinfo=UTC), 4 * 3600),
+        pytest.param(
+            datetime(2026, 10, 17, 1, 30, tzinfo=UTC),
+            90 * 60,
+            id="before-the-hour-runs-the-same-day",
+        ),
+        pytest.param(
+            datetime(2026, 10, 17, 4, 0, tzinfo=UTC),
+            23 * 3600,
+            id="after-the-hour-runs-the-next-day",
+        ),
+        pytest.param(
+            datetime(2026, 10, 17, 3, 0, tzinfo=UTC),
+            24 * 3600,
+            id="exactly-at-the-hour-runs-the-next-day-not-twice",
+        ),
+        pytest.param(
+            datetime(2026, 10, 31, 23, 0, tzinfo=UTC),
+            4 * 3600,
+            id="end-of-month-rolls-to-the-next-month",
+        ),
     ],
 )
 def test_the_next_run_is_the_next_time_the_hour_comes(now: datetime, expected_seconds: int):

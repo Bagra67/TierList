@@ -1,7 +1,3 @@
-"""Attribution du rôle super admin (US-1.1). Jamais appelée par l'API : seulement par la commande
-scripts/set_super_admin.py, en local. En staging et en production, le rôle se donne par une
-requête SQL (docs/technical/deployment.md)."""
-
 import logging
 from collections.abc import Callable
 from contextlib import AbstractContextManager

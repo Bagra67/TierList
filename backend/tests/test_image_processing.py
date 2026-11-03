@@ -15,6 +15,13 @@ EXIF_ORIENTATION_ROTATE_90_CLOCKWISE: int = 6
 EXIF_MAKE_TAG: int = 0x010F
 
 
+def png_with_a_corrupted_chunk() -> bytes:
+    content: bytearray = bytearray(make_image_file((40, 40), "PNG"))
+    first_byte_of_the_pixels: int = content.index(b"IDAT") + len(b"IDAT")
+    content[first_byte_of_the_pixels] ^= 0xFF
+    return bytes(content)
+
+
 def open_output(compressed: CompressedImage) -> Image.Image:
     return Image.open(BytesIO(compressed.data))
 
@@ -47,11 +54,22 @@ def test_accepted_formats_are_reencoded_in_webp(image_format: str) -> None:
         pytest.param(b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic", id="heic"),
         pytest.param(b"", id="empty"),
         pytest.param(make_image_file((600, 400), "JPEG")[:300], id="truncated-jpeg"),
+        pytest.param(png_with_a_corrupted_chunk(), id="corrupted-png"),
     ],
 )
 def test_other_files_are_refused(content: bytes) -> None:
     with pytest.raises(ImageUnsupportedFormatError):
         compress_image(content, MAX_SOURCE_PIXELS)
+
+
+@pytest.mark.parametrize("image_format", ["PNG", "WEBP"])
+def test_a_payload_appended_to_an_image_is_not_kept(image_format: str) -> None:
+    payload: bytes = b"<script>payload</script>"
+    content: bytes = make_image_file((40, 40), image_format) + payload
+
+    compressed: CompressedImage = compress_image(content, MAX_SOURCE_PIXELS)
+
+    assert payload not in compressed.data
 
 
 def test_too_many_pixels_are_refused_before_decoding() -> None:

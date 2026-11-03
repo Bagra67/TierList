@@ -24,8 +24,6 @@ class _ImmutableStaticFiles(StaticFiles):
 
 
 def _root_file(dist: Path, path: str) -> Path | None:
-    """Fichier de la racine du build demandé par `path`, ou None. Le chemin résolu doit rester
-    dans le build : « ../ » ou un lien symbolique ne permettent pas d'en sortir."""
     if not path:
         return None
     candidate: Path = (dist / path).resolve()

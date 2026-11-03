@@ -168,8 +168,6 @@ class RoomService:
             self._release_room_lock()
             return room
         self._ensure_can_arrive(room)
-        # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
-        # contrainte (room_id, user_id) reste le dernier filet
         player: Participant = Participant(user_id=user.id)
         room.participants.append(player)
         self._absent_for_past_rounds(room, player)
@@ -204,7 +202,6 @@ class RoomService:
         room.participants.append(guest)
         room.version += 1
         try:
-            # Le flush de la nouvelle place peut buter sur l'index du pseudo, comme le commit
             self._absent_for_past_rounds(room, guest)
             self._session.commit()
         except IntegrityError as exc:
@@ -259,7 +256,6 @@ class RoomService:
             setattr(room, field_name, value)
         if changes:
             room.version += 1
-        # Sans modification, le commit libère seulement le verrou
         self._session.commit()
         if changes:
             self._publisher.publish(room.id, RoomSettingsUpdatedEvent(room_version=room.version))
@@ -300,7 +296,6 @@ class RoomService:
             participant_id,
             ban,
         )
-        # Ses sockets d'abord : il quitte la salle avant la diffusion, et ne reçoit pas l'événement
         close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
         reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
         self._publisher.disconnect_participant(room.id, participant_id, close_code, reason)
@@ -401,9 +396,6 @@ class RoomService:
                 game.placements.append(absent)
 
     def _ensure_can_arrive(self, room: Room) -> None:
-        """Un nouveau venu peut-il prendre une place ? Pas pendant une partie aux arrivées
-        verrouillées, ni dans une salle pleine. Appelé sous le verrou de la salle : deux jonctions
-        simultanées ne dépassent pas la limite."""
         if room.status == RoomStatus.PLAYING and not room.late_arrivals_allowed:
             raise RoomLockedError
         if len(self.seated_participants(room)) >= FREE_PLAN_MAX_PARTICIPANTS:

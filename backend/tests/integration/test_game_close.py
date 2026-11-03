@@ -197,3 +197,29 @@ def test_a_placement_belongs_to_a_seat_or_a_player(db_session: Session, closed_g
 
     with pytest.raises(IntegrityError):
         db_session.flush()
+
+
+def test_a_closed_game_needs_its_results_link(db_session: Session, closed_game: JsonObject):
+    stored_game(db_session).public_token = None
+
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+
+
+def test_an_account_plays_a_game_once_but_guests_can_be_several(
+    db_session: Session, closed_game: JsonObject
+):
+    game: Game = stored_game(db_session)
+    alice_id: uuid.UUID = user_id(db_session, "alice@example.com")
+
+    with pytest.raises(IntegrityError), db_session.begin_nested():
+        db_session.add(GamePlayer(game_id=game.id, user_id=alice_id, display_name="alice"))
+        db_session.flush()
+
+    db_session.add_all(
+        [
+            GamePlayer(game_id=game.id, user_id=None, display_name="Max"),
+            GamePlayer(game_id=game.id, user_id=None, display_name="Noa"),
+        ]
+    )
+    db_session.flush()

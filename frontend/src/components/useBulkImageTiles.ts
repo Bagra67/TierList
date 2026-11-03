@@ -22,7 +22,6 @@ export interface BulkImageTiles {
 
 type UploadOutcome = { image: UploadedImage } | { error: unknown };
 
-// Lance les envois limit par limit, dans l'ordre ; chaque promesse se résout à la fin de son envoi
 function uploadAll(files: File[], limit: number): Promise<UploadOutcome>[] {
   let running: number = 0;
   const waiting: (() => void)[] = [];

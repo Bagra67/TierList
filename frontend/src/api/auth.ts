@@ -149,7 +149,6 @@ export function useVerifyEmail() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: verifyEmail,
-    // Utilisateur connecté dans ce navigateur : son adresse apparaît désormais comme confirmée
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }),
   });
 }

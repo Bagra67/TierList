@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { type InitialEntry, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
@@ -7,12 +7,15 @@ import i18n from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { LoginPage } from './LoginPage';
+import { RegisterPage } from './RegisterPage';
 
-function renderLoginPage(path = '/login') {
+function renderLoginPage(entry: InitialEntry = '/login') {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/r/K7P2QX" element={<h1>Lobby</h1>} />
         <Route path="/" element={<h1>Accueil</h1>} />
       </Routes>
     </MemoryRouter>,
@@ -46,6 +49,24 @@ describe('LoginPage', () => {
       email: 'alice@example.com',
       password: 'correct horse battery staple',
     });
+  });
+
+  it('keeps the requested page when the visitor goes on to create an account', async () => {
+    stubBackend({
+      'POST /auth/register': tokenResponse('new-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderLoginPage({ pathname: '/login', state: { from: '/r/K7P2QX' } });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Créer un compte' }));
+    fireEvent.change(screen.getByLabelText('Nom affiché'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), {
+      target: { value: 'correct horse battery staple' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
   });
 
   it('shows the backend message when the credentials are wrong', async () => {

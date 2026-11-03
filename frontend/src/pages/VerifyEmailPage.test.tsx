@@ -2,8 +2,15 @@ import { fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { useCurrentUser } from '../api/auth';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  signedInSession,
+  stubBackend,
+} from '../test/stubBackend';
 import { VerifyEmailPage } from './VerifyEmailPage';
 
 function renderVerifyEmailPage(path = '/verify-email?token=link-token') {
@@ -12,6 +19,12 @@ function renderVerifyEmailPage(path = '/verify-email?token=link-token') {
       <VerifyEmailPage />
     </MemoryRouter>,
   );
+}
+
+function SignedInUserAddressStatus() {
+  const { data: user } = useCurrentUser();
+  if (user === undefined || user === null) return null;
+  return <p>{user.email_verified ? 'Adresse confirmée' : 'Adresse à confirmer'}</p>;
 }
 
 describe('VerifyEmailPage', () => {
@@ -41,6 +54,29 @@ describe('VerifyEmailPage', () => {
     );
     expect(screen.getByRole('link', { name: 'Continuer' })).toHaveAttribute('href', '/');
     await expect(fetchMock.mock.calls[0][0].json()).resolves.toEqual({ token: 'link-token' });
+  });
+
+  it('shows the address as confirmed to the user signed in on this browser', async () => {
+    let emailVerified: boolean = false;
+    stubBackend({
+      ...signedInSession,
+      'GET /auth/me': () => Response.json({ ...alice, email_verified: emailVerified }),
+      'POST /auth/email/verify': () => {
+        emailVerified = true;
+        return new Response(null, { status: 204 });
+      },
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={['/verify-email?token=link-token']}>
+        <VerifyEmailPage />
+        <SignedInUserAddressStatus />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Adresse à confirmer')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer mon adresse' }));
+
+    expect(await screen.findByText('Adresse confirmée')).toBeInTheDocument();
   });
 
   it('explains an invalid or expired link', async () => {

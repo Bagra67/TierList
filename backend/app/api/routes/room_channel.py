@@ -108,8 +108,6 @@ def _find_seat(
     access_token: str | None,
     guest_token: str | None,
 ) -> ChannelSeat:
-    """Place du lecteur dans la salle. Comme en REST, un compte passe avant un cookie d'invité,
-    et une salle inconnue ou sans place pour lui sont indiscernables (room_not_found)."""
     with session_factory() as session:
         viewer: RoomViewer = RoomViewer(user=None, guest_token=guest_token)
         if access_token is not None:

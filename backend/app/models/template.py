@@ -28,8 +28,6 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         default=TemplateModeration.NONE,
         server_default=text("'none'"),
     )
-    # Motif du masquage, montré au propriétaire. Copié ici : le journal de modération est purgé
-    # après 3 ans, un modèle peut rester masqué plus longtemps
     moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
 
     tiers: Mapped[list[Tier]] = relationship(

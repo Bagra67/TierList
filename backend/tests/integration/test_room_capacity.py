@@ -82,6 +82,17 @@ def test_the_room_admin_counts_and_the_room_fills_up_to_the_limit(
     assert len(participants) == FREE_PLAN_MAX_PARTICIPANTS
 
 
+def test_an_admin_who_does_not_play_still_counts_in_the_limit(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+):
+    code: str = alice_room["code"]
+    auth_client.patch(f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice)
+
+    fill_the_room(auth_client, code)
+
+    assert_room_full(join_as_guest(auth_client, code, "Late"))
+
+
 def test_an_account_cannot_join_a_full_room(
     auth_client: TestClient, bob: dict[str, str], alice_room: JsonObject
 ):

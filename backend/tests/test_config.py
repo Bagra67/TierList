@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.db import session as session_module
 
 REQUIRED_SETTINGS: dict[str, object] = {
     "postgres_user": "tierlist",
@@ -124,3 +125,21 @@ def test_the_moderation_log_is_kept_the_3_years_stated_by_the_privacy_policy(
 def test_the_moderation_log_retention_must_be_positive(invalid_value: int) -> None:
     with pytest.raises(ValidationError):
         make_settings(moderation_log_retention_days=invalid_value)
+
+
+def test_the_engine_uses_the_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings: Settings = make_settings(database_connect_timeout_seconds=7)
+    engine_arguments: dict[str, object] = {}
+
+    def record_engine_arguments(url: object, **arguments: object) -> None:
+        engine_arguments.update(arguments)
+
+    def settings_of_the_test() -> Settings:
+        return settings
+
+    monkeypatch.setattr(session_module, "create_engine", record_engine_arguments)
+    monkeypatch.setattr(session_module, "get_settings", settings_of_the_test)
+
+    session_module.get_engine.__wrapped__()
+
+    assert engine_arguments["connect_args"] == {"connect_timeout": 7}

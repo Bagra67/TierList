@@ -214,16 +214,6 @@ class TemplateService:
         return template
 
     def take_snapshot(self, owner: User, template_id: uuid.UUID) -> TemplateSnapshot:
-        """Copie figée des tiers et des tuiles du template, prise au démarrage d'une partie.
-
-        Un template supprimé ne permet plus de démarrer de partie : il est introuvable, comme
-        celui d'un autre utilisateur. Un template sans tuile est refusé. Les images ne sont pas
-        dupliquées : la snapshot désigne les mêmes, qui sont immuables. Un template masqué par
-        la modération est refusé (TemplateHiddenError).
-
-        Pas de commit : l'appelant valide la snapshot avec la partie qui l'utilise, dans la même
-        transaction. Le template reste verrouillé jusque-là, la copie ne peut donc pas croiser
-        une modification simultanée."""
         template: Template = self._get_for_change(owner, template_id)
         if template.moderation == TemplateModeration.HIDDEN:
             raise TemplateHiddenError

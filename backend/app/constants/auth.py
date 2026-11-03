@@ -18,7 +18,6 @@ REFRESH_TOKEN_BYTES = 32
 DUMMY_PASSWORD_BYTES = 16
 GOOGLE_STATE_BYTES = 32
 GOOGLE_NONCE_BYTES = 32
-# RFC 7636 : le vérificateur PKCE fait de 43 à 128 caractères (64 octets → 86 caractères)
 PKCE_VERIFIER_BYTES = 64
 
 GOOGLE_PROVIDER = "google"
@@ -30,7 +29,6 @@ PASSWORD_HASH_MAX_LENGTH = 255
 REFRESH_TOKEN_HASH_LENGTH = 64
 PROVIDER_MAX_LENGTH = 20
 PROVIDER_SUBJECT_MAX_LENGTH = 255
-# Borne haute d'un token reçu par email : rejette une entrée démesurée avant tout décodage
 EMAIL_TOKEN_MAX_LENGTH = 2048
 
 FRONTEND_HOME = "/"

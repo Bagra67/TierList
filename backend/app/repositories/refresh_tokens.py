@@ -8,8 +8,6 @@ from app.models.refresh_token import RefreshToken
 
 
 def get_refresh_token_for_update(session: Session, token_hash: str) -> RefreshToken | None:
-    # FOR UPDATE : deux rafraîchissements simultanés du même token sont traités l'un après
-    # l'autre, le second voit donc le token déjà révoqué.
     statement = select(RefreshToken).where(RefreshToken.token_hash == token_hash).with_for_update()
     return session.scalars(statement).one_or_none()
 

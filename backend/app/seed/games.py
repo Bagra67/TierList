@@ -1,17 +1,3 @@
-"""Parties terminées du jeu de données, écrites directement dans l'état que laisse la clôture d'une
-partie (GameService._close_game) : instantané du modèle, tours, joueurs figés, placements de tour
-et finaux, lien des résultats.
-
-Jouer chaque partie par le service (un placement à la fois) recharge la salle à chaque appel :
-des centaines de milliers de requêtes, trop lent sur staging, à travers Internet. Les règles de la
-clôture sont donc reprises ici : un joueur figé par personne qui place ; un vote absent est un
-placement de tour sans tier ; seuls les items placés ont un placement final ; les positions
-restent continues dans chaque tier.
-
-L'instantané du modèle est copié ici aussi, comme TemplateService.take_snapshot le copierait (nom,
-tiers, tuiles, mêmes images) : take_snapshot relit le modèle et écrit l'instantané à chaque partie,
-ce qui empêche d'écrire les parties par lots."""
-
 import logging
 import random
 import uuid

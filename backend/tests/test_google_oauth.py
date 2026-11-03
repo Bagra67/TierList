@@ -203,3 +203,29 @@ def test_token_endpoint_failures_are_reported(response: httpx.Response):
 
     with pytest.raises(GoogleAuthError):
         client.fetch_identity("auth-code", GoogleLoginAttempt.start(None))
+
+
+def test_pkce_verifier_length_follows_rfc_7636():
+    assert 43 <= len(GoogleLoginAttempt.start(None).code_verifier) <= 128
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        pytest.param(httpx.Response(400, json={"error": "invalid_grant"}), id="refused"),
+        pytest.param(httpx.Response(500), id="google-error"),
+        pytest.param(httpx.Response(200, text="not json"), id="not-json"),
+        pytest.param(httpx.Response(200, json={}), id="no-id-token"),
+    ],
+)
+def test_google_failures_do_not_leak_secrets(response: httpx.Response):
+    client: GoogleOAuthClient = google_client(httpx.MockTransport(lambda request: response))
+    attempt: GoogleLoginAttempt = GoogleLoginAttempt.start(None)
+
+    with pytest.raises(GoogleAuthError) as failure:
+        client.fetch_identity("auth-code", attempt)
+
+    message: str = str(failure.value)
+    assert "test-client-secret" not in message
+    assert "auth-code" not in message
+    assert attempt.code_verifier not in message

@@ -14,11 +14,7 @@ if TYPE_CHECKING:
 
 class GamePlayer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "game_players"
-    __table_args__ = (
-        # Un compte joue au plus une fois une partie (les invités et les comptes supprimés,
-        # sans user_id, n'y sont pas : NULL n'est jamais égal à NULL)
-        UniqueConstraint("game_id", "user_id"),
-    )
+    __table_args__ = (UniqueConstraint("game_id", "user_id"),)
 
     game_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("games.id", ondelete="CASCADE"))
     user_id: Mapped[uuid.UUID | None] = mapped_column(

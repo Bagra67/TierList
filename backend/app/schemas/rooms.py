@@ -95,8 +95,6 @@ class CurrentGameResponse(BaseModel):
     placed_participant_ids: list[uuid.UUID]
     own_placements: list[OwnPlacementResponse]
     cooldown_ends_at: datetime | None
-    # Pendant le cooldown : les items que le lecteur n'a pas encore placés (votes absents, ou
-    # arrivé en retard), dans l'ordre des tours ; vide pendant les tours
     missed_items: list[CurrentItemResponse]
 
 
@@ -128,7 +126,6 @@ class RoomResponse(BaseModel):
     status: RoomStatus
     template: RoomTemplateResponse | None
     settings: RoomSettingsResponse
-    # Dans l'ordre d'arrivée, le room admin d'abord
     participants: list[ParticipantResponse]
     is_admin: bool
     bans: list[RoomBanResponse]

@@ -11,8 +11,6 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class LoggingSettings(BaseSettings):
-    # Séparé de Settings : l'application doit pouvoir journaliser même si la
-    # configuration PostgreSQL est absente.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     log_level: LogLevel = "INFO"

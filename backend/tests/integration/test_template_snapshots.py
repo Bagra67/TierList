@@ -59,6 +59,19 @@ def snapshot_tiles(snapshot: TemplateSnapshot) -> list[tuple[str | None, uuid.UU
     return [(tile.text, tile.image_id, tile.position) for tile in snapshot.tiles]
 
 
+def test_take_snapshot_leaves_the_commit_to_the_caller(
+    db_session: Session, service: TemplateService, alice: User
+):
+    template: Template = create_template(db_session, service, alice)
+
+    with pytest.raises(RuntimeError), db_session.begin_nested():
+        service.take_snapshot(alice, template.id)
+        db_session.flush()
+        raise RuntimeError("the game failed to start")
+
+    assert db_session.scalars(select(TemplateSnapshot)).all() == []
+
+
 def test_snapshot_copies_the_tiers_and_tiles(
     db_session: Session, service: TemplateService, alice: User
 ):

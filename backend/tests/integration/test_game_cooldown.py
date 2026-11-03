@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 
@@ -15,7 +16,9 @@ from app.models.enums import GameStatus, PlacementPhase, RoomStatus
 from app.models.game import Game
 from app.models.placement import Placement
 from app.models.room import Room
+from app.models.snapshot_tile import SnapshotTile
 from app.schemas.room_events import GameClosedEvent
+from app.services import games as games_module
 from app.services.games import GameService
 from app.services.rooms import RoomService
 from app.services.templates import TemplateService
@@ -207,6 +210,27 @@ def test_a_late_joiner_catches_up_every_item(
     assert response.status_code == 200
     assert board(response.json()) == [("A", "Tile 1", 0)]
     assert missed(response.json()) == ["Tile 0", "Tile 2"]
+
+
+def test_the_missed_items_follow_the_order_of_the_rounds(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def reverse(tiles: Sequence[SnapshotTile]) -> list[SnapshotTile]:
+        return list(reversed(tiles))
+
+    monkeypatch.setattr(games_module, "shuffle_items", reverse)
+    code: str = alice_room["code"]
+    auth_client.patch(f"/rooms/{code}/settings", json={"item_order": "random"}, headers=alice)
+    start_game(auth_client, code, alice)
+    to_cooldown(auth_client, code, alice)
+
+    joined: JsonObject = auth_client.post(f"/rooms/{code}/join", headers=bob).json()
+
+    assert missed(joined) == ["Tile 2", "Tile 1", "Tile 0"]
 
 
 def test_placing_in_the_cooldown_checks_the_tile_and_the_tier(

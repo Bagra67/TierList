@@ -1,13 +1,3 @@
-"""Modération des images des tuiles (US-1.4, US-1.6, docs/technical/images.md, « Moderation ») :
-masquer, réafficher ou supprimer une image.
-
-Les URL des images sont publiques : masquer une image agit sur le stockage, pas seulement sur la
-base. L'ordre des étapes échoue du côté sûr : le fichier est d'abord copié à son nouvel
-emplacement, le statut et l'entrée du journal sont validés ensemble, puis l'ancien fichier est
-effacé. Un effacement qui échoue est journalisé avec sa clé, pour être fait à la main ; l'API ne
-donne déjà plus l'adresse d'une image masquée.
-"""
-
 import logging
 import uuid
 

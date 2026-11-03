@@ -17,7 +17,6 @@ from app.services.results import FinalPlacement, GameResults, PlayerRanking, com
 class PlayerBoard:
     player: GamePlayer
     tiers: tuple[tuple[uuid.UUID, ...], ...]
-    # Items qu'il n'a jamais placés (absent, non rattrapé), dans l'ordre du template
     unplaced_tile_ids: tuple[uuid.UUID, ...]
 
 

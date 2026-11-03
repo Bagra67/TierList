@@ -47,7 +47,6 @@ def list_owned_templates_with_tile_count(
         .outerjoin(Tile, Tile.template_id == Template.id)
         .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
         .group_by(Template.id)
-        # id départage deux templates modifiés au même instant : l'ordre reste stable
         .order_by(Template.updated_at.desc(), Template.id)
     )
     return [(template, tile_count) for template, tile_count in session.execute(statement)]

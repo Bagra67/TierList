@@ -12,8 +12,6 @@ class RoomSweeper:
         self._task: asyncio.Task[None] | None = None
 
     def start(self, interval_seconds: float, sweep: SweepHandler) -> None:
-        """Appelé au démarrage du processus, dans la boucle asyncio : premier balayage après un
-        intervalle, le temps que les participants connectés avant un redémarrage reviennent."""
         self._task = asyncio.create_task(self._run(interval_seconds, sweep))
 
     async def stop(self) -> None:

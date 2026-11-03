@@ -57,6 +57,15 @@ describe('detectLanguage', () => {
     expect(detectLanguage()).toBe('fr');
   });
 
+  it('uses the browser language when localStorage is unavailable', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    stubBrowserLanguages(['en-US']);
+
+    expect(detectLanguage()).toBe('en');
+  });
+
   it('prefers the language chosen earlier', () => {
     stubBrowserLanguages(['en-US']);
     localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr');
@@ -73,12 +82,26 @@ describe('detectLanguage', () => {
 });
 
 describe('changeLanguage', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('translates, remembers the choice and sets the page language', async () => {
     await changeLanguage('en');
 
     expect(i18n.t('auth.login.submit')).toBe('Sign in');
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('en');
     expect(document.documentElement.lang).toBe('en');
+  });
+
+  it('still changes the language for this visit when localStorage is unavailable', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+
+    await changeLanguage('en');
+
+    expect(i18n.t('auth.login.submit')).toBe('Sign in');
   });
 
   it('interpolates values', async () => {

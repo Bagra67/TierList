@@ -3,11 +3,17 @@ from typing import Annotated
 import pytest
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.testclient import TestClient
+from httpx2 import Response
+from pydantic import AfterValidator
 
 from app.constants.error_codes import ErrorCode
 from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.exceptions.http import AppHTTPException
+
+
+def refuse_every_value(value: str) -> str:
+    raise ValueError(f"{value} is refused")
 
 
 def create_app() -> FastAPI:
@@ -25,6 +31,10 @@ def create_app() -> FastAPI:
     @app.get("/search")
     def search(query: Annotated[str, Query(min_length=3)]) -> dict[str, str]:
         return {"query": query}
+
+    @app.get("/refused")
+    def refused(value: Annotated[str, AfterValidator(refuse_every_value)]) -> dict[str, str]:
+        return {"value": value}
 
     @app.get("/missing")
     def missing() -> None:
@@ -80,6 +90,23 @@ def test_validation_error_exposes_the_constraint_as_params():
     [error] = response.json()["errors"]
     assert error["code"] == "string_too_short"
     assert error["params"] == {"min_length": 3}
+
+
+def test_a_validator_exception_is_not_exposed_as_params():
+    response: Response = client.get("/refused", params={"value": "anything"})
+
+    assert response.status_code == 422
+    [error] = response.json()["errors"]
+    assert error["code"] == "value_error"
+    assert "params" not in error
+
+
+def test_an_unexpected_error_is_answered_without_being_raised_again():
+    client_seeing_raised_errors: TestClient = TestClient(create_app())
+
+    response: Response = client_seeing_raised_errors.get("/boom")
+
+    assert response.status_code == 500
 
 
 def test_app_http_exception_returns_its_code_params_and_headers():

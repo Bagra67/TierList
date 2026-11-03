@@ -30,8 +30,6 @@ class ErrorResponse(BaseModel):
 
 
 def _scalar_params(context: Mapping[str, object] | None) -> dict[str, ErrorParamValue] | None:
-    # Le contexte Pydantic peut contenir des objets (ex. l'exception d'un validateur) :
-    # seules les valeurs simples, utiles à la traduction, sont exposées.
     if not context:
         return None
     params = {key: value for key, value in context.items() if isinstance(value, str | int | float)}
@@ -77,8 +75,6 @@ async def handle_validation_error(request: Request, exc: Exception) -> JSONRespo
 async def handle_unexpected_error(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    # Middleware plutôt qu'exception_handler(Exception) : Starlette relancerait l'exception
-    # après la réponse, et uvicorn journaliserait la même trace une seconde fois.
     try:
         return await call_next(request)
     except Exception:

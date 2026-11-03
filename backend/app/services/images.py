@@ -102,8 +102,6 @@ class ImageService:
             logger.exception("Fichier d'image orphelin non effacé : storage_key=%s", storage_key)
 
     def _read_within_limit(self, file: BinaryIO) -> bytes:
-        """Lit le fichier sans jamais dépasser la limite d'un octet : un fichier énorme n'est
-        pas chargé en mémoire."""
         max_bytes: int = self._settings.image_upload_max_bytes
         content: bytes = file.read(max_bytes + 1)
         if len(content) > max_bytes:

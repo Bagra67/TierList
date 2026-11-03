@@ -1,18 +1,20 @@
 import re
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import UserRole
+from app.models.enums import RoomStatus, UserRole
+from app.models.room import Room
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
@@ -76,6 +78,12 @@ def create_room(client: TestClient, headers: dict[str, str], template_id: str) -
     response: Response = client.post("/rooms", json={"template_id": template_id}, headers=headers)
     assert response.status_code == 201
     return response.json()
+
+
+def mark_game_in_progress(db_session: Session, code: str) -> None:
+    room: Room = db_session.scalars(select(Room).where(Room.code == code)).one()
+    room.status = RoomStatus.PLAYING
+    db_session.flush()
 
 
 def start_game(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
@@ -145,3 +153,14 @@ def counted_queries(db_session: Session) -> Iterator[list[str]]:
         yield statements
     finally:
         event.remove(connection, "before_cursor_execute", record)
+
+
+def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
+    lookup: Callable[..., object] = getattr(module, name)
+    calls: list[object] = []
+
+    def stale_lookup(*args: object, **kwargs: object) -> object:
+        calls.append(args)
+        return None if len(calls) == 1 else lookup(*args, **kwargs)
+
+    monkeypatch.setattr(module, name, stale_lookup)

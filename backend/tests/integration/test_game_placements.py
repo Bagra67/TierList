@@ -299,6 +299,27 @@ def test_removing_a_player_deletes_their_placements(
     assert placed_count(db_session) == 0
 
 
+def test_a_final_placement_cannot_be_absent(
+    auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
+):
+    code: str = alice_room["code"]
+    started: JsonObject = start_game(auth_client, code, alice)
+    place(
+        auth_client, code, tile_of_round(db_session, 1), started["game"]["tiers"][0]["id"], 0, alice
+    )
+    game: Game = stored_game(db_session)
+    without_tier: Placement = Placement(
+        game_id=game.id,
+        participant_id=game.placements[0].participant_id,
+        snapshot_tile_id=game.rounds[0].snapshot_tile_id,
+        phase=PlacementPhase.FINAL,
+    )
+    db_session.add(without_tier)
+
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+
+
 def test_the_database_keeps_one_placement_per_tile_and_a_tier_with_its_position(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
