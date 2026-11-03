@@ -8,19 +8,20 @@ Comment les templates sont stockés et exposés par l'API : modèle de données,
 
 Un template est ce qu'on classe : ses **tiers** (les lignes de la tier list) et ses **tuiles** (les items à classer). Il est **privé** à son propriétaire.
 
-| Action                | Endpoint                                 | Résultat                                                                                                                 |
-| --------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Créer un template     | `POST /templates`                        | Un template avec les six tiers par défaut (S à E) et sans tuile.                                                         |
-| Lister mes templates  | `GET /templates`                         | Mes templates actifs, avec leur nombre de tuiles, le plus récemment modifié d'abord.                                     |
-| Ouvrir un template    | `GET /templates/{id}`                    | Le template, ses tiers et ses tuiles, triés par position.                                                                |
-| Renommer un template  | `PATCH /templates/{id}`                  | Le nouveau nom ; la date de dernière modification est mise à jour.                                                       |
-| Ajouter un tier       | `POST /templates/{id}/tiers`             | Un tier en bas, nommé `?`, couleur `#9AA0B4`.                                                                            |
-| Modifier un tier      | `PATCH /templates/{id}/tiers/{tier_id}`  | Son nom, sa couleur et/ou sa position (les autres sont décalés).                                                         |
-| Supprimer un tier     | `DELETE /templates/{id}/tiers/{tier_id}` | Le tier disparaît, les suivants remontent ; refusé pour le dernier tier.                                                 |
-| Ajouter une tuile     | `POST /templates/{id}/tiles`             | Une tuile avec un texte, une image ou les deux, à la fin ; refusé au-delà du nombre maximal de tuiles.                   |
-| Modifier une tuile    | `PATCH /templates/{id}/tiles/{tile_id}`  | Son texte, son image (remplacée ou retirée) et/ou sa place dans l'ordre du template.                                     |
-| Supprimer une tuile   | `DELETE /templates/{id}/tiles/{tile_id}` | La tuile disparaît, les suivantes remontent.                                                                             |
-| Supprimer un template | `DELETE /templates/{id}`                 | Le template disparaît aussitôt pour son propriétaire, puis est effacé définitivement après la durée de rétention (§2.3). |
+| Action                               | Endpoint                                 | Résultat                                                                                                                 |
+| ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Créer un template                    | `POST /templates`                        | Un template avec les six tiers par défaut (S à E) et sans tuile.                                                         |
+| Lister mes templates                 | `GET /templates`                         | Mes templates actifs, avec leur nombre de tuiles, le plus récemment modifié d'abord.                                     |
+| Voir ce que la modération a supprimé | `GET /templates/removed`                 | Mes modèles supprimés par la modération et pas encore purgés, avec la date et le motif.                                  |
+| Ouvrir un template                   | `GET /templates/{id}`                    | Le template, ses tiers et ses tuiles, triés par position.                                                                |
+| Renommer un template                 | `PATCH /templates/{id}`                  | Le nouveau nom ; la date de dernière modification est mise à jour.                                                       |
+| Ajouter un tier                      | `POST /templates/{id}/tiers`             | Un tier en bas, nommé `?`, couleur `#9AA0B4`.                                                                            |
+| Modifier un tier                     | `PATCH /templates/{id}/tiers/{tier_id}`  | Son nom, sa couleur et/ou sa position (les autres sont décalés).                                                         |
+| Supprimer un tier                    | `DELETE /templates/{id}/tiers/{tier_id}` | Le tier disparaît, les suivants remontent ; refusé pour le dernier tier.                                                 |
+| Ajouter une tuile                    | `POST /templates/{id}/tiles`             | Une tuile avec un texte, une image ou les deux, à la fin ; refusé au-delà du nombre maximal de tuiles.                   |
+| Modifier une tuile                   | `PATCH /templates/{id}/tiles/{tile_id}`  | Son texte, son image (remplacée ou retirée) et/ou sa place dans l'ordre du template.                                     |
+| Supprimer une tuile                  | `DELETE /templates/{id}/tiles/{tile_id}` | La tuile disparaît, les suivantes remontent.                                                                             |
+| Supprimer un template                | `DELETE /templates/{id}`                 | Le template disparaît aussitôt pour son propriétaire, puis est effacé définitivement après la durée de rétention (§2.3). |
 
 Côté frontend, la page _Mes templates_ liste, crée et supprime les templates ; l'éditeur renomme le template et configure ses tiers et ses tuiles (un texte, une image ou les deux). Voir §3.
 
@@ -139,22 +140,23 @@ Règles (`TemplateService.take_snapshot(owner, template_id)`) :
 
 Chaque route exige l'access token Bearer (`401` sinon).
 
-| Méthode et chemin                        | Corps                           | Succès                       | Erreurs                    |
-| ---------------------------------------- | ------------------------------- | ---------------------------- | -------------------------- |
-| `POST /templates`                        | `{name}`                        | `201` `TemplateResponse`     | `401`, `422`               |
-| `GET /templates`                         | —                               | `200` `TemplateListResponse` | `401`                      |
-| `GET /templates/{id}`                    | —                               | `200` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}`                  | `{name}`                        | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `POST /templates/{id}/tiers`             | —                               | `201` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}`    | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiers/{tier_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`, `409`        |
-| `POST /templates/{id}/tiles`             | `{text?, image_id?}`            | `201` `TemplateResponse`     | `401`, `404`, `409`, `422` |
-| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, image_id?, position?}` | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`               |
-| `DELETE /templates/{id}`                 | —                               | `204`                        | `401`, `404`               |
+| Méthode et chemin                        | Corps                           | Succès                              | Erreurs                    |
+| ---------------------------------------- | ------------------------------- | ----------------------------------- | -------------------------- |
+| `POST /templates`                        | `{name}`                        | `201` `TemplateResponse`            | `401`, `422`               |
+| `GET /templates`                         | —                               | `200` `TemplateListResponse`        | `401`                      |
+| `GET /templates/removed`                 | —                               | `200` `RemovedTemplateListResponse` | `401`                      |
+| `GET /templates/{id}`                    | —                               | `200` `TemplateResponse`            | `401`, `404`               |
+| `PATCH /templates/{id}`                  | `{name}`                        | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `POST /templates/{id}/tiers`             | —                               | `201` `TemplateResponse`            | `401`, `404`               |
+| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}`    | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiers/{tier_id}` | —                               | `200` `TemplateResponse`            | `401`, `404`, `409`        |
+| `POST /templates/{id}/tiles`             | `{text?, image_id?}`            | `201` `TemplateResponse`            | `401`, `404`, `409`, `422` |
+| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, image_id?, position?}` | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`            | `401`, `404`               |
+| `DELETE /templates/{id}`                 | —                               | `204`                               | `401`, `404`               |
 
-- `TemplateResponse` vaut `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles, moderation, moderation_reason}`, tiers et tuiles triés par `position` ; `moderation` et `moderation_reason` sont décrits au §2.7. `image_url` est l'adresse publique de l'image compressée, `null` pour une tuile qui n'a qu'un texte ; `template_response` (`api/presenters/templates.py`) la construit avec `optional_image_url` (`api/presenters/images.py`), comme toute image de l'API.
-- `TemplateListResponse` vaut `{items: [{id, name, tile_count, updated_at, moderation, moderation_reason}]}`. Un objet plutôt qu'un tableau, pour qu'une pagination (#105) puisse ajouter un champ sans casser le contrat. La liste est lue en **une seule requête** : la base compte les tuiles (pas de N+1).
+- `TemplateResponse` vaut `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, image_removed, image_status, image_moderation_reason, position}], max_tiles, moderation, moderation_reason}`, tiers et tuiles triés par `position` ; `moderation` et `moderation_reason` sont décrits au §2.7. `image_url` est l'adresse publique de l'image compressée, `null` pour une tuile qui n'a qu'un texte ; `template_response` (`api/presenters/templates.py`) la construit avec `optional_image_url` (`api/presenters/images.py`), comme toute image de l'API.
+- `TemplateListResponse` vaut `{items: [{id, name, tile_count, updated_at, moderation, moderation_reason, removed_images}]}`. Un objet plutôt qu'un tableau, pour qu'une pagination (#105) puisse ajouter un champ sans casser le contrat. La liste est lue en **une seule requête** : la base compte les tuiles (pas de N+1).
 - Les routes des tiers et des tuiles renvoient tout le template, pour que l'éditeur remplace sa copie sans la relire. La `404` est `template_not_found` pour le template, `tier_not_found` / `tile_not_found` pour un tier ou une tuile qui n'en fait pas partie.
 
 ### 2.7 Modération
@@ -173,7 +175,9 @@ Un super admin peut **masquer**, **réafficher** ou **supprimer** le modèle de 
 - **Dernière modification inchangée** : le changement passe par un `UPDATE` qui garde `updated_at`, puisque c'est la dernière modification du propriétaire, pas une décision de la modération. L'ordre de _Mes templates_ ne bouge pas.
 - **Ce qu'un modèle masqué bloque** : `RoomService.create` et `TemplateService.take_snapshot` (le lancement d'une partie) lèvent `TemplateHiddenError`, donc `POST /rooms` et `POST /rooms/{code}/game` répondent `409` `template_hidden` ([guide des salles](rooms.fr.md), [guide des parties](games.fr.md)). Une partie déjà en cours se termine : elle ne dépend que de son instantané.
 - **Ce que garde le propriétaire** : un modèle masqué est encore lu, listé et modifié par son propriétaire. `TemplateResponse` et les éléments de `TemplateListResponse` portent `moderation` et `moderation_reason` ; la salle d'un modèle masqué l'indique par `template.hidden` dans `RoomResponse` ([guide des salles](rooms.fr.md)). La [politique de confidentialité](legal-pages.fr.md) dit que le propriétaire voit le motif.
+- **Ce que le propriétaire voit d'une décision** (US-1.10, #270) : `removed_images`, dans les éléments de `TemplateListResponse`, donne pour chaque tuile dont l'image est retirée son id, son texte et sa position, la décision (`hidden` ou `deleted`) et le motif ; une requête de plus les lit pour tous les modèles (`list_tiles_with_removed_image_of_owner`). `TileResponse` donne la même chose avec `image_status` et `image_moderation_reason`. Un modèle supprimé par la modération quitte `GET /templates` : `GET /templates/removed` le liste, avec son nom, la date et le motif, jusqu'à sa purge (§2.3). Cette route lit le journal de modération (`list_templates_deleted_by_moderation`) : une suppression par le propriétaire n'y a pas d'entrée, donc n'est pas listée, et le journal est gardé bien plus longtemps qu'un modèle supprimé. Le nom du super admin n'est jamais exposé.
 - **Frontend** : l'éditeur affiche un bandeau (`TemplateHiddenNotice`, `role="status"`) avec le motif, qui dit que le modèle reste modifiable mais qu'aucune partie ne peut être lancée avec, et n'a pas de bouton « Créer une salle » ; _Mes templates_ et les modèles récents de l'accueil affichent un badge « Masqué » (`TemplateHiddenBadge`, un statut écrit, pas seulement une couleur) à la place de ce bouton ; le salon d'une salle dont le modèle est masqué affiche un message à la place du bouton « Lancer la partie ».
+- **Frontend des décisions** : _Mes modèles_ affiche le motif d'un modèle masqué et, sur chaque ligne, les images retirées (la tuile, puis `RemovedImageDecision`) ; la section `RemovedTemplates` liste les modèles supprimés par la modération, sans lien puisqu'ils ne peuvent plus être ouverts, et n'affiche rien quand il n'y en a pas. L'éditeur affiche `RemovedImageDecision` sous l'image d'une tuile. Les dialogues de modération préviennent le super admin que le propriétaire verra le motif.
 - **Séparée de la visibilité du propriétaire** : la modération a sa propre colonne, à part de la visibilité que choisira le propriétaire (#271). Réafficher un modèle lui rend le choix de son propriétaire.
 - **Écran super admin** : la page d'un compte (#127, [guide de modération](moderation.fr.md#28-comptes)) liste les modèles du compte avec ces actions ; la file des signalements (#269) les appellera aussi.
 
