@@ -24,7 +24,7 @@ from app.repositories import users as user_repository
 from app.services.email import Email
 from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
-from tests.integration.helpers import link_token
+from tests.integration.helpers import link_token, miss_first_lookup
 
 pytestmark = pytest.mark.integration
 
@@ -163,17 +163,6 @@ def test_google_identity_is_linked_to_an_existing_verified_account(
         db_session.scalars(select(OAuthAccount)).one().user_id
         == db_session.scalars(select(User)).one().id
     )
-
-
-def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
-    lookup = getattr(module, name)
-    calls: list[object] = []
-
-    def stale_lookup(*args: object, **kwargs: object) -> object:
-        calls.append(args)
-        return None if len(calls) == 1 else lookup(*args, **kwargs)
-
-    monkeypatch.setattr(module, name, stale_lookup)
 
 
 def test_simultaneous_first_google_sign_ins_create_a_single_account(

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -152,3 +153,14 @@ def counted_queries(db_session: Session) -> Iterator[list[str]]:
         yield statements
     finally:
         event.remove(connection, "before_cursor_execute", record)
+
+
+def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
+    lookup = getattr(module, name)
+    calls: list[object] = []
+
+    def stale_lookup(*args: object, **kwargs: object) -> object:
+        calls.append(args)
+        return None if len(calls) == 1 else lookup(*args, **kwargs)
+
+    monkeypatch.setattr(module, name, stale_lookup)

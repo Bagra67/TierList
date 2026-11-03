@@ -29,7 +29,6 @@ PASSWORD_HASH_MAX_LENGTH = 255
 REFRESH_TOKEN_HASH_LENGTH = 64
 PROVIDER_MAX_LENGTH = 20
 PROVIDER_SUBJECT_MAX_LENGTH = 255
-# Borne haute d'un token reçu par email : rejette une entrée démesurée avant tout décodage
 EMAIL_TOKEN_MAX_LENGTH = 2048
 
 FRONTEND_HOME = "/"

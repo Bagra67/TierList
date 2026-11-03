@@ -107,7 +107,6 @@ class AuthService:
         try:
             user_repository.add_user(self._session, user)
         except IntegrityError as exc:
-            # Deux inscriptions simultanées avec le même email : la contrainte d'unicité tranche
             self._session.rollback()
             raise EmailAlreadyRegisteredError from exc
 

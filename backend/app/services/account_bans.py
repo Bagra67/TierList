@@ -94,8 +94,6 @@ class AccountBanService:
         logger.info("Bannissement levé : user_id=%s super_admin_id=%s", user.id, super_admin.id)
 
     def _get_user_for_update(self, user_id: uuid.UUID) -> User:
-        """Le compte, verrouillé jusqu'à la fin de l'action : deux bannissements simultanés ne
-        laissent pas deux bannissements actifs."""
         user: User | None = user_repository.get_user_for_update(self._session, user_id)
         if user is None:
             raise UserNotFoundError

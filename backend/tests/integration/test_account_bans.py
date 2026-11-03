@@ -1,20 +1,26 @@
+import threading
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import select
+from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
 from app.constants.auth import REFRESH_TOKEN_COOKIE
 from app.constants.error_codes import ErrorCode
+from app.core.config import get_settings
 from app.core.security import generate_refresh_token, hash_refresh_token
 from app.models.account_ban import AccountBan
-from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
 from app.models.moderation_action import ModerationAction
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.repositories import users as user_repository
+from app.services.account_bans import AccountBanService
+from app.services.moderation_log import ModerationLogService
 from tests.integration.helpers import PASSWORD, JsonObject, register, register_super_admin
 
 pytestmark = pytest.mark.integration
@@ -173,6 +179,61 @@ def test_banning_a_banned_account_replaces_its_ban(
     first, second = bans_of(db_session, alice_account)
     assert first.lifted_at is not None
     assert (second.ends_at, second.lifted_at) == (None, None)
+
+
+def test_two_simultaneous_bans_leave_one_active_ban(migrated_engine: Engine):
+    with Session(migrated_engine) as setup:
+        banned: User = User(email=f"banned-{uuid.uuid4()}@example.com", display_name="Banned")
+        super_admin: User = User(
+            email=f"admin-{uuid.uuid4()}@example.com",
+            display_name="Admin",
+            role=UserRole.SUPER_ADMIN,
+        )
+        setup.add_all([banned, super_admin])
+        setup.commit()
+        banned_id: uuid.UUID = banned.id
+        super_admin_id: uuid.UUID = super_admin.id
+
+    def ban_too() -> None:
+        with Session(migrated_engine) as second_request:
+            admin: User = second_request.get_one(User, super_admin_id)
+            AccountBanService(
+                second_request, ModerationLogService(second_request, get_settings())
+            ).ban(admin, banned_id, "Second decision", None)
+
+    try:
+        with Session(migrated_engine) as first_request:
+            locked: User | None = user_repository.get_user_for_update(first_request, banned_id)
+            assert locked is not None
+            first_request.add(
+                AccountBan(
+                    user_id=banned_id,
+                    actor_id=super_admin_id,
+                    actor_name="Admin",
+                    reason="First decision",
+                )
+            )
+            first_request.flush()
+            second_request_thread: threading.Thread = threading.Thread(target=ban_too)
+            second_request_thread.start()
+            time.sleep(0.3)
+            first_request.commit()
+            second_request_thread.join(timeout=10)
+
+        with Session(migrated_engine) as session:
+            active_bans: list[AccountBan] = list(
+                session.scalars(
+                    select(AccountBan).where(
+                        AccountBan.user_id == banned_id, AccountBan.lifted_at.is_(None)
+                    )
+                ).all()
+            )
+        assert [ban.reason for ban in active_bans] == ["Second decision"]
+    finally:
+        with Session(migrated_engine) as cleanup:
+            cleanup.execute(delete(ModerationAction).where(ModerationAction.target_id == banned_id))
+            cleanup.execute(delete(User).where(User.id.in_([banned_id, super_admin_id])))
+            cleanup.commit()
 
 
 def test_lifting_a_ban_lets_the_account_sign_in_again(

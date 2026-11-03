@@ -21,7 +21,6 @@ def get_user_by_email(session: Session, email: str) -> User | None:
 
 def add_user(session: Session, user: User) -> None:
     session.add(user)
-    # Flush : déclenche tout de suite la contrainte d'unicité de l'email
     session.flush()
 
 

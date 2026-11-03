@@ -1,18 +1,26 @@
+import threading
+import time
+import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import hash_refresh_token
+from app.exceptions.auth import InvalidRefreshTokenError
 from app.main import api_app
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.repositories import refresh_tokens as refresh_token_repository
+from app.repositories import users as user_repository
+from app.services.auth import AuthService, Registration
+from tests.integration.helpers import miss_first_lookup
 
 pytestmark = pytest.mark.integration
 
@@ -179,6 +187,58 @@ def test_login_failures_are_indistinguishable(auth_client: TestClient, credentia
         "detail": messages.INVALID_CREDENTIALS,
         "code": ErrorCode.INVALID_CREDENTIALS,
     }
+
+
+def test_simultaneous_registrations_with_the_same_email_conflict(
+    auth_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+):
+    register(auth_client)
+    miss_first_lookup(monkeypatch, user_repository, "get_user_by_email")
+
+    response = auth_client.post("/auth/register", json=REGISTRATION)
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.EMAIL_ALREADY_REGISTERED
+    assert len(db_session.scalars(select(User)).all()) == 1
+
+
+def test_two_simultaneous_refreshes_of_a_token_are_handled_one_after_the_other(
+    migrated_engine: Engine,
+):
+    email: str = f"refresh-{uuid.uuid4()}@example.com"
+    with Session(migrated_engine) as registration_request:
+        registration: Registration = AuthService(registration_request, get_settings()).register(
+            email, PASSWORD, "Refresh", "fr"
+        )
+    refresh_token: str = registration.tokens.refresh_token
+    errors: list[Exception] = []
+
+    def refresh_too() -> None:
+        with Session(migrated_engine) as second_request:
+            try:
+                AuthService(second_request, get_settings()).refresh(refresh_token)
+            except InvalidRefreshTokenError as error:
+                errors.append(error)
+
+    try:
+        with Session(migrated_engine) as first_request:
+            stored: RefreshToken | None = refresh_token_repository.get_refresh_token_for_update(
+                first_request, hash_refresh_token(refresh_token)
+            )
+            assert stored is not None
+            stored.revoked_at = datetime.now(UTC)
+            first_request.flush()
+            second_request_thread: threading.Thread = threading.Thread(target=refresh_too)
+            second_request_thread.start()
+            time.sleep(0.3)
+            first_request.commit()
+            second_request_thread.join(timeout=10)
+
+        assert len(errors) == 1
+    finally:
+        with Session(migrated_engine) as cleanup:
+            cleanup.execute(delete(User).where(User.email == email))
+            cleanup.commit()
 
 
 def test_refresh_rotates_the_refresh_token(auth_client: TestClient):
