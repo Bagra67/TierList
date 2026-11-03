@@ -215,8 +215,6 @@ class HealthResponse(BaseModel):
     release: str
 
 
-# Sonde de vie : ne dépend pas de la base, pour qu'une panne de la base ne fasse pas
-# redémarrer en boucle une application qui fonctionne (hébergeur).
 @api_app.get("/health")
 def health(settings: SettingsDep) -> HealthResponse:
     return HealthResponse(status="ok", release=settings.app_release)
@@ -242,9 +240,6 @@ def health_db(
 
 
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
-# Erreurs HTTP au format de l'API (404 hors du build, /api seul) ; pas de second middleware
-# d'erreurs : celui de api_app suffit, et chaque couche de middleware HTTP exécute la suite de la
-# requête dans une tâche à part, ce qui décale la fin des requêtes de l'API
 app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()

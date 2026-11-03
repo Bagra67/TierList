@@ -64,6 +64,23 @@ def test_files_outside_the_build_are_never_served(client: TestClient, path: str)
     assert "secret" not in response.text
 
 
+def test_a_link_out_of_the_build_is_never_served(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    outside_file: Path = tmp_path / "secret.txt"
+    (tmp_path / "frontend_dist" / "link.txt").write_text("secret", encoding="utf-8")
+    real_resolve = Path.resolve
+
+    def resolve_the_link_like_the_file_system(path: Path, strict: bool = False) -> Path:
+        return outside_file if path.name == "link.txt" else real_resolve(path, strict)
+
+    monkeypatch.setattr(Path, "resolve", resolve_the_link_like_the_file_system)
+
+    response = client.get("/link.txt")
+
+    assert "secret" not in response.text
+
+
 def test_the_bare_api_prefix_is_not_a_page(client: TestClient):
     response = client.get("/api")
 

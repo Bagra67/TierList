@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     postgres_db: str
     postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
-    # Sans délai, une connexion vers une base arrêtée peut bloquer la requête très longtemps
     database_connect_timeout_seconds: int = Field(default=3, gt=0)
 
     jwt_secret_key: SecretStr = Field(min_length=JWT_SECRET_KEY_MIN_LENGTH)
@@ -90,9 +89,6 @@ class Settings(BaseSettings):
     app_release: str = "dev"
     maintenance_enabled: bool = True
     maintenance_hour_utc: int = Field(default=3, ge=0, le=23)
-    # Adresses du proxy (Cloudflare Tunnel), séparées par des virgules : adresses IP ou réseaux
-    # CIDR, jamais « * ». Le port du pod est joignable sans le tunnel : quand la liste est
-    # définie, toute autre connexion est refusée (app/core/proxy.py). Vide en développement.
     trusted_proxy_ips: Annotated[list[IPvAnyNetwork], NoDecode] = []
 
     @field_validator("trusted_proxy_ips", mode="before")

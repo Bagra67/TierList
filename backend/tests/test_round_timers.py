@@ -201,3 +201,20 @@ def test_a_failing_transition_is_tried_again():
         await timers.stop()
 
     run(scenario)
+
+
+def test_a_replaced_deadline_leaves_its_replacement_to_be_stopped():
+    async def scenario() -> None:
+        deadlines: RecordingDeadlines = RecordingDeadlines()
+        timers: RoundTimers = RoundTimers()
+        timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
+        timers.schedule(GAME, 1, in_seconds(60))
+        await asyncio.sleep(0.01)
+        timers.schedule(GAME, 2, in_seconds(60))
+        await asyncio.sleep(0.01)
+
+        await timers.stop()
+
+        assert asyncio.all_tasks() == {asyncio.current_task()}
+
+    run(scenario)

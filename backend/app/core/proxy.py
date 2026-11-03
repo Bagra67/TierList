@@ -16,15 +16,6 @@ from app.core.errors import ErrorResponse
 
 
 class TrustedProxyMiddleware:
-    """Le port du pod est public : seules les connexions du proxy (Cloudflare Tunnel) et de la
-    boucle locale (attente de /api/health par start.sh) sont servies, toute autre est refusée.
-    Seul le proxy peut aussi annoncer le vrai client et le schéma (X-Forwarded-For,
-    X-Forwarded-Proto).
-
-    Remplace --proxy-headers d'uvicorn (lancé avec --no-proxy-headers) : uvicorn réécrirait le
-    client avant l'application, l'adresse de la connexion ne serait plus visible ici. Middleware
-    ASGI pur : pas de tâche à part par requête, contrairement à BaseHTTPMiddleware."""
-
     def __init__(self, app: ASGIApp, trusted_networks: Sequence[IPvAnyNetwork]) -> None:
         self.trusted_networks: tuple[IPvAnyNetwork, ...] = tuple(trusted_networks)
         trusted_hosts: list[str] = [str(network) for network in self.trusted_networks]

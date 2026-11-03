@@ -236,3 +236,24 @@ def test_closing_a_room_closes_every_socket_of_that_room_only():
         assert registry.is_connected(OTHER_ROOM, ALICE)
 
     run(scenario)
+
+
+def test_a_socket_is_out_of_the_registry_before_it_closes():
+    registry: ConnectionRegistry = ConnectionRegistry()
+    connected_while_closing: list[bool] = []
+
+    class SocketCheckingTheRegistryWhenItCloses(FakeSocket):
+        async def close(self, code: int, reason: str) -> None:
+            connected_while_closing.append(registry.is_connected(ROOM, ALICE))
+
+    async def scenario() -> None:
+        registry.add(ROOM, ALICE, as_websocket(SocketCheckingTheRegistryWhenItCloses()))
+
+        run_in_thread_like_a_sync_route(
+            registry.disconnect_participant, ROOM, ALICE, 4410, ErrorCode.REMOVED_FROM_ROOM
+        )
+        await asyncio.sleep(0.05)
+
+    run(scenario)
+
+    assert connected_while_closing == [False]

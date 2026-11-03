@@ -5,6 +5,22 @@ import pytest
 from app.services.room_sweeper import RoomSweeper
 
 
+def test_the_first_sweep_waits_for_one_interval():
+    async def scenario() -> list[int]:
+        sweeper: RoomSweeper = RoomSweeper()
+        sweeps: list[int] = []
+
+        async def sweep() -> None:
+            sweeps.append(len(sweeps))
+
+        sweeper.start(60, sweep)
+        await asyncio.sleep(0.01)
+        await sweeper.stop()
+        return sweeps
+
+    assert asyncio.run(scenario()) == []
+
+
 def test_the_sweep_runs_at_each_interval():
     async def scenario() -> int:
         sweeper: RoomSweeper = RoomSweeper()

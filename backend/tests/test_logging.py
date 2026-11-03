@@ -30,6 +30,13 @@ def test_log_level_defaults_to_info(no_env_file: pytest.MonkeyPatch):
     assert LoggingSettings().log_level == "INFO"
 
 
+def test_logging_settings_need_no_database_configuration(no_env_file: pytest.MonkeyPatch):
+    for variable in ("POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "JWT_SECRET_KEY"):
+        no_env_file.delenv(variable, raising=False)
+
+    LoggingSettings()
+
+
 def test_log_level_is_case_insensitive(no_env_file: pytest.MonkeyPatch):
     no_env_file.setenv("LOG_LEVEL", "debug")
     assert LoggingSettings().log_level == "DEBUG"
