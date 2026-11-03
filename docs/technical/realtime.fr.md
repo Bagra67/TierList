@@ -181,7 +181,7 @@ Construit dans #85. Ce qui existe aujourd'hui :
 
 - **Version de la room** : `rooms.version`, incrémentée par `RoomService` dans la même transaction que le changement (jonction, jonction d'un invité, retrait, réglages, présence), et par `GameService` (démarrage, premier placement d'un tour, fin d'un tour, fin du cooldown) ; renvoyée en `version` par l'API des rooms.
 - **Authentification** : le premier message est toujours `auth`, dans le délai `ROOM_AUTH_TIMEOUT_SECONDS` : un compte envoie son access token, un invité envoie `null` et est reconnu par son cookie `guest_token` (`Path=/api/rooms/<code>`, [guide des salles](rooms.fr.md#24-invités)). Un compte passe d'abord, comme en REST.
-- **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4401`, `4404`, `4410`, `4411` et `4412` :
+- **Codes de fermeture** (`app/constants/rooms.py`), avec l'`ErrorCode` comme raison ; le client ne se reconnecte pas après `4404`, `4410`, `4411` et `4412`, et après `4401` un compte ne réessaie qu'une fois (Robustesse, plus bas) :
 
   | Code       | Raison              | Quand                                                                                |
   | ---------- | ------------------- | ------------------------------------------------------------------------------------ |

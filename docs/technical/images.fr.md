@@ -48,7 +48,7 @@ Chaque image acceptée suit le même traitement ; le fichier reçu n'est **jamai
 5. la redimensionner pour que son **plus grand côté fasse 512 px**, en gardant ses proportions, avec le filtre **Lanczos** : une image plus grande est réduite (4000 × 3000 donne 512 × 384), une plus petite est **agrandie** (200 × 100 donne 512 × 256), jamais recadrée ni étirée. Le petit côté fait au moins 1 px : au-delà d'un rapport de 1024:1, il s'arrondirait à 0, une taille que Pillow refuse (2000 × 1 donne 512 × 1) ;
 6. l'encoder en **WebP, qualité 80**, sans aucune métadonnée (EXIF, position GPS : vie privée). Seul le profil de couleur (ICC) est gardé, sinon les photos en couleurs étendues (Display P3) paraîtraient ternes.
 
-Pourquoi 512 px : le plus grand affichage fait environ 150 px CSS, et un écran de densité 3 a besoin d'environ 450 pixels réels. Une seule taille est stockée : les petites tuiles utilisent le même fichier (pas de miniatures, YAGNI). Le WebP est lu par tous les navigateurs actuels et est bien plus léger que le JPEG ou le PNG à qualité égale.
+Pourquoi 512 px : le plus grand affichage en partie fait environ 150 px CSS (les pages de modération montrent les images plus larges, agrandies), et un écran de densité 3 a besoin d'environ 450 pixels réels. Une seule taille est stockée : les petites tuiles utilisent le même fichier (pas de miniatures, YAGNI). Le WebP est lu par tous les navigateurs actuels et est bien plus léger que le JPEG ou le PNG à qualité égale.
 
 Pourquoi agrandir les petites images (décidé dans #81) : toutes les images stockées ont alors la même taille, et une petite image s'affiche aussi nette que possible dans le grand cadre. Lanczos est le filtre d'interpolation classique de meilleure qualité, celui des éditeurs d'images ; il fait partie de Pillow, donc pas de bibliothèque en plus. Les agrandisseurs à base d'IA (Real-ESRGAN…) sont exclus. Agrandir n'invente pas de détails : une toute petite image (une icône de 32 px, du pixel art) sort lisse et un peu floue, pas pixelisée.
 
@@ -81,10 +81,10 @@ Réglages du stockage :
 
 Réglages contre les abus et de nettoyage :
 
-| Variable                      | Description                                                                                                               | Défaut |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `IMAGE_UPLOADS_PER_HOUR_MAX`  | Nombre maximal d'images envoyées par un compte sur l'heure écoulée (§2.9) ; au-delà, `429`.                               | `120`  |
-| `UNUSED_IMAGE_RETENTION_DAYS` | Jours pendant lesquels une image qu'aucune tuile n'utilise est gardée avant d'être effacée par le ramasse-miettes (§2.8). | `7`    |
+| Variable                      | Description                                                                                        | Défaut |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | ------ |
+| `IMAGE_UPLOADS_PER_HOUR_MAX`  | Nombre maximal d'images envoyées par un compte sur l'heure écoulée (§2.9) ; au-delà, `429`.        | `120`  |
+| `UNUSED_IMAGE_RETENTION_DAYS` | Âge en jours à partir duquel le ramasse-miettes efface une image qu'aucune tuile n'utilise (§2.8). | `7`    |
 
 Tous sont dans `Settings` (`app/core/config.py`) et `backend/.env.example`, qui contient les valeurs de SeaweedFS.
 
@@ -135,7 +135,7 @@ SeaweedFS en développement :
 
 ### 2.8 Nettoyage
 
-Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence depuis plus d'un délai de grâce. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). Il tourne chaque nuit dans le processus de l'application, avec les autres purges ([guide de déploiement](deployment.fr.md#23-tâches-de-nuit), #192), et peut aussi être lancé en ligne de commande, comme `scripts/purge_deleted_templates.py` :
+Aucun fichier n'est supprimé quand une tuile change, puisqu'un instantané peut encore l'utiliser. Un **ramasse-miettes** périodique efface les images qu'aucune tuile ni aucun instantané ne référence et qui ont été créées il y a plus d'un délai de grâce : ce délai part de l'envoi, pas du dernier usage. Il couvre les envois abandonnés (envoyés mais jamais rattachés à une tuile), la purge des templates supprimés et la suppression des comptes, qui ne retirent que des lignes en base (`ON DELETE CASCADE` sur les templates et les tuiles ; les lignes des images restent, sans auteur). Il tourne chaque nuit dans le processus de l'application, avec les autres purges ([guide de déploiement](deployment.fr.md#23-tâches-de-nuit), #192), et peut aussi être lancé en ligne de commande, comme `scripts/purge_deleted_templates.py` :
 
 ```bash
 cd backend
