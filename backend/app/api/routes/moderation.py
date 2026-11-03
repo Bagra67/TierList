@@ -11,10 +11,12 @@ from app.api.dependencies import (
     ImageStorageDep,
     ModerationLogServiceDep,
     RecentUploadsServiceDep,
+    ReportQueueServiceDep,
     SuperAdminDep,
     TemplateModerationServiceDep,
 )
 from app.api.presenters.images import recent_upload_response
+from app.api.presenters.reports import reported_content_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -28,6 +30,8 @@ from app.constants.moderation import (
     RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH,
     RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
     RECENT_UPLOADS_PAGE_SIZE_MAX,
+    REPORT_QUEUE_PAGE_SIZE_DEFAULT,
+    REPORT_QUEUE_PAGE_SIZE_MAX,
 )
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import UserNotFoundError
@@ -38,6 +42,7 @@ from app.exceptions.moderation import (
     BanEndInPastError,
     CannotBanSuperAdminError,
 )
+from app.exceptions.reports import ReportsNotOpenError
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
 from app.models.account_ban import AccountBan
 from app.models.image import ImageStatus
@@ -48,17 +53,21 @@ from app.schemas.moderation import (
     AccountSearchResponse,
     AccountSummaryResponse,
     BanAccountRequest,
+    DismissReportsRequest,
     HiddenImagesResponse,
     ModerationActionResponse,
     ModerationLogResponse,
     ModerationReasonRequest,
+    OpenReportCountResponse,
     RecentUploadsResponse,
+    ReportQueueResponse,
     SuperAdminResponse,
 )
 from app.schemas.templates import TemplateSummaryResponse
 from app.services.account_review import AccountDetails, AccountSearchPage
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
+from app.services.report_queue import ReportQueuePage
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -134,6 +143,50 @@ def _image_moderation_conflict() -> AppHTTPException:
         code=ErrorCode.IMAGE_MODERATION_CONFLICT,
         detail=messages.IMAGE_MODERATION_CONFLICT,
     )
+
+
+@router.get("/reports", responses=SUPER_ADMIN_RESPONSES)
+def list_reports(
+    super_admin: SuperAdminDep,
+    service: ReportQueueServiceDep,
+    storage: ImageStorageDep,
+    limit: Annotated[
+        int, Query(ge=1, le=REPORT_QUEUE_PAGE_SIZE_MAX)
+    ] = REPORT_QUEUE_PAGE_SIZE_DEFAULT,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    owner_id: uuid.UUID | None = None,
+) -> ReportQueueResponse:
+    page: ReportQueuePage = service.page(limit, offset, owner_id)
+    return ReportQueueResponse(
+        contents=[reported_content_response(storage, content) for content in page.contents],
+        has_more=page.has_more,
+    )
+
+
+@router.get("/reports/count", responses=SUPER_ADMIN_RESPONSES)
+def count_reports(
+    super_admin: SuperAdminDep, service: ReportQueueServiceDep
+) -> OpenReportCountResponse:
+    return OpenReportCountResponse(open_contents=service.count_open_contents())
+
+
+@router.post(
+    "/reports/dismiss",
+    status_code=204,
+    responses={
+        **SUPER_ADMIN_RESPONSES,
+        404: {"model": ErrorResponse, "description": messages.REPORTS_NOT_OPEN_DESCRIPTION},
+    },
+)
+def dismiss_reports(
+    body: DismissReportsRequest, super_admin: SuperAdminDep, service: ReportQueueServiceDep
+) -> None:
+    try:
+        service.dismiss(super_admin, body.target_type, body.target_id, body.reason)
+    except ReportsNotOpenError as exc:
+        raise AppHTTPException(
+            status_code=404, code=ErrorCode.REPORTS_NOT_OPEN, detail=messages.REPORTS_NOT_OPEN
+        ) from exc
 
 
 @router.get("/log", responses=SUPER_ADMIN_RESPONSES)

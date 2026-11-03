@@ -6,10 +6,12 @@ from sqlalchemy.orm import Session
 lazy from botocore.exceptions import BotoCoreError, ClientError
 
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
-from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.enums import ModerationActionKind, ModerationTargetType, ReportStatus
 from app.models.image import Image, ImageStatus
+from app.models.moderation_action import ModerationAction
 from app.models.user import User
 from app.repositories import images as image_repository
+from app.repositories import reports as report_repository
 from app.services.image_storage import ImageStorage, quarantine_key
 from app.services.moderation_log import ModerationLogService
 
@@ -77,7 +79,7 @@ class ImageModerationService:
         copied_key: str | None,
     ) -> None:
         try:
-            self._moderation_log.record(
+            moderation_action: ModerationAction = self._moderation_log.record(
                 super_admin,
                 action,
                 ModerationTargetType.IMAGE,
@@ -85,6 +87,14 @@ class ImageModerationService:
                 image.storage_key,
                 reason,
             )
+            if action is not ModerationActionKind.UNHIDE:
+                report_repository.close_open_reports(
+                    self._session,
+                    ModerationTargetType.IMAGE,
+                    [image.id],
+                    ReportStatus.ACTIONED,
+                    moderation_action.id,
+                )
             self._session.commit()
         except SQLAlchemyError:
             self._session.rollback()

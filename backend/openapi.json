@@ -3325,6 +3325,249 @@
         }
       }
     },
+    "/moderation/reports": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "List Reports",
+        "operationId": "list_reports_moderation_reports_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "owner_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportQueueResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/reports/count": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Count Reports",
+        "operationId": "count_reports_moderation_reports_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenReportCountResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/moderation/reports/dismiss": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Dismiss Reports",
+        "operationId": "dismiss_reports_moderation_reports_dismiss_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DismissReportsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No open report on this content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/moderation/log": {
       "get": {
         "tags": [
@@ -5505,6 +5748,32 @@
         "type": "object",
         "title": "DeleteAccountRequest"
       },
+      "DismissReportsRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "target_type": {
+            "$ref": "#/components/schemas/ModerationTargetType"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "target_type",
+          "target_id"
+        ],
+        "title": "DismissReportsRequest",
+        "description": "Classer sans suite les signalements ouverts d'un contenu (US-1.3)."
+      },
       "EmailVerificationRequest": {
         "properties": {
           "language": {
@@ -6213,6 +6482,20 @@
         "title": "ModerationTargetType",
         "description": "Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le\ncompte."
       },
+      "OpenReportCountResponse": {
+        "properties": {
+          "open_contents": {
+            "type": "integer",
+            "title": "Open Contents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "open_contents"
+        ],
+        "title": "OpenReportCountResponse",
+        "description": "Le nombre de contenus qui ont au moins un signalement ouvert."
+      },
       "OwnPlacementResponse": {
         "properties": {
           "item": {
@@ -6504,6 +6787,28 @@
         ],
         "title": "RenameTemplateRequest"
       },
+      "ReportQueueResponse": {
+        "properties": {
+          "contents": {
+            "items": {
+              "$ref": "#/components/schemas/ReportedContentResponse"
+            },
+            "type": "array",
+            "title": "Contents"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contents",
+          "has_more"
+        ],
+        "title": "ReportQueueResponse",
+        "description": "Une page de la file des signalements, les plus signalés d'abord."
+      },
       "ReportReason": {
         "type": "string",
         "enum": [
@@ -6516,6 +6821,24 @@
         ],
         "title": "ReportReason",
         "description": "Motif d'un signalement (US-1.2)."
+      },
+      "ReportReasonCountResponse": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "count"
+        ],
+        "title": "ReportReasonCountResponse",
+        "description": "Un motif de signalement et le nombre de signalements qui le donnent."
       },
       "ReportResponse": {
         "properties": {
@@ -6542,6 +6865,113 @@
         ],
         "title": "ReportTargetKind",
         "description": "Ce que désigne target_id dans un signalement (US-1.2)."
+      },
+      "ReportedContentResponse": {
+        "properties": {
+          "target_type": {
+            "$ref": "#/components/schemas/ModerationTargetType"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
+          "report_count": {
+            "type": "integer",
+            "title": "Report Count"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReportReasonCountResponse"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "details": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Details"
+          },
+          "first_reported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Reported At"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "public_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_type",
+          "target_id",
+          "label",
+          "owner_id",
+          "owner_name",
+          "report_count",
+          "reasons",
+          "details",
+          "first_reported_at",
+          "image_url",
+          "public_token"
+        ],
+        "title": "ReportedContentResponse",
+        "description": "Un contenu signalé dans la file (US-1.3). Elle ne dit jamais qui l'a signalé."
       },
       "ResetPasswordRequest": {
         "properties": {

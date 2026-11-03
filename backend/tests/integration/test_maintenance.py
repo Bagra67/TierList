@@ -83,7 +83,7 @@ def test_the_nightly_tasks_start_with_the_app(client: TestClient):
     assert not nightly_scheduler.is_running
 
 
-def test_the_nightly_tasks_purge_the_templates_the_images_and_the_moderation_log(
+def test_the_nightly_tasks_purge_the_templates_the_images_the_log_and_the_reports(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):
     started_jobs: list[str] = []
@@ -100,6 +100,7 @@ def test_the_nightly_tasks_purge_the_templates_the_images_and_the_moderation_log
             "purge_deleted_templates",
             "purge_unused_images",
             "purge_moderation_log",
+            "purge_closed_reports",
         ]
 
 

@@ -102,3 +102,10 @@ def list_pending_cooldown_ends(session: Session) -> list[tuple[uuid.UUID, dateti
         if cooldown_ends_at is not None:
             cooldown_ends.append((game_id, cooldown_ends_at))
     return cooldown_ends
+
+
+def public_tokens_by_game(
+    session: Session, game_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, str | None]:
+    statement = select(Game.id, Game.public_token).where(Game.id.in_(game_ids))
+    return {game_id: token for game_id, token in session.execute(statement).all()}

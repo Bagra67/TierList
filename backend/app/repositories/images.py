@@ -131,3 +131,8 @@ def list_visible_image_ids_of_owner(session: Session, owner_id: uuid.UUID) -> li
         .order_by(Image.created_at, Image.id)
     )
     return list(session.scalars(statement).all())
+
+
+def images_by_id(session: Session, image_ids: list[uuid.UUID]) -> dict[uuid.UUID, Image]:
+    statement: Select[Image] = select(Image).where(Image.id.in_(image_ids))
+    return {image.id: image for image in session.scalars(statement).all()}

@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import AwareDatetime, BaseModel, ConfigDict, StringConstraints
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
-from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
+from app.models.enums import ModerationActionKind, ModerationTargetType, ReportReason, UserRole
 from app.models.image import ImageStatus
 from app.schemas.templates import TemplateSummaryResponse
 
@@ -51,6 +51,49 @@ class ModerationReasonRequest(BaseModel):
     """Le motif d'une action de modération, écrit au journal (US-1.9)."""
 
     reason: ModerationReason
+
+
+class DismissReportsRequest(ModerationReasonRequest):
+    """Classer sans suite les signalements ouverts d'un contenu (US-1.3)."""
+
+    target_type: ModerationTargetType
+    target_id: uuid.UUID
+
+
+class ReportReasonCountResponse(BaseModel):
+    """Un motif de signalement et le nombre de signalements qui le donnent."""
+
+    reason: ReportReason
+    count: int
+
+
+class ReportedContentResponse(BaseModel):
+    """Un contenu signalé dans la file (US-1.3). Elle ne dit jamais qui l'a signalé."""
+
+    target_type: ModerationTargetType
+    target_id: uuid.UUID
+    label: str | None
+    owner_id: uuid.UUID | None
+    owner_name: str | None
+    report_count: int
+    reasons: list[ReportReasonCountResponse]
+    details: list[str]
+    first_reported_at: datetime
+    image_url: str | None
+    public_token: str | None
+
+
+class ReportQueueResponse(BaseModel):
+    """Une page de la file des signalements, les plus signalés d'abord."""
+
+    contents: list[ReportedContentResponse]
+    has_more: bool
+
+
+class OpenReportCountResponse(BaseModel):
+    """Le nombre de contenus qui ont au moins un signalement ouvert."""
+
+    open_contents: int
 
 
 class RecentUploadResponse(BaseModel):

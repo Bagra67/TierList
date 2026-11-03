@@ -1026,6 +1026,8 @@ export const fr = {
         'Ce contenu ne peut pas être signalé : il a peut-être déjà été retiré.',
       report_already_open: 'Vous avez déjà signalé ce contenu : il sera bientôt examiné.',
       report_details_required: 'Précisez votre signalement pour le motif « Autre ».',
+      reports_not_open:
+        "Ce contenu n'a plus de signalement ouvert : la file a peut-être déjà été traitée.",
       report_limit_reached:
         "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:

@@ -71,3 +71,4 @@ class ErrorCode(StrEnum):
     REPORT_ALREADY_OPEN = "report_already_open"
     REPORT_DETAILS_REQUIRED = "report_details_required"
     REPORT_LIMIT_REACHED = "report_limit_reached"
+    REPORTS_NOT_OPEN = "reports_not_open"
