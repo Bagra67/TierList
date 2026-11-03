@@ -24,8 +24,6 @@ class TestResult:
 
 
 def display_name(classname: str, name: str) -> str:
-    """`tests.test_main` + `test_hello` -> `tests/test_main.py::test_hello` (pytest);
-    `src/App.test.tsx` + `App > shows…` -> `src/App.test.tsx › App > shows…` (Vitest)."""
     if not classname:
         return name
     if "/" in classname or classname.endswith((".ts", ".tsx", ".js", ".jsx")):

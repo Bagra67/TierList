@@ -1894,6 +1894,15 @@ Its tests use `unittest` (standard library, nothing to install) and run first in
 | `test_non_test_files_do_not_require_the_guide`                     | Changes application code, including `frontend/src/testing.ts`.                                                                    | Only test files trigger the rule.                             | No problem.                                                            |
 | `test_sync_checks_run_on_changes`                                  | Runs every check with a one-language doc change and a test change.                                                                | The checks are combined as in CI.                             | Two problems: the doc and the test.                                    |
 | `test_skipped_sync_checks_keep_the_pairing_checks`                 | Runs the checks without changes (no base, or the `skip-docs-sync` label).                                                         | The label skips the PR checks only.                           | No problem for a complete pair; one problem for a missing translation. |
+| `test_a_problem_is_a_github_annotation_and_fails_the_run`          | Runs the script in a temporary Git repository holding an unpaired doc.                                                            | CI shows the problems on the files, and the check goes red.   | Exit `1` and `::error file=new.md::` on stdout.                        |
+| `test_the_script_only_imports_the_standard_library`                | Reads the imports of the script from its syntax tree.                                                                             | It runs on any runner without installing anything.            | Every imported module is in `sys.stdlib_module_names`.                 |
+
+`.github/scripts/junit_summary.py` builds the test report of the CI. Its tests (same `unittest` run):
+
+| Test                                           | What it does                                              | Purpose                                     | Expected result                    |
+| ---------------------------------------------- | --------------------------------------------------------- | ------------------------------------------- | ---------------------------------- |
+| `test_a_pytest_class_name_becomes_a_file_path` | Calls `display_name("tests.test_main", "test_hello")`.    | A pytest result is named as in pytest.      | `tests/test_main.py::test_hello`.  |
+| `test_a_vitest_class_name_is_kept_as_a_file`   | Calls `display_name("src/App.test.tsx", "App > shows…")`. | A Vitest class name is already a file path. | `src/App.test.tsx › App > shows…`. |
 
 `.github/scripts/write_env.py` writes the pod `.env` in the Deploy workflow ([deployment guide](deployment.md#3-environment-variables-pod-env)). Its tests (same `unittest` run):
 

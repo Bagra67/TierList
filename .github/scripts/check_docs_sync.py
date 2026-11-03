@@ -1,19 +1,3 @@
-"""Check that bilingual docs and the testing guide stay in sync (AGENTS.md §28 and §31).
-
-Usage: python check_docs_sync.py [--base <commit>] [--skip-sync]
-
-Always checked, on every tracked Markdown file:
-- every `name.md` has its `name.fr.md` in the same directory, and the other way round;
-- each file has its language switcher near the top.
-
-Checked on the changes since `--base` (the PR base), unless `--skip-sync`:
-- an English doc is never changed without its French version, and the other way round;
-- a changed test, test fixture or test tool comes with `docs/technical/testing.md` and `docs/technical/testing.fr.md`.
-
-Errors are printed as GitHub Actions annotations; the exit code is 1 when there is one.
-Standard library only, so it runs on any runner without installing anything.
-"""
-
 import argparse
 import subprocess
 import sys
@@ -135,7 +119,7 @@ def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description="Check that bilingual docs and the testing guide stay in sync.")
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
     parser.add_argument("--skip-sync", action="store_true", help="skip the checks on changes")
     args = parser.parse_args()
