@@ -894,8 +894,7 @@ export const en: Translation = {
         'Your Google address is not verified: it cannot be used to sign in.',
       google_unavailable: 'Google sign-in is not available at the moment.',
       google_failed: 'Google sign-in failed, please try again.',
-      google_account_banned:
-        'This account is banned: sign in with your password to see why, or write to us.',
+      google_account_banned: 'This account is banned. Write to us to find out more.',
     },
   },
 };

@@ -22,6 +22,7 @@ from app.constants.auth import (
     FRONTEND_HOME,
     FRONTEND_LOGIN,
     GOOGLE_ACCESS_DENIED,
+    GOOGLE_BAN_NOTICE_COOKIE,
     GOOGLE_COOKIE_SUBPATH,
     GOOGLE_ERROR_ACCOUNT_BANNED,
     GOOGLE_ERROR_CANCELLED,
@@ -36,11 +37,13 @@ from app.constants.auth import (
 from app.constants.error_codes import ErrorCode
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
+from app.core.security import create_ban_notice_token
 from app.exceptions.auth import (
     AccountBannedError,
     EmailAlreadyRegisteredError,
     GoogleEmailNotVerifiedError,
     IncorrectPasswordError,
+    InvalidBanNoticeError,
     InvalidCredentialsError,
     InvalidEmailTokenError,
     InvalidRefreshTokenError,
@@ -306,6 +309,27 @@ def _google_failure(error_code: str, settings: Settings) -> RedirectResponse:
     return _google_redirect(f"{FRONTEND_LOGIN}?{LOGIN_ERROR_PARAM}={error_code}", settings)
 
 
+def _google_account_banned(exc: AccountBannedError, settings: Settings) -> RedirectResponse:
+    # Le motif et la date n'ont pas leur place dans une URL (logs, historique) : un cookie HttpOnly
+    # de courte durée permet à la page de connexion de les demander (/auth/google/ban-notice).
+    response = _google_failure(GOOGLE_ERROR_ACCOUNT_BANNED, settings)
+    ttl = timedelta(minutes=settings.google_login_attempt_ttl_minutes)
+    response.set_cookie(
+        GOOGLE_BAN_NOTICE_COOKIE,
+        create_ban_notice_token(
+            user_id=exc.user_id,
+            secret_key=settings.jwt_secret_key.get_secret_value(),
+            ttl=ttl,
+        ),
+        max_age=int(ttl.total_seconds()),
+        path=_google_cookie_path(settings),
+        secure=settings.auth_cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
+    return response
+
+
 @router.get("/google/login", status_code=302, response_class=RedirectResponse)
 def google_login(
     settings: SettingsDep,
@@ -378,8 +402,8 @@ def google_callback(
     except GoogleEmailNotVerifiedError:
         logger.info("Connexion Google refusée : email non vérifié par Google")
         return _google_failure(GOOGLE_ERROR_EMAIL_NOT_VERIFIED, settings)
-    except AccountBannedError:
-        return _google_failure(GOOGLE_ERROR_ACCOUNT_BANNED, settings)
+    except AccountBannedError as exc:
+        return _google_account_banned(exc, settings)
 
     location = FRONTEND_HOME
     if attempt.next_step == DELETE_ACCOUNT_STEP:
@@ -387,6 +411,28 @@ def google_callback(
     response = _google_redirect(location, settings)
     _set_refresh_cookie(response, tokens.refresh_token, settings)
     return response
+
+
+@router.get(
+    "/google/ban-notice",
+    status_code=204,
+    responses={403: {"model": ErrorResponse, "description": messages.ACCOUNT_BANNED_DESCRIPTION}},
+)
+def google_ban_notice(
+    service: AuthServiceDep,
+    ban_notice_cookie: Annotated[str | None, Cookie(alias=GOOGLE_BAN_NOTICE_COOKIE)] = None,
+) -> None:
+    """Après un refus de Google : la même réponse 403 qu'une connexion par mot de passe, avec le
+    motif et la fin du bannissement. 204 s'il n'y a rien à montrer : pas de cookie ou cookie
+    invalide, bannissement levé ou fini."""
+    if ban_notice_cookie is None:
+        return
+    try:
+        service.check_ban_notice(ban_notice_cookie)
+    except InvalidBanNoticeError:
+        logger.info("Cookie du motif d'un bannissement invalide ou expiré")
+    except AccountBannedError as exc:
+        raise _account_banned(exc) from exc
 
 
 @router.post("/password/forgot", status_code=204)

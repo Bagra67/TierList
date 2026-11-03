@@ -18,6 +18,7 @@ from app.constants.auth import (
     DUMMY_PASSWORD_BYTES,
     EMAIL_FINGERPRINT_LENGTH,
     EMAIL_VERIFICATION_TOKEN_TYPE,
+    GOOGLE_BAN_NOTICE_TOKEN_TYPE,
     JWT_ALGORITHM,
     PASSWORD_FINGERPRINT_LENGTH,
     PASSWORD_RESET_TOKEN_TYPE,
@@ -25,7 +26,11 @@ from app.constants.auth import (
 )
 from app.constants.games import PUBLIC_RESULTS_TOKEN_BYTES
 from app.constants.rooms import GUEST_TOKEN_BYTES
-from app.exceptions.auth import InvalidAccessTokenError, InvalidEmailTokenError
+from app.exceptions.auth import (
+    InvalidAccessTokenError,
+    InvalidBanNoticeError,
+    InvalidEmailTokenError,
+)
 
 # Argon2id avec les paramètres recommandés par pwdlib
 _password_hash = PasswordHash.recommended()
@@ -94,6 +99,35 @@ def decode_access_token(token: str, *, secret_key: str) -> AccessTokenClaims:
         )
     except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
         raise InvalidAccessTokenError("Access token invalide") from exc
+
+
+def create_ban_notice_token(
+    *, user_id: uuid.UUID, secret_key: str, ttl: timedelta, now: datetime | None = None
+) -> str:
+    # Désigne le compte, sans le motif : celui-ci est relu en base, à jour, quand il est montré
+    issued_at = now or datetime.now(UTC)
+    claims = {
+        "sub": str(user_id),
+        "type": GOOGLE_BAN_NOTICE_TOKEN_TYPE,
+        "iat": issued_at,
+        "exp": issued_at + ttl,
+    }
+    return jwt.encode(claims, secret_key, algorithm=JWT_ALGORITHM)
+
+
+def decode_ban_notice_token(token: str, *, secret_key: str) -> uuid.UUID:
+    try:
+        claims = jwt.decode(
+            token,
+            secret_key,
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["sub", "type", "iat", "exp"]},
+        )
+        if claims["type"] != GOOGLE_BAN_NOTICE_TOKEN_TYPE:
+            raise InvalidBanNoticeError("Type de token inattendu")
+        return uuid.UUID(claims["sub"])
+    except (jwt.InvalidTokenError, ValueError, TypeError) as exc:
+        raise InvalidBanNoticeError("Cookie du motif invalide") from exc
 
 
 @dataclass(frozen=True)

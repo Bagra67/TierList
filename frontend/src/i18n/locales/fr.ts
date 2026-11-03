@@ -922,8 +922,7 @@ export const fr = {
         "Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.",
       google_unavailable: "La connexion avec Google n'est pas disponible pour le moment.",
       google_failed: 'La connexion avec Google a échoué, veuillez réessayer.',
-      google_account_banned:
-        'Ce compte est banni : connectez-vous avec votre mot de passe pour en connaître le motif, ou écrivez-nous.',
+      google_account_banned: 'Ce compte est banni. Écrivez-nous pour en savoir plus.',
     },
   },
 } as const;

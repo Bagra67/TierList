@@ -29,6 +29,7 @@ from app.core.security import (
     create_email_verification_token,
     create_password_reset_token,
     decode_access_token,
+    decode_ban_notice_token,
     decode_email_verification_token,
     decode_password_reset_token,
     email_fingerprint,
@@ -142,7 +143,7 @@ class AuthService:
             logger.info("Échec de connexion : identifiants invalides")
             raise InvalidCredentialsError
         # Après le mot de passe : sans lui, la réponse dirait qu'un compte existe et est banni
-        self._check_not_banned(user)
+        self._check_not_banned(user.id)
 
         tokens = self._start_session(user, authenticated_at=datetime.now(UTC))
         self._session.commit()
@@ -175,21 +176,29 @@ class AuthService:
             if not identity.email_verified:
                 raise GoogleEmailNotVerifiedError
             user = self._link_google_identity(identity, now)
-        self._check_not_banned(user)
+        self._check_not_banned(user.id)
 
         tokens = self._start_session(user, authenticated_at=now)
         self._session.commit()
         return tokens
 
-    def _check_not_banned(self, user: User) -> None:
+    def check_ban_notice(self, token: str) -> None:
+        """Lève AccountBannedError si le compte désigné par ce cookie est encore banni, pour montrer
+        le motif après un refus de Google, ou InvalidBanNoticeError si le cookie ne vaut rien."""
+        user_id: uuid.UUID = decode_ban_notice_token(
+            token, secret_key=self._settings.jwt_secret_key.get_secret_value()
+        )
+        self._check_not_banned(user_id)
+
+    def _check_not_banned(self, user_id: uuid.UUID) -> None:
         """Refuse la connexion d'un compte banni (US-1.8), avec le motif et la fin du
         bannissement. Un bannissement temporaire passé ne compte plus."""
         ban: AccountBan | None = account_ban_repository.get_active_ban(
-            self._session, user.id, datetime.now(UTC)
+            self._session, user_id, datetime.now(UTC)
         )
         if ban is not None:
-            logger.info("Connexion refusée : compte banni, user_id=%s", user.id)
-            raise AccountBannedError(ban.reason, ban.ends_at)
+            logger.info("Connexion refusée : compte banni, user_id=%s", user_id)
+            raise AccountBannedError(user_id, ban.reason, ban.ends_at)
 
     def _link_google_identity(self, identity: GoogleIdentity, now: datetime) -> User:
         email = normalize_email(identity.email)

@@ -642,6 +642,69 @@
         }
       }
     },
+    "/auth/google/ban-notice": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Google Ban Notice",
+        "description": "Après un refus de Google : la même réponse 403 qu'une connexion par mot de passe, avec le\nmotif et la fin du bannissement. 204 s'il n'y a rien à montrer : pas de cookie ou cookie\ninvalide, bannissement levé ou fini.",
+        "operationId": "google_ban_notice_auth_google_ban_notice_get",
+        "parameters": [
+          {
+            "name": "google_ban_notice",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Google Ban Notice"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account banned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/password/forgot": {
       "post": {
         "tags": [
