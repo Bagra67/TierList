@@ -12,8 +12,6 @@ interface GameAdminControlsProps {
   room: Room;
 }
 
-// Commandes du room admin pendant un tour (US-3.4, US-2.10) : « Item suivant » est toujours
-// possible, quel que soit le réglage automatique ; les arrivées peuvent être ouvertes ou fermées
 export function GameAdminControls({ room }: GameAdminControlsProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const nextMutation = useNextRound(room.code);
@@ -25,7 +23,7 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
     try {
       await nextMutation.mutateAsync();
     } catch {
-      return; // l'erreur est affichée depuis nextMutation.error
+      return;
     }
   }
 
@@ -33,12 +31,10 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
     try {
       await settingsMutation.mutateAsync({ late_arrivals_allowed: event.target.checked });
     } catch {
-      return; // l'erreur est affichée depuis settingsMutation.error
+      return;
     }
   }
 
-  // Encadré bordé d'ambre (--warning, 3:1 avec le fond en clair) : les commandes de l'hôte se
-  // repèrent d'un coup d'œil
   return (
     <section aria-labelledby={headingId} className={cn(panelVariants(), 'border-2 border-warning')}>
       <h2 id={headingId} className="font-semibold">

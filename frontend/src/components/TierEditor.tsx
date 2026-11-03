@@ -24,7 +24,6 @@ interface TierEditorProps {
   template: Template;
 }
 
-// Tiers d'un template (US-1.4) : chaque action est enregistrée tout de suite
 export function TierEditor({ template }: TierEditorProps) {
   const titleId: string = useId();
   const addMutation: TemplateChange<void> = useAddTier(template.id);
@@ -35,7 +34,6 @@ export function TierEditor({ template }: TierEditorProps) {
   // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
   const isChangingOrder: boolean =
     addMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
-  // L'erreur de champ de la 422 concerne le tier dont le nom vient d'être envoyé
   const failedTierId: string | undefined = updateMutation.variables?.tierId;
   const nameError: string | undefined = translateFieldError(
     t,
@@ -65,8 +63,6 @@ export function TierEditor({ template }: TierEditorProps) {
           onMove={moveTier}
           disabled={isChangingOrder}
           renderItem={(tier, { setNodeRef, style, handleProps }) => (
-            // Carte sur deux lignes : les commandes en haut, le nom dessous sur toute la largeur,
-            // pour qu'un long nom se lise en entier dans la colonne étroite des tiers
             <li
               ref={setNodeRef}
               style={style}
@@ -115,7 +111,6 @@ export function TierEditor({ template }: TierEditorProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t('templates.editor.deleteTier', { name: tier.name })}
-                    // Une tier list garde au moins un tier (le backend le refuse aussi)
                     disabled={isChangingOrder || tiers.length === 1}
                     onClick={() => deleteMutation.mutate(tier.id)}
                   >

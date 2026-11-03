@@ -15,8 +15,6 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 
-// Historique du compte (US-5.5) : ses parties closes, jouées ou animées comme room admin, de la
-// plus récente à la plus ancienne, chacune avec le lien de ses résultats
 export function HistoryPage() {
   const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useHistory();

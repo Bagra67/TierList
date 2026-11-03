@@ -5,7 +5,6 @@ import { AuthPageShell } from '../components/AuthPageShell';
 import { Button } from '../components/ui/button';
 import { ROUTES } from '../constants/routes';
 
-// Adresse inconnue (lien périmé, faute de frappe) : on le dit plutôt que de rediriger en silence
 export function NotFoundPage() {
   const { t } = useTranslation();
 

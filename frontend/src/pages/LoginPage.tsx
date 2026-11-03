@@ -18,9 +18,6 @@ import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
 
-// L'erreur du retour de Google. Pour un compte banni, le motif et la fin du bannissement, lus à
-// part car ils ne passent pas dans une URL ; à défaut (bannissement levé, backend injoignable), le
-// message général
 function GoogleErrorMessage({ code }: { code: string }) {
   const { t } = useTranslation();
   const { error, isLoading } = useGoogleBanNotice(code);
@@ -51,7 +48,7 @@ export function LoginPage() {
         password: String(form.get('password')),
       });
     } catch {
-      return; // l'erreur est affichée depuis loginMutation.error
+      return;
     }
     await navigate(pathAfterSignIn(location), { replace: true });
   }
@@ -99,7 +96,6 @@ export function LoginPage() {
         {t('auth.login.forgotPassword')}
       </Link>
       <GoogleSignInLink />
-      {/* Continuer avec Google crée le compte s'il n'existe pas encore */}
       <TermsAcceptance i18nKey="auth.acceptTerms.google" />
     </AuthPageShell>
   );

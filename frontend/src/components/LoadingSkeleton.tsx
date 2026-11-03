@@ -4,19 +4,14 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { panelVariants } from './ui/panel';
 import { Skeleton } from './ui/skeleton';
 
-// Nombre de lignes dessinées : assez pour évoquer la page, sans prétendre en connaître la taille
 const SKELETON_ROWS: readonly number[] = [0, 1, 2];
 
 interface LoadingSkeletonProps {
-  // list : lignes d'une liste (modèles, historique) ; board : lignes de tier (éditeur, salle, résultats)
   shape: 'list' | 'board';
 }
 
-// Chargement d'une page : la forme du contenu attendu, et « Chargement… » pour les lecteurs d'écran
 export function LoadingSkeleton({ shape }: LoadingSkeletonProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Une zone role="status" n'est annoncée de façon fiable que si son texte arrive après elle :
-  // le texte est écrit au rendu suivant
   const [isAnnounced, setIsAnnounced] = useState<boolean>(false);
   useEffect(() => {
     const timer: number = window.setTimeout(() => setIsAnnounced(true), 0);

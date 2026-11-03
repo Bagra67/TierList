@@ -26,8 +26,6 @@ interface RoomSettingsDialogProps {
   room: Room;
 }
 
-// Réglages de la prochaine partie (US-2.2), réservés au room admin, dans un <dialog> natif
-// (focus piégé, fermeture avec Échap)
 export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const settingsMutation: SettingsMutation = useUpdateRoomSettings(room.code);
@@ -50,7 +48,6 @@ export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
         title={t('rooms.settings.dialogTitle')}
         onClose={() => settingsMutation.reset()}
       >
-        {/* Une nouvelle clé remonte le formulaire : ses champs reprennent les réglages actuels */}
         <RoomSettingsForm
           key={formVersion}
           room={room}
@@ -72,11 +69,8 @@ interface RoomSettingsFormProps {
   onCancel: () => void;
 }
 
-// Pendant une partie, seules les arrivées restent modifiables (US-2.10). Les bornes des durées ne
-// sont pas recopiées : le backend les renvoie dans ses erreurs (« Au moins 5. »).
 function RoomSettingsForm({ room, settingsMutation, onSaved, onCancel }: RoomSettingsFormProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Suivi pour activer la durée du timer seulement quand le timer est choisi
   const [autoAdvance, setAutoAdvance] = useState<AutoAdvance>(room.settings.auto_advance);
   const isPlaying: boolean = room.status === 'playing';
   const fieldErrors: Record<string, FieldError> = getFieldErrors(settingsMutation.error);
@@ -85,8 +79,6 @@ function RoomSettingsForm({ room, settingsMutation, onSaved, onCancel }: RoomSet
     event.preventDefault();
     const formData: FormData = new FormData(event.currentTarget);
     const lateArrivalsAllowed: boolean = formData.get('late_arrivals_allowed') === 'on';
-    // Un champ désactivé n'est pas dans formData : la durée du timer n'est envoyée qu'avec le
-    // timer, et pendant une partie seules les arrivées le sont
     const timerSeconds: FormDataEntryValue | null = formData.get('timer_seconds');
     const changes: RoomSettingsChanges = isPlaying
       ? { late_arrivals_allowed: lateArrivalsAllowed }
@@ -101,7 +93,7 @@ function RoomSettingsForm({ room, settingsMutation, onSaved, onCancel }: RoomSet
     try {
       await settingsMutation.mutateAsync(changes);
     } catch {
-      return; // l'erreur est affichée depuis settingsMutation.error
+      return;
     }
     onSaved();
   }

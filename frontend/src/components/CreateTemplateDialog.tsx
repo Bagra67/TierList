@@ -31,7 +31,7 @@ export function CreateTemplateDialog() {
     try {
       template = await createMutation.mutateAsync({ name });
     } catch {
-      return; // l'erreur est affichée depuis createMutation.error
+      return;
     }
     dialogRef.current?.close();
     await navigate(templateEditorPath(template.id));

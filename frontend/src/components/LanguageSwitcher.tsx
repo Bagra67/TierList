@@ -22,7 +22,6 @@ export function LanguageSwitcher() {
       <Label htmlFor={id}>{t('common.language')}</Label>
       <NativeSelect id={id} value={i18n.resolvedLanguage} onChange={handleChange}>
         {SUPPORTED_LANGUAGES.map((language) => (
-          // lang : chaque nom de langue est lu dans sa propre langue par les lecteurs d'écran
           <option key={language} value={language} lang={language}>
             {LANGUAGE_NAMES[language]}
           </option>

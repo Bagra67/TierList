@@ -12,8 +12,6 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-// Une erreur pendant le rendu laisserait sinon une page blanche. React journalise déjà l'erreur
-// dans la console (onCaughtError) : rien à ajouter ici.
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 

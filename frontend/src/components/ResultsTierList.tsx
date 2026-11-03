@@ -14,25 +14,18 @@ import { panelVariants } from './ui/panel';
 
 interface ResultsTierListProps {
   tiers: GameTier[];
-  // Un élément par tier, de haut en bas
   rows: TierItems[];
   items: ResultItems;
-  // Ligne ajoutée sous les tiers (non classés, jamais placés), absente si elle est vide
   extraRow?: { label: string; itemIds: string[] };
-  // Cliquer un item ouvre ses votes
   selection: ItemSelection;
   // Les lignes apparaissent une à une, du bas vers le haut (sauf mouvement réduit). Lu au montage
   // seulement : pour rejouer la révélation, la tier list est montée à nouveau (key)
   reveal?: boolean;
-  // Appelé quand la révélation commence : la vue compte alors comme révélée
   onRevealStarted?: () => void;
 }
 
-// Classe et délai d'animation d'une ligne pendant la révélation
 type RevealProps = { className?: string; style?: CSSProperties };
 
-// Une tier list en lecture seule : le classement médian, ou le classement final d'un joueur.
-// Chaque ligne est un groupe nommé par son tier, que le lecteur d'écran annonce avec ses items
 export function ResultsTierList({
   tiers,
   rows,
@@ -58,8 +51,6 @@ export function ResultsTierList({
     if (revealing) onRevealStarted?.();
   }, [revealing, onRevealStarted]);
 
-  // Ligne d'indice index (0 = en haut) : la dernière apparaît la première, le tier du haut en
-  // dernier, pour garder le suspense
   function revealProps(index: number): RevealProps {
     if (!revealing) return {};
     return {

@@ -2,12 +2,8 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageContainer } from './PageContainer';
 
-// Mise en page commune des pages légales (politique de confidentialité, conditions
-// d'utilisation, mentions légales) : titre, date de la dernière mise à jour, introduction, puis
-// des sections (LegalSection)
 interface LegalPageProps {
   title: string;
-  // Date AAAA-MM-JJ, dans constants/legal.ts
   updatedAt: string;
   intro: string;
   children: ReactNode;
@@ -39,7 +35,6 @@ export function LegalSection({ title, children }: { title: string; children: Rea
   );
 }
 
-// Liste à puces d'une section
 export function LegalList({ items }: { items: string[] }) {
   return (
     <ul className="list-disc space-y-1 pl-5">

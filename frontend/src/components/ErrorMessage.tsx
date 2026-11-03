@@ -7,7 +7,6 @@ interface ErrorMessageProps {
   className?: string;
 }
 
-// Message d'erreur affiché à l'utilisateur, annoncé tout de suite par les lecteurs d'écran
 export function ErrorMessage({ children, className }: ErrorMessageProps) {
   return (
     <p

@@ -13,24 +13,16 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
-  // Parties closes du compte (US-5.5)
   HISTORY: '/history',
-  // Espace de modération, réservé aux super admins (US-1.1)
   MODERATION: '/moderation',
-  // Derniers envois d'images (US-1.7)
   MODERATION_UPLOADS: '/moderation/uploads',
-  // Comptes : recherche, et page d'un compte (US-1.8)
   MODERATION_ACCOUNTS: '/moderation/accounts',
   MODERATION_ACCOUNT: '/moderation/accounts/:accountId',
-  // Journal de modération (US-1.9)
   MODERATION_LOG: '/moderation/log',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
   ROOM: '/r/:code',
-  // Résultats d'une partie close, ouverts sans compte par leur lien (US-5.3)
   RESULTS: '/results/:token',
-  // Politique de confidentialité (#200), lisible sans compte
   PRIVACY: '/privacy',
-  // Conditions d'utilisation (#201) et mentions légales (#235), lisibles sans compte
   TERMS: '/terms',
   LEGAL_NOTICE: '/legal',
 } as const;
@@ -47,9 +39,6 @@ export function resultsPath(token: string): string {
   return generatePath(ROUTES.RESULTS, { token });
 }
 
-// État de navigation posé par le lobby en ouvrant des résultats : la salle d'où l'on vient, et si
-// le lecteur en est le room admin (il peut alors rejouer, US-2.9). Un visiteur arrivé par le lien
-// public n'en a pas
 export interface ResultsLinkState {
   roomCode: string;
   isAdmin: boolean;

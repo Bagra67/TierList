@@ -5,8 +5,6 @@ import { cn } from 'cn';
 import { PageContainer } from './PageContainer';
 import { ROUTES } from '../constants/routes';
 
-// Espace de modération des super admins : le menu de gauche et la page choisie
-// (docs/product/milestone-2/screens.md). Les signalements s'ajouteront au menu avec leur issue
 export function ModerationLayout() {
   const { t } = useTranslation();
 

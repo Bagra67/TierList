@@ -39,7 +39,6 @@ import {
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
-// Clés de focus de l'item en cours (useFocusAfterUpdate)
 const CURRENT_FOCUS = { drag: 'current:drag', earlier: 'current:earlier', later: 'current:later' };
 
 interface GameBoardProps {
@@ -47,10 +46,6 @@ interface GameBoardProps {
   game: CurrentGame;
 }
 
-// Le plateau privé du lecteur (US-3.3) : à gauche, la carte de l'élément en cours ; à droite, ses
-// tiers et les items qu'il a déjà placés (ils ne bougent plus avant le cooldown). L'élément en cours
-// se dépose dans un tier à la position voulue : à la souris ou au doigt en glissant sa carte ; au
-// clavier par les boutons « Placer dans » et ←/→.
 export function GameBoard({ room, game }: GameBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
@@ -90,7 +85,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
       await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
       focus.cancel();
-      return; // l'erreur est affichée depuis placeMutation.error
+      return;
     }
   }
 
@@ -134,8 +129,6 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
-  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu.
-  // L'aperçu a la forme de ce qu'on glisse : la carte tant qu'il n'est pas placé, sa puce ensuite
   function previewOf(id: string): DragPreviewContent | undefined {
     if (id !== draggableId) return undefined;
     if (currentPlacement === undefined) {
@@ -180,8 +173,6 @@ export function GameBoard({ room, game }: GameBoardProps) {
         }}
       >
         <div className="flex flex-col items-center gap-3 lg:row-span-2">
-          {/* Pas encore placé : la carte elle-même se glisse ; placé, elle reste en vue et c'est sa
-              puce, dans le tier, qui bouge */}
           {currentPlacement === undefined ? (
             <DraggableItem
               id={draggableId}
@@ -341,8 +332,6 @@ interface PlacedItemSlotProps {
   before: ReactNode;
 }
 
-// Un item d'un tour passé : il ne bouge pas, mais déposer l'item en cours dessus le place avant
-// ou après lui, selon le côté où il tombe
 function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({

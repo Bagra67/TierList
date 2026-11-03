@@ -14,8 +14,6 @@ import {
 } from '../constants/legal';
 import { ROUTES } from '../constants/routes';
 
-// Mentions légales (#235, LCEN art. 6-III), lisibles sans compte : éditeur, hébergeur,
-// prestataires et signalement. Le texte vient des locales (legalNotice.*)
 export function LegalNoticePage() {
   const { t } = useTranslation();
 

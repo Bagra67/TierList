@@ -10,8 +10,6 @@ interface ResultsTabsProps {
   onSelect: (view: ResultsView) => void;
 }
 
-// Onglets des vues (motif ARIA tabs) : un seul onglet dans l'ordre de tabulation, les flèches,
-// Début et Fin passent d'un onglet à l'autre et l'activent
 export function ResultsTabs({ selected, onSelect }: ResultsTabsProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tabRefs = useRef<Map<ResultsView, HTMLButtonElement>>(new Map());

@@ -31,7 +31,6 @@ export function ForgotPasswordPage() {
       }
     >
       {forgotMutation.isSuccess ? (
-        // Même message que le compte existe ou non : la page ne révèle pas qui est inscrit
         <p role="status">{t('auth.forgotPassword.sent')}</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

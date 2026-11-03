@@ -7,13 +7,9 @@ import { Button } from './ui/button';
 
 interface UploadCardProps {
   upload: RecentUpload;
-  // Ouvre le dialogue du motif pour cette action
   onAction: (upload: RecentUpload, action: ImageModerationAction) => void;
 }
 
-// Une image des derniers envois (US-1.7) : l'image, son auteur, sa date, où elle est utilisée,
-// et les actions possibles selon son statut. Une image masquée est montrée par une adresse
-// temporaire de sa quarantaine.
 export function UploadCard({ upload, onAction }: UploadCardProps) {
   const { t } = useTranslation();
   const author: string = upload.author_name ?? t('moderation.uploads.deletedAccount');
@@ -29,7 +25,6 @@ export function UploadCard({ upload, onAction }: UploadCardProps) {
           alt={t('moderation.uploads.imageAlt', { author, date })}
           className="aspect-video w-full rounded-lg bg-muted object-contain"
         />
-        {/* Le statut est écrit, pas seulement suggéré par une couleur */}
         {isHidden && (
           <span className="absolute top-2 left-2 rounded-md bg-background/90 px-2 py-0.5 text-xs font-semibold">
             {t('moderation.uploads.hiddenBadge')}
@@ -37,7 +32,6 @@ export function UploadCard({ upload, onAction }: UploadCardProps) {
         )}
       </div>
       <div className="flex flex-col gap-1 text-sm">
-        {/* L'auteur mène à la page de son compte, s'il existe encore */}
         {upload.author_id === null ? (
           <span className="font-semibold">{author}</span>
         ) : (

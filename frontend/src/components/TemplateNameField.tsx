@@ -15,7 +15,6 @@ interface TemplateNameFieldProps {
   template: Template;
 }
 
-// Nom du template, enregistré dès qu'il est validé ou que le champ est quitté
 export function TemplateNameField({ template }: TemplateNameFieldProps) {
   const renameMutation: TemplateChange<string> = useRenameTemplate(template.id);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();

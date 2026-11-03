@@ -14,11 +14,9 @@ import { Label } from './ui/label';
 
 interface InlineEditFieldProps {
   label: string;
-  // Libellé lu par les lecteurs d'écran seulement (ex. un champ par ligne d'une liste)
   hideLabel?: boolean;
   value: string;
   maxLength: number;
-  // false : le champ peut être vidé (ex. le texte d'une tuile qui a une image)
   required?: boolean;
   // true : le texte passe à la ligne et le champ grandit, pour qu'un long nom se lise en entier
   // dans une colonne étroite. La valeur reste sur une seule ligne (Entrée enregistre).
@@ -28,7 +26,6 @@ interface InlineEditFieldProps {
   className?: string;
 }
 
-// Attributs communs au champ d'une ligne (<input>) et à la zone de texte (<textarea>)
 interface SharedFieldProps {
   id: string;
   value: string;
@@ -54,7 +51,6 @@ export function InlineEditField({
   className,
 }: InlineEditFieldProps) {
   const [draft, setDraft] = useState<string>(value);
-  // Brouillon envoyé avec Entrée : quitter ensuite le champ sans rien changer ne le renvoie pas
   const draftSentWithEnter: RefObject<string | null> = useRef<string | null>(null);
   const textAreaRef: RefObject<HTMLTextAreaElement | null> = useRef<HTMLTextAreaElement>(null);
   const id: string = useId();
@@ -88,7 +84,6 @@ export function InlineEditField({
 
   function handleChange(newDraft: string) {
     draftSentWithEnter.current = null;
-    // Un retour à la ligne collé devient une espace : le passage à la ligne n'est qu'un affichage
     setDraft(newDraft.replace(/\r?\n/g, ' '));
   }
 

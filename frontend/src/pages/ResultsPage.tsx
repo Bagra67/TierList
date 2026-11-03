@@ -27,23 +27,13 @@ import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 
-// Résultats d'une partie close (US-5.2), ouverts par leur lien, avec ou sans compte (US-5.3) :
-// classement médian, vue globale et classement de chaque joueur, avec ou sans les votes absents,
-// et le lien public à copier. Lecture seule : la partie close ne change plus, et la page n'offre
-// aucune action de salle (seulement le retour à la salle, et rejouer pour le room admin, quand on
-// vient de son lobby)
 export function ResultsPage() {
-  // Toujours présent : la route RESULTS déclare ce paramètre
   const { token = '' }: Readonly<Params> = useParams();
   const location: Location = useLocation();
   const [includeAbsentVotes, setIncludeAbsentVotes] = useState<boolean>(true);
   const [view, setView] = useState<ResultsView>('median');
-  // Élément dont les votes sont affichés ; par défaut le premier du modèle
   const [chosenItemId, setChosenItemId] = useState<string | null>(null);
-  // Vues déjà révélées (leur tier list s'est affichée) : elles ne se révèlent plus, ni en y
-  // revenant ni après une relecture (case des votes absents), sauf « Rejouer la révélation »
   const [revealedViews, setRevealedViews] = useState<ReadonlySet<ResultsView>>(new Set());
-  // Change à chaque « Rejouer la révélation » : seule la tier list est montée à nouveau
   const [revealRun, setRevealRun] = useState<number>(0);
   const markRevealed = useCallback(() => {
     setRevealedViews((revealed: ReadonlySet<ResultsView>) =>
@@ -52,12 +42,10 @@ export function ResultsPage() {
   }, [view]);
   const state: GameResultsState = useGameResults(token, includeAbsentVotes);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Venu du lobby d'une salle : un lien y ramène, et le room admin peut rejouer
   const fromRoom: ResultsLinkState | null = isResultsLinkState(location.state)
     ? location.state
     : null;
 
-  // Rien de lu encore : chargement, ou échec de la première lecture
   if (state.anyVariant === undefined) {
     return (
       <PageContainer width="app" className="flex flex-col items-start gap-6">
@@ -84,8 +72,6 @@ export function ResultsPage() {
     known.items.length > 0 &&
     !(view === 'players' && state.results.players.length === 0);
 
-  // Seules les tier lists (médian, par joueur) se révèlent, pas le tableau global ; il faut aussi
-  // qu'elles soient à l'écran (pas pendant une lecture ou après un échec)
   const revealable: boolean = view !== 'overall' && state.results !== undefined;
 
   function replayReveal() {
@@ -118,8 +104,6 @@ export function ResultsPage() {
           {t('results.closedAt', { date: new Date(known.closed_at) })}
         </p>
       </div>
-      {/* Le lien de cette page, sur l'adresse de l'application : il marche sans compte, et après
-          la fermeture de la salle (US-5.3) */}
       <CopyLinkField
         label={t('results.publicLink')}
         link={`${window.location.origin}${resultsPath(token)}`}
@@ -141,7 +125,6 @@ export function ResultsPage() {
           </Button>
         )}
       </div>
-      {/* Sur grand écran, les votes de l'élément choisi à droite de la vue (ItemVotesPanel) */}
       <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <ResultsTabs selected={view} onSelect={setView} />
@@ -155,8 +138,6 @@ export function ResultsPage() {
             tabIndex={panelHasItems ? undefined : 0}
             className="w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
           >
-            {/* Les statistiques montrées correspondent toujours à la case : pendant une lecture ou
-              après un échec, rien d'autre que l'état n'est affiché */}
             {state.results !== undefined ? (
               <ResultsViewContent
                 view={view}
@@ -195,7 +176,6 @@ interface ResultsViewContentProps {
   results: GameResults;
   items: ResultItems;
   selection: ItemSelection;
-  // Les lignes des tier lists apparaissent une à une (ResultsTierList)
   reveal: boolean;
   revealRun: number;
   onRevealStarted: () => void;

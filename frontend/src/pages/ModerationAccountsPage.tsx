@@ -12,11 +12,8 @@ import { panelVariants } from '../components/ui/panel';
 import { moderationAccountPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
-// Comptes (US-1.8) : trouver un compte par son nom ou son e-mail, par exemple après un signalement
-// reçu par e-mail, puis ouvrir sa page
 export function ModerationAccountsPage() {
   const { t } = useTranslation();
-  // Le texte cherché n'est appliqué qu'à l'envoi du formulaire : une requête par recherche
   const [queryDraft, setQueryDraft] = useState<string>('');
   const [query, setQuery] = useState<string | undefined>(undefined);
   const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =

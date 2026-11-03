@@ -32,9 +32,8 @@ export function RegisterPage() {
         display_name: String(form.get('display_name')),
       });
     } catch {
-      return; // l'erreur est affichée depuis registerMutation.error
+      return;
     }
-    // Comme après une connexion : retour à la page privée demandée (ex. le lien d'une salle)
     await navigate(pathAfterSignIn(location), { replace: true });
   }
 

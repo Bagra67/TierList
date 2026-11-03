@@ -9,7 +9,6 @@ interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-// Champ de formulaire étiqueté ; l'erreur éventuelle est reliée au champ pour les lecteurs d'écran
 export function TextField({ label, error, ...inputProps }: TextFieldProps) {
   const id = useId();
   const errorId = `${id}-error`;

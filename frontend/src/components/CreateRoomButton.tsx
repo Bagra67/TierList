@@ -12,8 +12,6 @@ interface CreateRoomButtonProps {
   templateName: string;
 }
 
-// Crée une salle avec les réglages par défaut (US-2.1), puis ouvre son lobby, où le room admin
-// les change. Un template sans tuile est refusé par le backend (template_has_no_tiles).
 export function CreateRoomButton({ templateId, templateName }: CreateRoomButtonProps) {
   const createMutation = useCreateRoom();
   const navigate: NavigateFunction = useNavigate();
@@ -24,7 +22,7 @@ export function CreateRoomButton({ templateId, templateName }: CreateRoomButtonP
     try {
       room = await createMutation.mutateAsync({ template_id: templateId });
     } catch {
-      return; // l'erreur est affichée depuis createMutation.error
+      return;
     }
     await navigate(roomPath(room.code));
   }

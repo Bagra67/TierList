@@ -15,7 +15,6 @@ import { Button } from './ui/button';
 
 interface DeleteAccountDialogProps {
   user: User;
-  // Ouvre le dialogue dès l'affichage : retour d'une reconnexion Google faite pour confirmer
   openOnMount?: boolean;
 }
 
@@ -26,8 +25,6 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
   const navigate = useNavigate();
   const { t } = useTranslation();
   const fieldErrors = getFieldErrors(deleteMutation.error);
-  // Un compte Google n'a pas de mot de passe : le backend exige alors une connexion récente,
-  // et refuse (403) si elle date de trop longtemps.
   const needsGoogleSignIn =
     !user.has_password &&
     deleteMutation.error instanceof ApiError &&
@@ -35,7 +32,6 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    // Synchronise l'élément DOM : showModal() échoue sur un dialogue déjà ouvert
     if (openOnMount && dialog !== null && !dialog.open) {
       dialog.showModal();
     }
@@ -52,7 +48,7 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
     try {
       await deleteMutation.mutateAsync(password === null ? {} : { password: String(password) });
     } catch {
-      return; // l'erreur est affichée depuis deleteMutation.error
+      return;
     }
     dialogRef.current?.close();
     await navigate(ROUTES.LOGIN, { replace: true });

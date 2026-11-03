@@ -3,8 +3,6 @@ import type { ReactNode } from 'react';
 
 import { PAGE_WIDTH_CLASS, type PageWidth } from '../constants/layout';
 
-// Racine (main) de chaque page : centrée, à l'une des trois largeurs de constants/layout.ts.
-// className ajoute la mise en page propre à la page (colonne, espacements)
 interface PageContainerProps {
   width: PageWidth;
   className?: string;

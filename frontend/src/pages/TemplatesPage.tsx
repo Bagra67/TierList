@@ -16,8 +16,6 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 
-// Templates de l'utilisateur (US-1.5) : création (US-1.1), suppression (US-1.6) et création
-// d'une salle pour jouer avec (US-2.1)
 export function TemplatesPage() {
   const { data: templates, isPending, isError, error } = useTemplates();
   const { t } = useTranslation();

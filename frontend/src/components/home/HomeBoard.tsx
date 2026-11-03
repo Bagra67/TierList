@@ -12,10 +12,6 @@ import {
 } from '../../constants/home';
 import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS, tierColorStyle } from '../boardStyles';
 
-// Le moment fort de l'accueil : une tier list d'exemple qui se remplit au chargement, élément par
-// élément, avec les initiales des joueurs qui ont voté. Faite des mêmes styles que le plateau du
-// jeu. Décorative pour les lecteurs d'écran (une phrase la résume) ; en mouvement réduit, elle
-// s'affiche déjà remplie (motion-safe)
 export function HomeBoard({ className }: { className?: string }) {
   const { t } = useTranslation();
   // Rang de chaque élément dans l'ordre d'apparition, toutes lignes confondues
@@ -61,7 +57,6 @@ export function HomeBoard({ className }: { className?: string }) {
   );
 }
 
-// Initiales des joueurs, en pastilles au coin de l'élément
 function Voters({ voters }: { voters: readonly string[] }) {
   return (
     <span className="absolute -top-2.5 -right-2 flex gap-0.5">

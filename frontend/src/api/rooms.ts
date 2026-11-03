@@ -16,16 +16,13 @@ import type { components } from './schema';
 export type Room = components['schemas']['RoomResponse'];
 export type Participant = components['schemas']['ParticipantResponse'];
 export type RoomBan = components['schemas']['RoomBanResponse'];
-// Salle rejointe en invité, avec son lien perso (donné une seule fois)
 export type GuestRoom = components['schemas']['GuestRoomResponse'];
 export type RoomSettings = components['schemas']['RoomSettingsResponse'];
 export type ItemOrder = components['schemas']['ItemOrder'];
 export type AutoAdvance = components['schemas']['AutoAdvance'];
 type CreateRoomRequest = components['schemas']['CreateRoomRequest'];
 type JoinAsGuestRequest = components['schemas']['JoinAsGuestRequest'];
-// Réglages à changer : ceux qui sont absents restent tels quels
 export type RoomSettingsChanges = components['schemas']['UpdateRoomSettingsRequest'];
-// La partie en cours vue par le lecteur, ses tiers et ses propres placements
 export type CurrentGame = components['schemas']['CurrentGameResponse'];
 export type GameItem = components['schemas']['CurrentItemResponse'];
 export type PastGame = components['schemas']['PastGameResponse'];
@@ -52,7 +49,6 @@ async function joinAsGuest(code: string, body: JoinAsGuestRequest): Promise<Gues
   );
 }
 
-// Lien perso ouvert (US-5.4) : le backend pose le cookie de l'invité sur ce navigateur
 async function restoreGuestSession(
   code: string,
   token: string,
@@ -67,16 +63,12 @@ async function restoreGuestSession(
   );
 }
 
-// Invité qui a perdu son lien perso : un nouveau jeton remplace l'ancien (cookie compris)
 async function renewGuestLink(code: string): Promise<GuestRoom> {
   return dataOrThrow(
     await apiClient.POST('/rooms/{code}/guest-link', { params: { path: { code } } }),
   );
 }
 
-// Ouvrir une salle avec son compte, c'est y entrer (US-2.4) : sans place (404), l'utilisateur la
-// rejoint comme joueur. Rejoindre est idempotent : une relecture ne crée pas de seconde place, et
-// un mauvais code donne toujours room_not_found.
 async function enterRoom(code: string, signal?: AbortSignal): Promise<Room> {
   try {
     return await getRoom(code, signal);
@@ -97,7 +89,6 @@ async function updateRoomSettings(code: string, changes: RoomSettingsChanges): P
   );
 }
 
-// Supprime la place d'un participant (US-2.11) ; avec ban, il ne peut plus revenir (US-2.12)
 async function removeParticipant(code: string, participantId: string, ban: boolean): Promise<Room> {
   return dataOrThrow(
     await apiClient.DELETE('/rooms/{code}/participants/{participant_id}', {
@@ -114,18 +105,14 @@ async function unban(code: string, banId: string): Promise<Room> {
   );
 }
 
-// Le room admin ferme la salle (US-2.7) : elle est supprimée, sa partie en cours close d'abord
 async function closeRoom(code: string): Promise<void> {
   throwIfError(await apiClient.DELETE('/rooms/{code}', { params: { path: { code } } }));
 }
 
-// Le room admin lance une partie (US-3.1) : la salle renvoyée porte la partie et son premier item
 async function startGame(code: string): Promise<Room> {
   return dataOrThrow(await apiClient.POST('/rooms/{code}/game', { params: { path: { code } } }));
 }
 
-// Place l'item en cours dans un tier, à une position (0 = premier) : la salle renvoyée porte le
-// plateau du lecteur à jour
 async function placeItem(code: string, request: PlaceItemRequest): Promise<Room> {
   return dataOrThrow(
     await apiClient.PUT('/rooms/{code}/game/placements/{tile_id}', {
@@ -135,31 +122,24 @@ async function placeItem(code: string, request: PlaceItemRequest): Promise<Room>
   );
 }
 
-// Le room admin passe à l'item suivant
 async function nextRound(code: string): Promise<Room> {
   return dataOrThrow(
     await apiClient.POST('/rooms/{code}/game/next', { params: { path: { code } } }),
   );
 }
 
-// Le room admin termine le cooldown final : la salle renvoyée n'a plus de partie
 async function endCooldown(code: string): Promise<Room> {
   return dataOrThrow(
     await apiClient.POST('/rooms/{code}/game/end', { params: { path: { code } } }),
   );
 }
 
-// La salle renvoyée par une création ou une modification remplace celle du cache : le lobby
-// l'affiche sans nouvelle lecture
 function storeRoom(queryClient: QueryClient, room: Room): void {
   const cached: Room | undefined = queryClient.getQueryData<Room>(roomQueryKey(room.code));
   if (cached !== undefined && isOlder(room, cached)) return;
   queryClient.setQueryData(roomQueryKey(room.code), room);
 }
 
-// Une réponse arrivée après un événement temps réel déjà appliqué ne doit pas le défaire. Un
-// déplacement ne change pas la version : à version égale, une partie en retard (tour, statut)
-// est aussi plus ancienne.
 const GAME_STATUS_ORDER: Record<CurrentGame['status'], number> = {
   in_round: 0,
   cooldown: 1,
@@ -175,13 +155,8 @@ function isOlder(room: Room, cached: Room): boolean {
   return room.game.round_number < cached.game.round_number;
 }
 
-// Qui ouvre la salle : un compte connecté, ou un visiteur sans compte (invité, peut-être déjà
-// reconnu par son cookie)
 export type RoomViewer = 'account' | 'guest';
 
-// Salle ouverte par ce lecteur, lu une fois la session connue (viewer undefined : en attente).
-// Un compte y entre (enterRoom) ; un invité la lit grâce à son cookie, ou d'abord grâce au jeton
-// de son lien perso (guestToken), qui pose ce cookie.
 export function useRoom(
   code: string,
   viewer: RoomViewer | undefined,
@@ -200,7 +175,6 @@ export function useRoom(
   });
 }
 
-// Crée une salle à partir d'un template (US-2.1) ; l'utilisateur en devient le room admin
 export function useCreateRoom(): UseMutationResult<Room, Error, CreateRoomRequest> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -209,8 +183,6 @@ export function useCreateRoom(): UseMutationResult<Room, Error, CreateRoomReques
   });
 }
 
-// Entre dans la salle en invité avec un pseudo (US-2.5) ; le backend pose le cookie qui le fait
-// reconnaître et renvoie son lien perso
 export function useJoinAsGuest(
   code: string,
 ): UseMutationResult<GuestRoom, Error, JoinAsGuestRequest> {
@@ -221,7 +193,6 @@ export function useJoinAsGuest(
   });
 }
 
-// Nouveau lien perso pour l'invité reconnu par son cookie ; l'ancien cesse de marcher
 export function useRenewGuestLink(code: string): UseMutationResult<GuestRoom, Error, void> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -230,7 +201,6 @@ export function useRenewGuestLink(code: string): UseMutationResult<GuestRoom, Er
   });
 }
 
-// Réglages de la prochaine partie (US-2.2), réservés au room admin
 export function useUpdateRoomSettings(
   code: string,
 ): UseMutationResult<Room, Error, RoomSettingsChanges> {
@@ -247,7 +217,6 @@ export interface RemoveParticipantRequest {
   ban: boolean;
 }
 
-// Retire (ou bannit) un participant, réservé au room admin
 export function useRemoveParticipant(
   code: string,
 ): UseMutationResult<Room, Error, RemoveParticipantRequest> {
@@ -259,7 +228,6 @@ export function useRemoveParticipant(
   });
 }
 
-// Lève un bannissement, réservé au room admin : la personne peut rejoindre à nouveau
 export function useUnban(code: string): UseMutationResult<Room, Error, string> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -268,7 +236,6 @@ export function useUnban(code: string): UseMutationResult<Room, Error, string> {
   });
 }
 
-// Lance une partie, réservé au room admin
 export function useStartGame(code: string): UseMutationResult<Room, Error, void> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -283,8 +250,6 @@ export interface PlaceItemRequest {
   position: number;
 }
 
-// Place ou déplace une tuile dans le plateau du lecteur : l'item en cours pendant un tour (US-3.3),
-// n'importe quel item pendant le cooldown (US-4.1, US-4.6)
 export function usePlaceItem(code: string): UseMutationResult<Room, Error, PlaceItemRequest> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -293,7 +258,6 @@ export function usePlaceItem(code: string): UseMutationResult<Room, Error, Place
   });
 }
 
-// Passe à l'item suivant, réservé au room admin (US-3.4)
 export function useNextRound(code: string): UseMutationResult<Room, Error, void> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
@@ -302,12 +266,10 @@ export function useNextRound(code: string): UseMutationResult<Room, Error, void>
   });
 }
 
-// Ferme la salle, réservé au room admin (US-2.7)
 export function useCloseRoom(code: string): UseMutationResult<void, Error, void> {
   return useMutation({ mutationFn: () => closeRoom(canonicalRoomCode(code)) });
 }
 
-// Termine le cooldown final, réservé au room admin (US-4.1)
 export function useEndCooldown(code: string): UseMutationResult<Room, Error, void> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({

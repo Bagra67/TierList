@@ -14,14 +14,11 @@ import { Label } from './ui/label';
 type BanDuration = 'temporary' | 'permanent';
 
 interface BanAccountDialogProps {
-  // Ouvert par le parent avec dialogRef.current.showModal()
   dialogRef: RefObject<HTMLDialogElement | null>;
   accountId: string;
   displayName: string;
 }
 
-// Bannir un compte (US-1.8) : temporairement, jusqu'à un jour inclus, ou définitivement, avec un
-// motif que la personne verra en tentant de se connecter. Le compte est déconnecté partout.
 export function BanAccountDialog({ dialogRef, accountId, displayName }: BanAccountDialogProps) {
   const { t } = useTranslation();
   const untilId: string = useId();
@@ -36,11 +33,10 @@ export function BanAccountDialog({ dialogRef, accountId, displayName }: BanAccou
       await banMutation.mutateAsync({
         accountId,
         reason: reason.trim(),
-        // Le jour choisi est inclus : le bannissement finit au début du jour suivant
         endsAt: duration === 'temporary' ? startOfNextDay(until) : undefined,
       });
     } catch {
-      return; // l'erreur est affichée depuis banMutation.error
+      return;
     }
     dialogRef.current?.close();
   }

@@ -18,7 +18,6 @@ const CLOSE_NOT_AUTHENTICATED: number = 4401;
 const CLOSE_REMOVED: number = 4410;
 const CLOSE_BANNED: number = 4411;
 const CLOSE_ROOM_CLOSED: number = 4412;
-// Pourquoi le lecteur n'a plus de place dans la salle
 export type RemovalReason = 'removed' | 'banned' | 'closed';
 const REMOVAL_REASONS: ReadonlyMap<number, RemovalReason> = new Map([
   [CLOSE_REMOVED, 'removed'],
@@ -26,16 +25,11 @@ const REMOVAL_REASONS: ReadonlyMap<number, RemovalReason> = new Map([
   [CLOSE_ROOM_CLOSED, 'closed'],
 ]);
 const NO_RETRY_CLOSE_CODES: ReadonlySet<number> = new Set([CLOSE_NOT_AUTHENTICATED, 4404]);
-// Ouvertures ratées d'affilée (canal jamais ouvert : serveur injoignable, origine refusée…)
-// avant d'abandonner et de prévenir l'utilisateur
 const MAX_FAILED_OPENINGS: number = 5;
-// Attente avant de se reconnecter : de 0,5 s, doublée à chaque échec, jusqu'à 10 s
 const RECONNECT_MIN_DELAY_MS: number = 500;
 const RECONNECT_MAX_DELAY_MS: number = 10_000;
-// Fermeture voulue par la page (démontage)
 const NORMAL_CLOSURE: number = 1000;
 
-// Canal de la salle, sur la même origine que la page (le proxy /api le transmet au backend)
 function roomChannelUrl(code: string): string {
   const protocol: string = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/api/rooms/${encodeURIComponent(code)}/ws`;
@@ -47,20 +41,16 @@ function reconnectDelay(attempt: number): number {
   return ceiling / 2 + Math.random() * (ceiling / 2);
 }
 
-// Un compte s'authentifie par son access token (jamais dans l'URL) ; un invité, par son cookie
 async function channelAccessToken(viewer: RoomViewer): Promise<string | null> {
   if (viewer !== 'account') return null;
   if (getAccessToken() === null) await refreshAccessToken();
   return getAccessToken();
 }
 
-// Applique un événement à la salle en cache. La présence, un départ et « a placé » la modifient
-// directement ; une arrivée ou des réglages la font relire. Une version qui ne suit pas la précédente veut dire qu'un
-// événement a été manqué : la salle est relue (le serveur ne rejoue jamais le passé).
 function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomEvent): void {
   const queryKey = roomQueryKey(roomCode);
   const room: Room | undefined = queryClient.getQueryData<Room>(queryKey);
-  if (room !== undefined && event.room_version <= room.version) return; // déjà dans la salle lue
+  if (room !== undefined && event.room_version <= room.version) return;
   if (room === undefined || event.room_version !== room.version + 1) {
     void queryClient.invalidateQueries({ queryKey });
     return;
@@ -88,7 +78,6 @@ function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomE
     return;
   }
   if (event.type === 'participant.placed' && room.game !== null) {
-    // Qui a placé l'item en cours, jamais où (plateau privé)
     queryClient.setQueryData<Room>(queryKey, {
       ...room,
       version: event.room_version,
@@ -102,9 +91,7 @@ function applyRoomEvent(queryClient: QueryClient, roomCode: string, event: RoomE
   void queryClient.invalidateQueries({ queryKey });
 }
 
-// État du suivi en direct, pour la page
 export interface RoomEventsState {
-  // Le canal n'a pas pu s'ouvrir plusieurs fois d'affilée : plus de mise à jour en direct
   unavailable: boolean;
 }
 
@@ -120,7 +107,6 @@ export function useRoomEvents(
   onRemoved: (reason: RemovalReason) => void,
 ): RoomEventsState {
   const queryClient: QueryClient = useQueryClient();
-  // Salle pour laquelle le suivi a été abandonné : en changer annule l'abandon
   const [abandonedRoom, setAbandonedRoom] = useState<string | null>(null);
 
   useEffect(() => {
@@ -131,7 +117,6 @@ export function useRoomEvents(
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let attempt: number = 0;
     let failedOpenings: number = 0;
-    // Le nouvel essai après un 4401 n'a lieu qu'une fois tant qu'aucun message n'est arrivé
     let retriedWithFreshToken: boolean = false;
     let stopped: boolean = false;
 
@@ -172,7 +157,6 @@ export function useRoomEvents(
         ) {
           retriedWithFreshToken = true;
           void refreshAccessToken().then((refreshed: boolean) => {
-            // Sans session valable, la page le verra à sa prochaine requête
             if (refreshed && !stopped) connect();
           });
           return;

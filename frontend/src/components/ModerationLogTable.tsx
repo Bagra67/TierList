@@ -15,12 +15,9 @@ import { Button } from './ui/button';
 
 interface ModerationLogTableProps {
   filters: ModerationLogFilters;
-  // Message quand aucune entrée ne correspond (selon que des filtres sont choisis ou non)
   emptyMessage: string;
 }
 
-// Les entrées du journal de modération pour ces filtres, de la plus récente à la plus ancienne,
-// 50 à la fois (« Voir plus »). Sert au journal (US-1.9) et à l'historique d'un compte (US-1.8).
 export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTableProps) {
   const { t } = useTranslation();
   const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -33,7 +30,6 @@ export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTable
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
       {data !== undefined && entries.length === 0 && <EmptyState message={emptyMessage} />}
       {entries.length > 0 && (
-        // Le tableau défile seul sur un petit écran, pas la page
         <div className="w-full overflow-x-auto rounded-panel border bg-card">
           <table className="w-full text-sm">
             <caption className="sr-only">{t('moderation.log.title')}</caption>
@@ -88,8 +84,6 @@ export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTable
   );
 }
 
-// La cible d'une entrée. Un compte mène à sa page, qui dit « introuvable » une fois le compte
-// supprimé : savoir s'il existe encore demanderait une requête de plus par entrée
 function LogTarget({ entry }: { entry: ModerationLogEntry }) {
   const { t } = useTranslation();
   const label: string = t('moderation.log.targetCell', {

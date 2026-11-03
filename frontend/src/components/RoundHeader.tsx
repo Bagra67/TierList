@@ -5,11 +5,9 @@ import { Countdown } from './Countdown';
 interface RoundHeaderProps {
   roundNumber: number;
   roundCount: number;
-  // Fin du tour (minuteur), null sans minuteur
   endsAt: string | null;
 }
 
-// En-tête d'un tour : « Élément 5 sur 12 », la barre de progression de la partie et le chrono
 export function RoundHeader({ roundNumber, roundCount, endsAt }: RoundHeaderProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const progress: string = t('rooms.game.itemProgress', {

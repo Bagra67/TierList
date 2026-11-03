@@ -4,12 +4,10 @@ import { RemovedImage } from './RemovedImage';
 
 interface GameItemViewProps {
   item: GameItem;
-  // Nom de l'image quand l'item n'a pas de texte (avec un texte, l'image est illustrative)
   imageLabel: string;
   size: 'large' | 'small';
 }
 
-// Un item de la partie : son image et/ou son texte, en grand (item en cours) ou en petit (plateau)
 export function GameItemView({ item, imageLabel, size }: GameItemViewProps) {
   // Petite taille : la puce (bordure et marge comprises) garde la hauteur d'une puce de texte
   const imageSizeClass: string = size === 'large' ? 'size-32' : 'size-11 sm:size-13';
