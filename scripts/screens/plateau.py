@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 from collections.abc import Callable
+from typing import NamedTuple
 from xml.sax.saxutils import escape
 
 REPO_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -18,9 +19,9 @@ FONT_FILES: dict[str, str] = {
 BG, INK, CARD, BORDER = "#F4F5FA", "#1D1640", "#FFFFFF", "#D5D6E4"
 MUTED, MUTED_FG, PRIMARY, ON_PRIMARY = "#E9EAF3", "#5E5878", "#D41E5B", "#FFFFFF"
 SPOT, INPUT, SUCCESS, DESTRUCTIVE = "#FFC22E", "#8C88A6", "#168057", "#B32517"
-# Plateau sombre des retouches finales, quel que soit le thème
-D_BG, D_CARD, D_FG, D_BORDER, D_MUTED_FG = "#140F2B", "#1D1640", "#ECEAF6", "#3A3170", "#A49FBF"
-D_PRIMARY, D_ON_PRIMARY, D_WARNING = "#FF5C8A", "#140F2B", "#FFC22E"
+FINAL_BOARD_BG, FINAL_BOARD_CARD, FINAL_BOARD_FG = "#140F2B", "#1D1640", "#ECEAF6"
+FINAL_BOARD_BORDER, FINAL_BOARD_MUTED_FG = "#3A3170", "#A49FBF"
+FINAL_BOARD_PRIMARY, FINAL_BOARD_ON_PRIMARY, FINAL_BOARD_WARNING = "#FF5C8A", "#140F2B", "#FFC22E"
 TIERS: list[tuple[str, str]] = [
     ("S", "#FF3B6B"),
     ("A", "#FF8A2A"),
@@ -69,8 +70,7 @@ class Svg:
     def __init__(self, title: str, width: int, height: int, background: str = BG) -> None:
         self.title, self.width, self.height = title, width, height
         self.parts: list[str] = [f'<rect width="{width}" height="{height}" fill="{background}"/>']
-        # Caractères écrits : le sous-ensemble des polices n'en garde que ceux-là
-        self.chars: set[str] = set()
+        self.chars_kept_in_font_subset: set[str] = set()
 
     def add(self, markup: str) -> None:
         self.parts.append(markup)
@@ -110,7 +110,7 @@ class Svg:
         stretch=None,
         extra="",
     ) -> None:
-        self.chars.update(s)
+        self.chars_kept_in_font_subset.update(s)
         style: str = f"font-family:{family};font-size:{size}px;font-weight:{weight}"
         if stretch:
             style += f";font-stretch:{stretch}%"
@@ -130,12 +130,11 @@ class Svg:
         )
 
 
-# Largeurs estimées (pas de mesure réelle) : assez pour placer les éléments sans chevauchement
-def text_width(s: str, size: float = 14, weight: int = 500) -> float:
+def estimated_text_width(s: str, size: float = 14, weight: int = 500) -> float:
     return len(s) * size * (0.56 if weight >= 600 else 0.53)
 
 
-def head_width(s: str, size: float) -> float:
+def estimated_head_width(s: str, size: float) -> float:
     return len(s) * size * 0.74
 
 
@@ -143,7 +142,7 @@ def wrap(svg: Svg, x, y, text, width, size=13, line_h=18, fill=MUTED_FG, weight=
     line: str = ""
     for word in text.split(" "):
         candidate: str = (line + " " + word).strip()
-        if line and text_width(candidate, size, weight) > width:
+        if line and estimated_text_width(candidate, size, weight) > width:
             svg.text(x, y, line, size, weight, fill)
             y += line_h
             line = word
@@ -155,14 +154,14 @@ def wrap(svg: Svg, x, y, text, width, size=13, line_h=18, fill=MUTED_FG, weight=
     return y
 
 
-def header(
-    svg: Svg, t: Translator, user: str | None, extra: tuple[tuple[str, str | None], ...] = ()
-) -> None:
-    """En-tête : logo (trois barres S, A, B), navigation, avatar ou « Connexion ».
+class NavLink(NamedTuple):
+    label: str
+    badge: str | None
 
-    extra : liens ajoutés après ceux du jalon 1, (libellé, pastille ou None) ; un lien avec une
-    pastille (un compteur) est en gras.
-    """
+
+def header(
+    svg: Svg, t: Translator, user: str | None, extra_links: tuple[NavLink, ...] = ()
+) -> None:
     svg.rect(0, 0, svg.width, 56, CARD)
     svg.add(f'<line x1="0" y1="56" x2="{svg.width}" y2="56" stroke="{BORDER}"/>')
     for index, (width, color) in enumerate(
@@ -174,10 +173,10 @@ def header(
     for key in ("nav.home", "nav.templates", "nav.history"):
         label: str = t(key)
         svg.text(x, 33, label, 14, 500, MUTED_FG)
-        x += text_width(label) + 28
-    for label, badge in extra:
+        x += estimated_text_width(label) + 28
+    for label, badge in extra_links:
         svg.text(x, 33, label, 14, 600 if badge else 500, INK if badge else MUTED_FG)
-        x += text_width(label, 14, 600 if badge else 500) + 6
+        x += estimated_text_width(label, 14, 600 if badge else 500) + 6
         if badge:
             x += tag(svg, x, 18, badge, PRIMARY, "#FFFFFF")
         x += 22
@@ -190,15 +189,23 @@ def header(
 
 
 def button_width(label: str, size: int = 14) -> float:
-    return round(text_width(label, size) + 28)
+    return round(estimated_text_width(label, size) + 28)
 
 
 def button(svg: Svg, x, y, label, variant="default", h=32, w=None, dark=False) -> float:
     w = w or button_width(label)
     fills: dict[str, tuple[str, str | None, str]] = {
-        "default": (D_PRIMARY if dark else PRIMARY, None, D_ON_PRIMARY if dark else ON_PRIMARY),
+        "default": (
+            FINAL_BOARD_PRIMARY if dark else PRIMARY,
+            None,
+            FINAL_BOARD_ON_PRIMARY if dark else ON_PRIMARY,
+        ),
         "secondary": (MUTED, None, INK),
-        "outline": (D_CARD if dark else BG, D_BORDER if dark else BORDER, D_FG if dark else INK),
+        "outline": (
+            FINAL_BOARD_CARD if dark else BG,
+            FINAL_BOARD_BORDER if dark else BORDER,
+            FINAL_BOARD_FG if dark else INK,
+        ),
         "destructive": ("#F6E4E3", None, DESTRUCTIVE),
     }
     fill, stroke, color = fills[variant]
@@ -209,35 +216,56 @@ def button(svg: Svg, x, y, label, variant="default", h=32, w=None, dark=False) -
 
 def panel(svg: Svg, x, y, w, h, variant="solid", dark=False) -> None:
     if variant == "solid":
-        svg.rect(x, y, w, h, D_CARD if dark else CARD, D_BORDER if dark else BORDER, rx=16)
+        svg.rect(
+            x,
+            y,
+            w,
+            h,
+            FINAL_BOARD_CARD if dark else CARD,
+            FINAL_BOARD_BORDER if dark else BORDER,
+            rx=16,
+        )
     elif variant == "dashed":
-        svg.rect(x, y, w, h, "none", D_BORDER if dark else BORDER, rx=16, dash=True, sw=2)
+        svg.rect(x, y, w, h, "none", FINAL_BOARD_BORDER if dark else BORDER, rx=16, dash=True, sw=2)
     elif variant == "muted":
         svg.rect(x, y, w, h, MUTED, rx=16)
 
 
 def chip(svg: Svg, x, y, label, h=44, dark=False, current=False, art=None) -> float:
-    w: float = round(text_width(label) + 22 + (h if art else 0))
-    stroke, sw = (PRIMARY, 2) if current else (D_BORDER if dark else BORDER, 1)
-    svg.rect(x, y, w, h, D_CARD if dark else CARD, stroke, rx=8, sw=sw)
+    w: float = round(estimated_text_width(label) + 22 + (h if art else 0))
+    stroke, sw = (PRIMARY, 2) if current else (FINAL_BOARD_BORDER if dark else BORDER, 1)
+    svg.rect(x, y, w, h, FINAL_BOARD_CARD if dark else CARD, stroke, rx=8, sw=sw)
     tx: float = x + 11
     if art:
         svg.rect(x + 4, y + 4, h - 8, h - 8, art, rx=6)
         tx = x + h + 4
-    svg.text(tx, y + h / 2 + 5, label, 14, 500, D_FG if dark else INK)
+    svg.text(tx, y + h / 2 + 5, label, 14, 500, FINAL_BOARD_FG if dark else INK)
     return w
 
 
-def tier_rows(svg: Svg, x, y, w, rows, row_h=56, dark=False, slot=None, art=None) -> float:
-    """Lignes de tier S à E.
-
-    rows : les éléments de chaque tier ; slot : (tier,) d'un emplacement en pointillés à la fin
-    d'un tier ; art : couleur de l'image de certains éléments.
-    """
-    art = art or {}
+def tier_rows(
+    svg: Svg,
+    x,
+    y,
+    w,
+    rows: list[list[str]],
+    row_h=56,
+    dark=False,
+    dashed_slot_tier: int | None = None,
+    image_color_by_item: dict[str, str] | None = None,
+) -> float:
+    image_color_by_item = image_color_by_item or {}
     for index, (letter, color) in enumerate(TIERS):
         ry: float = y + index * (row_h + 6)
-        svg.rect(x, ry, w, row_h, D_CARD if dark else CARD, D_BORDER if dark else BORDER, rx=10)
+        svg.rect(
+            x,
+            ry,
+            w,
+            row_h,
+            FINAL_BOARD_CARD if dark else CARD,
+            FINAL_BOARD_BORDER if dark else BORDER,
+            rx=10,
+        )
         svg.add(
             f'<path d="M{x + 10} {ry}h{62}v{row_h}h-62a10 10 0 0 1-10-10v-{row_h - 20}'
             f'a10 10 0 0 1 10-10z" fill="{color}"/>'
@@ -247,14 +275,19 @@ def tier_rows(svg: Svg, x, y, w, rows, row_h=56, dark=False, slot=None, art=None
         )
         cx: float = x + 80
         for item in rows[index] if index < len(rows) else []:
-            cx += chip(svg, cx, ry + 6, item, row_h - 12, dark=dark, art=art.get(item)) + 6
-        if slot and slot[0] == index:
+            cx += (
+                chip(
+                    svg, cx, ry + 6, item, row_h - 12, dark=dark, art=image_color_by_item.get(item)
+                )
+                + 6
+            )
+        if dashed_slot_tier == index:
             svg.rect(cx, ry + 6, 120, row_h - 12, "none", PRIMARY, rx=8, dash=True, sw=2)
     return y + len(TIERS) * (row_h + 6)
 
 
 def tag(svg: Svg, x, y, label, fill=MUTED, color=MUTED_FG) -> float:
-    w: float = round(text_width(label, 12) + 16)
+    w: float = round(estimated_text_width(label, 12) + 16)
     svg.rect(x, y, w, 20, fill, rx=10)
     svg.text(x + w / 2, y + 14, label, 12, 500, color, anchor="middle")
     return w
@@ -277,15 +310,15 @@ def field(svg: Svg, x, y, w, label, value, h=40) -> None:
 
 def checkbox(svg: Svg, x, y, label, checked=True, dark=False) -> None:
     if checked:
-        svg.rect(x, y, 16, 16, D_PRIMARY if dark else PRIMARY, rx=4)
-        stroke: str = D_ON_PRIMARY if dark else "#FFFFFF"
+        svg.rect(x, y, 16, 16, FINAL_BOARD_PRIMARY if dark else PRIMARY, rx=4)
+        stroke: str = FINAL_BOARD_ON_PRIMARY if dark else "#FFFFFF"
         svg.add(
             f'<path d="M{x + 4} {y + 8.5}l3 3 5-6" fill="none" stroke="{stroke}" stroke-width="2" '
             'stroke-linecap="round" stroke-linejoin="round"/>'
         )
     else:
         svg.rect(x, y, 16, 16, CARD, INPUT, rx=4, sw=1.5)
-    svg.text(x + 26, y + 13, label, 14, 400, D_FG if dark else INK)
+    svg.text(x + 26, y + 13, label, 14, 400, FINAL_BOARD_FG if dark else INK)
 
 
 def radio(svg: Svg, x, y, label, checked=False) -> None:
@@ -299,13 +332,13 @@ def radio(svg: Svg, x, y, label, checked=False) -> None:
 
 
 def timer_pill(svg: Svg, x, y, label, fill=SPOT, color=INK, size=24) -> None:
-    w: float = round(text_width(label, size, 900) + 34)
+    w: float = round(estimated_text_width(label, size, 900) + 34)
     svg.rect(x, y, w, size + 16, fill, rx=(size + 16) / 2)
     svg.text(x + w / 2, y + size + 3, label, size, 900, color, HEAD, anchor="middle")
 
 
 def segmented(svg: Svg, x, y, labels, selected=0) -> None:
-    widths: list[float] = [round(text_width(label) + 32) for label in labels]
+    widths: list[float] = [round(estimated_text_width(label) + 32) for label in labels]
     svg.rect(x, y, sum(widths) + 8, 40, MUTED, rx=20)
     cx: float = x + 4
     for index, (label, w) in enumerate(zip(labels, widths, strict=True)):
@@ -385,14 +418,18 @@ def fonts_css(subsets: dict[str, str]) -> str:
     return css
 
 
+def _chars_written_by(screens: dict[str, Screen], t: Translator) -> set[str]:
+    chars: set[str] = set()
+    for draw in screens.values():
+        chars |= draw(t).chars_kept_in_font_subset
+    return chars
+
+
 def build(screens: dict[str, Screen], out_dir: str) -> None:
     translations: dict[str, dict] = load_translations()
     for lang in LANGUAGES:
         t: Translator = Translator(translations, lang)
-        # Premier passage : les caractères écrits, pour réduire les polices à ce qui sert
-        chars: set[str] = set()
-        for draw in screens.values():
-            chars |= draw(t).chars
+        chars: set[str] = _chars_written_by(screens, t)
         with tempfile.TemporaryDirectory() as fonts_dir:
             css: str = fonts_css(subset_fonts("".join(sorted(chars)) + "0123456789", fonts_dir))
         for name, draw in screens.items():

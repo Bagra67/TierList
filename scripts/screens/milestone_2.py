@@ -1,4 +1,5 @@
 import os
+from typing import NamedTuple
 
 from plateau import (
     BORDER,
@@ -12,6 +13,7 @@ from plateau import (
     PRIMARY,
     REPO_ROOT,
     TIERS,
+    NavLink,
     Screen,
     Svg,
     Translator,
@@ -20,13 +22,13 @@ from plateau import (
     button_width,
     checkbox,
     dot,
+    estimated_text_width,
     field,
     header,
     icon,
     panel,
     radio,
     tag,
-    text_width,
     wrap,
 )
 
@@ -271,24 +273,48 @@ ITEMS: dict[str, list[str]] = {
            "Curry", "Bacon", "Moutarde", "Barbecue"],
 }  # fmt: skip
 TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list", "fr": "Tier list des chips"}
-CHIP_ART: dict[str, str] = {"Barbecue": "#C2492E", "Paprika": "#FF8A2A", "Curry": "#FFC22E"}
-# Modèles publics d'exemple : nom, propriétaire, tags, éléments, j'aime, couleur de l'aperçu
-PUBLIC: dict[str, list[tuple[str, str, list[str], int, int, str]]] = {
+PLACEHOLDER_IMAGE_COLOR_BY_ITEM: dict[str, str] = {
+    "Barbecue": "#C2492E",
+    "Paprika": "#FF8A2A",
+    "Curry": "#FFC22E",
+}
+
+
+class PublicTemplateSample(NamedTuple):
+    name: str
+    owner: str
+    tags: list[str]
+    item_count: int
+    like_count: int
+    preview_color: str
+
+
+PUBLIC: dict[str, list[PublicTemplateSample]] = {
     "en": [
-        ("Chips tier list", "Camille", ["snacks", "party"], 12, 128, "#C2492E"),
-        ("Best Christmas movies", "Noé", ["movies", "holidays"], 24, 96, "#5B7CFA"),
-        ("First generation Pokémon", "Inès", ["video games"], 32, 87, "#FFC22E"),
-        ("French cheeses", "Lou", ["food", "cheese"], 20, 64, "#D4B483"),
-        ("Anime openings", "Sam", ["anime", "music"], 30, 51, "#A78BFA"),
-        ("Grandma's desserts", "Alex", ["food"], 16, 33, "#F06BD0"),
+        PublicTemplateSample("Chips tier list", "Camille", ["snacks", "party"], 12, 128, "#C2492E"),
+        PublicTemplateSample(
+            "Best Christmas movies", "Noé", ["movies", "holidays"], 24, 96, "#5B7CFA"
+        ),
+        PublicTemplateSample(
+            "First generation Pokémon", "Inès", ["video games"], 32, 87, "#FFC22E"
+        ),
+        PublicTemplateSample("French cheeses", "Lou", ["food", "cheese"], 20, 64, "#D4B483"),
+        PublicTemplateSample("Anime openings", "Sam", ["anime", "music"], 30, 51, "#A78BFA"),
+        PublicTemplateSample("Grandma's desserts", "Alex", ["food"], 16, 33, "#F06BD0"),
     ],
     "fr": [
-        ("Tier list des chips", "Camille", ["apéro", "snacks"], 12, 128, "#C2492E"),
-        ("Meilleurs films de Noël", "Noé", ["films", "fêtes"], 24, 96, "#5B7CFA"),
-        ("Pokémon de la 1re génération", "Inès", ["jeux vidéo"], 32, 87, "#FFC22E"),
-        ("Fromages français", "Lou", ["cuisine", "fromage"], 20, 64, "#D4B483"),
-        ("Openings d'anime", "Sam", ["anime", "musique"], 30, 51, "#A78BFA"),
-        ("Desserts de grand-mère", "Alex", ["cuisine"], 16, 33, "#F06BD0"),
+        PublicTemplateSample(
+            "Tier list des chips", "Camille", ["apéro", "snacks"], 12, 128, "#C2492E"
+        ),
+        PublicTemplateSample(
+            "Meilleurs films de Noël", "Noé", ["films", "fêtes"], 24, 96, "#5B7CFA"
+        ),
+        PublicTemplateSample(
+            "Pokémon de la 1re génération", "Inès", ["jeux vidéo"], 32, 87, "#FFC22E"
+        ),
+        PublicTemplateSample("Fromages français", "Lou", ["cuisine", "fromage"], 20, 64, "#D4B483"),
+        PublicTemplateSample("Openings d'anime", "Sam", ["anime", "musique"], 30, 51, "#A78BFA"),
+        PublicTemplateSample("Desserts de grand-mère", "Alex", ["cuisine"], 16, 33, "#F06BD0"),
     ],
 }
 FILTER_TAGS: dict[str, list[str]] = {
@@ -314,11 +340,11 @@ def h2(svg: Svg, x, y, text, size=20) -> None:
 
 
 def public_header(svg: Svg, t: Translator, user: str | None) -> None:
-    header(svg, t, user, ((c(t, "public"), None),))
+    header(svg, t, user, (NavLink(c(t, "public"), None),))
 
 
 def moderation_header(svg: Svg, t: Translator) -> None:
-    header(svg, t, "Nina", ((c(t, "public"), None), (c(t, "moderation"), "3")))
+    header(svg, t, "Nina", (NavLink(c(t, "public"), None), NavLink(c(t, "moderation"), "3")))
 
 
 def select(svg: Svg, x, y, w, label, value) -> None:
@@ -332,13 +358,13 @@ def select(svg: Svg, x, y, w, label, value) -> None:
 
 
 def icon_button(svg: Svg, x, y, label, name, variant="outline", w=None, h=32) -> float:
-    w = w or round(text_width(label) + 50)
+    w = w or round(estimated_text_width(label) + 50)
     fill, stroke, color = {
         "outline": (CARD, BORDER, INK),
         "secondary": (MUTED, None, INK),
     }[variant]
     svg.rect(x, y, w, h, fill, stroke, rx=10)
-    left: float = x + (w - text_width(label) - 22) / 2
+    left: float = x + (w - estimated_text_width(label) - 22) / 2
     icon(svg, left, y + (h - 16) / 2, name, 16, color)
     svg.text(left + 22, y + h / 2 + 5, label, 14, 500, color)
     return w
@@ -371,7 +397,7 @@ def marketplace(t: Translator) -> Svg:
     icon(svg, 44, 196, "search", 16, MUTED_FG)
     svg.text(68, 209, FILTER_TAGS[t.lang][0], 14, 400)
     select(svg, 616, 176, 312, c(t, "sort"), c(t, "most_liked"))
-    x: float = 32 + text_width("Tags :", 13, 600) + 10
+    x: float = 32 + estimated_text_width("Tags :", 13, 600) + 10
     svg.text(32, 262, "Tags :" if t.lang == "fr" else "Tags:", 13, 600)
     for index, label in enumerate(FILTER_TAGS[t.lang]):
         selected: bool = index == 0
@@ -389,7 +415,14 @@ def marketplace(t: Translator) -> Svg:
         tx: float = cx + 14
         for label in tags:
             tx += tag(svg, tx, cy + 194, label) + 6
-        icon(svg, cx + 244 - text_width(str(likes), 13, 600), cy + 196, "heart", 16, PRIMARY)
+        icon(
+            svg,
+            cx + 244 - estimated_text_width(str(likes), 13, 600),
+            cy + 196,
+            "heart",
+            16,
+            PRIMARY,
+        )
         svg.text(cx + 274, cy + 209, str(likes), 13, 600, PRIMARY, anchor="end")
     label: str = t("history.more")
     button(svg, 480 - button_width(label) / 2, 794, label, "outline")
@@ -415,7 +448,7 @@ def template_page(t: Translator) -> Svg:
         col, line = index % 6, index // 6
         x, y = 32 + col * 96, 344 + line * 100
         svg.rect(x, y, 88, 92, CARD, BORDER, rx=10)
-        svg.rect(x + 6, y + 6, 76, 56, CHIP_ART.get(item, MUTED), rx=6)
+        svg.rect(x + 6, y + 6, 76, 56, PLACEHOLDER_IMAGE_COLOR_BY_ITEM.get(item, MUTED), rx=6)
         svg.text(x + 44, y + 80, item, 12, 600, INK, anchor="middle")
     panel(svg, 640, 104, 288, 290)
     button(svg, 660, 124, c(t, "start_room"), "default", h=40, w=248)
@@ -430,7 +463,7 @@ def template_page(t: Translator) -> Svg:
 
 def publish(t: Translator) -> Svg:
     svg = Svg({"en": "Publish a template", "fr": "Publier un modèle"}[t.lang], 960, 580)
-    header(svg, t, "Alex", ((c(t, "public"), None),))
+    header(svg, t, "Alex", (NavLink(c(t, "public"), None),))
     svg.text(32, 92, "← " + t("templates.editor.back"), 14, 500, MUTED_FG)
     field(svg, 32, 124, 520, t("templates.editor.name"), TEMPLATE_NAME[t.lang])
     label: str = t("rooms.create.open")
@@ -444,7 +477,7 @@ def publish(t: Translator) -> Svg:
     svg.rect(56, 392, 392, 40, CARD, INPUT, rx=8)
     x: float = 64
     for value in TEMPLATE_TAGS[t.lang]:
-        w: float = round(text_width(value, 13) + 34)
+        w: float = round(estimated_text_width(value, 13) + 34)
         svg.rect(x, 399, w, 26, MUTED, rx=13)
         svg.text(x + 10, 416, value, 13, 400)
         svg.text(x + w - 14, 416, "✕", 11, 600, MUTED_FG, anchor="middle")
@@ -493,7 +526,7 @@ def reports(t: Translator) -> Svg:
         (c(t, "kind_template"), c(t, "report_1"), c(t, "from", owner="Max", count=5),
          [c(t, "harassment"), c(t, "other")], "#9AA0B4"),
         (c(t, "kind_image"), c(t, "report_2"), c(t, "from", owner="Camille", count=2),
-         [c(t, "sexual")], CHIP_ART["Barbecue"]),
+         [c(t, "sexual")], PLACEHOLDER_IMAGE_COLOR_BY_ITEM["Barbecue"]),
         (c(t, "kind_nickname"), c(t, "report_3"), c(t, "from_one", owner=c(t, "guest")),
          [c(t, "spam")], None),
     ]  # fmt: skip
