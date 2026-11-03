@@ -16,7 +16,7 @@ The actions that write to the log are those on images (#124) and on templates (#
 
 Super admins also review the **recent uploads** (US-1.7, #125), the first page of the moderation area (`/moderation/uploads`): the latest images, newest first, with their author, date and use (templates, games), filtered by author, upload days and status (§2.6). Each image can be hidden, unhidden or deleted from there, with a reason. A hidden image stays visible to super admins only, through a temporary link. The [privacy policy](legal-pages.md) says that super admins see the uploaded images with their author's name.
 
-Super admins also find an **account** (US-1.8, #127), for instance after a report received by email: the **Comptes** page (`/moderation/accounts`) searches by name or email, and the **page of an account** (`/moderation/accounts/{id}`) gathers its details, its templates and its images with their actions, a "hide all their images" button, its **ban** and the history of the decisions about it (§2.8). An account can be **banned** temporarily, until a day included, or **permanently**, with a reason shown to the person when they try to sign in (§2.9): it is signed out everywhere and can no longer sign in until the ban ends or is lifted. A super admin can never be banned. The [privacy policy](legal-pages.md) describes the ban data, kept until the account is deleted, and says that a banned person sees the reason at sign-in.
+Super admins also find an **account** (US-1.8, #127), for instance after a report received by email: the **Comptes** page (`/moderation/accounts`) searches by name or email, and the **page of an account** (`/moderation/accounts/{id}`) gathers its details, its templates and its images with their actions, a "hide all their images" button, its **ban** and the history of the decisions about it (§2.8). An account can be **banned** temporarily, until a day included, or **permanently**, with a reason shown to the person when they try to sign in (§2.9): it is signed out everywhere and can no longer sign in until the ban ends or is lifted. A super admin can never be banned. The [privacy policy](legal-pages.md) describes the ban data, kept until the account is deleted, says that a banned person sees the reason at sign-in, and what the super admins see of an account.
 
 ## 2. Technical design
 
@@ -191,7 +191,7 @@ An account can be banned temporarily or permanently (US-1.8). Not to be confused
 **Effects of a ban**, in the same transaction:
 
 - **Signed out everywhere**, like after a password reset: the refresh tokens of the account are revoked (no session can be refreshed) and `users.token_version` is incremented, so every access token already issued is refused at the next request ([authentication guide](authentication.md#banned-accounts)).
-- **Sign-in refused** while the ban is active, with a password or with Google, with the reason and the end ([authentication guide](authentication.md#banned-accounts)). Refreshing needs no check: the sessions are revoked, and a new one needs a sign-in.
+- **Sign-in refused** while the ban is active, with a password or with Google, with the reason and the end ([authentication guide](authentication.md#banned-accounts)). Refreshing is refused too, for a session that a sign-in in progress would have opened during the ban.
 - Lifting a ban only lets the account sign in again; its sessions stay closed.
 
 The frontend:
