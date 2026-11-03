@@ -129,7 +129,7 @@ export const fr = {
       deleted:
         'Modèles supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
       moderatedImages:
-        "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée.",
+        "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée. Le motif de la décision est gardé avec l'image pour que son propriétaire puisse le lire, jusqu'à la suppression de son compte.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
@@ -142,7 +142,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -524,7 +524,7 @@ export const fr = {
       delete: {
         title: 'Supprimer le modèle « {{name}} »',
         description:
-          'Il sera supprimé comme si son propriétaire le faisait. Les parties déjà jouées gardent leur version.',
+          'Il sera supprimé comme si son propriétaire le faisait, mais celui-ci verra la décision et le motif. Les parties déjà jouées gardent leur version.',
         submit: 'Supprimer',
         submitting: 'Suppression…',
       },
@@ -565,7 +565,7 @@ export const fr = {
     hideAllDialog: {
       title: 'Masquer toutes les images de {{name}}',
       description:
-        'Chaque image visible sera remplacée par « Image retirée » partout où elle apparaît. Vous pourrez les réafficher une à une.',
+        'Chaque image visible sera remplacée par « Image retirée » partout où elle apparaît. Son propriétaire verra le motif. Vous pourrez les réafficher une à une.',
       submit: 'Tout masquer',
       submitting: 'Masquage…',
     },
@@ -575,7 +575,7 @@ export const fr = {
       hide: {
         title: 'Masquer cette image',
         description:
-          'Elle sera remplacée par « Image retirée » partout où elle apparaît. Vous pourrez la réafficher.',
+          'Elle sera remplacée par « Image retirée » partout où elle apparaît. Son propriétaire verra le motif. Vous pourrez la réafficher.',
         submit: 'Masquer',
         submitting: 'Masquage…',
       },
@@ -588,7 +588,7 @@ export const fr = {
       delete: {
         title: 'Supprimer cette image',
         description:
-          'Son fichier sera effacé définitivement, et le même fichier ne pourra plus être envoyé. Cette action ne peut pas être annulée.',
+          'Son fichier sera effacé définitivement, et le même fichier ne pourra plus être envoyé. Son propriétaire verra le motif. Cette action ne peut pas être annulée.',
         submit: 'Supprimer',
         submitting: 'Suppression…',
       },
@@ -691,6 +691,14 @@ export const fr = {
       title: 'Masqué par la modération',
       reason: 'Motif : {{reason}}',
       hint: 'Vous pouvez encore le modifier, mais plus lancer de partie avec.',
+    },
+    removedImage: {
+      hidden: 'Image masquée par la modération',
+      deleted: 'Image supprimée par la modération',
+    },
+    removed: {
+      title: 'Supprimés par la modération',
+      date: 'Supprimé le {{date, datetime(dateStyle: long)}}',
     },
     empty: "Vous n'avez encore aucun modèle : créez-en un pour commencer.",
     tileCount_one: '{{count}} tuile',
