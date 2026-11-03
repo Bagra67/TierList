@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import Annotated, Any
@@ -15,10 +15,10 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.dependencies import (
-    SessionFactory,
     SettingsDep,
+    ShortLivedSessionFactory,
     build_game_service,
-    get_session_factory,
+    get_short_lived_session_factory,
 )
 from app.api.routes import (
     auth,
@@ -35,7 +35,7 @@ from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
 from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
-from app.core.frontend import mount_frontend
+from app.core.frontend import mount_frontend_after_api
 from app.core.logging import configure_logging, get_logging_settings
 from app.core.proxy import TrustedProxyMiddleware
 from app.db.session import get_db_session, ping_database
@@ -59,7 +59,7 @@ configure_logging(get_logging_settings().log_level)
 logger = logging.getLogger(__name__)
 
 
-def _reset_presence(session_factory: SessionFactory) -> None:
+def _reset_presence(session_factory: ShortLivedSessionFactory) -> None:
     try:
         with session_factory() as session:
             reset_count: int = RoomService(
@@ -76,18 +76,18 @@ def _game_service(session: Session) -> GameService:
 
 
 def _end_round_on_timer(
-    session_factory: SessionFactory, game_id: uuid.UUID, round_number: int
+    session_factory: ShortLivedSessionFactory, game_id: uuid.UUID, round_number: int
 ) -> None:
     with session_factory() as session:
         _game_service(session).end_round_on_timer(game_id, round_number)
 
 
-def _end_cooldown_on_timer(session_factory: SessionFactory, game_id: uuid.UUID) -> None:
+def _end_cooldown_on_timer(session_factory: ShortLivedSessionFactory, game_id: uuid.UUID) -> None:
     with session_factory() as session:
         _game_service(session).end_cooldown_on_timer(game_id)
 
 
-def _close_inactive_rooms(session_factory: SessionFactory) -> None:
+def _close_inactive_rooms(session_factory: ShortLivedSessionFactory) -> None:
     inactive_for: timedelta = timedelta(hours=get_settings().room_inactivity_hours)
     with session_factory() as session:
         closed_count: int = _game_service(session).close_inactive_rooms(inactive_for)
@@ -95,7 +95,7 @@ def _close_inactive_rooms(session_factory: SessionFactory) -> None:
         logger.info("Salles inactives fermées : %d", closed_count)
 
 
-def _reschedule_rounds(session_factory: SessionFactory) -> None:
+def _reschedule_rounds(session_factory: ShortLivedSessionFactory) -> None:
     try:
         with session_factory() as session:
             games: GameService = _game_service(session)
@@ -115,12 +115,16 @@ def _reschedule_rounds(session_factory: SessionFactory) -> None:
     )
 
 
+def _session_factory_honoring_test_overrides() -> ShortLivedSessionFactory:
+    get_factory: Callable[[], ShortLivedSessionFactory] = api_app.dependency_overrides.get(
+        get_short_lived_session_factory, get_short_lived_session_factory
+    )
+    return get_factory()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    # Les dépendances ne sont pas injectées ici : la fabrique remplacée par les tests (sur l'API
-    # montée sous /api), s'il y en a une, est reprise pour ne jamais toucher une autre base
-    get_factory = api_app.dependency_overrides.get(get_session_factory, get_session_factory)
-    session_factory: SessionFactory = get_factory()
+    session_factory: ShortLivedSessionFactory = _session_factory_honoring_test_overrides()
     settings: Settings = get_settings()
     await run_in_threadpool(_reset_presence, session_factory)
 
@@ -245,6 +249,6 @@ app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
-    mount_frontend(app, _settings.frontend_dist)
+    mount_frontend_after_api(app, _settings.frontend_dist)
 if _settings.trusted_proxy_ips:
     app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)

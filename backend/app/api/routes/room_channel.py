@@ -14,9 +14,9 @@ from app.api.dependencies import (
     PublisherDep,
     RegistryDep,
     RoundSchedulerDep,
-    SessionFactory,
-    SessionFactoryDep,
     SettingsDep,
+    ShortLivedSessionFactory,
+    ShortLivedSessionFactoryDep,
     build_game_service,
 )
 from app.constants.error_codes import ErrorCode
@@ -34,7 +34,7 @@ from app.models.participant import Participant
 from app.schemas.room_events import AuthMessage, PingMessage, PongMessage, RoomClientMessage
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.games import GameService
-from app.services.room_channel import ConnectionRegistry, RoomEventPublisher
+from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler
 
@@ -58,7 +58,7 @@ async def room_channel(
     websocket: WebSocket,
     code: str,
     settings: SettingsDep,
-    session_factory: SessionFactoryDep,
+    session_factory: ShortLivedSessionFactoryDep,
     publisher: PublisherDep,
     registry: RegistryDep,
     scheduler: RoundSchedulerDep,
@@ -101,9 +101,9 @@ async def _receive_auth(
 
 
 def _find_seat(
-    session_factory: SessionFactory,
+    session_factory: ShortLivedSessionFactory,
     settings: Settings,
-    publisher: RoomEventPublisher,
+    publisher: PostCommitRoomPublisher,
     code: str,
     access_token: str | None,
     guest_token: str | None,
@@ -138,8 +138,8 @@ async def _serve(
     websocket: WebSocket,
     seat: ChannelSeat,
     settings: Settings,
-    session_factory: SessionFactory,
-    publisher: RoomEventPublisher,
+    session_factory: ShortLivedSessionFactory,
+    publisher: PostCommitRoomPublisher,
     registry: ConnectionRegistry,
     scheduler: RoundScheduler,
 ) -> None:
@@ -166,9 +166,9 @@ async def _serve(
 
 
 def _set_presence(
-    session_factory: SessionFactory,
+    session_factory: ShortLivedSessionFactory,
     settings: Settings,
-    publisher: RoomEventPublisher,
+    publisher: PostCommitRoomPublisher,
     scheduler: RoundScheduler,
     seat: ChannelSeat,
     connected: bool,
@@ -185,9 +185,7 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
                 _receive_text(websocket), settings.room_heartbeat_interval_seconds
             )
         except TimeoutError:
-            # Fermé par le registre (participant retiré par le room admin) : la poignée de main de
-            # fermeture n'est pas finie, mais plus rien ne doit partir sur ce socket
-            if websocket.application_state == WebSocketState.DISCONNECTED:
+            if _closed_by_registry(websocket):
                 return
             await websocket.send_text(_PING)
             try:
@@ -200,6 +198,10 @@ async def _heartbeat(websocket: WebSocket, settings: Settings) -> None:
                 ) from exc
         if not isinstance(_parse_client_message(text), PongMessage):
             raise ChannelClosedError(CHANNEL_CLOSE_INVALID_MESSAGE, ErrorCode.INVALID_MESSAGE)
+
+
+def _closed_by_registry(websocket: WebSocket) -> bool:
+    return websocket.application_state == WebSocketState.DISCONNECTED
 
 
 async def _receive_text(websocket: WebSocket) -> str:

@@ -27,7 +27,7 @@ from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
 from app.services.recent_uploads import RecentUploadsService
-from app.services.room_channel import ConnectionRegistry, RoomEventPublisher, room_connections
+from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
 from app.services.template_moderation import TemplateModerationService
@@ -50,12 +50,10 @@ def get_template_service(
     return TemplateService(session, settings)
 
 
-# Ouvre une session courte : le canal temps réel vit longtemps, il ne garde pas de connexion à
-# la base entre deux accès
-SessionFactory = Callable[[], AbstractContextManager[Session]]
+ShortLivedSessionFactory = Callable[[], AbstractContextManager[Session]]
 
 
-def get_session_factory() -> SessionFactory:
+def get_short_lived_session_factory() -> ShortLivedSessionFactory:
     return lambda: Session(get_engine())
 
 
@@ -65,7 +63,7 @@ def get_connection_registry() -> ConnectionRegistry:
 
 def get_room_event_publisher(
     registry: Annotated[ConnectionRegistry, Depends(get_connection_registry)],
-) -> RoomEventPublisher:
+) -> PostCommitRoomPublisher:
     return registry
 
 
@@ -76,7 +74,7 @@ def get_round_scheduler() -> RoundScheduler:
 def get_room_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
-    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
+    publisher: Annotated[PostCommitRoomPublisher, Depends(get_room_event_publisher)],
 ) -> RoomService:
     return RoomService(session, settings, publisher)
 
@@ -112,7 +110,10 @@ def get_game_results_service(
 
 
 def build_game_service(
-    session: Session, settings: Settings, publisher: RoomEventPublisher, scheduler: RoundScheduler
+    session: Session,
+    settings: Settings,
+    publisher: PostCommitRoomPublisher,
+    scheduler: RoundScheduler,
 ) -> GameService:
     rooms: RoomService = RoomService(session, settings, publisher)
     return GameService(session, publisher, rooms, TemplateService(session, settings), scheduler)
@@ -120,7 +121,7 @@ def build_game_service(
 
 def get_game_service(
     session: Annotated[Session, Depends(get_db_session)],
-    publisher: Annotated[RoomEventPublisher, Depends(get_room_event_publisher)],
+    publisher: Annotated[PostCommitRoomPublisher, Depends(get_room_event_publisher)],
     rooms: Annotated[RoomService, Depends(get_room_service)],
     templates: Annotated[TemplateService, Depends(get_template_service)],
     scheduler: Annotated[RoundScheduler, Depends(get_round_scheduler)],
@@ -254,7 +255,9 @@ ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_
 ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
 EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
 GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]
-SessionFactoryDep = Annotated[SessionFactory, Depends(get_session_factory)]
-PublisherDep = Annotated[RoomEventPublisher, Depends(get_room_event_publisher)]
+ShortLivedSessionFactoryDep = Annotated[
+    ShortLivedSessionFactory, Depends(get_short_lived_session_factory)
+]
+PublisherDep = Annotated[PostCommitRoomPublisher, Depends(get_room_event_publisher)]
 RegistryDep = Annotated[ConnectionRegistry, Depends(get_connection_registry)]
 RoundSchedulerDep = Annotated[RoundScheduler, Depends(get_round_scheduler)]
