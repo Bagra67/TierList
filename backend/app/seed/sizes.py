@@ -25,6 +25,10 @@ class SeedSize:
     temporarily_banned_accounts: int
     permanently_banned_accounts: int
     accounts_with_a_lifted_ban: int
+    reported_images: int
+    reported_nicknames: int
+    reported_games: int
+    reports_on_most_reported_content: int
 
 
 FULL_SIZE: SeedSize = SeedSize(
@@ -50,6 +54,10 @@ FULL_SIZE: SeedSize = SeedSize(
     temporarily_banned_accounts=1,
     permanently_banned_accounts=1,
     accounts_with_a_lifted_ban=1,
+    reported_images=6,
+    reported_nicknames=3,
+    reported_games=3,
+    reports_on_most_reported_content=5,
 )
 
 SMALL_SIZE: SeedSize = SeedSize(
@@ -75,4 +83,8 @@ SMALL_SIZE: SeedSize = SeedSize(
     temporarily_banned_accounts=1,
     permanently_banned_accounts=1,
     accounts_with_a_lifted_ban=1,
+    reported_images=1,
+    reported_nicknames=1,
+    reported_games=1,
+    reports_on_most_reported_content=3,
 )

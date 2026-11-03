@@ -20,6 +20,7 @@ from app.seed.moderation import (
     moderate_templates,
 )
 from app.seed.no_op import NoOpRoomEventPublisher
+from app.seed.reports import create_reports
 from app.seed.rooms import SeedRooms, create_open_rooms
 from app.seed.sizes import SeedSize
 from app.seed.templates import SeedTemplates, create_templates
@@ -48,23 +49,24 @@ class SeedSummary:
     closed_games: int
     open_rooms: int
     moderation_actions: int
+    reports: int
 
 
 def run_seed(
     session: Session, settings: Settings, storage: ImageStorage, size: SeedSize, password: str
 ) -> SeedSummary:
     rng: random.Random = random.Random(SEED_RANDOM_SEED)
-    with _step("1/6 Suppression de l'ancien jeu de données"):
+    with _step("1/7 Suppression de l'ancien jeu de données"):
         removed: SeedCleanup = delete_seed_data(session, storage)
-    with _step("2/6 Comptes"):
+    with _step("2/7 Comptes"):
         accounts: SeedAccounts = create_accounts(session, settings, size, password)
-    with _step("3/6 Modèles et images"):
+    with _step("3/7 Modèles et images"):
         templates: SeedTemplates = create_templates(
             session, settings, storage, size, accounts.players, rng
         )
 
     rooms: RoomService = RoomService(session, settings, NoOpRoomEventPublisher())
-    with _step("4/6 Parties terminées"):
+    with _step("4/7 Parties terminées"):
         played: SeedGames = create_closed_games(
             session,
             settings,
@@ -74,13 +76,13 @@ def run_seed(
             templates.playable,
             rng,
         )
-    with _step("5/6 Salles ouvertes"):
+    with _step("5/7 Salles ouvertes"):
         open_rooms: SeedRooms = create_open_rooms(
             session, settings, rooms, size, accounts.players, templates.playable, rng
         )
 
     moderation_targets: list[User] = [*accounts.players, *accounts.unverified, *accounts.google]
-    with _step("6/6 Journal de modération"):
+    with _step("6/7 Journal de modération"):
         create_moderation_log(
             session,
             size.moderation_actions,
@@ -118,6 +120,8 @@ def run_seed(
             banned[still_banned:],
             rng,
         )
+    with _step("7/7 Signalements"):
+        reports: int = create_reports(session, size, accounts.players, rng)
     return SeedSummary(
         removed=removed,
         accounts=len(accounts.super_admins)
@@ -134,6 +138,7 @@ def run_seed(
         + moderated_images
         + moderated_templates
         + banned_accounts,
+        reports=reports,
     )
 
 

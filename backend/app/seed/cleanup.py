@@ -9,6 +9,7 @@ from app.models.game import Game
 from app.models.game_player import GamePlayer
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
+from app.models.report import Report
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
@@ -40,6 +41,11 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     logger.info("Suppression des données seed : %d comptes", len(seed_user_ids))
 
     session.execute(delete(ModerationAction).where(ModerationAction.actor_id.in_(seed_user_ids)))
+    session.execute(
+        delete(Report).where(
+            or_(Report.reporter_id.in_(seed_user_ids), Report.owner_id.in_(seed_user_ids))
+        )
+    )
     games: int = len(
         session.scalars(
             delete(Game)

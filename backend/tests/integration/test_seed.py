@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections import Counter
 from datetime import timedelta
 
 import pytest
@@ -13,7 +14,9 @@ from app.core.config import get_settings
 from app.models.account_ban import AccountBan
 from app.models.enums import (
     GameStatus,
+    ModerationTargetType,
     PlacementPhase,
+    ReportStatus,
     RoomStatus,
     TemplateModeration,
     UserRole,
@@ -22,6 +25,7 @@ from app.models.game import Game
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.placement import Placement
+from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
@@ -47,6 +51,10 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.permanently_banned_accounts
     + 2 * SMALL_SIZE.accounts_with_a_lifted_ban
 )
+REPORTED_CONTENTS = (
+    SMALL_SIZE.reported_images + SMALL_SIZE.reported_nicknames + SMALL_SIZE.reported_games
+)
+REPORTS = REPORTED_CONTENTS - 1 + SMALL_SIZE.reports_on_most_reported_content
 
 
 def seed(db_session: Session, stored_images: dict[str, bytes]) -> SeedSummary:
@@ -158,6 +166,33 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     )
 
 
+def test_the_seed_creates_open_reports_from_accounts_and_browsers(
+    db_session: Session, stored_images: dict[str, bytes]
+):
+    summary: SeedSummary = seed(db_session, stored_images)
+
+    reports: list[Report] = list(db_session.scalars(select(Report)).all())
+    assert len(reports) == REPORTS == summary.reports
+    assert {report.status for report in reports} == {ReportStatus.OPEN}
+    assert {report.target_type for report in reports} == {
+        ModerationTargetType.IMAGE,
+        ModerationTargetType.NICKNAME,
+        ModerationTargetType.GAME,
+    }
+    assert any(report.reporter_id is None for report in reports)
+    assert any(report.reporter_id is not None for report in reports)
+    assert all(report.reporter_id != report.owner_id for report in reports)
+    targets: Counter[uuid.UUID] = Counter(report.target_id for report in reports)
+    assert len(targets) == REPORTED_CONTENTS
+    assert max(targets.values()) == SMALL_SIZE.reports_on_most_reported_content
+    reported_images: list[uuid.UUID] = [
+        report.target_id for report in reports if report.target_type == ModerationTargetType.IMAGE
+    ]
+    assert {db_session.get_one(Image, image_id).status for image_id in reported_images} == {
+        ImageStatus.VISIBLE
+    }
+
+
 def test_running_the_seed_again_replaces_its_data_only(
     db_session: Session, stored_images: dict[str, bytes]
 ):
@@ -182,6 +217,7 @@ def test_running_the_seed_again_replaces_its_data_only(
     assert count(db_session, Game) == SMALL_SIZE.closed_games
     assert count(db_session, TemplateSnapshot) == first_snapshots
     assert count(db_session, ModerationAction) == MODERATION_ACTIONS
+    assert count(db_session, Report) == REPORTS
     assert db_session.scalars(
         select(Template.name).where(Template.owner_id == real_user.id)
     ).all() == ["Mine"]
@@ -333,10 +369,10 @@ def test_the_seed_logs_each_step_and_its_progress(
     seed(db_session, stored_images)
 
     messages: list[str] = [record.getMessage() for record in caplog.records]
-    for step in range(1, 7):
-        assert any(message.startswith(f"Étape {step}/6") for message in messages)
+    for step in range(1, 8):
+        assert any(message.startswith(f"Étape {step}/7") for message in messages)
         assert any(
-            message.startswith(f"Étape {step}/6") and " terminée en " in message
+            message.startswith(f"Étape {step}/7") and " terminée en " in message
             for message in messages
         )
     last_game: str = f"Partie terminée {SMALL_SIZE.closed_games}/{SMALL_SIZE.closed_games}"
