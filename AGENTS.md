@@ -970,19 +970,30 @@ Do not reformat unrelated code.
 
 # 31. Comments and Documentation
 
+Good code reads by itself. Comments are hard to keep in line with the code, and AI agents trust
+them more than the code.
+
 ## MUST
 
-Write comments when they explain:
+-   Write no comment by default.
+-   Say it in the code first: a name, a type, a named constant, an extracted function or a test.
+-   Keep a comment only if all three can be shown:
+    1.  What breaks without it: the reasonable change a developer would make, and its concrete
+        consequence.
+    2.  Why the code cannot say it: which name, type, constant or test was tried.
+    3.  Why no test catches it.
+-   Remove a comment that the code makes obsolete, in the same change.
 
--   Why something is necessary.
--   A non-obvious constraint.
--   A business rule.
--   A workaround.
--   A compatibility requirement.
+Not concerned: docstrings published in the OpenAPI schema (routes and Pydantic schemas), which
+are the API contract and must stay true, and tool directives (`noqa`, `type: ignore`,
+`eslint-disable`...).
 
 ## MUST NOT
 
-Use comments to explain obvious syntax.
+-   Repeat in a comment what the code, a name or a type already says.
+-   Add section banners, or references to issues or user stories that say nothing else.
+-   Describe the history of the code.
+-   Leave a misleading comment.
 
 Bad:
 
@@ -991,16 +1002,18 @@ Bad:
 i += 1
 ```
 
-Good:
+Bad, because a name says it:
 
 ``` python
 # The external API rejects requests made within 500 ms of the previous request.
 await asyncio.sleep(0.5)
 ```
 
-Do not leave misleading comments.
+Good:
 
-Update comments when behavior changes.
+``` python
+await asyncio.sleep(EXTERNAL_API_MIN_SECONDS_BETWEEN_REQUESTS)
+```
 
 ## Documentation location
 
