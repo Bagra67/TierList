@@ -130,6 +130,10 @@ def git_lines(root: Path, *args: str) -> list[str]:
     return [line for line in output.splitlines() if line]
 
 
+def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[str]:
+    return git_lines(root, "diff", "--name-only", "--no-renames", f"{base}...HEAD")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
@@ -140,10 +144,7 @@ def main() -> int:
     markdown_paths = git_lines(root, "ls-files", "--", "*.md")
     changed_paths = None
     if args.base and not args.skip_sync:
-        # --no-renames: a renamed doc counts as deleted + added, so both paths are checked.
-        changed_paths = git_lines(
-            root, "diff", "--name-only", "--no-renames", f"{args.base}...HEAD"
-        )
+        changed_paths = changed_paths_with_renames_as_delete_and_add(root, args.base)
 
     problems = run_checks(root, markdown_paths, changed_paths)
     for problem in problems:

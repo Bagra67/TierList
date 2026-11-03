@@ -9,8 +9,9 @@ STATUS_ICONS = {"passed": "✅", "failed": "❌", "skipped": "⏭️"}
 SLOWEST_COUNT = 5
 TRACE_MAX_LINES = 40
 MESSAGE_MAX_CHARS = 300
-# ANSI color codes, raw or XML-escaped (`#x1B[33m`), that test tools may leave in their output.
-ANSI_CODES = re.compile(r"(?:\x1b|#x1B)\[[0-9;]*m")
+RAW_ANSI_ESCAPE = r"\x1b"
+XML_ESCAPED_ANSI_ESCAPE = "#x1B"
+ANSI_CODES = re.compile(rf"(?:{RAW_ANSI_ESCAPE}|{XML_ESCAPED_ANSI_ESCAPE})\[[0-9;]*m")
 
 
 @dataclass
