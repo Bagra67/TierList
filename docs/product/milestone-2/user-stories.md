@@ -86,6 +86,7 @@ As a **super admin**, I want to see the latest uploaded images, so that I can fi
 As a **super admin**, I want a page per account and sanctions, so that I can stop repeated abuse.
 
 - _Given_ an account, _when_ I open its page, _then_ I see its details (display name, email, creation date, email confirmed), its templates, its uploaded images, the reports about its content and its moderation history.
+- _Given_ a template on the page, even private, _when_ I open it, _then_ I read its tiers and its tiles, hidden images included, without being able to edit them.
 - _Given_ the page, _when_ I **hide all its images** at once, _then_ each one is hidden as in US-1.4.
 - _Given_ the page, _when_ I **ban** the account **temporarily** (with an end date) or **permanently**, with a reason, _then_ it is signed out everywhere, cannot sign in until the end of the ban, and its public templates leave the marketplace for the duration of the ban.
 - _Given_ a banned account, _when_ it tries to sign in, _then_ it is refused with the reason and, for a temporary ban, its end date.
