@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { readableTextColor } from '../theme/contrast';
+import { readableTextColor } from '../theme/wcagContrast';
 
 export const ITEM_CHIP_CLASS: string =
   'flex min-h-14 items-center rounded-md border bg-card p-1 sm:min-h-16';
