@@ -5,6 +5,101 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.1.0] - 2026-11-03
+
+### Features
+
+- backend: add the super admin role and its authorization (#286)
+- backend: add a command to grant or revoke the super admin role (#287)
+- frontend: add the moderation area for super admins (#288)
+- backend: record moderation actions in a log (#291)
+- backend: list the moderation log for super admins (#292)
+- frontend: show the moderation log (#293)
+- backend: add a seed script with realistic test data (#297)
+- backend: log each seed step and its progress (#301)
+- backend: hide, unhide or delete an image as a super admin (#307)
+- backend: seed hidden and deleted images (#308)
+- frontend: show removed images (#309)
+- backend: list the recent uploads for super admins (#312)
+- backend: spread the seed uploads over 30 days (#313)
+- frontend: review the recent uploads (#314)
+- backend: hide, unhide or delete a template as a super admin (#317)
+- backend: seed a hidden template (#318)
+- frontend: show the templates hidden by moderation (#319)
+- backend: review an account as a super admin (#322)
+- backend: ban an account temporarily or permanently (#323)
+- backend: seed banned accounts (#324)
+- frontend: moderate an account from its page (#325)
+- frontend: ban an account and explain it at sign-in (#326)
+- backend: list the past bans of an account (#344)
+- backend: seed an account with a lifted ban (#345)
+- frontend: show the past bans on the account page (#346)
+- backend: report content from an account or a browser (#349)
+- backend: seed open reports (#350)
+- frontend: report content from the results and the room (#351)
+- backend: list and dismiss the open reports (#354)
+- backend: remove a reported nickname or hide a game (#355)
+- backend: seed closed reports and a hidden game (#356)
+- frontend: handle the reports in the moderation area (#357)
+- backend: read a template as a super admin (#361)
+- frontend: show a template from the account page (#362)
+- backend: show the owner the moderation decisions about their content (#365)
+- frontend: show the owner the moderation decisions about their content (#366)
+
+### Bug fixes
+
+- backend: count nobody absent when absent votes are unchecked (#343)
+
+### Performance
+
+- backend: use what python 3.15 brings (lazy boto3, unpadded pkce) (#264)
+- backend: seed staging with five times fewer queries (#304)
+
+### Refactoring
+
+- backend: remove the comments that repeat the code (#332)
+- remove the comments that repeat the code in scripts and CI (#333)
+- frontend: remove the comments that repeat the code (#335)
+- backend: say in the code what the comments said (#338)
+- frontend: say in the code what the comments said (#339)
+- remove the last comments without proof (#341)
+
+### Build & CI
+
+- seed the staging database from a manual workflow (#298)
+
+### Documentation
+
+- put public content before blind mode in the roadmap (#265)
+- product: design milestone 2 (stories, domain, lifecycles) (#266)
+- document the le plateau visual identity (#281)
+- product: redraw the milestone 1 screens on the visual identity (#282)
+- record the wording validated on the milestone 2 mockups (#283)
+- product: draw the milestone 2 screens on the visual identity (#284)
+- agents: plan deliverables, split prs by layer and mark them ready (#285)
+- document the super admin role (#289)
+- document the moderation log (#294)
+- document the seed data (#299)
+- describe the seed progress logs (#302)
+- explain the direct writes of the seed (#305)
+- document the image moderation (#310)
+- document the recent uploads review (#315)
+- document the template moderation (#320)
+- document the account moderation (#327)
+- agents: write no comment by default (#331)
+- correct the statements that contradict the code (#342)
+- describe the past bans on the account page (#347)
+- describe content reports (#352)
+- describe the reports queue (#358)
+- describe the template page of the moderation area (#363)
+- describe the moderation decisions shown to the owner (#367)
+
+### Tests
+
+- backend: remove the comments that repeat the tests (#334)
+- frontend: remove the comments that repeat the tests (#336)
+- pin in tests what the comments said (#340)
+
 ## [1.0.1] - 2026-10-31
 
 ### Bug fixes

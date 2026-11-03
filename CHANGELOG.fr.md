@@ -5,6 +5,101 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
 
+## [1.1.0] - 2026-11-03
+
+### Fonctionnalités
+
+- backend : ajout du rôle super admin et de son autorisation (#286)
+- backend : ajout d'une commande pour donner ou retirer le rôle super admin (#287)
+- frontend : ajout de l'espace de modération pour les super admins (#288)
+- backend : enregistrement des actions de modération dans un journal (#291)
+- backend : liste du journal de modération pour les super admins (#292)
+- frontend : affichage du journal de modération (#293)
+- backend : ajout d'un script de jeu de données de test réaliste (#297)
+- backend : journalisation de chaque étape du jeu de données et de sa progression (#301)
+- backend : masquer, réafficher ou supprimer une image en tant que super admin (#307)
+- backend : images masquées et supprimées dans le jeu de données (#308)
+- frontend : affichage des images retirées (#309)
+- backend : liste des derniers envois pour les super admins (#312)
+- backend : envois du jeu de données répartis sur 30 jours (#313)
+- frontend : revue des derniers envois (#314)
+- backend : masquer, réafficher ou supprimer un modèle en tant que super admin (#317)
+- backend : modèle masqué dans le jeu de données (#318)
+- frontend : affichage des modèles masqués par la modération (#319)
+- backend : consultation d'un compte en tant que super admin (#322)
+- backend : bannissement temporaire ou définitif d'un compte (#323)
+- backend : comptes bannis dans le jeu de données (#324)
+- frontend : modération d'un compte depuis sa page (#325)
+- frontend : bannissement d'un compte, expliqué à la connexion (#326)
+- backend : liste des bannissements passés d'un compte (#344)
+- backend : compte au bannissement levé dans le jeu de données (#345)
+- frontend : affichage des bannissements passés sur la page d'un compte (#346)
+- backend : signalement de contenu depuis un compte ou un navigateur (#349)
+- backend : signalements ouverts dans le jeu de données (#350)
+- frontend : signalement de contenu depuis les résultats et la salle (#351)
+- backend : liste et classement sans suite des signalements ouverts (#354)
+- backend : retrait d'un pseudo signalé ou masquage d'une partie (#355)
+- backend : signalements fermés et partie masquée dans le jeu de données (#356)
+- frontend : traitement des signalements dans l'espace de modération (#357)
+- backend : lecture d'un modèle en tant que super admin (#361)
+- frontend : affichage d'un modèle depuis la page d'un compte (#362)
+- backend : le propriétaire voit les décisions de modération sur son contenu (#365)
+- frontend : le propriétaire voit les décisions de modération sur son contenu (#366)
+
+### Corrections
+
+- backend : personne n'est compté absent quand les votes absents sont décochés (#343)
+
+### Performances
+
+- backend : utilisation des apports de Python 3.15 (boto3 paresseux, PKCE sans remplissage) (#264)
+- backend : jeu de données de staging avec cinq fois moins de requêtes (#304)
+
+### Refactorisation
+
+- backend : retrait des commentaires qui répètent le code (#332)
+- retrait des commentaires qui répètent le code dans les scripts et la CI (#333)
+- frontend : retrait des commentaires qui répètent le code (#335)
+- backend : dire dans le code ce que disaient les commentaires (#338)
+- frontend : dire dans le code ce que disaient les commentaires (#339)
+- retrait des derniers commentaires sans justification (#341)
+
+### Build & CI
+
+- remplissage de la base de staging par un workflow manuel (#298)
+
+### Documentation
+
+- le contenu public passe avant le mode à l'aveugle dans la roadmap (#265)
+- produit : conception du jalon 2 (stories, domaine, cycles de vie) (#266)
+- documentation de l'identité visuelle Le Plateau (#281)
+- produit : écrans du jalon 1 redessinés sur l'identité visuelle (#282)
+- vocabulaire validé sur les maquettes du jalon 2 (#283)
+- produit : écrans du jalon 2 dessinés sur l'identité visuelle (#284)
+- agents : plans avec livrable, PR par couche et passage en « ready » (#285)
+- documentation du rôle super admin (#289)
+- documentation du journal de modération (#294)
+- documentation du jeu de données (#299)
+- description des journaux de progression du jeu de données (#302)
+- explication des écritures directes du jeu de données (#305)
+- documentation de la modération des images (#310)
+- documentation de la revue des derniers envois (#315)
+- documentation de la modération des modèles (#320)
+- documentation de la modération des comptes (#327)
+- agents : aucun commentaire par défaut (#331)
+- correction des affirmations contredites par le code (#342)
+- description des bannissements passés sur la page d'un compte (#347)
+- description des signalements de contenu (#352)
+- description de la file des signalements (#358)
+- description de la page d'un modèle dans l'espace de modération (#363)
+- description des décisions de modération montrées au propriétaire (#367)
+
+### Tests
+
+- backend : retrait des commentaires qui répètent les tests (#334)
+- frontend : retrait des commentaires qui répètent les tests (#336)
+- fixer dans les tests ce que disaient les commentaires (#340)
+
 ## [1.0.1] - 2026-10-31
 
 ### Corrections
