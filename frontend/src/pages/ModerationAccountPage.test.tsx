@@ -169,7 +169,7 @@ describe('ModerationAccountPage', () => {
   });
 
   it('shows an active ban, which can be lifted with a reason', async () => {
-    const calls: Calls = { imageQueries: [], logQueries: [], posts: [] };
+    const calls: Calls = { reportQueries: [], imageQueries: [], logQueries: [], posts: [] };
     stubBackend({
       'GET /moderation/accounts/max-id': () =>
         Response.json({
