@@ -80,6 +80,11 @@ describe('RecentUploadsPage', () => {
       within(card).getByRole('button', { name: /Supprimer l'image de Camille/ }),
     ).toBeVisible();
     expect(within(card).queryByText('Masquée')).not.toBeInTheDocument();
+    // L'auteur mène à la page de son compte
+    expect(within(card).getByRole('link', { name: 'Camille' })).toHaveAttribute(
+      'href',
+      '/moderation/accounts/camille-id',
+    );
   });
 
   it('marks a hidden image, which can be unhidden, and names a deleted account', async () => {

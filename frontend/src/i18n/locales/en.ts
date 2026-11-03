@@ -292,6 +292,7 @@ export const en: Translation = {
     nav: {
       label: 'Moderation area',
       uploads: 'Recent uploads',
+      accounts: 'Accounts',
       log: 'Log',
     },
     log: {
@@ -362,6 +363,69 @@ export const en: Translation = {
         delete:
           "Delete {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
       },
+    },
+    accounts: {
+      title: 'Accounts',
+      intro: 'Find an account by its name or email, then open its page.',
+      query: 'Name or email',
+      queryPlaceholder: 'Max, max@example.com…',
+      search: 'Search',
+      empty: 'No account matches.',
+      more: 'Show more',
+      createdAt: 'Created on {{date, datetime(dateStyle: medium)}}',
+      superAdmin: 'Super admin',
+      banned: 'Banned',
+    },
+    account: {
+      email: 'Email',
+      createdAt: 'Created',
+      date: '{{date, datetime(dateStyle: medium)}}',
+      emailVerified: 'Email confirmed',
+      yes: 'Yes',
+      no: 'No',
+      templates: 'Templates',
+      noTemplates: 'This account has no template.',
+      templateActionLabel: {
+        hide: 'Hide the template {{name}}',
+        unhide: 'Unhide the template {{name}}',
+        delete: 'Delete the template {{name}}',
+      },
+      images: 'Uploaded images',
+      noImages: 'This account has uploaded no visible or hidden image.',
+      hideAll: 'Hide all their images',
+      hiddenCount_one: '{{count}} image hidden.',
+      hiddenCount_other: '{{count}} images hidden.',
+      history: 'Moderation history',
+      noHistory: 'No decision has been taken yet on this account or its content.',
+    },
+    templateDialog: {
+      hide: {
+        title: 'Hide the template "{{name}}"',
+        description:
+          'No room or game can start with it any more. Its owner will see it, with the reason, and can still edit it.',
+        submit: 'Hide',
+        submitting: 'Hiding…',
+      },
+      unhide: {
+        title: 'Unhide the template "{{name}}"',
+        description: 'It will be as it was before: games can start with it again.',
+        submit: 'Unhide',
+        submitting: 'Unhiding…',
+      },
+      delete: {
+        title: 'Delete the template "{{name}}"',
+        description:
+          'It will be deleted as if its owner did it. The games already played keep their version.',
+        submit: 'Delete',
+        submitting: 'Deleting…',
+      },
+    },
+    hideAllDialog: {
+      title: 'Hide all the images of {{name}}',
+      description:
+        'Each visible image will be replaced by "Image removed" everywhere it appears. You can unhide them one by one.',
+      submit: 'Hide all',
+      submitting: 'Hiding…',
     },
     reasonDialog: {
       reason: 'Reason',

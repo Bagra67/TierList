@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 
 import type { ImageModerationAction, RecentUpload } from '../api/moderation';
+import { moderationAccountPath } from '../constants/routes';
 import { Button } from './ui/button';
 
 interface UploadCardProps {
@@ -35,7 +37,17 @@ export function UploadCard({ upload, onAction }: UploadCardProps) {
         )}
       </div>
       <div className="flex flex-col gap-1 text-sm">
-        <span className="font-semibold">{author}</span>
+        {/* L'auteur mène à la page de son compte, s'il existe encore */}
+        {upload.author_id === null ? (
+          <span className="font-semibold">{author}</span>
+        ) : (
+          <Link
+            to={moderationAccountPath(upload.author_id)}
+            className="font-semibold underline-offset-4 hover:underline"
+          >
+            {author}
+          </Link>
+        )}
         <span className="text-muted-foreground">{t('moderation.uploads.at', { date })}</span>
         <span className="text-muted-foreground">
           {t('moderation.uploads.templates', { count: upload.template_names.length })}

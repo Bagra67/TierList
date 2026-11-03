@@ -19,6 +19,9 @@ export const ROUTES = {
   MODERATION: '/moderation',
   // Derniers envois d'images (US-1.7)
   MODERATION_UPLOADS: '/moderation/uploads',
+  // Comptes : recherche, et page d'un compte (US-1.8)
+  MODERATION_ACCOUNTS: '/moderation/accounts',
+  MODERATION_ACCOUNT: '/moderation/accounts/:accountId',
   // Journal de modération (US-1.9)
   MODERATION_LOG: '/moderation/log',
   // Lobby d'une salle, cible du lien partagé (backend/app/constants/rooms.py : FRONTEND_ROOM)
@@ -69,3 +72,7 @@ export const TOKEN_PARAM = 'token';
 // Paramètres de requête posés par le backend au retour de Google
 export const LOGIN_ERROR_PARAM = 'error';
 export const CONFIRM_PARAM = 'confirm';
+
+export function moderationAccountPath(accountId: string): string {
+  return generatePath(ROUTES.MODERATION_ACCOUNT, { accountId });
+}

@@ -301,6 +301,7 @@ export const fr = {
     nav: {
       label: 'Espace de modération',
       uploads: 'Derniers envois',
+      accounts: 'Comptes',
       log: 'Journal',
     },
     log: {
@@ -373,6 +374,70 @@ export const fr = {
         delete:
           "Supprimer l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
       },
+    },
+    accounts: {
+      title: 'Comptes',
+      intro: 'Trouvez un compte par son nom ou son e-mail, puis ouvrez sa page.',
+      query: 'Nom ou e-mail',
+      queryPlaceholder: 'Max, max@exemple.fr…',
+      search: 'Rechercher',
+      empty: 'Aucun compte ne correspond.',
+      more: 'Voir plus',
+      createdAt: 'Créé le {{date, datetime(dateStyle: medium)}}',
+      superAdmin: 'Super admin',
+      banned: 'Banni',
+    },
+    account: {
+      email: 'E-mail',
+      createdAt: 'Création',
+      date: '{{date, datetime(dateStyle: medium)}}',
+      emailVerified: 'E-mail confirmé',
+      yes: 'Oui',
+      no: 'Non',
+      templates: 'Modèles',
+      noTemplates: "Ce compte n'a aucun modèle.",
+      templateActionLabel: {
+        hide: 'Masquer le modèle {{name}}',
+        unhide: 'Réafficher le modèle {{name}}',
+        delete: 'Supprimer le modèle {{name}}',
+      },
+      images: 'Images envoyées',
+      noImages: "Ce compte n'a envoyé aucune image visible ou masquée.",
+      hideAll: 'Masquer toutes ses images',
+      hiddenCount_one: '{{count}} image masquée.',
+      hiddenCount_other: '{{count}} images masquées.',
+      history: 'Historique de modération',
+      noHistory: "Aucune décision n'a encore été prise sur ce compte ni sur son contenu.",
+    },
+    templateDialog: {
+      hide: {
+        title: 'Masquer le modèle « {{name}} »',
+        description:
+          'Plus aucune salle ni partie ne pourra être lancée avec. Son propriétaire le verra, avec le motif, et pourra encore le modifier.',
+        submit: 'Masquer',
+        submitting: 'Masquage…',
+      },
+      unhide: {
+        title: 'Réafficher le modèle « {{name}} »',
+        description:
+          'Il retrouvera son état d’avant : des parties pourront de nouveau être lancées avec.',
+        submit: 'Réafficher',
+        submitting: 'Réaffichage…',
+      },
+      delete: {
+        title: 'Supprimer le modèle « {{name}} »',
+        description:
+          'Il sera supprimé comme si son propriétaire le faisait. Les parties déjà jouées gardent leur version.',
+        submit: 'Supprimer',
+        submitting: 'Suppression…',
+      },
+    },
+    hideAllDialog: {
+      title: 'Masquer toutes les images de {{name}}',
+      description:
+        'Chaque image visible sera remplacée par « Image retirée » partout où elle apparaît. Vous pourrez les réafficher une à une.',
+      submit: 'Tout masquer',
+      submitting: 'Masquage…',
     },
     reasonDialog: {
       reason: 'Motif',

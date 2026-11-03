@@ -1,25 +1,13 @@
-import { type FormEvent, type RefObject, useId, useRef, useState } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  type ImageModerationAction,
-  type ListedImageStatus,
-  type RecentUpload,
-  type RecentUploadsFilters,
-  useModerateImage,
-  useRecentUploads,
-} from '../api/moderation';
-import { EmptyState } from '../components/EmptyState';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
+import { type ListedImageStatus, type RecentUploadsFilters } from '../api/moderation';
 import { TextField } from '../components/TextField';
-import { UploadCard } from '../components/UploadCard';
+import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
-import { translateError } from '../errors/apiError';
 
 // Début d'un jour choisi (AAAA-MM-JJ), dans le fuseau du super admin, en date ISO avec fuseau
 function startOfDay(day: string): string {
@@ -33,14 +21,9 @@ function startOfNextDay(day: string): string {
   return next.toISOString();
 }
 
-interface PendingAction {
-  upload: RecentUpload;
-  action: ImageModerationAction;
-}
-
 // Derniers envois (US-1.7) : les images envoyées, des plus récentes aux plus anciennes, pour
-// repérer un problème avant qu'on le signale. Chaque image peut être masquée, réaffichée ou
-// supprimée (US-1.4), avec un motif écrit au journal.
+// repérer un problème avant qu'on le signale, avec leurs filtres ; la grille et ses actions sont
+// dans UploadGrid.
 export function RecentUploadsPage() {
   const { t } = useTranslation();
   const fromId: string = useId();
@@ -60,45 +43,11 @@ export function RecentUploadsPage() {
   };
   const isFiltered: boolean =
     author !== undefined || fromDay !== '' || toDay !== '' || status !== '';
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useRecentUploads(filters);
-  const uploads: RecentUpload[] = data?.pages.flatMap((page) => page.images) ?? [];
-
-  const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
-  const [pending, setPending] = useState<PendingAction | null>(null);
-  const moderateMutation = useModerateImage();
-
   function applyAuthor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const searched: string = authorDraft.trim();
     setAuthor(searched === '' ? undefined : searched);
   }
-
-  function openDialog(upload: RecentUpload, action: ImageModerationAction) {
-    setPending({ upload, action });
-    dialogRef.current?.showModal();
-  }
-
-  async function moderate(reason: string): Promise<boolean> {
-    if (pending === null) return false;
-    try {
-      await moderateMutation.mutateAsync({
-        imageId: pending.upload.id,
-        action: pending.action,
-        reason,
-      });
-    } catch {
-      return false; // l'erreur est affichée depuis moderateMutation.error
-    }
-    return true;
-  }
-
-  function closeDialog() {
-    moderateMutation.reset();
-    setPending(null);
-  }
-
-  const action: ImageModerationAction = pending?.action ?? 'hide';
 
   return (
     <div className="flex flex-col items-start gap-6">
@@ -154,44 +103,11 @@ export function RecentUploadsPage() {
         </div>
       </div>
 
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && uploads.length === 0 && (
-        <EmptyState
-          message={
-            isFiltered ? t('moderation.uploads.emptyFiltered') : t('moderation.uploads.empty')
-          }
-        />
-      )}
-      {uploads.length > 0 && (
-        <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {uploads.map((upload: RecentUpload) => (
-            <UploadCard key={upload.id} upload={upload} onAction={openDialog} />
-          ))}
-        </ul>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.uploads.more')}
-        </Button>
-      )}
-
-      <ModerationReasonDialog
-        dialogRef={dialogRef}
-        title={t(`moderation.reasonDialog.${action}.title`)}
-        description={t(`moderation.reasonDialog.${action}.description`)}
-        submitLabel={t(`moderation.reasonDialog.${action}.submit`)}
-        submittingLabel={t(`moderation.reasonDialog.${action}.submitting`)}
-        destructive={action === 'delete'}
-        isPending={moderateMutation.isPending}
-        error={moderateMutation.isError ? translateError(t, moderateMutation.error) : null}
-        onSubmit={moderate}
-        onClose={closeDialog}
+      <UploadGrid
+        filters={filters}
+        emptyMessage={
+          isFiltered ? t('moderation.uploads.emptyFiltered') : t('moderation.uploads.empty')
+        }
       />
     </div>
   );
