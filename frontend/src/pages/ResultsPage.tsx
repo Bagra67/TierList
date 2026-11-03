@@ -66,8 +66,7 @@ export function ResultsPage() {
     }),
   );
 
-  // La vue montre des items, donc des boutons
-  const panelHasItems: boolean =
+  const panelHasFocusableItems: boolean =
     state.results !== undefined &&
     known.items.length > 0 &&
     !(view === 'players' && state.results.players.length === 0);
@@ -128,14 +127,12 @@ export function ResultsPage() {
       <div className="grid w-full items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-4">
           <ResultsTabs selected={view} onSelect={setView} />
-          {/* Motif ARIA tabs : le panneau n'est focalisable que s'il n'a aucun élément interactif
-              (chargement, erreur, partie sans joueur) ; sinon ses items, des boutons, suffisent */}
           <div
             role="tabpanel"
             id={resultsPanelId(view)}
             aria-labelledby={resultsTabId(view)}
             aria-busy={state.isPending}
-            tabIndex={panelHasItems ? undefined : 0}
+            tabIndex={panelHasFocusableItems ? undefined : 0}
             className="w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring"
           >
             {state.results !== undefined ? (
@@ -201,7 +198,7 @@ function ResultsViewContent({
         items={items}
         extraRow={{ label: t('results.median.unranked'), itemIds: results.unranked_item_ids }}
         selection={selection}
-        reveal={reveal}
+        revealOnMount={reveal}
         onRevealStarted={onRevealStarted}
       />
     );

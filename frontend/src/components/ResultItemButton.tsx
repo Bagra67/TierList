@@ -7,10 +7,7 @@ import type { ItemSelection, ResultItem } from './resultsViews';
 interface ResultItemButtonProps {
   resultItem: ResultItem;
   selection: ItemSelection;
-  // true : le nom accessible dit l'action (« Voir les votes : Paprika ») ; false : il reste le nom
-  // de l'item, quand le bouton nomme aussi autre chose (en-tête de ligne du tableau) et l'action
-  // passe dans l'infobulle
-  labelled: boolean;
+  accessibleNameIsAction: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -18,7 +15,7 @@ interface ResultItemButtonProps {
 export function ResultItemButton({
   resultItem,
   selection,
-  labelled,
+  accessibleNameIsAction,
   className,
   children,
 }: ResultItemButtonProps) {
@@ -30,8 +27,8 @@ export function ResultItemButton({
     <button
       type="button"
       aria-current={selected ? 'true' : undefined}
-      aria-label={labelled ? action : undefined}
-      title={labelled ? undefined : action}
+      aria-label={accessibleNameIsAction ? action : undefined}
+      title={accessibleNameIsAction ? undefined : action}
       onClick={() => selection.onSelect(itemId)}
       className={cn(
         'cursor-pointer text-left outline-none',

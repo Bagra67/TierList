@@ -10,16 +10,15 @@ import { cn } from 'cn';
 
 interface GuestLinkSectionProps {
   code: string;
-  // Lien perso connu de cette page (juste après l'arrivée ou un renouvellement), sinon null
-  guestRoom: GuestRoom | null;
+  justIssuedGuestLink: GuestRoom | null;
   onRenewed: (guestRoom: GuestRoom) => void;
 }
 
-export function GuestLinkSection({ code, guestRoom, onRenewed }: GuestLinkSectionProps) {
+export function GuestLinkSection({ code, justIssuedGuestLink, onRenewed }: GuestLinkSectionProps) {
   const renewMutation = useRenewGuestLink(code);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  if (guestRoom !== null) return <GuestLinkNotice guestRoom={guestRoom} />;
+  if (justIssuedGuestLink !== null) return <GuestLinkNotice guestRoom={justIssuedGuestLink} />;
 
   async function renew() {
     let renewed: GuestRoom;

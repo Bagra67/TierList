@@ -23,6 +23,11 @@ export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) 
   const queryClient: QueryClient = useQueryClient();
   const { t } = useTranslation();
 
+  function leaveClosedRoom() {
+    void navigate(ROUTES.HOME);
+    queryClient.removeQueries({ queryKey: roomQueryKey(canonicalRoomCode(code)) });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
@@ -30,10 +35,7 @@ export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) 
     } catch {
       return;
     }
-    // La salle n'existe plus : retour à l'accueil, puis la salle sort du cache (la relire
-    // donnerait room_not_found)
-    void navigate(ROUTES.HOME);
-    queryClient.removeQueries({ queryKey: roomQueryKey(canonicalRoomCode(code)) });
+    leaveClosedRoom();
   }
 
   return (

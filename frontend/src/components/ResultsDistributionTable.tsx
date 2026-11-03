@@ -60,7 +60,7 @@ export function ResultsDistributionTable({
                   <ResultItemButton
                     resultItem={resultItem}
                     selection={selection}
-                    labelled={false}
+                    accessibleNameIsAction={false}
                     className="rounded-md p-1 hover:bg-muted"
                   >
                     <GameItemView

@@ -72,15 +72,9 @@ export function RoomPage() {
     },
     [code, queryClient],
   );
-  // Ouvert dès que le lecteur a une place : la salle est chargée
-  const roomEvents: RoomEventsState = useRoomEvents(
-    code,
-    viewer,
-    room !== undefined,
-    handleRemoved,
-  );
-  // Lien perso de l'invité qui vient d'entrer (ou de le renouveler) : il n'est pas relu ensuite
-  const [guestRoom, setGuestRoom] = useState<GuestRoom | null>(null);
+  const viewerHasSeat: boolean = room !== undefined;
+  const roomEvents: RoomEventsState = useRoomEvents(code, viewer, viewerHasSeat, handleRemoved);
+  const [justIssuedGuestLink, setJustIssuedGuestLink] = useState<GuestRoom | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   useEffect(() => {
@@ -90,11 +84,10 @@ export function RoomPage() {
   }, [guestToken, isSuccess, location.pathname, navigate]);
 
   const errorCode: string | undefined = error instanceof ApiError ? error.code : undefined;
+  const visitorHasNoSeatYet: boolean = viewer === 'guest' && errorCode === 'room_not_found';
   const canJoinAsGuest: boolean =
-    viewer === 'guest' && (errorCode === 'room_not_found' || errorCode === 'guest_link_invalid');
-  // Pour un visiteur, room_not_found veut seulement dire « pas encore de place » : pas d'erreur
-  const showError: boolean =
-    error !== null && !(viewer === 'guest' && errorCode === 'room_not_found');
+    visitorHasNoSeatYet || (viewer === 'guest' && errorCode === 'guest_link_invalid');
+  const showError: boolean = error !== null && !visitorHasNoSeatYet;
 
   if (removal !== null) {
     return (
@@ -119,9 +112,13 @@ export function RoomPage() {
     <PageContainer width="app" className="flex flex-col items-start gap-6">
       {isPending && error === null && <LoadingSkeleton shape="board" />}
       {showError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setGuestRoom} />}
+      {canJoinAsGuest && <JoinRoomScreen code={code} onJoinedAsGuest={setJustIssuedGuestLink} />}
       {viewer === 'guest' && room !== undefined && (
-        <GuestLinkSection code={code} guestRoom={guestRoom} onRenewed={setGuestRoom} />
+        <GuestLinkSection
+          code={code}
+          justIssuedGuestLink={justIssuedGuestLink}
+          onRenewed={setJustIssuedGuestLink}
+        />
       )}
       {room !== undefined && roomEvents.unavailable && (
         <p
