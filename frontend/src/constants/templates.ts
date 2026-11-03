@@ -1,5 +1,3 @@
-// Doivent rester égales aux limites du backend (backend/app/constants/templates.py), liées au
-// schéma de la base
 export const TEMPLATE_NAME_MAX_LENGTH: number = 100;
 export const TIER_NAME_MAX_LENGTH: number = 50;
 export const TILE_TEXT_MAX_LENGTH: number = 200;

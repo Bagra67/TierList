@@ -4,7 +4,12 @@ import { readRepositoryFile } from '../test/repositoryFile';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from './auth';
 import { MODERATION_REASON_MAX_LENGTH } from './moderation';
 import { CONFIRM_PARAM, LOGIN_ERROR_PARAM, ROUTES, TOKEN_PARAM } from './routes';
-import { TIER_COLOR_PRESETS } from './templates';
+import {
+  TEMPLATE_NAME_MAX_LENGTH,
+  TIER_COLOR_PRESETS,
+  TIER_NAME_MAX_LENGTH,
+  TILE_TEXT_MAX_LENGTH,
+} from './templates';
 
 interface OpenApiProperty {
   maxLength?: number;
@@ -22,6 +27,12 @@ const openApiSchemas: OpenApiSchemas['components']['schemas'] = (
 const backendAuthConstants: string = readRepositoryFile('backend/app/constants/auth.py');
 const backendRoomConstants: string = readRepositoryFile('backend/app/constants/rooms.py');
 const backendTemplateConstants: string = readRepositoryFile('backend/app/constants/templates.py');
+
+function maxLengthOf(schemaName: string, propertyName: string): number | undefined {
+  const property: OpenApiProperty = openApiSchemas[schemaName].properties[propertyName];
+  const options: OpenApiProperty[] = [property, ...(property.anyOf ?? [])];
+  return options.find((option: OpenApiProperty) => option.maxLength !== undefined)?.maxLength;
+}
 
 function pythonStringConstant(pythonSource: string, name: string): string {
   const assignment: RegExpMatchArray | null = pythonSource.match(
@@ -53,6 +64,18 @@ describe('limits shared with the backend', () => {
       expect(MODERATION_REASON_MAX_LENGTH).toBe(
         openApiSchemas[schemaName].properties.reason.maxLength,
       );
+    }
+  });
+});
+
+describe('template limits shared with the backend', () => {
+  it('caps the names and the tile text at the limits of the template requests', () => {
+    for (const schemaName of ['CreateTemplateRequest', 'RenameTemplateRequest']) {
+      expect(TEMPLATE_NAME_MAX_LENGTH).toBe(maxLengthOf(schemaName, 'name'));
+    }
+    expect(TIER_NAME_MAX_LENGTH).toBe(maxLengthOf('UpdateTierRequest', 'name'));
+    for (const schemaName of ['CreateTileRequest', 'UpdateTileRequest']) {
+      expect(TILE_TEXT_MAX_LENGTH).toBe(maxLengthOf(schemaName, 'text'));
     }
   });
 });
