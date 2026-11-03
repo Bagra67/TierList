@@ -114,9 +114,8 @@ def run_seed(
             rng,
         )
         # Les derniers joueurs : les tests et la doc se connectent avec seed-player-1
-        banned: list[User] = accounts.players[
-            -(size.temporarily_banned_accounts + size.permanently_banned_accounts) :
-        ]
+        banned_count: int = size.temporarily_banned_accounts + size.permanently_banned_accounts
+        banned: list[User] = accounts.players[len(accounts.players) - banned_count :]
         banned_accounts: int = ban_accounts(
             session,
             settings,
