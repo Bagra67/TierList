@@ -27,6 +27,8 @@ from app.models.template import Template
 from app.schemas.templates import (
     CreateTemplateRequest,
     CreateTileRequest,
+    RemovedTemplateListResponse,
+    RemovedTemplateResponse,
     RenameTemplateRequest,
     TemplateListResponse,
     TemplateResponse,
@@ -34,7 +36,7 @@ from app.schemas.templates import (
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.templates import TemplateSummary, TierChanges, TileChanges
+from app.services.templates import RemovedTemplate, TemplateSummary, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -114,6 +116,16 @@ def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> Templat
     for summary in summaries:
         items.append(TemplateSummaryResponse.model_validate(summary))
     return TemplateListResponse(items=items)
+
+
+@router.get("/removed", responses=UNAUTHORIZED_RESPONSE)
+def list_removed_templates(
+    user: CurrentUserDep, service: TemplateServiceDep
+) -> RemovedTemplateListResponse:
+    removed_templates: list[RemovedTemplate] = service.list_removed_by_moderation(user)
+    return RemovedTemplateListResponse(
+        items=[RemovedTemplateResponse.model_validate(template) for template in removed_templates]
+    )
 
 
 @router.get("/{template_id}", responses=TEMPLATE_NOT_FOUND_RESPONSES)

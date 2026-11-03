@@ -21,7 +21,8 @@ from app.exceptions.templates import (
     TileNotFoundError,
 )
 from app.models.enums import TemplateModeration
-from app.models.image import Image
+from app.models.image import Image, ImageStatus
+from app.models.moderation_action import ModerationAction
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
@@ -30,6 +31,7 @@ from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import images as image_repository
+from app.repositories import moderation_actions as moderation_action_repository
 from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,23 @@ def _move[Positioned: (Tier, Tile)](
 
 
 @dataclass(frozen=True)
+class RemovedImage:
+    tile_id: uuid.UUID
+    tile_text: str | None
+    tile_position: int
+    status: ImageStatus
+    reason: str | None
+
+
+@dataclass(frozen=True)
+class RemovedTemplate:
+    id: uuid.UUID
+    name: str
+    removed_at: datetime
+    reason: str
+
+
+@dataclass(frozen=True)
 class TemplateSummary:
     id: uuid.UUID
     name: str
@@ -56,6 +75,7 @@ class TemplateSummary:
     updated_at: datetime
     moderation: TemplateModeration
     moderation_reason: str | None
+    removed_images: list[RemovedImage]
 
 
 class TierChanges(TypedDict, total=False):
@@ -93,6 +113,9 @@ class TemplateService:
         templates_with_tile_count: list[tuple[Template, int]] = (
             template_repository.list_owned_templates_with_tile_count(self._session, owner.id)
         )
+        removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
+            owner
+        )
 
         summaries: list[TemplateSummary] = []
         for template, tile_count in templates_with_tile_count:
@@ -103,9 +126,45 @@ class TemplateService:
                 updated_at=template.updated_at,
                 moderation=template.moderation,
                 moderation_reason=template.moderation_reason,
+                removed_images=removed_images.get(template.id, []),
             )
             summaries.append(summary)
         return summaries
+
+    def _removed_images_by_template(self, owner: User) -> dict[uuid.UUID, list[RemovedImage]]:
+        tiles_with_image: list[tuple[Tile, Image]] = (
+            template_repository.list_tiles_with_removed_image_of_owner(self._session, owner.id)
+        )
+
+        removed_images: dict[uuid.UUID, list[RemovedImage]] = {}
+        for tile, image in tiles_with_image:
+            removed_image: RemovedImage = RemovedImage(
+                tile_id=tile.id,
+                tile_text=tile.text,
+                tile_position=tile.position,
+                status=image.status,
+                reason=image.moderation_reason,
+            )
+            removed_images.setdefault(tile.template_id, []).append(removed_image)
+        return removed_images
+
+    def list_removed_by_moderation(self, owner: User) -> list[RemovedTemplate]:
+        deletions: list[tuple[Template, ModerationAction]] = (
+            moderation_action_repository.list_templates_deleted_by_moderation(
+                self._session, owner.id
+            )
+        )
+
+        removed_templates: list[RemovedTemplate] = []
+        for template, moderation_action in deletions:
+            removed_template: RemovedTemplate = RemovedTemplate(
+                id=template.id,
+                name=template.name,
+                removed_at=moderation_action.created_at,
+                reason=moderation_action.reason,
+            )
+            removed_templates.append(removed_template)
+        return removed_templates
 
     def get(self, owner: User, template_id: uuid.UUID) -> Template:
         template: Template | None = template_repository.get_owned_template(

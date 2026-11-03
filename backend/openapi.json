@@ -915,6 +915,52 @@
         ]
       }
     },
+    "/templates/removed": {
+      "get": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "List Removed Templates",
+        "operationId": "list_removed_templates_templates_removed_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemovedTemplateListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/templates/{template_id}": {
       "get": {
         "tags": [
@@ -7305,6 +7351,99 @@
         "title": "RemoveNicknameRequest",
         "description": "Retirer un pseudo signalé, définitivement. target_id est celui du signalement : un compte,\nun participant ou un joueur."
       },
+      "RemovedImageResponse": {
+        "properties": {
+          "tile_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tile Id"
+          },
+          "tile_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tile Text"
+          },
+          "tile_position": {
+            "type": "integer",
+            "title": "Tile Position"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImageStatus"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tile_id",
+          "tile_text",
+          "tile_position",
+          "status",
+          "reason"
+        ],
+        "title": "RemovedImageResponse"
+      },
+      "RemovedTemplateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RemovedTemplateResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "RemovedTemplateListResponse"
+      },
+      "RemovedTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "removed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Removed At"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "removed_at",
+          "reason"
+        ],
+        "title": "RemovedTemplateResponse"
+      },
       "RenameTemplateRequest": {
         "properties": {
           "name": {
@@ -7987,6 +8126,13 @@
               }
             ],
             "title": "Moderation Reason"
+          },
+          "removed_images": {
+            "items": {
+              "$ref": "#/components/schemas/RemovedImageResponse"
+            },
+            "type": "array",
+            "title": "Removed Images"
           }
         },
         "type": "object",
@@ -7996,7 +8142,8 @@
           "tile_count",
           "updated_at",
           "moderation",
-          "moderation_reason"
+          "moderation_reason",
+          "removed_images"
         ],
         "title": "TemplateSummaryResponse"
       },
@@ -8086,6 +8233,27 @@
             "type": "boolean",
             "title": "Image Removed"
           },
+          "image_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "image_moderation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Moderation Reason"
+          },
           "position": {
             "type": "integer",
             "title": "Position"
@@ -8097,6 +8265,8 @@
           "text",
           "image_url",
           "image_removed",
+          "image_status",
+          "image_moderation_reason",
           "position"
         ],
         "title": "TileResponse"

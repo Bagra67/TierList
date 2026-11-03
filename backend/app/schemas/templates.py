@@ -16,6 +16,7 @@ from app.constants.templates import (
     TILE_TEXT_MAX_LENGTH,
 )
 from app.models.enums import TemplateModeration
+from app.models.image import ImageStatus
 
 TemplateName = Annotated[
     str,
@@ -80,6 +81,8 @@ class TileResponse(BaseModel):
     text: str | None
     image_url: str | None
     image_removed: bool
+    image_status: ImageStatus | None
+    image_moderation_reason: str | None
     position: int
 
 
@@ -95,6 +98,16 @@ class TemplateResponse(BaseModel):
     moderation_reason: str | None
 
 
+class RemovedImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tile_id: uuid.UUID
+    tile_text: str | None
+    tile_position: int
+    status: ImageStatus
+    reason: str | None
+
+
 class TemplateSummaryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -104,7 +117,21 @@ class TemplateSummaryResponse(BaseModel):
     updated_at: datetime
     moderation: TemplateModeration
     moderation_reason: str | None
+    removed_images: list[RemovedImageResponse]
 
 
 class TemplateListResponse(BaseModel):
     items: list[TemplateSummaryResponse]
+
+
+class RemovedTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    removed_at: datetime
+    reason: str
+
+
+class RemovedTemplateListResponse(BaseModel):
+    items: list[RemovedTemplateResponse]

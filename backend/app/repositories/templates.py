@@ -5,6 +5,7 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
+from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
@@ -59,6 +60,23 @@ def list_owned_templates_with_tile_count(
         .order_by(Template.updated_at.desc(), Template.id)
     )
     return [(template, tile_count) for template, tile_count in session.execute(statement)]
+
+
+def list_tiles_with_removed_image_of_owner(
+    session: Session, owner_id: uuid.UUID
+) -> list[tuple[Tile, Image]]:
+    statement: Select[Tile, Image] = (
+        select(Tile, Image)
+        .join(Image, Tile.image_id == Image.id)
+        .join(Template, Tile.template_id == Template.id)
+        .where(
+            Template.owner_id == owner_id,
+            Template.deleted_at.is_(None),
+            Image.status != ImageStatus.VISIBLE,
+        )
+        .order_by(Tile.position, Tile.id)
+    )
+    return [(tile, image) for tile, image in session.execute(statement)]
 
 
 def delete_templates_deleted_before(session: Session, limit: datetime) -> int:

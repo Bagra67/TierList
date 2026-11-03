@@ -15,6 +15,7 @@ const chips: TemplateSummary = {
   updated_at: '2026-10-05T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  removed_images: [],
 };
 const sodas: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02',
@@ -23,6 +24,7 @@ const sodas: TemplateSummary = {
   updated_at: '2026-10-04T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  removed_images: [],
 };
 
 const createdTemplate: Template = {

@@ -297,3 +297,25 @@ def test_a_public_file_that_cannot_be_erased_after_hiding_is_logged_with_its_key
     db_session.refresh(image)
     assert image.status == ImageStatus.HIDDEN
     assert image.storage_key in caplog.text
+
+
+def test_the_reason_of_a_decision_is_kept_on_the_image_until_it_is_unhidden(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    image: Image = add_image(db_session, stored_images, ImageStatus.VISIBLE)
+
+    moderate(auth_client, nina, "hide", image.id, "Violence")
+    db_session.refresh(image)
+    assert image.moderation_reason == "Violence"
+
+    moderate(auth_client, nina, "unhide", image.id, "Mistake")
+    db_session.refresh(image)
+    assert image.moderation_reason is None
+
+    moderate(auth_client, nina, "delete", image.id, "Illegal content")
+    db_session.refresh(image)
+    assert image.moderation_reason == "Illegal content"

@@ -5,6 +5,7 @@ from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.dml import ReturningDelete
 
+from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
@@ -21,6 +22,23 @@ def delete_moderation_actions_before(session: Session, limit: datetime) -> int:
         .returning(ModerationAction.id)
     )
     return len(session.scalars(statement).all())
+
+
+def list_templates_deleted_by_moderation(
+    session: Session, owner_id: uuid.UUID
+) -> list[tuple[Template, ModerationAction]]:
+    statement: Select[Template, ModerationAction] = (
+        select(Template, ModerationAction)
+        .join(ModerationAction, ModerationAction.target_id == Template.id)
+        .where(
+            Template.owner_id == owner_id,
+            Template.deleted_at.is_not(None),
+            ModerationAction.target_type == ModerationTargetType.TEMPLATE,
+            ModerationAction.action == ModerationActionKind.DELETE,
+        )
+        .order_by(ModerationAction.created_at.desc(), ModerationAction.id)
+    )
+    return [(template, action) for template, action in session.execute(statement)]
 
 
 def list_moderation_actions(

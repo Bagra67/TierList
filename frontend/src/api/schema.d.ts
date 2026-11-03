@@ -253,6 +253,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/templates/removed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Removed Templates */
+        get: operations["list_removed_templates_templates_removed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates/{template_id}": {
         parameters: {
             query?: never;
@@ -1743,6 +1760,43 @@ export interface components {
              */
             target_id: string;
         };
+        /** RemovedImageResponse */
+        RemovedImageResponse: {
+            /**
+             * Tile Id
+             * Format: uuid
+             */
+            tile_id: string;
+            /** Tile Text */
+            tile_text: string | null;
+            /** Tile Position */
+            tile_position: number;
+            status: components["schemas"]["ImageStatus"];
+            /** Reason */
+            reason: string | null;
+        };
+        /** RemovedTemplateListResponse */
+        RemovedTemplateListResponse: {
+            /** Items */
+            items: components["schemas"]["RemovedTemplateResponse"][];
+        };
+        /** RemovedTemplateResponse */
+        RemovedTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Removed At
+             * Format: date-time
+             */
+            removed_at: string;
+            /** Reason */
+            reason: string;
+        };
         /** RenameTemplateRequest */
         RenameTemplateRequest: {
             /** Name */
@@ -2020,6 +2074,8 @@ export interface components {
             moderation: components["schemas"]["TemplateModeration"];
             /** Moderation Reason */
             moderation_reason: string | null;
+            /** Removed Images */
+            removed_images: components["schemas"]["RemovedImageResponse"][];
         };
         /**
          * TierItemsResponse
@@ -2061,6 +2117,9 @@ export interface components {
             image_url: string | null;
             /** Image Removed */
             image_removed: boolean;
+            image_status: components["schemas"]["ImageStatus"] | null;
+            /** Image Moderation Reason */
+            image_moderation_reason: string | null;
             /** Position */
             position: number;
         };
@@ -3087,6 +3146,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_removed_templates_templates_removed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemovedTemplateListResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */

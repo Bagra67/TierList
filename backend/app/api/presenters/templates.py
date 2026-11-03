@@ -32,6 +32,8 @@ def _tile_response(tile: Tile, storage: ImageStorage) -> TileResponse:
         text=tile.text,
         image_url=optional_image_url(storage, tile.image),
         image_removed=is_image_removed(tile.image),
+        image_status=tile.image.status if tile.image is not None else None,
+        image_moderation_reason=tile.image.moderation_reason if tile.image is not None else None,
         position=tile.position,
     )
 
