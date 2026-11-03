@@ -1,12 +1,3 @@
-"""Wireframes du jalon 2 (docs/product/milestone-2/screens/), sur la charte « Le Plateau ».
-
-Depuis la racine du dépôt, après pnpm install dans frontend/ :
-    uv run --project backend python scripts/screens/milestone_2.py
-Écrit les 8 écrans en anglais et en français ; décrits dans docs/product/milestone-2/screens.md.
-Les textes déjà dans l'application viennent des traductions ; les nouveaux, validés sur les
-maquettes, sont dans COPY tant que leurs clés n'existent pas (à remplacer par t() ensuite).
-"""
-
 import os
 
 from plateau import (
@@ -331,7 +322,6 @@ def moderation_header(svg: Svg, t: Translator) -> None:
 
 
 def select(svg: Svg, x, y, w, label, value) -> None:
-    """Liste déroulante : intitulé au-dessus, valeur et chevron dans le champ."""
     svg.text(x, y, label, 14, 600)
     svg.rect(x, y + 8, w, 40, CARD, INPUT, rx=8)
     svg.text(x + 12, y + 33, value, 14, 400)
@@ -342,7 +332,6 @@ def select(svg: Svg, x, y, w, label, value) -> None:
 
 
 def icon_button(svg: Svg, x, y, label, name, variant="outline", w=None, h=32) -> float:
-    """Bouton avec une icône devant son libellé."""
     w = w or round(text_width(label) + 50)
     fill, stroke, color = {
         "outline": (CARD, BORDER, INK),
@@ -356,14 +345,12 @@ def icon_button(svg: Svg, x, y, label, name, variant="outline", w=None, h=32) ->
 
 
 def alert(svg: Svg, x, y, w, h, fill, line) -> None:
-    """Encadré d'alerte : fond léger, bordure et pastille « ! » de la même couleur."""
     svg.rect(x, y, w, h, fill, line, rx=16, sw=1.5)
     svg.add(f'<circle cx="{x + 27}" cy="{y + 27}" r="11" fill="{line}"/>')
     svg.text(x + 27, y + 32, "!", 13, 800, "#FFFFFF", anchor="middle")
 
 
 def moderation_nav(svg: Svg, t: Translator, current: str) -> None:
-    """Menu de l'espace de modération, à gauche."""
     for index, key in enumerate(("reports", "uploads", "log")):
         y: float = 84 + index * 44
         if key == current:
@@ -372,9 +359,6 @@ def moderation_nav(svg: Svg, t: Translator, current: str) -> None:
                  INK if key == current else MUTED_FG)  # fmt: skip
         if key == "reports":
             tag(svg, 176, y + 8, "3", PRIMARY, "#FFFFFF")
-
-
-# --- Écrans -------------------------------------------------------------------------------------
 
 
 def marketplace(t: Translator) -> Svg:
@@ -433,7 +417,6 @@ def template_page(t: Translator) -> Svg:
         svg.rect(x, y, 88, 92, CARD, BORDER, rx=10)
         svg.rect(x + 6, y + 6, 76, 56, CHIP_ART.get(item, MUTED), rx=6)
         svg.text(x + 44, y + 80, item, 12, 600, INK, anchor="middle")
-    # Actions
     panel(svg, 640, 104, 288, 290)
     button(svg, 660, 124, c(t, "start_room"), "default", h=40, w=248)
     like_w: float = icon_button(svg, 660, 176, c(t, "like"), "heart")
@@ -452,7 +435,6 @@ def publish(t: Translator) -> Svg:
     field(svg, 32, 124, 520, t("templates.editor.name"), TEMPLATE_NAME[t.lang])
     label: str = t("rooms.create.open")
     button(svg, 928 - button_width(label), 132, label, "default", h=40)
-    # Visibilité
     panel(svg, 32, 200, 440, 340)
     h2(svg, 56, 238, c(t, "visibility"))
     radio(svg, 56, 258, c(t, "private"))
@@ -471,7 +453,6 @@ def publish(t: Translator) -> Svg:
     wrap(svg, 56, 452, c(t, "tags_hint"), 390, 12, 16)
     dot(svg, 64, 503)
     svg.text(78, 508, c(t, "public_since"), 13, 400, MUTED_FG)
-    # Autres états
     h2(svg, 496, 238, c(t, "other_states"), 18)
     alert(svg, 496, 256, 432, 120, WARNING_BG, WARNING_LINE)
     wrap(svg, 548, 280, c(t, "unconfirmed"), 360, 14, 20, INK, 600)
@@ -545,7 +526,6 @@ def account(t: Translator) -> Svg:
     h1(svg, 240, 108, "Max", 30)
     w: float = tag(svg, 240, 124, c(t, "open_reports"), PRIMARY, "#FFFFFF")
     tag(svg, 246 + w, 124, c(t, "no_sanction"))
-    # Informations
     panel(svg, 240, 160, 360, 128)
     facts: list[tuple[str, str]] = [
         (c(t, "display_name"), "Max"),
@@ -557,7 +537,6 @@ def account(t: Translator) -> Svg:
         x, y = 260 + (index % 2) * 170, 190 + (index // 2) * 54
         svg.text(x, y, label, 12, 400, MUTED_FG)
         svg.text(x, y + 20, value, 14, 500)
-    # Modèles, images, historique
     h2(svg, 240, 324, c(t, "templates"), 18)
     panel(svg, 240, 336, 360, 150)
     rows = [(c(t, "tpl_1"), c(t, "tpl_1_state"), True), (c(t, "tpl_2"), c(t, "tpl_2_state"), False),
@@ -581,7 +560,6 @@ def account(t: Translator) -> Svg:
     h2(svg, 240, 620, c(t, "history"), 18)
     panel(svg, 240, 634, 360, 48)
     svg.text(256, 663, c(t, "history_1"), 12, 400, INK)
-    # Bannir
     panel(svg, 620, 160, 308, 420)
     h2(svg, 640, 196, c(t, "ban_title"))
     radio(svg, 640, 216, c(t, "ban_until"), True)

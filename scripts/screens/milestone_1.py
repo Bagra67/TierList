@@ -1,10 +1,3 @@
-"""Wireframes du jalon 1 (docs/product/milestone-1/screens/), sur la charte « Le Plateau ».
-
-Depuis la racine du dépôt, après pnpm install dans frontend/ :
-    uv run --project backend python scripts/screens/milestone_1.py
-Écrit les 8 écrans en anglais et en français ; décrits dans docs/product/milestone-1/screens.md.
-"""
-
 import os
 
 from plateau import (
@@ -52,7 +45,6 @@ from plateau import (
 
 OUT_DIR: str = os.path.join(REPO_ROOT, "docs", "product", "milestone-1", "screens")
 
-# Les éléments du modèle d'exemple, dans la langue de l'écran
 ITEMS: dict[str, list[str]] = {
     "en": [
         "Plain",
@@ -116,9 +108,6 @@ def status_list(svg: Svg, x, y, w, t: Translator, people) -> None:
         )
 
 
-# --- Écrans -------------------------------------------------------------------------------------
-
-
 def template_editor(t: Translator) -> Svg:
     items = ITEMS[t.lang]
     svg = Svg({"en": "Template editor", "fr": "Éditeur de modèle"}[t.lang], 960, 660)
@@ -127,7 +116,6 @@ def template_editor(t: Translator) -> Svg:
     field(svg, 32, 124, 520, t("templates.editor.name"), TEMPLATE_NAME[t.lang])
     label = t("rooms.create.open")
     button(svg, 928 - button_width(label), 132, label, "default", h=40)
-    # Tiers
     svg.text(32, 212, t("templates.editor.tiers"), 24, 900, INK, HEAD, stretch=115)
     for index, (letter, color) in enumerate(TIERS):
         ry = 228 + index * 54
@@ -139,7 +127,6 @@ def template_editor(t: Translator) -> Svg:
         svg.text(124, ry + 28, letter, 14)
         svg.text(336, ry + 28, "✕", 14, 600, MUTED_FG, anchor="middle")
     button(svg, 32, 558, "+ " + t("templates.editor.addTier"), "secondary")
-    # Tuiles
     svg.text(394, 212, t("templates.editor.tiles"), 24, 900, INK, HEAD, stretch=115)
     svg.text(
         928, 212, t("templates.editor.tileCount", count=12, max=32), 14, 500, MUTED_FG, anchor="end"
@@ -208,12 +195,10 @@ def join(t: Translator) -> Svg:
         stretch=150,
         extra=' letter-spacing="2"',
     )
-    # Avec un compte
     panel(svg, 120, 244, 350, 300)
     svg.text(144, 282, t("rooms.join.withAccount"), 20, 900, INK, HEAD, stretch=115)
     wrap(svg, 144, 314, t("rooms.join.withAccountHint"), 300, 14, 22)
     button(svg, 144, 488, t("rooms.join.signIn"), "outline", h=36, w=302)
-    # En invité
     panel(svg, 490, 244, 350, 300)
     svg.text(514, 282, t("rooms.join.asGuest"), 20, 900, INK, HEAD, stretch=115)
     field(svg, 514, 316, 302, t("rooms.join.nickname"), "Lou")
@@ -227,7 +212,6 @@ def lobby(t: Translator) -> Svg:
     header(svg, t, "Alex")
     svg.text(32, 108, t("rooms.lobby.title", code="K7P2QX"), 32, 900, INK, HEAD, stretch=125)
     svg.text(32, 134, t("rooms.lobby.template", name=TEMPLATE_NAME[t.lang]), 14, 500, MUTED_FG)
-    # Inviter
     panel(svg, 32, 156, 560, 148)
     svg.text(56, 186, t("rooms.lobby.code"), 14, 600)
     svg.text(56, 240, "K7P2QX", 40, 900, INK, HEAD, stretch=125, extra=' letter-spacing="1"')
@@ -235,7 +219,6 @@ def lobby(t: Translator) -> Svg:
     svg.rect(330, 198, 238, 36, CARD, INPUT, rx=8)
     svg.text(342, 221, "tierlist.app/r/K7P2QX", 14, 400)
     button(svg, 330, 248, t("rooms.lobby.copyLink"), "outline")
-    # Participants
     svg.text(32, 340, t("rooms.lobby.participants", count=3), 20, 900, INK, HEAD, stretch=115)
     panel(svg, 32, 352, 560, 150)
     people = [
@@ -261,7 +244,6 @@ def lobby(t: Translator) -> Svg:
             MUTED_FG,
             anchor="end",
         )
-    # Réglages et actions
     panel(svg, 616, 156, 312, 216)
     svg.text(640, 190, t("rooms.settings.title"), 20, 900, INK, HEAD, stretch=115)
     button(
@@ -278,7 +260,6 @@ def lobby(t: Translator) -> Svg:
         svg.text(640, 230 + index * 28, "• " + line, 13, 400, INK)
     button(svg, 616, 388, t("rooms.lobby.start.submit"), "default", h=40, w=312)
     button(svg, 616, 438, t("rooms.lobby.close.open"), "destructive", h=36, w=312)
-    # Parties passées
     svg.text(32, 538, t("rooms.lobby.pastGames.title", count=1), 20, 900, INK, HEAD, stretch=115)
     panel(svg, 32, 552, 896, 40)
     svg.text(
@@ -300,14 +281,12 @@ def round_player(t: Translator) -> Svg:
     header(svg, t, "Sam")
     progress(svg, 32, 78, t)
     timer_pill(svg, 848, 74, "0:18")
-    # Carte de l'élément en cours, posée de biais
     svg.add('<g transform="rotate(-2 120 220)">')
     svg.rect(32, 134, 176, 190, CARD, PRIMARY, rx=16, sw=2)
     svg.rect(46, 148, 148, 128, CHIP_ART["Barbecue"], rx=10)
     svg.text(120, 304, items[11], 16, 700, INK, anchor="middle")
     svg.add("</g>")
     wrap(svg, 32, 360, t("rooms.game.dock"), 176, 12, 17)
-    # Plateau du participant
     svg.text(232, 150, t("rooms.game.board"), 20, 900, INK, HEAD, stretch=115)
     tier_rows(
         svg,
@@ -319,7 +298,6 @@ def round_player(t: Translator) -> Svg:
         slot=(1, 0),
         art=CHIP_ART,
     )
-    # Qui a placé
     panel(svg, 728, 134, 200, 172)
     svg.text(748, 164, t("rooms.game.placedCount_other", placed=2, count=3), 14, 600)
     status_list(
@@ -348,7 +326,6 @@ def round_admin(t: Translator) -> Svg:
     svg.rect(46, 148, 148, 128, CHIP_ART["Barbecue"], rx=10)
     svg.text(120, 304, items[11], 16, 700, INK, anchor="middle")
     svg.add("</g>")
-    # Commandes de l'hôte, bordées de projecteur
     svg.rect(232, 134, 696, 330, CARD, SPOT, rx=16, sw=2)
     svg.text(256, 170, t("rooms.game.hostControls"), 20, 900, INK, HEAD, stretch=115)
     svg.text(256, 204, t("rooms.game.placedCount_other", placed=2, count=3), 14, 600)
@@ -387,7 +364,6 @@ def cooldown(t: Translator) -> Svg:
     items = ITEMS[t.lang]
     svg = Svg(t("rooms.game.cooldown.title"), 960, 600)
     header(svg, t, "Lou")
-    # Le plateau sombre, quel que soit le thème
     svg.rect(24, 72, 912, 512, D_BG, D_WARNING, rx=16, sw=2, opacity=None)
     svg.text(48, 116, t("rooms.game.cooldown.title"), 26, 900, D_FG, HEAD, stretch=115)
     svg.text(912, 120, "0:42", 40, 900, D_WARNING, HEAD, anchor="end")
@@ -401,7 +377,6 @@ def cooldown(t: Translator) -> Svg:
         [],
     ]
     tier_rows(svg, 48, 164, 600, rows, row_h=60, dark=True, art=CHIP_ART)
-    # Éléments manqués
     svg.rect(668, 164, 244, 250, D_CARD, D_BORDER, rx=16)
     svg.text(688, 194, t("rooms.game.cooldown.missed"), 16, 700, D_FG)
     for index, item in enumerate((items[4], items[11])):
@@ -447,7 +422,6 @@ def results(t: Translator) -> Svg:
         [items[4]],
     ]
     tier_rows(svg, 32, 188, 580, rows, row_h=56, art=CHIP_ART)
-    # Votes de l'élément choisi
     panel(svg, 636, 188, 292, 300)
     svg.text(656, 220, t("results.votes.title", item=items[11]), 16, 700)
     counts = [2, 1, 0, 0, 0, 0]

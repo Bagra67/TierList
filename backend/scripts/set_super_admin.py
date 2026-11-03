@@ -1,26 +1,13 @@
-"""Donne ou retire le rôle super admin à un compte existant (US-1.1).
-
-Usage (dans backend/) :
-    uv run python scripts/set_super_admin.py <email>            # donne le rôle
-    uv run python scripts/set_super_admin.py <email> --revoke   # le retire
-
-Pour le développement local : le pod de production n'a pas de shell, le rôle s'y donne par une
-requête SQL (docs/technical/deployment.md). Le changement vaut dès la requête suivante côté
-serveur ; l'interface l'affiche après un rechargement de la page.
-"""
-
 import argparse
 import sys
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-# Dossier backend/ : le premier dossier parent qui contient alembic.ini
 BACKEND_DIR = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
 )
 
-# Permet `python scripts/set_super_admin.py` : le paquet `app` est dans backend/.
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 

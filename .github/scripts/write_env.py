@@ -1,18 +1,8 @@
-"""Writes the .env of the pod from the environment of the deployment job (GitHub secrets and
-variables). See docs/technical/deployment.md.
-
-Usage: python3 .github/scripts/write_env.py <output file>
-
-The pod start script sources the file with bash (set -a; . .env): every value is single-quoted,
-so that no character of a secret ($, `, spaces, quotes...) is interpreted by the shell.
-"""
-
 import os
 import sys
 from collections.abc import Mapping
 from pathlib import Path
 
-# Must be set in the GitHub environment (secret or variable): the application cannot run without
 REQUIRED = (
     "APP_RELEASE",
     "POSTGRES_HOST",
@@ -36,7 +26,6 @@ REQUIRED = (
     "EMAIL_FROM",
 )
 
-# Written only when set: the application has a default (or works without, like Google sign-in)
 OPTIONAL = (
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
@@ -46,7 +35,6 @@ OPTIONAL = (
     "MAINTENANCE_HOUR_UTC",
 )
 
-# Same value in every deployed environment: served over HTTPS (Cloudflare Tunnel)
 FIXED = {"AUTH_COOKIE_SECURE": "true"}
 
 
@@ -55,8 +43,6 @@ class EnvFileError(ValueError):
 
 
 def quote(value: str) -> str:
-    """Single-quoted for bash: a quote inside the value ends the quoting, is escaped, then the
-    quoting starts again."""
     return "'" + value.replace("'", "'\\''") + "'"
 
 
@@ -68,7 +54,6 @@ def render_env_file(environ: Mapping[str, str]) -> str:
     values.update({name: environ[name] for name in OPTIONAL if environ.get(name)})
     values.update(FIXED)
     for name, value in values.items():
-        # A line break would end the variable in the middle of its value
         if "\n" in value or "\r" in value:
             raise EnvFileError(f"{name} contains a line break")
     return "".join(f"{name}={quote(value)}\n" for name, value in values.items())

@@ -1,23 +1,12 @@
-"""Ramasse-miettes des images : efface celles qu'aucune tuile n'utilise depuis plus de
-UNUSED_IMAGE_RETENTION_DAYS (docs/technical/images.md, « Cleanup »).
-
-Usage (dans backend/) : uv run python scripts/purge_unused_images.py
-En production, l'application la lance aussi chaque nuit (MAINTENANCE_ENABLED, voir
-docs/technical/deployment.md). Relancer la commande ne pose aucun problème : elle n'efface
-que ce qui a expiré.
-"""
-
 import sys
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-# Dossier backend/ : le premier dossier parent qui contient alembic.ini
 BACKEND_DIR = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
 )
 
-# Permet `python scripts/purge_unused_images.py` : le paquet `app` est dans backend/.
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 

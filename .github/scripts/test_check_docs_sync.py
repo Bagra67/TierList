@@ -1,8 +1,3 @@
-"""Tests of check_docs_sync.py.
-
-Usage (from the repo root): python -m unittest discover -s .github/scripts
-"""
-
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,7 +17,9 @@ def paths_of(problems):
 
 class UnpairedDocsTest(unittest.TestCase):
     def test_a_complete_pair_is_accepted(self):
-        self.assertEqual(find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), [])
+        self.assertEqual(
+            find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), []
+        )
 
     def test_an_english_doc_without_french_is_reported(self):
         problems = find_unpaired_docs(["docs/new.md"])

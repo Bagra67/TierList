@@ -1,14 +1,3 @@
-"""Kit de dessin des wireframes de docs/product/, sur l'identité visuelle « Le Plateau ».
-
-Les couleurs, polices et rayons sont ceux de docs/technical/visual-identity.md ; les textes viennent
-des traductions de l'application (frontend/src/i18n/locales). Chaque écran est dessiné en SVG, dans
-chaque langue, avec Anybody et Geist embarquées en sous-ensembles : GitHub affiche un SVG comme une
-image, sans charger de police web.
-
-Prérequis : Node (pour lire les traductions .ts), les dépendances du frontend installées
-(pnpm install : les polices viennent de @fontsource-variable) et uv (pyftsubset via uvx).
-"""
-
 import base64
 import json
 import os
@@ -26,7 +15,6 @@ FONT_FILES: dict[str, str] = {
     "Geist": f"{FONTSOURCE}/geist/files/geist-latin-wght-normal.woff2",
 }
 
-# Thème clair (équivalents hexadécimaux des tokens oklch de frontend/src/index.css)
 BG, INK, CARD, BORDER = "#F4F5FA", "#1D1640", "#FFFFFF", "#D5D6E4"
 MUTED, MUTED_FG, PRIMARY, ON_PRIMARY = "#E9EAF3", "#5E5878", "#D41E5B", "#FFFFFF"
 SPOT, INPUT, SUCCESS, DESTRUCTIVE = "#FFC22E", "#8C88A6", "#168057", "#B32517"
@@ -45,11 +33,7 @@ HEAD: str = "Anybody"
 SANS: str = "Geist"
 
 
-# --- Traductions --------------------------------------------------------------------------------
-
-
 def load_translations() -> dict[str, dict]:
-    """Lit fr.ts et en.ts avec Node (les types sont retirés à la volée)."""
     script: str = (
         "Promise.all([import('./frontend/src/i18n/locales/fr.ts'),"
         "import('./frontend/src/i18n/locales/en.ts')])"
@@ -79,9 +63,6 @@ class Translator:
         for name, value in values.items():
             text = text.replace("{{" + name + "}}", str(value))
         return text
-
-
-# --- SVG ----------------------------------------------------------------------------------------
 
 
 class Svg:
@@ -159,7 +140,6 @@ def head_width(s: str, size: float) -> float:
 
 
 def wrap(svg: Svg, x, y, text, width, size=13, line_h=18, fill=MUTED_FG, weight=400) -> float:
-    """Écrit un texte sur des lignes de largeur estimée ; renvoie le y de la ligne suivante."""
     line: str = ""
     for word in text.split(" "):
         candidate: str = (line + " " + word).strip()
@@ -173,9 +153,6 @@ def wrap(svg: Svg, x, y, text, width, size=13, line_h=18, fill=MUTED_FG, weight=
         svg.text(x, y, line, size, weight, fill)
         y += line_h
     return y
-
-
-# --- Pièces de l'interface ----------------------------------------------------------------------
 
 
 def header(
@@ -231,7 +208,6 @@ def button(svg: Svg, x, y, label, variant="default", h=32, w=None, dark=False) -
 
 
 def panel(svg: Svg, x, y, w, h, variant="solid", dark=False) -> None:
-    """Les panneaux de panelVariants : plein, pointillé, atténué ; rayon 16."""
     if variant == "solid":
         svg.rect(x, y, w, h, D_CARD if dark else CARD, D_BORDER if dark else BORDER, rx=16)
     elif variant == "dashed":
@@ -241,7 +217,6 @@ def panel(svg: Svg, x, y, w, h, variant="solid", dark=False) -> None:
 
 
 def chip(svg: Svg, x, y, label, h=44, dark=False, current=False, art=None) -> float:
-    """Puce d'un élément (texte, et image si art) ; renvoie sa largeur."""
     w: float = round(text_width(label) + 22 + (h if art else 0))
     stroke, sw = (PRIMARY, 2) if current else (D_BORDER if dark else BORDER, 1)
     svg.rect(x, y, w, h, D_CARD if dark else CARD, stroke, rx=8, sw=sw)
@@ -324,14 +299,12 @@ def radio(svg: Svg, x, y, label, checked=False) -> None:
 
 
 def timer_pill(svg: Svg, x, y, label, fill=SPOT, color=INK, size=24) -> None:
-    """Minuteur en pastille, au projecteur."""
     w: float = round(text_width(label, size, 900) + 34)
     svg.rect(x, y, w, size + 16, fill, rx=(size + 16) / 2)
     svg.text(x + w / 2, y + size + 3, label, size, 900, color, HEAD, anchor="middle")
 
 
 def segmented(svg: Svg, x, y, labels, selected=0) -> None:
-    """Onglets en pilule, l'onglet choisi à l'encre."""
     widths: list[float] = [round(text_width(label) + 32) for label in labels]
     svg.rect(x, y, sum(widths) + 8, 40, MUTED, rx=20)
     cx: float = x + 4
@@ -350,7 +323,6 @@ def segmented(svg: Svg, x, y, labels, selected=0) -> None:
         cx += w
 
 
-# Icônes Lucide (lucide-react, celles de l'application), au trait, dessinées sur 24 unités
 ICONS: dict[str, str] = {
     "heart": '<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2'
     '-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/>',
@@ -364,7 +336,6 @@ ICONS: dict[str, str] = {
 
 
 def icon(svg: Svg, x, y, name, size=16, color=INK) -> None:
-    """Icône au trait, coin haut gauche en (x, y)."""
     scale: float = size / 24
     svg.add(
         f'<g transform="translate({x} {y}) scale({scale})" fill="none" stroke="{color}" '
@@ -372,13 +343,10 @@ def icon(svg: Svg, x, y, name, size=16, color=INK) -> None:
     )
 
 
-# --- Construction -------------------------------------------------------------------------------
-
 Screen = Callable[[Translator], Svg]
 
 
 def subset_fonts(chars: str, out_dir: str) -> dict[str, str]:
-    """Réduit chaque police aux caractères écrits (pyftsubset) ; renvoie le chemin des fichiers."""
     text_file: str = os.path.join(out_dir, "chars.txt")
     with open(text_file, "w", encoding="utf-8") as f:
         f.write(chars)
@@ -418,7 +386,6 @@ def fonts_css(subsets: dict[str, str]) -> str:
 
 
 def build(screens: dict[str, Screen], out_dir: str) -> None:
-    """Dessine chaque écran dans chaque langue : <nom>.<langue>.svg dans out_dir."""
     translations: dict[str, dict] = load_translations()
     for lang in LANGUAGES:
         t: Translator = Translator(translations, lang)
