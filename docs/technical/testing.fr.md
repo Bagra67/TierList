@@ -431,6 +431,21 @@ La fixture `google` est un `FakeGoogleOAuthClient` : le vrai client Google (URL 
 | `test_only_a_closed_game_can_be_hidden`                                         | Masque une partie en cours, puis une inconnue.  | Rien de public à masquer.                              | 404 `game_not_found`.                                                                                                                   |
 | `test_the_hidden_games_are_paginated_newest_first`                              | Masque trois parties, lit par pages de 2.       |                                                        | Les plus récentes d'abord, sans trou, le bon `has_more`.                                                                                |
 
+#### `tests/integration/test_template_review.py` (lire un modèle en super admin)
+
+`GET /moderation/templates/{id}` avec `auth_client` (#360, [guide de la modération](moderation.fr.md)). `nina` est une super admin ; `alice` possède un modèle privé avec une tuile de texte et des images.
+
+| Test                                                                   | Ce qu'il fait                                    | Son but                                       | Résultat attendu                                                                          |
+| ---------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `test_reading_a_template_refuses_visitors_and_other_accounts`          | Lit sans session, puis en Bob.                   | Un contenu privé reste privé.                 | 401, puis 403.                                                                            |
+| `test_a_super_admin_reads_the_private_template_of_an_account`          | Nina lit le modèle d'Alice.                      | Elle peut juger ce qu'elle modère.            | Le nom, le propriétaire, les tiers et les tuiles, dans l'ordre.                           |
+| `test_a_hidden_image_stays_visible_and_a_deleted_image_has_no_address` | Une image visible, une masquée et une supprimée. | Le super admin doit voir ce qui a été masqué. | Adresse publique, adresse signée de quarantaine, pas d'adresse ; chacune avec son statut. |
+| `test_a_hidden_template_comes_with_its_reason`                         | Nina le masque, puis le lit.                     | La page montre la décision.                   | `hidden` et le motif.                                                                     |
+| `test_an_unknown_or_deleted_template_is_not_found`                     | Un id inconnu, puis un modèle supprimé.          | La page du compte ne les liste pas non plus.  | 404 `template_not_found`.                                                                 |
+| `test_reading_a_template_writes_nothing_to_the_log`                    | Nina le lit.                                     | Le journal ne garde que les décisions.        | Aucune entrée.                                                                            |
+| `test_the_number_of_queries_does_not_grow_with_the_tiles`              | Un modèle avec beaucoup de tuiles à image.       | Pas de N+1.                                   | Un nombre de requêtes borné.                                                              |
+| `test_another_account_still_cannot_read_it_through_the_template_route` | Bob appelle `GET /templates/{id}`.               | La route de l'éditeur reste au propriétaire.  | 404.                                                                                      |
+
 #### `tests/integration/test_seed.py` (jeu de données)
 
 `run_seed` (`app/seed/run.py`, [guide du jeu de données](seed-data.fr.md)) sur la base de test, avec le petit jeu `SMALL_SIZE` (les mêmes cas que le jeu complet, en moins grand nombre) et `FakeImageStorage`. `seed` le lance avec le mot de passe `seed-test-password` ; `sign_in` connecte un compte seed par l'API.

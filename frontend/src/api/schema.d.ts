@@ -846,6 +846,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Template For Review
+         * @description Lit le contenu d'un modèle non supprimé, même privé (US-1.8). Lecture seule.
+         */
+        get: operations["get_template_for_review_moderation_templates__template_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/moderation/templates/{template_id}/hide": {
         parameters: {
             query?: never;
@@ -1814,6 +1834,54 @@ export interface components {
         RestoreGuestRequest: {
             /** Token */
             token: string;
+        };
+        /**
+         * ReviewedTemplateResponse
+         * @description Le contenu d'un modèle pour les super admins, même privé (US-1.8).
+         */
+        ReviewedTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string | null;
+            moderation: components["schemas"]["TemplateModeration"];
+            /** Moderation Reason */
+            moderation_reason: string | null;
+            /** Tiers */
+            tiers: components["schemas"]["TierResponse"][];
+            /** Tiles */
+            tiles: components["schemas"]["ReviewedTileResponse"][];
+        };
+        /**
+         * ReviewedTileResponse
+         * @description Une tuile lue par un super admin : une image masquée y reste visible, image_status le dit.
+         */
+        ReviewedTileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Text */
+            text: string | null;
+            /** Image Url */
+            image_url: string | null;
+            image_status: components["schemas"]["ImageStatus"] | null;
         };
         /** RoomBanResponse */
         RoomBanResponse: {
@@ -5599,6 +5667,73 @@ export interface operations {
             };
             /** @description Not a super admin */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_template_for_review_moderation_templates__template_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewedTemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

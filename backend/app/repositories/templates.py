@@ -35,6 +35,15 @@ def get_owned_template(
     return session.scalars(statement).one_or_none()
 
 
+def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
+    statement: Select[Template] = (
+        select(Template)
+        .where(Template.id == template_id, Template.deleted_at.is_(None))
+        .options(selectinload(Template.tiers), selectinload(Template.tiles))
+    )
+    return session.scalars(statement).one_or_none()
+
+
 def get_template_for_update(session: Session, template_id: uuid.UUID) -> Template | None:
     return session.get(Template, template_id, with_for_update=True)
 
