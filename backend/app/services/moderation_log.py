@@ -1,6 +1,3 @@
-"""Journal de modération (US-1.9, docs/technical/moderation.md) : chaque action d'un super admin y
-est écrite, dans la même transaction que l'action elle-même."""
-
 import logging
 import uuid
 from dataclasses import dataclass
@@ -20,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ModerationLogPage:
-    # De la plus récente à la plus ancienne
     entries: list[ModerationAction]
-    # Il reste des entrées après cette page
     has_more: bool
 
 
@@ -40,9 +35,6 @@ class ModerationLogService:
         target_label: str,
         reason: str,
     ) -> ModerationAction:
-        """Écrit une entrée, sans valider la transaction : c'est l'action de modération qui la
-        valide, pour que l'action et sa trace réussissent ou échouent ensemble. Les noms sont
-        copiés : ils restent lisibles après la suppression du compte ou de la cible."""
         moderation_action: ModerationAction = ModerationAction(
             actor_id=actor.id,
             actor_name=actor.display_name,
@@ -64,20 +56,15 @@ class ModerationLogService:
         target: str | None,
         account_id: uuid.UUID | None = None,
     ) -> ModerationLogPage:
-        """Les entrées à partir de offset, filtrées par super admin, par cible et par compte. Une
-        entrée de plus est lue pour savoir s'il en reste."""
         entries: list[ModerationAction] = moderation_action_repository.list_moderation_actions(
             self._session, limit + 1, offset, actor_id, target, account_id
         )
         return ModerationLogPage(entries=entries[:limit], has_more=len(entries) > limit)
 
     def super_admins(self) -> list[User]:
-        """Les super admins, pour filtrer le journal par auteur."""
         return user_repository.list_super_admins(self._session)
 
     def purge_expired(self) -> int:
-        """Supprime les entrées plus anciennes que la durée de conservation ; renvoie leur
-        nombre. Le seul endroit où une entrée est supprimée."""
         limit: datetime = datetime.now(UTC) - timedelta(
             days=self._settings.moderation_log_retention_days
         )

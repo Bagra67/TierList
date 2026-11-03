@@ -1567,8 +1567,7 @@ export interface components {
         };
         /**
          * TemplateModeration
-         * @description Décision de la modération sur un modèle (US-1.5), séparée de la visibilité choisie par
-         *     son propriétaire : réafficher un modèle lui rend son état d'avant.
+         * @description Décision de la modération sur un modèle (US-1.5).
          * @enum {string}
          */
         TemplateModeration: "none" | "hidden";

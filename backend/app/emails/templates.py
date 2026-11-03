@@ -7,8 +7,6 @@ from app.services.email import Email
 
 @dataclass(frozen=True)
 class _LinkEmailTexts:
-    """Textes d'un email qui invite à ouvrir un lien ; {name} et la durée sont remplacés."""
-
     subject: str
     greeting: str
     body: str
@@ -75,7 +73,6 @@ def _link_email(
     greeting = texts.greeting.format(name=display_name)
     body = texts.body.format(**duration)
     text = f"{greeting}\n\n{body}\n\n{link}\n\n{texts.footer}\n"
-    # Le nom affiché est choisi par l'utilisateur : échappé, il ne peut pas injecter de HTML
     html = (
         f"<p>{escape(greeting)}</p>"
         f"<p>{escape(body)}</p>"

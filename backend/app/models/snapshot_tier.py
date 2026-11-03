@@ -13,17 +13,13 @@ if TYPE_CHECKING:
 
 
 class SnapshotTier(UUIDPrimaryKeyMixin, Base):
-    """Copie d'un tier dans une snapshot ; mêmes colonnes que Tier."""
-
     __tablename__ = "snapshot_tiers"
 
     snapshot_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("template_snapshots.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(TIER_NAME_MAX_LENGTH))
-    # Format #RRGGBB
     color: Mapped[str] = mapped_column(String(TIER_COLOR_LENGTH))
-    # 0 = en haut, positions continues recopiées du template
     position: Mapped[int]
 
     snapshot: Mapped[TemplateSnapshot] = relationship(back_populates="tiers")

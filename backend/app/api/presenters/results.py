@@ -1,5 +1,3 @@
-"""Réponse des résultats d'une partie close (docs/technical/results.md)."""
-
 import uuid
 
 from app.api.presenters.items import item_response, tier_response
@@ -28,8 +26,6 @@ def game_results_response(closed: ClosedGameResults, storage: ImageStorage) -> G
                 item_id=tile.id,
                 votes_per_tier=list(item.votes_per_tier),
                 absent_count=item.absent_count,
-                # Sans les votes absents, pas de noms : comparés à l'autre variante, ils diraient
-                # qui a raté l'item au tour puis l'a rattrapé (results.md §2.6)
                 player_indexes_per_tier=(
                     [list(voters) for voters in item.voters_per_tier]
                     if closed.include_absent_votes

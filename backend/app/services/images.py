@@ -1,9 +1,3 @@
-"""Envoi des images des tuiles : vérification, compression, stockage (docs/technical/images.md).
-
-Le service possède la frontière de transaction : l'image est enregistrée en base par un commit,
-une fois son fichier écrit dans le stockage.
-"""
-
 import hashlib
 import logging
 import uuid
@@ -12,8 +6,6 @@ from typing import BinaryIO
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-
-# Différé (PEP 810) : botocore n'est chargé que si une erreur de stockage survient
 lazy from botocore.exceptions import BotoCoreError, ClientError
 
 from app.constants.images import IMAGE_FILE_EXTENSION
@@ -39,16 +31,10 @@ class ImageService:
         self._storage = storage
 
     def upload(self, owner: User, file: BinaryIO) -> Image:
-        """Compresse l'image envoyée et la stocke sous une nouvelle clé aléatoire.
-
-        Lève ImageUploadLimitReachedError, ImageTooLargeError, ImageUnsupportedFormatError (aussi
-        pour un fichier dont l'empreinte est bannie) ou ImageTooManyPixelsError.
-        """
         self._check_upload_limit(owner)
         content: bytes = self._read_within_limit(file)
         sha256: str = hashlib.sha256(content).hexdigest()
         if image_repository.is_fingerprint_banned(self._session, sha256):
-            # Le refus habituel, sans dire pourquoi (US-1.6) ; seul le journal du serveur le sait
             logger.info("Image refusée, empreinte bannie : owner_id=%s", owner.id)
             raise ImageUnsupportedFormatError
         compressed: CompressedImage = compress_image(
@@ -67,7 +53,6 @@ class ImageService:
         try:
             self._session.commit()
         except SQLAlchemyError:
-            # Sans ligne en base, aucun nettoyage ne retrouverait le fichier : il est retiré ici
             self._session.rollback()
             self._delete_orphan_file(image.storage_key)
             raise
@@ -80,14 +65,6 @@ class ImageService:
         return image
 
     def purge_unused(self) -> int:
-        """Ramasse-miettes : efface les images qu'aucune tuile, de template ou de snapshot,
-        n'utilise depuis plus que la durée de conservation (envois abandonnés, tuiles modifiées
-        ou supprimées, templates purgés, comptes supprimés) ; renvoie leur nombre.
-
-        Les lignes sont supprimées d'abord, puis les fichiers : un fichier qu'on n'arrive pas
-        à effacer est seulement journalisé, aucune tuile ne pointe jamais vers un fichier
-        absent. Une partie jouée garde ainsi ses images (docs/technical/images.md,
-        « Cleanup »)."""
         limit: datetime = datetime.now(UTC) - timedelta(
             days=self._settings.unused_image_retention_days
         )
@@ -99,8 +76,6 @@ class ImageService:
             try:
                 self._storage.delete(storage_key)
             except BotoCoreError, ClientError:
-                # La clé permet d'effacer le fichier à la main ; le prochain passage ne le
-                # retrouvera pas, sa ligne n'existant plus
                 logger.exception("Fichier d'image non effacé : storage_key=%s", storage_key)
         logger.info(
             "Images inutilisées purgées : %d (créées avant %s)",
@@ -123,9 +98,6 @@ class ImageService:
             raise ImageUploadLimitReachedError(max_uploads)
 
     def _delete_orphan_file(self, storage_key: str) -> None:
-        """Retire le fichier d'un envoi dont la ligne n'a pas pu être enregistrée. Si le stockage
-        échoue aussi, la clé est journalisée pour un effacement à la main, et l'erreur de base de
-        données, la vraie cause, reste celle qui remonte."""
         try:
             self._storage.delete(storage_key)
         except BotoCoreError, ClientError:

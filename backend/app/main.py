@@ -60,22 +60,18 @@ logger = logging.getLogger(__name__)
 
 
 def _reset_presence(session_factory: SessionFactory) -> None:
-    """Un processus qui démarre n'a aucun socket ouvert : personne n'est connecté."""
     try:
         with session_factory() as session:
             reset_count: int = RoomService(
                 session, get_settings(), room_connections
             ).reset_presence()
     except SQLAlchemyError:
-        # Base injoignable au démarrage : l'application démarre quand même (/health/db le dira)
         logger.warning("Présence non remise à zéro : base de données injoignable", exc_info=True)
         return
     logger.info("Présence remise à zéro au démarrage : %d participants", reset_count)
 
 
 def _game_service(session: Session) -> GameService:
-    """Service des parties pour le démarrage et les timers : les sockets et les timers de ce
-    processus."""
     return build_game_service(session, get_settings(), room_connections, round_timers)
 
 
@@ -100,9 +96,6 @@ def _close_inactive_rooms(session_factory: SessionFactory) -> None:
 
 
 def _reschedule_rounds(session_factory: SessionFactory) -> None:
-    """Un processus qui démarre n'a aucun timer : les échéances des tours en cours et des
-    cooldowns sont relues en base et reprogrammées (une échéance passée pendant l'arrêt se
-    déclenche tout de suite)."""
     try:
         with session_factory() as session:
             games: GameService = _game_service(session)
@@ -132,7 +125,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await run_in_threadpool(_reset_presence, session_factory)
 
     async def on_deadline(game_id: uuid.UUID, round_number: int) -> None:
-        # La base est synchrone : la transition passe par le threadpool (realtime.md, §2.8)
         await run_in_threadpool(_end_round_on_timer, session_factory, game_id, round_number)
 
     async def on_cooldown_deadline(game_id: uuid.UUID) -> None:
@@ -170,14 +162,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await round_timers.stop()
 
 
-# L'API : toutes ses routes, REST et canal temps réel, sont servies sous /api par l'application
-# racine ci-dessous. Montée comme sous-application, elle garde des chemins sans /api dans son
-# contrat (openapi.json, types du frontend) et dans les tests, qui l'appellent directement.
 api_app = FastAPI(
     title="TierList API",
     description="Backend FastAPI de l'application TierList",
     version="1.0.1",
-    # Toute route peut échouer de façon imprévue : la 500 générique figure dans le contrat
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(api_app)
@@ -192,8 +180,6 @@ api_app.include_router(moderation.router)
 
 
 def _openapi_with_room_messages() -> dict[str, Any]:
-    """Contrat de l'API, augmenté des messages du canal temps réel : ils ne passent par aucune
-    route REST, mais le frontend en génère les types (pnpm gen:api)."""
     if api_app.openapi_schema:
         return api_app.openapi_schema
     schema: dict[str, Any] = get_openapi(
@@ -203,8 +189,6 @@ def _openapi_with_room_messages() -> dict[str, Any]:
         routes=api_app.routes,
     )
     components: dict[str, Any] = schema.setdefault("components", {}).setdefault("schemas", {})
-    # Adaptateurs créés un par un : parcourus dans un tuple, les alias Annotated perdent leur
-    # forme de type, que TypeAdapter exige (pydantic 2.14)
     message_adapters: dict[str, TypeAdapter[Any]] = {
         "RoomServerMessage": TypeAdapter(RoomServerMessage),
         "RoomClientMessage": TypeAdapter(RoomClientMessage),
@@ -224,7 +208,6 @@ api_app.openapi = _openapi_with_room_messages  # type: ignore[method-assign]
 
 class HealthResponse(BaseModel):
     status: str
-    # Version qui tourne (APP_RELEASE) : le déploiement vérifie que c'est bien la nouvelle
     release: str
 
 
@@ -254,8 +237,6 @@ def health_db(
     return HealthResponse(status="ok", release=settings.app_release)
 
 
-# Application racine, lancée par uvicorn (app.main:app) : l'API sous /api et, en production, le
-# build du frontend sur la même origine (docs/technical/deployment.md)
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 # Erreurs HTTP au format de l'API (404 hors du build, /api seul) ; pas de second middleware
 # d'erreurs : celui de api_app suffit, et chaque couche de middleware HTTP exécute la suite de la
@@ -265,6 +246,5 @@ app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
     mount_frontend(app, _settings.frontend_dist)
-# Le port du pod est public : seul le proxy joint l'application (deployment.md, §2.2)
 if _settings.trusted_proxy_ips:
     app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)

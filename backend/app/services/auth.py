@@ -1,9 +1,3 @@
-"""Règles métier de l'authentification : inscription, connexion, rotation des refresh tokens,
-vérification de l'adresse email, réinitialisation du mot de passe.
-
-Le service possède les frontières de transaction : chaque opération se termine par un commit.
-"""
-
 import logging
 import uuid
 from collections.abc import Callable
@@ -68,7 +62,6 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class AuthenticatedSession:
     user: User
-    # Heure de la connexion d'origine (claim auth_time de l'access token)
     auth_time: datetime
 
 
@@ -82,21 +75,14 @@ class IssuedTokens:
 @dataclass(frozen=True)
 class Registration:
     tokens: IssuedTokens
-    # Envoyé par la route en tâche de fond, après la réponse
     verification_email: Email
 
 
 def _revoke_access_tokens(user: User) -> None:
-    """Refuse tous les access tokens déjà émis pour l'utilisateur (claim « token_version » dépassé).
-
-    Ses autres appareils reçoivent une 401 et rafraîchissent leur session, si leur refresh
-    token est encore valable.
-    """
     user.token_version += 1
 
 
 def _display_name(identity: GoogleIdentity) -> str:
-    # Nom du profil Google, sinon la partie de l'email avant « @ », tronqué à la longueur maximale
     name = (identity.name or "").strip() or identity.email.split("@")[0]
     return name[:DISPLAY_NAME_MAX_LENGTH]
 
@@ -134,7 +120,6 @@ class AuthService:
 
     def login(self, email: str, password: str) -> IssuedTokens:
         user = user_repository.get_user_by_email(self._session, normalize_email(email))
-        # Compte inconnu ou créé avec Google (sans mot de passe) : même réponse, même durée
         if user is None or user.password_hash is None:
             verify_dummy_password(password)
             logger.info("Échec de connexion : identifiants invalides")
@@ -142,7 +127,6 @@ class AuthService:
         if not verify_password(password, user.password_hash):
             logger.info("Échec de connexion : identifiants invalides")
             raise InvalidCredentialsError
-        # Après le mot de passe : sans lui, la réponse dirait qu'un compte existe et est banni
         self._check_not_banned(user.id)
 
         tokens = self._start_session(user, authenticated_at=datetime.now(UTC))
@@ -150,19 +134,9 @@ class AuthService:
         return tokens
 
     def login_with_google(self, identity: GoogleIdentity) -> IssuedTokens:
-        """Connecte le compte lié à cette identité Google, le lie ou le crée au besoin.
-
-        1. identité déjà liée : connexion à son compte ;
-        2. sinon, email déjà inscrit : l'identité est liée à ce compte ;
-        3. sinon : un compte sans mot de passe est créé.
-        Les cas 2 et 3 exigent un email vérifié par Google : sans cela, n'importe qui pourrait
-        prendre le contrôle d'un compte existant, ou réserver l'adresse de quelqu'un d'autre.
-        """
         try:
             return self._login_with_google(identity)
         except IntegrityError:
-            # Première connexion simultanée (double clic, deux onglets) : l'autre requête a
-            # créé le compte ou lié l'identité entre-temps, la nouvelle tentative le retrouve.
             self._session.rollback()
             logger.info("Connexion Google simultanée, nouvelle tentative")
             return self._login_with_google(identity)
@@ -183,16 +157,12 @@ class AuthService:
         return tokens
 
     def check_ban_notice(self, token: str) -> None:
-        """Lève AccountBannedError si le compte désigné par ce cookie est encore banni, pour montrer
-        le motif après un refus de Google, ou InvalidBanNoticeError si le cookie ne vaut rien."""
         user_id: uuid.UUID = decode_ban_notice_token(
             token, secret_key=self._settings.jwt_secret_key.get_secret_value()
         )
         self._check_not_banned(user_id)
 
     def _check_not_banned(self, user_id: uuid.UUID) -> None:
-        """Refuse la connexion d'un compte banni (US-1.8), avec le motif et la fin du
-        bannissement. Un bannissement temporaire passé ne compte plus."""
         ban: AccountBan | None = account_ban_repository.get_active_ban(
             self._session, user_id, datetime.now(UTC)
         )
@@ -213,10 +183,6 @@ class AuthService:
             user_repository.add_user(self._session, user)
             logger.info("Compte créé avec Google : user_id=%s", user.id)
         elif user.email_verified_at is None:
-            # Adresse jamais confirmée : le mot de passe a pu être posé par quelqu'un qui ne la
-            # possède pas, pour attendre que la vraie propriétaire se connecte avec Google
-            # (prise de contrôle préalable). Google prouve la possession de l'adresse : le
-            # mot de passe et les sessions ouvertes avec lui sont supprimés.
             user.password_hash = None
             user.email_verified_at = now
             refresh_token_repository.revoke_user_refresh_tokens(
@@ -249,8 +215,6 @@ class AuthService:
             raise InvalidRefreshTokenError
 
         if stored.revoked_at is not None:
-            # Un token déjà remplacé est rejoué : il a pu être volé. Toute la famille est
-            # révoquée, ce qui déconnecte aussi celui qui détient le token le plus récent.
             refresh_token_repository.revoke_refresh_token_family(
                 self._session, stored.family_id, revoked_at=now
             )
@@ -269,9 +233,6 @@ class AuthService:
         user = user_repository.get_user_by_id(self._session, stored.user_id)
         if user is None:
             raise InvalidRefreshTokenError
-        # Un bannissement révoque les sessions, mais pas le token qu'une connexion ou un
-        # rafraîchissement en cours n'a pas encore validé : sans ce contrôle, il prolongerait la
-        # session du compte banni à chaque rotation.
         if account_ban_repository.get_active_ban(self._session, user.id, now) is not None:
             refresh_token_repository.revoke_refresh_token_family(
                 self._session, stored.family_id, revoked_at=now
@@ -300,8 +261,6 @@ class AuthService:
         self._session.commit()
 
     def request_email_verification(self, user: User, language: Language) -> Email | None:
-        """Email de vérification à renvoyer, ou None si l'adresse est déjà confirmée ou si le
-        précédent email date de moins de EMAIL_COOLDOWN_SECONDS."""
         if user.email_verified_at is not None:
             return None
         now = datetime.now(UTC)
@@ -315,7 +274,6 @@ class AuthService:
         return email_to_send
 
     def verify_email(self, token: str) -> None:
-        """Confirme l'adresse du lien ; lève InvalidEmailTokenError si le lien ne vaut rien."""
         claims = decode_email_verification_token(
             token, secret_key=self._settings.jwt_secret_key.get_secret_value()
         )
@@ -328,12 +286,6 @@ class AuthService:
             logger.info("Adresse email confirmée : user_id=%s", user.id)
 
     def request_password_reset(self, email: str, language: Language) -> Email | None:
-        """Email de réinitialisation à envoyer, ou None si aucun compte n'a cette adresse ou si
-        le précédent email date de moins de EMAIL_COOLDOWN_SECONDS.
-
-        La route répond pareil dans tous les cas : elle ne révèle pas quelles adresses ont un
-        compte. Un compte créé avec Google peut ainsi définir un mot de passe.
-        """
         user = user_repository.get_user_by_email(self._session, normalize_email(email))
         if user is None:
             return None
@@ -367,8 +319,6 @@ class AuthService:
         )
 
     def reset_password(self, token: str, password: str) -> None:
-        """Remplace le mot de passe et ferme toutes les sessions ; lève InvalidEmailTokenError si
-        le lien est invalide, expiré ou déjà utilisé (le mot de passe a changé depuis)."""
         secret_key = self._settings.jwt_secret_key.get_secret_value()
         claims = decode_password_reset_token(token, secret_key=secret_key)
         user = user_repository.get_user_by_id(self._session, claims.user_id)
@@ -380,10 +330,8 @@ class AuthService:
 
         now = datetime.now(UTC)
         user.password_hash = hash_password(password)
-        # Ouvrir le lien reçu par email prouve la possession de l'adresse
         if user.email_verified_at is None:
             user.email_verified_at = now
-        # Le mot de passe a pu être volé : les sessions ouvertes avec lui sont fermées
         refresh_token_repository.revoke_user_refresh_tokens(self._session, user.id, revoked_at=now)
         _revoke_access_tokens(user)
         self._session.commit()
@@ -395,13 +343,6 @@ class AuthService:
         password: str | None,
         before_delete: Callable[[User], None] | None = None,
     ) -> None:
-        """Supprime définitivement le compte et ses sessions, une fois l'utilisateur confirmé.
-
-        Confirmation : le mot de passe pour un compte qui en a un, sinon une connexion récente
-        (moins de RECENT_AUTHENTICATION_MAX_AGE_MINUTES) : un compte Google n'a pas de mot de
-        passe à redemander. before_delete s'exécute une fois confirmé, avant la suppression
-        (fermeture de ses salles, US-2.7).
-        """
         user = session.user
         max_age = timedelta(minutes=self._settings.recent_authentication_max_age_minutes)
         if user.password_hash is not None:
@@ -417,11 +358,6 @@ class AuthService:
         logger.info("Compte supprimé : user_id=%s", user_id)
 
     def authenticate_access_token(self, access_token: str) -> AuthenticatedSession | None:
-        """Session de l'access token, ou None si l'utilisateur n'existe plus ou si le token a
-        été révoqué depuis son émission (déconnexion, nouveau mot de passe…).
-
-        Lève InvalidAccessTokenError si le token est invalide.
-        """
         claims = decode_access_token(
             access_token, secret_key=self._settings.jwt_secret_key.get_secret_value()
         )
@@ -449,12 +385,9 @@ class AuthService:
         )
 
     def _frontend_link(self, path: str, token: str) -> str:
-        """Lien vers une page du frontend, avec le token en paramètre (liens envoyés par email)."""
         return f"{self._settings.frontend_base_url}{path}?{urlencode({TOKEN_PARAM: token})}"
 
     def _start_session(self, user: User, authenticated_at: datetime) -> IssuedTokens:
-        # Ménage à chaque connexion, sans tâche planifiée : la table ne garde que les tokens
-        # encore valables, ou révoqués mais pas expirés (utiles pour repérer une réutilisation).
         refresh_token_repository.delete_expired_user_refresh_tokens(
             self._session, user.id, now=authenticated_at
         )

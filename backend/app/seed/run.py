@@ -1,6 +1,3 @@
-"""Création du jeu de données complet : suppression de l'ancien, puis comptes, modèles, parties
-terminées, salles ouvertes et journal de modération."""
-
 import logging
 import random
 import time
@@ -31,14 +28,11 @@ from app.services.rooms import RoomService
 
 logger = logging.getLogger(__name__)
 
-# Graine fixe : le même jeu de données à chaque lancement
 SEED_RANDOM_SEED = 2026
 
 
 @contextmanager
 def _step(name: str) -> Iterator[None]:
-    """Annonce une étape et sa durée : sur staging, chaque requête traverse Internet et le
-    lancement prend plusieurs minutes, le journal montre où il en est."""
     logger.info("Étape %s…", name)
     started: float = time.monotonic()
     yield
@@ -69,7 +63,6 @@ def run_seed(
             session, settings, storage, size, accounts.players, rng
         )
 
-    # Personne n'est connecté aux salles : les événements temps réel ne vont nulle part
     rooms: RoomService = RoomService(session, settings, NoOpRoomEventPublisher())
     with _step("4/6 Parties terminées"):
         played: SeedGames = create_closed_games(
@@ -113,7 +106,6 @@ def run_seed(
             _templates_to_hide(played, templates, size.hidden_templates),
             rng,
         )
-        # Les derniers joueurs : les tests et la doc se connectent avec seed-player-1
         banned_count: int = size.temporarily_banned_accounts + size.permanently_banned_accounts
         banned: list[User] = accounts.players[len(accounts.players) - banned_count :]
         banned_accounts: int = ban_accounts(
@@ -142,8 +134,6 @@ def run_seed(
 
 
 def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:
-    """Les modèles à masquer : d'abord ceux des salles restées ouvertes, puis les autres modèles
-    jouables, sans doublon."""
     candidates: list[uuid.UUID] = [
         room.template_id for room in played.lobby_rooms if room.template_id is not None
     ]

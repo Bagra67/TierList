@@ -178,7 +178,6 @@ def update_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    # Seuls les champs envoyés (non nuls) changent
     changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
@@ -247,7 +246,6 @@ def add_tile(
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     except TileLimitReachedError as exc:
-        # La limite part en param : le frontend l'affiche sans la recopier dans ses traductions
         raise AppHTTPException(
             status_code=409,
             code=ErrorCode.TILE_LIMIT_REACHED,
@@ -276,8 +274,6 @@ def update_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    # Seuls les champs envoyés changent : null retire le texte ou l'image, mais une position
-    # null est ignorée (une tuile a toujours une place)
     changes: TileChanges = TileChanges(**payload.model_dump(exclude_unset=True))
     if payload.position is None:
         changes.pop("position", None)

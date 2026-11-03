@@ -1,6 +1,3 @@
-"""Quantités du jeu de données : le jeu complet, et un petit jeu qui couvre les mêmes cas pour les
-tests."""
-
 from dataclasses import dataclass
 
 
@@ -18,7 +15,6 @@ class SeedSize:
     # Tuiles des modèles à images, toutes avec une image (au plus 120 envois par heure et par
     # compte)
     image_tiles_per_template: int
-    # Parties terminées, dont history_games pour le compte au long historique (plusieurs pages)
     closed_games: int
     history_games: int
     # Salles où les parties ont été jouées et qui restent ouvertes, avec leurs résultats passés
@@ -26,15 +22,9 @@ class SeedSize:
     full_rooms: int
     rooms_with_bans: int
     moderation_actions: int
-    # Images des modèles à images masquées, puis supprimées, par le vrai service de modération :
-    # le visuel « image retirée » dans les modèles, les parties terminées et les résultats
     hidden_images: int
     deleted_images: int
-    # Modèles masqués par le vrai service de modération, en priorité ceux d'une salle restée
-    # ouverte : son lobby le dit à la place du bouton de lancement
     hidden_templates: int
-    # Comptes bannis par le vrai service, pris parmi les derniers joueurs (les tests se
-    # connectent avec le premier)
     temporarily_banned_accounts: int
     permanently_banned_accounts: int
 
@@ -63,7 +53,6 @@ FULL_SIZE: SeedSize = SeedSize(
     permanently_banned_accounts=1,
 )
 
-# Assez pour tous les cas, dont un historique de deux pages (plus de 20 parties)
 SMALL_SIZE: SeedSize = SeedSize(
     super_admins=2,
     players=8,

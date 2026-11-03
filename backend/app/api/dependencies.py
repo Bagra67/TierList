@@ -33,7 +33,6 @@ from app.services.round_timers import RoundScheduler, round_timers
 from app.services.template_moderation import TemplateModerationService
 from app.services.templates import TemplateService
 
-# auto_error=False : l'absence de token est traitée ci-dessous, avec une 401 au format ErrorResponse
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -57,24 +56,20 @@ SessionFactory = Callable[[], AbstractContextManager[Session]]
 
 
 def get_session_factory() -> SessionFactory:
-    # Remplacée dans les tests : les accès du canal y passent par la session du test
     return lambda: Session(get_engine())
 
 
 def get_connection_registry() -> ConnectionRegistry:
-    # Les sockets ouverts de ce processus
     return room_connections
 
 
 def get_room_event_publisher(
     registry: Annotated[ConnectionRegistry, Depends(get_connection_registry)],
 ) -> RoomEventPublisher:
-    # Les services publient vers les sockets du registre ; remplaçable dans les tests
     return registry
 
 
 def get_round_scheduler() -> RoundScheduler:
-    # Les timers de ce processus ; remplacés par un faux dans les tests
     return round_timers
 
 
@@ -97,7 +92,6 @@ def get_template_moderation_service(
     session: Annotated[Session, Depends(get_db_session)],
     moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
 ) -> TemplateModerationService:
-    # Même session par requête : l'action et son entrée du journal partagent la transaction
     return TemplateModerationService(session, moderation_log)
 
 
@@ -120,8 +114,6 @@ def get_game_results_service(
 def build_game_service(
     session: Session, settings: Settings, publisher: RoomEventPublisher, scheduler: RoundScheduler
 ) -> GameService:
-    """Service des parties hors requête (canal temps réel, timers, démarrage du processus) : les
-    mêmes dépendances que get_game_service, construites sur une session courte."""
     rooms: RoomService = RoomService(session, settings, publisher)
     return GameService(session, publisher, rooms, TemplateService(session, settings), scheduler)
 
@@ -133,12 +125,10 @@ def get_game_service(
     templates: Annotated[TemplateService, Depends(get_template_service)],
     scheduler: Annotated[RoundScheduler, Depends(get_round_scheduler)],
 ) -> GameService:
-    # FastAPI met la session en cache par requête : les trois services partagent la même
     return GameService(session, publisher, rooms, templates, scheduler)
 
 
 def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> ImageStorage:
-    # Remplacé par un faux dans les tests d'API : seuls les tests du stockage contactent S3
     return create_image_storage(settings)
 
 
@@ -155,8 +145,6 @@ def get_image_moderation_service(
     storage: Annotated[ImageStorage, Depends(get_image_storage)],
     moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
 ) -> ImageModerationService:
-    # FastAPI met la session en cache par requête : l'action et son entrée du journal partagent
-    # la même transaction
     return ImageModerationService(session, storage, moderation_log)
 
 
@@ -164,7 +152,6 @@ def get_account_ban_service(
     session: Annotated[Session, Depends(get_db_session)],
     moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
 ) -> AccountBanService:
-    # Même session par requête : le bannissement et son entrée du journal partagent la transaction
     return AccountBanService(session, moderation_log)
 
 
@@ -177,14 +164,12 @@ def get_account_review_service(
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
-    # Remplacé par un faux dans les tests : aucun email n'est réellement envoyé
     return EmailSender(settings)
 
 
 def get_google_oauth_client(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> GoogleOAuthClient | None:
-    """Client Google, ou None si la connexion avec Google n'est pas configurée."""
     if settings.google_client_id is None or settings.google_client_secret is None:
         return None
     return GoogleOAuthClient(
@@ -199,7 +184,6 @@ def get_current_session(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> AuthenticatedSession:
-    """Session authentifiée par l'access token (en-tête Authorization: Bearer), sinon 401."""
     unauthorized = AppHTTPException(
         status_code=401,
         code=ErrorCode.NOT_AUTHENTICATED,
@@ -220,14 +204,10 @@ def get_current_session(
 def get_current_user(
     session: Annotated[AuthenticatedSession, Depends(get_current_session)],
 ) -> User:
-    """Utilisateur authentifié : la dépendance à utiliser pour protéger une route."""
     return session.user
 
 
 def get_current_super_admin(user: Annotated[User, Depends(get_current_user)]) -> User:
-    """Super admin authentifié : la dépendance des routes de modération. 403 et non 401 pour un
-    autre compte : il est bien connecté, une 401 ferait rafraîchir sa session pour rien
-    (docs/technical/authentication.md)."""
     if not user.is_super_admin:
         raise AppHTTPException(
             status_code=403,
@@ -251,12 +231,9 @@ def get_room_viewer(
     return RoomViewer(user=None, guest_token=guest_token)
 
 
-# --- Alias des dépendances, pour les signatures des routes --------------------------------------
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 CurrentSessionDep = Annotated[AuthenticatedSession, Depends(get_current_session)]
-# La dépendance à utiliser pour protéger une route
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
-# La dépendance à utiliser pour protéger une route de modération (avec SUPER_ADMIN_RESPONSES)
 SuperAdminDep = Annotated[User, Depends(get_current_super_admin)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
@@ -274,7 +251,6 @@ AccountBanServiceDep = Annotated[AccountBanService, Depends(get_account_ban_serv
 AccountReviewServiceDep = Annotated[AccountReviewService, Depends(get_account_review_service)]
 RecentUploadsServiceDep = Annotated[RecentUploadsService, Depends(get_recent_uploads_service)]
 ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]
-# Donne l'adresse publique des images (api/presenters/images.py)
 ImageStorageDep = Annotated[ImageStorage, Depends(get_image_storage)]
 EmailSenderDep = Annotated[EmailSender, Depends(get_email_sender)]
 GoogleClientDep = Annotated[GoogleOAuthClient | None, Depends(get_google_oauth_client)]

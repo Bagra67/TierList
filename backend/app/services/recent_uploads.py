@@ -1,6 +1,3 @@
-"""Derniers envois d'images, pour la revue des super admins (US-1.7, docs/technical/moderation.md) :
-repérer une image problématique avant qu'on la signale."""
-
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,19 +11,14 @@ from app.repositories import images as image_repository
 @dataclass(frozen=True)
 class RecentUpload:
     image: Image
-    # None une fois le compte de l'auteur supprimé
     author_name: str | None
-    # Modèles non supprimés qui montrent l'image, par ordre alphabétique
     template_names: list[str]
-    # Parties jouées avec l'image, en cours ou terminées
     game_count: int
 
 
 @dataclass(frozen=True)
 class RecentUploadsPage:
-    # Des plus récentes aux plus anciennes
     uploads: list[RecentUpload]
-    # Il reste des images après cette page
     has_more: bool
 
 
@@ -44,8 +36,6 @@ class RecentUploadsService:
         status: ImageStatus | None,
         owner_id: uuid.UUID | None = None,
     ) -> RecentUploadsPage:
-        """Les images à partir de offset, avec leur usage. Une image de plus est lue pour savoir
-        s'il en reste ; les usages de toute la page sont lus en deux requêtes."""
         rows: list[tuple[Image, str | None]] = image_repository.list_recent_images(
             self._session,
             limit + 1,

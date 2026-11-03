@@ -1,10 +1,3 @@
-"""Colonnes communes des modèles, partagées par héritage (mixins SQLAlchemy).
-
-Un mixin par besoin plutôt qu'une classe de base unique : chaque modèle prend ceux qui le
-concernent. SoftDeleteMixin surtout ne va pas partout, car une table supprimée logiquement
-oblige chaque requête à filtrer deleted_at.
-"""
-
 import uuid
 from datetime import datetime
 
@@ -17,13 +10,9 @@ class UUIDPrimaryKeyMixin:
 
 
 class TimestampMixin:
-    # clock_timestamp() et non now() : now() est l'heure du début de la transaction, identique
-    # pour toutes les écritures d'une même transaction (ex. un test d'intégration entier).
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp()
     )
-    # onupdate ne voit que les UPDATE de la ligne elle-même : un changement dans une table liée
-    # (ex. une tuile d'un template) doit mettre la date à jour explicitement.
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.clock_timestamp(),
@@ -32,5 +21,4 @@ class TimestampMixin:
 
 
 class SoftDeleteMixin:
-    # None tant que la ligne n'est pas supprimée logiquement
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

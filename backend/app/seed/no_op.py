@@ -1,6 +1,3 @@
-"""Le canal temps réel sans effet : le jeu de données crée et remplit des salles où aucun
-navigateur n'est connecté."""
-
 import uuid
 
 from app.constants.error_codes import ErrorCode

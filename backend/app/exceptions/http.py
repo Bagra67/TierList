@@ -8,11 +8,6 @@ ErrorParamValue = str | int | float
 
 
 class AppHTTPException(HTTPException):
-    """Erreur HTTP de l'API, identifiée par un code stable que le frontend traduit.
-
-    detail reste un texte anglais destiné aux développeurs ; params alimente la traduction.
-    """
-
     def __init__(
         self,
         status_code: int,

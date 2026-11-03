@@ -1,5 +1,3 @@
-"""Espace de modération des super admins (docs/technical/moderation.md)."""
-
 import uuid
 from typing import Annotated, Any, Literal
 
@@ -145,14 +143,10 @@ def get_moderation_log(
         int, Query(ge=1, le=MODERATION_LOG_PAGE_SIZE_MAX)
     ] = MODERATION_LOG_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
-    # Un super admin : ses actions seulement
     actor_id: uuid.UUID | None = None,
-    # Texte cherché dans le libellé de la cible, sans casse
     target: Annotated[str | None, Query(max_length=MODERATION_TARGET_LABEL_MAX_LENGTH)] = None,
-    # Un compte : les décisions sur lui, ses templates et ses images (la page de son compte)
     account_id: uuid.UUID | None = None,
 ) -> ModerationLogResponse:
-    # Le journal de modération (US-1.9), de l'action la plus récente à la plus ancienne
     page: ModerationLogPage = service.page(limit, offset, actor_id, target, account_id)
     return ModerationLogResponse(
         entries=[ModerationActionResponse.model_validate(entry) for entry in page.entries],
@@ -164,7 +158,6 @@ def get_moderation_log(
 def list_super_admins(
     super_admin: SuperAdminDep, service: ModerationLogServiceDep
 ) -> list[SuperAdminResponse]:
-    # Les auteurs possibles d'une action, pour le filtre du journal
     return [SuperAdminResponse.model_validate(user) for user in service.super_admins()]
 
 
@@ -177,7 +170,6 @@ def hide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
-    # Masque une image visible (US-1.4) : son adresse publique ne répond plus
     try:
         service.hide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -193,7 +185,6 @@ def unhide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
-    # Réaffiche une image masquée, partout où elle était utilisée
     try:
         service.unhide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -202,7 +193,6 @@ def unhide_image(
         raise _image_moderation_conflict() from exc
 
 
-# POST et non DELETE : l'action porte un motif dans son corps, et la ligne de l'image reste
 @router.post("/images/{image_id}/delete", status_code=204, responses=IMAGE_MODERATION_RESPONSES)
 def delete_image(
     image_id: uuid.UUID,
@@ -210,7 +200,6 @@ def delete_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
-    # Supprime une image visible ou masquée, définitivement ; son empreinte est bannie (US-1.6)
     try:
         service.delete(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -228,18 +217,14 @@ def list_recent_uploads(
         int, Query(ge=1, le=RECENT_UPLOADS_PAGE_SIZE_MAX)
     ] = RECENT_UPLOADS_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
-    # Texte cherché dans le nom ou l'e-mail de l'auteur, sans casse
     author: Annotated[str | None, Query(max_length=RECENT_UPLOADS_AUTHOR_FILTER_MAX_LENGTH)] = None,
     # Période d'envoi : à partir de created_after, avant created_before. Le fuseau horaire est
     # exigé : le frontend envoie les bornes des jours choisis dans le fuseau du super admin
     created_after: AwareDatetime | None = None,
     created_before: AwareDatetime | None = None,
-    # Sans statut : les images visibles et masquées
     status: Literal["visible", "hidden"] | None = None,
-    # Un auteur précis : les images de la page de son compte
     owner_id: uuid.UUID | None = None,
 ) -> RecentUploadsResponse:
-    # Les derniers envois (US-1.7), des plus récents aux plus anciens
     page: RecentUploadsPage = service.page(
         limit,
         offset,
@@ -264,8 +249,6 @@ def hide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
-    # Masque un template (US-1.5) : plus de nouvelle salle ni de partie, le propriétaire voit le
-    # motif
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -283,7 +266,6 @@ def unhide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
-    # Réaffiche un template masqué : il retrouve l'état choisi par son propriétaire
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -292,7 +274,6 @@ def unhide_template(
         raise _template_moderation_conflict() from exc
 
 
-# POST et non DELETE, comme pour les images : l'action porte un motif dans son corps
 @router.post(
     "/templates/{template_id}/delete", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
 )
@@ -302,7 +283,6 @@ def delete_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
-    # Supprime un template comme son propriétaire le ferait (suppression logique, puis purge)
     try:
         service.delete(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -316,14 +296,12 @@ def search_accounts(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
     bans: AccountBanServiceDep,
-    # Texte cherché dans le nom ou l'e-mail, sans casse ; sans texte, tous les comptes
     query: Annotated[str | None, Query(max_length=ACCOUNT_SEARCH_QUERY_MAX_LENGTH)] = None,
     limit: Annotated[
         int, Query(ge=1, le=ACCOUNT_SEARCH_PAGE_SIZE_MAX)
     ] = ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> AccountSearchResponse:
-    # Trouver un compte (US-1.8), par exemple après un signalement reçu par e-mail
     page: AccountSearchPage = service.search(query, limit, offset)
     banned: set[uuid.UUID] = bans.banned_user_ids([user.id for user in page.accounts])
     return AccountSearchResponse(
@@ -349,7 +327,6 @@ def get_account(
     service: AccountReviewServiceDep,
     bans: AccountBanServiceDep,
 ) -> AccountResponse:
-    # La page d'un compte (US-1.8) : ses détails et ses templates
     try:
         details: AccountDetails = service.details(user_id)
     except UserNotFoundError as exc:
@@ -376,7 +353,6 @@ def hide_account_images(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
 ) -> HiddenImagesResponse:
-    # Masque toutes les images visibles d'un compte, chacune comme en US-1.4
     try:
         hidden_count: int = service.hide_all_images(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:
@@ -391,7 +367,6 @@ def ban_account(
     super_admin: SuperAdminDep,
     service: AccountBanServiceDep,
 ) -> None:
-    # Bannit un compte (US-1.8) jusqu'à une date ou définitivement : il est déconnecté partout
     try:
         service.ban(super_admin, user_id, body.reason, body.ends_at)
     except UserNotFoundError as exc:
@@ -417,7 +392,6 @@ def lift_account_ban(
     super_admin: SuperAdminDep,
     service: AccountBanServiceDep,
 ) -> None:
-    # Lève le bannissement actif : le compte peut de nouveau se connecter
     try:
         service.lift(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:

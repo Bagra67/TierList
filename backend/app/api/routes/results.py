@@ -23,14 +23,11 @@ router = APIRouter(prefix="/results", tags=["results"])
     },
 )
 def get_game_results(
-    # Un jeton plus long que la colonne ne peut correspondre à aucune partie : refusé tout de suite
     public_token: Annotated[str, Path(max_length=PUBLIC_RESULTS_TOKEN_MAX_LENGTH)],
     service: GameResultsServiceDep,
     storage: ImageStorageDep,
     include_absent_votes: bool = True,
 ) -> GameResultsResponse:
-    # Sans compte : le lien est la seule protection des résultats (US-5.3), donné aux places de la
-    # salle par le lobby
     try:
         closed: ClosedGameResults = service.results(public_token, include_absent_votes)
     except GameResultsNotFoundError as exc:

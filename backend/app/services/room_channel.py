@@ -1,10 +1,3 @@
-"""Sockets temps réel ouverts par ce processus, et publication des événements des salles.
-
-Étape 0 de docs/technical/realtime.md : un seul worker, tout en mémoire. Les services ne touchent
-jamais un socket : ils publient par RoomEventPublisher, la seule abstraction introduite d'avance
-(une diffusion entre plusieurs instances la remplacera).
-"""
-
 import asyncio
 import logging
 import uuid
@@ -42,20 +35,12 @@ class RoomEventPublisher(Protocol):
 
 
 class ConnectionRegistry:
-    """Sockets ouverts de ce processus, par salle, avec le participant de chacun.
-
-    Le registre n'est modifié que dans la boucle asyncio (route WebSocket). publish peut être
-    appelé depuis le threadpool (routes REST synchrones) : l'envoi est alors confié à la boucle.
-    """
-
     def __init__(self) -> None:
         self._sockets: dict[uuid.UUID, dict[WebSocket, uuid.UUID]] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
-        # Départs en attente de la fin du délai de grâce, par participant
         self._pending_disconnects: dict[uuid.UUID, asyncio.Task[None]] = {}
 
     def add(self, room_id: uuid.UUID, participant_id: uuid.UUID, websocket: WebSocket) -> bool:
-        """Enregistre le socket ; True si c'est le premier socket ouvert de ce participant."""
         self._loop = asyncio.get_running_loop()
         room_sockets: dict[WebSocket, uuid.UUID] = self._sockets.setdefault(room_id, {})
         first: bool = participant_id not in room_sockets.values()
@@ -63,7 +48,6 @@ class ConnectionRegistry:
         return first
 
     def remove(self, room_id: uuid.UUID, websocket: WebSocket) -> bool:
-        """Retire le socket ; True si son participant n'a plus aucun socket ouvert."""
         room_sockets: dict[WebSocket, uuid.UUID] = self._sockets.get(room_id, {})
         participant_id: uuid.UUID | None = room_sockets.pop(websocket, None)
         if not room_sockets:
@@ -82,7 +66,6 @@ class ConnectionRegistry:
         delay_seconds: float,
         set_presence: Callable[[bool], Awaitable[None]],
     ) -> None:
-        """Marque le participant déconnecté après le délai s'il n'a rouvert aucun socket."""
 
         async def disconnect_after_delay() -> None:
             try:
@@ -90,12 +73,9 @@ class ConnectionRegistry:
                 if self.is_connected(room_id, participant_id):
                     return
                 await set_presence(False)
-                # Revenu pendant cette écriture (l'annulation ne peut pas arrêter le thread qui
-                # écrit) : son « connecté » a pu passer avant ce « déconnecté », on le rétablit
                 if self.is_connected(room_id, participant_id):
                     await set_presence(True)
             finally:
-                # Une tâche annulée puis remplacée ne doit pas retirer sa remplaçante
                 if self._pending_disconnects.get(participant_id) is asyncio.current_task():
                     self._pending_disconnects.pop(participant_id, None)
 
@@ -143,7 +123,6 @@ class ConnectionRegistry:
     async def _close_participant(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
     ) -> None:
-        # Sa place n'existe plus : aucun départ à enregistrer après le délai de grâce
         self.cancel_pending_disconnect(participant_id)
         room_sockets: dict[WebSocket, uuid.UUID] = self._sockets.get(room_id, {})
         participant_sockets: list[WebSocket] = [
@@ -166,9 +145,7 @@ class ConnectionRegistry:
             try:
                 await websocket.send_text(message)
             except RuntimeError, OSError:
-                # Socket déjà fermé côté client : sa route le retirera du registre
                 logger.debug("Envoi impossible sur un socket fermé : room_id=%s", room_id)
 
 
-# Le registre de ce processus : l'état global assumé de l'étape 0 (un seul worker)
 room_connections: ConnectionRegistry = ConnectionRegistry()
