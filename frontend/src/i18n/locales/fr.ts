@@ -142,7 +142,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -494,6 +494,17 @@ export const fr = {
       hiddenCount_other: '{{count}} images masquées.',
       history: 'Historique de modération',
       noHistory: "Aucune décision n'a encore été prise sur ce compte ni sur son contenu.",
+    },
+    template: {
+      unknownOwner: 'Compte inconnu',
+      updatedAt: 'modifié le {{date, datetime(dateStyle: medium)}}',
+      hiddenReason: 'Motif : {{reason}}',
+      tiers: 'Tiers',
+      tiles_one: '{{count}} tuile',
+      tiles_other: '{{count}} tuiles',
+      noTiles: "Ce modèle n'a aucune tuile.",
+      tileImage: 'Image de la tuile {{number}}',
+      imageHidden: 'Image masquée par la modération',
     },
     templateDialog: {
       hide: {

@@ -1,6 +1,7 @@
 import { type RefObject, useRef, useState } from 'react';
+import { cn } from 'cn';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 
 import {
   type Account,
@@ -22,6 +23,8 @@ import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
+import { textLinkClassName } from '../components/ui/text-link';
+import { moderationTemplatePath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
 export function ModerationAccountPage() {
@@ -251,7 +254,12 @@ function AccountTemplates({ account }: { account: Account }) {
               template.moderation === 'hidden' ? ['unhide', 'delete'] : ['hide', 'delete'];
             return (
               <li key={template.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <span className="font-medium">{template.name}</span>
+                <Link
+                  to={moderationTemplatePath(template.id)}
+                  className={cn(textLinkClassName, 'font-medium')}
+                >
+                  {template.name}
+                </Link>
                 <span className="text-sm text-muted-foreground">
                   {t('templates.tileCount', { count: template.tile_count })}
                 </span>

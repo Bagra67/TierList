@@ -15,6 +15,7 @@ export const ROUTES = {
   MODERATION_UPLOADS: '/moderation/uploads',
   MODERATION_ACCOUNTS: '/moderation/accounts',
   MODERATION_ACCOUNT: '/moderation/accounts/:accountId',
+  MODERATION_TEMPLATE: '/moderation/templates/:templateId',
   MODERATION_LOG: '/moderation/log',
   ROOM: '/r/:code',
   RESULTS: '/results/:token',
@@ -54,6 +55,10 @@ export function isResultsLinkState(state: unknown): state is ResultsLinkState {
 export const TOKEN_PARAM = 'token';
 export const LOGIN_ERROR_PARAM = 'error';
 export const CONFIRM_PARAM = 'confirm';
+
+export function moderationTemplatePath(templateId: string): string {
+  return generatePath(ROUTES.MODERATION_TEMPLATE, { templateId });
+}
 
 export function moderationAccountPath(accountId: string): string {
   return generatePath(ROUTES.MODERATION_ACCOUNT, { accountId });

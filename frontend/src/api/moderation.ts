@@ -28,6 +28,8 @@ export type AccountSearchPage = components['schemas']['AccountSearchResponse'];
 export type AccountSummary = components['schemas']['AccountSummaryResponse'];
 export type Account = components['schemas']['AccountResponse'];
 
+export type ReviewedTemplate = components['schemas']['ReviewedTemplateResponse'];
+export type ReviewedTile = components['schemas']['ReviewedTileResponse'];
 export type ReportQueuePage = components['schemas']['ReportQueueResponse'];
 export type ReportedContent = components['schemas']['ReportedContentResponse'];
 export type HiddenGamesPage = components['schemas']['HiddenGamesResponse'];
@@ -47,6 +49,7 @@ const RECENT_UPLOADS_QUERY_KEY = ['moderation', 'images'] as const;
 const REPORT_QUEUE_QUERY_KEY = ['moderation', 'reports'] as const;
 const OPEN_REPORT_COUNT_QUERY_KEY = ['moderation', 'reports-count'] as const;
 const HIDDEN_GAMES_QUERY_KEY = ['moderation', 'hidden-games'] as const;
+const REVIEWED_TEMPLATE_QUERY_KEY = ['moderation', 'templates'] as const;
 const ACCOUNT_SEARCH_QUERY_KEY = ['moderation', 'accounts', 'search'] as const;
 const ACCOUNT_QUERY_KEY = ['moderation', 'accounts', 'detail'] as const;
 
@@ -372,12 +375,27 @@ async function moderateTemplate({ templateId, action, reason }: TemplateModerati
   }
 }
 
+export function useReviewedTemplate(templateId: string): UseQueryResult<ReviewedTemplate> {
+  return useQuery({
+    queryKey: [...REVIEWED_TEMPLATE_QUERY_KEY, templateId],
+    queryFn: async ({ signal }) =>
+      dataOrThrow(
+        await apiClient.GET('/moderation/templates/{template_id}', {
+          params: { path: { template_id: templateId } },
+          signal,
+        }),
+      ),
+    retry: retryUnlessClientError,
+  });
+}
+
 export function useModerateTemplate(): UseMutationResult<void, Error, TemplateModeration> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: moderateTemplate,
     onSuccess: async () => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
       ]);

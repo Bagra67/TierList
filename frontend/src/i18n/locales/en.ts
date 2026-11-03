@@ -140,7 +140,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -485,6 +485,17 @@ export const en: Translation = {
       hiddenCount_other: '{{count}} images hidden.',
       history: 'Moderation history',
       noHistory: 'No decision has been taken yet on this account or its content.',
+    },
+    template: {
+      unknownOwner: 'Unknown account',
+      updatedAt: 'edited on {{date, datetime(dateStyle: medium)}}',
+      hiddenReason: 'Reason: {{reason}}',
+      tiers: 'Tiers',
+      tiles_one: '{{count}} tile',
+      tiles_other: '{{count}} tiles',
+      noTiles: 'This template has no tile.',
+      tileImage: 'Image of tile {{number}}',
+      imageHidden: 'Image hidden by the moderation',
     },
     templateDialog: {
       hide: {
