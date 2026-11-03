@@ -1,5 +1,6 @@
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -11,15 +12,31 @@ from app.models.enums import ModerationActionKind, ModerationTargetType, Templat
 from app.models.template import Template
 from app.models.user import User
 from app.repositories import templates as template_repository
+from app.repositories import users as user_repository
 from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ReviewedTemplate:
+    template: Template
+    owner_name: str | None
 
 
 class TemplateModerationService:
     def __init__(self, session: Session, moderation_log: ModerationLogService) -> None:
         self._session = session
         self._moderation_log = moderation_log
+
+    def review(self, template_id: uuid.UUID) -> ReviewedTemplate:
+        template: Template | None = template_repository.get_template_for_review(
+            self._session, template_id
+        )
+        if template is None:
+            raise TemplateNotFoundError
+        owner: User | None = user_repository.get_user_by_id(self._session, template.owner_id)
+        return ReviewedTemplate(template, owner.display_name if owner is not None else None)
 
     def hide(self, super_admin: User, template_id: uuid.UUID, reason: str) -> None:
         template: Template = self._get_template(template_id)

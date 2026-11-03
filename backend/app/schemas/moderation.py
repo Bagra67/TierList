@@ -5,9 +5,15 @@ from typing import Annotated
 from pydantic import AwareDatetime, BaseModel, ConfigDict, StringConstraints
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
-from app.models.enums import ModerationActionKind, ModerationTargetType, ReportReason, UserRole
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    ReportReason,
+    TemplateModeration,
+    UserRole,
+)
 from app.models.image import ImageStatus
-from app.schemas.templates import TemplateSummaryResponse
+from app.schemas.templates import TemplateSummaryResponse, TierResponse
 
 ModerationReason = Annotated[
     str,
@@ -116,6 +122,29 @@ class HiddenGamesResponse(BaseModel):
 
     games: list[HiddenGameResponse]
     has_more: bool
+
+
+class ReviewedTileResponse(BaseModel):
+    """Une tuile lue par un super admin : une image masquée y reste visible, image_status le dit."""
+
+    id: uuid.UUID
+    text: str | None
+    image_url: str | None
+    image_status: ImageStatus | None
+
+
+class ReviewedTemplateResponse(BaseModel):
+    """Le contenu d'un modèle pour les super admins, même privé (US-1.8)."""
+
+    id: uuid.UUID
+    name: str
+    updated_at: datetime
+    owner_id: uuid.UUID
+    owner_name: str | None
+    moderation: TemplateModeration
+    moderation_reason: str | None
+    tiers: list[TierResponse]
+    tiles: list[ReviewedTileResponse]
 
 
 class RecentUploadResponse(BaseModel):

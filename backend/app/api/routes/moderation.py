@@ -17,6 +17,7 @@ from app.api.dependencies import (
 )
 from app.api.presenters.images import recent_upload_response
 from app.api.presenters.reports import reported_content_response
+from app.api.presenters.templates import reviewed_template_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -69,6 +70,7 @@ from app.schemas.moderation import (
     RecentUploadsResponse,
     RemoveNicknameRequest,
     ReportQueueResponse,
+    ReviewedTemplateResponse,
     SuperAdminResponse,
 )
 from app.schemas.templates import TemplateSummaryResponse
@@ -76,6 +78,7 @@ from app.services.account_review import AccountDetails, AccountSearchPage
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
 from app.services.report_queue import HiddenGamesPage, ReportQueuePage
+from app.services.template_moderation import ReviewedTemplate
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -389,6 +392,27 @@ def list_recent_uploads(
         images=[recent_upload_response(storage, upload) for upload in page.uploads],
         has_more=page.has_more,
     )
+
+
+@router.get(
+    "/templates/{template_id}",
+    responses={
+        **SUPER_ADMIN_RESPONSES,
+        404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
+    },
+)
+def get_template_for_review(
+    template_id: uuid.UUID,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+    storage: ImageStorageDep,
+) -> ReviewedTemplateResponse:
+    """Lit le contenu d'un modèle non supprimé, même privé (US-1.8). Lecture seule."""
+    try:
+        reviewed: ReviewedTemplate = service.review(template_id)
+    except TemplateNotFoundError as exc:
+        raise _template_not_found() from exc
+    return reviewed_template_response(reviewed, storage)
 
 
 @router.post(

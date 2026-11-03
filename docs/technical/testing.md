@@ -431,6 +431,21 @@ The `google` fixture is a `FakeGoogleOAuthClient`: the real Google client (autho
 | `test_only_a_closed_game_can_be_hidden`                                         | Hides a game in progress, then an unknown one.   | Nothing public to hide.                                   | 404 `game_not_found`.                                                                                            |
 | `test_the_hidden_games_are_paginated_newest_first`                              | Hides three games, reads pages of 2.             |                                                           | Newest first, no gap, the right `has_more`.                                                                      |
 
+#### `tests/integration/test_template_review.py` (reading a template as a super admin)
+
+`GET /moderation/templates/{id}` with `auth_client` (#360, [moderation guide](moderation.md)). `nina` is a super admin; `alice` owns a private template with a text tile and images.
+
+| Test                                                                   | What it does                             | Purpose                                     | Expected result                                                              |
+| ---------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `test_reading_a_template_refuses_visitors_and_other_accounts`          | Reads without a session, then as Bob.    | Private content stays private.              | 401, then 403.                                                               |
+| `test_a_super_admin_reads_the_private_template_of_an_account`          | Nina reads the template of Alice.        | She can judge what she moderates.           | The name, the owner, the tiers and the tiles, in order.                      |
+| `test_a_hidden_image_stays_visible_and_a_deleted_image_has_no_address` | A visible, a hidden and a deleted image. | The super admin must see what was hidden.   | Public address, signed quarantine address, no address; each with its status. |
+| `test_a_hidden_template_comes_with_its_reason`                         | Nina hides it, then reads it.            | The page shows the decision.                | `hidden` and the reason.                                                     |
+| `test_an_unknown_or_deleted_template_is_not_found`                     | An unknown id, then a deleted template.  | The account page does not list them either. | 404 `template_not_found`.                                                    |
+| `test_reading_a_template_writes_nothing_to_the_log`                    | Nina reads it.                           | The log only keeps decisions.               | No entry.                                                                    |
+| `test_the_number_of_queries_does_not_grow_with_the_tiles`              | A template with many image tiles.        | No N+1.                                     | A bounded number of queries.                                                 |
+| `test_another_account_still_cannot_read_it_through_the_template_route` | Bob calls `GET /templates/{id}`.         | The editor route stays for the owner.       | 404.                                                                         |
+
 #### `tests/integration/test_seed.py` (seed data)
 
 `run_seed` (`app/seed/run.py`, [seed data guide](seed-data.md)) on the test database, with the small set `SMALL_SIZE` (the same cases as the full set, fewer of each) and `FakeImageStorage`. `seed` runs it with the password `seed-test-password`; `sign_in` signs a seed account in through the API.
