@@ -29,6 +29,9 @@ class AccountBanService:
     def active_ban(self, user_id: uuid.UUID) -> AccountBan | None:
         return account_ban_repository.get_active_ban(self._session, user_id, datetime.now(UTC))
 
+    def past_bans(self, user_id: uuid.UUID) -> list[AccountBan]:
+        return account_ban_repository.list_past_bans(self._session, user_id, datetime.now(UTC))
+
     def banned_user_ids(self, user_ids: list[uuid.UUID]) -> set[uuid.UUID]:
         return account_ban_repository.banned_user_ids(self._session, user_ids, datetime.now(UTC))
 

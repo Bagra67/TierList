@@ -102,6 +102,13 @@ class AccountBanResponse(BaseModel):
     actor_name: str
 
 
+class AccountPastBanResponse(AccountBanResponse):
+    """Un bannissement levé, remplacé par un autre ou arrivé à sa fin : lifted_at est vide dans ce
+    dernier cas."""
+
+    lifted_at: datetime | None
+
+
 class AccountResponse(BaseModel):
     """La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
     envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
@@ -114,6 +121,7 @@ class AccountResponse(BaseModel):
     email_verified: bool
     role: UserRole
     ban: AccountBanResponse | None
+    past_bans: list[AccountPastBanResponse]
     templates: list[TemplateSummaryResponse]
 
 
