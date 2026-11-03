@@ -42,6 +42,7 @@ class Report(UUIDPrimaryKeyMixin, Base):
         ),
         Index("ix_reports_reporter_id_created_at", "reporter_id", "created_at"),
         Index("ix_reports_reporter_browser_hash_created_at", "reporter_browser_hash", "created_at"),
+        Index("ix_reports_status_closed_at", "status", "closed_at"),
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -63,4 +64,8 @@ class Report(UUIDPrimaryKeyMixin, Base):
     details: Mapped[str | None] = mapped_column(String(REPORT_DETAILS_MAX_LENGTH))
     status: Mapped[ReportStatus] = mapped_column(
         text_enum(ReportStatus, "report_status"), default=ReportStatus.OPEN
+    )
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_by_action_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("moderation_actions.id", ondelete="SET NULL")
     )
