@@ -44,7 +44,8 @@ En tant que **super admin**, je veux une file des signalements ouverts, pour tra
 
 - _Étant donné_ des signalements ouverts, _quand_ j'ouvre la file, _alors_ je les vois **regroupés par contenu**, avec le nombre de signalements, les motifs, le contenu lui-même et son propriétaire, les plus signalés en premier.
 - _Étant donné_ un contenu signalé, _quand_ je **classe sans suite** les signalements, _alors_ ils sont fermés et le contenu reste tel quel.
-- _Étant donné_ un contenu signalé, _quand_ je le **masque** ou le **supprime** (US-1.4, US-1.5) ou **sanctionne** son propriétaire (US-1.8), _alors_ ses signalements ouverts sont fermés avec cette décision.
+- _Étant donné_ un contenu signalé, _quand_ je le **retire** (masquer ou supprimer une image, US-1.4 ; retirer un pseudo ; masquer une partie), _alors_ ses signalements ouverts sont fermés avec cette décision.
+- _Étant donné_ un contenu signalé, _quand_ je **sanctionne** son propriétaire (US-1.8), _alors_ ses signalements restent ouverts : le contenu reste en ligne jusqu'à son retrait ou son classement.
 - _Étant donné_ une décision, _alors_ elle est écrite dans le **journal de modération** (US-1.9).
 
 ### US-1.4 Masquer ou supprimer une image — Must

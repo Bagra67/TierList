@@ -12,7 +12,7 @@ Chaque décision d'un super admin (classer un signalement sans suite, masquer, r
 - Personne ne peut modifier ni supprimer une entrée : aucune route ne le permet. Seule la purge de nuit supprime les entrées de plus de **3 ans** (la durée annoncée par la [politique de confidentialité](legal-pages.fr.md)).
 - Une entrée reste lisible après la suppression de la cible ou du compte du super admin : elle garde une copie de leurs noms.
 
-Les actions qui écrivent au journal sont celles sur les images (#124) et sur les modèles (#268) : masquer, réafficher ou supprimer une image ou un modèle (§2.2), et celles sur les comptes (#127) : bannir ou lever un bannissement (§2.9). Les autres cibles arrivent avec leurs issues. Un modèle masqué par la modération n'ouvre plus de salle ni ne lance de partie, tandis que son propriétaire le modifie encore et voit le motif ([guide des templates](templates.fr.md#27-modération)). Les actions sur les modèles sont appelées depuis la page d'un compte (§2.8) ; la file des signalements (#269) les appellera aussi.
+Les actions qui écrivent au journal sont celles sur les images (#124) et sur les modèles (#268) : masquer, réafficher ou supprimer une image ou un modèle (§2.2), et celles sur les comptes (#127) : bannir ou lever un bannissement (§2.9), et la file des signalements : classer, retirer un pseudo, masquer ou réafficher une partie (§2.11). Les modèles deviennent signalables avec leur issue. Un modèle masqué par la modération n'ouvre plus de salle ni ne lance de partie, tandis que son propriétaire le modifie encore et voit le motif ([guide des templates](templates.fr.md#27-modération)). Les actions sur les modèles sont appelées depuis la page d'un compte (§2.8) ; la file des signalements (#269) les appellera aussi.
 
 Les super admins passent aussi en revue les **derniers envois** (US-1.7, #125), la première page de l'espace de modération (`/moderation/uploads`) : les dernières images, des plus récentes aux plus anciennes, avec leur auteur, leur date et leur usage (modèles, parties), filtrées par auteur, jours d'envoi et statut (§2.6). Chaque image peut y être masquée, réaffichée ou supprimée, avec un motif. Une image masquée reste visible des seuls super admins, par un lien temporaire. La [politique de confidentialité](legal-pages.fr.md) dit que les super admins voient les images envoyées avec le nom de leur auteur.
 
@@ -132,6 +132,7 @@ La page, `RecentUploadsPage` (`/moderation/uploads`) :
 | ------------------------------- | ------------------------------------------------------------------- | ------ |
 | `MODERATION_LOG_RETENTION_DAYS` | Jours pendant lesquels une entrée du journal est gardée             | `1095` |
 | `REPORTS_PER_HOUR_MAX`          | Signalements par compte ou navigateur sur la dernière heure (§2.10) | `20`   |
+| `CLOSED_REPORT_RETENTION_DAYS`  | Jours pendant lesquels un signalement fermé est gardé (§2.11)       | `365`  |
 
 La changer oblige à changer aussi la politique de confidentialité ([pages légales](legal-pages.fr.md)).
 
@@ -209,7 +210,7 @@ Le frontend :
 
 ### 2.10 Signalements de contenus
 
-N'importe qui peut signaler l'image d'une tuile, un pseudo ou une partie close (US-1.2) : `POST /reports`, sans authentification. La file qui les traite est #269 : d'ici là, les signalements sont seulement enregistrés. Un modèle public devient signalable avec sa page (#275).
+N'importe qui peut signaler l'image d'une tuile, un pseudo ou une partie close (US-1.2) : `POST /reports`, sans authentification. La file qui les traite est au §2.11. Un modèle public devient signalable avec sa page (#275).
 
 **Le bouton.** `ReportButton` ouvre le dialogue de la [maquette](../product/milestone-2/screens.fr.md#4-signaler), pour tout le monde. Il est sur la page de résultats (la partie, l'image de l'élément choisi, le joueur choisi) et dans la salle (le pseudo d'un participant, sauf le sien, et l'image de l'élément en cours). Dans les résultats, il reste sur son propre pseudo, car ils ne disent pas quel joueur est le lecteur. Un élément sans image visible n'a pas de bouton.
 
@@ -233,7 +234,34 @@ La même image est donc une seule cible d'une partie à l'autre, et le pseudo d'
 - Le motif `other` demande des précisions : 422 `report_details_required`.
 - Aucune route ne dit qui a signalé, et les logs non plus.
 
-**Conservation.** La politique de confidentialité promet « le temps de les traiter, puis un an au plus » : la purge arrive avec la fermeture d'un signalement, dans #269. `reporter_id` et `owner_id` sont en `SET NULL` : un signalement survit aux comptes.
+**Conservation.** La politique de confidentialité promet « le temps de les traiter, puis un an au plus » : la purge de nuit supprime les signalements fermés depuis plus de `CLOSED_REPORT_RETENTION_DAYS` (§2.11). `reporter_id` et `owner_id` sont en `SET NULL` : un signalement survit aux comptes.
+
+### 2.11 File des signalements
+
+Les super admins traitent les signalements sur `/moderation/reports` (US-1.3, #269), première page de l'espace de modération. Le menu principal montre le nombre de contenus signalés. La même liste, filtrée par `owner_id`, est sur la page d'un compte (US-1.8).
+
+**Lecture.** `GET /moderation/reports` regroupe les signalements ouverts par contenu, les plus signalés d'abord, puis les plus anciens. Une entrée a le type, le libellé, le propriétaire, le nombre, les motifs, les précisions, l'adresse de l'image et le lien des résultats, **jamais l'auteur**. `GET /moderation/reports/count` compte des contenus, pas des signalements.
+
+**Décision.** Chaque décision a un motif, va au journal et ferme tous les signalements ouverts du contenu (`closed_at`, `closed_by_action_id`) :
+
+| Contenu | Décision             | Route                                          | Effet                                            | Statut      |
+| ------- | -------------------- | ---------------------------------------------- | ------------------------------------------------ | ----------- |
+| Tous    | Classer sans suite   | `POST /moderation/reports/dismiss`             | Rien ne change                                   | `dismissed` |
+| Image   | Masquer ou supprimer | `POST /moderation/images/{id}/hide`, `/delete` | §2.2                                             | `actioned`  |
+| Pseudo  | Retirer              | `POST /moderation/nicknames/remove`            | Un code neutre le remplace, définitivement       | `actioned`  |
+| Partie  | Masquer              | `POST /moderation/games/{id}/hide`             | Son lien de résultats répond `results_not_found` | `actioned`  |
+
+- **Bannir ne ferme rien** : le contenu reste en ligne après un bannissement, donc ses signalements restent dans la file jusqu'à son retrait ou son classement.
+- **Une image retirée ailleurs** (derniers envois, page d'un compte) ferme aussi ses signalements : `ImageModerationService` s'en charge. La réafficher ne rouvre rien.
+- **Un nouveau signalement** après une fermeture fait revenir le contenu.
+
+**Retirer un pseudo.** Le nouveau nom est `#` suivi de 8 caractères aléatoires, sans langue. Pour un compte : `users.display_name` et ses `game_players` ; la personne peut ensuite choisir un autre nom. Pour un invité : son `participants.nickname` et les `game_players` de la même salle portant ce pseudo, car un pseudo est unique dans une salle et rien d'autre ne les relie. Les signalements de ces lignes sont fermés ensemble. L'ancien pseudo reste au journal et dans `target_label`. Les clients connectés voient le changement à leur prochaine lecture de la salle : aucun événement temps réel n'est envoyé.
+
+**Masquer une partie.** `games.hidden_at` : `get_closed_game_by_token` l'exclut, et elle ne peut plus être signalée. Elle reste listée dans l'historique et le salon, où son lien dit que les résultats sont introuvables. `GET /moderation/games/hidden` liste les parties masquées sur la page des signalements, et `POST /moderation/games/{id}/unhide` en réaffiche une. Cela ne rouvre aucun signalement.
+
+**Purge.** `purge_closed_reports`, chaque nuit, supprime les signalements fermés depuis plus de `CLOSED_REPORT_RETENTION_DAYS`, jamais un signalement ouvert.
+
+Un modèle n'est pas encore dans la file : ses signalements arrivent avec sa page publique (#275).
 
 ## 3. Dans le code
 
@@ -250,6 +278,7 @@ La même image est donc une seule cible d'une partie à l'autre, et le pseudo d'
 | Service      | `backend/app/services/account_review.py`                                                                                                                                                                                                                                                                                                                                                                                                           | `AccountReviewService` : `search`, `details`, `hide_all_images` (§2.8).                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Service      | `backend/app/services/account_bans.py`                                                                                                                                                                                                                                                                                                                                                                                                             | `AccountBanService` : `ban`, `lift`, `active_ban`, `banned_user_ids` (§2.9).                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Service      | `backend/app/services/reports.py`                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Service      | `backend/app/services/report_queue.py`                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Repositories | `repositories/moderation_actions.py`, `repositories/users.py`, `repositories/images.py`, `repositories/templates.py`, `repositories/account_bans.py`                                                                                                                                                                                                                                                                                               | Requêtes : ajouter, lister avec les filtres, supprimer avant une date ; les super admins par nom ; les images récentes, leurs modèles et leurs parties ; un modèle de n'importe quel propriétaire, verrouillé (`get_template_for_update`) ; les comptes cherchés par nom ou e-mail (`search_users`), un compte verrouillé (`get_user_for_update`), les images visibles d'un compte (`list_visible_image_ids_of_owner`) ; le bannissement actif (`is_active`, `get_active_ban`, `banned_user_ids`). |
 | Repositories | `repositories/reports.py`                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Modèle       | `backend/app/models/moderation_action.py`                                                                                                                                                                                                                                                                                                                                                                                                          | `ModerationAction` (`moderation_actions`) ; enums dans `models/enums.py`.                                                                                                                                                                                                                                                                                                                                                                                                                          |

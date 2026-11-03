@@ -74,16 +74,16 @@ stateDiagram-v2
     Traite : Traité
     [*] --> Ouvert : quelqu'un signale un contenu
     Ouvert --> Classe : un super admin le classe sans suite
-    Ouvert --> Traite : un super admin masque, supprime ou sanctionne
+    Ouvert --> Traite : un super admin retire le contenu
     Classe --> [*]
     Traite --> [*]
 ```
 
-| État                  | Sens                                                                                            |
-| --------------------- | ----------------------------------------------------------------------------------------------- |
-| **Ouvert**            | En attente dans la file, regroupé avec les autres signalements ouverts du même contenu.         |
-| **Classé sans suite** | Fermé sans action : le contenu reste tel quel.                                                  |
-| **Traité**            | Fermé par une décision (masquer, supprimer, bannir), enregistrée dans le journal de modération. |
+| État                  | Sens                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ouvert**            | En attente dans la file, regroupé avec les autres signalements ouverts du même contenu.                                                 |
+| **Classé sans suite** | Fermé sans action : le contenu reste tel quel.                                                                                          |
+| **Traité**            | Fermé par un retrait (masquer ou supprimer une image, retirer un pseudo, masquer une partie), enregistré dans le journal de modération. |
 
 Une décision sur un contenu ferme **tous** ses signalements ouverts d'un coup (US-1.3).
 

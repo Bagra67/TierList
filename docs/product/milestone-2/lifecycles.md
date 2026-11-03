@@ -64,16 +64,16 @@ An image that no tile uses any more is still cleaned up as in milestone 1 ([imag
 stateDiagram-v2
     [*] --> Open : anyone reports a content
     Open --> Dismissed : super admin dismisses it
-    Open --> Actioned : super admin hides, deletes or sanctions
+    Open --> Actioned : super admin removes the content
     Dismissed --> [*]
     Actioned --> [*]
 ```
 
-| State         | Meaning                                                                           |
-| ------------- | --------------------------------------------------------------------------------- |
-| **Open**      | Waiting in the queue, grouped with the other open reports about the same content. |
-| **Dismissed** | Closed without action: the content stays as it is.                                |
-| **Actioned**  | Closed by a decision (hide, delete, ban), recorded in the moderation log.         |
+| State         | Meaning                                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Open**      | Waiting in the queue, grouped with the other open reports about the same content.                              |
+| **Dismissed** | Closed without action: the content stays as it is.                                                             |
+| **Actioned**  | Closed by a removal (hide or delete an image, remove a nickname, hide a game), recorded in the moderation log. |
 
 A decision on a content closes **all** its open reports at once (US-1.3).
 

@@ -52,7 +52,7 @@ Les textes déjà dans l'interface viennent de ses traductions ; les nouveaux, v
 
 - **Stories** : US-1.1, US-1.3.
 - L'espace de modération est réservé aux super admins : un lien « Modération » avec le nombre de signalements ouverts dans l'en-tête, un menu à gauche.
-- Les signalements ouverts **regroupés par contenu**, les plus signalés d'abord ; classer sans suite, masquer, supprimer, ou ouvrir le compte pour le sanctionner. Chaque décision va au journal.
+- Les signalements ouverts **regroupés par contenu**, les plus signalés d'abord. Tout contenu peut être classé sans suite ; une image peut être masquée ou supprimée, un pseudo retiré, une partie masquée ; le compte du propriétaire peut être ouvert pour le sanctionner. Chaque décision va au journal. La maquette montre toutes les actions sur chaque ligne, et un modèle : il arrive avec sa page publique.
 
 ## 6. Modération : un compte
 

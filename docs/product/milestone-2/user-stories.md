@@ -44,7 +44,8 @@ As a **super admin**, I want a queue of the open reports, so that I handle each 
 
 - _Given_ open reports, _when_ I open the queue, _then_ I see them **grouped by content**, with the number of reports, the reasons, the content itself and its owner, the most reported first.
 - _Given_ a reported content, _when_ I **dismiss** the reports, _then_ they are closed and the content stays as it is.
-- _Given_ a reported content, _when_ I **hide** or **delete** it (US-1.4, US-1.5) or **sanction** its owner (US-1.8), _then_ its open reports are closed with that decision.
+- _Given_ a reported content, _when_ I **remove** it (hide or delete an image, US-1.4; remove a nickname; hide a game), _then_ its open reports are closed with this decision.
+- _Given_ a reported content, _when_ I **sanction** its owner (US-1.8), _then_ its reports stay open: the content is still online until it is removed or dismissed.
 - _Given_ any decision, _then_ it is written to the **moderation log** (US-1.9).
 
 ### US-1.4 Hide or delete an image — Must

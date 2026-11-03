@@ -79,7 +79,7 @@ The scheme seen by the app does not drive anything sensitive: the cookies are `S
 
 There is no cron on the pods. The lifespan starts a small scheduler next to the inactive-room sweeper (`nightly_scheduler.py`, same style: an asyncio task, no scheduling library for one run a day):
 
-- every night at `MAINTENANCE_HOUR_UTC` (UTC), it purges the deleted templates, then the unused images, then the moderation log entries older than `MODERATION_LOG_RETENTION_DAYS` ([moderation guide](moderation.md#24-purge)) (`maintenance.py`, also called by `scripts/purge_*.py` from the command line);
+- every night at `MAINTENANCE_HOUR_UTC` (UTC), it purges the deleted templates, then the unused images, then the moderation log entries older than `MODERATION_LOG_RETENTION_DAYS` ([moderation guide](moderation.md#24-purge)), then the reports closed for longer than `CLOSED_REPORT_RETENTION_DAYS` (`maintenance.py`, also called by `scripts/purge_*.py` from the command line);
 - each task logs its result; an exception is logged without stopping the next tasks, the next nights or the app;
 - the purges only delete what has expired: running them twice is harmless;
 - `MAINTENANCE_ENABLED=false` turns it off.
