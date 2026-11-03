@@ -12,8 +12,6 @@ class SeedSize:
     image_templates: int
     full_templates: int
     deleted_templates: int
-    # Tuiles des modèles à images, toutes avec une image (au plus 120 envois par heure et par
-    # compte)
     image_tiles_per_template: int
     closed_games: int
     history_games: int

@@ -1,9 +1,3 @@
-"""Compression des images des tuiles avec Pillow (docs/technical/images.md, « Processing »).
-
-Le fichier reçu n'est jamais stocké : il est décodé puis réencodé en WebP, sans métadonnées. Le
-réencodage neutralise aussi les fichiers forgés pour être à la fois une image et autre chose.
-"""
-
 from dataclasses import dataclass
 from io import BytesIO
 
@@ -17,8 +11,6 @@ from app.constants.images import (
 )
 from app.exceptions.images import ImageTooManyPixelsError, ImageUnsupportedFormatError
 
-# Pillow signale un fichier invalide ou tronqué par l'une de ces exceptions
-# (UnidentifiedImageError hérite d'OSError ; verify() lève SyntaxError sur un PNG corrompu)
 _INVALID_IMAGE_ERRORS: tuple[type[Exception], ...] = (OSError, SyntaxError, ValueError)
 
 
