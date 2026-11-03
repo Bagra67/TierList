@@ -66,3 +66,8 @@ class ErrorCode(StrEnum):
     IMAGE_UPLOAD_LIMIT_REACHED = "image_upload_limit_reached"
     IMAGE_NOT_FOUND = "image_not_found"
     IMAGE_MODERATION_CONFLICT = "image_moderation_conflict"
+
+    REPORT_TARGET_NOT_FOUND = "report_target_not_found"
+    REPORT_ALREADY_OPEN = "report_already_open"
+    REPORT_DETAILS_REQUIRED = "report_details_required"
+    REPORT_LIMIT_REACHED = "report_limit_reached"

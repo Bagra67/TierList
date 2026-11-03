@@ -38,6 +38,7 @@ def game_results_response(closed: ClosedGameResults, storage: ImageStorage) -> G
             )
         )
     return GameResultsResponse(
+        game_id=closed.game.id,
         template_name=closed.game.snapshot.name,
         closed_at=closed.closed_at,
         include_absent_votes=closed.include_absent_votes,
@@ -61,6 +62,7 @@ def _tier_items(
 
 def _player_response(tiers: list[SnapshotTier], board: PlayerBoard) -> PlayerResultsResponse:
     return PlayerResultsResponse(
+        id=board.player.id,
         display_name=board.player.display_name,
         tiers=_tier_items(tiers, board.tiers),
         unplaced_item_ids=list(board.unplaced_tile_ids),

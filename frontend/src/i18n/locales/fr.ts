@@ -993,6 +993,12 @@ export const fr = {
       image_upload_limit_reached:
         "Vous avez envoyé {{max_uploads}} images dans l'heure : réessayez un peu plus tard.",
       image_not_found: 'Cette image est introuvable.',
+      report_target_not_found:
+        'Ce contenu ne peut pas être signalé : il a peut-être déjà été retiré.',
+      report_already_open: 'Vous avez déjà signalé ce contenu : il sera bientôt examiné.',
+      report_details_required: 'Précisez votre signalement pour le motif « Autre ».',
+      report_limit_reached:
+        "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:
         "Cette action ne s'applique pas à l'image dans son état actuel : elle est peut-être déjà masquée, visible ou supprimée.",
     },

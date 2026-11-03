@@ -856,6 +856,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Report
+         * @description Signale un contenu, avec un compte ou sans : un cookie reconnaît alors le navigateur.
+         */
+        post: operations["create_report_reports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1015,6 +1035,22 @@ export interface components {
             /** File */
             file: string;
         };
+        /**
+         * CreateReportRequest
+         * @description Un signalement (US-1.2). target_id désigne, selon target_kind : un item d'une partie, un
+         *     participant d'une salle, un joueur des résultats ou une partie close.
+         */
+        CreateReportRequest: {
+            target_kind: components["schemas"]["ReportTargetKind"];
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            reason: components["schemas"]["ReportReason"];
+            /** Details */
+            details?: string | null;
+        };
         /** CreateRoomRequest */
         CreateRoomRequest: {
             /**
@@ -1133,6 +1169,11 @@ export interface components {
          * @description Résultats d'une partie close (US-5.2), lus par son lien (US-5.3).
          */
         GameResultsResponse: {
+            /**
+             * Game Id
+             * Format: uuid
+             */
+            game_id: string;
             /** Template Name */
             template_name: string;
             /**
@@ -1425,6 +1466,11 @@ export interface components {
          * @description Le classement final d'un joueur.
          */
         PlayerResultsResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
             /** Display Name */
             display_name: string;
             /** Tiers */
@@ -1492,6 +1538,29 @@ export interface components {
             /** Name */
             name: string;
         };
+        /**
+         * ReportReason
+         * @description Motif d'un signalement (US-1.2).
+         * @enum {string}
+         */
+        ReportReason: "illegal" | "sexual" | "violence_or_hate" | "harassment" | "spam" | "other";
+        /**
+         * ReportResponse
+         * @description Le signalement enregistré. Il ne dit rien de son auteur.
+         */
+        ReportResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * ReportTargetKind
+         * @description Ce que désigne target_id dans un signalement (US-1.2).
+         * @enum {string}
+         */
+        ReportTargetKind: "item" | "participant" | "player" | "game";
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** Token */
@@ -5434,6 +5503,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_report_reports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                report_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content unknown or already removed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Open report from the same person on this content */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Reason 'other' without details */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too many reports sent in the last hour */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */
