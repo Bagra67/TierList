@@ -7,6 +7,7 @@ from app.models.oauth_account import OAuthAccount
 from app.models.participant import Participant
 from app.models.placement import Placement
 from app.models.refresh_token import RefreshToken
+from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.round import Round
@@ -28,6 +29,7 @@ __all__ = [
     "Participant",
     "Placement",
     "RefreshToken",
+    "Report",
     "Room",
     "RoomBan",
     "Round",
