@@ -63,6 +63,8 @@ export const en: Translation = {
     templates: 'My templates',
     history: 'History',
     moderation: 'Moderation',
+    openReports_one: '{{count}} reported content',
+    openReports_other: '{{count}} reported contents',
   },
   settings: {
     open: 'Settings',
@@ -138,7 +140,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -297,6 +299,7 @@ export const en: Translation = {
   moderation: {
     nav: {
       label: 'Moderation area',
+      reports: 'Reports',
       uploads: 'Recent uploads',
       accounts: 'Accounts',
       log: 'Log',
@@ -336,6 +339,83 @@ export const en: Translation = {
       account: 'Account',
       nickname: 'Nickname',
       game: 'Game',
+    },
+    reports: {
+      title: 'Reports',
+      intro:
+        'The open reports, grouped by content, the most reported first. Every decision is written to the log.',
+      empty: 'No open report.',
+      more: 'See more',
+      type: {
+        template: 'Template',
+        image: 'Image',
+        account: 'Account',
+        nickname: 'Nickname',
+        game: 'Game',
+      },
+      noOwner: 'Guest',
+      count_one: '{{count}} report',
+      count_other: '{{count}} reports',
+      since: 'since {{date, datetime(dateStyle: medium)}}',
+      reason: '{{reason}} ×{{count}}',
+      viewAccount: 'View the account',
+      viewResults: 'View the results',
+      decisions: {
+        dismiss: {
+          open: 'Dismiss',
+          openLabel: 'Dismiss: {{name}}',
+          title: 'Dismiss the reports?',
+          description:
+            'The open reports of this content are closed, and the content stays as it is.',
+          submit: 'Dismiss',
+          submitting: 'Dismissing…',
+        },
+        hide_image: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this image?',
+          description:
+            'It is replaced everywhere by the "image removed" visual, and its open reports are closed. It can be shown again from the recent uploads.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+        delete_image: {
+          open: 'Delete',
+          openLabel: 'Delete: {{name}}',
+          title: 'Delete this image?',
+          description:
+            'Its file is erased and cannot be uploaded again. Its open reports are closed. This cannot be undone.',
+          submit: 'Delete',
+          submitting: 'Deleting…',
+        },
+        remove_nickname: {
+          open: 'Remove the nickname',
+          openLabel: 'Remove the nickname: {{name}}',
+          title: 'Remove this nickname?',
+          description:
+            'It is replaced by a neutral code in the rooms and the results, and its open reports are closed. This cannot be undone: the old nickname stays in the log only.',
+          submit: 'Remove the nickname',
+          submitting: 'Removing…',
+        },
+        hide_game: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this game?',
+          description:
+            'Its results link can no longer be found, and its open reports are closed. It can be shown again.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+      },
+      hiddenGames: {
+        title: 'Hidden games',
+        hiddenAt: 'hidden on {{date, datetime(dateStyle: medium)}}',
+        unhide: 'Show again',
+        unhideLabel: 'Show again: {{name}}',
+        unhiding: 'Showing…',
+        dialogTitle: 'Show this game again?',
+        dialogDescription: 'Its results link works again.',
+      },
     },
     uploads: {
       title: 'Recent uploads',
@@ -383,6 +463,8 @@ export const en: Translation = {
       banned: 'Banned',
     },
     account: {
+      reports: 'Reports on their content',
+      reportsEmpty: 'No open report on their content.',
       email: 'Email',
       createdAt: 'Created',
       date: '{{date, datetime(dateStyle: medium)}}',

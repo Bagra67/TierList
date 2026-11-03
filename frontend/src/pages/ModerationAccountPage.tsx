@@ -16,6 +16,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ModerationLogTable } from '../components/ModerationLogTable';
+import { ReportQueue } from '../components/ReportQueue';
 import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { UploadGrid } from '../components/UploadGrid';
@@ -38,6 +39,10 @@ export function ModerationAccountPage() {
           <AccountBan account={account} />
           <AccountTemplates account={account} />
           <AccountImages account={account} />
+          <section className="flex w-full flex-col items-start gap-3">
+            <h2 className="text-lg font-semibold">{t('moderation.account.reports')}</h2>
+            <ReportQueue ownerId={account.id} emptyMessage={t('moderation.account.reportsEmpty')} />
+          </section>
           <section className="flex w-full flex-col items-start gap-3">
             <h2 className="text-lg font-semibold">{t('moderation.account.history')}</h2>
             <ModerationLogTable

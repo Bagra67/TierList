@@ -154,16 +154,19 @@ describe('App', () => {
   it('shows the moderation link to a super admin and opens the moderation area', async () => {
     stubBackend({
       ...superAdminSession,
-      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
+      'GET /moderation/reports/count': () => Response.json({ open_contents: 3 }),
+      'GET /moderation/games/hidden': () => Response.json({ games: [], has_more: false }),
       'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
       'GET /moderation/super-admins': () => Response.json([]),
     });
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
-    fireEvent.click(within(nav).getByRole('link', { name: 'Modération' }));
+    expect(await within(nav).findByLabelText('3 contenus signalés')).toHaveTextContent('3');
+    fireEvent.click(within(nav).getByRole('link', { name: /^Modération/ }));
 
-    expect(await screen.findByRole('heading', { name: 'Derniers envois' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Signalements' })).toBeInTheDocument();
     const moderationNav = screen.getByRole('navigation', { name: 'Espace de modération' });
     fireEvent.click(within(moderationNav).getByRole('link', { name: 'Journal' }));
     expect(

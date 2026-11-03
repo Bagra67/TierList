@@ -62,6 +62,8 @@ export const fr = {
     templates: 'Mes modèles',
     history: 'Historique',
     moderation: 'Modération',
+    openReports_one: '{{count}} contenu signalé',
+    openReports_other: '{{count}} contenus signalés',
   },
   settings: {
     open: 'Paramètres',
@@ -140,7 +142,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -304,6 +306,7 @@ export const fr = {
   moderation: {
     nav: {
       label: 'Espace de modération',
+      reports: 'Signalements',
       uploads: 'Derniers envois',
       accounts: 'Comptes',
       log: 'Journal',
@@ -344,6 +347,83 @@ export const fr = {
       account: 'Compte',
       nickname: 'Pseudo',
       game: 'Partie',
+    },
+    reports: {
+      title: 'Signalements',
+      intro:
+        "Les signalements ouverts, regroupés par contenu, les plus signalés d'abord. Chaque décision est écrite au journal.",
+      empty: 'Aucun signalement ouvert.',
+      more: 'Voir plus',
+      type: {
+        template: 'Modèle',
+        image: 'Image',
+        account: 'Compte',
+        nickname: 'Pseudo',
+        game: 'Partie',
+      },
+      noOwner: 'Invité',
+      count_one: '{{count}} signalement',
+      count_other: '{{count}} signalements',
+      since: 'depuis le {{date, datetime(dateStyle: medium)}}',
+      reason: '{{reason}} ×{{count}}',
+      viewAccount: 'Voir le compte',
+      viewResults: 'Voir les résultats',
+      decisions: {
+        dismiss: {
+          open: 'Classer sans suite',
+          openLabel: 'Classer sans suite : {{name}}',
+          title: 'Classer sans suite ?',
+          description:
+            'Les signalements ouverts de ce contenu sont fermés, et le contenu reste tel quel.',
+          submit: 'Classer sans suite',
+          submitting: 'Classement…',
+        },
+        hide_image: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer cette image ?',
+          description:
+            'Elle est remplacée partout par le visuel « image retirée », et ses signalements ouverts sont fermés. Elle peut être réaffichée depuis les derniers envois.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+        delete_image: {
+          open: 'Supprimer',
+          openLabel: 'Supprimer : {{name}}',
+          title: 'Supprimer cette image ?',
+          description:
+            'Son fichier est effacé et ne pourra plus être envoyé. Ses signalements ouverts sont fermés. Cette action est définitive.',
+          submit: 'Supprimer',
+          submitting: 'Suppression…',
+        },
+        remove_nickname: {
+          open: 'Retirer le pseudo',
+          openLabel: 'Retirer le pseudo : {{name}}',
+          title: 'Retirer ce pseudo ?',
+          description:
+            "Il est remplacé par un code neutre dans les salles et les résultats, et ses signalements ouverts sont fermés. Cette action est définitive : l'ancien pseudo ne reste qu'au journal.",
+          submit: 'Retirer le pseudo',
+          submitting: 'Retrait…',
+        },
+        hide_game: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer cette partie ?',
+          description:
+            'Son lien de résultats devient introuvable, et ses signalements ouverts sont fermés. Elle peut être réaffichée.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+      },
+      hiddenGames: {
+        title: 'Parties masquées',
+        hiddenAt: 'masquée le {{date, datetime(dateStyle: medium)}}',
+        unhide: 'Réafficher',
+        unhideLabel: 'Réafficher : {{name}}',
+        unhiding: 'Réaffichage…',
+        dialogTitle: 'Réafficher cette partie ?',
+        dialogDescription: 'Son lien de résultats fonctionne à nouveau.',
+      },
     },
     uploads: {
       title: 'Derniers envois',
@@ -392,6 +472,8 @@ export const fr = {
       banned: 'Banni',
     },
     account: {
+      reports: 'Signalements sur ses contenus',
+      reportsEmpty: 'Aucun signalement ouvert sur ses contenus.',
       email: 'E-mail',
       createdAt: 'Création',
       date: '{{date, datetime(dateStyle: medium)}}',
