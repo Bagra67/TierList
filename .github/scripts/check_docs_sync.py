@@ -119,7 +119,9 @@ def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Check that bilingual docs and the testing guide stay in sync.")
+    parser = argparse.ArgumentParser(
+        description="Check that bilingual docs and the testing guide stay in sync."
+    )
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
     parser.add_argument("--skip-sync", action="store_true", help="skip the checks on changes")
     args = parser.parse_args()
