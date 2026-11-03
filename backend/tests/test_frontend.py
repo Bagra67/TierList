@@ -4,7 +4,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.frontend import mount_frontend
+from app.core.frontend import mount_frontend_after_api
 
 INDEX_HTML = "<!doctype html><title>TierList</title>"
 
@@ -18,7 +18,7 @@ def client(tmp_path: Path) -> TestClient:
     (dist / "favicon.svg").write_text("<svg/>", encoding="utf-8")
     (tmp_path / "secret.txt").write_text("secret", encoding="utf-8")
     frontend_app: FastAPI = FastAPI()
-    mount_frontend(frontend_app, dist)
+    mount_frontend_after_api(frontend_app, dist)
     return TestClient(frontend_app)
 
 
