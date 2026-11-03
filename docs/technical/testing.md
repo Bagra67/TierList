@@ -1928,6 +1928,12 @@ Compares the constants the frontend repeats with their source in `backend/openap
 | `tier color presets` › `are twelve, to fill two rows of six`                                                      | Counts the presets.                                                                         | The grid of the picker has six columns, with no gap in its last row.                                    | 12 colors.                                                                            |
 | `tier color presets` › `are only suggestions: the backend accepts any #RRGGBB color`                              | Tests `#123ABC`, which is not a preset, against the `color` pattern of `UpdateTierRequest`. | The owner may choose another color.                                                                     | The color matches the pattern.                                                        |
 
+### 2.49 Tests: `src/test/setup.test.ts`
+
+| Test                                                                            | What it does                                                                                         | Purpose                                                                                                                          | Expected result                                     |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `waits longer than the Testing Library default, below the time limit of a test` | Reads `asyncUtilTimeout` in the Testing Library configuration and the `timeout` of the running test. | A busy CI runner can take more than the default second, and a failure must name the missing element instead of a Vitest timeout. | More than 1000 ms, less than the limit of the test. |
+
 ## 3. Reading the results
 
 | Result              | Meaning                                                                                                                                                                                              |

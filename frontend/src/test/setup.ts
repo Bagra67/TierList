@@ -12,11 +12,8 @@ import { installMatchMedia, resetSystemTheme } from './matchMedia';
 
 installMatchMedia();
 
-// Attente maximale des findBy… et waitFor (1 s par défaut) : une machine chargée, comme un runner
-// de CI, peut dépasser 1 s alors que la page se comporte bien. Un test qui réussit n'attend pas
-// plus longtemps : il repart dès que l'élément apparaît. Reste sous la limite d'un test de
-// Vitest (5 s), pour qu'un échec montre l'élément introuvable plutôt qu'un dépassement de délai.
-configure({ asyncUtilTimeout: 3000 });
+const ASYNC_WAIT_FOR_LOADED_CI_BELOW_VITEST_LIMIT_MS: number = 3000;
+configure({ asyncUtilTimeout: ASYNC_WAIT_FOR_LOADED_CI_BELOW_VITEST_LIMIT_MS });
 
 beforeEach(async () => {
   await i18n.changeLanguage('fr');

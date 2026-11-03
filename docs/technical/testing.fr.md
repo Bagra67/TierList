@@ -1928,6 +1928,12 @@ Compare les constantes que le frontend répète à leur source dans `backend/ope
 | `tier color presets` › `are twelve, to fill two rows of six`                                                      | Compte les couleurs.                                                                   | La grille du sélecteur a six colonnes, sans trou sur sa dernière ligne.                                            | 12 couleurs.                                                                                         |
 | `tier color presets` › `are only suggestions: the backend accepts any #RRGGBB color`                              | Teste `#123ABC`, qui n'est pas proposée, avec le motif `color` de `UpdateTierRequest`. | Le propriétaire peut choisir une autre couleur.                                                                    | La couleur respecte le motif.                                                                        |
 
+### 2.49 Tests : `src/test/setup.test.ts`
+
+| Test                                                                            | Ce qu'il fait                                                                                     | But                                                                                                                                                    | Résultat attendu                              |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| `waits longer than the Testing Library default, below the time limit of a test` | Lit `asyncUtilTimeout` dans la configuration de Testing Library et le `timeout` du test en cours. | Un runner de CI chargé peut dépasser la seconde par défaut, et un échec doit nommer l'élément introuvable plutôt qu'un dépassement de délai de Vitest. | Plus de 1000 ms, moins que la limite du test. |
+
 ## 3. Lire les résultats
 
 | Résultat            | Signification                                                                                                                                                                                                         |
