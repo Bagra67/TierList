@@ -24,6 +24,7 @@ const maxAccount: Account = {
       updated_at: '2026-10-20T12:00:00Z',
       moderation: 'none',
       moderation_reason: null,
+      removed_images: [],
     },
     {
       id: 'teachers-id',
@@ -32,6 +33,7 @@ const maxAccount: Account = {
       updated_at: '2026-10-21T12:00:00Z',
       moderation: 'hidden',
       moderation_reason: 'Harcèlement',
+      removed_images: [],
     },
   ],
 };

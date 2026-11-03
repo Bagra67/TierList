@@ -5,6 +5,7 @@ from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.images import IMAGE_SHA256_LENGTH, IMAGE_STORAGE_KEY_MAX_LENGTH
+from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
@@ -34,3 +35,4 @@ class Image(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     status: Mapped[ImageStatus] = mapped_column(
         text_enum(ImageStatus, "image_status"), default=ImageStatus.VISIBLE
     )
+    moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))

@@ -33,6 +33,7 @@ class ImageModerationService:
         storage_key: str = image.storage_key
         self._storage.copy_to_quarantine(storage_key)
         image.status = ImageStatus.HIDDEN
+        image.moderation_reason = reason
         self._commit_action(
             super_admin, ModerationActionKind.HIDE, image, reason, quarantine_key(storage_key)
         )
@@ -46,6 +47,7 @@ class ImageModerationService:
         storage_key: str = image.storage_key
         self._storage.copy_from_quarantine(storage_key)
         image.status = ImageStatus.VISIBLE
+        image.moderation_reason = None
         self._commit_action(super_admin, ModerationActionKind.UNHIDE, image, reason, storage_key)
         self._delete_file(quarantine_key(storage_key))
         logger.info("Image réaffichée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
@@ -60,6 +62,7 @@ class ImageModerationService:
             else image.storage_key
         )
         image.status = ImageStatus.DELETED
+        image.moderation_reason = reason
         self._commit_action(super_admin, ModerationActionKind.DELETE, image, reason, None)
         self._delete_file(file_key)
         logger.info("Image supprimée : image_id=%s super_admin_id=%s", image_id, super_admin.id)

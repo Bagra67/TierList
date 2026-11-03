@@ -12,11 +12,13 @@ from app.constants.error_codes import ErrorCode
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.core.config import get_settings
 from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateModeration
+from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.services.maintenance import purge_moderation_log
 from tests.integration.helpers import (
     JsonObject,
+    counted_queries,
     create_room,
     create_template,
     next_item,
@@ -323,3 +325,212 @@ def test_a_game_in_progress_finishes_after_its_template_is_hidden(
 
     following: JsonObject = next_item(auth_client, room["code"], alice)
     assert following["game"]["round_number"] == 2
+
+
+def add_tile_with_image(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    template_id: str,
+    text: str | None,
+) -> tuple[str, Image]:
+    template: Template = stored_template(db_session, template_id)
+    image: Image = Image(
+        owner_id=template.owner_id,
+        storage_key=f"{uuid.uuid4()}.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="a" * 64,
+    )
+    db_session.add(image)
+    db_session.flush()
+    response: Response = client.post(
+        f"/templates/{template_id}/tiles",
+        json={"text": text, "image_id": str(image.id)},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    tile_id: str = response.json()["tiles"][-1]["id"]
+    return tile_id, image
+
+
+def moderate_image(
+    client: TestClient, headers: dict[str, str], action: str, image: Image, reason: str
+) -> None:
+    response: Response = client.post(
+        f"/moderation/images/{image.id}/{action}", json={"reason": reason}, headers=headers
+    )
+    assert response.status_code == 204
+
+
+def test_the_owner_sees_the_decision_about_an_image_on_its_tile(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    tile_id, image = add_tile_with_image(auth_client, db_session, alice, template_id, "Paprika")
+    stored_images[image.storage_key] = b"webp"
+    moderate_image(auth_client, nina, "hide", image, "Violence")
+
+    template: Response = auth_client.get(f"/templates/{template_id}", headers=alice)
+
+    [tile] = [tile for tile in template.json()["tiles"] if tile["id"] == tile_id]
+    assert tile["image_removed"] is True
+    assert tile["image_status"] == "hidden"
+    assert tile["image_moderation_reason"] == "Violence"
+
+
+def test_my_templates_lists_the_removed_images_of_each_template_only(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    other_template_id: str = create_template(auth_client, db_session, alice)
+    hidden_tile_id, hidden_image = add_tile_with_image(
+        auth_client, db_session, alice, template_id, "Paprika"
+    )
+    deleted_tile_id, deleted_image = add_tile_with_image(
+        auth_client, db_session, alice, template_id, None
+    )
+    add_tile_with_image(auth_client, db_session, alice, other_template_id, "Visible")
+    stored_images[hidden_image.storage_key] = b"webp"
+    stored_images[deleted_image.storage_key] = b"webp"
+    moderate_image(auth_client, nina, "hide", hidden_image, "Violence")
+    moderate_image(auth_client, nina, "delete", deleted_image, "Illegal content")
+
+    items: list[JsonObject] = auth_client.get("/templates", headers=alice).json()["items"]
+
+    summaries: dict[str, JsonObject] = {item["id"]: item for item in items}
+    removed_images: list[JsonObject] = summaries[template_id]["removed_images"]
+    assert [(image["tile_id"], image["status"], image["reason"]) for image in removed_images] == [
+        (hidden_tile_id, "hidden", "Violence"),
+        (deleted_tile_id, "deleted", "Illegal content"),
+    ]
+    assert removed_images[0]["tile_text"] == "Paprika"
+    assert removed_images[1]["tile_text"] is None
+    assert summaries[other_template_id]["removed_images"] == []
+
+
+def test_my_templates_reads_the_removed_images_in_a_constant_number_of_queries(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    other_template_id: str = create_template(auth_client, db_session, alice)
+
+    def hide_an_image_of_each_template() -> None:
+        for owned_template_id in (template_id, other_template_id):
+            _, image = add_tile_with_image(
+                auth_client, db_session, alice, owned_template_id, "Paprika"
+            )
+            stored_images[image.storage_key] = b"webp"
+            moderate_image(auth_client, nina, "hide", image, "Violence")
+
+    hide_an_image_of_each_template()
+    with counted_queries(db_session) as statements_with_two_images:
+        auth_client.get("/templates", headers=alice)
+
+    hide_an_image_of_each_template()
+    with counted_queries(db_session) as statements_with_four_images:
+        items: list[JsonObject] = auth_client.get("/templates", headers=alice).json()["items"]
+
+    assert len(statements_with_four_images) == len(statements_with_two_images)
+    assert [len(item["removed_images"]) for item in items] == [2, 2]
+
+
+def test_an_unhidden_image_leaves_the_removed_images(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    _, image = add_tile_with_image(auth_client, db_session, alice, template_id, "Paprika")
+    stored_images[image.storage_key] = b"webp"
+    moderate_image(auth_client, nina, "hide", image, "Violence")
+    moderate_image(auth_client, nina, "unhide", image, "Mistake")
+
+    [summary] = auth_client.get("/templates", headers=alice).json()["items"]
+
+    assert summary["removed_images"] == []
+
+
+def test_the_owner_sees_a_template_deleted_by_the_moderation_with_its_reason(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    name: str = stored_template(db_session, template_id).name
+    moderate(auth_client, nina, "delete", template_id, "Illegal content")
+
+    response: Response = auth_client.get("/templates/removed", headers=alice)
+
+    assert response.status_code == 200
+    [removed] = response.json()["items"]
+    assert removed["id"] == template_id
+    assert removed["name"] == name
+    assert removed["reason"] == "Illegal content"
+    assert set(removed) == {"id", "name", "removed_at", "reason"}
+
+
+def test_a_template_deleted_by_its_owner_is_not_a_moderation_decision(
+    auth_client: TestClient, alice: dict[str, str], template_id: str
+):
+    assert auth_client.delete(f"/templates/{template_id}", headers=alice).status_code == 204
+
+    response: Response = auth_client.get("/templates/removed", headers=alice)
+
+    assert response.json()["items"] == []
+
+
+def test_a_hidden_template_is_not_among_the_removed_ones(
+    auth_client: TestClient,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    moderate(auth_client, nina, "hide", template_id)
+
+    assert auth_client.get("/templates/removed", headers=alice).json()["items"] == []
+
+
+def test_a_template_deleted_by_the_moderation_leaves_the_list_once_purged(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    template_id: str,
+):
+    moderate(auth_client, nina, "delete", template_id)
+    db_session.delete(stored_template(db_session, template_id))
+    db_session.flush()
+
+    assert auth_client.get("/templates/removed", headers=alice).json()["items"] == []
+
+
+def test_the_templates_deleted_by_the_moderation_stay_private_to_their_owner(
+    auth_client: TestClient,
+    nina: dict[str, str],
+    template_id: str,
+):
+    moderate(auth_client, nina, "delete", template_id)
+    bob: dict[str, str] = register(auth_client, "bob@example.com")
+
+    assert auth_client.get("/templates/removed", headers=bob).json()["items"] == []
+
+
+def test_the_templates_deleted_by_the_moderation_require_a_session(auth_client: TestClient):
+    assert auth_client.get("/templates/removed").status_code == 401

@@ -20,7 +20,15 @@ function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
 }
 
 function makeTile(text: string, position: number): Tile {
-  return { id: `tile-${text}`, text, image_url: null, image_removed: false, position };
+  return {
+    id: `tile-${text}`,
+    text,
+    image_url: null,
+    image_removed: false,
+    image_status: null,
+    image_moderation_reason: null,
+    position,
+  };
 }
 
 function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Template {
@@ -613,6 +621,8 @@ describe('TemplateEditorPage', () => {
       text: null,
       image_url: 'https://images.example.com/only.webp',
       image_removed: false,
+      image_status: 'visible',
+      image_moderation_reason: null,
       position: 0,
     };
 
@@ -919,6 +929,8 @@ describe('TemplateEditorPage', () => {
               text: null,
               image_url: `https://images.example.com/${image_id}.webp`,
               image_removed: false,
+              image_status: 'visible',
+              image_moderation_reason: null,
               position: tiles.length,
             });
             return Response.json(withTiles(tiles), { status: 201 });
