@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import cast
 
-from sqlalchemy import Select, delete, exists, func, or_, select
+from sqlalchemy import Select, delete, exists, func, or_, select, update
 from sqlalchemy.orm import Mapped, Session
 from sqlalchemy.sql.dml import ReturningDelete
 from sqlalchemy.sql.expression import Exists
@@ -21,6 +21,14 @@ def add_image(session: Session, image: Image) -> None:
 
 def get_image_for_update(session: Session, image_id: uuid.UUID) -> Image | None:
     return session.get(Image, image_id, with_for_update=True)
+
+
+def clear_moderation_reasons_of_owner(session: Session, owner_id: uuid.UUID) -> None:
+    session.execute(
+        update(Image)
+        .where(Image.owner_id == owner_id, Image.moderation_reason.is_not(None))
+        .values(moderation_reason=None)
+    )
 
 
 def is_fingerprint_banned(session: Session, sha256: str) -> bool:

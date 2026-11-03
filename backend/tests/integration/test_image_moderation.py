@@ -19,7 +19,7 @@ from app.models.moderation_action import ModerationAction
 from app.models.user import User
 from app.services.image_storage import quarantine_key
 from tests.integration.conftest import FailingImageStorage, FakeImageStorage
-from tests.integration.helpers import register, register_super_admin
+from tests.integration.helpers import PASSWORD, register, register_super_admin
 
 pytestmark = pytest.mark.integration
 
@@ -319,3 +319,24 @@ def test_the_reason_of_a_decision_is_kept_on_the_image_until_it_is_unhidden(
     moderate(auth_client, nina, "delete", image.id, "Illegal content")
     db_session.refresh(image)
     assert image.moderation_reason == "Illegal content"
+
+
+def test_deleting_the_account_erases_the_reason_kept_on_its_images(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    image: Image = add_image(db_session, stored_images, ImageStatus.VISIBLE)
+    moderate(auth_client, nina, "delete", image.id, "Illegal content")
+
+    deleted: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=alice
+    )
+
+    assert deleted.status_code == 204
+    db_session.refresh(image)
+    assert image.status == ImageStatus.DELETED
+    assert image.owner_id is None
+    assert image.moderation_reason is None
