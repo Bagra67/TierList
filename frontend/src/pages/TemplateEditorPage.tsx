@@ -12,6 +12,10 @@ import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
 import { textLinkClassName } from '../components/ui/text-link';
+import {
+  EDITOR_COLUMNS_FITTING_FULL_TIER_ROW_CLASS,
+  FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
+} from '../constants/layout';
 import { ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -43,11 +47,12 @@ export function TemplateEditorPage() {
   }, []);
 
   return (
-    // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile
-    // pas, ce sont la colonne des tiers et la grille des tuiles qui défilent (chacune de son côté)
     <PageContainer
       width="app"
-      className="flex flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6"
+      className={cn(
+        'flex flex-col items-start gap-6 lg:gap-4 lg:py-6',
+        FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
+      )}
     >
       <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
         {t('templates.editor.back')}
@@ -68,8 +73,12 @@ export function TemplateEditorPage() {
           <div className="w-full max-w-xl">
             <TemplateNameField template={template} />
           </div>
-          {/* 22rem : la poignée, la pastille, le nom et les trois boutons d'un tier */}
-          <div className="grid w-full gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+          <div
+            className={cn(
+              'grid w-full gap-8 lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)]',
+              EDITOR_COLUMNS_FITTING_FULL_TIER_ROW_CLASS,
+            )}
+          >
             <TierEditor template={template} />
             <TileEditor template={template} />
           </div>

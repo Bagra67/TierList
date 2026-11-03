@@ -46,6 +46,10 @@ export function getFieldErrors(error: unknown): Record<string, FieldError> {
   );
 }
 
+export function hasNoFieldError(error: unknown): boolean {
+  return Object.keys(getFieldErrors(error)).length === 0;
+}
+
 function withDates(params: ErrorParams): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(params).map(([name, value]) => [
@@ -55,13 +59,14 @@ function withDates(params: ErrorParams): Record<string, unknown> {
   );
 }
 
-// Les params viennent du backend : connus seulement à l'exécution, ils ne peuvent pas être
-// vérifiés au typage contre les variables du texte. L'appelant vérifie la clé au préalable.
-function translateWithParams(t: TFunction, key: string, params: ErrorParams | null | undefined) {
-  return (t as (key: string, params: Record<string, unknown>) => string)(
-    key,
-    withDates(params ?? {}),
-  );
+type TranslateRuntimeKey = (key: string, params: Record<string, unknown>) => string;
+
+function translateCheckedKeyWithRuntimeParams(
+  t: TFunction,
+  key: string,
+  params: ErrorParams | null | undefined,
+) {
+  return (t as TranslateRuntimeKey)(key, withDates(params ?? {}));
 }
 
 export function translateError(t: TFunction, error: unknown): string {
@@ -69,7 +74,7 @@ export function translateError(t: TFunction, error: unknown): string {
     return t('common.backendUnreachable');
   }
   if (hasTranslation(fr.errors.api, error.code)) {
-    return translateWithParams(t, `errors.api.${error.code}`, error.params);
+    return translateCheckedKeyWithRuntimeParams(t, `errors.api.${error.code}`, error.params);
   }
   return t('errors.unknown');
 }
@@ -80,7 +85,11 @@ export function translateFieldError(
 ): string | undefined {
   if (fieldError === undefined) return undefined;
   if (hasTranslation(fr.errors.field, fieldError.code)) {
-    return translateWithParams(t, `errors.field.${fieldError.code}`, fieldError.params);
+    return translateCheckedKeyWithRuntimeParams(
+      t,
+      `errors.field.${fieldError.code}`,
+      fieldError.params,
+    );
   }
   return t('errors.field.invalid');
 }

@@ -50,8 +50,7 @@ function uploadAll(files: File[], limit: number): Promise<UploadOutcome>[] {
 }
 
 export function useBulkImageTiles(template: Template) {
-  // Une mutation à part : ses erreurs vont dans le bilan, pas sous le formulaire d'ajout
-  const addMutation: TemplateChange<NewTile> = useAddTile(template.id);
+  const addMutationForBulkSummary: TemplateChange<NewTile> = useAddTile(template.id);
   const [state, setState] = useState<BulkImageTiles | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
@@ -86,7 +85,9 @@ export function useBulkImageTiles(template: Template) {
       let failure: unknown = 'error' in outcome ? outcome.error : null;
       if ('image' in outcome) {
         try {
-          const updated: Template = await addMutation.mutateAsync({ image_id: outcome.image.id });
+          const updated: Template = await addMutationForBulkSummary.mutateAsync({
+            image_id: outcome.image.id,
+          });
           const added: Template['tiles'][number] | undefined = updated.tiles.at(-1);
           if (added !== undefined) addedTileIds.push(added.id);
         } catch (error: unknown) {

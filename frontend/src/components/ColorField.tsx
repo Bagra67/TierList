@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import type { TFunction } from 'i18next';
 import { HexColorInput, HexColorPicker } from 'react-colorful';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -8,13 +9,11 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface ColorFieldProps {
   label: string;
-  // Couleur enregistrée, #RRGGBB en majuscules
-  value: string;
+  savedColor: string;
   onSave: (color: string) => Promise<unknown>;
 }
 
-// #ABC → #AABBCC, en majuscules : le backend n'accepte que #RRGGBB
-function toSixDigitHex(color: string): string {
+function toUppercaseSixDigitHex(color: string): string {
   const digits: string = color.replace('#', '').toUpperCase();
   if (digits.length !== 3) return `#${digits}`;
   let expanded: string = '';
@@ -24,13 +23,27 @@ function toSixDigitHex(color: string): string {
   return `#${expanded}`;
 }
 
-// Pastille qui ouvre un sélecteur de couleur : nuancier (saturation et teinte), couleurs proposées
-// et code hexadécimal. La pastille suit le choix en direct, mais la couleur n'est enregistrée
-// qu'une fois, à la fermeture du sélecteur (clic en dehors ou OK) : glisser dans le nuancier
-// n'envoie pas une requête par mouvement. Échap annule. Le parent lui donne key={value}.
-export function ColorField({ label, value, onSave }: ColorFieldProps) {
+function translateHardcodedColorfulLabels(picker: HTMLDivElement, t: TFunction): void {
+  const area: Element | null = picker.querySelector('.react-colorful__saturation [role="slider"]');
+  const hue: Element | null = picker.querySelector('.react-colorful__hue [role="slider"]');
+  if (area !== null) {
+    area.setAttribute('aria-label', t('templates.editor.color.area'));
+    const values: RegExpMatchArray | null = (area.getAttribute('aria-valuetext') ?? '').match(
+      /(\d+)%.*?(\d+)%/,
+    );
+    if (values !== null) {
+      area.setAttribute(
+        'aria-valuetext',
+        t('templates.editor.color.areaValue', { saturation: values[1], brightness: values[2] }),
+      );
+    }
+  }
+  hue?.setAttribute('aria-label', t('templates.editor.color.hue'));
+}
+
+export function ColorField({ label, savedColor, onSave }: ColorFieldProps) {
   const [open, setOpen] = useState<boolean>(false);
-  const [draft, setDraft] = useState<string>(value);
+  const [draft, setDraft] = useState<string>(savedColor);
   const isCancelling: RefObject<boolean> = useRef<boolean>(false);
   // Nuancier affiché : le contenu du popover se monte après ce composant, d'où un état (le
   // changement relance l'effet de traduction) plutôt qu'une simple ref
@@ -38,48 +51,28 @@ export function ColorField({ label, value, onSave }: ColorFieldProps) {
   const presetsLabelId: string = useId();
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // react-colorful écrit en dur ses libellés d'accessibilité en anglais (« Color », « Hue »,
-  // « Saturation x%, Brightness y% »), sans prop pour les changer : on les remplace après chaque
-  // rendu par les textes traduits.
   useEffect(() => {
-    if (picker === null) return;
-    const area: Element | null = picker.querySelector(
-      '.react-colorful__saturation [role="slider"]',
-    );
-    const hue: Element | null = picker.querySelector('.react-colorful__hue [role="slider"]');
-    if (area !== null) {
-      area.setAttribute('aria-label', t('templates.editor.color.area'));
-      const values: RegExpMatchArray | null = (area.getAttribute('aria-valuetext') ?? '').match(
-        /(\d+)%.*?(\d+)%/,
-      );
-      if (values !== null) {
-        area.setAttribute(
-          'aria-valuetext',
-          t('templates.editor.color.areaValue', { saturation: values[1], brightness: values[2] }),
-        );
-      }
-    }
-    hue?.setAttribute('aria-label', t('templates.editor.color.hue'));
+    if (picker !== null) translateHardcodedColorfulLabels(picker, t);
   });
 
-  function save() {
-    const color: string = toSixDigitHex(draft);
-    if (color === value) return;
-    onSave(color).catch(() => setDraft(value));
+  function saveOnClose() {
+    const color: string = toUppercaseSixDigitHex(draft);
+    if (color === savedColor) return;
+    onSave(color).catch(() => setDraft(savedColor));
   }
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
     if (nextOpen) {
-      setDraft(value);
+      setDraft(savedColor);
       return;
     }
     if (isCancelling.current) {
       isCancelling.current = false;
-      setDraft(value);
+      setDraft(savedColor);
       return;
     }
-    save();
+    saveOnClose();
   }
 
   return (
@@ -111,7 +104,7 @@ export function ColorField({ label, value, onSave }: ColorFieldProps) {
               key={preset}
               type="button"
               aria-label={t('templates.editor.color.preset', { color: preset })}
-              aria-pressed={toSixDigitHex(draft) === preset}
+              aria-pressed={toUppercaseSixDigitHex(draft) === preset}
               onClick={() => setDraft(preset)}
               className="aspect-square rounded-full ring-1 ring-foreground/20 aria-pressed:ring-2 aria-pressed:ring-foreground"
               style={{ backgroundColor: preset }}

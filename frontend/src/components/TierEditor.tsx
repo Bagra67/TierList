@@ -1,5 +1,6 @@
 import { verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ArrowDown, ArrowUp, GripVertical, Trash2 } from 'lucide-react';
+import { cn } from 'cn';
 import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -12,8 +13,14 @@ import {
   useDeleteTier,
   useUpdateTier,
 } from '../api/templates';
+import { FOCUS_RING_ROOM_IN_SCROLL_AREA_CLASS } from '../constants/layout';
 import { TIER_NAME_MAX_LENGTH } from '../constants/templates';
-import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import {
+  getFieldErrors,
+  hasNoFieldError,
+  translateError,
+  translateFieldError,
+} from '../errors/apiError';
 import { ColorField } from './ColorField';
 import { ErrorMessage } from './ErrorMessage';
 import { InlineEditField } from './InlineEditField';
@@ -31,8 +38,7 @@ export function TierEditor({ template }: TierEditorProps) {
   const deleteMutation: TemplateChange<string> = useDeleteTier(template.id);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiers: Tier[] = template.tiers;
-  // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
-  const isChangingOrder: boolean =
+  const isWaitingForOrderResponse: boolean =
     addMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
   const failedTierId: string | undefined = updateMutation.variables?.tierId;
   const nameError: string | undefined = translateFieldError(
@@ -40,9 +46,7 @@ export function TierEditor({ template }: TierEditorProps) {
     getFieldErrors(updateMutation.error).name,
   );
   const lastError: Error | null = addMutation.error ?? updateMutation.error ?? deleteMutation.error;
-  // Une erreur de champ (422) s'affiche déjà sous son champ : pas de second message
-  const showLastError: boolean =
-    lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
+  const showLastError: boolean = lastError !== null && hasNoFieldError(lastError);
 
   function moveTier(tier: Tier, position: number) {
     updateMutation.mutate({ tierId: tier.id, changes: { position } });
@@ -53,15 +57,18 @@ export function TierEditor({ template }: TierEditorProps) {
       <h2 id={titleId} className="text-lg font-semibold">
         {t('templates.editor.tiers')}
       </h2>
-      {/* Grand écran : seule la liste défile, le titre et le bouton d'ajout restent visibles. p-1 :
-          la marge garde visibles les anneaux de focus, que le défilement couperait sinon */}
-      <ol className="flex w-full flex-col gap-2 lg:min-h-0 lg:overflow-y-auto lg:p-1">
+      <ol
+        className={cn(
+          'flex w-full flex-col gap-2 lg:min-h-0 lg:overflow-y-auto',
+          FOCUS_RING_ROOM_IN_SCROLL_AREA_CLASS,
+        )}
+      >
         <SortableList
           items={tiers}
           strategy={verticalListSortingStrategy}
           getItemLabel={(tier) => tier.name}
           onMove={moveTier}
-          disabled={isChangingOrder}
+          disabled={isWaitingForOrderResponse}
           renderItem={(tier, { setNodeRef, style, handleProps }) => (
             <li
               ref={setNodeRef}
@@ -80,7 +87,7 @@ export function TierEditor({ template }: TierEditorProps) {
                 <ColorField
                   key={tier.color}
                   label={t('templates.editor.tierColor', { name: tier.name })}
-                  value={tier.color}
+                  savedColor={tier.color}
                   onSave={(color) =>
                     updateMutation.mutateAsync({ tierId: tier.id, changes: { color } })
                   }
@@ -91,7 +98,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t('templates.editor.moveUp', { name: tier.name })}
-                    disabled={isChangingOrder || tier.position === 0}
+                    disabled={isWaitingForOrderResponse || tier.position === 0}
                     onClick={() => moveTier(tier, tier.position - 1)}
                   >
                     <ArrowUp />
@@ -101,7 +108,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t('templates.editor.moveDown', { name: tier.name })}
-                    disabled={isChangingOrder || tier.position === tiers.length - 1}
+                    disabled={isWaitingForOrderResponse || tier.position === tiers.length - 1}
                     onClick={() => moveTier(tier, tier.position + 1)}
                   >
                     <ArrowDown />
@@ -111,7 +118,7 @@ export function TierEditor({ template }: TierEditorProps) {
                     variant="ghost"
                     size="icon"
                     aria-label={t('templates.editor.deleteTier', { name: tier.name })}
-                    disabled={isChangingOrder || tiers.length === 1}
+                    disabled={isWaitingForOrderResponse || tiers.length === 1}
                     onClick={() => deleteMutation.mutate(tier.id)}
                   >
                     <Trash2 />
@@ -124,7 +131,7 @@ export function TierEditor({ template }: TierEditorProps) {
                 hideLabel
                 value={tier.name}
                 maxLength={TIER_NAME_MAX_LENGTH}
-                multiline
+                wrapsLongValue
                 error={failedTierId === tier.id ? nameError : undefined}
                 onSave={(name) => updateMutation.mutate({ tierId: tier.id, changes: { name } })}
               />
@@ -136,7 +143,7 @@ export function TierEditor({ template }: TierEditorProps) {
       <Button
         type="button"
         variant="outline"
-        disabled={isChangingOrder}
+        disabled={isWaitingForOrderResponse}
         onClick={() => addMutation.mutate()}
       >
         {t('templates.editor.addTier')}

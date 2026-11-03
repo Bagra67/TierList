@@ -20,9 +20,7 @@ interface ImageDropZoneProps {
   imageRemoved?: boolean;
   isUploading: boolean;
   disabled?: boolean;
-  // large : vignette du formulaire d'ajout ; fill : carré sur toute la largeur du parent (carte
-  // d'une tuile). Les deux affichent la consigne quand il n'y a pas d'image.
-  size: 'large' | 'fill';
+  size: 'addFormThumbnail' | 'fullWidthSquare';
   removeLabel?: string;
   onSelect: (file: File) => void;
   onSelectMany?: (files: File[]) => void;
@@ -31,14 +29,14 @@ interface ImageDropZoneProps {
 }
 
 const SIZE_CLASSES = {
-  large: {
+  addFormThumbnail: {
     zone: 'size-24',
     icon: 'size-7',
     hint: 'text-[0.7rem]',
     remove: '-top-1.5 -right-1.5 size-5',
     removeIcon: 'size-3',
   },
-  fill: {
+  fullWidthSquare: {
     zone: 'aspect-square w-full',
     icon: 'size-10',
     hint: 'text-xs',
@@ -49,6 +47,14 @@ const SIZE_CLASSES = {
 
 function draggedFiles(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
+}
+
+function allowChoosingSameFileAgain(input: HTMLInputElement): void {
+  input.value = '';
+}
+
+function allowDropping(event: DragEvent<HTMLDivElement>): void {
+  event.preventDefault();
 }
 
 export function ImageDropZone({
@@ -66,9 +72,7 @@ export function ImageDropZone({
 }: ImageDropZoneProps) {
   const inputRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
-  // dragenter et dragleave se déclenchent aussi en passant sur les éléments enfants : on compte
-  // les entrées pour savoir quand le fichier quitte vraiment la vignette
-  const dragDepth: RefObject<number> = useRef<number>(0);
+  const dragEntersIncludingChildren: RefObject<number> = useRef<number>(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const sizeClasses: (typeof SIZE_CLASSES)[ImageDropZoneProps['size']] = SIZE_CLASSES[size];
@@ -102,33 +106,31 @@ export function ImageDropZone({
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     handleFiles(event.target.files);
-    // Permet de choisir à nouveau le même fichier (ex. après une erreur)
-    event.target.value = '';
+    allowChoosingSameFileAgain(event.target);
   }
 
   function handleDragEnter(event: DragEvent<HTMLDivElement>) {
     if (disabled || !draggedFiles(event)) return;
     event.preventDefault();
-    dragDepth.current += 1;
+    dragEntersIncludingChildren.current += 1;
     setIsDraggingOver(true);
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     if (disabled || !draggedFiles(event)) return;
-    // Sans preventDefault, le navigateur refuse le dépôt (et ouvrirait le fichier)
-    event.preventDefault();
+    allowDropping(event);
     event.dataTransfer.dropEffect = 'copy';
   }
 
   function handleDragLeave() {
-    dragDepth.current = Math.max(0, dragDepth.current - 1);
-    if (dragDepth.current === 0) setIsDraggingOver(false);
+    dragEntersIncludingChildren.current = Math.max(0, dragEntersIncludingChildren.current - 1);
+    if (dragEntersIncludingChildren.current === 0) setIsDraggingOver(false);
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     if (disabled) return;
     event.preventDefault();
-    dragDepth.current = 0;
+    dragEntersIncludingChildren.current = 0;
     setIsDraggingOver(false);
     handleFiles(event.dataTransfer.files);
   }

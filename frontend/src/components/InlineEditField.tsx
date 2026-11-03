@@ -18,9 +18,7 @@ interface InlineEditFieldProps {
   value: string;
   maxLength: number;
   required?: boolean;
-  // true : le texte passe à la ligne et le champ grandit, pour qu'un long nom se lise en entier
-  // dans une colonne étroite. La valeur reste sur une seule ligne (Entrée enregistre).
-  multiline?: boolean;
+  wrapsLongValue?: boolean;
   error?: string;
   onSave: (value: string) => void;
   className?: string;
@@ -45,7 +43,7 @@ export function InlineEditField({
   value,
   maxLength,
   required = true,
-  multiline = false,
+  wrapsLongValue = false,
   error,
   onSave,
   className,
@@ -92,9 +90,8 @@ export function InlineEditField({
       setDraft(value);
       return;
     }
-    // Dans une zone de texte, Entrée ajouterait un retour à la ligne : elle enregistre, comme
-    // dans un champ d'une ligne (sauf pendant une saisie IME, où elle valide un caractère)
-    if (multiline && event.key === 'Enter' && !event.nativeEvent.isComposing) {
+    const enterConfirmsImeCharacter: boolean = event.nativeEvent.isComposing;
+    if (wrapsLongValue && event.key === 'Enter' && !enterConfirmsImeCharacter) {
       event.preventDefault();
       event.currentTarget.form?.requestSubmit();
     }
@@ -115,7 +112,7 @@ export function InlineEditField({
       <Label htmlFor={id} className={cn(hideLabel && 'sr-only')}>
         {label}
       </Label>
-      {multiline ? (
+      {wrapsLongValue ? (
         <textarea
           ref={textAreaRef}
           rows={1}
