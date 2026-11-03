@@ -71,14 +71,19 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     session.execute(delete(User).where(User.id.in_(seed_user_ids)))
     session.execute(delete(Image).where(Image.id.in_([image_id for image_id, _ in images])))
     session.commit()
-    # Les fichiers après le commit : une erreur de stockage ne laisse pas d'image sans fichier
     logger.info("Données seed supprimées en base : %d parties, %d images", games, len(images))
+    _delete_image_files_after_commit(storage, images)
+    return SeedCleanup(accounts=len(seed_user_ids), games=games, images=len(images))
+
+
+def _delete_image_files_after_commit(
+    storage: ImageStorage, images: list[tuple[uuid.UUID, str | None]]
+) -> None:
     for number, (_, file_key) in enumerate(images, start=1):
         if file_key is not None:
             storage.delete(file_key)
         if number % 25 == 0 or number == len(images):
             logger.info("Fichiers d'images effacés : %d/%d", number, len(images))
-    return SeedCleanup(accounts=len(seed_user_ids), games=games, images=len(images))
 
 
 def _file_key(storage_key: str, status: ImageStatus) -> str | None:

@@ -19,7 +19,7 @@ from app.api.dependencies import (
     get_image_storage,
     get_room_event_publisher,
     get_round_scheduler,
-    get_session_factory,
+    get_short_lived_session_factory,
 )
 from app.constants.api import API_PREFIX
 from app.constants.error_codes import ErrorCode
@@ -32,9 +32,7 @@ from app.services.image_storage import ImageStorage, create_image_storage, quara
 from tests.integration.helpers import alembic_config
 
 
-def _service_unavailable(reason: str) -> None:
-    # En CI, un service injoignable (base, stockage S3) est une erreur : on ne masque jamais un
-    # test d'intégration.
+def _fail_in_ci_otherwise_skip(reason: str) -> None:
     if os.environ.get("CI") == "true":
         pytest.fail(reason)
     pytest.skip(reason)
@@ -44,7 +42,7 @@ def _test_database_url(suffix: str) -> URL:
     try:
         settings = get_settings()
     except ValidationError:
-        _service_unavailable("PostgreSQL settings missing: copy backend/.env.example to .env")
+        _fail_in_ci_otherwise_skip("PostgreSQL settings missing: copy backend/.env.example to .env")
         raise
 
     test_database: str = f"{settings.postgres_db}{suffix}"
@@ -66,7 +64,7 @@ def _test_database_url(suffix: str) -> URL:
                 quoted_name = connection.dialect.identifier_preparer.quote(test_database)
                 connection.execute(text(f"CREATE DATABASE {quoted_name}"))
     except OperationalError:
-        _service_unavailable(
+        _fail_in_ci_otherwise_skip(
             "PostgreSQL is not reachable: start it with `docker compose up -d --wait`"
         )
         raise
@@ -115,7 +113,7 @@ def s3_image_storage() -> ImageStorage:
     try:
         storage.delete("connectivity-check")
     except BotoCoreError, ClientError:
-        _service_unavailable(
+        _fail_in_ci_otherwise_skip(
             "S3 image storage is not reachable: start it with `docker compose up -d --wait` "
             "and set the IMAGE_S3_* settings (backend/.env.example)"
         )
@@ -186,14 +184,16 @@ def client(
     api_app.dependency_overrides[get_db_session] = lambda: db_session
     api_app.dependency_overrides[get_email_sender] = lambda: email_sender
     api_app.dependency_overrides[get_image_storage] = lambda: image_storage
-    api_app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
+    api_app.dependency_overrides[get_short_lived_session_factory] = lambda: (
+        lambda: nullcontext(db_session)
+    )
     try:
         yield TestClient(app, base_url=f"http://testserver{API_PREFIX}")
     finally:
         api_app.dependency_overrides.pop(get_db_session, None)
         api_app.dependency_overrides.pop(get_email_sender, None)
         api_app.dependency_overrides.pop(get_image_storage, None)
-        api_app.dependency_overrides.pop(get_session_factory, None)
+        api_app.dependency_overrides.pop(get_short_lived_session_factory, None)
 
 
 def http_test_settings() -> Settings:

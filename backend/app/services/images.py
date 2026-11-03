@@ -85,10 +85,8 @@ class ImageService:
         return len(storage_keys)
 
     def _check_upload_limit(self, owner: User) -> None:
-        """Refuse l'envoi au-delà de IMAGE_UPLOADS_PER_HOUR_MAX images sur l'heure écoulée.
-
-        Deux envois simultanés peuvent dépasser la limite d'une image : elle sert à freiner
-        les abus, pas à compter au plus juste."""
+        """Deux envois simultanés peuvent dépasser la limite d'une image : elle sert à freiner les
+        abus, pas à compter au plus juste."""
         max_uploads: int = self._settings.image_uploads_per_hour_max
         since: datetime = datetime.now(UTC) - timedelta(hours=1)
         recent_uploads: int = image_repository.count_images_created_since(

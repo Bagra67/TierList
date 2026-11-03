@@ -5,14 +5,14 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.constants.auth import GOOGLE_PROVIDER
-from app.constants.i18n import DEFAULT_LANGUAGE
+from app.constants.i18n import DEFAULT_EMAIL_LANGUAGE
 from app.core.config import Settings
 from app.models.enums import UserRole
 from app.models.oauth_account import OAuthAccount
 from app.models.user import User
 from app.repositories import users as user_repository
 from app.seed.sizes import SeedSize
-from app.services.auth import AuthService
+from app.services.auth import AuthService, Registration
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,9 @@ def create_accounts(
 
     def register(kind: str, number: int, display_name: str, verified: bool) -> User:
         email: str = seed_email(kind, number)
-        # L'e-mail de vérification renvoyé n'est jamais envoyé
-        auth.register(email, password, display_name, DEFAULT_LANGUAGE)
+        _unsent_verification: Registration = auth.register(
+            email, password, display_name, DEFAULT_EMAIL_LANGUAGE
+        )
         user: User | None = user_repository.get_user_by_email(session, email)
         assert user is not None
         if verified:

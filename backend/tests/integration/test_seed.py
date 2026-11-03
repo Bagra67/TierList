@@ -117,13 +117,15 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         )
         == 0
     )
-    # Des votes absents, comme dans une vraie partie
-    assert db_session.scalar(
+    absent_votes: int | None = db_session.scalar(
         select(func.count())
         .select_from(Placement)
         .where(Placement.phase == PlacementPhase.ROUND, Placement.snapshot_tier_id.is_(None))
     )
-    open_rooms: int = SMALL_SIZE.lobby_rooms + SMALL_SIZE.full_rooms + SMALL_SIZE.rooms_with_bans
+    assert absent_votes
+    open_rooms: int = (
+        SMALL_SIZE.open_rooms_with_past_games + SMALL_SIZE.full_rooms + SMALL_SIZE.rooms_with_bans
+    )
     assert (
         db_session.scalar(
             select(func.count()).select_from(Room).where(Room.status == RoomStatus.OPEN)

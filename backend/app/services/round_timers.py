@@ -11,12 +11,15 @@ from app.constants.games import TIMER_RETRY_DELAYS_SECONDS
 
 logger = logging.getLogger(__name__)
 
-# Termine le tour round_number de la partie game_id ; sans effet s'il n'est plus en cours
-DeadlineHandler = Callable[[uuid.UUID, int], Awaitable[None]]
-# Termine le cooldown final de la partie game_id ; sans effet s'il n'est plus en cours
-CooldownDeadlineHandler = Callable[[uuid.UUID], Awaitable[None]]
-
 COOLDOWN_RANK: float = math.inf
+
+
+class EndRoundOnTimer(Protocol):
+    async def __call__(self, game_id: uuid.UUID, round_number: int) -> None: ...
+
+
+class EndCooldownOnTimer(Protocol):
+    async def __call__(self, game_id: uuid.UUID) -> None: ...
 
 
 class RoundScheduler(Protocol):
@@ -30,8 +33,8 @@ class RoundTimers:
         self, retry_delays_seconds: tuple[float, ...] = TIMER_RETRY_DELAYS_SECONDS
     ) -> None:
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._on_deadline: DeadlineHandler | None = None
-        self._on_cooldown_deadline: CooldownDeadlineHandler | None = None
+        self._on_deadline: EndRoundOnTimer | None = None
+        self._on_cooldown_deadline: EndCooldownOnTimer | None = None
         self._retry_delays_seconds: tuple[float, ...] = retry_delays_seconds
         self._tasks: dict[uuid.UUID, asyncio.Task[None]] = {}
         self._ranks: dict[uuid.UUID, float] = {}
@@ -39,8 +42,8 @@ class RoundTimers:
     def start(
         self,
         loop: asyncio.AbstractEventLoop,
-        on_deadline: DeadlineHandler,
-        on_cooldown_deadline: CooldownDeadlineHandler,
+        on_deadline: EndRoundOnTimer,
+        on_cooldown_deadline: EndCooldownOnTimer,
     ) -> None:
         """Appelé au démarrage du processus, avant de reprogrammer les échéances en attente."""
         self._loop = loop

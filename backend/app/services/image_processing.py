@@ -11,6 +11,7 @@ from PIL import Image, ImageOps
 
 from app.constants.images import (
     ACCEPTED_IMAGE_FORMATS,
+    IMAGE_FAST_DOWNSCALE_REDUCING_GAP,
     IMAGE_OUTPUT_MAX_SIDE_PX,
     IMAGE_WEBP_QUALITY,
 )
@@ -82,5 +83,6 @@ def _fit_to_output_size(image: Image.Image) -> Image.Image:
     )
     if target_size == image.size:
         return image
-    # reducing_gap accélère les fortes réductions sans perte visible ; sans effet pour agrandir
-    return image.resize(target_size, Image.Resampling.LANCZOS, reducing_gap=3.0)
+    return image.resize(
+        target_size, Image.Resampling.LANCZOS, reducing_gap=IMAGE_FAST_DOWNSCALE_REDUCING_GAP
+    )

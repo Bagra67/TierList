@@ -12,12 +12,14 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# L'URL vient de la configuration du backend (.env) plutôt que d'alembic.ini,
-# sauf si l'appelant en fournit déjà une (ex. tests d'intégration sur la base de test).
-# configparser interprète « % » : on le double pour les mots de passe qui en contiennent.
+
+def _escape_for_configparser(url: str) -> str:
+    return url.replace("%", "%%")
+
+
 if not config.get_main_option("sqlalchemy.url"):
     database_url = get_settings().database_url.render_as_string(hide_password=False)
-    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    config.set_main_option("sqlalchemy.url", _escape_for_configparser(database_url))
 
 target_metadata = Base.metadata
 

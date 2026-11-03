@@ -218,8 +218,7 @@ def create_templates(
         theme, words = TEXT_THEMES[index % len(TEXT_THEMES)]
         playable.append(with_tiles(next_owner(), theme, [(word, None) for word in words]))
     for index in range(size.image_templates):
-        # Un propriétaire par modèle à images : au plus 120 envois par heure et par compte
-        owner: User = owners[index % len(owners)]
+        owner: User = _distinct_image_owner(owners, index)
         name: str = IMAGE_THEMES[index % len(IMAGE_THEMES)]
         image_tiles: list[tuple[str | None, uuid.UUID | None]] = []
         for tile_number in range(1, size.image_tiles_per_template + 1):
@@ -254,6 +253,10 @@ def create_templates(
         templates.delete(owner, template.id)
         deleted.append(template)
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
+
+
+def _distinct_image_owner(owners: list[User], index: int) -> User:
+    return owners[index % len(owners)]
 
 
 def _generated_image(number: int, rng: random.Random) -> bytes:

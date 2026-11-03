@@ -43,7 +43,7 @@ from app.schemas.room_events import (
     RoundStartedData,
     RoundStartedEvent,
 )
-from app.services.room_channel import RoomEventPublisher
+from app.services.room_channel import PostCommitRoomPublisher
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler
 from app.services.templates import TemplateService
@@ -140,7 +140,7 @@ class GameService:
     def __init__(
         self,
         session: Session,
-        publisher: RoomEventPublisher,
+        publisher: PostCommitRoomPublisher,
         rooms: RoomService,
         templates: TemplateService,
         scheduler: RoundScheduler,
@@ -271,7 +271,7 @@ class GameService:
                 ),
             )
         if round_end is not None:
-            self._announce_round_end(room, game, round_end)
+            self._announce_round_end(room.id, game.id, round_end)
         return self._reloaded_seat(room.id, seat.id)
 
     def next_round(self, user: User, code: str) -> Room:
@@ -281,7 +281,7 @@ class GameService:
             raise RoundNotInProgressError
         round_end: RoundStartedEvent | CooldownStartedEvent = self._end_round(room, game)
         self._session.commit()
-        self._announce_round_end(room, game, round_end)
+        self._announce_round_end(room.id, game.id, round_end)
         return self._reloaded(room.id)
 
     def end_round_on_timer(self, game_id: uuid.UUID, round_number: int) -> None:
@@ -294,12 +294,11 @@ class GameService:
             or game.status != GameStatus.IN_ROUND
             or game.current_round_number != round_number
         ):
-            # Le commit libère seulement le verrou
-            self._session.commit()
+            self._release_room_lock()
             return
         round_end: RoundStartedEvent | CooldownStartedEvent = self._end_round(room, game)
         self._session.commit()
-        self._announce_round_end(room, game, round_end)
+        self._announce_round_end(room.id, game.id, round_end)
 
     def set_presence(self, participant_id: uuid.UUID, connected: bool) -> None:
         changed: Room | None = self._rooms.set_presence(participant_id, connected)
@@ -326,7 +325,7 @@ class GameService:
             return
         round_end: RoundStartedEvent | CooldownStartedEvent = self._end_round(room, game)
         self._session.commit()
-        self._announce_round_end(room, game, round_end)
+        self._announce_round_end(room.id, game.id, round_end)
 
     def end_cooldown(self, user: User, code: str) -> Room:
         room: Room = self._rooms.get_for_admin_change(user, code)
@@ -342,8 +341,7 @@ class GameService:
         room: Room | None = self._locked_room_of_game(game_id)
         game: Game | None = room.current_game if room is not None else None
         if room is None or game is None or game.id != game_id or game.status != GameStatus.COOLDOWN:
-            # Le commit libère seulement le verrou
-            self._session.commit()
+            self._release_room_lock()
             return
         closed: GameClosedEvent = self._close_game(room, game)
         self._session.commit()
@@ -378,8 +376,7 @@ class GameService:
                 self._session, room_id, for_update=True
             )
             if room is None or not _is_inactive(room, cutoff):
-                # Le commit libère seulement le verrou
-                self._session.commit()
+                self._release_room_lock()
                 continue
             self._close_room_locked(room, reason="inactive")
             self._session.commit()
@@ -532,16 +529,19 @@ class GameService:
         logger.info("Salle fermée : room_id=%s reason=%s", room.id, reason)
 
     def _announce_round_end(
-        self, room: Room, game: Game, round_end: RoundStartedEvent | CooldownStartedEvent
+        self,
+        room_id: uuid.UUID,
+        game_id: uuid.UUID,
+        round_end: RoundStartedEvent | CooldownStartedEvent,
     ) -> None:
-        """Après le commit : programme l'échéance qui suit, puis publie la fin du tour.
-        L'échéance vient de l'événement, figé sous le verrou : relire la partie ici pourrait voir
-        la transition suivante d'un autre thread."""
         if isinstance(round_end, CooldownStartedEvent):
-            self._scheduler.schedule_cooldown_end(game.id, round_end.data.ends_at)
+            self._scheduler.schedule_cooldown_end(game_id, round_end.data.ends_at)
         elif round_end.data.ends_at is not None:
-            self._scheduler.schedule(game.id, round_end.data.round_number, round_end.data.ends_at)
-        self._publisher.publish(room.id, round_end)
+            self._scheduler.schedule(game_id, round_end.data.round_number, round_end.data.ends_at)
+        self._publisher.publish(room_id, round_end)
+
+    def _release_room_lock(self) -> None:
+        self._session.commit()
 
     def _schedule_first_round(self, game: Game) -> None:
         first_round: Round = game.current_round

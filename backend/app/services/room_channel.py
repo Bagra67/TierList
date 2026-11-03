@@ -16,22 +16,14 @@ logger = logging.getLogger(__name__)
 _ROOM_EVENT_ADAPTER: TypeAdapter[RoomEvent] = TypeAdapter(RoomEvent)
 
 
-class RoomEventPublisher(Protocol):
-    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
-        """Envoie l'événement à tous les sockets ouverts de la salle. Appelé après le commit."""
-        ...
+class PostCommitRoomPublisher(Protocol):
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None: ...
 
     def disconnect_participant(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
-    ) -> None:
-        """Ferme les sockets du participant dans la salle, avec ce code et cette raison : sa place
-        vient d'être supprimée. Appelé après le commit."""
-        ...
+    ) -> None: ...
 
-    def close_room(self, room_id: uuid.UUID) -> None:
-        """Ferme tous les sockets de la salle (CHANNEL_CLOSE_ROOM_CLOSED) : elle vient d'être
-        fermée, donc supprimée. Appelé après le commit."""
-        ...
+    def close_room(self, room_id: uuid.UUID) -> None: ...
 
 
 class ConnectionRegistry:
@@ -87,26 +79,31 @@ class ConnectionRegistry:
         if pending is not None:
             pending.cancel()
 
-    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+    def _loop_if_a_socket_can_be_open(self) -> asyncio.AbstractEventLoop | None:
         if self._loop is None or self._loop.is_closed():
-            # Aucun socket n'a jamais été ouvert dans ce processus : personne à prévenir
+            return None
+        return self._loop
+
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+        loop: asyncio.AbstractEventLoop | None = self._loop_if_a_socket_can_be_open()
+        if loop is None:
             return
         message: str = _ROOM_EVENT_ADAPTER.dump_json(event).decode()
-        self._loop.call_soon_threadsafe(self._schedule_broadcast, room_id, message)
+        loop.call_soon_threadsafe(self._schedule_broadcast, room_id, message)
 
     def disconnect_participant(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
     ) -> None:
-        if self._loop is None or self._loop.is_closed():
+        loop: asyncio.AbstractEventLoop | None = self._loop_if_a_socket_can_be_open()
+        if loop is None:
             return
-        self._loop.call_soon_threadsafe(
-            self._schedule_close, room_id, participant_id, close_code, reason
-        )
+        loop.call_soon_threadsafe(self._schedule_close, room_id, participant_id, close_code, reason)
 
     def close_room(self, room_id: uuid.UUID) -> None:
-        if self._loop is None or self._loop.is_closed():
+        loop: asyncio.AbstractEventLoop | None = self._loop_if_a_socket_can_be_open()
+        if loop is None:
             return
-        self._loop.call_soon_threadsafe(self._schedule_room_close, room_id)
+        loop.call_soon_threadsafe(self._schedule_room_close, room_id)
 
     def _schedule_room_close(self, room_id: uuid.UUID) -> None:
         participant_ids: set[uuid.UUID] = set(self._sockets.get(room_id, {}).values())

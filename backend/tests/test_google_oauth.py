@@ -90,16 +90,19 @@ def test_login_attempt_cookie_expires_after_its_ttl():
         GoogleLoginAttempt.from_cookie(cookie, SECRET_KEY)
 
 
+RFC_7636_APPENDIX_B_VERIFIER: str = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+RFC_7636_APPENDIX_B_CHALLENGE: str = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+
 def test_code_challenge_is_the_s256_hash_of_the_verifier():
-    # Exemple de la RFC 7636 (annexe B)
     attempt = GoogleLoginAttempt(
         state="s",
         nonce="n",
-        code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+        code_verifier=RFC_7636_APPENDIX_B_VERIFIER,
         next_step=None,
     )
 
-    assert attempt.code_challenge == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+    assert attempt.code_challenge == RFC_7636_APPENDIX_B_CHALLENGE
 
 
 def test_authorization_url_asks_for_openid_with_pkce():

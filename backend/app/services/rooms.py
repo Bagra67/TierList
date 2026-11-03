@@ -67,7 +67,7 @@ from app.schemas.room_events import (
     ParticipantRemovedEvent,
     RoomSettingsUpdatedEvent,
 )
-from app.services.room_channel import RoomEventPublisher
+from app.services.room_channel import PostCommitRoomPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,9 @@ class GuestSeat:
 
 
 class RoomService:
-    def __init__(self, session: Session, settings: Settings, publisher: RoomEventPublisher) -> None:
+    def __init__(
+        self, session: Session, settings: Settings, publisher: PostCommitRoomPublisher
+    ) -> None:
         self._session = session
         self._settings = settings
         self._publisher = publisher
@@ -163,8 +165,7 @@ class RoomService:
         if any(room_ban.user_id == user.id for room_ban in room.bans):
             raise RoomBannedError
         if self._has_seat(room, user):
-            # Rien à écrire : le commit libère seulement le verrou
-            self._session.commit()
+            self._release_room_lock()
             return room
         self._ensure_can_arrive(room)
         # Le verrou de la salle sérialise deux jonctions simultanées du même utilisateur ; la
@@ -264,6 +265,9 @@ class RoomService:
             self._publisher.publish(room.id, RoomSettingsUpdatedEvent(room_version=room.version))
         return room
 
+    def _release_room_lock(self) -> None:
+        self._session.commit()
+
     def remove_participant(
         self, user: User, code: str, participant_id: uuid.UUID, ban: bool
     ) -> Room:
@@ -350,8 +354,7 @@ class RoomService:
         if room is not None:
             participant = next((p for p in room.participants if p.id == participant_id), None)
         if room is None or participant is None or participant.connected == connected:
-            # Rien à écrire : le commit libère seulement le verrou
-            self._session.commit()
+            self._release_room_lock()
             return None
         participant.connected = connected
         room.version += 1

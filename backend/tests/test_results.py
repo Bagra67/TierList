@@ -1,6 +1,3 @@
-"""Exemples chiffrés de docs/technical/results.md, recalculés : la doc et le code donnent les mêmes
-résultats. Tiers numérotés de haut en bas (0 = S)."""
-
 import uuid
 from fractions import Fraction
 
@@ -37,7 +34,7 @@ def ranking(
     return PlayerRanking(final_placements=final_placements, absent_tile_ids=absent_tile_ids)
 
 
-def test_example_1_median_ranking_without_absent_votes() -> None:
+def test_results_md_example_1_median_ranking_without_absent_votes() -> None:
     alice: PlayerRanking = ranking({S: [PAPRIKA, BARBECUE], A: [NATURE]})
     bob: PlayerRanking = ranking({S: [BARBECUE], A: [PAPRIKA, NATURE]})
     chloe: PlayerRanking = ranking({S: [PAPRIKA], A: [BARBECUE], B: [NATURE]})
@@ -77,7 +74,7 @@ def test_example_1_median_ranking_without_absent_votes() -> None:
     assert results.unranked_tile_ids == ()
 
 
-def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
+def test_results_md_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
     players: list[PlayerRanking] = [
         ranking({A: [PAPRIKA]}),
         ranking({A: [PAPRIKA]}),
@@ -123,19 +120,19 @@ def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
         ),
     ],
 )
-def test_example_3_absent_votes_with_and_without_the_toggle(
+def test_results_md_example_3_absent_votes_with_and_without_the_toggle(
     include_absent_votes: bool,
     expected_barbecue: ItemResults,
     expected_ranking: tuple[tuple[uuid.UUID, ...], ...],
 ) -> None:
     alice: PlayerRanking = ranking({S: [BARBECUE], A: [PAPRIKA]})
-    # Dan a raté Barbecue au tour et l'a rattrapé au cooldown, en B
-    dan: PlayerRanking = ranking({S: [PAPRIKA], B: [BARBECUE]}, frozenset({BARBECUE}))
-    # Eve a raté Barbecue et ne l'a jamais placé
-    eve: PlayerRanking = ranking({A: [PAPRIKA]}, frozenset({BARBECUE}))
+    dan_caught_up: PlayerRanking = ranking(
+        {S: [PAPRIKA], B: [BARBECUE]}, absent_tile_ids=frozenset({BARBECUE})
+    )
+    eve_never_placed: PlayerRanking = ranking({A: [PAPRIKA]}, absent_tile_ids=frozenset({BARBECUE}))
 
     results: GameResults = compute_results(
-        3, [PAPRIKA, BARBECUE], [alice, dan, eve], include_absent_votes
+        3, [PAPRIKA, BARBECUE], [alice, dan_caught_up, eve_never_placed], include_absent_votes
     )
 
     assert results.items[BARBECUE] == expected_barbecue
@@ -154,7 +151,7 @@ def test_example_3_absent_votes_with_and_without_the_toggle(
 @pytest.mark.parametrize(
     ("include_absent_votes", "expected_absent_indexes"), [(True, (0, 1)), (False, ())]
 )
-def test_example_4_an_item_nobody_placed_is_unranked(
+def test_results_md_example_4_an_item_nobody_placed_is_unranked(
     include_absent_votes: bool, expected_absent_indexes: tuple[int, ...]
 ) -> None:
     alice: PlayerRanking = ranking({S: [PAPRIKA]}, frozenset({VINAIGRE}))
@@ -177,7 +174,7 @@ def test_example_4_an_item_nobody_placed_is_unranked(
     assert results.median_ranking == ((), (PAPRIKA,), ())
 
 
-def test_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
+def test_results_md_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     alice: PlayerRanking = ranking({A: [X, Y, Z]})
     bob: PlayerRanking = ranking({A: [Y, X, Z]})
     chloe: PlayerRanking = ranking({S: [Y, X, Z]})
@@ -191,7 +188,7 @@ def test_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     assert results.median_ranking[A][:2] == (Y, X)
 
 
-def test_example_5_equal_median_and_mean_scores_keep_the_template_order() -> None:
+def test_results_md_example_5_equal_median_and_mean_scores_keep_the_template_order() -> None:
     alice: PlayerRanking = ranking({S: [X, Y]})
     bob: PlayerRanking = ranking({S: [Y, X]})
 

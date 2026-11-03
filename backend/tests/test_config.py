@@ -112,8 +112,9 @@ def test_an_invalid_trusted_proxy_is_refused(
         make_settings()
 
 
-def test_the_moderation_log_is_kept_3_years_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Durée annoncée par la politique de confidentialité
+def test_the_moderation_log_is_kept_the_3_years_stated_by_the_privacy_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("MODERATION_LOG_RETENTION_DAYS", raising=False)
 
     assert make_settings().moderation_log_retention_days == 3 * 365

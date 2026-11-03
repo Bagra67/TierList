@@ -34,9 +34,8 @@ def _root_file(dist: Path, path: str) -> Path | None:
     return candidate
 
 
-def mount_frontend(app: FastAPI, dist: Path) -> None:
-    """Sert le build `dist` (doit exister). À appeler après le montage de l'API."""
-    resolved_dist: Path = dist.resolve()
+def mount_frontend_after_api(app: FastAPI, existing_dist: Path) -> None:
+    resolved_dist: Path = existing_dist.resolve()
     index_file: Path = resolved_dist / FRONTEND_INDEX_FILE
     app.mount(
         FRONTEND_ASSETS_PATH,

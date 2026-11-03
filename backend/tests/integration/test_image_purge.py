@@ -61,8 +61,7 @@ def use_in_a_tile(db_session: Session, owner: User, image: Image) -> None:
     db_session.flush()
 
 
-def use_in_a_snapshot(db_session: Session, image: Image) -> None:
-    """Snapshot dont le template n'existe plus (purgé) : seule la snapshot garde l'image."""
+def use_only_in_a_snapshot_of_a_purged_template(db_session: Session, image: Image) -> None:
     snapshot: TemplateSnapshot = TemplateSnapshot(template_id=None, name="Food")
     snapshot.tiles.append(SnapshotTile(text=None, image_id=image.id, position=0))
     db_session.add(snapshot)
@@ -99,7 +98,7 @@ def test_purge_keeps_the_images_used_only_by_a_snapshot(
     db_session: Session, stored_images: dict[str, bytes], alice: User
 ):
     image: Image = create_image(db_session, stored_images, alice, created_days_ago=30)
-    use_in_a_snapshot(db_session, image)
+    use_only_in_a_snapshot_of_a_purged_template(db_session, image)
 
     purged_count: int = ImageService(
         db_session, settings_with_retention(7), FakeImageStorage(stored_images)

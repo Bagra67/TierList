@@ -59,9 +59,13 @@ def run_script(**env: str) -> tuple[int, str, str]:
             "RESTART_RETRY_DELAY_SECONDS": "0",
             **env,
         }
-        # Full path: under Windows, a bare "bash" can resolve to the WSL launcher of System32
-        bash = shutil.which("bash") or "bash"
-        result = subprocess.run([bash, str(SCRIPT)], env=environ, capture_output=True, text=True)
+        full_bash_path_not_wsl_launcher = shutil.which("bash") or "bash"
+        result = subprocess.run(
+            [full_bash_path_not_wsl_launcher, str(SCRIPT)],
+            env=environ,
+            capture_output=True,
+            text=True,
+        )
         read = lambda path: path.read_text(encoding="utf-8") if path.exists() else ""  # noqa: E731
         return result.returncode, read(summary), read(outputs)
 

@@ -10,7 +10,7 @@ from app.constants.auth import (
     EMAIL_TOKEN_MAX_LENGTH,
     PASSWORD_MAX_LENGTH,
 )
-from app.constants.i18n import DEFAULT_LANGUAGE, Language
+from app.constants.i18n import DEFAULT_EMAIL_LANGUAGE, Language
 from app.core.config import get_settings
 from app.models.enums import UserRole
 from app.schemas.common import DisplayName
@@ -36,7 +36,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: NewPassword
     display_name: DisplayName
-    language: Language = DEFAULT_LANGUAGE
+    language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class LoginRequest(BaseModel):
@@ -67,7 +67,7 @@ class DeleteAccountRequest(BaseModel):
 
 
 class EmailVerificationRequest(BaseModel):
-    language: Language = DEFAULT_LANGUAGE
+    language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class VerifyEmailRequest(BaseModel):
@@ -76,7 +76,7 @@ class VerifyEmailRequest(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-    language: Language = DEFAULT_LANGUAGE
+    language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class ResetPasswordRequest(BaseModel):

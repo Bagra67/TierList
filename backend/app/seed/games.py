@@ -51,8 +51,7 @@ GAMES_PER_COMMIT = 10
 @dataclass(frozen=True)
 class SeedGames:
     closed: list[Game]
-    # Salles qui restent ouvertes, avec leurs parties terminées
-    lobby_rooms: list[Room]
+    open_rooms_with_past_games: list[Room]
 
 
 @dataclass(frozen=True)
@@ -113,16 +112,16 @@ def create_closed_games(
     ]
     playable_templates: list[_Playable] = [_playable(template) for template in playable]
     closed: list[Game] = []
-    lobby_rooms: list[Room] = []
-    lobby_games: int = size.lobby_rooms * GAMES_PER_LOBBY_ROOM
+    open_rooms_with_past_games: list[Room] = []
+    lobby_games: int = size.open_rooms_with_past_games * GAMES_PER_LOBBY_ROOM
     room: _OpenRoom | None = None
     admin: _Account = accounts[0]
     template: _Playable = playable_templates[0]
     game_players: list[_Player] = []
     for index in range(size.closed_games):
         in_lobby_room: bool = index < lobby_games
-        # La seconde partie d'une salle ouverte reprend sa salle, son room admin et ses joueurs
-        if not in_lobby_room or index % GAMES_PER_LOBBY_ROOM == 0:
+        starts_new_room: bool = not in_lobby_room or index % GAMES_PER_LOBBY_ROOM == 0
+        if starts_new_room:
             template = playable_templates[index % len(playable_templates)]
             admin = next(account for account in accounts if account.id == template.owner_id)
             game_players = _pick_players(
@@ -131,7 +130,7 @@ def create_closed_games(
             room = None
             if in_lobby_room:
                 room = _seat_in_new_room(session, settings, rooms, admin, template, game_players)
-                lobby_rooms.append(room.room)
+                open_rooms_with_past_games.append(room.room)
         days_ago: float = HISTORY_SPAN_DAYS * (size.closed_games - 1 - index) / size.closed_games
         closed_at: datetime = datetime.now(UTC) - timedelta(
             days=days_ago, minutes=rng.randint(0, 600)
@@ -146,23 +145,20 @@ def create_closed_games(
             closed_at,
             rng,
         )
-        # Lus avant le commit, qui les oublierait
-        name: str = snapshot.name
-        round_count: int = len(game.rounds)
-        if (index + 1) % GAMES_PER_COMMIT == 0 or index + 1 == size.closed_games:
-            session.commit()
-        closed.append(game)
         logger.info(
             "Partie terminée %d/%d : %s, %d joueurs, %d tours, le %s%s",
             index + 1,
             size.closed_games,
-            name,
+            snapshot.name,
             len(game_players),
-            round_count,
+            len(game.rounds),
             closed_at.date().isoformat(),
             "" if room is None else f" (salle ouverte {room.code})",
         )
-    return SeedGames(closed=closed, lobby_rooms=lobby_rooms)
+        if (index + 1) % GAMES_PER_COMMIT == 0 or index + 1 == size.closed_games:
+            session.commit()
+        closed.append(game)
+    return SeedGames(closed=closed, open_rooms_with_past_games=open_rooms_with_past_games)
 
 
 def _playable(template: Template) -> _Playable:
@@ -316,8 +312,8 @@ def _place_every_item(
                 Placement(player=player, snapshot_tile_id=tile.id, phase=PlacementPhase.ROUND)
             )
             continue
-        # Plutôt les tiers du haut, comme de vrais joueurs
-        tier: SnapshotTier = rng.choices(tiers, weights=range(len(tiers), 0, -1))[0]
+        top_tiers_first_weights: range = range(len(tiers), 0, -1)
+        tier: SnapshotTier = rng.choices(tiers, weights=top_tiers_first_weights)[0]
         position: int = next_position.get(tier.id, 0)
         next_position[tier.id] = position + 1
         for phase in (PlacementPhase.ROUND, PlacementPhase.FINAL):

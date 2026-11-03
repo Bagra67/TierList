@@ -1,16 +1,17 @@
 import os
+from typing import NamedTuple
 
 from plateau import (
     BORDER,
     CARD,
-    D_BG,
-    D_BORDER,
-    D_CARD,
-    D_FG,
-    D_MUTED_FG,
-    D_ON_PRIMARY,
-    D_PRIMARY,
-    D_WARNING,
+    FINAL_BOARD_BG,
+    FINAL_BOARD_BORDER,
+    FINAL_BOARD_CARD,
+    FINAL_BOARD_FG,
+    FINAL_BOARD_MUTED_FG,
+    FINAL_BOARD_ON_PRIMARY,
+    FINAL_BOARD_PRIMARY,
+    FINAL_BOARD_WARNING,
     HEAD,
     INK,
     INPUT,
@@ -30,14 +31,14 @@ from plateau import (
     checkbox,
     chip,
     dot,
+    estimated_head_width,
+    estimated_text_width,
     field,
-    head_width,
     header,
     panel,
     radio,
     segmented,
     tag,
-    text_width,
     tier_rows,
     timer_pill,
     wrap,
@@ -76,8 +77,11 @@ ITEMS: dict[str, list[str]] = {
     ],
 }
 TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list", "fr": "Tier list des chips"}
-# Éléments avec une image : un aplat de couleur la représente
-CHIP_ART: dict[str, str] = {"Barbecue": "#C2492E", "Paprika": "#FF8A2A", "Curry": "#FFC22E"}
+PLACEHOLDER_IMAGE_COLOR_BY_ITEM: dict[str, str] = {
+    "Barbecue": "#C2492E",
+    "Paprika": "#FF8A2A",
+    "Curry": "#FFC22E",
+}
 
 
 def progress(svg: Svg, x, y, t: Translator, number=4, total=12) -> None:
@@ -91,13 +95,18 @@ def progress(svg: Svg, x, y, t: Translator, number=4, total=12) -> None:
         HEAD,
         stretch=115,
     )
-    bx = x + head_width(t("rooms.game.itemProgress", number=number, total=total), 22) + 24
+    bx = x + estimated_head_width(t("rooms.game.itemProgress", number=number, total=total), 22) + 24
     svg.rect(bx, y + 6, 240, 8, MUTED, rx=4)
     svg.rect(bx, y + 6, 240 * number / total, 8, INK, rx=4)
 
 
-def status_list(svg: Svg, x, y, w, t: Translator, people) -> None:
-    """people : (nom, clé du statut, en ligne)."""
+class PersonStatus(NamedTuple):
+    name: str
+    status_key: str
+    online: bool
+
+
+def status_list(svg: Svg, x, y, w, t: Translator, people: list[PersonStatus]) -> None:
     colors = {"placed": SUCCESS, "waiting": MUTED_FG, "disconnected": MUTED_FG}
     for index, (name, status, online) in enumerate(people):
         ry = y + index * 34
@@ -135,7 +144,7 @@ def template_editor(t: Translator) -> Svg:
         col, row = index % 6, index // 6
         x, y = 394 + col * 90, 228 + row * 100
         svg.rect(x, y, 82, 92, CARD, BORDER, rx=10)
-        svg.rect(x + 6, y + 6, 70, 56, CHIP_ART.get(item, MUTED), rx=6)
+        svg.rect(x + 6, y + 6, 70, 56, PLACEHOLDER_IMAGE_COLOR_BY_ITEM.get(item, MUTED), rx=6)
         svg.text(x + 41, y + 80, item, 12, 600, INK, anchor="middle")
     panel(svg, 394, 444, 534, 196, "dashed")
     svg.rect(410, 460, 120, 120, "none", BORDER, rx=10, dash=True, sw=2)
@@ -234,7 +243,7 @@ def lobby(t: Translator) -> Svg:
         svg.text(72, ry + 30, name, 14, 600)
         if role:
             fill, color = (SPOT, INK) if index == 0 else (MUTED, MUTED_FG)
-            tag(svg, 72 + text_width(name, 14, 600) + 12, ry + 15, role, fill, color)
+            tag(svg, 72 + estimated_text_width(name, 14, 600) + 12, ry + 15, role, fill, color)
         svg.text(
             568,
             ry + 30,
@@ -283,7 +292,7 @@ def round_player(t: Translator) -> Svg:
     timer_pill(svg, 848, 74, "0:18")
     svg.add('<g transform="rotate(-2 120 220)">')
     svg.rect(32, 134, 176, 190, CARD, PRIMARY, rx=16, sw=2)
-    svg.rect(46, 148, 148, 128, CHIP_ART["Barbecue"], rx=10)
+    svg.rect(46, 148, 148, 128, PLACEHOLDER_IMAGE_COLOR_BY_ITEM["Barbecue"], rx=10)
     svg.text(120, 304, items[11], 16, 700, INK, anchor="middle")
     svg.add("</g>")
     wrap(svg, 32, 360, t("rooms.game.dock"), 176, 12, 17)
@@ -295,8 +304,8 @@ def round_player(t: Translator) -> Svg:
         476,
         [[items[1]], [items[0], items[2]], [items[3]], [], [], []],
         row_h=56,
-        slot=(1, 0),
-        art=CHIP_ART,
+        dashed_slot_tier=1,
+        image_color_by_item=PLACEHOLDER_IMAGE_COLOR_BY_ITEM,
     )
     panel(svg, 728, 134, 200, 172)
     svg.text(748, 164, t("rooms.game.placedCount_other", placed=2, count=3), 14, 600)
@@ -307,9 +316,9 @@ def round_player(t: Translator) -> Svg:
         160,
         t,
         [
-            ("Alex", "placed", True),
-            (t("rooms.game.nameYou", name="Sam"), "waiting", True),
-            ("Lou", "placed", True),
+            PersonStatus("Alex", "placed", True),
+            PersonStatus(t("rooms.game.nameYou", name="Sam"), "waiting", True),
+            PersonStatus("Lou", "placed", True),
         ],
     )
     return svg
@@ -323,7 +332,7 @@ def round_admin(t: Translator) -> Svg:
     timer_pill(svg, 848, 74, "0:18")
     svg.add('<g transform="rotate(-2 120 220)">')
     svg.rect(32, 134, 176, 190, CARD, BORDER, rx=16)
-    svg.rect(46, 148, 148, 128, CHIP_ART["Barbecue"], rx=10)
+    svg.rect(46, 148, 148, 128, PLACEHOLDER_IMAGE_COLOR_BY_ITEM["Barbecue"], rx=10)
     svg.text(120, 304, items[11], 16, 700, INK, anchor="middle")
     svg.add("</g>")
     svg.rect(232, 134, 696, 330, CARD, SPOT, rx=16, sw=2)
@@ -336,10 +345,10 @@ def round_admin(t: Translator) -> Svg:
         360,
         t,
         [
-            ("Alex", "placed", True),
-            ("Sam", "waiting", True),
-            ("Lou", "placed", True),
-            ("Max", "disconnected", False),
+            PersonStatus("Alex", "placed", True),
+            PersonStatus("Sam", "waiting", True),
+            PersonStatus("Lou", "placed", True),
+            PersonStatus("Max", "disconnected", False),
         ],
     )
     button(svg, 660, 216, t("rooms.game.next"), "default", h=40, w=244)
@@ -364,10 +373,10 @@ def cooldown(t: Translator) -> Svg:
     items = ITEMS[t.lang]
     svg = Svg(t("rooms.game.cooldown.title"), 960, 600)
     header(svg, t, "Lou")
-    svg.rect(24, 72, 912, 512, D_BG, D_WARNING, rx=16, sw=2, opacity=None)
-    svg.text(48, 116, t("rooms.game.cooldown.title"), 26, 900, D_FG, HEAD, stretch=115)
-    svg.text(912, 120, "0:42", 40, 900, D_WARNING, HEAD, anchor="end")
-    svg.text(48, 144, t("rooms.game.cooldown.hint"), 14, 400, D_MUTED_FG)
+    svg.rect(24, 72, 912, 512, FINAL_BOARD_BG, FINAL_BOARD_WARNING, rx=16, sw=2, opacity=None)
+    svg.text(48, 116, t("rooms.game.cooldown.title"), 26, 900, FINAL_BOARD_FG, HEAD, stretch=115)
+    svg.text(912, 120, "0:42", 40, 900, FINAL_BOARD_WARNING, HEAD, anchor="end")
+    svg.text(48, 144, t("rooms.game.cooldown.hint"), 14, 400, FINAL_BOARD_MUTED_FG)
     rows = [
         [items[1], items[5]],
         [items[0], items[9], items[2]],
@@ -376,13 +385,31 @@ def cooldown(t: Translator) -> Svg:
         [items[10]],
         [],
     ]
-    tier_rows(svg, 48, 164, 600, rows, row_h=60, dark=True, art=CHIP_ART)
-    svg.rect(668, 164, 244, 250, D_CARD, D_BORDER, rx=16)
-    svg.text(688, 194, t("rooms.game.cooldown.missed"), 16, 700, D_FG)
+    tier_rows(
+        svg,
+        48,
+        164,
+        600,
+        rows,
+        row_h=60,
+        dark=True,
+        image_color_by_item=PLACEHOLDER_IMAGE_COLOR_BY_ITEM,
+    )
+    svg.rect(668, 164, 244, 250, FINAL_BOARD_CARD, FINAL_BOARD_BORDER, rx=16)
+    svg.text(688, 194, t("rooms.game.cooldown.missed"), 16, 700, FINAL_BOARD_FG)
     for index, item in enumerate((items[4], items[11])):
         ry = 214 + index * 66
-        width = chip(svg, 688, ry, item, 52, dark=True, art=CHIP_ART.get(item))
-        tag(svg, 688 + width + 8, ry + 16, t("rooms.game.cooldown.absent"), D_PRIMARY, D_ON_PRIMARY)
+        width = chip(
+            svg, 688, ry, item, 52, dark=True, art=PLACEHOLDER_IMAGE_COLOR_BY_ITEM.get(item)
+        )
+        tag(
+            svg,
+            688 + width + 8,
+            ry + 16,
+            t("rooms.game.cooldown.absent"),
+            FINAL_BOARD_PRIMARY,
+            FINAL_BOARD_ON_PRIMARY,
+        )
     button(svg, 668, 432, t("rooms.game.cooldown.end.open"), "outline", h=40, w=244, dark=True)
     return svg
 
@@ -421,7 +448,9 @@ def results(t: Translator) -> Svg:
         [items[6], items[10]],
         [items[4]],
     ]
-    tier_rows(svg, 32, 188, 580, rows, row_h=56, art=CHIP_ART)
+    tier_rows(
+        svg, 32, 188, 580, rows, row_h=56, image_color_by_item=PLACEHOLDER_IMAGE_COLOR_BY_ITEM
+    )
     panel(svg, 636, 188, 292, 300)
     svg.text(656, 220, t("results.votes.title", item=items[11]), 16, 700)
     counts = [2, 1, 0, 0, 0, 0]

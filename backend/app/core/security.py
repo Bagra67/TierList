@@ -46,8 +46,7 @@ def verify_password(password: str, password_hash: str) -> bool:
     return _password_hash.verify(password, password_hash)
 
 
-def verify_dummy_password(password: str) -> None:
-    """Prend le temps d'une vraie vérification : ne révèle pas qu'un email n'existe pas."""
+def spend_password_verification_time(password: str) -> None:
     _password_hash.verify(password, _DUMMY_PASSWORD_HASH)
 
 

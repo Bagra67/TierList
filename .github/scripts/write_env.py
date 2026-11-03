@@ -3,6 +3,8 @@ import sys
 from collections.abc import Mapping
 from pathlib import Path
 
+OWNER_READ_WRITE_ONLY = 0o600
+
 REQUIRED = (
     "APP_RELEASE",
     "POSTGRES_HOST",
@@ -69,8 +71,7 @@ def main() -> int:
         print(f"::error::{error}", file=sys.stderr)
         return 1
     output: Path = Path(sys.argv[1])
-    # Only the job user can read the secrets written there
-    output.touch(mode=0o600)
+    output.touch(mode=OWNER_READ_WRITE_ONLY)
     output.write_text(content, encoding="utf-8", newline="\n")
     print(f"{output}: {len(content.splitlines())} variables written")
     return 0

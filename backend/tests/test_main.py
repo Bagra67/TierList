@@ -18,8 +18,7 @@ def clear_dependency_overrides() -> Iterator[None]:
     api_app.dependency_overrides.clear()
 
 
-def test_health():
-    # Aucune dépendance remplacée : la sonde de vie ne doit pas toucher la base
+def test_health_answers_without_touching_the_database():
     response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "release": "dev"}

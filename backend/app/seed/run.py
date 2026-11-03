@@ -125,7 +125,9 @@ def run_seed(
         templates=len(templates.playable) + len(templates.empty) + len(templates.deleted),
         images=size.image_templates * size.image_tiles_per_template,
         closed_games=len(played.closed),
-        open_rooms=len(played.lobby_rooms) + len(open_rooms.full) + len(open_rooms.with_bans),
+        open_rooms=len(played.open_rooms_with_past_games)
+        + len(open_rooms.full)
+        + len(open_rooms.with_bans),
         moderation_actions=size.moderation_actions
         + moderated_images
         + moderated_templates
@@ -135,7 +137,9 @@ def run_seed(
 
 def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:
     candidates: list[uuid.UUID] = [
-        room.template_id for room in played.lobby_rooms if room.template_id is not None
+        room.template_id
+        for room in played.open_rooms_with_past_games
+        if room.template_id is not None
     ]
     candidates.extend(template.id for template in templates.playable)
     return list(dict.fromkeys(candidates))[:count]

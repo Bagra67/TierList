@@ -31,7 +31,7 @@ from app.core.security import (
     hash_password,
     hash_refresh_token,
     password_fingerprint,
-    verify_dummy_password,
+    spend_password_verification_time,
     verify_password,
 )
 from app.emails.templates import password_reset_email, verification_email
@@ -121,7 +121,7 @@ class AuthService:
     def login(self, email: str, password: str) -> IssuedTokens:
         user = user_repository.get_user_by_email(self._session, normalize_email(email))
         if user is None or user.password_hash is None:
-            verify_dummy_password(password)
+            spend_password_verification_time(password)
             logger.info("Échec de connexion : identifiants invalides")
             raise InvalidCredentialsError
         if not verify_password(password, user.password_hash):
