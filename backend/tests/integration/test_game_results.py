@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -8,6 +10,7 @@ from app.constants.error_codes import ErrorCode
 from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.models.image import Image, ImageStatus
 from app.models.snapshot_tile import SnapshotTile
+from app.services import games as games_module
 from tests.integration.helpers import (
     PASSWORD,
     JsonObject,
@@ -181,6 +184,33 @@ def test_without_absent_votes_the_caught_up_votes_and_the_absents_are_ignored(
         assert entry["player_indexes_per_tier"] is None
         assert entry["absent_player_indexes"] is None
     assert boards(body)["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
+
+
+def test_the_results_keep_the_template_order_after_a_random_game(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def reverse(tiles: Sequence[SnapshotTile]) -> list[SnapshotTile]:
+        return list(reversed(tiles))
+
+    monkeypatch.setattr(games_module, "shuffle_items", reverse)
+    code: str = alice_room["code"]
+    auth_client.patch(f"/rooms/{code}/settings", json={"item_order": "random"}, headers=alice)
+    started: JsonObject = start_game(auth_client, code, alice)
+    assert started["game"]["current_item"]["text"] == "Tile 2"
+    closed: JsonObject = play_and_close(auth_client, code, alice)
+
+    body: JsonObject = results(
+        auth_client, closed["past_games"][0]["public_token"], include_absent_votes=False
+    ).json()
+
+    assert [item["text"] for item in body["items"]] == ["Tile 0", "Tile 1", "Tile 2"]
+    template_order: list[str] = [item["id"] for item in body["items"]]
+    assert body["unranked_item_ids"] == template_order
+    assert [item["item_id"] for item in body["distribution"]] == template_order
+    assert [player["unplaced_item_ids"] for player in body["players"]] == [template_order] * 2
 
 
 def test_the_room_admin_who_does_not_play_is_not_in_the_results(
