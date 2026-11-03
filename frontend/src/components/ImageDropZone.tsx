@@ -10,7 +10,7 @@ import {
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { cn } from 'cn';
-import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
+import { BACKEND_ACCEPTED_IMAGE_TYPES } from '../constants/images';
 import { isAcceptedImageFile } from './imageFiles';
 import { RemovedImage } from './RemovedImage';
 
@@ -214,7 +214,7 @@ export function ImageDropZone({
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        accept={BACKEND_ACCEPTED_IMAGE_TYPES.join(',')}
         multiple={onSelectMany !== undefined}
         tabIndex={-1}
         aria-hidden="true"

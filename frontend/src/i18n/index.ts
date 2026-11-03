@@ -10,7 +10,7 @@ import {
   type Language,
 } from '../constants/i18n';
 import { en } from './locales/en';
-import { fr } from './locales/fr';
+import { fr, type Translation } from './locales/fr';
 
 export function isSupportedLanguage(value: unknown): value is Language {
   return SUPPORTED_LANGUAGES.includes(value as Language);
@@ -58,8 +58,13 @@ i18next.on('languageChanged', (language) => {
   document.documentElement.lang = language;
 });
 
+const resources: Record<Language, { translation: Translation }> = {
+  fr: { translation: fr },
+  en: { translation: en },
+};
+
 void i18next.use(initReactI18next).init({
-  resources: { fr: { translation: fr }, en: { translation: en } },
+  resources,
   lng: detectLanguage(),
   fallbackLng: DEFAULT_LANGUAGE,
   supportedLngs: [...SUPPORTED_LANGUAGES],
