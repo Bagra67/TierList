@@ -1271,12 +1271,12 @@ The errors are translated with `i18n.t`, in French unless the test switches to E
 
 ### 2.14 Tests: `src/pages/VerifyEmailPage.test.tsx`
 
-| Test                                              | What it does                                  | Purpose                                                             | Expected result                                                                                          |
-| ------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `waits for a click before confirming the address` | Opens `/verify-email?token=link-token`.       | A tool that opens the link (antispam) must not confirm the address. | The "Confirmer mon adresse" button; no call to the backend.                                              |
-| `confirms the address with the token of the link` | Clicks the button; the backend answers `204`. | Checks the request and the success state.                           | `Votre adresse e-mail est confirmée.`; a "Continuer" link to `/`; the body is `{ token: 'link-token' }`. |
-| `explains an invalid or expired link`             | The backend answers `400 invalid_token`.      | Translated error message.                                           | `Ce lien est invalide ou a expiré.`                                                                      |
-| `explains a link without token`                   | Opens `/verify-email`.                        | An incomplete link is explained, without button.                    | `Ce lien est incomplet…`; no button.                                                                     |
+| Test                                                                          | What it does                                  | Purpose                                                             | Expected result                                                                                          |
+| ----------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `waits for a click, so that a mail scanner opening the link confirms nothing` | Opens `/verify-email?token=link-token`.       | A tool that opens the link (antispam) must not confirm the address. | The "Confirmer mon adresse" button; no call to the backend.                                              |
+| `confirms the address with the token of the link`                             | Clicks the button; the backend answers `204`. | Checks the request and the success state.                           | `Votre adresse e-mail est confirmée.`; a "Continuer" link to `/`; the body is `{ token: 'link-token' }`. |
+| `explains an invalid or expired link`                                         | The backend answers `400 invalid_token`.      | Translated error message.                                           | `Ce lien est invalide ou a expiré.`                                                                      |
+| `explains a link without token`                                               | Opens `/verify-email`.                        | An incomplete link is explained, without button.                    | `Ce lien est incomplet…`; no button.                                                                     |
 
 ### 2.15 Tests: `src/components/EmailVerificationBanner.test.tsx`
 
@@ -1705,7 +1705,7 @@ Legal notice (#235):
 | ----------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- | ------------------------- |
 | `links to the home page from the shared layout` | Renders the login page. | The header logo is on every page and leads home; its drawing is decorative. | A `TierList` link to `/`. |
 
-### 2.38 Tests: `src/theme/contrast.test.ts`
+### 2.38 Tests: `src/theme/wcagContrast.test.ts`
 
 | Test                                                                                      | What it does                                                 | Purpose                                                                     | Expected result               |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------- | ----------------------------- |

@@ -11,11 +11,11 @@ import type { GameResults } from '../api/results';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoomInGame } from '../test/fixtures/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import type { ResultsLinkState } from '../constants/routes';
 import { ResultsPage } from './ResultsPage';
 
-// La page ouverte par son lien ; state : l'état de navigation posé par le lobby
-function renderResultsPage(state?: unknown) {
-  const entry: InitialEntry = { pathname: `/results/${RESULTS_TOKEN}`, state };
+function renderResultsPage(stateFromLobby?: ResultsLinkState) {
+  const entry: InitialEntry = { pathname: `/results/${RESULTS_TOKEN}`, state: stateFromLobby };
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>

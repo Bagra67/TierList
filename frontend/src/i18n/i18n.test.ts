@@ -5,16 +5,15 @@ import i18n, { changeLanguage, detectLanguage } from '.';
 import { en } from './locales/en';
 import { fr } from './locales/fr';
 
-// Textes de toutes les clés, par chemin : « auth.login.title » → « Connexion »…
-function flatten(tree: object, prefix = ''): [string, unknown][] {
+function translationTextsByKeyPath(tree: object, prefix = ''): [string, unknown][] {
   return Object.entries(tree).flatMap(([key, value]): [string, unknown][] =>
     typeof value === 'object' && value !== null
-      ? flatten(value as object, `${prefix}${key}.`)
+      ? translationTextsByKeyPath(value as object, `${prefix}${key}.`)
       : [[`${prefix}${key}`, value]],
   );
 }
 
-const keyPaths = (tree: object) => flatten(tree).map(([path]) => path);
+const keyPaths = (tree: object) => translationTextsByKeyPath(tree).map(([path]) => path);
 
 function stubBrowserLanguages(languages: string[]) {
   vi.spyOn(navigator, 'languages', 'get').mockReturnValue(languages);
@@ -27,7 +26,7 @@ describe('translations', () => {
 
   it('have a non-empty text for every key', () => {
     for (const translation of [fr, en]) {
-      const invalid = flatten(translation).filter(
+      const invalid = translationTextsByKeyPath(translation).filter(
         ([, text]) => typeof text !== 'string' || text.trim() === '',
       );
       expect(invalid).toEqual([]);

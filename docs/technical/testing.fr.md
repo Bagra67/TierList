@@ -1271,12 +1271,12 @@ Les erreurs sont traduites avec `i18n.t`, en français sauf si le test passe en 
 
 ### 2.14 Tests : `src/pages/VerifyEmailPage.test.tsx`
 
-| Test                                              | Ce qu'il fait                                   | But                                                                    | Résultat attendu                                                                                                 |
-| ------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `waits for a click before confirming the address` | Ouvre `/verify-email?token=link-token`.         | Un outil qui ouvre le lien (antispam) ne doit pas confirmer l'adresse. | Le bouton « Confirmer mon adresse » ; aucun appel au backend.                                                    |
-| `confirms the address with the token of the link` | Clique sur le bouton ; le backend répond `204`. | Vérifier la requête et l'état de succès.                               | `Votre adresse e-mail est confirmée.` ; un lien « Continuer » vers `/` ; le corps est `{ token: 'link-token' }`. |
-| `explains an invalid or expired link`             | Le backend répond `400 invalid_token`.          | Message d'erreur traduit.                                              | `Ce lien est invalide ou a expiré.`                                                                              |
-| `explains a link without token`                   | Ouvre `/verify-email`.                          | Un lien incomplet est expliqué, sans bouton.                           | `Ce lien est incomplet…` ; pas de bouton.                                                                        |
+| Test                                                                          | Ce qu'il fait                                   | But                                                                    | Résultat attendu                                                                                                 |
+| ----------------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `waits for a click, so that a mail scanner opening the link confirms nothing` | Ouvre `/verify-email?token=link-token`.         | Un outil qui ouvre le lien (antispam) ne doit pas confirmer l'adresse. | Le bouton « Confirmer mon adresse » ; aucun appel au backend.                                                    |
+| `confirms the address with the token of the link`                             | Clique sur le bouton ; le backend répond `204`. | Vérifier la requête et l'état de succès.                               | `Votre adresse e-mail est confirmée.` ; un lien « Continuer » vers `/` ; le corps est `{ token: 'link-token' }`. |
+| `explains an invalid or expired link`                                         | Le backend répond `400 invalid_token`.          | Message d'erreur traduit.                                              | `Ce lien est invalide ou a expiré.`                                                                              |
+| `explains a link without token`                                               | Ouvre `/verify-email`.                          | Un lien incomplet est expliqué, sans bouton.                           | `Ce lien est incomplet…` ; pas de bouton.                                                                        |
 
 ### 2.15 Tests : `src/components/EmailVerificationBanner.test.tsx`
 
@@ -1705,7 +1705,7 @@ Mentions légales (#235) :
 | ----------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------- |
 | `links to the home page from the shared layout` | Affiche la page de connexion. | Le logo de l'en-tête est sur toutes les pages et mène à l'accueil ; son dessin est décoratif. | Un lien `TierList` vers `/`. |
 
-### 2.38 Tests : `src/theme/contrast.test.ts`
+### 2.38 Tests : `src/theme/wcagContrast.test.ts`
 
 | Test                                                                                      | Ce qu'il fait                                                               | But                                                                                 | Résultat attendu                   |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------- |

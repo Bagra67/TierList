@@ -19,7 +19,7 @@ describe('VerifyEmailPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('waits for a click before confirming the address', () => {
+  it('waits for a click, so that a mail scanner opening the link confirms nothing', () => {
     const fetchMock = stubBackend({});
 
     renderVerifyEmailPage();
