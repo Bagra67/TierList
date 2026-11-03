@@ -181,7 +181,7 @@ Built in #85. What exists today:
 
 - **Room version**: `rooms.version`, incremented by `RoomService` in the same transaction as the change (join, guest join, removal, settings, presence), and by `GameService` (start, first placement of a round, end of a round, end of the cooldown); returned as `version` by the room API.
 - **Authentication**: the first message is always `auth`, within `ROOM_AUTH_TIMEOUT_SECONDS`: an account sends its access token, a guest sends `null` and is recognised by its `guest_token` cookie (`Path=/api/rooms/<code>`, [rooms guide](rooms.md#24-guests)). An account comes first, like in REST.
-- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4401`, `4404`, `4410`, `4411` and `4412`:
+- **Close codes** (`app/constants/rooms.py`), with the `ErrorCode` as reason; the client does not reconnect after `4404`, `4410`, `4411` and `4412`, and after `4401` an account only retries once (Robustness, below):
 
   | Code       | Reason              | When                                                                             |
   | ---------- | ------------------- | -------------------------------------------------------------------------------- |
