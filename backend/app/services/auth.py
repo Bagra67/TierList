@@ -50,6 +50,7 @@ from app.models.oauth_account import OAuthAccount
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories import account_bans as account_ban_repository
+from app.repositories import images as image_repository
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import refresh_tokens as refresh_token_repository
 from app.repositories import users as user_repository
@@ -352,6 +353,7 @@ class AuthService:
         if before_delete is not None:
             before_delete(user)
         user_id = user.id
+        image_repository.clear_moderation_reasons_of_owner(self._session, user_id)
         user_repository.delete_user(self._session, user)
         self._session.commit()
         logger.info("Compte supprimé : user_id=%s", user_id)
