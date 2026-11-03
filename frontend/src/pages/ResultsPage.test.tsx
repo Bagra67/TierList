@@ -405,6 +405,7 @@ describe('ResultsPage', () => {
           (button: HTMLElement) =>
             button.textContent !== 'Copier le lien' &&
             button.textContent !== 'Rejouer la révélation' &&
+            button.textContent !== 'Signaler' &&
             !(button.getAttribute('aria-label') ?? '').startsWith('Voir les votes : '),
         ),
     ).toEqual([]);
@@ -427,5 +428,39 @@ describe('ResultsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ce lien de résultats ne correspond à aucune partie terminée.',
     );
+  });
+
+  it('reports the game and the chosen player, even for a visitor', async () => {
+    stubResults();
+    renderResultsPage();
+
+    expect(await screen.findByRole('button', { name: 'Signaler : Épices' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Par joueur' }));
+    expect(screen.getByRole('button', { name: 'Signaler : Alice' })).toBeInTheDocument();
+  });
+
+  it('reports the image of the chosen item, not a text nor a removed image', async () => {
+    const [paprika, chorizo, curry]: GameResults['items'] = closedGameResults.items;
+    stubBackend({
+      [resultsRoute]: () =>
+        Response.json({
+          ...closedGameResults,
+          items: [
+            { ...paprika, image_url: 'https://images.example.com/paprika.webp', text: null },
+            { ...chorizo, image_removed: true, text: null },
+            curry,
+          ],
+        }),
+    });
+    renderResultsPage();
+
+    expect(
+      await screen.findByRole('button', { name: "Signaler : Image de l'élément 1" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: "Voir les votes : Image de l'élément 2" }));
+    expect(
+      screen.queryByRole('button', { name: /^Signaler : Image de l'élément/ }),
+    ).not.toBeInTheDocument();
   });
 });

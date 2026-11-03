@@ -6,6 +6,7 @@ import type { ItemDistribution } from '../api/results';
 import type { GameTier } from '../api/rooms';
 import { ITEM_CHIP_CLASS, tierColorStyle } from './boardStyles';
 import { GameItemView } from './GameItemView';
+import { ReportButton } from './ReportButton';
 import type { ResultItem } from './resultsViews';
 import { panelVariants } from './ui/panel';
 
@@ -51,6 +52,16 @@ export function ItemVotesPanel({
           {t('results.votes.title', { item: resultItem.name })}
         </h2>
       </div>
+      {resultItem.item.image_url !== null && (
+        <div>
+          <ReportButton
+            key={resultItem.item.id}
+            targetKind="item"
+            targetId={resultItem.item.id}
+            contentName={resultItem.imageLabel}
+          />
+        </div>
+      )}
       <ul className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-3">
         {tiers.map((tier: GameTier, index: number) => (
           <VoteLine

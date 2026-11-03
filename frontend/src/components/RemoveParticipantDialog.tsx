@@ -40,7 +40,6 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
         type="button"
         variant="outline"
         size="sm"
-        className="ml-auto"
         aria-label={t('rooms.lobby.remove.openLabel', { name })}
         onClick={() => dialogRef.current?.showModal()}
       >

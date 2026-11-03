@@ -4,6 +4,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import type { CurrentGame, Participant, Room } from '../api/rooms';
 import { CooldownStage } from './CooldownStage';
 import { CurrentItemCard } from './CurrentItemCard';
+import { ReportButton } from './ReportButton';
 import { EndCooldownDialog } from './EndCooldownDialog';
 import { GameAdminControls } from './GameAdminControls';
 import { GameBoard } from './GameBoard';
@@ -51,7 +52,15 @@ export function GameScreen({ room, game, onGameEnded }: GameScreenProps) {
         ) : (
           <CurrentItemCard item={game.current_item} />
         )}
-        <aside className="flex flex-col gap-4">
+        <aside className="flex flex-col items-start gap-4">
+          {game.current_item.image_url !== null && (
+            <ReportButton
+              key={game.current_item.id}
+              targetKind="item"
+              targetId={game.current_item.id}
+              contentName={t('rooms.game.currentItemImage')}
+            />
+          )}
           <PlacedList
             placingParticipants={placingParticipants}
             placedParticipantIds={game.placed_participant_ids}

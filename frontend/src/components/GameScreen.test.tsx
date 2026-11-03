@@ -681,4 +681,24 @@ describe('GameScreen', () => {
       expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
     });
   });
+
+  it('reports the image of the current item, and nothing when it has no image', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    const { unmount } = renderRoomPage();
+
+    const label: string = "Signaler : Image de l'élément en cours";
+    expect(await screen.findByRole('button', { name: label })).toBeInTheDocument();
+    unmount();
+
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json(
+          inGame({ current_item: { ...game.current_item, image_url: null, image_removed: true } }),
+        ),
+    });
+    renderRoomPage();
+
+    await screen.findByText('Élément 1 sur 3');
+    expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
+  });
 });

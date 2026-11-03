@@ -97,7 +97,7 @@ export const en: Translation = {
         'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position). The fingerprint of each uploaded file is kept, to refuse an image deleted by the moderation if it is uploaded again.',
       games: 'Games: the rooms you join, your placements and the results of the games.',
       reports:
-        'Reports: the email address of the person who reports content, and what their message contains.',
+        'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
       bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
       moderation:
         'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
@@ -138,7 +138,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -162,6 +162,8 @@ export const en: Translation = {
       banNotice:
         'Ban cookie: after a refused Google sign-in, lets the page show the reason (10 minutes).',
       guest: 'Guest cookie: recognises you in a room (30 days at most).',
+      report:
+        'Report cookie: after a report without an account, avoids duplicates and limits their frequency (1 year).',
       local: 'Browser local storage: the chosen theme and language.',
     },
     security: {
@@ -187,13 +189,13 @@ export const en: Translation = {
     report: {
       title: 'Report content',
       intro:
-        "If content published on TierList seems illegal to you (hateful, sexual, infringing someone's rights or against the law), report it by email:",
+        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname or a game, with or without an account. For any other content, or to get an answer, write to:',
       include: 'So that the report can be handled, give:',
       page: 'the link of the page where the content is (template, room or results);',
       content: 'the content concerned: a tile (its text or image), a template or a nickname;',
       reason: 'the reason for the report;',
       reply: 'an email address to answer you.',
-      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. You receive an answer with the decision taken.',
+      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. If you write by email, you receive an answer with the decision taken.',
     },
   },
   terms: {
@@ -667,6 +669,33 @@ export const en: Translation = {
         cancelled: 'Moving {{item}} cancelled.',
       },
     },
+  },
+  report: {
+    open: 'Report',
+    openLabel: 'Report: {{name}}',
+    title: {
+      item: 'Report this image',
+      participant: 'Report this nickname',
+      player: 'Report this nickname',
+      game: 'Report this game',
+    },
+    anonymous: 'Your report is anonymous: the reported person will not know who sent it.',
+    reason: 'Reason',
+    reasons: {
+      illegal: 'Illegal content',
+      sexual: 'Sexual content',
+      violence_or_hate: 'Violence or hate',
+      harassment: 'Harassment',
+      spam: 'Spam',
+      other: 'Other',
+    },
+    detailsOptional: 'Details (optional)',
+    detailsRequired: 'Details',
+    submit: 'Send the report',
+    submitting: 'Sending…',
+    cancel: 'Cancel',
+    sent: 'Thank you: your report is sent.',
+    close: 'Close',
   },
   results: {
     title: 'Results: {{name}}',

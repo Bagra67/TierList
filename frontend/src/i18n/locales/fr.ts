@@ -97,7 +97,7 @@ export const fr = {
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       reports:
-        "Signalements : l'adresse e-mail de la personne qui signale un contenu, et ce que contient son message.",
+        "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
       moderation:
         "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
@@ -140,7 +140,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés. Le propriétaire d'un modèle masqué par la modération voit le motif de la décision, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -167,6 +167,8 @@ export const fr = {
       banNotice:
         'Cookie de bannissement : après une connexion avec Google refusée, permet de montrer le motif (10 minutes).',
       guest: "Cookie d'invité : vous reconnaît dans une salle (30 jours au plus).",
+      report:
+        'Cookie de signalement : après un signalement sans compte, évite les doublons et limite leur fréquence (1 an).',
       local: 'Stockage local du navigateur : le thème et la langue choisis.',
     },
     security: {
@@ -192,13 +194,13 @@ export const fr = {
     report: {
       title: 'Signaler un contenu',
       intro:
-        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), signalez-le par e-mail :",
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo ou d'une partie, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
       include: 'Pour que le signalement puisse être traité, indiquez :',
       page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
       content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',
       reason: 'le motif du signalement ;',
       reply: 'une adresse e-mail pour vous répondre.',
-      next: "Chaque signalement est examiné rapidement. Un contenu illicite est retiré, et le compte qui l'a publié peut être suspendu ou supprimé. Vous recevez une réponse avec la décision prise.",
+      next: "Chaque signalement est examiné rapidement. Un contenu illicite est retiré, et le compte qui l'a publié peut être suspendu ou supprimé. Si vous écrivez par e-mail, vous recevez une réponse avec la décision prise.",
     },
   },
   terms: {
@@ -680,6 +682,33 @@ export const fr = {
         cancelled: 'Déplacement de {{item}} annulé.',
       },
     },
+  },
+  report: {
+    open: 'Signaler',
+    openLabel: 'Signaler : {{name}}',
+    title: {
+      item: 'Signaler cette image',
+      participant: 'Signaler ce pseudo',
+      player: 'Signaler ce pseudo',
+      game: 'Signaler cette partie',
+    },
+    anonymous: "Votre signalement est anonyme : la personne signalée ne saura pas qui l'a envoyé.",
+    reason: 'Motif',
+    reasons: {
+      illegal: 'Contenu illégal',
+      sexual: 'Contenu sexuel',
+      violence_or_hate: 'Violence ou haine',
+      harassment: 'Harcèlement',
+      spam: 'Spam',
+      other: 'Autre',
+    },
+    detailsOptional: 'Précisions (facultatif)',
+    detailsRequired: 'Précisions',
+    submit: 'Envoyer le signalement',
+    submitting: 'Envoi…',
+    cancel: 'Annuler',
+    sent: 'Merci : votre signalement est envoyé.',
+    close: 'Fermer',
   },
   results: {
     title: 'Résultats : {{name}}',

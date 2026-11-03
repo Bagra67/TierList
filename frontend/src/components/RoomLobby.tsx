@@ -9,6 +9,7 @@ import { ErrorMessage } from './ErrorMessage';
 import { GameScreen } from './GameScreen';
 import { PastGames } from './PastGames';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
+import { ReportButton } from './ReportButton';
 import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
@@ -73,9 +74,18 @@ export function RoomLobby({ room }: RoomLobbyProps) {
                 {participant.is_guest && (
                   <span className="text-sm text-muted-foreground">({t('rooms.lobby.guest')})</span>
                 )}
-                {room.is_admin && !participant.is_admin && (
-                  <RemoveParticipantDialog code={room.code} participant={participant} />
-                )}
+                <span className="ml-auto flex items-center gap-2">
+                  {!participant.is_you && (
+                    <ReportButton
+                      targetKind="participant"
+                      targetId={participant.id}
+                      contentName={participant.display_name}
+                    />
+                  )}
+                  {room.is_admin && !participant.is_admin && (
+                    <RemoveParticipantDialog code={room.code} participant={participant} />
+                  )}
+                </span>
               </li>
             ))}
           </ul>
