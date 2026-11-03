@@ -45,8 +45,6 @@ export function ColorField({ label, savedColor, onSave }: ColorFieldProps) {
   const [open, setOpen] = useState<boolean>(false);
   const [draft, setDraft] = useState<string>(savedColor);
   const isCancelling: RefObject<boolean> = useRef<boolean>(false);
-  // Nuancier affiché : le contenu du popover se monte après ce composant, d'où un état (le
-  // changement relance l'effet de traduction) plutôt qu'une simple ref
   const [picker, setPicker] = useState<HTMLDivElement | null>(null);
   const presetsLabelId: string = useId();
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();

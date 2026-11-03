@@ -48,7 +48,7 @@ Every accepted image goes through the same pipeline; the received file is **neve
 5. resize it so that its **longest side is 512 px**, keeping its proportions, with the **Lanczos** filter: a larger image is shrunk (4000 × 3000 gives 512 × 384), a smaller one is **enlarged** (200 × 100 gives 512 × 256), never cropped nor stretched. The short side is at least 1 px: beyond a 1024:1 ratio it would round to 0, a size Pillow refuses (2000 × 1 gives 512 × 1);
 6. encode it in **WebP, quality 80**, without any metadata (EXIF, GPS position: privacy). Only the color profile (ICC) is kept, otherwise wide-gamut photos (Display P3) would look dull.
 
-Why 512 px: the largest display is about 150 CSS px, and a screen with a pixel ratio of 3 needs about 450 real pixels. A single size is stored: the small tiles use the same file (no thumbnails, YAGNI). WebP is read by every current browser and is much lighter than JPEG or PNG at equal quality.
+Why 512 px: the largest display in a game is about 150 CSS px (the moderation pages show images wider, enlarged), and a screen with a pixel ratio of 3 needs about 450 real pixels. A single size is stored: the small tiles use the same file (no thumbnails, YAGNI). WebP is read by every current browser and is much lighter than JPEG or PNG at equal quality.
 
 Why enlarge small images (decided in #81): every stored image then has the same size, and a small image is shown as sharp as possible in the large frame. Lanczos is the classic interpolation filter with the best quality, the one image editors use; it is part of Pillow, so no extra library. AI upscalers (Real-ESRGAN…) are excluded. Enlarging does not invent details: a tiny image (a 32 px icon, pixel art) comes out smooth and slightly blurred, not pixelated.
 
@@ -84,7 +84,7 @@ Abuse and cleanup settings:
 | Variable                      | Description                                                                                  | Default |
 | ----------------------------- | -------------------------------------------------------------------------------------------- | ------- |
 | `IMAGE_UPLOADS_PER_HOUR_MAX`  | Maximum number of images uploaded by an account over the last hour (§2.9); beyond it, `429`. | `120`   |
-| `UNUSED_IMAGE_RETENTION_DAYS` | Days an image that no tile uses is kept before the garbage collection erases it (§2.8).      | `7`     |
+| `UNUSED_IMAGE_RETENTION_DAYS` | Age in days from which the garbage collection erases an image that no tile uses (§2.8).      | `7`     |
 
 All of them are in `Settings` (`app/core/config.py`) and `backend/.env.example`, which holds the SeaweedFS values.
 
@@ -135,7 +135,7 @@ SeaweedFS in development:
 
 ### 2.8 Cleanup
 
-No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference since longer than a grace delay. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192), and can also be run from the command line, like `scripts/purge_deleted_templates.py`:
+No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference and that were created longer ago than a grace delay: the delay counts from the upload, not from the last use. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192), and can also be run from the command line, like `scripts/purge_deleted_templates.py`:
 
 ```bash
 cd backend
