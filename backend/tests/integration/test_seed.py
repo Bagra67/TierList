@@ -45,6 +45,7 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.hidden_templates
     + SMALL_SIZE.temporarily_banned_accounts
     + SMALL_SIZE.permanently_banned_accounts
+    + 2 * SMALL_SIZE.accounts_with_a_lifted_ban
 )
 
 
@@ -260,11 +261,38 @@ def test_the_seeded_history_and_results_work_through_the_api(
     assert body["players"]
 
 
+def test_the_seeded_account_with_a_lifted_ban_signs_in_and_shows_it(
+    client: TestClient, db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+    lifted_ban: AccountBan = db_session.scalars(
+        select(AccountBan).where(AccountBan.lifted_at.is_not(None))
+    ).one()
+    email: str = db_session.scalars(select(User.email).where(User.id == lifted_ban.user_id)).one()
+
+    signed_in: Response = client.post(
+        "/auth/login", json={"email": email, "password": SEED_PASSWORD}
+    )
+    super_admin: Response = client.post(
+        "/auth/login", json={"email": seed_email("admin", 1), "password": SEED_PASSWORD}
+    )
+    page: Response = client.get(
+        f"/moderation/accounts/{lifted_ban.user_id}",
+        headers={"Authorization": f"Bearer {super_admin.json()['access_token']}"},
+    )
+
+    assert signed_in.status_code == 200
+    assert page.json()["ban"] is None
+    assert len(page.json()["past_bans"]) == 1
+
+
 def test_the_seeded_banned_accounts_cannot_sign_in(
     client: TestClient, db_session: Session, stored_images: dict[str, bytes]
 ):
     seed(db_session, stored_images)
-    banned: list[uuid.UUID] = list(db_session.scalars(select(AccountBan.user_id)).all())
+    banned: list[uuid.UUID] = list(
+        db_session.scalars(select(AccountBan.user_id).where(AccountBan.lifted_at.is_(None))).all()
+    )
     emails: list[str] = list(
         db_session.scalars(select(User.email).where(User.id.in_(banned))).all()
     )
