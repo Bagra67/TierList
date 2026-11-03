@@ -28,6 +28,13 @@ export type AccountSearchPage = components['schemas']['AccountSearchResponse'];
 export type AccountSummary = components['schemas']['AccountSummaryResponse'];
 export type Account = components['schemas']['AccountResponse'];
 
+export type ReportQueuePage = components['schemas']['ReportQueueResponse'];
+export type ReportedContent = components['schemas']['ReportedContentResponse'];
+export type HiddenGamesPage = components['schemas']['HiddenGamesResponse'];
+export type HiddenGame = components['schemas']['HiddenGameResponse'];
+export type ReportDecisionKind =
+  'dismiss' | 'hide_image' | 'delete_image' | 'remove_nickname' | 'hide_game';
+
 export interface ModerationLogFilters {
   actorId?: string;
   target?: string;
@@ -37,6 +44,9 @@ export interface ModerationLogFilters {
 const MODERATION_LOG_QUERY_KEY = ['moderation', 'log'] as const;
 const SUPER_ADMINS_QUERY_KEY = ['moderation', 'super-admins'] as const;
 const RECENT_UPLOADS_QUERY_KEY = ['moderation', 'images'] as const;
+const REPORT_QUEUE_QUERY_KEY = ['moderation', 'reports'] as const;
+const OPEN_REPORT_COUNT_QUERY_KEY = ['moderation', 'reports-count'] as const;
+const HIDDEN_GAMES_QUERY_KEY = ['moderation', 'hidden-games'] as const;
 const ACCOUNT_SEARCH_QUERY_KEY = ['moderation', 'accounts', 'search'] as const;
 const ACCOUNT_QUERY_KEY = ['moderation', 'accounts', 'detail'] as const;
 
@@ -157,6 +167,145 @@ export function useModerateImage(): UseMutationResult<void, Error, ImageModerati
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        invalidateReports(queryClient),
+      ]);
+    },
+  });
+}
+
+async function invalidateReports(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: REPORT_QUEUE_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: OPEN_REPORT_COUNT_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: HIDDEN_GAMES_QUERY_KEY }),
+  ]);
+}
+
+export function useReportQueue(
+  ownerId?: string,
+): UseInfiniteQueryResult<InfiniteData<ReportQueuePage, number>> {
+  return useInfiniteQuery({
+    queryKey: [...REPORT_QUEUE_QUERY_KEY, ownerId],
+    queryFn: async ({ pageParam, signal }) =>
+      dataOrThrow(
+        await apiClient.GET('/moderation/reports', {
+          params: { query: { offset: pageParam, owner_id: ownerId } },
+          signal,
+        }),
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: ReportQueuePage, pages: ReportQueuePage[]) =>
+      lastPage.has_more
+        ? pages.reduce((count: number, page: ReportQueuePage) => count + page.contents.length, 0)
+        : undefined,
+    retry: retryUnlessClientError,
+  });
+}
+
+export function useOpenReportCount(enabled: boolean): UseQueryResult<number> {
+  return useQuery({
+    queryKey: OPEN_REPORT_COUNT_QUERY_KEY,
+    queryFn: async ({ signal }) => {
+      const body = dataOrThrow(await apiClient.GET('/moderation/reports/count', { signal }));
+      return body.open_contents;
+    },
+    enabled,
+    retry: retryUnlessClientError,
+  });
+}
+
+export function useHiddenGames(): UseInfiniteQueryResult<InfiniteData<HiddenGamesPage, number>> {
+  return useInfiniteQuery({
+    queryKey: HIDDEN_GAMES_QUERY_KEY,
+    queryFn: async ({ pageParam, signal }) =>
+      dataOrThrow(
+        await apiClient.GET('/moderation/games/hidden', {
+          params: { query: { offset: pageParam } },
+          signal,
+        }),
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: HiddenGamesPage, pages: HiddenGamesPage[]) =>
+      lastPage.has_more
+        ? pages.reduce((count: number, page: HiddenGamesPage) => count + page.games.length, 0)
+        : undefined,
+    retry: retryUnlessClientError,
+  });
+}
+
+export interface ReportDecision {
+  content: ReportedContent;
+  kind: ReportDecisionKind;
+  reason: string;
+}
+
+async function decideReport({ content, kind, reason }: ReportDecision): Promise<void> {
+  const targetId: string = content.target_id;
+  switch (kind) {
+    case 'dismiss':
+      throwIfError(
+        await apiClient.POST('/moderation/reports/dismiss', {
+          body: { target_type: content.target_type, target_id: targetId, reason },
+        }),
+      );
+      return;
+    case 'hide_image':
+      await moderateImage({ imageId: targetId, action: 'hide', reason });
+      return;
+    case 'delete_image':
+      await moderateImage({ imageId: targetId, action: 'delete', reason });
+      return;
+    case 'remove_nickname':
+      throwIfError(
+        await apiClient.POST('/moderation/nicknames/remove', {
+          body: { target_id: targetId, reason },
+        }),
+      );
+      return;
+    case 'hide_game':
+      throwIfError(
+        await apiClient.POST('/moderation/games/{game_id}/hide', {
+          params: { path: { game_id: targetId } },
+          body: { reason },
+        }),
+      );
+      return;
+  }
+}
+
+export function useDecideReport(): UseMutationResult<void, Error, ReportDecision> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: decideReport,
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateReports(queryClient),
+        queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+      ]);
+    },
+  });
+}
+
+export function useUnhideGame(): UseMutationResult<
+  void,
+  Error,
+  { gameId: string; reason: string }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ gameId, reason }: { gameId: string; reason: string }): Promise<void> => {
+      throwIfError(
+        await apiClient.POST('/moderation/games/{game_id}/unhide', {
+          params: { path: { game_id: gameId } },
+          body: { reason },
+        }),
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateReports(queryClient),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
       ]);
     },
@@ -307,5 +456,6 @@ async function invalidateAccount(queryClient: QueryClient): Promise<void> {
     queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
     queryClient.invalidateQueries({ queryKey: ACCOUNT_SEARCH_QUERY_KEY }),
     queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+    invalidateReports(queryClient),
   ]);
 }

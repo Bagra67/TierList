@@ -14,6 +14,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ModerationAccountPage } from './pages/ModerationAccountPage';
 import { ModerationAccountsPage } from './pages/ModerationAccountsPage';
 import { ModerationLogPage } from './pages/ModerationLogPage';
+import { ModerationReportsPage } from './pages/ModerationReportsPage';
 import { RecentUploadsPage } from './pages/RecentUploadsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
@@ -46,8 +47,9 @@ export default function App() {
             <Route element={<ModerationLayout />}>
               <Route
                 path={ROUTES.MODERATION}
-                element={<Navigate to={ROUTES.MODERATION_UPLOADS} replace />}
+                element={<Navigate to={ROUTES.MODERATION_REPORTS} replace />}
               />
+              <Route path={ROUTES.MODERATION_REPORTS} element={<ModerationReportsPage />} />
               <Route path={ROUTES.MODERATION_UPLOADS} element={<RecentUploadsPage />} />
               <Route path={ROUTES.MODERATION_ACCOUNTS} element={<ModerationAccountsPage />} />
               <Route path={ROUTES.MODERATION_ACCOUNT} element={<ModerationAccountPage />} />

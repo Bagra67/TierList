@@ -20,6 +20,11 @@ export function ModerationLayout() {
       <nav aria-label={t('moderation.nav.label')} className="shrink-0 md:w-48">
         <ul className="flex gap-1 md:flex-col">
           <li>
+            <NavLink to={ROUTES.MODERATION_REPORTS} className={linkClassName}>
+              {t('moderation.nav.reports')}
+            </NavLink>
+          </li>
+          <li>
             <NavLink to={ROUTES.MODERATION_UPLOADS} className={linkClassName}>
               {t('moderation.nav.uploads')}
             </NavLink>

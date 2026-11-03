@@ -11,6 +11,7 @@ export const ROUTES = {
   TEMPLATE_EDITOR: '/templates/:templateId',
   HISTORY: '/history',
   MODERATION: '/moderation',
+  MODERATION_REPORTS: '/moderation/reports',
   MODERATION_UPLOADS: '/moderation/uploads',
   MODERATION_ACCOUNTS: '/moderation/accounts',
   MODERATION_ACCOUNT: '/moderation/accounts/:accountId',

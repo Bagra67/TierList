@@ -37,6 +37,7 @@ const maxAccount: Account = {
 };
 
 interface Calls {
+  reportQueries: URLSearchParams[];
   imageQueries: URLSearchParams[];
   logQueries: URLSearchParams[];
   posts: { path: string; body: unknown }[];
@@ -46,13 +47,34 @@ function stubAccount(
   account: Account = maxAccount,
   postAnswer: () => Response = () => new Response(null, { status: 204 }),
 ): Calls {
-  const calls: Calls = { imageQueries: [], logQueries: [], posts: [] };
+  const calls: Calls = { reportQueries: [], imageQueries: [], logQueries: [], posts: [] };
   async function recordPost(request: Request): Promise<Response> {
     calls.posts.push({ path: new URL(request.url).pathname, body: await request.json() });
     return postAnswer();
   }
   stubBackend({
     'GET /moderation/accounts/max-id': () => Response.json(account),
+    'GET /moderation/reports': (request: Request) => {
+      calls.reportQueries.push(new URL(request.url).searchParams);
+      return Response.json({
+        contents: [
+          {
+            target_type: 'nickname',
+            target_id: 'max-id',
+            label: 'Max le spammeur',
+            owner_id: 'max-id',
+            owner_name: 'Max',
+            report_count: 1,
+            reasons: [{ reason: 'spam', count: 1 }],
+            details: [],
+            first_reported_at: '2026-10-20T12:00:00Z',
+            image_url: null,
+            public_token: null,
+          },
+        ],
+        has_more: false,
+      });
+    },
     'GET /moderation/images': (request: Request) => {
       calls.imageQueries.push(new URL(request.url).searchParams);
       return Response.json({ images: [], has_more: false });
@@ -104,6 +126,17 @@ describe('ModerationAccountPage', () => {
     await waitFor(() => expect(calls.logQueries.at(-1)?.get('account_id')).toBe('max-id'));
   });
 
+  it('shows the reports on the content of the account', async () => {
+    const calls: Calls = stubAccount();
+    renderAccountPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Signalements sur ses contenus' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Max le spammeur')).toBeInTheDocument();
+    expect(calls.reportQueries[0].get('owner_id')).toBe('max-id');
+  });
+
   it('hides a template with a reason', async () => {
     const calls: Calls = stubAccount();
     renderAccountPage();
@@ -136,7 +169,7 @@ describe('ModerationAccountPage', () => {
   });
 
   it('shows an active ban, which can be lifted with a reason', async () => {
-    const calls: Calls = { imageQueries: [], logQueries: [], posts: [] };
+    const calls: Calls = { reportQueries: [], imageQueries: [], logQueries: [], posts: [] };
     stubBackend({
       'GET /moderation/accounts/max-id': () =>
         Response.json({
