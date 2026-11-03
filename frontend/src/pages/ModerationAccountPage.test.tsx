@@ -171,6 +171,48 @@ describe('ModerationAccountPage', () => {
     );
   });
 
+  it('lists the past bans of the account', async () => {
+    stubAccount({
+      ...maxAccount,
+      past_bans: [
+        {
+          created_at: '2026-10-10T12:00:00Z',
+          ends_at: '2026-10-20T12:00:00Z',
+          lifted_at: null,
+          reason: 'Spam',
+          actor_name: 'Nina',
+        },
+        {
+          created_at: '2026-09-01T12:00:00Z',
+          ends_at: null,
+          lifted_at: '2026-09-05T12:00:00Z',
+          reason: 'Harcèlement',
+          actor_name: 'Omar',
+        },
+      ],
+    });
+    renderAccountPage();
+
+    const heading: HTMLElement = await screen.findByRole('heading', {
+      name: 'Bannissements passés',
+    });
+    const items: HTMLElement[] = within(heading.parentElement as HTMLElement).getAllByRole(
+      'listitem',
+    );
+    expect(items[0]).toHaveTextContent(/Banni le 10 oct\. 2026, jusqu.au 20 oct\. 2026/);
+    expect(items[0]).toHaveTextContent('Motif : Spam');
+    expect(items[1]).toHaveTextContent(/levé ou remplacé le 5 sept\. 2026/);
+    expect(items[1]).toHaveTextContent('Par Omar');
+  });
+
+  it('shows no past bans section for an account never banned', async () => {
+    stubAccount();
+    renderAccountPage();
+
+    await screen.findByRole('heading', { name: 'Bannissement' });
+    expect(screen.queryByRole('heading', { name: 'Bannissements passés' })).toBeNull();
+  });
+
   it('offers to ban a user but never a super admin', async () => {
     stubAccount({ ...maxAccount, role: 'super_admin' });
     renderAccountPage();

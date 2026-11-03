@@ -445,6 +445,12 @@ export const fr = {
       activeUntil: "Banni jusqu'au {{date, datetime(dateStyle: long; timeStyle: short)}}",
       activeReason: 'Motif : {{reason}}',
       activeBy: 'Par {{name}}, le {{date, datetime(dateStyle: medium)}}',
+      pastTitle: 'Bannissements passés',
+      pastLifted:
+        'Banni le {{start, datetime(dateStyle: medium)}}, levé ou remplacé le {{end, datetime(dateStyle: medium)}}',
+      pastEnded:
+        "Banni le {{start, datetime(dateStyle: medium)}}, jusqu'au {{end, datetime(dateStyle: medium)}}",
+      pastBy: 'Par {{name}}',
       title: 'Bannir {{name}}',
       hint: 'Le compte est déconnecté partout et ne peut plus se connecter avant la fin du bannissement.',
       duration: 'Durée',

@@ -435,6 +435,12 @@ export const en: Translation = {
       activeUntil: 'Banned until {{date, datetime(dateStyle: long; timeStyle: short)}}',
       activeReason: 'Reason: {{reason}}',
       activeBy: 'By {{name}}, on {{date, datetime(dateStyle: medium)}}',
+      pastTitle: 'Past bans',
+      pastLifted:
+        'Banned on {{start, datetime(dateStyle: medium)}}, lifted or replaced on {{end, datetime(dateStyle: medium)}}',
+      pastEnded:
+        'Banned on {{start, datetime(dateStyle: medium)}}, until {{end, datetime(dateStyle: medium)}}',
+      pastBy: 'By {{name}}',
       title: 'Ban {{name}}',
       hint: 'The account is signed out everywhere and cannot sign in before the end of the ban.',
       duration: 'Duration',
