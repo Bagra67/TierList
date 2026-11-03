@@ -52,7 +52,7 @@ The texts already in the interface come from its translations; the new ones, val
 
 - **Stories**: US-1.1, US-1.3.
 - The moderation area is only for super admins: a "Moderation" link with the number of open reports in the header, a menu on the left.
-- Open reports **grouped by content**, the most reported first; dismiss, hide, delete, or open the account to sanction it. Every decision goes to the log.
+- Open reports **grouped by content**, the most reported first. Every content can be dismissed; an image can be hidden or deleted, a nickname removed, a game hidden; the account of its owner can be opened to sanction it. Every decision goes to the log. The mock-up shows all the actions on every line, and a template: it comes with its public page.
 
 ## 6. Moderation: an account
 

@@ -79,7 +79,7 @@ Le schéma vu par l'application ne pilote rien de sensible : les cookies sont `S
 
 Il n'y a pas de cron dans les pods. Le lifespan lance un petit planificateur à côté du balayage des salles inactives (`nightly_scheduler.py`, même style : une tâche asyncio, sans bibliothèque de planification pour une exécution par jour) :
 
-- chaque nuit à `MAINTENANCE_HOUR_UTC` (UTC), il purge les templates supprimés, puis les images inutilisées, puis les entrées du journal de modération plus anciennes que `MODERATION_LOG_RETENTION_DAYS` ([guide de la modération](moderation.fr.md#24-purge)) (`maintenance.py`, appelé aussi par `scripts/purge_*.py` en ligne de commande) ;
+- chaque nuit à `MAINTENANCE_HOUR_UTC` (UTC), il purge les templates supprimés, puis les images inutilisées, puis les entrées du journal de modération plus anciennes que `MODERATION_LOG_RETENTION_DAYS` ([guide de la modération](moderation.fr.md#24-purge)), puis les signalements fermés depuis plus de `CLOSED_REPORT_RETENTION_DAYS` (`maintenance.py`, appelé aussi par `scripts/purge_*.py` en ligne de commande) ;
 - chaque tâche journalise son résultat ; une exception est journalisée sans arrêter les tâches suivantes, les nuits suivantes ni l'application ;
 - les purges ne suppriment que ce qui a expiré : les lancer deux fois ne pose aucun problème ;
 - `MAINTENANCE_ENABLED=false` le désactive.

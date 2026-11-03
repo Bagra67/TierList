@@ -12,7 +12,7 @@ Every decision of a super admin (dismiss a report, hide, unhide or delete a cont
 - Nobody can edit or delete an entry: there is no route for it. Only the nightly purge deletes the entries older than **3 years** (the retention announced by the [privacy policy](legal-pages.md)).
 - An entry stays readable after the target or the super admin's account is deleted: it keeps a copy of their names.
 
-The actions that write to the log are those on images (#124) and on templates (#268): hide, unhide or delete an image or a template (§2.2), and those on accounts (#127): ban or lift a ban (§2.9). The other targets come with their issues. A template hidden by the moderation no longer opens a room nor starts a game, while its owner still edits it and sees the reason ([templates guide](templates.md#27-moderation)). The template actions are called from the account page (§2.8); the reports queue (#269) will call them too.
+The actions that write to the log are those on images (#124) and on templates (#268): hide, unhide or delete an image or a template (§2.2), and those on accounts (#127): ban or lift a ban (§2.9), and the reports queue: dismiss, remove a nickname, hide or unhide a game (§2.11). Templates become reportable with their issue. A template hidden by the moderation no longer opens a room nor starts a game, while its owner still edits it and sees the reason ([templates guide](templates.md#27-moderation)). The template actions are called from the account page (§2.8); the reports queue (#269) will call them too.
 
 Super admins also review the **recent uploads** (US-1.7, #125), the first page of the moderation area (`/moderation/uploads`): the latest images, newest first, with their author, date and use (templates, games), filtered by author, upload days and status (§2.6). Each image can be hidden, unhidden or deleted from there, with a reason. A hidden image stays visible to super admins only, through a temporary link. The [privacy policy](legal-pages.md) says that super admins see the uploaded images with their author's name.
 
@@ -132,6 +132,7 @@ The page, `RecentUploadsPage` (`/moderation/uploads`):
 | ------------------------------- | --------------------------------------------------------- | ------- |
 | `MODERATION_LOG_RETENTION_DAYS` | Days an entry of the moderation log is kept               | `1095`  |
 | `REPORTS_PER_HOUR_MAX`          | Reports per account or browser over the last hour (§2.10) | `20`    |
+| `CLOSED_REPORT_RETENTION_DAYS`  | Days a closed report is kept (§2.11)                      | `365`   |
 
 Changing it means changing the privacy policy too ([legal pages](legal-pages.md)).
 
@@ -209,7 +210,7 @@ The frontend:
 
 ### 2.10 Content reports
 
-Anyone can report a tile image, a nickname or a closed game (US-1.2): `POST /reports`, without authentication. The queue that handles them is #269: until then, reports are only stored. A public template becomes reportable with its page (#275).
+Anyone can report a tile image, a nickname or a closed game (US-1.2): `POST /reports`, without authentication. The queue that handles them is §2.11. A public template becomes reportable with its page (#275).
 
 **The button.** `ReportButton` opens the dialog of the [mock-up](../product/milestone-2/screens.md#4-report), for everyone. It is on the results page (the game, the image of the chosen item, the chosen player) and in the room (the nickname of a participant, except one's own, and the image of the current item). In the results it stays on one's own nickname, since they do not say which player is the reader. An item without a visible image has no button.
 
@@ -233,7 +234,34 @@ So the same image is one target from one game to another, and the nickname of an
 - The reason `other` needs details: 422 `report_details_required`.
 - No route says who reported, and the logs do not either.
 
-**Retention.** The privacy policy promises "as long as needed to handle them, then one year at most": the purge comes with the closure of a report, in #269. `reporter_id` and `owner_id` are `SET NULL`: a report outlives the accounts.
+**Retention.** The privacy policy promises "as long as needed to handle them, then one year at most": the nightly purge deletes the reports closed for longer than `CLOSED_REPORT_RETENTION_DAYS` (§2.11). `reporter_id` and `owner_id` are `SET NULL`: a report outlives the accounts.
+
+### 2.11 Reports queue
+
+The super admins handle the reports on `/moderation/reports` (US-1.3, #269), first page of the moderation area. The main menu shows the number of reported contents. The same list, filtered on `owner_id`, is on the page of an account (US-1.8).
+
+**Reading.** `GET /moderation/reports` groups the open reports by content, the most reported first, then the oldest. An entry has the type, the label, the owner, the number, the reasons, the details, the image address and the results link, **never the author**. `GET /moderation/reports/count` counts contents, not reports.
+
+**Deciding.** Each decision has a reason, goes to the log and closes all the open reports of the content (`closed_at`, `closed_by_action_id`):
+
+| Content  | Decision       | Route                                          | Effect                                       | Status      |
+| -------- | -------------- | ---------------------------------------------- | -------------------------------------------- | ----------- |
+| Any      | Dismiss        | `POST /moderation/reports/dismiss`             | Nothing changes                              | `dismissed` |
+| Image    | Hide or delete | `POST /moderation/images/{id}/hide`, `/delete` | §2.2                                         | `actioned`  |
+| Nickname | Remove         | `POST /moderation/nicknames/remove`            | A neutral code replaces it, for good         | `actioned`  |
+| Game     | Hide           | `POST /moderation/games/{id}/hide`             | Its results link answers `results_not_found` | `actioned`  |
+
+- **Banning closes nothing**: the content stays online after a ban, so its reports stay in the queue until it is removed or dismissed.
+- **An image removed elsewhere** (recent uploads, account page) closes its reports too: `ImageModerationService` does it. Unhiding opens nothing again.
+- **A new report** after a closure opens the content again.
+
+**Removing a nickname.** The new name is `#` and 8 random characters, without a language. For an account: `users.display_name` and its `game_players`; the person can then choose another name. For a guest: their `participants.nickname` and the `game_players` of the same room with this nickname, since a nickname is unique in a room and nothing else links them. The reports on these rows close together. The old nickname stays in the log and in `target_label`. Connected clients see the change at their next read of the room: no realtime event is sent.
+
+**Hiding a game.** `games.hidden_at`: `get_closed_game_by_token` leaves it out, and it can no longer be reported. It stays listed in the history and the lobby, where its link says that the results cannot be found. `GET /moderation/games/hidden` lists the hidden games on the reports page, and `POST /moderation/games/{id}/unhide` shows one again. It reopens no report.
+
+**Purge.** `purge_closed_reports`, every night, deletes the reports closed for longer than `CLOSED_REPORT_RETENTION_DAYS`, never an open one.
+
+A template is not in the queue yet: its reports come with its public page (#275).
 
 ## 3. In the code
 
@@ -250,6 +278,7 @@ So the same image is one target from one game to another, and the nickname of an
 | Service      | `backend/app/services/account_review.py`                                                                                                                                                                                                                                                                                                                                                                                                           | `AccountReviewService`: `search`, `details`, `hide_all_images` (§2.8).                                                                                                                                                                                                                                                                                                                                                                   |
 | Service      | `backend/app/services/account_bans.py`                                                                                                                                                                                                                                                                                                                                                                                                             | `AccountBanService`: `ban`, `lift`, `active_ban`, `banned_user_ids` (§2.9).                                                                                                                                                                                                                                                                                                                                                              |
 | Service      | `backend/app/services/reports.py`                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Service      | `backend/app/services/report_queue.py`                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Repositories | `repositories/moderation_actions.py`, `repositories/users.py`, `repositories/images.py`, `repositories/templates.py`, `repositories/account_bans.py`                                                                                                                                                                                                                                                                                               | Queries: add, list with filters, delete before a date; the super admins by name; the recent images, their templates and games; a template of any owner, locked (`get_template_for_update`); the accounts searched by name or email (`search_users`), an account locked (`get_user_for_update`), the visible images of an account (`list_visible_image_ids_of_owner`); the active ban (`is_active`, `get_active_ban`, `banned_user_ids`). |
 | Repositories | `repositories/reports.py`                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Model        | `backend/app/models/moderation_action.py`                                                                                                                                                                                                                                                                                                                                                                                                          | `ModerationAction` (`moderation_actions`); enums in `models/enums.py`.                                                                                                                                                                                                                                                                                                                                                                   |
