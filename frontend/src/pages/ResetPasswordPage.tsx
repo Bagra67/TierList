@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 
 import { useResetPassword } from '../api/auth';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
@@ -27,7 +27,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthPageShell title={t('auth.resetPassword.title')}>
+    <CenteredCardPage title={t('auth.resetPassword.title')}>
       {token === null ? (
         <ErrorMessage>{t('auth.resetPassword.missingToken')}</ErrorMessage>
       ) : resetMutation.isSuccess ? (
@@ -58,6 +58,6 @@ export function ResetPasswordPage() {
           </Button>
         </form>
       )}
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

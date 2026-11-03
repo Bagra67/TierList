@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useForgotPassword } from '../api/auth';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
@@ -22,7 +22,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthPageShell
+    <CenteredCardPage
       title={t('auth.forgotPassword.title')}
       footer={
         <Link to={ROUTES.LOGIN} className={textLinkClassName}>
@@ -53,6 +53,6 @@ export function ForgotPasswordPage() {
           </Button>
         </form>
       )}
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

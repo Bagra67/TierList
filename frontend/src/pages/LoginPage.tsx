@@ -10,7 +10,7 @@ import { HTTP_STATUS } from '../constants/http';
 import { LOGIN_ERROR_PARAM, ROUTES } from '../constants/routes';
 import { ApiError, getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 import { translateGoogleError } from '../errors/googleError';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TermsAcceptance } from '../components/TermsAcceptance';
@@ -54,7 +54,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthPageShell
+    <CenteredCardPage
       title={t('auth.login.title')}
       footer={
         <p>
@@ -97,6 +97,6 @@ export function LoginPage() {
       </Link>
       <GoogleSignInLink />
       <TermsAcceptance i18nKey="auth.acceptTerms.google" />
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }
