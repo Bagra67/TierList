@@ -14,6 +14,7 @@ from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
+from app.services.account_bans import AccountBanService
 from app.services.account_review import AccountReviewService
 from app.services.auth import AuthenticatedSession, AuthService
 from app.services.email import EmailSender
@@ -159,6 +160,14 @@ def get_image_moderation_service(
     return ImageModerationService(session, storage, moderation_log)
 
 
+def get_account_ban_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+) -> AccountBanService:
+    # Même session par requête : le bannissement et son entrée du journal partagent la transaction
+    return AccountBanService(session, moderation_log)
+
+
 def get_account_review_service(
     session: Annotated[Session, Depends(get_db_session)],
     templates: Annotated[TemplateService, Depends(get_template_service)],
@@ -261,6 +270,7 @@ ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
 TemplateModerationServiceDep = Annotated[
     TemplateModerationService, Depends(get_template_moderation_service)
 ]
+AccountBanServiceDep = Annotated[AccountBanService, Depends(get_account_ban_service)]
 AccountReviewServiceDep = Annotated[AccountReviewService, Depends(get_account_review_service)]
 RecentUploadsServiceDep = Annotated[RecentUploadsService, Depends(get_recent_uploads_service)]
 ImageModerationServiceDep = Annotated[ImageModerationService, Depends(get_image_moderation_service)]

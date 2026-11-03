@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import AwareDatetime, BaseModel, ConfigDict, StringConstraints
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
@@ -90,13 +90,13 @@ class RecentUploadsResponse(BaseModel):
 class AccountSummaryResponse(BaseModel):
     """Un compte dans la recherche des super admins (US-1.8)."""
 
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     display_name: str
     email: str
     created_at: datetime
     role: UserRole
+    # Banni en ce moment
+    banned: bool
 
 
 class AccountSearchResponse(BaseModel):
@@ -105,6 +105,19 @@ class AccountSearchResponse(BaseModel):
     accounts: list[AccountSummaryResponse]
     # Il reste des comptes après cette page : la suivante commence à offset + limit
     has_more: bool
+
+
+class AccountBanResponse(BaseModel):
+    """Le bannissement actif d'un compte."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    created_at: datetime
+    # Fin d'un bannissement temporaire ; None pour un bannissement définitif
+    ends_at: datetime | None
+    # Montré à la personne quand elle tente de se connecter
+    reason: str
+    actor_name: str
 
 
 class AccountResponse(BaseModel):
@@ -119,6 +132,8 @@ class AccountResponse(BaseModel):
     email_verified: bool
     # Un super admin ne peut pas être sanctionné
     role: UserRole
+    # Le bannissement actif, None si le compte n'est pas banni
+    ban: AccountBanResponse | None
     # Ses templates actifs, avec leur état de modération
     templates: list[TemplateSummaryResponse]
 
@@ -127,3 +142,13 @@ class HiddenImagesResponse(BaseModel):
     """Résultat de « masquer toutes ses images »."""
 
     hidden_count: int
+
+
+class BanAccountRequest(BaseModel):
+    """Bannir un compte (US-1.8) : jusqu'à ends_at, ou définitivement sans date."""
+
+    # Montré à la personne quand elle tente de se connecter
+    reason: ModerationReason
+    # Fin du bannissement, dans le futur et avec fuseau horaire ; absente pour un bannissement
+    # définitif
+    ends_at: AwareDatetime | None = None

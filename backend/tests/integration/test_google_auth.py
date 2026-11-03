@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
@@ -9,11 +10,13 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_google_oauth_client
 from app.constants import messages
+from app.constants.auth import GOOGLE_BAN_NOTICE_COOKIE
 from app.constants.error_codes import ErrorCode
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.exceptions.google import GoogleAuthError
 from app.main import api_app
+from app.models.account_ban import AccountBan
 from app.models.oauth_account import OAuthAccount
 from app.models.user import User
 from app.repositories import oauth_accounts as oauth_account_repository
@@ -265,6 +268,94 @@ def test_unverified_google_email_is_refused(
     assert response.headers["location"] == "/login?error=google_email_not_verified"
     assert "refresh_token" not in google_client.cookies
     assert db_session.scalars(select(OAuthAccount)).all() == []
+
+
+def ban_alice(db_session: Session, ends_at: datetime | None = None) -> AccountBan:
+    user: User = db_session.scalars(select(User).where(User.email == "alice@gmail.com")).one()
+    ban: AccountBan = AccountBan(user_id=user.id, actor_name="Nina", reason="Spam", ends_at=ends_at)
+    db_session.add(ban)
+    db_session.flush()
+    return ban
+
+
+def test_a_banned_account_is_refused_without_its_reason_in_the_address(
+    google_client: TestClient, db_session: Session
+):
+    sign_in_with_google(google_client)
+    ban_alice(db_session)
+    google_client.cookies.clear()
+
+    response = sign_in_with_google(google_client)
+
+    # Le motif ne passe pas dans une URL : la page de connexion le demande avec le cookie
+    assert response.headers["location"] == "/login?error=google_account_banned"
+    assert "refresh_token" not in google_client.cookies
+    assert GOOGLE_BAN_NOTICE_COOKIE in google_client.cookies
+
+
+def test_the_ban_notice_gives_the_reason_of_a_permanent_ban(
+    google_client: TestClient, db_session: Session
+):
+    sign_in_with_google(google_client)
+    ban_alice(db_session)
+    google_client.cookies.clear()
+    sign_in_with_google(google_client)
+
+    response = google_client.get("/auth/google/ban-notice")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.ACCOUNT_BANNED
+    assert response.json()["params"] == {"reason": "Spam"}
+
+
+def test_the_ban_notice_gives_the_reason_and_the_end_of_a_temporary_ban(
+    google_client: TestClient, db_session: Session
+):
+    sign_in_with_google(google_client)
+    ends_at: datetime = datetime.now(UTC) + timedelta(days=7)
+    ban_alice(db_session, ends_at)
+    google_client.cookies.clear()
+    sign_in_with_google(google_client)
+
+    response = google_client.get("/auth/google/ban-notice")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.ACCOUNT_BANNED_UNTIL
+    assert response.json()["params"]["reason"] == "Spam"
+    assert datetime.fromisoformat(response.json()["params"]["ends_at"]) == ends_at
+
+
+def test_the_ban_notice_says_nothing_once_the_ban_is_lifted(
+    google_client: TestClient, db_session: Session
+):
+    sign_in_with_google(google_client)
+    ban: AccountBan = ban_alice(db_session)
+    google_client.cookies.clear()
+    sign_in_with_google(google_client)
+    ban.lifted_at = datetime.now(UTC)
+    db_session.flush()
+
+    assert google_client.get("/auth/google/ban-notice").status_code == 204
+
+
+def test_the_ban_notice_says_nothing_without_a_cookie(google_client: TestClient):
+    assert google_client.get("/auth/google/ban-notice").status_code == 204
+
+
+def test_the_ban_notice_refuses_a_forged_cookie_or_a_token_of_another_type(
+    google_client: TestClient,
+):
+    access_token: str = create_access_token(
+        user_id=uuid.uuid4(),
+        auth_time=datetime.now(UTC),
+        token_version=0,
+        secret_key=get_settings().jwt_secret_key.get_secret_value(),
+        ttl=timedelta(minutes=5),
+    )
+
+    for cookie in ("forged", access_token):
+        google_client.cookies.set(GOOGLE_BAN_NOTICE_COOKIE, cookie, path="/api/auth/google")
+        assert google_client.get("/auth/google/ban-notice").status_code == 204
 
 
 def test_callback_with_another_state_is_refused(google_client: TestClient):

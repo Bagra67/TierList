@@ -23,6 +23,16 @@ class ErrorCode(StrEnum):
     SUPER_ADMIN_REQUIRED = "super_admin_required"
     # Compte inconnu ou supprimé, sur une page de modération
     ACCOUNT_NOT_FOUND = "account_not_found"
+    # Connexion refusée : compte banni définitivement, avec le param reason
+    ACCOUNT_BANNED = "account_banned"
+    # Connexion refusée : compte banni temporairement, avec les params reason et ends_at
+    ACCOUNT_BANNED_UNTIL = "account_banned_until"
+    # Un super admin ne peut pas être banni
+    CANNOT_BAN_SUPER_ADMIN = "cannot_ban_super_admin"
+    # Lever un bannissement demande un bannissement actif
+    ACCOUNT_NOT_BANNED = "account_not_banned"
+    # La fin d'un bannissement temporaire doit être dans le futur
+    BAN_END_IN_PAST = "ban_end_in_past"
     EMAIL_ALREADY_REGISTERED = "email_already_registered"
     INVALID_CREDENTIALS = "invalid_credentials"
     SESSION_EXPIRED = "session_expired"

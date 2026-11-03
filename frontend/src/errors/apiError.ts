@@ -52,10 +52,24 @@ export function getFieldErrors(error: unknown): Record<string, FieldError> {
   );
 }
 
+// Un param dont le nom finit par « _at » est une date ISO (ex. ends_at d'un bannissement) : le
+// formateur datetime d'i18next demande un objet Date
+function withDates(params: ErrorParams): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(params).map(([name, value]) => [
+      name,
+      name.endsWith('_at') && typeof value === 'string' ? new Date(value) : value,
+    ]),
+  );
+}
+
 // Les params viennent du backend : connus seulement à l'exécution, ils ne peuvent pas être
 // vérifiés au typage contre les variables du texte. L'appelant vérifie la clé au préalable.
 function translateWithParams(t: TFunction, key: string, params: ErrorParams | null | undefined) {
-  return (t as (key: string, params: ErrorParams) => string)(key, params ?? {});
+  return (t as (key: string, params: Record<string, unknown>) => string)(
+    key,
+    withDates(params ?? {}),
+  );
 }
 
 // Message à afficher pour une erreur de requête, dans la langue de l'interface

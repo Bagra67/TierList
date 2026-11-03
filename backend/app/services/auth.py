@@ -29,6 +29,7 @@ from app.core.security import (
     create_email_verification_token,
     create_password_reset_token,
     decode_access_token,
+    decode_ban_notice_token,
     decode_email_verification_token,
     decode_password_reset_token,
     email_fingerprint,
@@ -41,6 +42,7 @@ from app.core.security import (
 )
 from app.emails.templates import password_reset_email, verification_email
 from app.exceptions.auth import (
+    AccountBannedError,
     EmailAlreadyRegisteredError,
     GoogleEmailNotVerifiedError,
     IncorrectPasswordError,
@@ -49,9 +51,11 @@ from app.exceptions.auth import (
     InvalidRefreshTokenError,
     ReauthenticationRequiredError,
 )
+from app.models.account_ban import AccountBan
 from app.models.oauth_account import OAuthAccount
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
+from app.repositories import account_bans as account_ban_repository
 from app.repositories import oauth_accounts as oauth_account_repository
 from app.repositories import refresh_tokens as refresh_token_repository
 from app.repositories import users as user_repository
@@ -138,6 +142,8 @@ class AuthService:
         if not verify_password(password, user.password_hash):
             logger.info("Échec de connexion : identifiants invalides")
             raise InvalidCredentialsError
+        # Après le mot de passe : sans lui, la réponse dirait qu'un compte existe et est banni
+        self._check_not_banned(user.id)
 
         tokens = self._start_session(user, authenticated_at=datetime.now(UTC))
         self._session.commit()
@@ -170,10 +176,29 @@ class AuthService:
             if not identity.email_verified:
                 raise GoogleEmailNotVerifiedError
             user = self._link_google_identity(identity, now)
+        self._check_not_banned(user.id)
 
         tokens = self._start_session(user, authenticated_at=now)
         self._session.commit()
         return tokens
+
+    def check_ban_notice(self, token: str) -> None:
+        """Lève AccountBannedError si le compte désigné par ce cookie est encore banni, pour montrer
+        le motif après un refus de Google, ou InvalidBanNoticeError si le cookie ne vaut rien."""
+        user_id: uuid.UUID = decode_ban_notice_token(
+            token, secret_key=self._settings.jwt_secret_key.get_secret_value()
+        )
+        self._check_not_banned(user_id)
+
+    def _check_not_banned(self, user_id: uuid.UUID) -> None:
+        """Refuse la connexion d'un compte banni (US-1.8), avec le motif et la fin du
+        bannissement. Un bannissement temporaire passé ne compte plus."""
+        ban: AccountBan | None = account_ban_repository.get_active_ban(
+            self._session, user_id, datetime.now(UTC)
+        )
+        if ban is not None:
+            logger.info("Connexion refusée : compte banni, user_id=%s", user_id)
+            raise AccountBannedError(user_id, ban.reason, ban.ends_at)
 
     def _link_google_identity(self, identity: GoogleIdentity, now: datetime) -> User:
         email = normalize_email(identity.email)
@@ -243,6 +268,16 @@ class AuthService:
         stored.revoked_at = now
         user = user_repository.get_user_by_id(self._session, stored.user_id)
         if user is None:
+            raise InvalidRefreshTokenError
+        # Un bannissement révoque les sessions, mais pas le token qu'une connexion ou un
+        # rafraîchissement en cours n'a pas encore validé : sans ce contrôle, il prolongerait la
+        # session du compte banni à chaque rotation.
+        if account_ban_repository.get_active_ban(self._session, user.id, now) is not None:
+            refresh_token_repository.revoke_refresh_token_family(
+                self._session, stored.family_id, revoked_at=now
+            )
+            self._session.commit()
+            logger.info("Rafraîchissement refusé : compte banni, user_id=%s", user.id)
             raise InvalidRefreshTokenError
         tokens = self._issue_tokens(
             user, family_id=stored.family_id, authenticated_at=stored.authenticated_at

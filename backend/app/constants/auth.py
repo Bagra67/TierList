@@ -4,6 +4,8 @@ from typing import Literal
 REFRESH_TOKEN_COOKIE = "refresh_token"
 # Tentative de connexion Google en cours (state, nonce, vérificateur PKCE)
 GOOGLE_LOGIN_COOKIE = "google_login"
+# Après un refus de Google pour bannissement : désigne le compte dont montrer le motif
+GOOGLE_BAN_NOTICE_COOKIE = "google_ban_notice"
 # Sous-chemin du cookie google_login, sous AUTH_COOKIE_PATH
 GOOGLE_COOKIE_SUBPATH = "/google"
 
@@ -12,6 +14,7 @@ GOOGLE_COOKIE_SUBPATH = "/google"
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_TYPE = "access"
 GOOGLE_LOGIN_TOKEN_TYPE = "google_login"
+GOOGLE_BAN_NOTICE_TOKEN_TYPE = "google_ban_notice"
 # Lien de vérification de l'adresse email (envoyé par email)
 EMAIL_VERIFICATION_TOKEN_TYPE = "email_verification"
 # Lien de réinitialisation du mot de passe (envoyé par email)
@@ -69,5 +72,8 @@ GOOGLE_ERROR_CANCELLED = "google_cancelled"
 GOOGLE_ERROR_EMAIL_NOT_VERIFIED = "google_email_not_verified"
 GOOGLE_ERROR_UNAVAILABLE = "google_unavailable"
 GOOGLE_ERROR_FAILED = "google_failed"
+# Compte banni : le motif et la date ne passent pas dans une URL, ils se lisent avec le cookie
+# GOOGLE_BAN_NOTICE_COOKIE
+GOOGLE_ERROR_ACCOUNT_BANNED = "google_account_banned"
 # Erreur OAuth renvoyée par Google quand l'utilisateur refuse ou ferme sa page
 GOOGLE_ACCESS_DENIED = "access_denied"
