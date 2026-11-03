@@ -5,6 +5,8 @@ import { readableTextColor } from '../theme/contrast';
 export const ITEM_CHIP_CLASS: string =
   'flex min-h-14 items-center rounded-md border bg-card p-1 sm:min-h-16';
 
+export const ITEM_CHIP_IMAGE_SIZE_CLASS: string = 'size-11 sm:size-13';
+
 export const EMPHASIZED_BORDER_CLASS: string = 'border-2 border-primary';
 
 export const CURRENT_CARD_CLASS: string =

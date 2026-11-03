@@ -22,7 +22,7 @@ import { translateError } from '../errors/apiError';
 import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import {
-  COOLDOWN_KEYBOARD_CODES,
+  ENTER_CHOOSES_TILE_KEYBOARD_CODES,
   tileFocusKey,
   useBoardSensors,
   useFocusAfterUpdate,
@@ -48,7 +48,7 @@ interface CooldownBoardProps {
 export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
-  const sensors = useBoardSensors(COOLDOWN_KEYBOARD_CODES);
+  const sensors = useBoardSensors(ENTER_CHOOSES_TILE_KEYBOARD_CODES);
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const pending: boolean = placeMutation.isPending;
@@ -94,7 +94,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
 
   async function placeAt(itemId: string, tierId: string, position: number): Promise<boolean> {
     if (pending) return false;
-    focus.request([tileFocusKey(itemId)]);
+    focus.focusFirstEnabledAfterUpdate([tileFocusKey(itemId)]);
     try {
       await placeMutation.mutateAsync({ tileId: itemId, tierId, position });
       return true;
@@ -167,7 +167,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   function previewOf(id: string): DragPreviewContent | undefined {
     const item: GameItem | undefined = itemById(id);
     if (item === undefined) return undefined;
-    return { item, label: itemLabel(id), className: ITEM_CHIP_CLASS, size: 'small' };
+    return { item, label: itemLabel(id), sourceShapeClassName: ITEM_CHIP_CLASS, size: 'small' };
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
@@ -330,10 +330,12 @@ function CooldownTile({ item, label, tierId, chosen, pending, onChoose }: Cooldo
     id: `${tierId}:${item.id}`,
     data: target,
   });
-  // La tuile glissée survole sa propre place : rien n'y tomberait
-  const highlighted: boolean = isOver && active?.id !== item.id;
+  const hoveredByAnotherTile: boolean = isOver && active?.id !== item.id;
   return (
-    <li ref={setNodeRef} className={cn('rounded-md', highlighted && 'ring-2 ring-primary')}>
+    <li
+      ref={setNodeRef}
+      className={cn('rounded-md', hoveredByAnotherTile && 'ring-2 ring-primary')}
+    >
       <ChoosableTile
         item={item}
         label={label}

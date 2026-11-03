@@ -1,5 +1,6 @@
 import type { GameItem } from '../api/rooms';
 import { cn } from 'cn';
+import { ITEM_CHIP_IMAGE_SIZE_CLASS } from './boardStyles';
 import { RemovedImage } from './RemovedImage';
 
 interface GameItemViewProps {
@@ -9,19 +10,17 @@ interface GameItemViewProps {
 }
 
 export function GameItemView({ item, imageLabel, size }: GameItemViewProps) {
-  // Petite taille : la puce (bordure et marge comprises) garde la hauteur d'une puce de texte
-  const imageSizeClass: string = size === 'large' ? 'size-32' : 'size-11 sm:size-13';
+  const imageSizeClass: string = size === 'large' ? 'size-32' : ITEM_CHIP_IMAGE_SIZE_CLASS;
+  const altAvoidingDoubleReading: string = item.text === null ? imageLabel : '';
   return (
     <span className={cn('flex items-center gap-2', size === 'large' && 'flex-col items-start')}>
       {item.image_removed && (
         <RemovedImage className={cn('rounded-sm', imageSizeClass)} showLabel={size === 'large'} />
       )}
       {item.image_url !== null && (
-        // Avec un texte, il est affiché à côté : l'image est illustrative (alt vide), sinon le
-        // lecteur d'écran le lirait deux fois
         <img
           src={item.image_url}
-          alt={item.text === null ? imageLabel : ''}
+          alt={altAvoidingDoubleReading}
           className={cn('rounded-sm object-cover', imageSizeClass)}
         />
       )}

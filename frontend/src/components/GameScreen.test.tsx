@@ -11,6 +11,8 @@ const game: CurrentGame = aliceRoomInGame.game as CurrentGame;
 const [tierS, tierA]: CurrentGame['tiers'] = game.tiers;
 const bobId: string = aliceRoomInGame.participants[1].id;
 
+const SHAKING_BLOCK_SELECTOR: string = '[class~="motion-safe:animate-shake"]';
+
 function inGame(changes: Partial<CurrentGame>, roomChanges: Partial<Room> = {}): Room {
   return { ...aliceRoomInGame, ...roomChanges, game: { ...game, ...changes } };
 }
@@ -294,7 +296,7 @@ describe('GameScreen', () => {
     const { container } = renderRoomPage();
 
     expect(await screen.findByRole('timer')).toHaveClass('bg-primary');
-    expect(container.querySelector('[class~="motion-safe:animate-shake"]')).toBeNull();
+    expect(container.querySelector(SHAKING_BLOCK_SELECTOR)).toBeNull();
   });
 
   describe('during the final cooldown', () => {
@@ -336,14 +338,15 @@ describe('GameScreen', () => {
 
     it('shakes harder each second in the last seconds, with a pink timer', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      // 4,5 s restantes : la cinquième seconde avant la fin
-      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, 4_500)) });
+      const inFifthLastSecondMs: number = 4_500;
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, inFifthLastSecondMs)),
+      });
       renderRoomPage();
 
       const { stage, timer } = await findCooldownStage();
       expect(stage).toHaveClass('motion-safe:animate-shake');
-      // Le sélecteur du test des manches trouve bien un bloc qui tremble
-      expect(document.querySelector('[class~="motion-safe:animate-shake"]')).toBe(stage);
+      expect(document.querySelector(SHAKING_BLOCK_SELECTOR)).toBe(stage);
       expect(stage.style.getPropertyValue('--shake-px')).toBe('0.5px');
       expect(timer).toHaveClass('text-primary');
 
@@ -426,7 +429,7 @@ describe('GameScreen', () => {
       expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
     });
 
-    it('keeps the choice when the move fails', async () => {
+    it('keeps the choice and its buttons when the move fails, so that the focus stays and a retry is possible', async () => {
       stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
         [paprikaPut]: () => errorResponse(409, 'cooldown_not_in_progress'),
@@ -439,7 +442,6 @@ describe('GameScreen', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         'Les retouches finales ne sont pas en cours.',
       );
-      // Le choix et les boutons restent : le focus ne se perd pas, on peut réessayer
       expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }),
@@ -492,11 +494,10 @@ describe('GameScreen', () => {
     });
 
     it('lets the room admin end the cooldown after confirming', async () => {
+      const roomAfterGameEnd: Room = { ...aliceRoom, version: aliceRoomInGame.version + 1 };
       const fetchMock = stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
-        // La partie close incrémente la version de la salle
-        'POST /rooms/K7P2QX/game/end': () =>
-          Response.json({ ...aliceRoom, version: aliceRoomInGame.version + 1 }),
+        'POST /rooms/K7P2QX/game/end': () => Response.json(roomAfterGameEnd),
       });
       renderRoomPage();
 

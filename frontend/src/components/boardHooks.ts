@@ -11,11 +11,9 @@ import {
 } from '@dnd-kit/core';
 import { type RefObject, useEffect, useRef } from 'react';
 
-// Distance (px) avant qu'un appui de souris devienne un glisser : un simple clic ne pose rien
-const MOUSE_DRAG_DISTANCE = 8;
-// Au doigt, un appui long saisit la tuile ; un balayage fait défiler la page
-const TOUCH_DRAG_DELAY_MS = 200;
-const TOUCH_DRAG_TOLERANCE = 5;
+const MOUSE_DRAG_ACTIVATION_DISTANCE_PX = 8;
+const TOUCH_LONG_PRESS_DELAY_MS = 200;
+const TOUCH_LONG_PRESS_TOLERANCE_PX = 5;
 
 const DEFAULT_KEYBOARD_CODES: KeyboardCodes = {
   start: [KeyboardCode.Space, KeyboardCode.Enter],
@@ -23,9 +21,7 @@ const DEFAULT_KEYBOARD_CODES: KeyboardCodes = {
   end: [KeyboardCode.Space, KeyboardCode.Enter],
 };
 
-// Sur le plateau final, Entrée (le clic) choisit la tuile pour « Déplacer ici » : seul Espace la
-// saisit pour la glisser
-export const COOLDOWN_KEYBOARD_CODES: KeyboardCodes = {
+export const ENTER_CHOOSES_TILE_KEYBOARD_CODES: KeyboardCodes = {
   ...DEFAULT_KEYBOARD_CODES,
   start: [KeyboardCode.Space],
 };
@@ -34,27 +30,29 @@ export function useBoardSensors(
   keyboardCodes: KeyboardCodes = DEFAULT_KEYBOARD_CODES,
 ): SensorDescriptor<SensorOptions>[] {
   return useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: MOUSE_DRAG_DISTANCE } }),
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: MOUSE_DRAG_ACTIVATION_DISTANCE_PX },
+    }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: TOUCH_DRAG_DELAY_MS, tolerance: TOUCH_DRAG_TOLERANCE },
+      activationConstraint: {
+        delay: TOUCH_LONG_PRESS_DELAY_MS,
+        tolerance: TOUCH_LONG_PRESS_TOLERANCE_PX,
+      },
     }),
     useSensor(KeyboardSensor, { keyboardCodes }),
   );
 }
 
-// Rend le focus après une action du plateau : la tuile déplacée change de rangée et son bouton
-// est remonté, le focus du clavier serait perdu. request(clés) : le premier élément
-// [data-focus-key] trouvé et actif reçoit le focus quand trigger change (la réponse du serveur).
 export function useFocusAfterUpdate(
   container: RefObject<HTMLElement | null>,
-  trigger: unknown,
-): { request: (keys: string[]) => void; cancel: () => void } {
-  const wanted = useRef<string[] | null>(null);
+  serverUpdate: unknown,
+): { focusFirstEnabledAfterUpdate: (focusKeysByPriority: string[]) => void; cancel: () => void } {
+  const focusKeysToRestore = useRef<string[] | null>(null);
 
   useEffect(() => {
-    const keys: string[] | null = wanted.current;
+    const keys: string[] | null = focusKeysToRestore.current;
     if (keys === null) return;
-    wanted.current = null;
+    focusKeysToRestore.current = null;
     for (const key of keys) {
       const element: HTMLElement | null | undefined = container.current?.querySelector(
         `[data-focus-key="${key}"]`,
@@ -64,14 +62,14 @@ export function useFocusAfterUpdate(
         return;
       }
     }
-  }, [container, trigger]);
+  }, [container, serverUpdate]);
 
   return {
-    request: (keys: string[]) => {
-      wanted.current = keys;
+    focusFirstEnabledAfterUpdate: (focusKeysByPriority: string[]) => {
+      focusKeysToRestore.current = focusKeysByPriority;
     },
     cancel: () => {
-      wanted.current = null;
+      focusKeysToRestore.current = null;
     },
   };
 }
