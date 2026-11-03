@@ -27,6 +27,7 @@ class ItemDistributionResponse(BaseModel):
 class PlayerResultsResponse(BaseModel):
     """Le classement final d'un joueur."""
 
+    id: uuid.UUID
     display_name: str
     tiers: list[TierItemsResponse]
     unplaced_item_ids: list[uuid.UUID]
@@ -35,6 +36,7 @@ class PlayerResultsResponse(BaseModel):
 class GameResultsResponse(BaseModel):
     """Résultats d'une partie close (US-5.2), lus par son lien (US-5.3)."""
 
+    game_id: uuid.UUID
     template_name: str
     closed_at: datetime
     include_absent_votes: bool

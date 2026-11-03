@@ -4808,6 +4808,121 @@
         }
       }
     },
+    "/reports": {
+      "post": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Create Report",
+        "description": "Signale un contenu, avec un compte ou sans : un cookie reconnaît alors le navigateur.",
+        "operationId": "create_report_reports_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "report_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Report Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Content unknown or already removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Open report from the same person on this content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Reason 'other' without details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many reports sent in the last hour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -5146,6 +5261,41 @@
           "file"
         ],
         "title": "Body_upload_image_images_post"
+      },
+      "CreateReportRequest": {
+        "properties": {
+          "target_kind": {
+            "$ref": "#/components/schemas/ReportTargetKind"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Id"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReportReason"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_kind",
+          "target_id",
+          "reason"
+        ],
+        "title": "CreateReportRequest",
+        "description": "Un signalement (US-1.2). target_id désigne, selon target_kind : un item d'une partie, un\nparticipant d'une salle, un joueur des résultats ou une partie close."
       },
       "CreateRoomRequest": {
         "properties": {
@@ -5498,6 +5648,11 @@
       },
       "GameResultsResponse": {
         "properties": {
+          "game_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Game Id"
+          },
           "template_name": {
             "type": "string",
             "title": "Template Name"
@@ -5557,6 +5712,7 @@
         },
         "type": "object",
         "required": [
+          "game_id",
           "template_name",
           "closed_at",
           "include_absent_votes",
@@ -6172,6 +6328,11 @@
       },
       "PlayerResultsResponse": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "display_name": {
             "type": "string",
             "title": "Display Name"
@@ -6194,6 +6355,7 @@
         },
         "type": "object",
         "required": [
+          "id",
           "display_name",
           "tiers",
           "unplaced_item_ids"
@@ -6341,6 +6503,45 @@
           "name"
         ],
         "title": "RenameTemplateRequest"
+      },
+      "ReportReason": {
+        "type": "string",
+        "enum": [
+          "illegal",
+          "sexual",
+          "violence_or_hate",
+          "harassment",
+          "spam",
+          "other"
+        ],
+        "title": "ReportReason",
+        "description": "Motif d'un signalement (US-1.2)."
+      },
+      "ReportResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ReportResponse",
+        "description": "Le signalement enregistré. Il ne dit rien de son auteur."
+      },
+      "ReportTargetKind": {
+        "type": "string",
+        "enum": [
+          "item",
+          "participant",
+          "player",
+          "game"
+        ],
+        "title": "ReportTargetKind",
+        "description": "Ce que désigne target_id dans un signalement (US-1.2)."
       },
       "ResetPasswordRequest": {
         "properties": {

@@ -25,6 +25,7 @@ from app.api.routes import (
     history,
     images,
     moderation,
+    reports,
     results,
     room_channel,
     rooms,
@@ -181,6 +182,7 @@ api_app.include_router(room_channel.router)
 api_app.include_router(results.router)
 api_app.include_router(history.router)
 api_app.include_router(moderation.router)
+api_app.include_router(reports.router)
 
 
 def _openapi_with_room_messages() -> dict[str, Any]:

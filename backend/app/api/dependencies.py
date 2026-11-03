@@ -27,6 +27,7 @@ from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
 from app.services.recent_uploads import RecentUploadsService
+from app.services.reports import ReportService
 from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
@@ -97,6 +98,13 @@ def get_recent_uploads_service(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> RecentUploadsService:
     return RecentUploadsService(session)
+
+
+def get_report_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ReportService:
+    return ReportService(session, settings)
 
 
 def get_history_service(session: Annotated[Session, Depends(get_db_session)]) -> HistoryService:
@@ -218,20 +226,28 @@ def get_current_super_admin(user: Annotated[User, Depends(get_current_user)]) ->
     return user
 
 
-def get_room_viewer(
+def get_optional_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     service: Annotated[AuthService, Depends(get_auth_service)],
+) -> User | None:
+    if credentials is None:
+        return None
+    return get_current_session(credentials, service).user
+
+
+def get_room_viewer(
+    user: Annotated[User | None, Depends(get_optional_user)],
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> RoomViewer:
-    if credentials is not None:
-        session: AuthenticatedSession = get_current_session(credentials, service)
-        return RoomViewer(user=session.user, guest_token=None)
+    if user is not None:
+        return RoomViewer(user=user, guest_token=None)
     return RoomViewer(user=None, guest_token=guest_token)
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 CurrentSessionDep = Annotated[AuthenticatedSession, Depends(get_current_session)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+OptionalUserDep = Annotated[User | None, Depends(get_optional_user)]
 SuperAdminDep = Annotated[User, Depends(get_current_super_admin)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
@@ -240,6 +256,7 @@ RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]
 HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
+ReportServiceDep = Annotated[ReportService, Depends(get_report_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
 TemplateModerationServiceDep = Annotated[

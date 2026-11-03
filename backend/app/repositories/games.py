@@ -40,6 +40,18 @@ def list_history(session: Session, user_id: uuid.UUID, limit: int, offset: int) 
     return list(session.scalars(statement).all())
 
 
+def get_game(session: Session, game_id: uuid.UUID) -> Game | None:
+    return session.get(Game, game_id)
+
+
+def get_game_player(session: Session, player_id: uuid.UUID) -> GamePlayer | None:
+    return session.get(GamePlayer, player_id)
+
+
+def get_snapshot_tile(session: Session, tile_id: uuid.UUID) -> SnapshotTile | None:
+    return session.get(SnapshotTile, tile_id)
+
+
 def get_closed_game_by_token(session: Session, public_token: str) -> Game | None:
     statement: Select[Game] = (
         select(Game)

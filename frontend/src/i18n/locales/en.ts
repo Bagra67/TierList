@@ -974,6 +974,11 @@ export const en: Translation = {
       image_upload_limit_reached:
         'You uploaded {{max_uploads}} images in the last hour: try again a little later.',
       image_not_found: 'This image could not be found.',
+      report_target_not_found: 'This content cannot be reported: it may already have been removed.',
+      report_already_open: 'You already reported this content: it will be reviewed soon.',
+      report_details_required: 'Add details to your report for the reason "Other".',
+      report_limit_reached:
+        'You sent {{max_reports}} reports in the last hour: try again a little later.',
       image_moderation_conflict:
         'This action does not apply to the image as it is now: it may already be hidden, visible or deleted.',
     },

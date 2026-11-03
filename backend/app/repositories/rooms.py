@@ -57,6 +57,10 @@ def get_room_by_id(session: Session, room_id: uuid.UUID, for_update: bool = Fals
     return _attach_room_to_participants(session.scalars(statement).one_or_none())
 
 
+def get_participant(session: Session, participant_id: uuid.UUID) -> Participant | None:
+    return session.get(Participant, participant_id)
+
+
 def get_room_of_participant(
     session: Session, participant_id: uuid.UUID, for_update: bool = False
 ) -> Room | None:

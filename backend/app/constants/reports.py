@@ -1,0 +1,5 @@
+REPORT_DETAILS_MAX_LENGTH = 500
+REPORT_COOKIE = "report_token"
+REPORT_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60
+REPORT_OPEN_BY_ACCOUNT_INDEX = "uq_reports_open_by_account"
+REPORT_OPEN_BY_BROWSER_INDEX = "uq_reports_open_by_browser"

@@ -68,6 +68,32 @@ class ModerationTargetType(StrEnum):
     GAME = "game"
 
 
+class ReportTargetKind(StrEnum):
+    """Ce que désigne target_id dans un signalement (US-1.2)."""
+
+    ITEM = "item"
+    PARTICIPANT = "participant"
+    PLAYER = "player"
+    GAME = "game"
+
+
+class ReportReason(StrEnum):
+    """Motif d'un signalement (US-1.2)."""
+
+    ILLEGAL = "illegal"
+    SEXUAL = "sexual"
+    VIOLENCE_OR_HATE = "violence_or_hate"
+    HARASSMENT = "harassment"
+    SPAM = "spam"
+    OTHER = "other"
+
+
+class ReportStatus(StrEnum):
+    OPEN = "open"
+    DISMISSED = "dismissed"
+    ACTIONED = "actioned"
+
+
 class TemplateModeration(StrEnum):
     """Décision de la modération sur un modèle (US-1.5)."""
 
