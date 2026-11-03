@@ -148,6 +148,7 @@ function AccountBan({ account }: { account: Account }) {
           </div>
         </div>
       )}
+      <PastBans pastBans={account.past_bans} />
       <BanAccountDialog
         dialogRef={banDialogRef}
         accountId={account.id}
@@ -168,6 +169,37 @@ function AccountBan({ account }: { account: Account }) {
         onClose={() => liftMutation.reset()}
       />
     </section>
+  );
+}
+
+function PastBans({ pastBans }: { pastBans: Account['past_bans'] }) {
+  const { t } = useTranslation();
+  if (pastBans.length === 0) return null;
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <h3 className="font-semibold">{t('moderation.ban.pastTitle')}</h3>
+      <ul className="flex w-full flex-col gap-2 text-sm">
+        {pastBans.map((pastBan: Account['past_bans'][number]) => (
+          <li key={pastBan.created_at} className="rounded-lg border p-3">
+            <p className="font-medium">
+              {pastBan.lifted_at === null
+                ? t('moderation.ban.pastEnded', {
+                    start: new Date(pastBan.created_at),
+                    end: new Date(pastBan.ends_at ?? pastBan.created_at),
+                  })
+                : t('moderation.ban.pastLifted', {
+                    start: new Date(pastBan.created_at),
+                    end: new Date(pastBan.lifted_at),
+                  })}
+            </p>
+            <p>{t('moderation.ban.activeReason', { reason: pastBan.reason })}</p>
+            <p className="text-muted-foreground">
+              {t('moderation.ban.pastBy', { name: pastBan.actor_name })}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
