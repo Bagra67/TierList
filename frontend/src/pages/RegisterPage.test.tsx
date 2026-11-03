@@ -5,7 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setAccessToken } from '../api/client';
 import i18n from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
+import {
+  alice,
+  type BackendMock,
+  errorResponse,
+  stubBackend,
+  tokenResponse,
+} from '../test/stubBackend';
 import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
 
@@ -53,14 +59,13 @@ describe('RegisterPage', () => {
       email: 'alice@example.com',
       password: 'correct horse battery staple',
       display_name: 'Alice',
-      // Langue de l'email de vérification : celle de l'interface
       language: 'fr',
     });
   });
 
   it('sends the interface language for the verification email', async () => {
     await i18n.changeLanguage('en');
-    const fetchMock = stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       'POST /auth/register': tokenResponse('new-token'),
       'GET /auth/me': () => Response.json(alice),
     });

@@ -5,7 +5,7 @@ import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
 import { aliceRoom, aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { latestSocket } from '../test/fakeWebSocket';
 import { renderRoomPage } from '../test/renderRoomPage';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import { type BackendMock, calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
 const game: CurrentGame = aliceRoomInGame.game as CurrentGame;
 const [tierS, tierA]: CurrentGame['tiers'] = game.tiers;
@@ -275,7 +275,7 @@ describe('GameScreen', () => {
     };
     const lateAnswerFromRound1: Room = inGame({ own_placements: [paprikaInS] });
     const placeBarbecue: string = `PUT /rooms/K7P2QX/game/placements/${barbecue.id}`;
-    const fetchMock = stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(inGame({ round_number: 2, current_item: barbecue })),
       [placeBarbecue]: () => Response.json(lateAnswerFromRound1),
     });
@@ -501,7 +501,7 @@ describe('GameScreen', () => {
     });
 
     it('only marks the move button as busy during a move: focus, choice and single request stay', async () => {
-      const fetchMock = stubBackend({
+      const fetchMock: BackendMock = stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
         [paprikaPut]: () => new Promise<Response>(() => {}),
       });
