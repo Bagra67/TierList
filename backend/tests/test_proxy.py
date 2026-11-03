@@ -10,7 +10,6 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from app.core.proxy import TrustedProxyMiddleware
 
-# Le tunnel joint le pod depuis ce réseau ; 91.197.6.107 est un client qui vise le port directement
 PROXY_ADDRESS: str = "10.0.0.7"
 DIRECT_CLIENT_ADDRESS: str = "91.197.6.107"
 

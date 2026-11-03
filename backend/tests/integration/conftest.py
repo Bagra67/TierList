@@ -41,12 +41,6 @@ def _service_unavailable(reason: str) -> None:
 
 
 def _test_database_url(suffix: str) -> URL:
-    """URL de la base `<POSTGRES_DB><suffix>`, créée si besoin (jamais la base de dev).
-
-    Avec pytest-xdist (`pytest -n auto`), chaque worker a sa propre base
-    (`<POSTGRES_DB><suffix>_gw0`…) : il la migre seul et ses transactions ne croisent pas
-    celles des autres workers.
-    """
     try:
         settings = get_settings()
     except ValidationError:
@@ -84,20 +78,16 @@ def _test_database_url(suffix: str) -> URL:
 
 @pytest.fixture(scope="session")
 def test_database_url() -> URL:
-    """URL de la base de test `<POSTGRES_DB>_test`, partagée par les tests d'intégration."""
     return _test_database_url("_test")
 
 
 @pytest.fixture(scope="session")
 def migrations_database_url() -> URL:
-    """URL de la base `<POSTGRES_DB>_test_migrations`, réservée aux tests qui descendent les
-    migrations : la base de test partagée garde son schéma pendant toute la session."""
     return _test_database_url("_test_migrations")
 
 
 @pytest.fixture(scope="session")
 def migrated_engine(test_database_url: URL) -> Iterator[Engine]:
-    """Applique les migrations Alembic sur la base de test, puis fournit un engine."""
     command.upgrade(alembic_config(test_database_url), "head")
 
     connect_timeout = get_settings().database_connect_timeout_seconds
@@ -108,7 +98,6 @@ def migrated_engine(test_database_url: URL) -> Iterator[Engine]:
 
 @pytest.fixture
 def db_session(migrated_engine: Engine) -> Iterator[Session]:
-    """Session isolée : tout ce qu'un test écrit est annulé à la fin du test."""
     with migrated_engine.connect() as connection:
         transaction = connection.begin()
         session = Session(bind=connection, join_transaction_mode="create_savepoint")
@@ -121,12 +110,9 @@ def db_session(migrated_engine: Engine) -> Iterator[Session]:
 
 @pytest.fixture(scope="session")
 def s3_image_storage() -> ImageStorage:
-    """Vrai stockage des images, configuré par les réglages IMAGE_S3_* (SeaweedFS en local et en
-    CI) : seuls les tests du stockage l'utilisent, les tests d'API ont FakeImageStorage."""
     settings: Settings = get_settings()
     storage: ImageStorage = create_image_storage(settings)
     try:
-        # Supprimer une clé absente ne fait rien, mais vérifie l'adresse, les clés et le bucket
         storage.delete("connectivity-check")
     except BotoCoreError, ClientError:
         _service_unavailable(
@@ -138,8 +124,6 @@ def s3_image_storage() -> ImageStorage:
 
 
 class FakeEmailSender(EmailSender):
-    """Garde les emails au lieu de les envoyer : aucun test ne contacte un serveur SMTP."""
-
     def __init__(self, sent: list[Email]) -> None:
         self.sent = sent
 
@@ -149,19 +133,14 @@ class FakeEmailSender(EmailSender):
 
 @pytest.fixture
 def sent_emails() -> list[Email]:
-    """Emails « envoyés » pendant le test (les tâches de fond s'exécutent avant la réponse)."""
     return []
 
 
 FAKE_IMAGE_BASE_URL = "https://images.example.com"
-# Adresse des URL signées du faux stockage (aperçu d'une image masquée)
 FAKE_PRESIGNED_BASE_URL = "https://signed.example.com"
 
 
 class FakeImageStorage(ImageStorage):
-    """Garde les images en mémoire : les tests d'API ne contactent pas le stockage S3 (le vrai
-    stockage est testé par test_image_storage.py)."""
-
     def __init__(self, stored: dict[str, bytes]) -> None:
         super().__init__(client=MagicMock(), bucket="fake", public_base_url=FAKE_IMAGE_BASE_URL)
         self.stored = stored
@@ -183,9 +162,6 @@ class FakeImageStorage(ImageStorage):
 
 
 class FailingImageStorage(FakeImageStorage):
-    """Stockage qui refuse d'effacer, comme un fournisseur S3 en panne : une seule clé si
-    failing_key est donnée, sinon toutes."""
-
     def __init__(self, stored: dict[str, bytes], failing_key: str | None = None) -> None:
         super().__init__(stored)
         self.failing_key = failing_key
@@ -198,7 +174,6 @@ class FailingImageStorage(FakeImageStorage):
 
 @pytest.fixture
 def stored_images() -> dict[str, bytes]:
-    """Images « stockées » pendant le test, par clé de stockage."""
     return {}
 
 
@@ -211,11 +186,8 @@ def client(
     api_app.dependency_overrides[get_db_session] = lambda: db_session
     api_app.dependency_overrides[get_email_sender] = lambda: email_sender
     api_app.dependency_overrides[get_image_storage] = lambda: image_storage
-    # Le canal temps réel ouvre ses sessions lui-même : il réutilise celle du test (sans la fermer)
     api_app.dependency_overrides[get_session_factory] = lambda: lambda: nullcontext(db_session)
     try:
-        # L'application racine, comme uvicorn, avec son lifespan (timers, balayage) ; les chemins
-        # des tests restent relatifs à l'API : "/auth/login" part vers /api/auth/login
         yield TestClient(app, base_url=f"http://testserver{API_PREFIX}")
     finally:
         api_app.dependency_overrides.pop(get_db_session, None)
@@ -225,9 +197,6 @@ def client(
 
 
 def http_test_settings() -> Settings:
-    # TestClient parle en HTTP à http://testserver/api/... : les cookies doivent être non Secure
-    # pour que le client les renvoie (leurs chemins par défaut, /api/auth et /api/rooms, sont ceux
-    # de l'application)
     return get_settings().model_copy(update={"auth_cookie_secure": False})
 
 
@@ -242,11 +211,6 @@ def auth_client(client: TestClient) -> Iterator[TestClient]:
 
 @pytest.fixture
 def override_settings(auth_client: TestClient) -> Callable[..., None]:
-    """Change des réglages pour un test, ex. override_settings(password_min_length=12).
-
-    Ne concerne que les réglages injectés par FastAPI (Depends(get_settings)) ; auth_client
-    retire la surcharge à la fin du test.
-    """
 
     def apply(**changes: object) -> None:
         api_app.dependency_overrides[get_settings] = lambda: http_test_settings().model_copy(
@@ -257,13 +221,9 @@ def override_settings(auth_client: TestClient) -> Callable[..., None]:
 
 
 class RecordingRoomEventPublisher:
-    """Publisher factice : garde les événements publiés par les services, sans socket."""
-
     def __init__(self) -> None:
         self.events: list[tuple[uuid.UUID, RoomEvent]] = []
-        # Sockets à fermer : (participant, code de fermeture)
         self.disconnections: list[tuple[uuid.UUID, int]] = []
-        # Salles fermées, dont tous les sockets sont à fermer
         self.closed_rooms: list[uuid.UUID] = []
 
     def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
@@ -283,7 +243,6 @@ class RecordingRoomEventPublisher:
 
 @pytest.fixture
 def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
-    """Événements publiés par les routes REST des salles pendant le test."""
     publisher: RecordingRoomEventPublisher = RecordingRoomEventPublisher()
     api_app.dependency_overrides[get_room_event_publisher] = lambda: publisher
     try:
@@ -293,14 +252,8 @@ def room_events(client: TestClient) -> Iterator[RecordingRoomEventPublisher]:
 
 
 class RecordingRoundScheduler:
-    """Timers factices : gardent les échéances programmées, sans tâche asyncio. Le test appelle
-    lui-même la transition (GameService.end_round_on_timer, end_cooldown_on_timer) pour simuler
-    la fin du timer."""
-
     def __init__(self) -> None:
-        # (partie, numéro du tour, fin du timer)
         self.deadlines: list[tuple[uuid.UUID, int, datetime]] = []
-        # (partie, fin du cooldown)
         self.cooldown_ends: list[tuple[uuid.UUID, datetime]] = []
 
     def schedule(self, game_id: uuid.UUID, round_number: int, ends_at: datetime) -> None:
@@ -312,7 +265,6 @@ class RecordingRoundScheduler:
 
 @pytest.fixture
 def round_scheduler(client: TestClient) -> Iterator[RecordingRoundScheduler]:
-    """Échéances des tours programmées par les routes REST pendant le test."""
     scheduler: RecordingRoundScheduler = RecordingRoundScheduler()
     api_app.dependency_overrides[get_round_scheduler] = lambda: scheduler
     try:

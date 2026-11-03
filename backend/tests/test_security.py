@@ -32,7 +32,6 @@ def make_token(**overrides: object) -> str:
         "token_version": 0,
     }
     claims.update(overrides)
-    # Une valeur None retire le claim
     claims = {name: value for name, value in claims.items() if value is not None}
     return jwt.encode(claims, SECRET_KEY, algorithm=JWT_ALGORITHM)
 
@@ -95,7 +94,6 @@ def test_access_token_signed_with_another_key_is_rejected():
     [
         pytest.param(make_token(type="refresh"), id="wrong-type"),
         pytest.param(make_token(sub="not-a-uuid"), id="invalid-subject"),
-        # Émis avant l'ajout de la version : refusé, le frontend rafraîchit la session
         pytest.param(make_token(token_version=None), id="no-version"),
         pytest.param(
             jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, SECRET_KEY), id="no-expiry"
@@ -109,7 +107,6 @@ def test_invalid_access_tokens_are_rejected(token: str):
 
 
 def test_unsigned_access_token_is_rejected():
-    # Attaque classique : un token « alg: none » sans signature
     token = jwt.encode({"sub": str(uuid.uuid4()), "type": "access"}, key="", algorithm="none")
 
     with pytest.raises(InvalidAccessTokenError):
@@ -129,7 +126,6 @@ def test_public_results_tokens_are_random_and_fit_their_column():
     first, second = generate_public_results_token(), generate_public_results_token()
 
     assert first != second
-    # 128 bits en base64 URL : 22 caractères, sans caractère à échapper dans une URL
     assert len(first) == 22
     assert len(first) <= PUBLIC_RESULTS_TOKEN_MAX_LENGTH
     assert all(character.isalnum() or character in "-_" for character in first)

@@ -1,6 +1,3 @@
-"""Résultats d'une partie close (US-5.2), lus par son lien (US-5.3) : classement de chaque joueur,
-vue globale avec les absents, classement médian, avec ou sans les votes absents."""
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -42,7 +39,6 @@ def bob(auth_client: TestClient) -> dict[str, str]:
 def alice_room(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], bob: dict[str, str]
 ) -> JsonObject:
-    """Salle d'Alice (3 tuiles texte), que Bob a rejointe."""
     template_id: str = create_template(auth_client, db_session, alice, tile_count=TILE_COUNT)
     room: JsonObject = create_room(auth_client, alice, template_id)
     assert auth_client.post(f"/rooms/{room['code']}/join", headers=bob).status_code == 200
@@ -53,12 +49,6 @@ def alice_room(
 def public_token(
     auth_client: TestClient, alice: dict[str, str], bob: dict[str, str], alice_room: JsonObject
 ) -> str:
-    """Alice, Bob et l'invitée Lou jouent :
-    - Tile 0 : Alice en S, Bob en A, Lou absente ;
-    - Tile 1 : Alice en tête de S ; Bob absent, il la rattrape en B pendant le cooldown ; Lou
-      absente ;
-    - Tile 2 : personne.
-    Renvoie le jeton du lien de résultats, lu dans le lobby."""
     code: str = alice_room["code"]
     assert auth_client.post(f"/rooms/{code}/guests", json={"nickname": "Lou"}).status_code == 201
     first: JsonObject = start_game(auth_client, code, alice)
@@ -80,21 +70,18 @@ def public_token(
 
 
 def results(client: TestClient, token: str, include_absent_votes: bool = True) -> Response:
-    # Sans en-tête ni cookie de compte : le lien suffit
     return client.get(
         f"/results/{token}", params={"include_absent_votes": str(include_absent_votes).lower()}
     )
 
 
 def names(body: JsonObject) -> tuple[dict[str, str], dict[str, str]]:
-    """(nom de tier par id, texte d'item par id) de la réponse."""
     tier_names: dict[str, str] = {tier["id"]: tier["name"] for tier in body["tiers"]}
     item_texts: dict[str, str] = {item["id"]: item["text"] for item in body["items"]}
     return tier_names, item_texts
 
 
 def distribution(body: JsonObject) -> dict[str, tuple[list[int], int, str | None]]:
-    """Par texte d'item : (votes par tier, absents, tier médian)."""
     tier_names, item_texts = names(body)
     return {
         item_texts[entry["item_id"]]: (
@@ -107,7 +94,6 @@ def distribution(body: JsonObject) -> dict[str, tuple[list[int], int, str | None
 
 
 def voters(body: JsonObject) -> dict[str, tuple[dict[str, list[str]], list[str]]]:
-    """Par texte d'item : (noms des joueurs par nom de tier, sans les tiers vides ; absents)."""
     tier_names, item_texts = names(body)
     player_names: list[str] = [player["display_name"] for player in body["players"]]
     return {
@@ -126,7 +112,6 @@ def voters(body: JsonObject) -> dict[str, tuple[dict[str, list[str]], list[str]]
 
 
 def boards(body: JsonObject) -> dict[str, tuple[dict[str, list[str]], list[str]]]:
-    """Par joueur : (items par nom de tier, sans les tiers vides ; items jamais placés)."""
     tier_names, item_texts = names(body)
     return {
         player["display_name"]: (
@@ -158,12 +143,10 @@ def test_the_results_show_every_ranking_the_distribution_and_the_median(
         "Lou": ({}, ["Tile 0", "Tile 1", "Tile 2"]),
     }
     assert distribution(body) == {
-        # Médian : le moins bon des deux votes du milieu (results.md §2.3)
         "Tile 0": ([1, 1, 0, 0, 0, 0], 1, "A"),
         "Tile 1": ([1, 0, 1, 0, 0, 0], 1, "B"),
         "Tile 2": ([0, 0, 0, 0, 0, 0], 3, None),
     }
-    # Qui a voté où, pour le détail d'un item : le même décompte, avec les noms
     assert voters(body) == {
         "Tile 0": ({"S": ["alice"], "A": ["bob"]}, ["Lou"]),
         "Tile 1": ({"S": ["alice"], "B": ["bob"]}, ["Lou"]),
@@ -188,17 +171,14 @@ def test_without_absent_votes_the_caught_up_votes_and_the_absents_are_ignored(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["include_absent_votes"] is False
-    # Le rattrapage de Bob ne compte plus, et la colonne des absents est vide (results.md §2.1)
     assert distribution(body) == {
         "Tile 0": ([1, 1, 0, 0, 0, 0], 0, "A"),
         "Tile 1": ([1, 0, 0, 0, 0, 0], 0, "S"),
         "Tile 2": ([0, 0, 0, 0, 0, 0], 0, None),
     }
-    # Pas de noms sans les votes absents : on saurait qui a rattrapé un item (results.md §2.6)
     for entry in body["distribution"]:
         assert entry["player_indexes_per_tier"] is None
         assert entry["absent_player_indexes"] is None
-    # Les classements des joueurs ne changent pas
     assert boards(body)["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
 
 
@@ -237,7 +217,6 @@ def test_the_results_link_replaces_an_image_removed_by_the_moderation(
 
     body: JsonObject = results(auth_client, public_token).json()
 
-    # Le lien public, lu sans compte, ne donne plus l'adresse du fichier effacé
     removed: JsonObject = next(item for item in body["items"] if item["text"] == "Tile 2")
     assert (removed["image_url"], removed["image_removed"]) == (None, True)
 
@@ -277,7 +256,6 @@ def test_the_results_link_keeps_working_after_the_room_is_closed(
 
     response: Response = results(auth_client, public_token)
 
-    # US-5.3 : la partie survit à sa salle, son lien aussi
     assert response.status_code == 200
     assert sorted(boards(response.json())) == ["Lou", "alice", "bob"]
 

@@ -44,7 +44,6 @@ def create_image(db_session: Session, owner: User) -> Image:
 
 
 def create_template(db_session: Session, service: TemplateService, owner: User) -> Template:
-    """Template « Food » avec ses tiers par défaut, une tuile texte et une tuile image."""
     template: Template = service.create(owner, "Food")
     image: Image = create_image(db_session, owner)
     service.add_tile(owner, template.id, "Pizza", None)

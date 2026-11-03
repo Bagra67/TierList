@@ -1,6 +1,3 @@
-"""Cooldown final (US-4.1, US-4.2, US-4.6) : plateau final, rattrapage des items manqués et fin
-du cooldown (timer ou « Terminer maintenant »)."""
-
 import uuid
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
@@ -75,7 +72,6 @@ def tier_id(db_session: Session, name: str) -> str:
 
 
 def to_cooldown(client: TestClient, code: str, headers: dict[str, str]) -> JsonObject:
-    """Termine les tours restants : la partie passe en cooldown."""
     room: JsonObject = client.get(f"/rooms/{code}", headers=headers).json()
     while room["game"]["status"] == "in_round":
         room = next_item(client, code, headers)
@@ -83,7 +79,6 @@ def to_cooldown(client: TestClient, code: str, headers: dict[str, str]) -> JsonO
 
 
 def placements_of(db_session: Session, text: str, phase: PlacementPhase) -> list[Placement]:
-    """Placements de cette tuile pour cette phase, toutes places confondues."""
     game: Game = stored_game(db_session)
     return [
         placement
@@ -99,7 +94,6 @@ def missed(room: JsonObject) -> list[str | None]:
 def game_service(
     db_session: Session, publisher: RecordingRoomEventPublisher, scheduler: RecordingRoundScheduler
 ) -> GameService:
-    """Le service hors requête, comme le lancent les timers."""
     rooms: RoomService = RoomService(db_session, get_settings(), publisher)
     return GameService(
         db_session, publisher, rooms, TemplateService(db_session, get_settings()), scheduler
@@ -110,7 +104,6 @@ def game_service(
 def alice_in_cooldown(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ) -> JsonObject:
-    """Alice a placé Tile 0 en S, puis Tile 1 en tête de S ; elle a manqué Tile 2."""
     code: str = alice_room["code"]
     start_game(auth_client, code, alice)
     assert (
@@ -129,16 +122,12 @@ def alice_in_cooldown(
     return to_cooldown(auth_client, code, alice)
 
 
-# --- Plateau final --------------------------------------------------------------------------------
-
-
 def test_the_final_board_starts_as_a_copy_of_the_round_board(
     db_session: Session, alice_in_cooldown: JsonObject
 ):
     assert alice_in_cooldown["game"]["status"] == "cooldown"
     assert board(alice_in_cooldown) == [("S", "Tile 1", 0), ("S", "Tile 0", 1)]
     assert missed(alice_in_cooldown) == ["Tile 2"]
-    # Un placement final par placement de tour ; le vote absent n'est pas copié
     finals: list[Placement] = placements_of(db_session, "Tile 0", PlacementPhase.FINAL)
     assert [(final.position, final.is_absent) for final in finals] == [(1, False)]
     assert placements_of(db_session, "Tile 2", PlacementPhase.FINAL) == []
@@ -166,10 +155,8 @@ def test_a_move_in_the_cooldown_only_changes_the_final_placement(
     assert response.status_code == 200
     moved: JsonObject = response.json()
     assert board(moved) == [("S", "Tile 1", 0), ("A", "Tile 0", 0)]
-    # Plateau privé : ni version, ni événement
     assert moved["version"] == alice_in_cooldown["version"]
     assert len(room_events.events) == event_count
-    # Les deux placements sont gardés (US-4.2) : celui du tour n'a pas bougé
     (round_placement,) = placements_of(db_session, "Tile 0", PlacementPhase.ROUND)
     assert (str(round_placement.snapshot_tier_id), round_placement.position) == (
         tier_id(db_session, "S"),
@@ -256,7 +243,6 @@ def test_the_admin_who_does_not_play_cannot_place_in_the_cooldown(
     auth_client.patch(f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice)
     start_game(auth_client, code, alice)
     cooldown: JsonObject = to_cooldown(auth_client, code, alice)
-    # Ni plateau ni item manqué pour elle : elle ne place pas les items
     assert cooldown["game"]["own_placements"] == []
     assert missed(cooldown) == []
 
@@ -275,7 +261,6 @@ def test_placing_after_the_end_of_the_cooldown_is_refused(
     alice_room: JsonObject,
     alice_in_cooldown: JsonObject,
 ):
-    # La fin du cooldown est passée, son timer pas encore
     game: Game = stored_game(db_session)
     game.cooldown_ends_at = datetime.now(UTC) - timedelta(seconds=1)
     db_session.flush()
@@ -291,9 +276,6 @@ def test_placing_after_the_end_of_the_cooldown_is_refused(
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.COOLDOWN_OVER
-
-
-# --- Fin du cooldown ------------------------------------------------------------------------------
 
 
 def test_the_admin_ends_the_cooldown_and_the_game_is_closed(
@@ -368,7 +350,6 @@ def test_the_cooldown_timer_closes_the_game_only_once(
 
     service.end_cooldown_on_timer(game.id)
     event_count: int = len(room_events.events)
-    # En retard, ou après « Terminer maintenant » : plus de cooldown, rien ne change
     service.end_cooldown_on_timer(game.id)
 
     assert stored_game(db_session).status == GameStatus.CLOSED
@@ -388,7 +369,6 @@ def test_a_late_round_timer_does_not_close_the_game(
     start_game(auth_client, code, alice)
     to_cooldown(auth_client, code, alice)
 
-    # Le timer du dernier tour, terminé avant par « suivant »
     game_service(db_session, room_events, round_scheduler).end_round_on_timer(
         stored_game(db_session).id, TILE_COUNT
     )
@@ -409,7 +389,6 @@ def test_pending_cooldown_ends_are_scheduled_again_at_startup(
     recorded: RecordingRoundScheduler = RecordingRoundScheduler()
     monkeypatch.setattr(main_module, "round_timers", recorded)
 
-    # Un redémarrage : les timers en mémoire sont perdus, la base garde la fin du cooldown
     main_module._reschedule_rounds(lambda: nullcontext(db_session))
 
     game: Game = stored_game(db_session)

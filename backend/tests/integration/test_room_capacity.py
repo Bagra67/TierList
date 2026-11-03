@@ -41,7 +41,6 @@ def join_as_guest(client: TestClient, code: str, nickname: str) -> Response:
 
 
 def fill_with_guests(client: TestClient, code: str, count: int) -> None:
-    """Ajoute count invités (plus rapide que des comptes), depuis des navigateurs distincts."""
     for index in range(count):
         client.cookies.clear()
         assert join_as_guest(client, code, f"Guest{index}").status_code == 201
@@ -49,12 +48,10 @@ def fill_with_guests(client: TestClient, code: str, count: int) -> None:
 
 
 def fill_the_room(client: TestClient, code: str) -> None:
-    # La place du room admin compte : il reste FREE_PLAN_MAX_PARTICIPANTS - 1 places
     fill_with_guests(client, code, FREE_PLAN_MAX_PARTICIPANTS - 1)
 
 
 def start_a_game(db_session: Session, code: str, late_arrivals_allowed: bool) -> None:
-    # Une partie est en cours (posé par le démarrage, #91)
     room: Room = db_session.scalars(select(Room).where(Room.code == code)).one()
     room.status = RoomStatus.PLAYING
     room.late_arrivals_allowed = late_arrivals_allowed
@@ -70,9 +67,6 @@ def assert_room_full(response: Response) -> None:
 def assert_room_locked(response: Response) -> None:
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.ROOM_LOCKED
-
-
-# --- Capacité -------------------------------------------------------------------------------
 
 
 def test_the_room_admin_counts_and_the_room_fills_up_to_the_limit(
@@ -128,9 +122,6 @@ def test_a_participant_comes_back_to_a_full_room(
     response: Response = join(auth_client, code, bob)
 
     assert response.status_code == 200
-
-
-# --- Verrou des arrivées --------------------------------------------------------------------
 
 
 def test_newcomers_cannot_join_a_locked_room_during_a_game(

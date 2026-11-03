@@ -62,7 +62,6 @@ def seat_id(room: JsonObject, display_name: str) -> str:
 
 
 def placed_count(db_session: Session) -> int:
-    """Placements dans un tier, sans les votes absents enregistrés à la fin des tours."""
     return (
         db_session.scalar(
             select(func.count())
@@ -71,9 +70,6 @@ def placed_count(db_session: Session) -> int:
         )
         or 0
     )
-
-
-# --- Placer l'item en cours ----------------------------------------------------------------
 
 
 def test_a_player_places_the_current_item(
@@ -101,7 +97,6 @@ def test_a_player_places_the_current_item(
     placed: object = room_events.events[-1][1]
     assert isinstance(placed, ParticipantPlacedEvent)
     assert placed.room_version == body["version"]
-    # Qui a placé, jamais où : ni tier ni position dans l'événement
     assert placed.data.model_dump(mode="json") == {"participant_id": bob_id, "round_number": 1}
 
 
@@ -126,7 +121,6 @@ def test_moving_the_item_in_the_same_round_replaces_the_placement(
     body: JsonObject = response.json()
     assert board(body) == [("B", "Tile 0", 0)]
     assert placed_count(db_session) == 1
-    # Les autres n'en voient rien : ni nouvelle version, ni événement
     assert body["version"] == first["version"]
     assert len(room_events.events) == event_count
 
@@ -141,21 +135,17 @@ def test_positions_stay_continuous_and_past_items_keep_their_order(
     place(auth_client, code, tile_of_round(db_session, 1), tier_s, 0, alice)
 
     next_item(auth_client, code, alice)
-    # Avant l'item déjà placé
     before: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 2), tier_s, 0, alice
     ).json()
     assert board(before) == [("S", "Tile 1", 0), ("S", "Tile 0", 1)]
 
     next_item(auth_client, code, alice)
-    # Entre les deux
     between: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 3), tier_s, 1, alice
     ).json()
     assert board(between) == [("S", "Tile 1", 0), ("S", "Tile 2", 1), ("S", "Tile 0", 2)]
 
-    # Déplacé dans un autre tier, au-delà de la fin : il y va en dernier, et son ancien tier se
-    # referme sans changer l'ordre des items passés
     moved: JsonObject = place(
         auth_client, code, tile_of_round(db_session, 3), tier_a, 99, alice
     ).json()
@@ -186,7 +176,6 @@ def test_a_guest_places_with_their_cookie_and_finds_their_board_again(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    # Le cookie de l'invité reste dans le client ; les requêtes d'Alice passent son token
     assert auth_client.post(f"/rooms/{code}/guests", json={"nickname": "Lou"}).status_code == 201
     started: JsonObject = start_game(auth_client, code, alice)
 
@@ -197,9 +186,6 @@ def test_a_guest_places_with_their_cookie_and_finds_their_board_again(
     assert response.status_code == 200
     assert board(response.json()) == [("S", "Tile 0", 0)]
     assert board(auth_client.get(f"/rooms/{code}").json()) == [("S", "Tile 0", 0)]
-
-
-# --- Refus ---------------------------------------------------------------------------------
 
 
 def test_only_the_current_item_can_be_placed(
@@ -289,9 +275,6 @@ def test_a_negative_position_is_refused(
     response: Response = place(auth_client, code, tile_of_round(db_session, 1), tier_s, -1, alice)
 
     assert response.status_code == 422
-
-
-# --- Retrait et contraintes ------------------------------------------------------------------
 
 
 def test_removing_a_player_deletes_their_placements(

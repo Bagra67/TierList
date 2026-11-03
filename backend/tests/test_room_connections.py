@@ -12,12 +12,9 @@ from app.services.room_channel import ConnectionRegistry
 
 
 class FakeSocket:
-    """Socket factice : garde les messages reçus, ou échoue à l'envoi."""
-
     def __init__(self, failing: bool = False) -> None:
         self.messages: list[str] = []
         self.failing = failing
-        # Code et raison de la fermeture demandée par le serveur
         self.closed_with: tuple[int, str] | None = None
 
     async def send_text(self, message: str) -> None:
@@ -32,7 +29,6 @@ class FakeSocket:
 
 
 def as_websocket(socket: FakeSocket) -> WebSocket:
-    """Le registre n'utilise que send_text et close : le faux socket suffit."""
     return cast(WebSocket, socket)
 
 
@@ -126,7 +122,6 @@ def test_a_participant_back_during_the_departure_write_is_set_connected_again():
         async def set_presence(connected: bool) -> None:
             calls.append(connected)
             if not connected:
-                # Le participant revient pendant que « déconnecté » s'écrit
                 registry.add(ROOM, ALICE, as_websocket(FakeSocket()))
 
         registry.schedule_disconnect(ROOM, ALICE, 0, set_presence)
@@ -146,13 +141,11 @@ def test_a_replaced_pending_disconnection_does_not_remove_its_replacement():
             calls.append(connected)
 
         registry.schedule_disconnect(ROOM, ALICE, 0.05, set_presence)
-        # Le second départ remplace le premier, qui est annulé
         registry.schedule_disconnect(ROOM, ALICE, 0.1, set_presence)
         await asyncio.sleep(0.01)
         registry.cancel_pending_disconnect(ALICE)
         await asyncio.sleep(0.15)
 
-        # Annuler a bien retiré la remplaçante : aucun départ n'a eu lieu
         assert calls == []
 
     run(scenario)
@@ -183,7 +176,6 @@ def test_disconnecting_a_participant_closes_only_their_sockets_in_that_room():
         assert second_tab.closed_with == (4410, "removed_from_room")
         assert other_participant.closed_with is None
         assert other_room.closed_with is None
-        # Retirés du registre : ils ne reçoivent plus les événements de la salle
         assert not registry.is_connected(ROOM, ALICE)
         assert registry.is_connected(OTHER_ROOM, ALICE)
 
@@ -199,7 +191,6 @@ def test_disconnecting_cancels_the_pending_departure():
             calls.append(connected)
 
         registry.add(ROOM, BOB, as_websocket(FakeSocket()))
-        # Sa place est supprimée pendant le délai de grâce : plus de départ à écrire
         registry.schedule_disconnect(ROOM, ALICE, 0.05, set_presence)
         registry.disconnect_participant(ROOM, ALICE, 4411, ErrorCode.ROOM_BANNED)
         await asyncio.sleep(0.1)

@@ -1,6 +1,3 @@
-"""Stockage S3 réel (SeaweedFS en local et en CI) : écriture, lecture publique, suppression,
-quarantaine des images masquées."""
-
 import uuid
 
 import httpx
@@ -20,7 +17,6 @@ def test_a_saved_image_is_publicly_readable_with_a_one_day_cache(s3_image_storag
 
     s3_image_storage.save(key, data)
     try:
-        # Sans authentification : l'URL publique suffit (lien public des résultats)
         response: httpx.Response = httpx.get(
             s3_image_storage.url(key), timeout=HTTP_TIMEOUT_SECONDS
         )
@@ -60,11 +56,9 @@ def test_an_image_moved_to_the_quarantine_and_back_is_public_again_with_its_cach
     data: bytes = b"RIFF\x00\x00\x00\x00WEBPtest"
     s3_image_storage.save(key, data)
     try:
-        # Masquage : copie en quarantaine, puis effacement de l'original par le service
         s3_image_storage.copy_to_quarantine(key)
         s3_image_storage.delete(key)
         hidden: httpx.Response = httpx.get(s3_image_storage.url(key), timeout=HTTP_TIMEOUT_SECONDS)
-        # Réaffichage : l'image revient à son adresse, avec son type et sa durée de cache
         s3_image_storage.copy_from_quarantine(key)
         s3_image_storage.delete(quarantine_key(key))
         restored: httpx.Response = httpx.get(
@@ -87,7 +81,6 @@ def test_a_presigned_url_reads_a_quarantined_image(s3_image_storage: ImageStorag
     s3_image_storage.save(key, data)
     try:
         s3_image_storage.copy_to_quarantine(key)
-        # Sans authentification : l'aperçu d'une image masquée pour un super admin (#125)
         response: httpx.Response = httpx.get(
             s3_image_storage.presigned_url(quarantine_key(key)), timeout=HTTP_TIMEOUT_SECONDS
         )

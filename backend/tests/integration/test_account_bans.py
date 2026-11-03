@@ -1,6 +1,3 @@
-"""Bannissement des comptes (US-1.8) : un compte banni est déconnecté partout et ne peut plus se
-connecter jusqu'à la fin du bannissement ; un super admin ne peut jamais être banni."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -22,7 +19,6 @@ from tests.integration.helpers import PASSWORD, JsonObject, register, register_s
 
 pytestmark = pytest.mark.integration
 
-# Fixe : un identifiant aléatoire dans un parametrize change le nom du test à chaque collecte
 UNKNOWN_ID = "00000000-0000-4000-8000-000000000000"
 
 
@@ -84,7 +80,6 @@ def test_a_temporary_ban_signs_the_account_out_and_refuses_its_sign_in_until_the
     response: Response = ban(auth_client, nina, alice_account.id, ends_at, "  Spam  ")
 
     assert response.status_code == 204
-    # Ses jetons d'accès déjà émis sont refusés, et ses sessions ne se rafraîchissent plus
     assert auth_client.get("/auth/me", headers=alice).status_code == 401
     assert auth_client.post("/auth/refresh").status_code == 401
     refused: Response = login(auth_client, "alice@example.com")
@@ -106,8 +101,6 @@ def test_a_session_opened_while_the_ban_was_decided_cannot_be_refreshed(
 ):
     alice_account: User = account(db_session, "alice@example.com")
     assert ban(auth_client, nina, alice_account.id).status_code == 204
-    # Le token qu'une connexion en cours valide juste après le bannissement : sa révocation ne l'a
-    # pas vu
     now: datetime = datetime.now(UTC)
     raw_token: str = generate_refresh_token()
     surviving: RefreshToken = RefreshToken(
@@ -174,7 +167,6 @@ def test_banning_a_banned_account_replaces_its_ban(
     alice_account: User = account(db_session, "alice@example.com")
     ban(auth_client, nina, alice_account.id, datetime.now(UTC) + timedelta(days=1))
 
-    # De temporaire à définitif
     response: Response = ban(auth_client, nina, alice_account.id)
 
     assert response.status_code == 204

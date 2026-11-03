@@ -14,8 +14,6 @@ from app.main import api_app
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -47,7 +45,6 @@ def test_register_creates_the_account_and_returns_tokens(
     assert user.email == "alice@example.com"
     assert user.password_hash != PASSWORD
     stored = db_session.scalars(select(RefreshToken)).one()
-    # Seul le hash est en base, jamais le token lui-même
     assert stored.token_hash == hash_refresh_token(response.cookies["refresh_token"])
 
 
@@ -92,8 +89,6 @@ def test_short_password_error_states_the_minimum(auth_client: TestClient):
 
 @pytest.fixture
 def password_min_length_12(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    # Le schéma lit get_settings() directement (pas par injection) : on passe par
-    # l'environnement, et on vide le cache des réglages avant et après le test.
     monkeypatch.setenv("PASSWORD_MIN_LENGTH", "12")
     get_settings.cache_clear()
     yield
@@ -132,7 +127,6 @@ def test_me_returns_the_authenticated_user(auth_client: TestClient):
     body = response.json()
     assert body["email"] == "alice@example.com"
     assert body["display_name"] == "Alice"
-    # Un nouveau compte n'est jamais super admin
     assert body["role"] == "user"
     assert "password_hash" not in body
 
@@ -213,7 +207,6 @@ def test_replaying_a_rotated_refresh_token_revokes_the_whole_family(auth_client:
 
     assert replay.status_code == 401
     assert replay.json() == {"detail": messages.SESSION_EXPIRED, "code": ErrorCode.SESSION_EXPIRED}
-    # Le token le plus récent, même légitime, est révoqué lui aussi
     auth_client.cookies.set("refresh_token", legitimate_refresh_token, path="/api/auth")
     assert auth_client.post("/auth/refresh").status_code == 401
 
@@ -238,7 +231,6 @@ def test_sign_in_deletes_the_expired_refresh_tokens(auth_client: TestClient, db_
     auth_client.cookies.clear()
     login = {"email": "alice@example.com", "password": PASSWORD}
     assert auth_client.post("/auth/login", json=login).status_code == 200
-    # Révoqué mais pas expiré : gardé, pour repérer une réutilisation
     assert auth_client.post("/auth/logout").status_code == 204
     revoked_id = db_session.scalars(select(RefreshToken)).one().id
 
@@ -275,16 +267,13 @@ def test_logout_revokes_the_session(auth_client: TestClient):
 def test_logout_revokes_the_access_tokens_of_every_device(auth_client: TestClient):
     laptop_access_token = register(auth_client)
     laptop_refresh_token = auth_client.cookies["refresh_token"]
-    # Seconde connexion, comme depuis un téléphone
     login = {"email": "alice@example.com", "password": PASSWORD}
     phone_access_token = auth_client.post("/auth/login", json=login).json()["access_token"]
 
     assert auth_client.post("/auth/logout").status_code == 204
 
-    # Les access tokens déjà émis sont refusés tout de suite, sans attendre leur expiration
     for access_token in (phone_access_token, laptop_access_token):
         assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
-    # L'appareil resté connecté rafraîchit sa session et continue
     auth_client.cookies.set("refresh_token", laptop_refresh_token, path="/api/auth")
     refreshed = auth_client.post("/auth/refresh")
     assert refreshed.status_code == 200
@@ -301,7 +290,6 @@ def test_logout_without_session_succeeds(auth_client: TestClient):
 
 
 def test_refresh_cookie_attributes(client: TestClient):
-    # Paramètres par défaut (production) : Secure, HttpOnly, SameSite=Strict, chemin /api/auth
     api_app.dependency_overrides[get_settings] = lambda: get_settings().model_copy(
         update={"auth_cookie_secure": True, "auth_cookie_path": "/api/auth"}
     )
@@ -317,7 +305,6 @@ def test_refresh_cookie_attributes(client: TestClient):
 
 
 def delete_account(client: TestClient, access_token: str, password: str):
-    # TestClient.delete n'accepte pas de corps : on passe par request()
     return client.request(
         "DELETE", "/auth/me", json={"password": password}, headers=bearer(access_token)
     )
@@ -335,7 +322,6 @@ def test_delete_account_removes_the_user_and_its_sessions(
     assert "refresh_token" not in auth_client.cookies
     assert db_session.scalars(select(User)).all() == []
     assert db_session.scalars(select(RefreshToken)).all() == []
-    # Plus aucune session ni connexion possible
     assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
     auth_client.cookies.set("refresh_token", refresh_token, path="/api/auth")
     assert auth_client.post("/auth/refresh").status_code == 401

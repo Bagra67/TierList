@@ -66,7 +66,6 @@ def next_round(client: TestClient, code: str, headers: dict[str, str]) -> Respon
 def place_current(
     client: TestClient, db_session: Session, code: str, headers: dict[str, str]
 ) -> Response:
-    """Place l'item en cours en tête du premier tier."""
     game: Game = stored_game(db_session)
     tier_id: uuid.UUID = game.snapshot.tiers[0].id
     return client.put(
@@ -89,7 +88,6 @@ def room_id_of_game(db_session: Session) -> uuid.UUID:
 
 
 def set_connected(db_session: Session, connected_names: set[str]) -> None:
-    """Présence des participants, sans canal : connectés ceux de connected_names."""
     for participant in db_session.scalars(select(Participant)):
         participant.connected = participant.display_name in connected_names
     db_session.flush()
@@ -102,7 +100,6 @@ def seat_id_of(db_session: Session, display_name: str) -> uuid.UUID:
 
 
 def absent_tiles(db_session: Session, display_name: str) -> list[str | None]:
-    """Textes des items pour lesquels ce participant a un vote absent, dans l'ordre des tours."""
     participant: Participant = db_session.scalars(
         select(Participant).where(Participant.user.has(display_name=display_name))
     ).one()
@@ -120,14 +117,10 @@ def absent_tiles(db_session: Session, display_name: str) -> list[str | None]:
 def game_service(
     db_session: Session, publisher: RecordingRoomEventPublisher, scheduler: RecordingRoundScheduler
 ) -> GameService:
-    """Le service hors requête, comme le lancent les timers et le canal."""
     rooms: RoomService = RoomService(db_session, get_settings(), publisher)
     return GameService(
         db_session, publisher, rooms, TemplateService(db_session, get_settings()), scheduler
     )
-
-
-# --- « Suivant » ------------------------------------------------------------------------------
 
 
 def test_the_admin_moves_to_the_next_item(
@@ -152,7 +145,6 @@ def test_the_admin_moves_to_the_next_item(
     assert body["game"]["placed_participant_ids"] == []
     assert body["version"] == placed["version"] + 1
     assert stored_game(db_session).rounds[0].ended_at is not None
-    # Bob n'avait pas placé l'item : vote absent ; Alice l'avait placé
     assert absent_tiles(db_session, "bob") == ["Tile 0"]
     assert absent_tiles(db_session, "alice") == []
     started: object = room_events.events[-1][1]
@@ -210,13 +202,9 @@ def test_the_last_round_starts_the_cooldown(
     cooldown: object = room_events.events[-1][1]
     assert isinstance(cooldown, CooldownStartedEvent)
     assert cooldown.data.ends_at == game.cooldown_ends_at
-    # Plus aucun tour à terminer
     again: Response = next_round(auth_client, code, alice)
     assert again.status_code == 409
     assert again.json()["code"] == ErrorCode.ROUND_NOT_IN_PROGRESS
-
-
-# --- Timer ------------------------------------------------------------------------------------
 
 
 def test_a_timer_is_scheduled_for_each_round(
@@ -254,7 +242,6 @@ def test_the_timer_ends_its_round_only_once(
 
     service.end_round_on_timer(game_id, 1)
     event_count: int = len(room_events.events)
-    # En retard, ou après un « suivant » : le tour 1 n'est plus en cours, rien ne change
     service.end_round_on_timer(game_id, 1)
 
     assert stored_game(db_session).current_round_number == 2
@@ -271,7 +258,6 @@ def test_placing_after_the_end_of_the_round_timer_is_refused(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
     start_game(auth_client, code, alice)
-    # La fin du tour est passée, son timer pas encore (threadpool chargé, redémarrage)
     stored_game(db_session).current_round.ends_at = datetime.now(UTC) - timedelta(seconds=1)
     db_session.flush()
 
@@ -295,7 +281,6 @@ def test_pending_deadlines_are_scheduled_again_at_startup(
     recorded: RecordingRoundScheduler = RecordingRoundScheduler()
     monkeypatch.setattr(main_module, "round_timers", recorded)
 
-    # Un redémarrage : les timers en mémoire sont perdus, la base garde la fin du tour en cours
     main_module._reschedule_rounds(lambda: nullcontext(db_session))
 
     game: Game = stored_game(db_session)
@@ -312,7 +297,6 @@ def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
     code: str = alice_room["code"]
     settings(auth_client, code, alice, auto_advance="timer", timer_seconds=20)
     start_game(auth_client, code, alice)
-    # La salle a été supprimée (compte du room admin supprimé) : la partie reste, sans salle
     stored_game(db_session).room_id = None
     db_session.flush()
     recorded: RecordingRoundScheduler = RecordingRoundScheduler()
@@ -321,9 +305,6 @@ def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
     main_module._reschedule_rounds(lambda: nullcontext(db_session))
 
     assert recorded.deadlines == []
-
-
-# --- « Tout le monde a placé » ------------------------------------------------------------------
 
 
 def test_everyone_placed_ends_the_round(
@@ -364,7 +345,6 @@ def test_a_disconnected_player_is_not_waited_for(
     response: Response = place_current(auth_client, db_session, code, alice)
 
     assert response.json()["game"]["round_number"] == 2
-    # Bob, déconnecté, a un vote absent pour l'item
     assert absent_tiles(db_session, "bob") == ["Tile 0"]
 
 
@@ -384,7 +364,6 @@ def test_a_departure_can_end_the_round(
     set_connected(db_session, {"alice", "bob"})
     place_current(auth_client, db_session, code, alice)
 
-    # Bob, qui n'a pas placé, ferme son dernier onglet (fin du délai de grâce)
     game_service(db_session, room_events, round_scheduler).set_presence(
         seat_id_of(db_session, "bob"), False
     )
@@ -405,7 +384,6 @@ def test_a_return_can_end_the_round(
     settings(auth_client, code, alice, auto_advance="everyone_placed")
     join(auth_client, code, bob)
     start_game(auth_client, code, alice)
-    # Alice a placé puis s'est déconnectée ; Bob, qui n'a pas placé, aussi : personne à attendre
     set_connected(db_session, set())
     place_current(auth_client, db_session, code, alice)
     assert stored_game(db_session).current_round_number == 1
@@ -414,7 +392,6 @@ def test_a_return_can_end_the_round(
         seat_id_of(db_session, "alice"), True
     )
 
-    # Seule connectée, Alice a placé : le tour se termine sans attendre le room admin
     assert stored_game(db_session).current_round_number == 2
 
 
@@ -482,9 +459,6 @@ def test_without_automatic_setting_the_round_waits_for_the_admin(
     assert stored_game(db_session).current_round_number == 1
 
 
-# --- Retardataire -----------------------------------------------------------------------------
-
-
 def test_a_late_joiner_gets_absent_votes_for_the_past_rounds(
     auth_client: TestClient,
     db_session: Session,
@@ -498,7 +472,5 @@ def test_a_late_joiner_gets_absent_votes_for_the_past_rounds(
 
     join(auth_client, code, bob)
 
-    # Le tour 1 est fini, le tour 2 est en cours : Bob peut encore placer Tile 1
     assert absent_tiles(db_session, "bob") == ["Tile 0"]
-    # Alice n'avait pas placé Tile 0 non plus : vote absent à la fin du tour 1
     assert absent_tiles(db_session, "alice") == ["Tile 0"]

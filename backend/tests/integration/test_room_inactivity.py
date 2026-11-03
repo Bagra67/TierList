@@ -1,6 +1,3 @@
-"""Fermeture automatique des salles inactives (US-2.8) : une salle ouverte où personne n'est
-connecté, sans changement depuis le délai d'inactivité, est fermée comme par son room admin."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -43,12 +40,10 @@ def alice_room(
 def games(
     db_session: Session, publisher: RecordingRoomEventPublisher, scheduler: RecordingRoundScheduler
 ) -> GameService:
-    """Le service hors requête, comme le lance le balayage."""
     return build_game_service(db_session, get_settings(), publisher, scheduler)
 
 
 def last_changed(db_session: Session, code: str, hours_ago: float) -> uuid.UUID:
-    """La salle n'a plus changé depuis hours_ago heures ; renvoie son identifiant."""
     changed_at: datetime = datetime.now(UTC) - timedelta(hours=hours_ago)
     db_session.execute(update(Room).where(Room.code == code).values(updated_at=changed_at))
     db_session.expire_all()
@@ -98,7 +93,6 @@ def test_a_room_with_someone_connected_stays_open(
     room_events: RecordingRoomEventPublisher,
     round_scheduler: RecordingRoundScheduler,
 ):
-    # Alice reste dans le lobby sans rien changer : le heartbeat n'écrit rien en base
     db_session.execute(update(Participant).values(connected=True))
     last_changed(db_session, alice_room["code"], hours_ago=25)
 
@@ -136,7 +130,6 @@ def test_a_room_active_again_is_checked_under_its_lock(
     room_events: RecordingRoomEventPublisher,
     round_scheduler: RecordingRoundScheduler,
 ):
-    # La liste a été lue avant qu'Alice ne revienne : la salle est revérifiée sous son verrou
     room_id: uuid.UUID = last_changed(db_session, alice_room["code"], hours_ago=1)
     monkeypatch.setattr(
         room_repository, "list_inactive_room_ids", lambda session, cutoff: [room_id]
@@ -159,7 +152,6 @@ def test_a_change_of_the_room_restarts_the_delay(
     round_scheduler: RecordingRoundScheduler,
 ):
     last_changed(db_session, alice_room["code"], hours_ago=25)
-    # Bob rejoint la salle : la version change, rooms.updated_at avec elle
     bob: dict[str, str] = register(auth_client, "bob@example.com")
     assert auth_client.post(f"/rooms/{alice_room['code']}/join", headers=bob).status_code == 200
 

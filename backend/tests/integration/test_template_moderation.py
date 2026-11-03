@@ -1,7 +1,3 @@
-"""Modération des templates (US-1.5) : masquer, réafficher ou supprimer un template, par les routes
-des super admins ; chaque action s'écrit au journal, et un template masqué ne lance plus de
-partie."""
-
 import uuid
 from datetime import UTC, datetime
 
@@ -43,7 +39,6 @@ def alice(auth_client: TestClient) -> dict[str, str]:
 
 @pytest.fixture
 def template_id(auth_client: TestClient, db_session: Session, alice: dict[str, str]) -> str:
-    """Template « Food » d'Alice, avec 3 tuiles."""
     return create_template(auth_client, db_session, alice)
 
 
@@ -163,7 +158,6 @@ def test_deleting_a_template_is_a_soft_deletion_like_its_owner_would_do(
 
     assert response.status_code == 204
     assert stored_template(db_session, template_id).deleted_at is not None
-    # Disparu pour son propriétaire, puis purgé par la tâche de nuit
     assert auth_client.get(f"/templates/{template_id}", headers=alice).status_code == 404
     [entry] = logged_actions(db_session)
     assert entry.action == ModerationActionKind.DELETE
@@ -229,7 +223,6 @@ def test_the_template_actions_refuse_other_accounts(
     template_id: str,
     action: str,
 ):
-    # Même la propriétaire du template : seul un super admin modère
     response: Response = moderate(auth_client, alice, action, template_id)
 
     assert response.status_code == 403
@@ -284,7 +277,6 @@ def test_a_hidden_template_cannot_start_a_game_until_it_is_unhidden(
 
     assert refused.status_code == 409
     assert refused.json()["code"] == ErrorCode.TEMPLATE_HIDDEN
-    # Le lobby le dit à la place du bouton de lancement
     assert lobby["template"]["hidden"] is True
     assert started.status_code == 201
 
@@ -300,6 +292,5 @@ def test_a_game_in_progress_finishes_after_its_template_is_hidden(
 
     moderate(auth_client, nina, "hide", template_id)
 
-    # La partie ne dépend que de sa version figée : elle continue
     following: JsonObject = next_item(auth_client, room["code"], alice)
     assert following["game"]["round_number"] == 2

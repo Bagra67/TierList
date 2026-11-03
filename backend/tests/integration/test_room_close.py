@@ -1,6 +1,3 @@
-"""Fermeture d'une salle (US-2.7) : la salle disparaît avec ses places, ses parties lui survivent ;
-une partie en cours est close d'abord."""
-
 import uuid
 
 import pytest
@@ -51,7 +48,6 @@ def alice_room(
     room_events: RecordingRoomEventPublisher,
     round_scheduler: RecordingRoundScheduler,
 ) -> JsonObject:
-    """Salle d'Alice, que Bob a rejointe."""
     template_id: str = create_template(auth_client, db_session, alice, tile_count=TILE_COUNT)
     room: JsonObject = create_room(auth_client, alice, template_id)
     assert auth_client.post(f"/rooms/{room['code']}/join", headers=bob).status_code == 200
@@ -87,7 +83,6 @@ def test_closing_deletes_the_room_and_its_seats(
     assert auth_client.get(f"/rooms/{alice_room['code']}", headers=alice).status_code == 404
     assert db_session.scalars(select(Room)).all() == []
     assert db_session.scalars(select(Participant)).all() == []
-    # Tous les sockets de la salle sont fermés, après le commit
     assert room_events.closed_rooms == [closed_id]
 
 
@@ -123,7 +118,6 @@ def test_closing_during_a_round_closes_the_game_with_its_rankings(
     place_current_in_first_tier(auth_client, started, alice)
     place_current_in_first_tier(auth_client, started, bob)
     second: JsonObject = next_item(auth_client, code, alice)
-    # Seule Alice place le deuxième item avant la fermeture
     place_current_in_first_tier(auth_client, second, alice)
 
     assert close(auth_client, code, alice).status_code == 204
@@ -133,7 +127,6 @@ def test_closing_during_a_round_closes_the_game_with_its_rankings(
     assert game.closed_at is not None
     assert game.room_id is None
     assert all(game_round.ended_at is not None for game_round in game.rounds[:2])
-    # Les classements du moment deviennent les plateaux finaux, rattachés aux joueurs figés
     finals: dict[str, int] = {}
     for placement in game.placements:
         assert placement.participant_id is None
@@ -214,7 +207,6 @@ def test_deleting_the_admin_account_closes_their_room_and_its_game(
     assert deleted.status_code == 204
     assert db_session.scalars(select(Room)).all() == []
     game: Game = stored_game(db_session)
-    # La partie est close au lieu de rester orpheline, et le classement de Bob est gardé
     assert game.status == GameStatus.CLOSED
     assert [player.display_name for player in game.players] == ["bob"]
     assert room_events.closed_rooms == [closed_id]

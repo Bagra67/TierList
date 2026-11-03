@@ -14,7 +14,6 @@ from app.main import api_app
 
 @pytest.fixture
 def no_env_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.MonkeyPatch:
-    # Dossier sans .env : seules les variables d'environnement du test comptent.
     monkeypatch.chdir(tmp_path)
     return monkeypatch
 

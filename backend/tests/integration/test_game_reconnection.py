@@ -1,5 +1,3 @@
-"""Retour à sa place pendant une partie (US-4.4) et arrivée en cours de partie (US-4.5)."""
-
 import uuid
 
 import pytest
@@ -53,7 +51,6 @@ def your_seat(room: JsonObject) -> str:
 
 
 def absent_tiles(db_session: Session, seat_id: str) -> list[str | None]:
-    """Textes des items pour lesquels cette place a un vote absent, dans l'ordre des tours."""
     game: Game = db_session.scalars(select(Game)).one()
     db_session.refresh(game)
     absent_ids: set[uuid.UUID] = {
@@ -67,14 +64,10 @@ def absent_tiles(db_session: Session, seat_id: str) -> list[str | None]:
 
 
 def disconnect(db_session: Session, seat_id: str) -> None:
-    """Le canal temps réel de cette place se ferme (sans websocket dans ces tests)."""
     participant: Participant | None = db_session.get(Participant, uuid.UUID(seat_id))
     assert participant is not None
     participant.connected = False
     db_session.flush()
-
-
-# --- Retour à sa place --------------------------------------------------------------------------
 
 
 def test_an_account_finds_its_ranking_and_the_current_round_when_coming_back(
@@ -90,7 +83,6 @@ def test_an_account_finds_its_ranking_and_the_current_round_when_coming_back(
     place_current_in_first_tier(auth_client, started, bob)
     bob_seat: str = your_seat(joined)
     disconnect(db_session, bob_seat)
-    # Pendant son absence, deux tours se terminent : il avait placé le premier, pas le second
     next_item(auth_client, code, alice)
     version: int = next_item(auth_client, code, alice)["version"]
 
@@ -138,14 +130,11 @@ def test_a_guest_comes_back_with_the_cookie_or_the_personal_link(
     token: str = guest["guest_link"].split("#guest=", 1)[1]
     lou_seat: str = your_seat(guest)
     started: JsonObject = start_game(auth_client, code, alice)
-    # Sans en-tête : le cookie du navigateur de Lou
     place_current_in_first_tier(auth_client, started)
     disconnect(db_session, lou_seat)
     next_item(auth_client, code, alice)
 
-    # Même navigateur : le cookie suffit
     same_browser: JsonObject = auth_client.get(f"/rooms/{code}").json()
-    # Autre appareil, sans cookie : le lien personnel
     auth_client.cookies.clear()
     other_device: Response = auth_client.post(f"/rooms/{code}/guest-session", json={"token": token})
 
@@ -154,9 +143,6 @@ def test_a_guest_comes_back_with_the_cookie_or_the_personal_link(
         assert your_seat(room) == lou_seat
         assert room["game"]["round_number"] == 2
         assert board(room) == [("S", "Tile 0", 0)]
-
-
-# --- Arrivée en cours de partie -----------------------------------------------------------------
 
 
 def test_a_late_joiner_during_the_cooldown_is_absent_for_every_round(

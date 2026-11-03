@@ -29,7 +29,6 @@ JsonObject = dict[str, Any]
 
 
 def register(client: TestClient, email: str) -> dict[str, str]:
-    """Crée un compte et renvoie l'en-tête Authorization de son access token."""
     response: Response = client.post(
         "/auth/register",
         json={"email": email, "password": PASSWORD, "display_name": email.split("@")[0]},
@@ -128,17 +127,14 @@ def test_a_failed_cleanup_of_a_failed_upload_keeps_the_database_error_and_logs_t
 
     monkeypatch.setattr(db_session, "commit", fail_commit)
     failing_storage: FailingImageStorage = FailingImageStorage(stored_images)
-    # Remplace le faux stockage du client ; la fixture client retire la surcharge à la fin
     api_app.dependency_overrides[get_image_storage] = lambda: failing_storage
 
     with caplog.at_level(logging.ERROR):
         response: Response = upload(auth_client, alice, make_image_file((100, 100), "PNG"))
 
     assert response.status_code == 500
-    # Le fichier n'a pas pu être effacé : sa clé est journalisée pour l'effacer à la main
     [orphan_key] = list(stored_images)
     assert orphan_key in caplog.text
-    # L'erreur journalisée par le gestionnaire générique est bien celle de la base
     assert "OperationalError" in caplog.text
 
 
@@ -147,7 +143,6 @@ def test_deleting_the_account_keeps_its_images_for_the_garbage_collection(
 ):
     uploaded: Response = upload(auth_client, alice, make_image_file((100, 100), "PNG"))
 
-    # TestClient.delete n'accepte pas de corps : on passe par request()
     deleted: Response = auth_client.request(
         "DELETE", "/auth/me", json={"password": PASSWORD}, headers=alice
     )
@@ -209,7 +204,6 @@ def test_upload_refuses_the_file_of_an_image_deleted_by_the_moderation(
     db_session.flush()
     files_before: dict[str, bytes] = dict(stored_images)
 
-    # Le même fichier, par n'importe qui : le refus habituel, sans dire pourquoi (US-1.6)
     response: Response = upload(auth_client, bob, content)
 
     assert response.status_code == 415
@@ -227,7 +221,6 @@ def test_a_hidden_image_does_not_ban_its_file(
     hidden.status = ImageStatus.HIDDEN
     db_session.flush()
 
-    # Seule la suppression bannit l'empreinte : un masquage peut encore être levé
     response: Response = upload(auth_client, alice, content)
 
     assert response.status_code == 201
@@ -296,7 +289,6 @@ def test_uploads_are_limited_per_account_and_hour(
     assert body["code"] == ErrorCode.IMAGE_UPLOAD_LIMIT_REACHED
     assert body["params"] == {"max_uploads": 2}
     assert len(stored_images) == 2
-    # La limite est propre à chaque compte
     assert upload(auth_client, bob, content).status_code == 201
 
 

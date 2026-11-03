@@ -18,28 +18,20 @@ from app.models.user import User
 from app.repositories import templates as template_repository
 from app.services.templates import TemplateService
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
-# Temps laissé à la seconde requête pour arriver jusqu'au verrou avant que la première se termine
 SECOND_REQUEST_HEAD_START_SECONDS = 0.3
 
 
 @pytest.fixture
 def committed_template(migrated_engine: Engine) -> Iterator[tuple[uuid.UUID, uuid.UUID]]:
-    """Utilisateur et template réellement validés en base : deux requêtes simultanées utilisent
-    deux connexions, ce que la session isolée des autres tests ne permet pas. Le template a deux
-    tiers et une tuile de moins que la limite. Supprimés à la fin."""
     with Session(migrated_engine) as session:
         owner: User = User(email=f"lock-{uuid.uuid4()}@example.com", display_name="Lock")
         session.add(owner)
         session.flush()
         template: Template = TemplateService(session, get_settings()).create(owner, "Locked")
-        # Deux tiers seulement : supprimer les deux en même temps viderait la tier list
         for extra_tier in template.tiers[2:]:
             session.delete(extra_tier)
-        # Une seule tuile de plus atteint la limite : deux ajouts simultanés la dépasseraient
         for position in range(FREE_PLAN_MAX_TILES - 1):
             template.tiles.append(Tile(text=f"Tile {position}", position=position))
         session.commit()
@@ -49,7 +41,6 @@ def committed_template(migrated_engine: Engine) -> Iterator[tuple[uuid.UUID, uui
         yield owner_id, template_id
     finally:
         with Session(migrated_engine) as session:
-            # Supprime aussi ses templates et leurs tiers (ON DELETE CASCADE)
             session.execute(delete(User).where(User.id == owner_id))
             session.commit()
 
@@ -62,7 +53,6 @@ def test_two_simultaneous_deletions_keep_the_last_tier(
     errors: list[Exception] = []
 
     with Session(migrated_engine) as first_request:
-        # Première requête : supprime le premier tier, sans avoir encore validé
         template: Template | None = template_repository.get_owned_template(
             first_request, template_id, owner_id, for_update=True
         )
@@ -71,7 +61,6 @@ def test_two_simultaneous_deletions_keep_the_last_tier(
         first_request.delete(template.tiers[0])
         first_request.flush()
 
-        # Seconde requête, en parallèle : supprime l'autre tier
         def delete_second_tier() -> None:
             with Session(migrated_engine) as second_request:
                 owner: User | None = second_request.get(User, owner_id)
@@ -89,7 +78,6 @@ def test_two_simultaneous_deletions_keep_the_last_tier(
         first_request.commit()
         second_request_thread.join(timeout=10)
 
-    # La seconde requête a attendu la première, puis a vu qu'il ne restait qu'un tier
     assert len(errors) == 1
     with Session(migrated_engine) as session:
         remaining: list[Tier] = list(
@@ -106,7 +94,6 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
     errors: list[Exception] = []
 
     with Session(migrated_engine) as first_request:
-        # Première requête : ajoute la dernière tuile permise, sans avoir encore validé
         template: Template | None = template_repository.get_owned_template(
             first_request, template_id, owner_id, for_update=True
         )
@@ -114,7 +101,6 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
         template.tiles.append(Tile(text="Last allowed", position=len(template.tiles)))
         first_request.flush()
 
-        # Seconde requête, en parallèle : ajoute une tuile de plus
         def add_one_more_tile() -> None:
             with Session(migrated_engine) as second_request:
                 owner: User | None = second_request.get(User, owner_id)
@@ -132,7 +118,6 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
         first_request.commit()
         second_request_thread.join(timeout=10)
 
-    # La seconde requête a attendu la première, puis a vu la limite atteinte
     assert len(errors) == 1
     with Session(migrated_engine) as session:
         tile_texts: list[str | None] = list(
@@ -150,7 +135,6 @@ def test_a_snapshot_waits_for_a_change_in_progress(
     snapshot_ids: list[uuid.UUID] = []
 
     with Session(migrated_engine) as first_request:
-        # Première requête : supprime une tuile, sans avoir encore validé
         template: Template | None = template_repository.get_owned_template(
             first_request, template_id, owner_id, for_update=True
         )
@@ -158,7 +142,6 @@ def test_a_snapshot_waits_for_a_change_in_progress(
         first_request.delete(template.tiles[0])
         first_request.flush()
 
-        # Seconde requête, en parallèle : démarre une partie (snapshot validée aussitôt)
         def take_a_snapshot() -> None:
             with Session(migrated_engine) as second_request:
                 owner: User | None = second_request.get(User, owner_id)
@@ -177,13 +160,10 @@ def test_a_snapshot_waits_for_a_change_in_progress(
 
     assert len(snapshot_ids) == 1
     try:
-        # La snapshot a attendu la fin de la suppression : elle copie la version modifiée, pas
-        # celle d'avant (que lirait une copie sans verrou)
         with Session(migrated_engine) as session:
             snapshot_tile_count: int = len(session.get_one(TemplateSnapshot, snapshot_ids[0]).tiles)
         assert snapshot_tile_count == FREE_PLAN_MAX_TILES - 2
     finally:
-        # Une snapshot survit à la suppression du compte : la fixture ne l'efface pas
         with Session(migrated_engine) as session:
             session.execute(delete(TemplateSnapshot).where(TemplateSnapshot.id.in_(snapshot_ids)))
             session.commit()

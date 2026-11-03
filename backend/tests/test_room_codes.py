@@ -9,5 +9,4 @@ def test_room_codes_use_only_the_unambiguous_alphabet():
     assert set("".join(codes)) <= set(ROOM_CODE_ALPHABET)
     # Aucun caractère qu'on confond en lisant ou en dictant le code
     assert not set("".join(codes)) & set("0O1I")
-    # Tirages aléatoires : 200 codes identiques trahiraient un générateur figé
     assert len(set(codes)) > 1

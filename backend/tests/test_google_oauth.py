@@ -17,14 +17,11 @@ REDIRECT_URI = "http://localhost:5173/api/auth/google/callback"
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
 ATTEMPT_TTL = timedelta(minutes=10)
 
-# Clés RSA générées pour les tests : elles jouent le rôle des clés de signature de Google
 GOOGLE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
 class StaticJWKClient(jwt.PyJWKClient):
-    """Renvoie toujours la clé publique de test, sans télécharger le JWKS de Google."""
-
     def __init__(self) -> None:
         jwk = json.loads(RSAAlgorithm.to_jwk(GOOGLE_KEY.public_key()))
         self._signing_key = jwt.PyJWK(jwk, algorithm="RS256")
@@ -87,7 +84,6 @@ def test_login_attempt_cookie_signed_with_another_key_is_rejected():
 
 
 def test_login_attempt_cookie_expires_after_its_ttl():
-    # Durée négative : le cookie est déjà expiré au moment où on le relit
     cookie = GoogleLoginAttempt.start(None).to_cookie(SECRET_KEY, timedelta(seconds=-1))
 
     with pytest.raises(GoogleAuthError):
@@ -158,7 +154,6 @@ def test_fetch_identity_exchanges_the_code_and_verifies_the_id_token():
 
 
 def test_id_token_issued_slightly_in_the_future_is_accepted():
-    # Horloge de Google légèrement en avance sur la nôtre : le token reste valide
     attempt = GoogleLoginAttempt.start(None)
     id_token = make_id_token(attempt.nonce, iat=datetime.now(UTC) + timedelta(seconds=30))
 
