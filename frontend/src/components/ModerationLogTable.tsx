@@ -88,7 +88,8 @@ export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTable
   );
 }
 
-// La cible d'une entrée ; un compte qui existe encore mène à sa page
+// La cible d'une entrée. Un compte mène à sa page, qui dit « introuvable » une fois le compte
+// supprimé : savoir s'il existe encore demanderait une requête de plus par entrée
 function LogTarget({ entry }: { entry: ModerationLogEntry }) {
   const { t } = useTranslation();
   const label: string = t('moderation.log.targetCell', {
