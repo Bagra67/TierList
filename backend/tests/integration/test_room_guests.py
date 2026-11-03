@@ -137,11 +137,9 @@ def test_a_nickname_already_used_in_the_room_is_refused(
     assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN
 
 
-def test_the_nickname_index_refusal_is_a_conflict_too(
+def test_the_nickname_index_refuses_a_duplicate_the_service_did_not_see(
     auth_client: TestClient, alice_room: JsonObject, monkeypatch: pytest.MonkeyPatch
 ):
-    # Le service ne voit aucun nom pris (comme quand lower() diffère entre Python et PostgreSQL) :
-    # c'est l'index unique de la base qui refuse le doublon
     join_as_guest(auth_client, alice_room["code"], "Lou")
     auth_client.cookies.clear()
     monkeypatch.setattr(RoomService, "_taken_names", staticmethod(lambda room: set()))

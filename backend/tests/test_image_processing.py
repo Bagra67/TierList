@@ -10,8 +10,8 @@ from app.services.image_processing import CompressedImage, compress_image
 from tests.image_files import make_image_file
 
 MAX_SOURCE_PIXELS: int = 40_000_000
-# Balise EXIF Orientation : 6 = l'image doit être tournée de 90° dans le sens horaire
 EXIF_ORIENTATION_TAG: int = 0x0112
+EXIF_ORIENTATION_ROTATE_90_CLOCKWISE: int = 6
 EXIF_MAKE_TAG: int = 0x010F
 
 
@@ -97,8 +97,7 @@ def test_the_longest_side_is_resized_to_512_keeping_proportions(
     [
         pytest.param((4000, 3000), (512, 384), id="photo-landscape"),
         pytest.param((3000, 4000), (384, 512), id="photo-portrait"),
-        # Petit côté sous 512 px : le décodeur ne réduit pas l'image en la lisant
-        pytest.param((4000, 300), (512, 38), id="panorama"),
+        pytest.param((4000, 300), (512, 38), id="short-side-under-512-not-reduced-by-the-decoder"),
     ],
 )
 def test_a_large_jpeg_decoded_at_a_reduced_scale_keeps_the_exact_output_size(
@@ -130,7 +129,7 @@ def test_a_large_jpeg_is_decoded_at_a_reduced_scale(monkeypatch: pytest.MonkeyPa
 
 def test_exif_orientation_is_applied() -> None:
     exif: Image.Exif = Image.Exif()
-    exif[EXIF_ORIENTATION_TAG] = 6
+    exif[EXIF_ORIENTATION_TAG] = EXIF_ORIENTATION_ROTATE_90_CLOCKWISE
     content: bytes = make_image_file((400, 200), "JPEG", exif=exif.tobytes())
 
     compressed: CompressedImage = compress_image(content, MAX_SOURCE_PIXELS)

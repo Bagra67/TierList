@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.constants.games import PUBLIC_RESULTS_TOKEN_MAX_LENGTH
 from app.models.image import Image, ImageStatus
 from app.models.snapshot_tile import SnapshotTile
 from tests.integration.helpers import (
@@ -229,9 +230,8 @@ def test_an_unknown_results_link_is_not_found(auth_client: TestClient):
 
 
 def test_a_results_link_longer_than_any_token_is_refused_at_once(auth_client: TestClient):
-    response: Response = results(auth_client, "x" * 33)
+    response: Response = results(auth_client, "x" * (PUBLIC_RESULTS_TOKEN_MAX_LENGTH + 1))
 
-    # Plus long que games.public_token : refusé avant toute lecture en base
     assert response.status_code == 422
 
 
@@ -274,11 +274,9 @@ def test_the_results_link_keeps_a_player_who_deleted_their_account(
     assert boards(response.json())["bob"] == ({"A": ["Tile 0"], "B": ["Tile 1"]}, ["Tile 2"])
 
 
-def test_every_room_answer_counts_the_players_of_the_past_games(
+def test_a_room_answer_built_after_a_commit_still_counts_the_players_of_the_past_games(
     auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject, public_token: str
 ):
-    # Une réponse construite après un commit (réglages) relit la salle : le nombre de joueurs,
-    # calculé par la requête, ne doit pas tomber à 0
     changed: Response = auth_client.patch(
         f"/rooms/{alice_room['code']}/settings", json={"admin_plays": False}, headers=alice
     )

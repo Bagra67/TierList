@@ -106,9 +106,10 @@ def test_the_pages_follow_each_other_without_gap_nor_duplicate(
     auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
 ):
     alice_account: User = account(db_session, "alice@example.com")
-    # Trois images du même instant : l'identifiant départage l'ordre
-    images: list[Image] = [add_image(db_session, alice_account, hours_ago=2) for _ in range(3)]
-    images.append(add_image(db_session, alice_account, hours_ago=1))
+    same_instant_images: list[Image] = [
+        add_image(db_session, alice_account, hours_ago=2) for _ in range(3)
+    ]
+    images: list[Image] = [*same_instant_images, add_image(db_session, alice_account, hours_ago=1)]
 
     first: Response = recent_uploads(auth_client, nina, limit=2)
     second: Response = recent_uploads(auth_client, nina, limit=2, offset=2)

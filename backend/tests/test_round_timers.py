@@ -80,13 +80,12 @@ def test_a_deadline_already_passed_fires_at_once():
     run(scenario)
 
 
-def test_a_deadline_can_be_scheduled_from_another_thread():
+def test_a_deadline_can_be_scheduled_from_a_sync_route_thread():
     async def scenario() -> None:
         deadlines: RecordingDeadlines = RecordingDeadlines()
         timers: RoundTimers = RoundTimers()
         timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
 
-        # Une route REST synchrone tourne dans le threadpool
         thread: threading.Thread = threading.Thread(
             target=timers.schedule, args=(GAME, 1, in_seconds(0.02))
         )

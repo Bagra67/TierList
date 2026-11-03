@@ -193,16 +193,18 @@ def test_refresh_rotates_the_refresh_token(auth_client: TestClient):
     assert me.status_code == 200
 
 
+def replace_refresh_cookie(client: TestClient, refresh_token: str) -> None:
+    client.cookies.delete("refresh_token")
+    client.cookies.set("refresh_token", refresh_token, path="/api/auth")
+
+
 def test_replaying_a_rotated_refresh_token_revokes_the_whole_family(auth_client: TestClient):
     register(auth_client)
     stolen_refresh_token = auth_client.cookies["refresh_token"]
     assert auth_client.post("/auth/refresh").status_code == 200
     legitimate_refresh_token = auth_client.cookies["refresh_token"]
 
-    # Remplace le cookie posé par le serveur : sinon le client enverrait les deux, dans un ordre
-    # qui dépend de httpx2
-    auth_client.cookies.delete("refresh_token")
-    auth_client.cookies.set("refresh_token", stolen_refresh_token, path="/api/auth")
+    replace_refresh_cookie(auth_client, stolen_refresh_token)
     replay = auth_client.post("/auth/refresh")
 
     assert replay.status_code == 401

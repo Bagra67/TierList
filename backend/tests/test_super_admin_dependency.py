@@ -17,10 +17,9 @@ def test_a_super_admin_is_let_through():
     assert get_current_super_admin(super_admin) is super_admin
 
 
-def test_another_account_is_refused_with_a_403():
+def test_another_account_gets_a_403_not_a_401_so_the_frontend_does_not_refresh():
     with pytest.raises(AppHTTPException) as exc_info:
         get_current_super_admin(make_user(UserRole.USER))
 
-    # 403 et non 401 : le compte est connecté, le frontend ne doit pas rafraîchir sa session
     assert exc_info.value.status_code == 403
     assert exc_info.value.code == ErrorCode.SUPER_ADMIN_REQUIRED

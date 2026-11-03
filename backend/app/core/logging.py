@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.constants.logging import APP_LOGGER
+from app.constants.logging import APP_LOG_HANDLER, APP_LOGGER
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -40,14 +40,14 @@ def configure_logging(level: LogLevel) -> None:
                 },
             },
             "handlers": {
-                "default": {
+                APP_LOG_HANDLER: {
                     "class": "logging.StreamHandler",
                     "formatter": "default",
                     "stream": "ext://sys.stderr",
                 },
             },
             "loggers": {
-                APP_LOGGER: {"handlers": ["default"], "level": level, "propagate": False},
+                APP_LOGGER: {"handlers": [APP_LOG_HANDLER], "level": level, "propagate": False},
             },
         }
     )

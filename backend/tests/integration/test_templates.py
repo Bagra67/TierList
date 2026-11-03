@@ -422,8 +422,9 @@ def test_the_last_tier_cannot_be_deleted(auth_client: TestClient, alice: dict[st
 def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str]):
     template: JsonObject = create_template(auth_client, alice, "Movies")
     other: JsonObject = create_template(auth_client, alice, "Books")
-    # Un tier inconnu, puis un tier d'un autre template du même utilisateur
-    for unknown_tier_id in (str(uuid.uuid4()), tier_id(other, "S")):
+    never_created_tier_id: str = str(uuid.uuid4())
+    tier_of_another_template: str = tier_id(other, "S")
+    for unknown_tier_id in (never_created_tier_id, tier_of_another_template):
         url: str = f"/templates/{template['id']}/tiers/{unknown_tier_id}"
         for response in (
             auth_client.patch(url, json={"name": "New name"}, headers=alice),
@@ -599,9 +600,9 @@ def test_delete_a_tile_renumbers_the_others(
 def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str]):
     template: JsonObject = create_template(auth_client, alice, "Food")
     other: JsonObject = create_template(auth_client, alice, "Drinks")
-    other_tile: JsonObject = add_tile(auth_client, alice, other["id"], "Water")
-    # Une tuile inconnue, puis une tuile d'un autre template du même utilisateur
-    for unknown_tile_id in (str(uuid.uuid4()), other_tile["id"]):
+    never_created_tile_id: str = str(uuid.uuid4())
+    tile_of_another_template: JsonObject = add_tile(auth_client, alice, other["id"], "Water")
+    for unknown_tile_id in (never_created_tile_id, tile_of_another_template["id"]):
         url: str = f"/templates/{template['id']}/tiles/{unknown_tile_id}"
         for response in (
             auth_client.patch(url, json={"text": "New text"}, headers=alice),

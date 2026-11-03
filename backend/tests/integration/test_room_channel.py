@@ -18,24 +18,23 @@ from app.constants.rooms import (
     CHANNEL_CLOSE_REMOVED,
     CHANNEL_CLOSE_ROOM_NOT_FOUND,
 )
+from app.core.config import Settings
 from tests.integration.helpers import JsonObject, create_room, create_template, register
 
 pytestmark = pytest.mark.integration
 
-# Origine de l'application dans les tests (FRONTEND_BASE_URL par défaut)
-APP_ORIGIN: dict[str, str] = {"origin": "http://localhost:5173"}
+APP_ORIGIN: dict[str, str] = {"origin": Settings.model_fields["frontend_base_url"].default}
+PRESENCE_GRACE_OUTLASTING_ANY_TEST_SECONDS: int = 30
 
 
 @pytest.fixture
-def channel_client(
+def client_sharing_one_event_loop(
     auth_client: TestClient, override_settings: Callable[..., None]
 ) -> Iterator[TestClient]:
-    """Client ouvert une seule fois : sockets et requêtes REST partagent la même boucle, comme dans
-    le serveur. Le délai de grâce est long par défaut : un socket fermé en fin de test laisse un
-    départ en attente, annulé avec la boucle, au lieu d'écrire en base pendant le nettoyage (la
-    session du test est partagée entre threads). Les tests de départ le raccourcissent pour Bob,
-    après la connexion d'Alice, puis attendent l'événement avant de continuer."""
-    override_settings(room_auth_timeout_seconds=1, room_presence_grace_seconds=30)
+    override_settings(
+        room_auth_timeout_seconds=1,
+        room_presence_grace_seconds=PRESENCE_GRACE_OUTLASTING_ANY_TEST_SECONDS,
+    )
     with auth_client:
         yield auth_client
 
@@ -82,15 +81,15 @@ def participant(room: JsonObject, name: str) -> JsonObject:
 
 
 def test_an_account_opens_the_channel_and_becomes_present(
-    channel_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+    client_sharing_one_event_loop: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    with channel(channel_client, code) as socket:
+    with channel(client_sharing_one_event_loop, code) as socket:
         authenticate(socket, alice)
 
         event: JsonObject = next_event(socket)
 
-        room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
+        room: JsonObject = client_sharing_one_event_loop.get(f"/rooms/{code}", headers=alice).json()
         assert event == {
             "type": "participant.presence",
             "room_version": room["version"],
@@ -101,41 +100,41 @@ def test_an_account_opens_the_channel_and_becomes_present(
 
 
 def test_a_guest_is_recognised_by_the_cookie(
-    channel_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+    client_sharing_one_event_loop: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
     code: str = alice_room["code"]
-    channel_client.post(f"/rooms/{code}/guests", json={"nickname": "Lou"})
+    client_sharing_one_event_loop.post(f"/rooms/{code}/guests", json={"nickname": "Lou"})
 
-    with channel(channel_client, code) as socket:
+    with channel(client_sharing_one_event_loop, code) as socket:
         authenticate(socket, None)
         event: JsonObject = next_event(socket)
-        room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
+        room: JsonObject = client_sharing_one_event_loop.get(f"/rooms/{code}", headers=alice).json()
 
     assert event["type"] == "participant.presence"
     assert event["data"]["participant_id"] == participant(room, "Lou")["id"]
 
 
 def test_the_room_sees_a_player_arrive_and_leave(
-    channel_client: TestClient,
+    client_sharing_one_event_loop: TestClient,
     alice: dict[str, str],
     alice_room: JsonObject,
     override_settings: Callable[..., None],
 ):
     code: str = alice_room["code"]
-    bob: dict[str, str] = register(channel_client, "bob@example.com")
-    with channel(channel_client, code) as alice_socket:
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
+    with channel(client_sharing_one_event_loop, code) as alice_socket:
         authenticate(alice_socket, alice)
         next_event(alice_socket)
         override_settings(room_presence_grace_seconds=0)
 
-        channel_client.post(f"/rooms/{code}/join", headers=bob)
+        client_sharing_one_event_loop.post(f"/rooms/{code}/join", headers=bob)
         joined: JsonObject = next_event(alice_socket)
-        with channel(channel_client, code) as bob_socket:
+        with channel(client_sharing_one_event_loop, code) as bob_socket:
             authenticate(bob_socket, bob)
             connected: JsonObject = next_event(alice_socket)
             next_event(bob_socket)
         disconnected: JsonObject = next_event(alice_socket)
-        room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
+        room: JsonObject = client_sharing_one_event_loop.get(f"/rooms/{code}", headers=alice).json()
 
     bob_id: str = participant(room, "bob")["id"]
     assert joined["type"] == "participant.joined"
@@ -151,24 +150,24 @@ def test_the_room_sees_a_player_arrive_and_leave(
 
 
 def test_a_second_tab_keeps_the_participant_connected(
-    channel_client: TestClient,
+    client_sharing_one_event_loop: TestClient,
     alice: dict[str, str],
     alice_room: JsonObject,
     override_settings: Callable[..., None],
 ):
     code: str = alice_room["code"]
-    bob: dict[str, str] = register(channel_client, "bob@example.com")
-    channel_client.post(f"/rooms/{code}/join", headers=bob)
-    with channel(channel_client, code) as alice_socket:
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
+    client_sharing_one_event_loop.post(f"/rooms/{code}/join", headers=bob)
+    with channel(client_sharing_one_event_loop, code) as alice_socket:
         authenticate(alice_socket, alice)
         next_event(alice_socket)
         override_settings(room_presence_grace_seconds=0)
-        with channel(channel_client, code) as first_tab:
+        with channel(client_sharing_one_event_loop, code) as first_tab:
             authenticate(first_tab, bob)
             next_event(alice_socket)
-            with channel(channel_client, code) as second_tab:
+            with channel(client_sharing_one_event_loop, code) as second_tab:
                 authenticate(second_tab, bob)
-            channel_client.patch(
+            client_sharing_one_event_loop.patch(
                 f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice
             )
             assert next_event(alice_socket)["type"] == "room.settings_updated"
@@ -176,29 +175,31 @@ def test_a_second_tab_keeps_the_participant_connected(
 
 
 def test_coming_back_within_the_grace_delay_keeps_the_participant_connected(
-    channel_client: TestClient,
+    client_sharing_one_event_loop: TestClient,
     alice: dict[str, str],
     alice_room: JsonObject,
     override_settings: Callable[..., None],
 ):
     code: str = alice_room["code"]
-    bob: dict[str, str] = register(channel_client, "bob@example.com")
-    channel_client.post(f"/rooms/{code}/join", headers=bob)
-    with channel(channel_client, code) as alice_socket:
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
+    client_sharing_one_event_loop.post(f"/rooms/{code}/join", headers=bob)
+    with channel(client_sharing_one_event_loop, code) as alice_socket:
         authenticate(alice_socket, alice)
         next_event(alice_socket)
         override_settings(room_presence_grace_seconds=0.5)
-        with channel(channel_client, code) as bob_socket:
+        with channel(client_sharing_one_event_loop, code) as bob_socket:
             authenticate(bob_socket, bob)
             next_event(alice_socket)
-        with channel(channel_client, code) as bob_socket:
+        with channel(client_sharing_one_event_loop, code) as bob_socket:
             authenticate(bob_socket, bob)
             time.sleep(0.8)
-            channel_client.patch(
+            client_sharing_one_event_loop.patch(
                 f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice
             )
             assert next_event(alice_socket)["type"] == "room.settings_updated"
-            room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
+            room: JsonObject = client_sharing_one_event_loop.get(
+                f"/rooms/{code}", headers=alice
+            ).json()
             assert participant(room, "bob")["connected"] is True
 
 
@@ -210,7 +211,7 @@ def test_coming_back_within_the_grace_delay_keeps_the_participant_connected(
     ],
 )
 def test_a_removed_participant_is_disconnected_and_the_room_is_told(
-    channel_client: TestClient,
+    client_sharing_one_event_loop: TestClient,
     alice: dict[str, str],
     alice_room: JsonObject,
     ban: bool,
@@ -218,19 +219,19 @@ def test_a_removed_participant_is_disconnected_and_the_room_is_told(
     reason: str,
 ):
     code: str = alice_room["code"]
-    bob: dict[str, str] = register(channel_client, "bob@example.com")
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
     bob_id: str = participant(
-        channel_client.post(f"/rooms/{code}/join", headers=bob).json(), "bob"
+        client_sharing_one_event_loop.post(f"/rooms/{code}/join", headers=bob).json(), "bob"
     )["id"]
-    with channel(channel_client, code) as alice_socket:
+    with channel(client_sharing_one_event_loop, code) as alice_socket:
         authenticate(alice_socket, alice)
         next_event(alice_socket)
-        with channel(channel_client, code) as bob_socket:
+        with channel(client_sharing_one_event_loop, code) as bob_socket:
             authenticate(bob_socket, bob)
             next_event(alice_socket)
             next_event(bob_socket)
 
-            removed: JsonObject = channel_client.delete(
+            removed: JsonObject = client_sharing_one_event_loop.delete(
                 f"/rooms/{code}/participants/{bob_id}",
                 params={"ban": str(ban).lower()},
                 headers=alice,
@@ -245,49 +246,57 @@ def test_a_removed_participant_is_disconnected_and_the_room_is_told(
 
 
 def test_the_channel_closes_without_authentication(
-    channel_client: TestClient, alice_room: JsonObject, override_settings: Callable[..., None]
+    client_sharing_one_event_loop: TestClient,
+    alice_room: JsonObject,
+    override_settings: Callable[..., None],
 ):
     override_settings(room_auth_timeout_seconds=0.2)
-    with channel(channel_client, alice_room["code"]) as socket:
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         assert_closed_with(socket, CHANNEL_CLOSE_NOT_AUTHENTICATED, ErrorCode.NOT_AUTHENTICATED)
 
 
 @pytest.mark.parametrize("token", ["not-a-token", None])
 def test_a_wrong_token_or_no_cookie_is_not_authenticated(
-    channel_client: TestClient, alice_room: JsonObject, token: str | None
+    client_sharing_one_event_loop: TestClient, alice_room: JsonObject, token: str | None
 ):
-    with channel(channel_client, alice_room["code"]) as socket:
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         socket.send_json({"type": "auth", "access_token": token})
         assert_closed_with(socket, CHANNEL_CLOSE_NOT_AUTHENTICATED, ErrorCode.NOT_AUTHENTICATED)
 
 
 def test_a_user_without_a_seat_cannot_open_the_channel(
-    channel_client: TestClient, alice_room: JsonObject
+    client_sharing_one_event_loop: TestClient, alice_room: JsonObject
 ):
-    bob: dict[str, str] = register(channel_client, "bob@example.com")
-    with channel(channel_client, alice_room["code"]) as socket:
+    bob: dict[str, str] = register(client_sharing_one_event_loop, "bob@example.com")
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         authenticate(socket, bob)
         assert_closed_with(socket, CHANNEL_CLOSE_ROOM_NOT_FOUND, ErrorCode.ROOM_NOT_FOUND)
 
 
-def test_an_unknown_room_cannot_be_followed(channel_client: TestClient, alice: dict[str, str]):
-    with channel(channel_client, "ZZZZZZ") as socket:
+def test_an_unknown_room_cannot_be_followed(
+    client_sharing_one_event_loop: TestClient, alice: dict[str, str]
+):
+    with channel(client_sharing_one_event_loop, "ZZZZZZ") as socket:
         authenticate(socket, alice)
         assert_closed_with(socket, CHANNEL_CLOSE_ROOM_NOT_FOUND, ErrorCode.ROOM_NOT_FOUND)
 
 
-def test_another_origin_is_refused(channel_client: TestClient, alice_room: JsonObject):
+def test_another_origin_is_refused(
+    client_sharing_one_event_loop: TestClient, alice_room: JsonObject
+):
     with (
         pytest.raises(WebSocketDisconnect),
-        channel(channel_client, alice_room["code"], {"origin": "https://evil.example"}),
+        channel(
+            client_sharing_one_event_loop, alice_room["code"], {"origin": "https://evil.example"}
+        ),
     ):
         pass
 
 
 def test_an_unexpected_message_closes_the_channel(
-    channel_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+    client_sharing_one_event_loop: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
-    with channel(channel_client, alice_room["code"]) as socket:
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         authenticate(socket, alice)
         next_event(socket)
 
@@ -297,9 +306,9 @@ def test_an_unexpected_message_closes_the_channel(
 
 
 def test_a_binary_frame_closes_the_channel(
-    channel_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+    client_sharing_one_event_loop: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
-    with channel(channel_client, alice_room["code"]) as socket:
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         authenticate(socket, alice)
         next_event(socket)
 
@@ -309,7 +318,7 @@ def test_a_binary_frame_closes_the_channel(
 
 
 def test_the_server_pings_and_closes_a_silent_client(
-    channel_client: TestClient,
+    client_sharing_one_event_loop: TestClient,
     alice: dict[str, str],
     alice_room: JsonObject,
     override_settings: Callable[..., None],
@@ -319,7 +328,7 @@ def test_the_server_pings_and_closes_a_silent_client(
         room_heartbeat_timeout_seconds=0.3,
         room_auth_timeout_seconds=1,
     )
-    with channel(channel_client, alice_room["code"]) as socket:
+    with channel(client_sharing_one_event_loop, alice_room["code"]) as socket:
         authenticate(socket, alice)
         next_event(socket)
 
