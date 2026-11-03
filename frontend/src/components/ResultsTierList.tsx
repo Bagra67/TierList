@@ -40,9 +40,6 @@ export function ResultsTierList({
   const visibleExtraRow: { label: string; itemIds: string[] } | undefined =
     extraRow !== undefined && extraRow.itemIds.length > 0 ? extraRow : undefined;
   const rowCount: number = tiers.length + (visibleExtraRow === undefined ? 0 : 1);
-  // Figé au montage, puis éteint quand la ligne du haut a fini d'apparaître : une ligne ajoutée
-  // ensuite (autre joueur, autre variante) n'est pas animée seule. En mouvement réduit, rien ne
-  // s'anime (motion-safe) et la fin n'arrive jamais, sans effet
   const [revealing, setRevealing] = useState<boolean>(revealOnMount);
 
   useEffect(() => {

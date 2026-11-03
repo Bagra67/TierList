@@ -20,7 +20,6 @@ export function CopyLinkField({ label, link }: CopyLinkFieldProps) {
 
   async function copyLink() {
     try {
-      // navigator.clipboard n'existe que sur une page sécurisée (HTTPS ou localhost)
       await navigator.clipboard.writeText(link);
       setCopyStatus('copied');
     } catch {

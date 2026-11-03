@@ -48,7 +48,6 @@ export function RoomPage() {
   const queryClient: QueryClient = useQueryClient();
   const { data: user, isPending: isUserPending } = useCurrentUser();
   const [lastRemoval, setLastRemoval] = useState<Removal | null>(null);
-  // Un retrait ne vaut que pour sa salle : en ouvrir une autre l'oublie
   const removal: Removal | null =
     lastRemoval?.roomCode === canonicalRoomCode(code) ? lastRemoval : null;
   const viewer: RoomViewer | undefined =

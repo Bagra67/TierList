@@ -6,8 +6,6 @@ export const COOLDOWN_SHAKE_STEP_PX: number = 0.5;
 
 export const GUEST_LINK_FRAGMENT: string = 'guest';
 
-// Code tel que le backend l'enregistre : un code tapé en minuscules ou avec des espaces ouvre la
-// même salle (et le cookie d'un invité est posé sous le code canonique)
 export function canonicalRoomCode(code: string): string {
   return code.trim().toUpperCase();
 }

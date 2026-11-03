@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
@@ -7,6 +8,7 @@ import { latestSocket } from '../test/fakeWebSocket';
 import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
 import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
+import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
   calledRoutes,
   errorResponse,
@@ -14,6 +16,7 @@ import {
   signedInSession,
   type BackendMock,
 } from '../test/stubBackend';
+import { RoomPage } from './RoomPage';
 
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -170,6 +173,41 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Vous avez été banni de cette salle.')).toBeInTheDocument();
   });
 
+  it('forgets a removal when another room is opened', async () => {
+    stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+      'GET /rooms/AAAAAA': () => Response.json({ ...aliceRoom, code: 'AAAAAA' }),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={['/r/K7P2QX']}>
+        <Link to="/r/AAAAAA">Autre salle</Link>
+        <Routes>
+          <Route path="/r/:code" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+    act(() => latestSocket().closeFromServer(4410));
+    expect(screen.getByRole('status')).toHaveTextContent("L'hôte vous a retiré de cette salle.");
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autre salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle AAAAAA' })).toBeInTheDocument();
+    expect(screen.queryByText("L'hôte vous a retiré de cette salle.")).not.toBeInTheDocument();
+  });
+
+  it('opens the same room from a code typed in lowercase or with spaces', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+    });
+
+    renderRoomPage('%20k7p2qx%20');
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('GET /rooms/K7P2QX');
+  });
+
   it('copies the link and announces it', async () => {
     const writeText: (text: string) => Promise<void> = vi.fn(async () => {});
     stubClipboard(writeText);
@@ -191,6 +229,16 @@ describe('RoomPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
 
+    expect(await screen.findByRole('alert')).toHaveTextContent('copiez-le à la main');
+  });
+
+  it('asks to copy the link by hand on a page without clipboard', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
+
+    expect(navigator.clipboard).toBeUndefined();
     expect(await screen.findByRole('alert')).toHaveTextContent('copiez-le à la main');
   });
 

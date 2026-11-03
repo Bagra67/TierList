@@ -26,6 +26,7 @@ function renderResultsPage(stateFromLobby?: ResultsLinkState) {
   );
 }
 
+const ANIMATION_END_EVENT_HEARD_BY_REACT_IN_JSDOM: string = 'webkitAnimationEnd';
 const resultsRoute: string = `GET /results/${RESULTS_TOKEN}`;
 
 function stubResults(): { includeAbsentVotes: string[] } {
@@ -52,6 +53,10 @@ function voteLines(item: string): string[] {
   return within(screen.getByRole('region', { name: `Votes : ${item}` }))
     .getAllByRole('listitem')
     .map((line: HTMLElement) => line.textContent ?? '');
+}
+
+function fireAnimationEnd(element: HTMLElement): void {
+  fireEvent(element, new Event(ANIMATION_END_EVENT_HEARD_BY_REACT_IN_JSDOM, { bubbles: true }));
 }
 
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
@@ -154,6 +159,23 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
+  it('stops the reveal once the top row has appeared: a row added later is not animated', async () => {
+    stubResults();
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    const tierS: HTMLElement = screen.getByRole('group', { name: 'S' });
+
+    fireAnimationEnd(within(tierS).getAllByRole('listitem')[0]);
+    expect(tierS).toHaveClass('motion-safe:animate-reveal');
+
+    fireAnimationEnd(tierS);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+
+    expect(screen.getByRole('group', { name: 'Jamais placés' })).not.toHaveClass(
+      'motion-safe:animate-reveal',
+    );
+  });
+
   it('does not reveal again when the absent votes box is toggled', async () => {
     stubResults();
     renderResultsPage();
@@ -225,10 +247,18 @@ describe('ResultsPage', () => {
     expect(overall).toHaveFocus();
     const panel: HTMLElement = screen.getByRole('tabpanel');
     expect(panel).toHaveAttribute('aria-labelledby', overall.id);
-    // Ses items sont des boutons : le panneau lui-même n'est pas un arrêt de tabulation
-    expect(panel).not.toHaveAttribute('tabindex');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
+  });
+
+  it('leaves out of the tab order a panel whose items are buttons', async () => {
+    stubResults();
+    renderResultsPage();
+
+    expect(await screen.findByRole('tabpanel')).not.toHaveAttribute('tabindex');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    expect(screen.getByRole('tabpanel')).not.toHaveAttribute('tabindex');
   });
 
   it('copies the public link of the results and announces it', async () => {
