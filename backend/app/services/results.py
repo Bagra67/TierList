@@ -94,7 +94,8 @@ def _item_results(
             continue
         placement: FinalPlacement | None = player.final_placements.get(tile_id)
         if placement is None:
-            absent_player_indexes.append(player_index)
+            if include_absent_votes:
+                absent_player_indexes.append(player_index)
             continue
         voters_per_tier[placement.tier_index].append(player_index)
         scores.append(player_scores[tile_id])
