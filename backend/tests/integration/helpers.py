@@ -1,6 +1,6 @@
 import re
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -156,7 +156,7 @@ def counted_queries(db_session: Session) -> Iterator[list[str]]:
 
 
 def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
-    lookup = getattr(module, name)
+    lookup: Callable[..., object] = getattr(module, name)
     calls: list[object] = []
 
     def stale_lookup(*args: object, **kwargs: object) -> object:

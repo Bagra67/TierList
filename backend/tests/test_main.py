@@ -5,6 +5,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -63,7 +64,7 @@ class UnreachableDatabaseSession:
 def test_health_answers_when_the_database_is_down():
     api_app.dependency_overrides[get_db_session] = UnreachableDatabaseSession
 
-    response = client.get("/api/health")
+    response: Response = client.get("/api/health")
 
     assert response.status_code == 200
 
@@ -87,7 +88,7 @@ def test_api_routes_are_only_served_under_the_prefix():
 
 
 def test_a_path_outside_the_api_uses_the_error_format():
-    response = client.get("/health")
+    response: Response = client.get("/health")
 
     assert response.json() == {"detail": "Not Found", "code": "http_error"}
 

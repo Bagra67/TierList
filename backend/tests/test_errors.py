@@ -3,6 +3,7 @@ from typing import Annotated
 import pytest
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from pydantic import AfterValidator
 
 from app.constants.error_codes import ErrorCode
@@ -92,7 +93,7 @@ def test_validation_error_exposes_the_constraint_as_params():
 
 
 def test_a_validator_exception_is_not_exposed_as_params():
-    response = client.get("/refused", params={"value": "anything"})
+    response: Response = client.get("/refused", params={"value": "anything"})
 
     assert response.status_code == 422
     [error] = response.json()["errors"]
@@ -103,7 +104,7 @@ def test_a_validator_exception_is_not_exposed_as_params():
 def test_an_unexpected_error_is_answered_without_being_raised_again():
     client_seeing_raised_errors: TestClient = TestClient(create_app())
 
-    response = client_seeing_raised_errors.get("/boom")
+    response: Response = client_seeing_raised_errors.get("/boom")
 
     assert response.status_code == 500
 

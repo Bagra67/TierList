@@ -1,8 +1,10 @@
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx2 import Response
 
 from app.core.frontend import mount_frontend_after_api
 
@@ -69,14 +71,14 @@ def test_a_link_out_of_the_build_is_never_served(
 ):
     outside_file: Path = tmp_path / "secret.txt"
     (tmp_path / "frontend_dist" / "link.txt").write_text("secret", encoding="utf-8")
-    real_resolve = Path.resolve
+    real_resolve: Callable[[Path, bool], Path] = Path.resolve
 
     def resolve_the_link_like_the_file_system(path: Path, strict: bool = False) -> Path:
         return outside_file if path.name == "link.txt" else real_resolve(path, strict)
 
     monkeypatch.setattr(Path, "resolve", resolve_the_link_like_the_file_system)
 
-    response = client.get("/link.txt")
+    response: Response = client.get("/link.txt")
 
     assert "secret" not in response.text
 

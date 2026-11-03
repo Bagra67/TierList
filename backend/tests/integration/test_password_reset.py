@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -216,7 +217,7 @@ def test_an_oversized_link_token_is_refused_before_decoding(
 ):
     oversized_token: str = "x" * (EMAIL_TOKEN_MAX_LENGTH + 1)
 
-    response = auth_client.post(url, json={**body, "token": oversized_token})
+    response: Response = auth_client.post(url, json={**body, "token": oversized_token})
 
     assert response.status_code == 422
     assert response.json()["errors"][0]["code"] == "string_too_long"

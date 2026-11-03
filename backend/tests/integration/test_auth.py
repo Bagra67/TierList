@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
@@ -195,7 +196,7 @@ def test_simultaneous_registrations_with_the_same_email_conflict(
     register(auth_client)
     miss_first_lookup(monkeypatch, user_repository, "get_user_by_email")
 
-    response = auth_client.post("/auth/register", json=REGISTRATION)
+    response: Response = auth_client.post("/auth/register", json=REGISTRATION)
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.EMAIL_ALREADY_REGISTERED

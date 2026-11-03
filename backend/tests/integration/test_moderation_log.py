@@ -1,3 +1,4 @@
+import uuid
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 
@@ -88,7 +89,7 @@ def test_deleting_the_target_keeps_the_entry_and_its_label(db_session: Session, 
     template: Template = Template(owner_id=nina.id, name="Top 10")
     db_session.add(template)
     db_session.flush()
-    template_id = template.id
+    template_id: uuid.UUID = template.id
     ModerationLogService(db_session, get_settings()).record(
         nina,
         ModerationActionKind.HIDE,

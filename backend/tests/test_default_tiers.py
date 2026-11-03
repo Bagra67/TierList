@@ -18,18 +18,18 @@ def channels(color: str) -> tuple[float, float, float]:
 
 
 def relative_luminance(color: str) -> float:
-    red, green, blue = (
+    linear_channels: list[float] = [
         channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
         for channel in channels(color)
-    )
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    ]
+    return 0.2126 * linear_channels[0] + 0.7152 * linear_channels[1] + 0.0722 * linear_channels[2]
 
 
 def contrast_ratio(first_color: str, second_color: str) -> float:
-    lighter, darker = sorted(
+    lighter_first: list[float] = sorted(
         (relative_luminance(first_color), relative_luminance(second_color)), reverse=True
     )
-    return (lighter + 0.05) / (darker + 0.05)
+    return (lighter_first[0] + 0.05) / (lighter_first[1] + 0.05)
 
 
 def hue_degrees_along_the_ramp(color: str) -> float:
