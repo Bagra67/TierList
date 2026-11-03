@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import cast
 
 from sqlalchemy import Select, delete, exists, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Mapped, Session
 from sqlalchemy.sql.dml import ReturningDelete
 from sqlalchemy.sql.expression import Exists
 
@@ -108,8 +109,9 @@ def list_recent_images(
 def template_names_by_image(
     session: Session, image_ids: list[uuid.UUID]
 ) -> dict[uuid.UUID, list[str]]:
-    statement: Select[uuid.UUID | None, str] = (
-        select(Tile.image_id, Template.name)
+    image_id_kept_by_the_filter: Mapped[uuid.UUID] = cast(Mapped[uuid.UUID], Tile.image_id)
+    statement: Select[uuid.UUID, str] = (
+        select(image_id_kept_by_the_filter, Template.name)
         .join(Template, Template.id == Tile.template_id)
         .where(Tile.image_id.in_(image_ids), Template.deleted_at.is_(None))
         .distinct()
@@ -117,25 +119,19 @@ def template_names_by_image(
     )
     names: dict[uuid.UUID, list[str]] = {}
     for image_id, name in session.execute(statement).all():
-        # Jamais None : le filtre ne garde que les tuiles de ces images
-        if image_id is not None:
-            names.setdefault(image_id, []).append(name)
+        names.setdefault(image_id, []).append(name)
     return names
 
 
 def game_counts_by_image(session: Session, image_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
-    statement: Select[uuid.UUID | None, int] = (
-        select(SnapshotTile.image_id, func.count(func.distinct(Game.id)))
+    image_id_kept_by_the_filter: Mapped[uuid.UUID] = cast(Mapped[uuid.UUID], SnapshotTile.image_id)
+    statement: Select[uuid.UUID, int] = (
+        select(image_id_kept_by_the_filter, func.count(func.distinct(Game.id)))
         .join(Game, Game.snapshot_id == SnapshotTile.snapshot_id)
         .where(SnapshotTile.image_id.in_(image_ids))
         .group_by(SnapshotTile.image_id)
     )
-    # Jamais None : le filtre ne garde que les tuiles de ces images
-    return {
-        image_id: count
-        for image_id, count in session.execute(statement).all()
-        if image_id is not None
-    }
+    return {image_id: count for image_id, count in session.execute(statement).all()}
 
 
 def list_visible_image_ids_of_owner(session: Session, owner_id: uuid.UUID) -> list[uuid.UUID]:

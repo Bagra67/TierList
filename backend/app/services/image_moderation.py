@@ -35,7 +35,7 @@ class ImageModerationService:
         self._moderation_log = moderation_log
 
     def hide(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        image: Image = self._get_image(image_id)
+        image: Image = self._lock_image(image_id)
         if image.status != ImageStatus.VISIBLE:
             raise ImageModerationConflictError
         storage_key: str = image.storage_key
@@ -48,7 +48,7 @@ class ImageModerationService:
         logger.info("Image masquée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
 
     def unhide(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        image: Image = self._get_image(image_id)
+        image: Image = self._lock_image(image_id)
         if image.status != ImageStatus.HIDDEN:
             raise ImageModerationConflictError
         storage_key: str = image.storage_key
@@ -59,7 +59,7 @@ class ImageModerationService:
         logger.info("Image réaffichée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
 
     def delete(self, super_admin: User, image_id: uuid.UUID, reason: str) -> None:
-        image: Image = self._get_image(image_id)
+        image: Image = self._lock_image(image_id)
         if image.status == ImageStatus.DELETED:
             raise ImageModerationConflictError
         file_key: str = (
@@ -72,9 +72,7 @@ class ImageModerationService:
         self._delete_file(file_key)
         logger.info("Image supprimée : image_id=%s super_admin_id=%s", image_id, super_admin.id)
 
-    def _get_image(self, image_id: uuid.UUID) -> Image:
-        """L'image, verrouillée jusqu'à la fin de l'action : deux super admins qui agissent en
-        même temps sur la même image ne déplacent pas son fichier deux fois."""
+    def _lock_image(self, image_id: uuid.UUID) -> Image:
         image: Image | None = image_repository.get_image_for_update(self._session, image_id)
         if image is None:
             raise ImageNotFoundError

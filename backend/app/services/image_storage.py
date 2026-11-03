@@ -75,7 +75,7 @@ def create_image_storage(settings: Settings) -> ImageStorage:
     secret_access_key: str | None = None
     if settings.image_s3_secret_access_key is not None:
         secret_access_key = settings.image_s3_secret_access_key.get_secret_value()
-    client: S3Client = _create_s3_client(
+    client: S3Client = _shared_s3_client_for_configuration(
         settings.image_s3_endpoint_url,
         settings.image_s3_region,
         settings.image_s3_access_key_id,
@@ -85,10 +85,8 @@ def create_image_storage(settings: Settings) -> ImageStorage:
     return ImageStorage(client, settings.image_s3_bucket, settings.image_public_base_url)
 
 
-# Créer un client boto3 est coûteux (lecture des définitions de l'API) : un client par
-# configuration est gardé et partagé entre les requêtes (les clients boto3 sont thread-safe)
 @lru_cache
-def _create_s3_client(
+def _shared_s3_client_for_configuration(
     endpoint_url: str | None,
     region: str,
     access_key_id: str | None,
