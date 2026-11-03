@@ -7,6 +7,7 @@ from pydantic import Field, IPvAnyNetwork, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy import URL
 
+from app.constants.api import API_PREFIX
 from app.constants.auth import JWT_SECRET_KEY_MIN_LENGTH, PASSWORD_MAX_LENGTH
 from app.constants.rooms import (
     COOLDOWN_SECONDS_MAX,
@@ -39,7 +40,7 @@ class Settings(BaseSettings):
     password_reset_ttl_minutes: int = Field(default=30, gt=0)
     email_cooldown_seconds: int = Field(default=60, ge=0)
     auth_cookie_secure: bool = True
-    auth_cookie_path: str = "/api/auth"
+    auth_cookie_path: str = f"{API_PREFIX}/auth"
 
     deleted_template_retention_days: int = Field(default=30, gt=0)
 
@@ -50,7 +51,7 @@ class Settings(BaseSettings):
         default=60, ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECONDS_MAX
     )
     guest_link_ttl_days: int = Field(default=30, gt=0, le=GUEST_LINK_MAX_TTL_DAYS)
-    room_cookie_path: str = "/api/rooms"
+    room_cookie_path: str = f"{API_PREFIX}/rooms"
     room_heartbeat_interval_seconds: float = Field(default=10, gt=0)
     room_heartbeat_timeout_seconds: float = Field(default=5, gt=0)
     room_presence_grace_seconds: float = Field(default=3, ge=0)
@@ -72,7 +73,7 @@ class Settings(BaseSettings):
 
     google_client_id: str | None = None
     google_client_secret: SecretStr | None = None
-    google_redirect_uri: str = "http://localhost:5173/api/auth/google/callback"
+    google_redirect_uri: str = f"http://localhost:5173{API_PREFIX}/auth/google/callback"
     google_login_attempt_ttl_minutes: int = Field(default=10, gt=0)
     google_http_timeout_seconds: int = Field(default=10, gt=0)
 
@@ -120,6 +121,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    # Les champs obligatoires sont lus depuis l'environnement / .env par pydantic-settings,
-    # ce que Pyright ne peut pas savoir statiquement.
     return Settings()  # pyright: ignore[reportCallIssue]
