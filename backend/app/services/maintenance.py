@@ -7,6 +7,7 @@ from app.core.config import Settings
 from app.services.image_storage import ImageStorage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
+from app.services.report_queue import ReportQueueService
 from app.services.templates import TemplateService
 
 MaintenanceSessionFactory = Callable[[], AbstractContextManager[Session]]
@@ -27,3 +28,10 @@ def purge_unused_images(
 def purge_moderation_log(session_factory: MaintenanceSessionFactory, settings: Settings) -> int:
     with session_factory() as session:
         return ModerationLogService(session, settings).purge_expired()
+
+
+def purge_closed_reports(session_factory: MaintenanceSessionFactory, settings: Settings) -> int:
+    with session_factory() as session:
+        return ReportQueueService(
+            session, settings, ModerationLogService(session, settings)
+        ).purge_closed()

@@ -27,6 +27,7 @@ from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.moderation_log import ModerationLogService
 from app.services.recent_uploads import RecentUploadsService
+from app.services.report_queue import ReportQueueService
 from app.services.reports import ReportService
 from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
@@ -85,6 +86,14 @@ def get_moderation_log_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> ModerationLogService:
     return ModerationLogService(session, settings)
+
+
+def get_report_queue_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+) -> ReportQueueService:
+    return ReportQueueService(session, settings, moderation_log)
 
 
 def get_template_moderation_service(
@@ -257,6 +266,7 @@ GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]
 HistoryServiceDep = Annotated[HistoryService, Depends(get_history_service)]
 ReportServiceDep = Annotated[ReportService, Depends(get_report_service)]
+ReportQueueServiceDep = Annotated[ReportQueueService, Depends(get_report_queue_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
 TemplateModerationServiceDep = Annotated[

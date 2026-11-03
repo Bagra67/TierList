@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     moderation_log_retention_days: int = Field(default=3 * 365, gt=0)
 
     reports_per_hour_max: int = Field(default=20, gt=0)
+    closed_report_retention_days: int = Field(default=365, gt=0)
     report_cookie_path: str = f"{API_PREFIX}/reports"
 
     room_default_timer_seconds: int = Field(default=30, ge=TIMER_SECONDS_MIN, le=TIMER_SECONDS_MAX)

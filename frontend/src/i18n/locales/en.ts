@@ -1006,6 +1006,8 @@ export const en: Translation = {
       report_target_not_found: 'This content cannot be reported: it may already have been removed.',
       report_already_open: 'You already reported this content: it will be reviewed soon.',
       report_details_required: 'Add details to your report for the reason "Other".',
+      reports_not_open:
+        'This content has no open report any more: it may already have been handled.',
       report_limit_reached:
         'You sent {{max_reports}} reports in the last hour: try again a little later.',
       image_moderation_conflict:

@@ -47,3 +47,8 @@ def search_users(session: Session, query: str | None, limit: int, offset: int) -
         )
     statement = statement.order_by(User.display_name, User.id).limit(limit).offset(offset)
     return list(session.scalars(statement).all())
+
+
+def display_names_by_id(session: Session, user_ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+    statement = select(User.id, User.display_name).where(User.id.in_(user_ids))
+    return {user_id: name for user_id, name in session.execute(statement).all()}

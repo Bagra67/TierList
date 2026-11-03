@@ -618,6 +618,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reports */
+        get: operations["list_reports_moderation_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/reports/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count Reports */
+        get: operations["count_reports_moderation_reports_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/reports/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Reports */
+        post: operations["dismiss_reports_moderation_reports_dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/moderation/log": {
         parameters: {
             query?: never;
@@ -1115,6 +1166,20 @@ export interface components {
             /** Password */
             password?: string | null;
         };
+        /**
+         * DismissReportsRequest
+         * @description Classer sans suite les signalements ouverts d'un contenu (US-1.3).
+         */
+        DismissReportsRequest: {
+            /** Reason */
+            reason: string;
+            target_type: components["schemas"]["ModerationTargetType"];
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+        };
         /** EmailVerificationRequest */
         EmailVerificationRequest: {
             /**
@@ -1401,6 +1466,14 @@ export interface components {
          */
         ModerationTargetType: "template" | "image" | "account" | "nickname" | "game";
         /**
+         * OpenReportCountResponse
+         * @description Le nombre de contenus qui ont au moins un signalement ouvert.
+         */
+        OpenReportCountResponse: {
+            /** Open Contents */
+            open_contents: number;
+        };
+        /**
          * OwnPlacementResponse
          * @description Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
          *     pendant les tours, placement final pendant le cooldown.
@@ -1539,11 +1612,30 @@ export interface components {
             name: string;
         };
         /**
+         * ReportQueueResponse
+         * @description Une page de la file des signalements, les plus signalés d'abord.
+         */
+        ReportQueueResponse: {
+            /** Contents */
+            contents: components["schemas"]["ReportedContentResponse"][];
+            /** Has More */
+            has_more: boolean;
+        };
+        /**
          * ReportReason
          * @description Motif d'un signalement (US-1.2).
          * @enum {string}
          */
         ReportReason: "illegal" | "sexual" | "violence_or_hate" | "harassment" | "spam" | "other";
+        /**
+         * ReportReasonCountResponse
+         * @description Un motif de signalement et le nombre de signalements qui le donnent.
+         */
+        ReportReasonCountResponse: {
+            reason: components["schemas"]["ReportReason"];
+            /** Count */
+            count: number;
+        };
         /**
          * ReportResponse
          * @description Le signalement enregistré. Il ne dit rien de son auteur.
@@ -1561,6 +1653,39 @@ export interface components {
          * @enum {string}
          */
         ReportTargetKind: "item" | "participant" | "player" | "game";
+        /**
+         * ReportedContentResponse
+         * @description Un contenu signalé dans la file (US-1.3). Elle ne dit jamais qui l'a signalé.
+         */
+        ReportedContentResponse: {
+            target_type: components["schemas"]["ModerationTargetType"];
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Label */
+            label: string | null;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Report Count */
+            report_count: number;
+            /** Reasons */
+            reasons: components["schemas"]["ReportReasonCountResponse"][];
+            /** Details */
+            details: string[];
+            /**
+             * First Reported At
+             * Format: date-time
+             */
+            first_reported_at: string;
+            /** Image Url */
+            image_url: string | null;
+            /** Public Token */
+            public_token: string | null;
+        };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** Token */
@@ -4494,6 +4619,180 @@ export interface operations {
             };
             /** @description Not authenticated */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_reports_moderation_reports_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                owner_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportQueueResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    count_reports_moderation_reports_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenReportCountResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    dismiss_reports_moderation_reports_dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissReportsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No open report on this content */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
