@@ -72,7 +72,6 @@ class GameTierResponse(BaseModel):
 
     id: uuid.UUID
     name: str
-    # Format #RRGGBB
     color: str
 
 
