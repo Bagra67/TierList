@@ -165,8 +165,9 @@ describe('JoinRoomScreen', () => {
   });
 
   it('says when the personal link is no longer valid, then offers to join again', async () => {
-    // Le cache de requêtes journalise l'erreur attendue
-    const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const silencedQueryCacheErrorLog: MockInstance = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     stubBackend({
       'POST /rooms/K7P2QX/guest-session': () => errorResponse(404, 'guest_link_invalid'),
     });
@@ -177,6 +178,6 @@ describe('JoinRoomScreen', () => {
       'Ce lien personnel a expiré, ou la salle a été fermée.',
     );
     expect(screen.getByRole('heading', { name: 'Rejoindre la salle' })).toBeInTheDocument();
-    consoleError.mockRestore();
+    silencedQueryCacheErrorLog.mockRestore();
   });
 });

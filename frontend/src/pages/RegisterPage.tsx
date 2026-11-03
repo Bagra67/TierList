@@ -7,7 +7,7 @@ import { pathAfterSignIn } from '../auth/signInRedirect';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TermsAcceptance } from '../components/TermsAcceptance';
@@ -38,7 +38,7 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthPageShell
+    <CenteredCardPage
       title={t('auth.register.title')}
       footer={
         <p>
@@ -85,6 +85,6 @@ export function RegisterPage() {
       </form>
       <GoogleSignInLink />
       <TermsAcceptance i18nKey="auth.acceptTerms.register" />
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

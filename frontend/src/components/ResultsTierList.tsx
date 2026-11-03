@@ -18,9 +18,7 @@ interface ResultsTierListProps {
   items: ResultItems;
   extraRow?: { label: string; itemIds: string[] };
   selection: ItemSelection;
-  // Les lignes apparaissent une à une, du bas vers le haut (sauf mouvement réduit). Lu au montage
-  // seulement : pour rejouer la révélation, la tier list est montée à nouveau (key)
-  reveal?: boolean;
+  revealOnMount?: boolean;
   onRevealStarted?: () => void;
 }
 
@@ -32,7 +30,7 @@ export function ResultsTierList({
   items,
   extraRow,
   selection,
-  reveal = false,
+  revealOnMount = false,
   onRevealStarted,
 }: ResultsTierListProps) {
   const idPrefix: string = useId();
@@ -45,7 +43,7 @@ export function ResultsTierList({
   // Figé au montage, puis éteint quand la ligne du haut a fini d'apparaître : une ligne ajoutée
   // ensuite (autre joueur, autre variante) n'est pas animée seule. En mouvement réduit, rien ne
   // s'anime (motion-safe) et la fin n'arrive jamais, sans effet
-  const [revealing, setRevealing] = useState<boolean>(reveal);
+  const [revealing, setRevealing] = useState<boolean>(revealOnMount);
 
   useEffect(() => {
     if (revealing) onRevealStarted?.();
@@ -128,7 +126,7 @@ function ItemList({ itemIds, items, selection }: ItemListProps) {
             <ResultItemButton
               resultItem={resultItem}
               selection={selection}
-              labelled
+              accessibleNameIsAction
               className={cn(ITEM_CHIP_CLASS, 'hover:border-primary')}
             >
               <GameItemView

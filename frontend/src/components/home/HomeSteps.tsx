@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LOGO_BARS } from '../../constants/brand';
-import { readableTextColor } from '../../theme/contrast';
+import { readableTextColor } from '../../theme/wcagContrast';
 
 const HOME_STEPS = [
   { key: 'template', color: LOGO_BARS[0].color },

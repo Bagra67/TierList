@@ -3,15 +3,13 @@ import type { ReactNode } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { PageContainer } from './PageContainer';
 
-interface AuthPageShellProps {
+interface CenteredCardPageProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-// Mise en page commune des pages en carte centrée : compte (connexion, inscription, liens reçus
-// par email) et page introuvable
-export function AuthPageShell({ title, children, footer }: AuthPageShellProps) {
+export function CenteredCardPage({ title, children, footer }: CenteredCardPageProps) {
   return (
     <PageContainer width="form">
       <Card>

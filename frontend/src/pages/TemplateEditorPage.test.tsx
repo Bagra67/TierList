@@ -12,6 +12,7 @@ import { TemplateEditorPage } from './TemplateEditorPage';
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
 const templateUrl: string = `/templates/${templateId}`;
+const neverAnswers = (): Promise<Response> => new Promise<Response>(() => {});
 
 function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
   return { id: `tier-${name}`, name, color, position };
@@ -536,10 +537,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.drop(zone, { dataTransfer });
     }
 
-    // La requête est-elle un envoi multipart avec un champ file ? Lu dans le corps brut : sous
-    // jsdom, undici ne sait ni relire ce FormData ni lire le contenu d'un File de jsdom (le
-    // contenu envoyé est vérifié par les tests du backend)
-    async function sendsAFileField(request: Request): Promise<boolean> {
+    async function rawBodyHasMultipartFileField(request: Request): Promise<boolean> {
       const contentType: string = request.headers.get('content-type') ?? '';
       const body: string = await request.text();
       return contentType.startsWith('multipart/form-data') && body.includes('name="file"');
@@ -574,7 +572,7 @@ describe('TemplateEditorPage', () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
         'POST /images': async (request) => {
-          uploads.push(await sendsAFileField(request));
+          uploads.push(await rawBodyHasMultipartFileField(request));
           return Response.json(uploadedImage, { status: 201 });
         },
         [`POST ${templateUrl}/tiles`]: () =>
@@ -661,7 +659,7 @@ describe('TemplateEditorPage', () => {
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ image_id: null });
     });
 
-    it('keeps the image of an image-only tile, whose text is optional', async () => {
+    it('offers no image removal on an image-only tile, which would leave it empty, and keeps its text optional', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([imageOnlyTile])),
       });
@@ -669,7 +667,6 @@ describe('TemplateEditorPage', () => {
 
       await screen.findByRole('button', { name: "Remplacer l'image de Tuile 1" });
 
-      // Sans texte, retirer l'image laisserait la tuile vide : le bouton n'existe pas
       expect(screen.queryByRole('button', { name: /^Retirer l'image/ })).not.toBeInTheDocument();
       expect(screen.getByRole('textbox', { name: 'Texte de la tuile 1' })).not.toBeRequired();
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
@@ -749,10 +746,11 @@ describe('TemplateEditorPage', () => {
       const title: HTMLElement = await screen.findByRole('heading', { name: 'Tuiles' });
       const dataTransfer: FileDataTransfer = fileDataTransfer(pngFile());
 
-      // fireEvent renvoie false quand l'action par défaut (le navigateur ouvre le fichier) est
-      // empêchée
-      expect(fireEvent.dragOver(title, { dataTransfer })).toBe(false);
-      expect(fireEvent.drop(title, { dataTransfer })).toBe(false);
+      const browserMayRefuseDragOver: boolean = fireEvent.dragOver(title, { dataTransfer });
+      const browserMayOpenFileOnDrop: boolean = fireEvent.drop(title, { dataTransfer });
+
+      expect(browserMayRefuseDragOver).toBe(false);
+      expect(browserMayOpenFileOnDrop).toBe(false);
       expect(dataTransfer.dropEffect).toBe('none');
     });
 
@@ -977,8 +975,7 @@ describe('TemplateEditorPage', () => {
     it('disables the drag and drop of tiles while a tile move is being saved', async () => {
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
-        // L'enregistrement du déplacement ne répond jamais : il reste en cours
-        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => new Promise<Response>(() => {}),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: neverAnswers,
       });
       renderEditor();
 
@@ -1070,8 +1067,7 @@ describe('TemplateEditorPage', () => {
     it('disables drag and drop while a move is being saved', async () => {
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
-        // L'enregistrement du déplacement ne répond jamais : il reste en cours
-        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () => new Promise<Response>(() => {}),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: neverAnswers,
       });
       renderEditor();
       const dragHandle: HTMLElement = await screen.findByRole('button', { name: 'Déplacer S' });

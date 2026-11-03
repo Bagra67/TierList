@@ -7,10 +7,11 @@ import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { RegisterPage } from './RegisterPage';
 
-// from : la page privée demandée avant d'arriver sur l'inscription (cf. RequireAuth)
-function renderRegisterPage(from?: string) {
+function renderRegisterPage(requestedPrivatePath?: string) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[{ pathname: '/register', state: { from } }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/register', state: { from: requestedPrivatePath } }]}
+    >
       <Routes>
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<h1>Accueil</h1>} />

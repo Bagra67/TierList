@@ -187,13 +187,13 @@ Comme il est en mémoire, **le backend doit tourner avec un seul worker** : avec
 
 ### 2.10 Le frontend
 
-`useRoomEvents(code, viewer, enabled, onRemoved)` (`frontend/src/api/roomChannel.ts`) possède le socket ; les composants n'y touchent jamais. `RoomPage` l'active une fois la salle chargée (le lecteur a une place). Il :
+`useRoomEvents(code, viewer, viewerHasSeat, stableOnRemoved)` (`frontend/src/api/roomChannel.ts`) possède le socket ; les composants n'y touchent jamais. `RoomPage` l'active une fois la salle chargée (le lecteur a une place). Il :
 
 - ouvre `ws(s)://<hôte de la page>/api/rooms/<CODE>/ws` et envoie `auth` (l'access token en mémoire, rafraîchi s'il manque ; `null` pour un invité) ;
 - répond `pong` au `ping` ;
 - applique les événements au cache TanStack Query (§2.5) ;
 - relit la salle après chaque (re)connexion ;
-- après `4410`, `4411` ou `4412`, appelle `onRemoved(reason)` (`removed`, `banned` ou `closed`) et s'arrête : `RoomPage` affiche le message et ne lit plus la salle ;
+- après `4410`, `4411` ou `4412`, appelle `stableOnRemoved(reason)` (`removed`, `banned` ou `closed`) et s'arrête : `RoomPage` affiche le message et ne lit plus la salle ;
 - se reconnecte avec backoff et gigue (0,5 s à 10 s), pas après `4404` ; après `4401`, un compte réessaie une fois avec un token rafraîchi (l'access token dure 15 minutes) ;
 - abandonne après 5 ouvertures d'affilée qui n'ont jamais abouti, et renvoie `unavailable: true` (le lobby affiche alors « Mises à jour en direct indisponibles : rechargez la page ») ;
 - ferme le socket (`1000`) quand la page quitte la salle.

@@ -17,7 +17,12 @@ import {
   useUpdateTile,
 } from '../api/templates';
 import { TILE_TEXT_MAX_LENGTH } from '../constants/templates';
-import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import {
+  getFieldErrors,
+  hasNoFieldError,
+  translateError,
+  translateFieldError,
+} from '../errors/apiError';
 import { EMPHASIZED_BORDER_CLASS } from './boardStyles';
 import { ErrorMessage } from './ErrorMessage';
 import { ImageDropZone } from './ImageDropZone';
@@ -31,9 +36,7 @@ interface TileEditorProps {
   template: Template;
 }
 
-// La tuile a une image, même retirée par la modération : le backend la lui garde, elle peut donc
-// se passer de texte
-function hasImage(tile: Tile): boolean {
+function hasImageEvenIfRemoved(tile: Tile): boolean {
   return tile.image_url !== null || tile.image_removed;
 }
 
@@ -48,18 +51,17 @@ export function TileEditor({ template }: TileEditorProps) {
   const tileImageUpload: UseMutationResult<UploadedImage, Error, File> = useUploadImage();
   const bulk = useBulkImageTiles(template);
   const [lastAddedTileIds, setLastAddedTileIds] = useState<string[]>([]);
-  // Image envoyée pour la tuile en cours d'ajout, rattachée à l'ajout
-  const [newImage, setNewImage] = useState<UploadedImage | null>(null);
-  // Tuile dont l'image est en cours d'envoi puis d'enregistrement
-  const [imageTileId, setImageTileId] = useState<string | null>(null);
+  const [uploadedImageForNewTile, setUploadedImageForNewTile] = useState<UploadedImage | null>(
+    null,
+  );
+  const [tileIdWithImageBeingSaved, setTileIdWithImageBeingSaved] = useState<string | null>(null);
   const [newTileLocalError, setNewTileLocalError] = useState<string | null>(null);
   const [tilesLocalError, setTilesLocalError] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiles: Tile[] = template.tiles;
   const isFull: boolean = tiles.length >= template.max_tiles;
   const isAddingImages: boolean = bulk.state?.isRunning ?? false;
-  // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
-  const isChangingOrder: boolean = updateMutation.isPending || deleteMutation.isPending;
+  const isWaitingForOrderResponse: boolean = updateMutation.isPending || deleteMutation.isPending;
   const failedTileId: string | undefined = updateMutation.variables?.tileId;
   const textError: string | undefined = translateFieldError(
     t,
@@ -71,8 +73,7 @@ export function TileEditor({ template }: TileEditorProps) {
   );
   const lastError: Error | null =
     updateMutation.error ?? deleteMutation.error ?? tileImageUpload.error;
-  const showLastError: boolean =
-    lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
+  const showLastError: boolean = lastError !== null && hasNoFieldError(lastError);
   const newTileError: Error | null = addMutation.error ?? newImageUpload.error;
   const unsupportedImageMessage: string = t('errors.api.image_unsupported_format');
 
@@ -100,7 +101,7 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   function saveTileText(tile: Tile, text: string) {
-    const removesTheText: boolean = text.trim() === '' && hasImage(tile);
+    const removesTheText: boolean = text.trim() === '' && hasImageEvenIfRemoved(tile);
     setTilesLocalError(null);
     updateMutation.mutate({
       tileId: tile.id,
@@ -110,14 +111,14 @@ export function TileEditor({ template }: TileEditorProps) {
 
   async function replaceTileImage(tile: Tile, file: File) {
     setTilesLocalError(null);
-    setImageTileId(tile.id);
+    setTileIdWithImageBeingSaved(tile.id);
     try {
       const image: UploadedImage = await tileImageUpload.mutateAsync(file);
       await updateMutation.mutateAsync({ tileId: tile.id, changes: { image_id: image.id } });
     } catch {
-      // l'erreur est affichée depuis tileImageUpload.error ou updateMutation.error
+      return;
     } finally {
-      setImageTileId(null);
+      setTileIdWithImageBeingSaved(null);
     }
   }
 
@@ -130,7 +131,7 @@ export function TileEditor({ template }: TileEditorProps) {
     setNewTileLocalError(null);
     addMutation.reset();
     bulk.clear();
-    newImageUpload.mutate(file, { onSuccess: setNewImage });
+    newImageUpload.mutate(file, { onSuccess: setUploadedImageForNewTile });
   }
 
   async function addManyImages(files: File[]) {
@@ -141,14 +142,14 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   function removeNewImage() {
-    setNewImage(null);
+    setUploadedImageForNewTile(null);
     newImageUpload.reset();
   }
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text: string = String(new FormData(event.currentTarget).get('text')).trim();
-    if (text === '' && newImage === null) {
+    if (text === '' && uploadedImageForNewTile === null) {
       setNewTileLocalError(t('errors.api.tile_empty'));
       return;
     }
@@ -157,7 +158,7 @@ export function TileEditor({ template }: TileEditorProps) {
     setLastAddedTileIds([]);
     const newTile: NewTile = {};
     if (text !== '') newTile.text = text;
-    if (newImage !== null) newTile.image_id = newImage.id;
+    if (uploadedImageForNewTile !== null) newTile.image_id = uploadedImageForNewTile.id;
     let updated: Template;
     try {
       updated = await addMutation.mutateAsync(newTile);
@@ -167,7 +168,7 @@ export function TileEditor({ template }: TileEditorProps) {
     const added: Tile | undefined = updated.tiles.at(-1);
     if (added !== undefined) setLastAddedTileIds([added.id]);
     addFormRef.current?.reset();
-    setNewImage(null);
+    setUploadedImageForNewTile(null);
     newImageUpload.reset();
   }
 
@@ -191,7 +192,7 @@ export function TileEditor({ template }: TileEditorProps) {
             strategy={rectSortingStrategy}
             getItemLabel={tileLabel}
             onMove={moveTile}
-            disabled={isChangingOrder}
+            disabled={isWaitingForOrderResponse}
             renderItem={(tile, { setNodeRef, style, handleProps }) => (
               <li
                 ref={setNodeRef}
@@ -203,16 +204,16 @@ export function TileEditor({ template }: TileEditorProps) {
                 )}
               >
                 <ImageDropZone
-                  size="fill"
+                  size="fullWidthSquare"
                   label={
-                    !hasImage(tile)
+                    !hasImageEvenIfRemoved(tile)
                       ? t('templates.editor.image.addTo', { name: tileLabel(tile) })
                       : t('templates.editor.image.replace', { name: tileLabel(tile) })
                   }
                   imageUrl={tile.image_url}
                   imageRemoved={tile.image_removed}
-                  isUploading={imageTileId === tile.id}
-                  disabled={imageTileId !== null}
+                  isUploading={tileIdWithImageBeingSaved === tile.id}
+                  disabled={tileIdWithImageBeingSaved !== null}
                   removeLabel={
                     tile.text === null
                       ? undefined
@@ -228,8 +229,8 @@ export function TileEditor({ template }: TileEditorProps) {
                   hideLabel
                   value={tile.text ?? ''}
                   maxLength={TILE_TEXT_MAX_LENGTH}
-                  required={!hasImage(tile)}
-                  multiline
+                  required={!hasImageEvenIfRemoved(tile)}
+                  wrapsLongValue
                   error={failedTileId === tile.id ? textError : undefined}
                   onSave={(text) => saveTileText(tile, text)}
                 />
@@ -248,7 +249,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.moveBefore', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder || tile.position === 0}
+                      disabled={isWaitingForOrderResponse || tile.position === 0}
                       onClick={() => moveTile(tile, tile.position - 1)}
                     >
                       <ArrowLeft />
@@ -258,7 +259,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.moveAfter', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder || tile.position === tiles.length - 1}
+                      disabled={isWaitingForOrderResponse || tile.position === tiles.length - 1}
                       onClick={() => moveTile(tile, tile.position + 1)}
                     >
                       <ArrowRight />
@@ -268,7 +269,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder}
+                      disabled={isWaitingForOrderResponse}
                       onClick={() => deleteTile(tile)}
                     >
                       <Trash2 />
@@ -286,13 +287,13 @@ export function TileEditor({ template }: TileEditorProps) {
       )}
       <form ref={addFormRef} onSubmit={handleAdd} className="flex w-full flex-wrap items-end gap-3">
         <ImageDropZone
-          size="large"
+          size="addFormThumbnail"
           label={
-            newImage === null
+            uploadedImageForNewTile === null
               ? t('templates.editor.image.addToNew')
               : t('templates.editor.image.replaceNew')
           }
-          imageUrl={newImage?.url ?? null}
+          imageUrl={uploadedImageForNewTile?.url ?? null}
           isUploading={newImageUpload.isPending}
           disabled={isFull || isAddingImages}
           removeLabel={t('templates.editor.image.removeNew')}

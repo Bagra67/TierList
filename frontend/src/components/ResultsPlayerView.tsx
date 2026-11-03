@@ -62,7 +62,7 @@ export function ResultsPlayerView({
         items={items}
         extraRow={{ label: t('results.players.unplaced'), itemIds: player.unplaced_item_ids }}
         selection={selection}
-        reveal={reveal}
+        revealOnMount={reveal}
         onRevealStarted={onRevealStarted}
       />
     </div>

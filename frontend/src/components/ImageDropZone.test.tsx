@@ -25,7 +25,7 @@ function renderZone(
     <ImageDropZone
       label="Ajouter une image"
       removeLabel="Retirer l'image"
-      size="large"
+      size="addFormThumbnail"
       imageUrl={props.imageUrl ?? null}
       imageRemoved={props.imageRemoved ?? false}
       isUploading={props.isUploading ?? false}
@@ -132,7 +132,7 @@ describe('ImageDropZone', () => {
     const { rerender }: RenderResult = render(
       <ImageDropZone
         label="Ajouter une image"
-        size="large"
+        size="addFormThumbnail"
         imageUrl={null}
         isUploading={false}
         {...handlers}
@@ -143,7 +143,7 @@ describe('ImageDropZone', () => {
     rerender(
       <ImageDropZone
         label="Ajouter une image"
-        size="large"
+        size="addFormThumbnail"
         imageUrl={null}
         isUploading
         {...handlers}
@@ -172,7 +172,7 @@ describe('ImageDropZone', () => {
       <ImageDropZone
         label="Remplacer l'image"
         removeLabel="Retirer l'image"
-        size="fill"
+        size="fullWidthSquare"
         imageUrl="https://images.example.com/a.webp"
         isUploading={false}
         onSelect={vi.fn()}
@@ -209,7 +209,7 @@ describe('ImageDropZone', () => {
       render(
         <ImageDropZone
           label="Ajouter une image"
-          size="large"
+          size="addFormThumbnail"
           imageUrl={null}
           isUploading={false}
           {...handlers}

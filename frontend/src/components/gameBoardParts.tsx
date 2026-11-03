@@ -121,9 +121,7 @@ export function DraggableItem({
 export interface DragPreviewContent {
   item: GameItem;
   label: string;
-  // Forme de la source (puce, puce d'accent, carte) : l'aperçu a sa taille, qui est aussi celle du
-  // rectangle dont dnd-kit se sert pour viser le dépôt
-  className: string;
+  sourceShapeClassName: string;
   size: 'small' | 'large';
 }
 
@@ -140,7 +138,10 @@ export function DragPreview({ previewOf }: DragPreviewProps) {
       {content === undefined ? null : (
         <div
           aria-hidden="true"
-          className={cn(content.className, 'cursor-grabbing shadow-lift motion-safe:-rotate-2')}
+          className={cn(
+            content.sourceShapeClassName,
+            'cursor-grabbing shadow-lift motion-safe:-rotate-2',
+          )}
         >
           <GameItemView item={content.item} imageLabel={content.label} size={content.size} />
         </div>

@@ -11,7 +11,7 @@ The visual identity of TierList, decided on real screens on 2026-10-28 (#213 to 
 | Color, radius and shadow tokens (light and `.dark`) | `frontend/src/index.css` (`:root`, `.dark`, `@theme inline`)                                          |
 | Tier color presets (12)                             | `frontend/src/constants/templates.ts` (`TIER_COLOR_PRESETS`)                                          |
 | Logo bars, ink and white for text on a tier         | `frontend/src/constants/brand.ts`                                                                     |
-| Text color on a user-chosen color                   | `frontend/src/theme/contrast.ts` (`readableTextColor`)                                                |
+| Text color on a user-chosen color                   | `frontend/src/theme/wcagContrast.ts` (`readableTextColor`)                                            |
 | Panels, buttons, item chips, tier rows              | `components/ui/panel.ts`, `components/ui/button.tsx`, `components/boardStyles.ts`                     |
 | Fonts                                               | `@fontsource-variable/anybody` (width axis) and `@fontsource-variable/geist`, imported by `index.css` |
 | Favicon                                             | `frontend/public/favicon.svg`                                                                         |

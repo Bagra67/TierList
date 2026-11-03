@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { INK_TEXT_COLOR, WHITE_TEXT_COLOR } from '../constants/brand';
-import { contrastRatio, readableTextColor } from './contrast';
+import { contrastRatio, readableTextColor } from './wcagContrast';
 
 describe('contrastRatio', () => {
   it('goes from 1 for the same color to 21 for black on white, in any order', () => {

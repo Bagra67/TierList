@@ -2,7 +2,7 @@ import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ListedImageStatus, type RecentUploadsFilters } from '../api/moderation';
-import { startOfDay, startOfNextDay } from '../components/localDays';
+import { startOfDay, exclusiveEndOfDay } from '../components/localDays';
 import { TextField } from '../components/TextField';
 import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
@@ -23,7 +23,7 @@ export function RecentUploadsPage() {
   const filters: RecentUploadsFilters = {
     author,
     createdAfter: fromDay === '' ? undefined : startOfDay(fromDay),
-    createdBefore: toDay === '' ? undefined : startOfNextDay(toDay),
+    createdBefore: toDay === '' ? undefined : exclusiveEndOfDay(toDay),
     status: status === '' ? undefined : status,
   };
   const isFiltered: boolean =

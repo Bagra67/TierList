@@ -29,18 +29,17 @@ interface RoomSettingsDialogProps {
 export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const settingsMutation: SettingsMutation = useUpdateRoomSettings(room.code);
-  const [formVersion, setFormVersion] = useState<number>(0);
+  const [formOpeningCount, setFormOpeningCount] = useState<number>(0);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // Le formulaire repart des réglages actuels à chaque ouverture (ils ont pu changer depuis)
-  function handleOpen() {
-    setFormVersion((version) => version + 1);
+  function reopenFormWithCurrentSettings() {
+    setFormOpeningCount((openingCount) => openingCount + 1);
     dialogRef.current?.showModal();
   }
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={handleOpen}>
+      <Button type="button" variant="outline" onClick={reopenFormWithCurrentSettings}>
         {t('rooms.settings.edit')}
       </Button>
       <ModalDialog
@@ -49,7 +48,7 @@ export function RoomSettingsDialog({ room }: RoomSettingsDialogProps) {
         onClose={() => settingsMutation.reset()}
       >
         <RoomSettingsForm
-          key={formVersion}
+          key={formOpeningCount}
           room={room}
           settingsMutation={settingsMutation}
           onSaved={() => dialogRef.current?.close()}

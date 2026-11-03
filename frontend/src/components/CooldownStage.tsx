@@ -51,9 +51,9 @@ export function CooldownStage({ room, game, readerPlaces, endCooldown }: Cooldow
   );
 }
 
-// useRemainingSeconds ne peut pas être appelé seulement quand l'heure de fin existe (règle des
-// hooks) : sans heure de fin, il compte vers maintenant, et le résultat est ignoré
+const NO_END_TIME_PLACEHOLDER: string = new Date(0).toISOString();
+
 function useCooldownRemainingSeconds(endsAt: string | null): number | null {
-  const remainingSeconds: number = useRemainingSeconds(endsAt ?? new Date(0).toISOString());
+  const remainingSeconds: number = useRemainingSeconds(endsAt ?? NO_END_TIME_PLACEHOLDER);
   return endsAt === null ? null : remainingSeconds;
 }

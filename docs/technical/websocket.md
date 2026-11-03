@@ -187,13 +187,13 @@ Because it is in memory, **the backend must run with one worker**: with several 
 
 ### 2.10 The frontend
 
-`useRoomEvents(code, viewer, enabled, onRemoved)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
+`useRoomEvents(code, viewer, viewerHasSeat, stableOnRemoved)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
 
 - opens `ws(s)://<page host>/api/rooms/<CODE>/ws` and sends `auth` (the in-memory access token, refreshed if missing; `null` for a guest);
 - answers `pong` to `ping`;
 - applies the events to the TanStack Query cache (§2.5);
 - reads the room again after each (re)connection;
-- after `4410`, `4411` or `4412`, calls `onRemoved(reason)` (`removed`, `banned` or `closed`) and stops: `RoomPage` shows the message and stops reading the room;
+- after `4410`, `4411` or `4412`, calls `stableOnRemoved(reason)` (`removed`, `banned` or `closed`) and stops: `RoomPage` shows the message and stops reading the room;
 - reconnects with backoff and jitter (0.5 s to 10 s), not after `4404`; after `4401`, an account retries once with a refreshed token (the access token lasts 15 minutes);
 - gives up after 5 openings in a row that never opened, and returns `unavailable: true` (the lobby then shows "Live updates are unavailable: reload the page");
 - closes the socket (`1000`) when the page leaves the room.

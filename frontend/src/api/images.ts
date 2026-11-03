@@ -5,17 +5,18 @@ import type { components } from './schema';
 
 export type UploadedImage = components['schemas']['ImageUploadResponse'];
 
+function formDataWithContentTypeLeftToBrowser(file: File): FormData {
+  const formData: FormData = new FormData();
+  formData.append('file', file);
+  return formData;
+}
+
 export async function uploadImage(file: File): Promise<UploadedImage> {
+  const bodyOnlyForSchemaTyping: string = file.name;
   return dataOrThrow(
     await apiClient.POST('/images', {
-      // Le schéma décrit le fichier comme une chaîne binaire : le vrai fichier part dans un
-      // FormData, dont le navigateur écrit lui-même le Content-Type (avec sa frontière)
-      body: { file: file.name },
-      bodySerializer: () => {
-        const formData: FormData = new FormData();
-        formData.append('file', file);
-        return formData;
-      },
+      body: { file: bodyOnlyForSchemaTyping },
+      bodySerializer: () => formDataWithContentTypeLeftToBrowser(file),
     }),
   );
 }

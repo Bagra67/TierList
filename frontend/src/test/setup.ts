@@ -24,12 +24,14 @@ beforeEach(async () => {
   vi.stubGlobal('WebSocket', FakeWebSocket);
 });
 
+function letLateResponsesFinish(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 afterEach(async () => {
   cleanup();
   vi.useRealTimers();
-  // Laisse finir les réponses déjà reçues (les faux backends répondent tout de suite) avant de
-  // vider l'access token : sinon une réponse tardive (refresh) le remettrait pour le test suivant
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await letLateResponsesFinish();
   setAccessToken(null);
   vi.unstubAllGlobals();
   localStorage.removeItem(LANGUAGE_STORAGE_KEY);
