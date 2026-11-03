@@ -106,14 +106,16 @@ def run_seed(
             _templates_to_hide(played, templates, size.hidden_templates),
             rng,
         )
-        banned_count: int = size.temporarily_banned_accounts + size.permanently_banned_accounts
+        still_banned: int = size.temporarily_banned_accounts + size.permanently_banned_accounts
+        banned_count: int = still_banned + size.accounts_with_a_lifted_ban
         banned: list[User] = accounts.players[len(accounts.players) - banned_count :]
         banned_accounts: int = ban_accounts(
             session,
             settings,
             accounts.super_admins,
             banned[: size.temporarily_banned_accounts],
-            banned[size.temporarily_banned_accounts :],
+            banned[size.temporarily_banned_accounts : still_banned],
+            banned[still_banned:],
             rng,
         )
     return SeedSummary(

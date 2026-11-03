@@ -30,6 +30,7 @@ BAN_REASONS: tuple[str, ...] = (
     "Harcèlement répété", "Spam", "Propos haineux", "Usurpation d'identité",
 )  # fmt: skip
 TEMPORARY_BAN_DAYS = 14
+BAN_LIFT_REASON = "Recours accepté"
 TEMPLATE_REASONS: tuple[str, ...] = (
     "Harcèlement", "Propos haineux", "Données personnelles visibles", "Droit d'auteur",
 )  # fmt: skip
@@ -138,6 +139,7 @@ def ban_accounts(
     super_admins: list[User],
     temporarily: list[User],
     permanently: list[User],
+    lifted: list[User],
     rng: random.Random,
 ) -> int:
     service: AccountBanService = AccountBanService(session, ModerationLogService(session, settings))
@@ -146,7 +148,14 @@ def ban_accounts(
         service.ban(rng.choice(super_admins), user.id, rng.choice(BAN_REASONS), ends_at)
     for user in permanently:
         service.ban(rng.choice(super_admins), user.id, rng.choice(BAN_REASONS), None)
+    for user in lifted:
+        super_admin: User = rng.choice(super_admins)
+        service.ban(super_admin, user.id, rng.choice(BAN_REASONS), None)
+        service.lift(super_admin, user.id, BAN_LIFT_REASON)
     logger.info(
-        "Comptes bannis : %d temporairement, %d définitivement", len(temporarily), len(permanently)
+        "Comptes bannis : %d temporairement, %d définitivement, %d puis graciés",
+        len(temporarily),
+        len(permanently),
+        len(lifted),
     )
-    return len(temporarily) + len(permanently)
+    return len(temporarily) + len(permanently) + 2 * len(lifted)

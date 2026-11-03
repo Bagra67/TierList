@@ -24,6 +24,7 @@ class SeedSize:
     hidden_templates: int
     temporarily_banned_accounts: int
     permanently_banned_accounts: int
+    accounts_with_a_lifted_ban: int
 
 
 FULL_SIZE: SeedSize = SeedSize(
@@ -48,6 +49,7 @@ FULL_SIZE: SeedSize = SeedSize(
     hidden_templates=2,
     temporarily_banned_accounts=1,
     permanently_banned_accounts=1,
+    accounts_with_a_lifted_ban=1,
 )
 
 SMALL_SIZE: SeedSize = SeedSize(
@@ -72,4 +74,5 @@ SMALL_SIZE: SeedSize = SeedSize(
     hidden_templates=1,
     temporarily_banned_accounts=1,
     permanently_banned_accounts=1,
+    accounts_with_a_lifted_ban=1,
 )
