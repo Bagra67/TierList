@@ -4915,6 +4915,57 @@
         "title": "AccountBanResponse",
         "description": "Le bannissement actif d'un compte."
       },
+      "AccountPastBanResponse": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          },
+          "lifted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "ends_at",
+          "reason",
+          "actor_name",
+          "lifted_at"
+        ],
+        "title": "AccountPastBanResponse",
+        "description": "Un bannissement levé, remplacé par un autre ou arrivé à sa fin : lifted_at est vide dans ce\ndernier cas."
+      },
       "AccountResponse": {
         "properties": {
           "id": {
@@ -4952,6 +5003,13 @@
               }
             ]
           },
+          "past_bans": {
+            "items": {
+              "$ref": "#/components/schemas/AccountPastBanResponse"
+            },
+            "type": "array",
+            "title": "Past Bans"
+          },
           "templates": {
             "items": {
               "$ref": "#/components/schemas/TemplateSummaryResponse"
@@ -4969,6 +5027,7 @@
           "email_verified",
           "role",
           "ban",
+          "past_bans",
           "templates"
         ],
         "title": "AccountResponse",

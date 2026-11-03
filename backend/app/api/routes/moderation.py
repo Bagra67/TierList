@@ -43,6 +43,7 @@ from app.models.account_ban import AccountBan
 from app.models.image import ImageStatus
 from app.schemas.moderation import (
     AccountBanResponse,
+    AccountPastBanResponse,
     AccountResponse,
     AccountSearchResponse,
     AccountSummaryResponse,
@@ -335,6 +336,10 @@ def get_account(
         email_verified=details.user.email_verified,
         role=details.user.role,
         ban=_ban_response(bans.active_ban(details.user.id)),
+        past_bans=[
+            AccountPastBanResponse.model_validate(past_ban)
+            for past_ban in bans.past_bans(details.user.id)
+        ],
         templates=[
             TemplateSummaryResponse.model_validate(summary) for summary in details.templates
         ],

@@ -912,6 +912,26 @@ export interface components {
             actor_name: string;
         };
         /**
+         * AccountPastBanResponse
+         * @description Un bannissement levé, remplacé par un autre ou arrivé à sa fin : lifted_at est vide dans ce
+         *     dernier cas.
+         */
+        AccountPastBanResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Ends At */
+            ends_at: string | null;
+            /** Reason */
+            reason: string;
+            /** Actor Name */
+            actor_name: string;
+            /** Lifted At */
+            lifted_at: string | null;
+        };
+        /**
          * AccountResponse
          * @description La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
          *     envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
@@ -936,6 +956,8 @@ export interface components {
             email_verified: boolean;
             role: components["schemas"]["UserRole"];
             ban: components["schemas"]["AccountBanResponse"] | null;
+            /** Past Bans */
+            past_bans: components["schemas"]["AccountPastBanResponse"][];
             /** Templates */
             templates: components["schemas"]["TemplateSummaryResponse"][];
         };

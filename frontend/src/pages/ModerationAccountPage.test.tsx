@@ -15,6 +15,7 @@ const maxAccount: Account = {
   email_verified: true,
   role: 'user',
   ban: null,
+  past_bans: [],
   templates: [
     {
       id: 'food-id',

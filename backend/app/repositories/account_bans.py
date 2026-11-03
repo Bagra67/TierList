@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, Select, and_, or_, select
+from sqlalchemy import ColumnElement, Select, and_, not_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.account_ban import AccountBan
@@ -23,6 +23,15 @@ def get_active_ban(session: Session, user_id: uuid.UUID, now: datetime) -> Accou
         AccountBan.user_id == user_id, is_active(now)
     )
     return session.scalars(statement).one_or_none()
+
+
+def list_past_bans(session: Session, user_id: uuid.UUID, now: datetime) -> list[AccountBan]:
+    statement: Select[AccountBan] = (
+        select(AccountBan)
+        .where(AccountBan.user_id == user_id, not_(is_active(now)))
+        .order_by(AccountBan.created_at.desc(), AccountBan.id)
+    )
+    return list(session.scalars(statement).all())
 
 
 def banned_user_ids(session: Session, user_ids: list[uuid.UUID], now: datetime) -> set[uuid.UUID]:

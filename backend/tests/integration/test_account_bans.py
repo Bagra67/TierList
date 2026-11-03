@@ -352,6 +352,47 @@ def test_the_account_page_and_the_search_show_the_active_ban(
     assert found["banned"] is True
 
 
+def test_the_account_page_lists_the_past_bans_newest_first(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    ban(auth_client, nina, alice_account.id, reason="First, lifted")
+    lift(auth_client, nina, alice_account.id)
+    ban(auth_client, nina, alice_account.id, reason="Second, replaced")
+    ban(auth_client, nina, alice_account.id, reason="Third, ended")
+    [third, *_] = [entry for entry in bans_of(db_session, alice_account) if entry.lifted_at is None]
+    third.ends_at = datetime.now(UTC) - timedelta(minutes=1)
+    db_session.flush()
+    ban(auth_client, nina, alice_account.id, reason="Current")
+
+    page: JsonObject = auth_client.get(
+        f"/moderation/accounts/{alice_account.id}", headers=nina
+    ).json()
+
+    assert page["ban"]["reason"] == "Current"
+    assert [past["reason"] for past in page["past_bans"]] == [
+        "Third, ended",
+        "Second, replaced",
+        "First, lifted",
+    ]
+    assert page["past_bans"][0]["lifted_at"] is None
+    assert page["past_bans"][1]["lifted_at"] is not None
+    assert page["past_bans"][2]["actor_name"] == "nina"
+
+
+def test_an_account_never_banned_has_no_past_bans(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
+):
+    alice_account: User = account(db_session, "alice@example.com")
+
+    page: JsonObject = auth_client.get(
+        f"/moderation/accounts/{alice_account.id}", headers=nina
+    ).json()
+
+    assert page["ban"] is None
+    assert page["past_bans"] == []
+
+
 def test_deleting_the_account_deletes_its_bans(
     auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
 ):
