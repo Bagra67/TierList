@@ -155,7 +155,6 @@ def decode_email_verification_token(token: str, *, secret_key: str) -> EmailVeri
             algorithms=[JWT_ALGORITHM],
             options={"require": ["sub", "type", "email", "iat", "exp"]},
         )
-        # Le type empêche de présenter un access token (même clé de signature) comme lien
         if claims["type"] != EMAIL_VERIFICATION_TOKEN_TYPE:
             raise InvalidEmailTokenError("Type de token inattendu")
         return EmailVerificationClaims(
@@ -172,11 +171,6 @@ class PasswordResetClaims:
 
 
 def password_fingerprint(password_hash: str | None, *, secret_key: str) -> str:
-    """Empreinte du hash du mot de passe actuel (vide pour un compte sans mot de passe).
-
-    Mise dans le lien de réinitialisation, elle change dès que le mot de passe change : le lien
-    ne sert qu'une fois, sans rien stocker. HMAC avec la clé : rien n'est déductible du hash.
-    """
     digest = hmac.new(secret_key.encode(), (password_hash or "").encode(), hashlib.sha256)
     return digest.hexdigest()[:PASSWORD_FINGERPRINT_LENGTH]
 
