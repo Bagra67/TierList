@@ -243,7 +243,6 @@ function TierRow({
   onPlace,
 }: TierRowProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Rang de l'item en cours parmi les autres items du tier : il est affiché avant others[rank]
   const currentRank: number | undefined = currentPlacementInThisTier?.position;
   const placeFocus: string = `place:${tier.id}`;
 
@@ -291,8 +290,6 @@ function TierRow({
 
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
-      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>

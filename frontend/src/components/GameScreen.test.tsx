@@ -49,14 +49,15 @@ describe('GameScreen', () => {
   });
 
   it('shows the current item, its progress and who has placed it', async () => {
+    const disconnectedBobId: string = bobId;
     stubBackend({
-      'GET /rooms/K7P2QX': () => Response.json(inGame({ placed_participant_ids: [bobId] })),
+      'GET /rooms/K7P2QX': () =>
+        Response.json(inGame({ placed_participant_ids: [disconnectedBobId] })),
     });
     renderRoomPage();
 
     expect(await screen.findByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
-    // Bob, déconnecté, a placé : le compteur n'attend que les connectés (Alice)
     expect(screen.getByRole('heading', { name: 'Placé 0 / 1 connecté' })).toBeInTheDocument();
     expect(within(placedList()).getByText('Alice (vous)').parentElement).toHaveTextContent(
       'en attente',
@@ -272,20 +273,71 @@ describe('GameScreen', () => {
       image_url: null,
       image_removed: false,
     };
-    stubBackend({
+    const lateAnswerFromRound1: Room = inGame({ own_placements: [paprikaInS] });
+    const placeBarbecue: string = `PUT /rooms/K7P2QX/game/placements/${barbecue.id}`;
+    const fetchMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(inGame({ round_number: 2, current_item: barbecue })),
-      // Le tour 2 a commencé entre-temps : cette réponse du tour 1 arrive trop tard
-      [`PUT /rooms/K7P2QX/game/placements/${barbecue.id}`]: () =>
-        Response.json(inGame({ own_placements: [paprikaInS] })),
+      [placeBarbecue]: () => Response.json(lateAnswerFromRound1),
     });
     renderRoomPage();
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
-    );
+    const placeInS: HTMLElement = await screen.findByRole('button', {
+      name: "Placer dans S : l'élément en cours, à la fin",
+    });
+    fireEvent.click(placeInS);
 
-    await vi.waitFor(() => expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument());
+    await vi.waitFor(() => expect(calledRoutes(fetchMock)).toContain(placeBarbecue));
+    await vi.waitFor(() => expect(placeInS).toHaveAttribute('aria-disabled', 'false'));
+    expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument();
     expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
+  });
+
+  it('shows the current item at its rank among the other items of the tier', async () => {
+    const curryInS: OwnPlacement = {
+      item: {
+        id: '7c1d2e3f-0000-4000-8000-000000000010',
+        text: 'Curry',
+        image_url: null,
+        image_removed: false,
+      },
+      tier_id: tierS.id,
+      position: 2,
+    };
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json(
+          inGame({
+            own_placements: [
+              { ...chorizoInS, position: 0 },
+              { ...paprikaInS, position: 1 },
+              curryInS,
+            ],
+          }),
+        ),
+    });
+    renderRoomPage();
+
+    const tierSList: HTMLElement = await screen.findByRole('list', { name: 'S' });
+
+    expect(
+      within(tierSList)
+        .getAllByRole('listitem')
+        .map((listItem: HTMLElement) => listItem.textContent)
+        .filter((text: string | null) => text !== ''),
+    ).toEqual(['Chorizo', 'Paprika', 'Curry']);
+  });
+
+  it('rounds the tier letter inside its row, without clipping the focus ring of the tiles', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+
+    const tierSList: HTMLElement = await screen.findByRole('list', { name: 'S' });
+    const tierRow: HTMLElement | null = tierSList.closest('li');
+    if (tierRow === null) throw new Error('No tier row');
+
+    expect(tierRow).toHaveClass('rounded-[10px]');
+    expect(tierRow).not.toHaveClass('overflow-hidden');
+    expect(within(tierRow).getByTitle('S')).toHaveClass('rounded-l-[9px]');
   });
 
   it('does not shake during a round, even in its last seconds', async () => {
@@ -446,6 +498,32 @@ describe('GameScreen', () => {
       expect(
         screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }),
       ).toBeInTheDocument();
+    });
+
+    it('only marks the move button as busy during a move: focus, choice and single request stay', async () => {
+      const fetchMock = stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        [paprikaPut]: () => new Promise<Response>(() => {}),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Paprika' }));
+      const moveToA: HTMLElement = screen.getByRole('button', {
+        name: 'Déplacer Paprika à la fin de A',
+      });
+      moveToA.focus();
+      fireEvent.click(moveToA);
+
+      await vi.waitFor(() => expect(moveToA).toHaveAttribute('aria-disabled', 'true'));
+      expect(moveToA).toBeEnabled();
+      expect(moveToA).toHaveFocus();
+
+      fireEvent.click(moveToA);
+
+      expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
+      expect(calledRoutes(fetchMock).filter((route: string) => route.startsWith('PUT'))).toEqual([
+        paprikaPut,
+      ]);
     });
 
     it('sends nothing when the chosen tile is already last of the tier', async () => {
