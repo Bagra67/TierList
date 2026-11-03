@@ -37,6 +37,13 @@ describe('ForgotPasswordPage', () => {
     });
   });
 
+  it('underlines the link in the text, so that it does not rely on color alone', () => {
+    stubBackend({});
+    renderForgotPasswordPage();
+
+    expect(screen.getByRole('link', { name: 'Retour à la connexion' })).toHaveClass('underline');
+  });
+
   it('links back to the sign-in page', () => {
     stubBackend({});
 
