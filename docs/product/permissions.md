@@ -62,7 +62,7 @@ The room size is limited by the **room admin's plan** (see [game-rules.md](game-
 
 ## Moderation
 
-- Any user can **report** content.
+- Anyone can **report** content, with or without an account.
 - Every report is reviewed **by hand**, in an **admin panel** showing the number of reports and their details.
 - **Super admins see everything** (founder views) and can moderate **everything**: templates, media, nicknames, games…
 - Sanctions: **hide**, **delete**, **temporary ban**, **permanent ban**, **remove a purchased plan**.

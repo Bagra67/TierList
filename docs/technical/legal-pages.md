@@ -31,7 +31,7 @@ The texts were written from the code (data inventory of #200, scope of #201) and
 
 ### Reports
 
-Illegal content is reported by email to `LEGAL_CONTACT_EMAIL`, until the in-app reports (#126). The section says what to include (link, content, reason, an address to answer) and what happens next (removal, suspension or deletion of the account, done by hand for now). The privacy policy describes the data of a report and how long it is kept.
+Content is reported with the in-app button, with or without an account ([moderation guide](moderation.md)). The section also gives `LEGAL_CONTACT_EMAIL`, for other content and for those who want an answer, and says what to include (link, content, reason, an address to answer) and what happens next (removal, suspension or deletion of the account, done by hand for now). The privacy policy describes the data of a report and how long it is kept.
 
 ## 2. Keeping the pages up to date
 

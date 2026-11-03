@@ -36,6 +36,7 @@ En tant que **n'importe qui** (utilisateur, participant ou visiteur), je veux si
 - _Étant donné_ que j'ai déjà signalé ce contenu, _quand_ je le signale à nouveau, _alors_ aucun second signalement n'est créé, et on m'indique qu'il est déjà signalé.
 - _Étant donné_ que j'envoie beaucoup de signalements en peu de temps, _alors_ les suivants sont refusés un moment, avec un message (limite de fréquence).
 - _Étant donné_ un signalement, _alors_ la personne signalée **ne sait jamais** qui l'a signalée.
+- Sans compte, le navigateur est reconnu par un cookie seul : l'effacer contourne les deux règles précédentes. Un template public devient signalable avec sa page (US-3.3).
 
 ### US-1.3 Traiter les signalements — Must
 
