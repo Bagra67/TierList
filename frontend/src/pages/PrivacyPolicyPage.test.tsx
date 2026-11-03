@@ -62,9 +62,15 @@ describe('PrivacyPolicyPage', () => {
   it('describes the data of a content report and how long it is kept', async () => {
     renderPrivacyPage();
 
-    expect(await screen.findByText(/^Signalements : l'adresse e-mail/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Signalements : dans l'application/)).toBeInTheDocument();
     expect(screen.getByText(/^Traiter les signalements de contenus illicites/)).toBeInTheDocument();
     expect(screen.getByText(/^Signalements : le temps de les traiter/)).toBeInTheDocument();
+  });
+
+  it('describes the cookie of a report without an account', async () => {
+    renderPrivacyPage();
+
+    expect(await screen.findByText(/^Cookie de signalement : .* \(1 an\)\.$/)).toBeInTheDocument();
   });
 
   it('describes the moderation log, who sees it and how long it is kept', async () => {

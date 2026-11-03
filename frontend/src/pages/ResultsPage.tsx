@@ -8,6 +8,7 @@ import type { GameItem } from '../api/rooms';
 import { CopyLinkField } from '../components/CopyLinkField';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { ItemVotesPanel } from '../components/ItemVotesPanel';
+import { ReportButton } from '../components/ReportButton';
 import { ResultsDistributionTable } from '../components/ResultsDistributionTable';
 import { ResultsPlayerView } from '../components/ResultsPlayerView';
 import { ResultsRoomActions } from '../components/ResultsRoomActions';
@@ -95,13 +96,20 @@ export function ResultsPage() {
   return (
     <PageContainer width="app" className="flex flex-col items-start gap-6">
       {fromRoom !== null && <ResultsRoomActions fromRoom={fromRoom} />}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">
-          {t('results.title', { name: known.template_name })}
-        </h1>
-        <p className="text-muted-foreground">
-          {t('results.closedAt', { date: new Date(known.closed_at) })}
-        </p>
+      <div className="flex w-full flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold">
+            {t('results.title', { name: known.template_name })}
+          </h1>
+          <p className="text-muted-foreground">
+            {t('results.closedAt', { date: new Date(known.closed_at) })}
+          </p>
+        </div>
+        <ReportButton
+          targetKind="game"
+          targetId={known.game_id}
+          contentName={known.template_name}
+        />
       </div>
       <CopyLinkField
         label={t('results.publicLink')}

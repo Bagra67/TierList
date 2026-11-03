@@ -105,6 +105,7 @@ export function PrivacyPolicyPage() {
             t('privacy.cookies.google'),
             t('privacy.cookies.banNotice'),
             t('privacy.cookies.guest'),
+            t('privacy.cookies.report'),
             t('privacy.cookies.local'),
           ]}
         />

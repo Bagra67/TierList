@@ -3,6 +3,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { PlayerResults } from '../api/results';
 import type { GameTier } from '../api/rooms';
+import { ReportButton } from './ReportButton';
 import { ResultsTierList } from './ResultsTierList';
 import type { ItemSelection, ResultItems } from './resultsViews';
 import { NativeSelect } from './ui/native-select';
@@ -54,6 +55,12 @@ export function ResultsPlayerView({
             </option>
           ))}
         </NativeSelect>
+        <ReportButton
+          key={player.id}
+          targetKind="player"
+          targetId={player.id}
+          contentName={player.display_name}
+        />
       </div>
       <ResultsTierList
         key={revealRun}

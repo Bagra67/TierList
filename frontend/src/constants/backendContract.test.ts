@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { readRepositoryFile } from '../test/repositoryFile';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from './auth';
-import { MODERATION_REASON_MAX_LENGTH } from './moderation';
+import { MODERATION_REASON_MAX_LENGTH, REPORT_DETAILS_MAX_LENGTH } from './moderation';
 import { CONFIRM_PARAM, LOGIN_ERROR_PARAM, ROUTES, TOKEN_PARAM } from './routes';
 import {
   TEMPLATE_NAME_MAX_LENGTH,
@@ -65,6 +65,12 @@ describe('limits shared with the backend', () => {
         openApiSchemas[schemaName].properties.reason.maxLength,
       );
     }
+  });
+});
+
+describe('report limits shared with the backend', () => {
+  it('caps the details at the limit of the report request', () => {
+    expect(REPORT_DETAILS_MAX_LENGTH).toBe(maxLengthOf('CreateReportRequest', 'details'));
   });
 });
 

@@ -55,6 +55,14 @@ describe('RoomPage', () => {
     expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
   });
 
+  it('reports the nickname of the others, not ones own', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+
+    expect(await screen.findByRole('button', { name: 'Signaler : Bob' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Signaler : Alice' })).not.toBeInTheDocument();
+  });
+
   it('shows who is online', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
 
