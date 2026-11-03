@@ -10,10 +10,13 @@ from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.constants.auth import REFRESH_TOKEN_COOKIE
 from app.constants.error_codes import ErrorCode
+from app.core.security import generate_refresh_token, hash_refresh_token
 from app.models.account_ban import AccountBan
 from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.moderation_action import ModerationAction
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from tests.integration.helpers import PASSWORD, JsonObject, register, register_super_admin
 
@@ -96,6 +99,35 @@ def test_a_temporary_ban_signs_the_account_out_and_refuses_its_sign_in_until_the
         alice_account.id,
         "alice",
     )
+
+
+def test_a_session_opened_while_the_ban_was_decided_cannot_be_refreshed(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str], alice: dict[str, str]
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    assert ban(auth_client, nina, alice_account.id).status_code == 204
+    # Le token qu'une connexion en cours valide juste après le bannissement : sa révocation ne l'a
+    # pas vu
+    now: datetime = datetime.now(UTC)
+    raw_token: str = generate_refresh_token()
+    surviving: RefreshToken = RefreshToken(
+        user_id=alice_account.id,
+        token_hash=hash_refresh_token(raw_token),
+        family_id=uuid.uuid4(),
+        authenticated_at=now,
+        expires_at=now + timedelta(days=1),
+    )
+    db_session.add(surviving)
+    db_session.flush()
+    auth_client.cookies.clear()
+    auth_client.cookies.set(REFRESH_TOKEN_COOKIE, raw_token)
+
+    response: Response = auth_client.post("/auth/refresh")
+
+    assert response.status_code == 401
+    assert response.json()["code"] == ErrorCode.SESSION_EXPIRED
+    db_session.expire_all()
+    assert surviving.revoked_at is not None
 
 
 def test_a_permanent_ban_has_no_end(

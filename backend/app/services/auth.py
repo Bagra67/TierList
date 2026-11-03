@@ -260,6 +260,16 @@ class AuthService:
         user = user_repository.get_user_by_id(self._session, stored.user_id)
         if user is None:
             raise InvalidRefreshTokenError
+        # Un bannissement révoque les sessions, mais pas le token qu'une connexion ou un
+        # rafraîchissement en cours n'a pas encore validé : sans ce contrôle, il prolongerait la
+        # session du compte banni à chaque rotation.
+        if account_ban_repository.get_active_ban(self._session, user.id, now) is not None:
+            refresh_token_repository.revoke_refresh_token_family(
+                self._session, stored.family_id, revoked_at=now
+            )
+            self._session.commit()
+            logger.info("Rafraîchissement refusé : compte banni, user_id=%s", user.id)
+            raise InvalidRefreshTokenError
         tokens = self._issue_tokens(
             user, family_id=stored.family_id, authenticated_at=stored.authenticated_at
         )
