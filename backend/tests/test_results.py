@@ -174,6 +174,23 @@ def test_results_md_example_4_an_item_nobody_placed_is_unranked(
     assert results.median_ranking == ((), (PAPRIKA,), ())
 
 
+def test_unchecked_absent_votes_leave_the_absent_row_empty_for_an_item_never_played() -> None:
+    placed_only_the_first_item: PlayerRanking = ranking({S: [PAPRIKA]})
+
+    checked: GameResults = compute_results(
+        3, [PAPRIKA, VINAIGRE], [placed_only_the_first_item], True
+    )
+    unchecked: GameResults = compute_results(
+        3, [PAPRIKA, VINAIGRE], [placed_only_the_first_item], False
+    )
+
+    assert checked.items[VINAIGRE].absent_player_indexes == (0,)
+    assert checked.items[VINAIGRE].absent_count == 1
+    assert unchecked.items[VINAIGRE].absent_player_indexes == ()
+    assert unchecked.items[VINAIGRE].absent_count == 0
+    assert unchecked.unranked_tile_ids == (VINAIGRE,)
+
+
 def test_results_md_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     alice: PlayerRanking = ranking({A: [X, Y, Z]})
     bob: PlayerRanking = ranking({A: [Y, X, Z]})
