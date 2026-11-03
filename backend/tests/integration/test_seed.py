@@ -25,6 +25,7 @@ from app.models.placement import Placement
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import seed_email
 from app.seed.run import SeedSummary, run_seed
@@ -166,6 +167,7 @@ def test_running_the_seed_again_replaces_its_data_only(
     db_session.commit()
     seed(db_session, stored_images)
     first_keys: set[str] = set(stored_images)
+    first_snapshots: int = count(db_session, TemplateSnapshot)
 
     seed(db_session, stored_images)
 
@@ -177,12 +179,65 @@ def test_running_the_seed_again_replaces_its_data_only(
     )
     assert count(db_session, User) == accounts + 1
     assert count(db_session, Game) == SMALL_SIZE.closed_games
+    assert count(db_session, TemplateSnapshot) == first_snapshots
     assert count(db_session, ModerationAction) == MODERATION_ACTIONS
     assert db_session.scalars(
         select(Template.name).where(Template.owner_id == real_user.id)
     ).all() == ["Mine"]
     assert count(db_session, Image) == len(stored_images) + SMALL_SIZE.deleted_images
     assert first_keys.isdisjoint(stored_images)
+
+
+def test_the_seeded_games_keep_the_closure_rules(
+    db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+
+    for game in db_session.scalars(select(Game)).all():
+        tile_ids: set[uuid.UUID] = {tile.id for tile in game.snapshot.tiles}
+        assert {game_round.snapshot_tile_id for game_round in game.rounds} == tile_ids
+        assert len(game.rounds) == len(tile_ids)
+        assert all(placement.player is not None for placement in game.placements)
+        for player in game.players:
+            placements: list[Placement] = [p for p in game.placements if p.player_id == player.id]
+            round_placements: list[Placement] = [
+                p for p in placements if p.phase == PlacementPhase.ROUND
+            ]
+            final_placements: list[Placement] = [
+                p for p in placements if p.phase == PlacementPhase.FINAL
+            ]
+            assert len(round_placements) == len(tile_ids)
+            assert sorted(
+                (p.snapshot_tile_id, p.snapshot_tier_id, p.position)
+                for p in round_placements
+                if not p.is_absent
+            ) == sorted(
+                (p.snapshot_tile_id, p.snapshot_tier_id, p.position) for p in final_placements
+            )
+            positions_per_tier: dict[uuid.UUID | None, list[int | None]] = {}
+            for placement in final_placements:
+                positions_per_tier.setdefault(placement.snapshot_tier_id, []).append(
+                    placement.position
+                )
+            for positions in positions_per_tier.values():
+                assert sorted(p for p in positions if p is not None) == list(range(len(positions)))
+
+
+def test_the_seeded_snapshots_copy_their_template(
+    db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+
+    for snapshot in db_session.scalars(select(TemplateSnapshot)).all():
+        template: Template | None = db_session.get(Template, snapshot.template_id)
+        assert template is not None
+        assert snapshot.name == template.name
+        assert [(tier.name, tier.color, tier.position) for tier in snapshot.tiers] == [
+            (tier.name, tier.color, tier.position) for tier in template.tiers
+        ]
+        assert [(tile.text, tile.image_id, tile.position) for tile in snapshot.tiles] == [
+            (tile.text, tile.image_id, tile.position) for tile in template.tiles
+        ]
 
 
 def test_the_seeded_history_and_results_work_through_the_api(
