@@ -154,8 +154,6 @@ function storeTemplate(queryClient: QueryClient, template: Template): Promise<vo
   return queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY, exact: true });
 }
 
-// Modification d'un template ouvert : renvoie le template à jour ; le contexte est le template
-// d'avant un déplacement, rétabli si l'enregistrement échoue
 export type TemplateChange<Variables> = UseMutationResult<
   Template,
   Error,
@@ -174,7 +172,6 @@ interface Positioned {
   position: number;
 }
 
-// Éléments dans le nouvel ordre, avant la réponse du backend (qui applique la même règle)
 function moveItem<Item extends Positioned>(
   items: Item[],
   itemId: string,
