@@ -126,8 +126,6 @@ class ConnectionRegistry:
             websocket for websocket, owner_id in room_sockets.items() if owner_id == participant_id
         ]
         for websocket in participant_sockets:
-            # Retiré du registre avant la fermeture : sa route ne programmera pas de départ, et il
-            # ne reçoit plus les événements de la salle
             self.remove(room_id, websocket)
             try:
                 await websocket.close(code=close_code, reason=reason)
