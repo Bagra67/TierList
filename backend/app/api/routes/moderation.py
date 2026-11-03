@@ -91,8 +91,13 @@ def _account_not_found() -> AppHTTPException:
 
 BAN_RESPONSES: dict[int | str, dict[str, Any]] = {
     **ACCOUNT_RESPONSES,
-    409: {"model": ErrorResponse, "description": messages.BAN_CONFLICT_DESCRIPTION},
+    409: {"model": ErrorResponse, "description": messages.CANNOT_BAN_SUPER_ADMIN_DESCRIPTION},
     422: {"model": ErrorResponse, "description": messages.BAN_END_IN_PAST_DESCRIPTION},
+}
+
+LIFT_BAN_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **ACCOUNT_RESPONSES,
+    409: {"model": ErrorResponse, "description": messages.ACCOUNT_NOT_BANNED_DESCRIPTION},
 }
 
 
@@ -405,7 +410,7 @@ def ban_account(
         ) from exc
 
 
-@router.post("/accounts/{user_id}/lift-ban", status_code=204, responses=BAN_RESPONSES)
+@router.post("/accounts/{user_id}/lift-ban", status_code=204, responses=LIFT_BAN_RESPONSES)
 def lift_account_ban(
     user_id: uuid.UUID,
     body: ModerationReasonRequest,

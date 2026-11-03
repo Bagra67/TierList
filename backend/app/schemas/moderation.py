@@ -90,8 +90,6 @@ class RecentUploadsResponse(BaseModel):
 class AccountSummaryResponse(BaseModel):
     """Un compte dans la recherche des super admins (US-1.8)."""
 
-    model_config = ConfigDict(from_attributes=True)
-
     id: uuid.UUID
     display_name: str
     email: str

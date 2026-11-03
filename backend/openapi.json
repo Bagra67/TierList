@@ -4685,7 +4685,7 @@
             }
           },
           "409": {
-            "description": "Super admin, or account not banned",
+            "description": "Super admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -4786,7 +4786,7 @@
             }
           },
           "409": {
-            "description": "Super admin, or account not banned",
+            "description": "Account not banned",
             "content": {
               "application/json": {
                 "schema": {
@@ -4796,11 +4796,11 @@
             }
           },
           "422": {
-            "description": "Ban end in the past, or invalid request",
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }

@@ -5319,7 +5319,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Super admin, or account not banned */
+            /** @description Super admin */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5397,7 +5397,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Super admin, or account not banned */
+            /** @description Account not banned */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5406,13 +5406,13 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Ban end in the past, or invalid request */
+            /** @description Validation Error */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
