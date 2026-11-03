@@ -6,7 +6,6 @@ import { aliceRoom } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
 import { errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
-// Corps de l'unique PATCH des réglages reçu par le faux backend, une fois envoyé
 async function sentChanges(fetchMock: BackendMock): Promise<unknown> {
   const request: Request = await waitFor(() => {
     const patch = fetchMock.mock.calls.find(([call]) => call.method === 'PATCH');
@@ -16,7 +15,6 @@ async function sentChanges(fetchMock: BackendMock): Promise<unknown> {
   return request.clone().json();
 }
 
-// Ouvre le lobby de la salle, puis le formulaire des réglages
 async function openSettings(room: Room, routes: Parameters<typeof stubBackend>[0] = {}) {
   const fetchMock: BackendMock = stubBackend({
     'GET /rooms/K7P2QX': () => Response.json(room),

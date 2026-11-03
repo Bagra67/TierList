@@ -8,10 +8,8 @@ import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../t
 
 const bobId: string = aliceRoom.participants[1].id;
 
-// Salle d'Alice, room admin, avec Bob et Lou (invité)
 const roomWithLou: Room = { ...aliceRoom, participants: lousRoom.participants };
 
-// Adresse de l'unique DELETE reçu par le faux backend, une fois envoyé
 async function sentDeletion(fetchMock: BackendMock): Promise<URL> {
   const request: Request = await waitFor(() => {
     const deletion = fetchMock.mock.calls.find(([call]) => call.method === 'DELETE');
@@ -21,7 +19,6 @@ async function sentDeletion(fetchMock: BackendMock): Promise<URL> {
   return new URL(request.url);
 }
 
-// Ouvre le lobby, puis le dialogue de retrait de ce participant
 async function openRemoval(name: string, routes: Parameters<typeof stubBackend>[0] = {}) {
   const fetchMock: BackendMock = stubBackend({
     'GET /rooms/K7P2QX': () => Response.json(roomWithLou),
@@ -66,7 +63,6 @@ describe('RemoveParticipantDialog', () => {
     fireEvent.click(
       within(dialog).getByLabelText('Bannir : ne pourra plus revenir dans cette salle'),
     );
-    // Pas d'avertissement pour un compte : son bannissement est sûr
     expect(within(dialog).queryByText(/contourner/)).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Bannir' }));
 

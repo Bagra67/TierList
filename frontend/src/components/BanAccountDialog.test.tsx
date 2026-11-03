@@ -50,7 +50,6 @@ describe('BanAccountDialog', () => {
     fireEvent.click(submit);
 
     await waitFor(() => expect(close).toHaveBeenCalledOnce());
-    // Le jour choisi est inclus : le bannissement finit au début du jour suivant, en heure locale
     expect(bodies).toEqual([
       { reason: 'Spam', ends_at: new Date('2099-11-16T00:00:00').toISOString() },
     ]);

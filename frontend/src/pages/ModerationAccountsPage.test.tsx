@@ -19,7 +19,6 @@ function account(overrides: Partial<AccountSummary>): AccountSummary {
   };
 }
 
-// Le faux backend renvoie la page selon l'offset demandé, et garde les paramètres reçus
 function stubSearch(pages: Record<string, AccountSearchPage>): URLSearchParams[] {
   const queries: URLSearchParams[] = [];
   stubBackend({

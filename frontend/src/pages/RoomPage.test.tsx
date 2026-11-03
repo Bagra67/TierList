@@ -15,7 +15,6 @@ import {
   type BackendMock,
 } from '../test/stubBackend';
 
-// Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 }
@@ -32,7 +31,6 @@ describe('RoomPage', () => {
 
     renderRoomPage();
 
-    // Le squelette de chargement (son texte « Chargement… » arrive au rendu suivant)
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.getByText('Modèle : Chips')).toBeInTheDocument();
@@ -98,7 +96,6 @@ describe('RoomPage', () => {
     const reads: number = calledRoutes(fetchMock).filter(
       (route) => route === 'GET /rooms/K7P2QX',
     ).length;
-    // Une relecture ferait rejoindre à nouveau le compte : il revient seulement s'il le demande
     act(() => window.dispatchEvent(new Event('focus')));
     expect(calledRoutes(fetchMock).filter((route) => route === 'GET /rooms/K7P2QX')).toHaveLength(
       reads,
@@ -205,7 +202,6 @@ describe('RoomPage', () => {
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
 
-    // Code tapé en minuscules : la salle est lue et rejointe sous son code canonique
     renderRoomPage('k7p2qx');
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
@@ -354,7 +350,6 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Partie en cours')).toBeInTheDocument();
     expect(screen.getByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
-    // Le texte est affiché : l'image n'est pas relue par les lecteurs d'écran
     expect(screen.getByRole('presentation')).toHaveAttribute(
       'src',
       'https://images.example.com/paprika.webp',

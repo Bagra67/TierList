@@ -5,7 +5,6 @@ import { aliceRoom, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage } from '../test/renderRoomPage';
 import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 
-// Corps de la première requête reçue sur cette route
 async function requestBody(fetchMock: BackendMock, route: string): Promise<unknown> {
   const call = fetchMock.mock.calls.find(
     ([request]) => `${request.method} ${new URL(request.url).pathname}` === `POST /api${route}`,
@@ -14,7 +13,6 @@ async function requestBody(fetchMock: BackendMock, route: string): Promise<unkno
   return call[0].clone().json();
 }
 
-// Visiteur sans compte (aucune session) et sans place : GET /rooms/K7P2QX répond 404
 const visitorWithoutSeat = {
   'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
 };
@@ -128,7 +126,6 @@ describe('JoinRoomScreen', () => {
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Votre lien personnel' })).not.toBeInTheDocument();
-    // Le lien perso n'est plus affichable, mais l'invité peut en demander un nouveau
     expect(
       screen.getByRole('button', { name: 'Obtenir un nouveau lien personnel' }),
     ).toBeInTheDocument();

@@ -8,7 +8,6 @@ function rect(left: number, width: number): ClientRect {
 }
 
 describe('dropPosition', () => {
-  // Le tier S contient A, B, C, dans cet ordre
   const tierS: string[] = ['A', 'B', 'C'];
 
   it('keeps a tile dropped on itself where it is', () => {
@@ -22,7 +21,6 @@ describe('dropPosition', () => {
   });
 
   it('ignores a drop that would leave the tile in place', () => {
-    // A avant B : A y est déjà
     expect(dropPosition(tierS, 'A', { tierId: 'S', itemId: 'B' }, 'before')).toBeNull();
     expect(dropPosition(tierS, 'C', { tierId: 'S', itemId: null }, 'before')).toBeNull();
   });

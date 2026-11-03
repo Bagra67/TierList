@@ -1,6 +1,5 @@
 import type { GuestRoom, Room } from '../../api/rooms';
 
-// Salle d'Alice (room admin) avec Bob, telle que la renvoie GET /rooms/{code}
 export const aliceRoom: Room = {
   code: 'K7P2QX',
   version: 3,
@@ -39,7 +38,6 @@ export const aliceRoom: Room = {
   past_games: [],
 };
 
-// La même salle pendant une partie : tour 1 sur 3, telle que la renvoie POST /rooms/{code}/game
 export const aliceRoomInGame: Room = {
   ...aliceRoom,
   version: 4,
@@ -66,11 +64,9 @@ export const aliceRoomInGame: Room = {
   },
 };
 
-// Salle rejointe par Lou en invité, avec son lien perso, telle que la renvoie POST /guests
 export const lousRoom: GuestRoom = {
   ...aliceRoom,
   is_admin: false,
-  // Vue de Lou : sa place est la sienne, plus celle d'Alice
   participants: [
     ...aliceRoom.participants.map((participant) => ({ ...participant, is_you: false })),
     {

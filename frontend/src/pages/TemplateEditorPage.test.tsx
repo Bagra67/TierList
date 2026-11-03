@@ -54,14 +54,12 @@ function withTiles(tiles: Tile[]): Template {
   return makeTemplate([tierS, tierA, tierB], 'Chips', tiles);
 }
 
-// Textes des tuiles dans l'ordre affiché (un champ de texte par tuile)
 function displayedTileTexts(): string[] {
   return screen
     .queryAllByRole('textbox', { name: /^Texte de la tuile/ })
     .map((input) => (input as HTMLInputElement).value);
 }
 
-// Noms des tiers dans l'ordre affiché (un champ de nom par ligne)
 function displayedTierNames(): string[] {
   return screen
     .getAllByRole('textbox', { name: /^Nom du tier/ })
@@ -121,7 +119,6 @@ describe('TemplateEditorPage', () => {
     expect(notice).toHaveAttribute('role', 'status');
     expect(notice).toHaveTextContent('Motif : Harcèlement');
     expect(notice).toHaveTextContent('Vous pouvez encore le modifier');
-    // Toujours modifiable, mais plus de salle à lancer avec
     expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toBeEnabled();
     expect(
       screen.queryByRole('button', { name: 'Créer une salle avec Chips' }),
@@ -234,10 +231,8 @@ describe('TemplateEditorPage', () => {
         name: 'Nom du tier 1',
       });
 
-      // Une zone de texte passe à la ligne au lieu de couper le nom
       expect(firstTierName.tagName).toBe('TEXTAREA');
       fireEvent.change(firstTierName, { target: { value: longName } });
-      // Entrée enregistre, sans ajouter de retour à la ligne
       const enterKept: boolean = fireEvent.keyDown(firstTierName, { key: 'Enter' });
 
       expect(enterKept).toBe(false);
@@ -363,7 +358,6 @@ describe('TemplateEditorPage', () => {
 
       await waitFor(() => expect(displayedTileTexts()).toEqual(['Pizza', 'Tacos']));
       await expect(requestBody(fetchMock, 'POST')).resolves.toEqual({ text: 'Tacos' });
-      // Le champ est vidé pour la tuile suivante
       expect(newTileField).toHaveValue('');
     });
 
@@ -526,7 +520,6 @@ describe('TemplateEditorPage', () => {
       return new File(['png-bytes'], name, { type: 'image/png' });
     }
 
-    // Champ fichier caché d'une vignette, trouvé par le nom accessible de la vignette
     function fileInputOf(zoneName: string): HTMLInputElement {
       const zone: HTMLElement = screen.getByRole('button', { name: zoneName });
       const input: HTMLInputElement | null | undefined =
@@ -569,7 +562,6 @@ describe('TemplateEditorPage', () => {
 
       renderEditor();
 
-      // La tuile garde son image côté serveur : on la remplace, on ne l'ajoute pas
       const zone: HTMLElement = await screen.findByRole('button', {
         name: "Remplacer l'image de Tuile 1",
       });
@@ -611,7 +603,6 @@ describe('TemplateEditorPage', () => {
         .map(([request]) => request)
         .find((request) => request.url.endsWith('/tiles'));
       await expect(addRequest?.json()).resolves.toEqual({ image_id: uploadedImage.id });
-      // Le formulaire est vidé, image comprise, pour la tuile suivante
       expect(
         screen.getByRole('button', { name: 'Ajouter une image à la nouvelle tuile' }),
       ).toBeInTheDocument();
@@ -717,7 +708,6 @@ describe('TemplateEditorPage', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         /^L'image est trop lourde : 10\sMo au maximum\.$/,
       );
-      // L'aperçu disparaît : aucune image n'est rattachée à la nouvelle tuile
       expect(
         screen.getByRole('button', { name: 'Ajouter une image à la nouvelle tuile' }),
       ).toBeInTheDocument();
@@ -727,7 +717,6 @@ describe('TemplateEditorPage', () => {
       let uploadCount: number = 0;
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
-        // Le premier envoi réussit, le remplacement est refusé
         'POST /images': () => {
           uploadCount += 1;
           return uploadCount === 1
@@ -803,7 +792,6 @@ describe('TemplateEditorPage', () => {
     });
 
     describe('several images at once', () => {
-      // Une image envoyée par appel, dans l'ordre des appels : img-1, img-2…
       function imageNumber(index: number): UploadedImage {
         return {
           ...uploadedImage,
@@ -812,8 +800,6 @@ describe('TemplateEditorPage', () => {
         };
       }
 
-      // Faux backend qui garde les tuiles : chaque ajout renvoie le modèle avec la nouvelle tuile
-      // en dernier ; addedImageIds note l'image de chaque ajout, dans l'ordre
       function stubBulkBackend(
         startTiles: Tile[],
         upload: (index: number) => Response | Promise<Response> = (index) =>
@@ -873,7 +859,6 @@ describe('TemplateEditorPage', () => {
             'border-primary',
           );
         }
-        // La tuile d'avant n'est pas mise en avant
         expect(document.querySelector('[data-tile-id="tile-Pizza"]')).not.toHaveClass(
           'border-primary',
         );
@@ -881,7 +866,6 @@ describe('TemplateEditorPage', () => {
 
       it('keeps the order of the selection when a later image is uploaded first', async () => {
         const { addedImageIds } = stubBulkBackend([], async (index) => {
-          // La première image met plus de temps que la seconde
           if (index === 1) await new Promise((resolve) => setTimeout(resolve, 50));
           return Response.json(imageNumber(index), { status: 201 });
         });
@@ -987,7 +971,6 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      // Une tuile sans image garde son texte : il est envoyé tel quel, pas retiré (null)
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: '   ' });
     });
 
@@ -1120,7 +1103,6 @@ describe('TemplateEditorPage', () => {
   });
 
   describe('tier color', () => {
-    // Ouvre le sélecteur de couleur du tier A et renvoie son contenu
     async function openColorPicker(): Promise<HTMLElement> {
       fireEvent.click(await screen.findByRole('button', { name: 'Couleur du tier A' }));
       return screen.findByRole('dialog');

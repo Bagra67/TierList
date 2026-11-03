@@ -6,7 +6,6 @@ import { aliceRoom } from '../test/fixtures/rooms';
 import { renderRoomPage } from '../test/renderRoomPage';
 import { stubBackend } from '../test/stubBackend';
 
-// Salle d'Alice, room admin, qui a banni Bob (compte) et Lou (invité)
 const roomWithBans: Room = {
   ...aliceRoom,
   participants: [aliceRoom.participants[0]],

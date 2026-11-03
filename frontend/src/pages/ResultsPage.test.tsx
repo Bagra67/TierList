@@ -28,7 +28,6 @@ function renderResultsPage(state?: unknown) {
 
 const resultsRoute: string = `GET /results/${RESULTS_TOKEN}`;
 
-// Le faux backend répond selon la case envoyée, et garde les valeurs reçues
 function stubResults(): { includeAbsentVotes: string[] } {
   const received: string[] = [];
   stubBackend({
@@ -43,22 +42,18 @@ function stubResults(): { includeAbsentVotes: string[] } {
   return { includeAbsentVotes: received };
 }
 
-// Le texte des items de la ligne d'un tier (ou de « Non classés », « Jamais placés ») : chaque
-// ligne est un groupe nommé par son tier
 function rowItems(label: string): string[] {
   return within(screen.getByRole('group', { name: label }))
     .queryAllByRole('listitem')
     .map((item: HTMLElement) => item.textContent ?? '');
 }
 
-// Les lignes du panneau des votes d'un item : nom du tier (ou « Absents »), nombre de votes, noms
 function voteLines(item: string): string[] {
   return within(screen.getByRole('region', { name: `Votes : ${item}` }))
     .getAllByRole('listitem')
     .map((line: HTMLElement) => line.textContent ?? '');
 }
 
-// Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 }
@@ -125,7 +120,6 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
-    // Le tier du haut apparaît en dernier ; l'animation est sous motion-safe (mouvement réduit)
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
     expect(tierS).toHaveStyle({ animationDelay: '520ms' });
     expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
@@ -140,7 +134,6 @@ describe('ResultsPage', () => {
     await screen.findByRole('group', { name: 'S' });
 
     fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
-    // Le tableau global ne se révèle pas
     expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: 'Médian' }));
     expect(screen.getByRole('group', { name: 'S' })).not.toHaveClass('motion-safe:animate-reveal');
@@ -167,7 +160,6 @@ describe('ResultsPage', () => {
     await screen.findByRole('group', { name: 'S' });
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
-    // Pendant la lecture de l'autre variante, rien à rejouer
     expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
 
     expect(await screen.findByRole('group', { name: 'S' })).not.toHaveClass(
@@ -195,7 +187,6 @@ describe('ResultsPage', () => {
 
     expect(chorizo).toHaveAttribute('aria-current', 'true');
     expect(voteLines('Chorizo')).toEqual(['S0 vote', 'A1 voteAlice', 'Absents1 voteLou']);
-    // Le choix reste d'une vue à l'autre
     fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
     expect(screen.getByRole('region', { name: 'Votes : Chorizo' })).toBeInTheDocument();
   });
@@ -207,8 +198,6 @@ describe('ResultsPage', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
 
-    // Le vote rattrapé de Lou ne compte plus, et aucun nom n'est affiché : il dirait qui a
-    // rattrapé l'item
     await vi.waitFor(() => expect(voteLines('Paprika')).toEqual(['S1 vote', 'A0 vote']));
   });
 
@@ -323,12 +312,9 @@ describe('ResultsPage', () => {
 
     fireEvent.click(box);
 
-    // L'erreur prend la place des statistiques, jamais celles de l'autre variante ; une erreur
-    // serveur est réessayée une fois avant d'être montrée
     expect(await within(screen.getByRole('tabpanel')).findByRole('alert')).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'A' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
-    // Recocher remontre tout de suite la variante déjà lue
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
     expect(rowItems('A')).toEqual(['Paprika', 'Chorizo']);
   });
@@ -382,8 +368,6 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     await screen.findByRole('heading', { name: 'Résultats : Épices' });
-    // En dehors des onglets, seuls le bouton de copie, celui qui rejoue la révélation et les
-    // éléments (qui ouvrent leurs votes) sont des boutons : ni « Rejouer », ni commande de salle
     expect(
       screen
         .getAllByRole('button')

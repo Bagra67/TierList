@@ -86,7 +86,6 @@ describe('DeleteAccountDialog', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer mon compte' }));
-    // TanStack Query notifie la remise à zéro de la mutation de façon asynchrone
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(screen.getByLabelText('Mot de passe')).toHaveValue('');
   });

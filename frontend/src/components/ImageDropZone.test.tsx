@@ -71,7 +71,6 @@ describe('ImageDropZone', () => {
 
     expect(click).toHaveBeenCalledOnce();
     expect(fileInput()).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp');
-    // Le champ caché n'est pas atteignable au clavier : la vignette, un vrai bouton, l'est
     expect(fileInput()).toHaveAttribute('tabindex', '-1');
   });
 
@@ -183,7 +182,6 @@ describe('ImageDropZone', () => {
     );
     const fillZone: HTMLElement = screen.getByRole('button', { name: "Remplacer l'image" });
 
-    // Carré sur toute la largeur de la carte ; l'image entière, sans recadrage
     expect(fillZone.parentElement).toHaveClass('aspect-square', 'w-full');
     expect(fillZone.querySelector('img')).toHaveClass('object-contain');
     expect(screen.getByRole('button', { name: "Retirer l'image" })).toBeInTheDocument();

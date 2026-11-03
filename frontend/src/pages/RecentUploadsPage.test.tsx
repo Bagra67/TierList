@@ -34,8 +34,6 @@ interface StubbedUploads {
   moderations: { path: string; body: unknown }[];
 }
 
-// Le faux backend renvoie la page selon l'offset demandé, garde les paramètres reçus et les
-// actions de modération envoyées
 function stubUploads(
   pages: Record<string, UploadsPage>,
   moderationAnswer: () => Response = () => new Response(null, { status: 204 }),
@@ -80,7 +78,6 @@ describe('RecentUploadsPage', () => {
       within(card).getByRole('button', { name: /Supprimer l'image de Camille/ }),
     ).toBeVisible();
     expect(within(card).queryByText('Masquée')).not.toBeInTheDocument();
-    // L'auteur mène à la page de son compte
     expect(within(card).getByRole('link', { name: 'Camille' })).toHaveAttribute(
       'href',
       '/moderation/accounts/camille-id',
@@ -134,7 +131,6 @@ describe('RecentUploadsPage', () => {
     await waitFor(() => expect(stubbed.queries.at(-1)?.get('status')).toBe('visible'));
     const query: URLSearchParams = stubbed.queries.at(-1) as URLSearchParams;
     expect(query.get('author')).toBe('camille');
-    // Les jours choisis, dans le fuseau du super admin : le dernier est inclus en entier
     expect(query.get('created_after')).toBe(new Date('2026-10-01T00:00:00').toISOString());
     expect(query.get('created_before')).toBe(new Date('2026-11-01T00:00:00').toISOString());
   });

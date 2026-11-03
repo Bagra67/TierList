@@ -15,7 +15,6 @@ import {
   unauthorized,
 } from './test/stubBackend';
 
-// Seul fetch est remplacé : routeur, hooks, client API et TanStack Query tournent pour de vrai
 function renderAppAt(path: string) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>
@@ -67,7 +66,6 @@ describe('App', () => {
       'GET /templates': () => Response.json({ items: [] }),
       'POST /auth/logout': () => new Response(null, { status: 204 }),
     });
-    // Depuis une autre page que l'accueil : le bouton est dans l'en-tête de toutes les pages
     renderAppAt('/templates');
     await screen.findByRole('heading', { name: 'Mes modèles' });
 
@@ -81,8 +79,6 @@ describe('App', () => {
   });
 
   it('goes back to the signed-out state when the session ends elsewhere', async () => {
-    // La session est restaurée au chargement, puis se termine ailleurs (autre onglet, refresh
-    // token expiré) : le rafraîchissement suivant répond 401
     let sessionOpen: boolean = true;
     stubBackend({
       'POST /auth/refresh': () => (sessionOpen ? tokenResponse('alice-token')() : unauthorized()),
@@ -118,7 +114,6 @@ describe('App', () => {
       'GET /auth/me': () => Response.json(alice),
       'GET /history': () => Response.json({ games: [], has_more: false }),
     });
-    // Une page privée : sans session, elle mène à la connexion, puis y revient
     renderAppAt('/history?confirm=delete-account');
     await screen.findByRole('heading', { name: 'Connexion' });
 
@@ -126,7 +121,6 @@ describe('App', () => {
     fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
 
-    // ?confirm=delete-account rouvre le dialogue de suppression, sur n'importe quelle page
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
   });
 
@@ -169,7 +163,6 @@ describe('App', () => {
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
     fireEvent.click(within(nav).getByRole('link', { name: 'Modération' }));
 
-    // /moderation mène à la première page du menu de l'espace : les derniers envois
     expect(await screen.findByRole('heading', { name: 'Derniers envois' })).toBeInTheDocument();
     const moderationNav = screen.getByRole('navigation', { name: 'Espace de modération' });
     fireEvent.click(within(moderationNav).getByRole('link', { name: 'Journal' }));
@@ -192,7 +185,6 @@ describe('App', () => {
 
     renderAppAt('/moderation');
 
-    // L'espace reste invisible : rien ne dit qu'il existe
     expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Journal de modération' }),
@@ -234,7 +226,6 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Connexion' })).not.toBeInTheDocument();
-    // Sans compte, l'en-tête n'a ni les liens privés ni « Se déconnecter »
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Se déconnecter' })).not.toBeInTheDocument();
   });

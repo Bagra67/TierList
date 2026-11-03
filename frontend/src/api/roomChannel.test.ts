@@ -222,7 +222,6 @@ describe('useRoomEvents', () => {
         { type: 'auth', access_token: 'fresh-token' },
       ]),
     );
-    // Refusé une seconde fois d'affilée : la session est vraiment finie
     latestSocket().closeFromServer(4401);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(FakeWebSocket.instances).toHaveLength(2);
@@ -261,7 +260,6 @@ describe('useRoomEvents', () => {
 
   it('keeps retrying after a connection that was open', () => {
     vi.useFakeTimers();
-    // Invité : l'ouverture n'a pas besoin de rafraîchir un token
     followRoom('guest');
 
     for (let drop = 0; drop < 6; drop += 1) {
