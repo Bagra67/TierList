@@ -15,6 +15,7 @@ import { ModerationAccountPage } from './pages/ModerationAccountPage';
 import { ModerationAccountsPage } from './pages/ModerationAccountsPage';
 import { ModerationLogPage } from './pages/ModerationLogPage';
 import { ModerationReportsPage } from './pages/ModerationReportsPage';
+import { ModerationTemplatePage } from './pages/ModerationTemplatePage';
 import { RecentUploadsPage } from './pages/RecentUploadsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
@@ -53,6 +54,7 @@ export default function App() {
               <Route path={ROUTES.MODERATION_UPLOADS} element={<RecentUploadsPage />} />
               <Route path={ROUTES.MODERATION_ACCOUNTS} element={<ModerationAccountsPage />} />
               <Route path={ROUTES.MODERATION_ACCOUNT} element={<ModerationAccountPage />} />
+              <Route path={ROUTES.MODERATION_TEMPLATE} element={<ModerationTemplatePage />} />
               <Route path={ROUTES.MODERATION_LOG} element={<ModerationLogPage />} />
             </Route>
           </Route>

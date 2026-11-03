@@ -126,6 +126,20 @@ describe('ModerationAccountPage', () => {
     await waitFor(() => expect(calls.logQueries.at(-1)?.get('account_id')).toBe('max-id'));
   });
 
+  it('links each template to its content, even a hidden one', async () => {
+    stubAccount();
+    renderAccountPage();
+
+    expect(await screen.findByRole('link', { name: 'Food' })).toHaveAttribute(
+      'href',
+      '/moderation/templates/food-id',
+    );
+    expect(screen.getByRole('link', { name: 'Teachers' })).toHaveAttribute(
+      'href',
+      '/moderation/templates/teachers-id',
+    );
+  });
+
   it('shows the reports on the content of the account', async () => {
     const calls: Calls = stubAccount();
     renderAccountPage();
