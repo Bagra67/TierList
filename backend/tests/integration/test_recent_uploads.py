@@ -1,6 +1,3 @@
-"""Derniers envois (US-1.7) : la grille des images des super admins, ses filtres, sa pagination et
-l'usage de chaque image."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -134,7 +131,6 @@ def test_a_deleted_image_is_never_listed_and_a_hidden_one_is_shown_privately(
 
     [listed] = response.json()["images"]
     assert (listed["id"], listed["status"]) == (str(hidden.id), "hidden")
-    # Une adresse signée de la quarantaine : le fichier masqué reste privé
     assert listed["url"] == f"{FAKE_PRESIGNED_BASE_URL}/{quarantine_key(hidden.storage_key)}"
 
 
@@ -223,7 +219,6 @@ def test_the_usage_counts_the_templates_and_the_games_of_an_image(
     alice_account: User = account(db_session, "alice@example.com")
     image: Image = add_image(db_session, alice_account, hours_ago=1)
     played_id: str = create_template(auth_client, db_session, alice, tile_count=3)
-    # Deux tuiles du même modèle : un seul modèle, une seule partie
     for tile in db_session.scalars(
         select(Tile).where(Tile.template_id == uuid.UUID(played_id), Tile.position < 2)
     ):
@@ -240,7 +235,6 @@ def test_the_usage_counts_the_templates_and_the_games_of_an_image(
     response: Response = recent_uploads(auth_client, nina)
 
     [listed] = response.json()["images"]
-    # Un modèle supprimé n'est plus compté ; les noms sont dans l'ordre alphabétique
     assert listed["template_names"] == ["Animals", "Food"]
     assert listed["game_count"] == 1
 
@@ -258,7 +252,6 @@ def test_a_page_reads_the_usage_in_a_fixed_number_of_queries(
     with counted_queries(db_session) as many_images:
         recent_uploads(auth_client, nina)
 
-    # Pas de requête par image : la page, les modèles et les parties
     assert len(many_images) == len(one_image)
 
 

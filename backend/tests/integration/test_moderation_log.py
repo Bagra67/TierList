@@ -62,7 +62,6 @@ def test_record_writes_who_when_what_and_why(db_session: Session, nina: User):
 
 
 def test_record_leaves_the_transaction_to_the_action(db_session: Session, nina: User):
-    # L'action de modération échoue après avoir écrit sa trace : la trace disparaît avec elle
     with pytest.raises(RuntimeError), db_session.begin_nested():
         record_hide(db_session, nina)
         raise RuntimeError("the moderation action failed")

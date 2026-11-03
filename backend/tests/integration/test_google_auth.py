@@ -26,8 +26,6 @@ from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
 from tests.integration.helpers import link_token
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -40,8 +38,6 @@ ALICE_GOOGLE = GoogleIdentity(
 
 
 class FakeGoogleOAuthClient(RealGoogleOAuthClient):
-    """Client Google sans réseau : renvoie l'identité choisie par le test, ou une erreur."""
-
     def __init__(self) -> None:
         super().__init__(
             "test-client-id",
@@ -74,7 +70,6 @@ def google_client(auth_client: TestClient, google: FakeGoogleOAuthClient) -> Ite
 
 
 def start_google_login(client: TestClient, query: str = "") -> str:
-    """Démarre la connexion et renvoie le state envoyé à Google."""
     response = client.get(f"/auth/google/login{query}", follow_redirects=False)
     assert response.status_code == 302
     assert "google_login" in response.cookies
@@ -138,7 +133,6 @@ def test_next_google_sign_in_reuses_the_same_account(
     google_client: TestClient, google: FakeGoogleOAuthClient, db_session: Session
 ):
     sign_in_with_google(google_client)
-    # L'email Google a changé : c'est l'identifiant « sub » qui retrouve le compte
     google.identity = GoogleIdentity(
         subject=ALICE_GOOGLE.subject, email="alice.new@gmail.com", email_verified=True, name=None
     )
@@ -172,8 +166,6 @@ def test_google_identity_is_linked_to_an_existing_verified_account(
 
 
 def miss_first_lookup(monkeypatch: pytest.MonkeyPatch, module: object, name: str) -> None:
-    """Le premier appel de module.name ne trouve rien : comme une requête simultanée qui a lu
-    la base juste avant que l'autre n'enregistre le compte."""
     lookup = getattr(module, name)
     calls: list[object] = []
 
@@ -189,7 +181,6 @@ def test_simultaneous_first_google_sign_ins_create_a_single_account(
 ):
     sign_in_with_google(google_client)
     google_client.cookies.clear()
-    # La seconde requête ne voit ni l'identité ni l'email : elle tente de créer le compte
     miss_first_lookup(monkeypatch, oauth_account_repository, "get_user_by_oauth_account")
     miss_first_lookup(monkeypatch, user_repository, "get_user_by_email")
 
@@ -206,7 +197,6 @@ def test_simultaneous_google_sign_ins_link_the_identity_once(
 ):
     sign_in_with_google(google_client)
     google_client.cookies.clear()
-    # La seconde requête trouve le compte par son email et tente de lier l'identité à nouveau
     miss_first_lookup(monkeypatch, oauth_account_repository, "get_user_by_oauth_account")
 
     response = sign_in_with_google(google_client)
@@ -219,7 +209,6 @@ def test_simultaneous_google_sign_ins_link_the_identity_once(
 def test_google_takes_over_an_unverified_account_and_drops_its_password(
     google_client: TestClient, db_session: Session
 ):
-    # Quelqu'un s'inscrit avec l'adresse Gmail d'Alice sans pouvoir la confirmer
     registration = {"email": "alice@gmail.com", "password": PASSWORD, "display_name": "Mallory"}
     squatter = google_client.post("/auth/register", json=registration)
     assert squatter.status_code == 201
@@ -232,12 +221,10 @@ def test_google_takes_over_an_unverified_account_and_drops_its_password(
     user = current_user(google_client)
     assert user["has_password"] is False
     assert user["email_verified"] is True
-    # Le mot de passe posé par l'inconnu ne permet plus de se connecter
     login = google_client.post(
         "/auth/login", json={"email": "alice@gmail.com", "password": PASSWORD}
     )
     assert login.status_code == 401
-    # Et sa session ouverte est fermée
     google_client.cookies.clear()
     google_client.cookies.set("refresh_token", squatter_refresh_token)
     assert google_client.post("/auth/refresh").status_code == 401
@@ -287,7 +274,6 @@ def test_a_banned_account_is_refused_without_its_reason_in_the_address(
 
     response = sign_in_with_google(google_client)
 
-    # Le motif ne passe pas dans une URL : la page de connexion le demande avec le cookie
     assert response.headers["location"] == "/login?error=google_account_banned"
     assert "refresh_token" not in google_client.cookies
     assert GOOGLE_BAN_NOTICE_COOKIE in google_client.cookies
@@ -381,7 +367,6 @@ def test_callback_with_an_invalid_id_token_is_refused(
     response = sign_in_with_google(google_client)
 
     assert response.headers["location"] == "/login?error=google_failed"
-    # La tentative ne sert qu'une fois : son cookie est effacé
     assert "google_login" not in google_client.cookies
 
 

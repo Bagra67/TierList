@@ -1,6 +1,3 @@
-"""Modération des images (US-1.4) : masquer, réafficher ou supprimer une image, par les routes des
-super admins ; chaque action déplace ou efface le fichier et s'écrit au journal."""
-
 import logging
 import uuid
 
@@ -40,8 +37,6 @@ def alice(auth_client: TestClient) -> dict[str, str]:
 
 
 def add_image(db_session: Session, stored_images: dict[str, bytes], status: ImageStatus) -> Image:
-    """Image d'Alice dans ce statut, avec son fichier là où le stockage le range : à son adresse
-    publique, en quarantaine si elle est masquée, nulle part si elle est supprimée."""
     owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
     image: Image = Image(
         owner_id=owner.id,
@@ -91,7 +86,6 @@ def test_hiding_an_image_moves_its_file_to_the_quarantine_and_logs_the_action(
     assert response.status_code == 204
     db_session.refresh(image)
     assert image.status == ImageStatus.HIDDEN
-    # L'adresse publique ne répond plus ; le fichier est gardé, en privé, pour un recours
     assert stored_images == {quarantine_key(image.storage_key): FILE_CONTENT}
     [entry] = logged_actions(db_session)
     assert (entry.actor_name, entry.action, entry.target_type) == (
@@ -99,7 +93,6 @@ def test_hiding_an_image_moves_its_file_to_the_quarantine_and_logs_the_action(
         ModerationActionKind.HIDE,
         ModerationTargetType.IMAGE,
     )
-    # Le motif est enregistré sans les espaces autour ; la clé sert de nom à l'image
     assert (entry.target_id, entry.target_label, entry.reason) == (
         image.id,
         image.storage_key,
@@ -141,7 +134,6 @@ def test_deleting_an_image_erases_its_file_and_keeps_its_fingerprint(
 
     assert response.status_code == 204
     db_session.refresh(image)
-    # La ligne reste, avec son empreinte : le même fichier sera refusé à l'envoi (US-1.6)
     assert (image.status, image.sha256) == (ImageStatus.DELETED, "a" * 64)
     assert stored_images == {}
     [entry] = logged_actions(db_session)
@@ -211,7 +203,6 @@ def test_the_image_actions_refuse_other_accounts(
 ):
     image: Image = add_image(db_session, stored_images, ImageStatus.VISIBLE)
 
-    # Même la propriétaire de l'image : seul un super admin modère
     response: Response = moderate(auth_client, alice, action, image.id)
 
     assert response.status_code == 403
@@ -257,7 +248,6 @@ def test_a_failed_database_save_leaves_the_image_public_without_a_quarantine_cop
     response: Response = moderate(auth_client, nina, "hide", image.id)
 
     assert response.status_code == 500
-    # Rien n'a changé : l'image reste visible, à son adresse, sans copie orpheline
     assert stored_images == {storage_key: FILE_CONTENT}
 
 
@@ -271,13 +261,11 @@ def test_a_public_file_that_cannot_be_erased_after_hiding_is_logged_with_its_key
 ):
     image: Image = add_image(db_session, stored_images, ImageStatus.VISIBLE)
     failing_storage: FailingImageStorage = FailingImageStorage(stored_images, image.storage_key)
-    # Remplace le faux stockage du client ; la fixture client retire la surcharge à la fin
     api_app.dependency_overrides[get_image_storage] = lambda: failing_storage
 
     with caplog.at_level(logging.ERROR):
         response: Response = moderate(auth_client, nina, "hide", image.id)
 
-    # La décision est prise : l'API ne donne plus l'adresse, le fichier reste à effacer à la main
     assert response.status_code == 204
     db_session.refresh(image)
     assert image.status == ImageStatus.HIDDEN

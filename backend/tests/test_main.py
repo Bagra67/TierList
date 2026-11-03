@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db_session
 from app.main import api_app, app
 
-# Application racine, lancée par uvicorn : l'API y est servie sous /api
 client = TestClient(app)
 
 
@@ -23,12 +22,10 @@ def test_health():
     # Aucune dépendance remplacée : la sonde de vie ne doit pas toucher la base
     response = client.get("/api/health")
     assert response.status_code == 200
-    # APP_RELEASE n'est pas défini en tests : la valeur par défaut
     assert response.json() == {"status": "ok", "release": "dev"}
 
 
 def test_health_db_ok():
-    # SQLite en mémoire : vérifie le chemin nominal sans dépendre d'un PostgreSQL lancé
     engine = create_engine("sqlite://")
 
     def sqlite_session() -> Iterator[Session]:
@@ -56,7 +53,6 @@ def test_health_db_unavailable():
 
 
 def test_unknown_api_route_is_a_json_404():
-    # Jamais index.html : un appel d'API inconnu doit échouer clairement
     response = client.get("/api/does-not-exist")
     assert response.status_code == 404
     assert response.json()["code"] == "http_error"

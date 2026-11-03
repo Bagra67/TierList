@@ -38,7 +38,6 @@ def create_image(
     created_days_ago: int,
     status: ImageStatus = ImageStatus.VISIBLE,
 ) -> Image:
-    """Image envoyée il y a created_days_ago jours, avec son fichier dans le stockage factice."""
     image: Image = Image(
         owner_id=owner.id if owner is not None else None,
         storage_key=f"{uuid.uuid4()}.webp",
@@ -81,7 +80,6 @@ def test_purge_erases_the_unused_images_older_than_the_retention(
     recent_unused: Image = create_image(db_session, stored_images, alice, created_days_ago=6)
     old_used: Image = create_image(db_session, stored_images, alice, created_days_ago=30)
     use_in_a_tile(db_session, alice, old_used)
-    # Lues avant la purge : l'image supprimée ne peut plus être rechargée ensuite
     kept_ids: set[uuid.UUID] = {recent_unused.id, old_used.id}
     kept_keys: set[str] = {recent_unused.storage_key, old_used.storage_key}
     purged_key: str = old_unused.storage_key
@@ -175,6 +173,5 @@ def test_a_file_that_cannot_be_erased_is_logged_and_the_others_are_still_erased(
 
     assert purged_count == 2
     assert stored_image_ids(db_session) == set()
-    # Seul le fichier en échec reste, et sa clé est journalisée pour l'effacer à la main
     assert set(stored_images) == {failing_key}
     assert failing_key in caplog.text

@@ -30,7 +30,6 @@ Z: uuid.UUID = uuid.uuid4()
 def ranking(
     tiers: dict[int, list[uuid.UUID]], absent_tile_ids: frozenset[uuid.UUID] = frozenset()
 ) -> PlayerRanking:
-    """Classement final d'un joueur, écrit tier par tier dans l'ordre des tuiles."""
     final_placements: dict[uuid.UUID, FinalPlacement] = {}
     for tier_index, tile_ids in tiers.items():
         for position, tile_id in enumerate(tile_ids):
@@ -189,7 +188,6 @@ def test_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     assert results.items[Y].median_score == Fraction(7, 6)
     assert results.items[X].mean_score == Fraction(19, 18)
     assert results.items[Y].mean_score == Fraction(17, 18)
-    # Y passe avant X, pourtant premier dans le template, grâce à son score moyen
     assert results.median_ranking[A][:2] == (Y, X)
 
 

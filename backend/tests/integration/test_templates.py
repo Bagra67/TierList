@@ -25,12 +25,8 @@ from app.models.user import User
 from tests.image_files import make_image_file
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
-# Modèle, tier ou tuile qui n'existe pas. Fixe, pas uuid4() : les noms des tests paramétrés
-# doivent être les mêmes à chaque collecte, sinon les workers de pytest-xdist refusent de démarrer
 UNKNOWN_ID: uuid.UUID = uuid.UUID("00000000-0000-4000-8000-000000000000")
 
 PASSWORD = "correct horse battery staple"
@@ -40,7 +36,6 @@ JsonObject = dict[str, Any]
 
 
 def register(client: TestClient, email: str) -> dict[str, str]:
-    """Crée un compte et renvoie l'en-tête Authorization de son access token."""
     response: Response = client.post(
         "/auth/register",
         json={"email": email, "password": PASSWORD, "display_name": email.split("@")[0]},
@@ -66,8 +61,6 @@ def create_template(client: TestClient, headers: dict[str, str], name: str) -> J
 
 
 def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    """Ajoute des tuiles directement en base : plus rapide que l'API quand un test a besoin de
-    beaucoup de tuiles (ex. atteindre la limite)."""
     for position in range(count):
         db_session.add(
             Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
@@ -188,7 +181,6 @@ def test_delete_template_is_a_soft_delete(
     assert response.status_code == 204
     assert auth_client.get("/templates", headers=alice).json() == {"items": []}
     assert auth_client.get(f"/templates/{template['id']}", headers=alice).status_code == 404
-    # Toujours en base, avec ses tiers, jusqu'à la purge
     stored: Template = db_session.scalars(select(Template)).one()
     assert stored.deleted_at is not None
     assert len(db_session.scalars(select(Tier)).all()) == len(DEFAULT_TIERS)
@@ -219,7 +211,6 @@ def test_templates_of_other_users_are_not_found(
     for response in responses:
         assert response.status_code == 404
         assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
-    # Le template d'Alice n'a pas changé
     unchanged: JsonObject = auth_client.get(url, headers=alice).json()
     assert unchanged["name"] == "Alice's template"
     assert unchanged["tiers"] == template["tiers"]
@@ -278,9 +269,6 @@ def test_deleting_the_account_deletes_its_templates(
     assert db_session.scalars(select(Tier)).all() == []
 
 
-# --- Tiers ---------------------------------------------------------------------------------
-
-
 def tier_names(template: JsonObject) -> list[str]:
     return [tier["name"] for tier in template["tiers"]]
 
@@ -322,7 +310,6 @@ def test_rename_and_recolor_a_tier(auth_client: TestClient, alice: dict[str, str
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiers"][0]["name"] == "Masterpiece"
-    # Enregistrée en majuscules
     assert body["tiers"][0]["color"] == "#A1B2C3"
     assert tier_names(body)[1:] == ["A", "B", "C", "D", "E"]
     assert body["updated_at"] > template["updated_at"]
@@ -357,13 +344,9 @@ def test_update_tier_validates_the_fields(
 @pytest.mark.parametrize(
     ("name", "position", "expected_names"),
     [
-        # Vers le bas
         ("S", 2, ["A", "B", "S", "C", "D", "E"]),
-        # Vers le haut
         ("D", 0, ["D", "S", "A", "B", "C", "E"]),
-        # Au-delà de la fin : en dernier
         ("B", 99, ["S", "A", "C", "D", "E", "B"]),
-        # Sur place
         ("C", 3, ["S", "A", "B", "C", "D", "E"]),
     ],
 )
@@ -382,7 +365,6 @@ def test_move_a_tier_keeps_the_positions_continuous(
     assert response.status_code == 200
     assert tier_names(response.json()) == expected_names
     assert tier_positions(response.json()) == list(range(len(DEFAULT_TIERS)))
-    # Relu depuis la base : l'ordre est bien enregistré
     stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
     assert tier_names(stored) == expected_names
 
@@ -399,7 +381,6 @@ def test_an_empty_tier_update_changes_nothing(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiers"] == template["tiers"]
-    # Rien n'a changé : la date de dernière modification non plus
     assert body["updated_at"] == template["updated_at"]
     unknown_url: str = f"/templates/{template['id']}/tiers/{uuid.uuid4()}"
     assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
@@ -452,13 +433,9 @@ def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str
             assert response.json()["code"] == ErrorCode.TIER_NOT_FOUND
 
 
-# --- Tuiles --------------------------------------------------------------------------------
-
-
 def add_tile(
     client: TestClient, headers: dict[str, str], template_id: str, text: str
 ) -> JsonObject:
-    """Ajoute une tuile par l'API et renvoie la tuile créée (la dernière)."""
     response: Response = client.post(
         f"/templates/{template_id}/tiles", json={"text": text}, headers=headers
     )
@@ -497,7 +474,6 @@ def test_add_tile_validates_the_text(auth_client: TestClient, alice: dict[str, s
         f"/templates/{template['id']}/tiles", json={"text": text}, headers=alice
     )
 
-    # Un texte vide n'est pas « pas de texte » : envoyer null pour une tuile image seule
     assert response.status_code == 422
     errors: list[JsonObject] = response.json()["errors"]
     assert [error["field"] for error in errors] == ["body.text"]
@@ -581,7 +557,6 @@ def test_move_a_tile_keeps_the_positions_continuous(
     assert tile_texts(stored) == expected_texts
 
 
-# Une position null est ignorée ; un texte null, lui, retire le texte (tests des tuiles image)
 @pytest.mark.parametrize("payload", [{}, {"position": None}])
 def test_an_empty_tile_update_changes_nothing(
     auth_client: TestClient, alice: dict[str, str], payload: JsonObject
@@ -596,7 +571,6 @@ def test_an_empty_tile_update_changes_nothing(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiles"] == before["tiles"]
-    # Rien n'a changé : la date de dernière modification non plus
     assert body["updated_at"] == before["updated_at"]
     unknown_url: str = f"/templates/{template['id']}/tiles/{uuid.uuid4()}"
     assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
@@ -637,11 +611,7 @@ def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str
             assert response.json()["code"] == ErrorCode.TILE_NOT_FOUND
 
 
-# --- Tuiles image --------------------------------------------------------------------------
-
-
 def upload_image(client: TestClient, headers: dict[str, str]) -> JsonObject:
-    """Envoie une image par l'API (stockage factice) et renvoie {id, url, width, height}."""
     response: Response = client.post(
         "/images",
         files={"file": ("photo.png", make_image_file((100, 100), "PNG"), "image/png")},
@@ -688,7 +658,6 @@ def test_a_tile_whose_image_is_removed_by_the_moderation_has_no_image_url(
 
     response: Response = auth_client.get(f"/templates/{template['id']}", headers=alice)
 
-    # Le fichier n'est plus à son adresse : le frontend montre « image retirée » à la place
     [tile] = response.json()["tiles"]
     assert (tile["image_url"], tile["image_removed"]) == (None, True)
 
@@ -704,7 +673,6 @@ def test_add_a_tile_with_a_text_and_an_image(auth_client: TestClient, alice: dic
     assert response.status_code == 201
     tile: JsonObject = response.json()["tiles"][0]
     assert (tile["text"], tile["image_url"]) == ("Pizza", image["url"])
-    # Une tuile texte n'a pas d'image
     text_tile: JsonObject = add_tile(auth_client, alice, template["id"], "Sushi")
     assert text_tile["image_url"] is None
 

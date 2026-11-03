@@ -11,7 +11,6 @@ from app.exceptions.http import AppHTTPException
 
 
 def create_app() -> FastAPI:
-    # Application dédiée : ajouter ces routes à app.main modifierait le contrat OpenAPI
     app = FastAPI()
     register_error_handlers(app)
 

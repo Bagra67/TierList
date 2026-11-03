@@ -11,8 +11,6 @@ from app.models.tile import Tile
 from app.models.user import User
 from app.services.templates import TemplateService
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 
@@ -21,8 +19,6 @@ def settings_with_retention(days: int) -> Settings:
 
 
 def create_template(db_session: Session, name: str, deleted_days_ago: int | None) -> Template:
-    """Template d'Alice avec ses tiers par défaut et une tuile ; supprimé il y a deleted_days_ago
-    jours, ou actif si None."""
     alice = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
     template = TemplateService(db_session, get_settings()).create(alice, name)
     template.tiles.append(Tile(text="Tile", position=0))

@@ -1,5 +1,3 @@
-"""Fixtures communes à tous les tests (celles des tests d'intégration sont dans integration/)."""
-
 import logging
 import sys
 
@@ -22,6 +20,4 @@ def app_logs_to_captured_stderr() -> None:
         # Type exact : pytest ajoute aussi ses handlers (LogCaptureHandler, sous-classe de
         # StreamHandler), qui doivent garder leur propre flux
         if type(handler) is logging.StreamHandler:
-            # Pas setStream(), qui vide l'ancien flux : celui de capsys d'un test précédent
-            # (test_errors.py rappelle configure_logging) est déjà fermé
             handler.stream = sys.stderr

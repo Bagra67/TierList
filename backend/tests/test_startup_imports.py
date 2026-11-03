@@ -4,12 +4,10 @@ from pathlib import Path
 
 BACKEND_DIR: Path = Path(__file__).resolve().parents[1]
 
-# Chargés en différé (lazy import, PEP 810) : un import direct ajouté ailleurs annulerait le gain
 DEFERRED_PACKAGES: tuple[str, ...] = ("boto3", "botocore")
 
 
 def test_starting_the_app_does_not_load_the_s3_client():
-    # Un sous-processus neuf : les autres tests ont pu charger boto3 dans ce processus-ci
     script: str = (
         "import sys\n"
         "import app.main\n"

@@ -4,9 +4,6 @@ from app.services.image_storage import ImageStorage
 
 
 class RecordingS3Client:
-    """Client S3 factice : garde les arguments de chaque put_object et copy_object, et ceux de
-    generate_presigned_url."""
-
     def __init__(self) -> None:
         self.put_calls: list[dict[str, Any]] = []
         self.copy_calls: list[dict[str, Any]] = []
@@ -29,7 +26,6 @@ def test_a_saved_image_is_sent_public_with_its_type_and_cache():
 
     storage.save("abc.webp", b"webp")
 
-    # public-read : chez Scaleway, un objet reste privé même dans un bucket public
     assert client.put_calls == [
         {
             "Bucket": "images",
@@ -49,7 +45,6 @@ def test_a_hidden_image_is_copied_private_under_the_quarantine_prefix():
 
     storage.copy_to_quarantine("abc.webp")
 
-    # private : la copie n'est pas lisible par son URL publique chez Scaleway
     assert client.copy_calls == [
         {
             "Bucket": "images",

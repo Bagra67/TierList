@@ -14,8 +14,6 @@ from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import link_token
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -38,7 +36,6 @@ def login(client: TestClient, password: str) -> int:
 
 
 def reset_emails(sent_emails: list[Email]) -> list[Email]:
-    # L'inscription envoie aussi l'email de vérification : seuls ceux de réinitialisation comptent
     return [email for email in sent_emails if "/reset-password?" in email.text]
 
 
@@ -99,11 +96,9 @@ def test_reset_replaces_the_password_and_closes_every_session(
     assert response.status_code == 204
     assert login(auth_client, PASSWORD) == 401
     assert login(auth_client, NEW_PASSWORD) == 200
-    # La session ouverte avant la réinitialisation est fermée
     auth_client.cookies.clear()
     auth_client.cookies.set("refresh_token", old_refresh_token)
     assert auth_client.post("/auth/refresh").status_code == 401
-    # Son access token est refusé tout de suite, sans attendre son expiration
     old_bearer = {"Authorization": f"Bearer {old_access_token}"}
     assert auth_client.get("/auth/me", headers=old_bearer).status_code == 401
 
@@ -195,7 +190,6 @@ def test_new_password_must_be_long_enough(auth_client: TestClient, sent_emails: 
 def test_account_without_password_can_set_one(
     auth_client: TestClient, db_session: Session, sent_emails: list[Email]
 ):
-    # Compte créé avec Google : pas de mot de passe
     db_session.add(User(email="alice@example.com", password_hash=None, display_name="Alice"))
     db_session.flush()
     forgot(auth_client)

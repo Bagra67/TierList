@@ -60,9 +60,6 @@ def display_names(room: JsonObject) -> list[str]:
     return [p["display_name"] for p in room["participants"]]
 
 
-# --- Retirer un participant -----------------------------------------------------------------
-
-
 def test_the_admin_removes_a_player(
     auth_client: TestClient,
     alice: dict[str, str],
@@ -86,7 +83,6 @@ def test_the_admin_removes_a_player(
     assert str(removed.data.participant_id) == bob_id
     assert removed.room_version == body["version"]
     assert room_events.disconnections == [(uuid.UUID(bob_id), CHANNEL_CLOSE_REMOVED)]
-    # Il n'a plus de place : la salle lui est introuvable
     assert auth_client.get(f"/rooms/{code}", headers=bob).status_code == 404
 
 
@@ -192,9 +188,6 @@ def test_removing_requires_authentication(auth_client: TestClient, alice_room: J
     assert response.status_code == 401
 
 
-# --- Bannir ---------------------------------------------------------------------------------
-
-
 def test_a_banned_account_cannot_join_again(
     auth_client: TestClient,
     alice: dict[str, str],
@@ -222,7 +215,6 @@ def test_a_banned_guest_cannot_join_again_from_the_same_browser(
 ):
     code: str = alice_room["code"]
     guest: JsonObject = join_as_guest(auth_client, code, "Lou").json()
-    # Le client de test garde le cookie de l'invité, comme son navigateur
     remove(auth_client, code, seat_id(guest, "Lou"), alice, ban=True)
 
     refused: Response = join_as_guest(auth_client, code, "Lou2")
@@ -234,7 +226,6 @@ def test_a_banned_guest_cannot_join_again_from_the_same_browser(
 def test_a_banned_guest_without_their_cookie_is_not_recognized(
     auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
-    # Limite assumée (US-2.12) : sans compte ni cookie, rien ne reconnaît le banni
     code: str = alice_room["code"]
     guest: JsonObject = join_as_guest(auth_client, code, "Lou").json()
     remove(auth_client, code, seat_id(guest, "Lou"), alice, ban=True)
@@ -273,9 +264,6 @@ def test_only_the_admin_sees_the_bans(
 
     assert len(auth_client.get(f"/rooms/{code}", headers=alice).json()["bans"]) == 1
     assert auth_client.get(f"/rooms/{code}", headers=carol).json()["bans"] == []
-
-
-# --- Débannir -------------------------------------------------------------------------------
 
 
 def test_an_unbanned_account_can_join_again(

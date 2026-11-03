@@ -11,8 +11,6 @@ INDEX_HTML = "<!doctype html><title>TierList</title>"
 
 @pytest.fixture
 def client(tmp_path: Path) -> TestClient:
-    """Application neuve qui sert un faux build : index.html, un fichier hashé dans assets/, un
-    favicon, et un fichier hors du build qui ne doit jamais être servi."""
     dist: Path = tmp_path / "frontend_dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text(INDEX_HTML, encoding="utf-8")
@@ -32,7 +30,6 @@ def test_hashed_assets_are_cached_for_a_long_time(client: TestClient):
 
 
 def test_a_missing_asset_is_a_404_not_the_page(client: TestClient):
-    # Un ancien fichier hashé, après un déploiement : pas de index.html servi comme du JavaScript
     assert client.get("/assets/index-old.js").status_code == 404
 
 

@@ -34,15 +34,11 @@ def join_as_guest(client: TestClient, code: str, nickname: str) -> Response:
 
 
 def token_of(guest_link: str) -> str:
-    """Jeton porté par le fragment du lien perso (#guest=<jeton>)."""
     return guest_link.split("#guest=", 1)[1]
 
 
 def guest_seat(db_session: Session, nickname: str) -> Participant:
     return db_session.scalars(select(Participant).where(Participant.nickname == nickname)).one()
-
-
-# --- Rejoindre en invité --------------------------------------------------------------------
 
 
 def test_a_guest_joins_with_a_nickname_and_gets_a_cookie_and_a_personal_link(
@@ -106,7 +102,6 @@ def test_the_cookie_of_a_room_does_not_open_another_one(
         auth_client, alice, create_template(auth_client, db_session, alice)
     )
     guest_link: str = join_as_guest(auth_client, alice_room["code"], "Lou").json()["guest_link"]
-    # Le jeton de la première salle, envoyé sur les routes de l'autre
     auth_client.cookies.clear()
     auth_client.cookies.set(GUEST_COOKIE, token_of(guest_link), path=f"/rooms/{other_room['code']}")
 
@@ -176,15 +171,11 @@ def test_the_link_validity_is_a_setting(
     assert "Max-Age=604" in response.headers["set-cookie"]
 
 
-# --- Lien perso -----------------------------------------------------------------------------
-
-
 def test_the_personal_link_gives_the_seat_back_on_another_device(
     auth_client: TestClient, alice_room: JsonObject
 ):
     code: str = alice_room["code"]
     joined: JsonObject = join_as_guest(auth_client, code, "Lou").json()
-    # Autre appareil : aucun cookie
     auth_client.cookies.clear()
 
     response: Response = auth_client.post(
@@ -254,10 +245,8 @@ def test_a_guest_who_lost_the_link_gets_a_new_one(auth_client: TestClient, alice
     assert response.status_code == 200
     renewed: JsonObject = response.json()
     assert renewed["guest_link"] != joined["guest_link"]
-    # La place n'est pas prolongée
     assert renewed["guest_link_expires_at"] == joined["guest_link_expires_at"]
     assert renewed["participants"] == joined["participants"]
-    # Le cookie porte le nouveau jeton : la salle reste lisible depuis ce navigateur
     assert auth_client.get(f"/rooms/{code}").status_code == 200
     auth_client.cookies.clear()
     old_link: Response = auth_client.post(
@@ -283,16 +272,12 @@ def test_a_new_link_needs_a_guest_seat(
     assert as_account.status_code == 404
 
 
-# --- Compte et invité -----------------------------------------------------------------------
-
-
 def test_an_account_is_served_before_a_guest_cookie(
     auth_client: TestClient, alice_room: JsonObject
 ):
     join_as_guest(auth_client, alice_room["code"], "Lou")
     bob: dict[str, str] = register(auth_client, "bob@example.com")
 
-    # Bob n'a pas de place : son compte passe avant le cookie d'invité du même navigateur
     response: Response = auth_client.get(f"/rooms/{alice_room['code']}", headers=bob)
 
     assert response.status_code == 404

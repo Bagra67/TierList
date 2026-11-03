@@ -57,12 +57,8 @@ def stored_room(db_session: Session, code: str) -> Room:
 
 
 def forced_room_codes(monkeypatch: pytest.MonkeyPatch, codes: list[str]) -> None:
-    """Le générateur de codes renvoie ces codes, dans l'ordre."""
     remaining_codes: Iterator[str] = iter(codes)
     monkeypatch.setattr(room_service_module, "generate_room_code", lambda: next(remaining_codes))
-
-
-# --- Création -------------------------------------------------------------------------------
 
 
 def test_create_room_makes_the_creator_its_admin_with_the_default_settings(
@@ -188,9 +184,6 @@ def test_creation_gives_up_when_no_code_is_free(
     assert len(db_session.scalars(select(Room)).all()) == 1
 
 
-# --- Lecture --------------------------------------------------------------------------------
-
-
 def test_the_admin_reads_the_room_by_its_code_in_any_case(
     auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
@@ -255,9 +248,6 @@ def test_each_reader_sees_their_own_seat_marked_as_you(
     ]
 
 
-# --- Rejoindre -------------------------------------------------------------------------------
-
-
 def test_a_user_joins_a_room_as_a_player(
     auth_client: TestClient, bob: dict[str, str], alice_room: JsonObject
 ):
@@ -270,7 +260,6 @@ def test_a_user_joins_a_room_as_a_player(
         ("alice", True),
         ("bob", False),
     ]
-    # Sa place lui donne ensuite accès à la salle
     assert auth_client.get(f"/rooms/{alice_room['code']}", headers=bob).status_code == 200
 
 
@@ -306,9 +295,6 @@ def test_joining_requires_authentication(auth_client: TestClient, alice_room: Js
 
     assert response.status_code == 401
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
-
-
-# --- Événements temps réel ---------------------------------------------------------------
 
 
 def test_joining_publishes_the_new_participant_with_the_next_version(
@@ -355,12 +341,8 @@ def test_changing_the_settings_publishes_them(
 
     assert changed.json()["version"] == alice_room["version"] + 1
     assert unchanged.json()["version"] == changed.json()["version"]
-    # Une modification vide ne publie rien
     assert room_events.types() == ["room.settings_updated"]
     assert room_events.events[0][1].room_version == changed.json()["version"]
-
-
-# --- Réglages -------------------------------------------------------------------------------
 
 
 def test_the_admin_changes_some_settings(
@@ -496,13 +478,9 @@ def test_settings_are_locked_during_a_game_except_late_arrivals(
     assert allowed.json()["settings"]["admin_plays"] is True
 
 
-# --- Suppressions ---------------------------------------------------------------------------
-
-
 def test_purging_the_template_keeps_the_room_without_template(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], alice_room: JsonObject
 ):
-    # Ce que fait la purge des templates supprimés (suppression définitive)
     db_session.execute(
         delete(Template).where(Template.id == uuid.UUID(alice_room["template"]["id"]))
     )

@@ -6,7 +6,6 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 
-# Seuls les champs obligatoires : les autres prennent leur valeur par défaut
 REQUIRED_SETTINGS: dict[str, object] = {
     "postgres_user": "tierlist",
     "postgres_password": "unit-test-password",
@@ -32,8 +31,6 @@ IMAGE_SETTINGS_ENV_VARS: tuple[str, ...] = (
 
 @pytest.fixture(autouse=True)
 def isolate_from_local_configuration(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    # Settings lit l'environnement et le .env du dossier courant : un dossier vide et des variables
-    # retirées garantissent que seules les valeurs par défaut du code sont testées
     monkeypatch.chdir(tmp_path)
     for env_var in IMAGE_SETTINGS_ENV_VARS:
         monkeypatch.delenv(env_var, raising=False)
@@ -71,7 +68,6 @@ def test_image_limits_must_be_positive(field_name: str, invalid_value: int) -> N
 def test_image_storage_defaults_to_the_development_bucket_without_credentials() -> None:
     settings: Settings = make_settings()
 
-    # Sans adresse ni clés, boto3 vise AWS S3 avec ses identifiants habituels
     assert settings.image_s3_endpoint_url is None
     assert settings.image_s3_access_key_id is None
     assert settings.image_s3_secret_access_key is None

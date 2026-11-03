@@ -36,10 +36,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-# Requêtes du petit jeu de données (375 mesurées) : la borne repère un retour aux écritures
-# une à une, des dizaines de requêtes par tuile, par partie ou par place
 SMALL_SEED_MAX_QUERIES = 500
-# Le journal daté dans le passé, plus une entrée par image masquée ou supprimée
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -95,7 +92,6 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         == SMALL_SIZE.deleted_templates
     )
     assert count(db_session, Image) == summary.images
-    # Des images retirées par la modération : en quarantaine, ou effacées
     hidden_keys: list[str] = list(
         db_session.scalars(
             select(Image.storage_key).where(Image.status == ImageStatus.HIDDEN)
@@ -110,7 +106,6 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         == SMALL_SIZE.deleted_images
     )
     assert len(stored_images) == summary.images - SMALL_SIZE.deleted_images
-    # Les envois sont étalés sur plusieurs jours : les derniers envois ont des dates à filtrer
     first_upload, last_upload = db_session.execute(
         select(func.min(Image.created_at), func.max(Image.created_at))
     ).one()
@@ -136,10 +131,8 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         == open_rooms
         == summary.open_rooms
     )
-    # Un compte et un invité bannis par salle à bannissements
     assert count(db_session, RoomBan) == 2 * SMALL_SIZE.rooms_with_bans
     assert count(db_session, ModerationAction) == MODERATION_ACTIONS == summary.moderation_actions
-    # Les actions sur les images désignent la vraie image
     assert (
         db_session.scalar(
             select(func.count())
@@ -148,7 +141,6 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         )
         == SMALL_SIZE.hidden_images + SMALL_SIZE.deleted_images
     )
-    # Des modèles masqués, dont celui d'une salle restée ouverte : son lobby le dit
     hidden_template_ids: list[uuid.UUID] = list(
         db_session.scalars(
             select(Template.id).where(Template.moderation == TemplateModeration.HIDDEN)
@@ -187,8 +179,6 @@ def test_running_the_seed_again_replaces_its_data_only(
     assert db_session.scalars(
         select(Template.name).where(Template.owner_id == real_user.id)
     ).all() == ["Mine"]
-    # Les fichiers des anciennes images sont effacés, quarantaine comprise, les nouvelles les
-    # remplacent ; une image supprimée n'a plus de fichier
     assert count(db_session, Image) == len(stored_images) + SMALL_SIZE.deleted_images
     assert first_keys.isdisjoint(stored_images)
 
@@ -227,7 +217,6 @@ def test_the_seeded_banned_accounts_cannot_sign_in(
         for email in emails
     ]
 
-    # Un bannissement temporaire et un définitif, chacun avec son message
     assert len(emails) == (
         SMALL_SIZE.temporarily_banned_accounts + SMALL_SIZE.permanently_banned_accounts
     )
@@ -235,7 +224,6 @@ def test_the_seeded_banned_accounts_cannot_sign_in(
         ErrorCode.ACCOUNT_BANNED,
         ErrorCode.ACCOUNT_BANNED_UNTIL,
     ]
-    # Les comptes avec lesquels les tests se connectent ne sont pas bannis
     assert seed_email("player", 1) not in emails
 
 
@@ -271,8 +259,6 @@ def test_the_seed_logs_each_step_and_its_progress(
 
 
 def test_the_seed_needs_few_queries(db_session: Session, stored_images: dict[str, bytes]):
-    # Sur staging, chaque requête traverse Internet (environ 0,2 s) : jouer les parties ou
-    # ajouter les tuiles une à une par les services coûtait des milliers de requêtes
     with counted_queries(db_session) as statements:
         seed(db_session, stored_images)
 

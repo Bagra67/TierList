@@ -1,6 +1,3 @@
-"""Nombre de requêtes SQL d'une partie et de ses résultats : constant, quel que soit le nombre
-d'items (pas de N+1)."""
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -22,7 +19,6 @@ pytestmark = pytest.mark.integration
 
 
 def played_room(client: TestClient, db_session: Session, email: str, tile_count: int) -> JsonObject:
-    """Une salle dont la partie a eu tous ses tours placés : le plateau tient tile_count items."""
     headers: dict[str, str] = register(client, email)
     room: JsonObject = create_room(
         client, headers, create_template(client, db_session, headers, tile_count=tile_count)
@@ -40,8 +36,6 @@ def played_room(client: TestClient, db_session: Session, email: str, tile_count:
 
 
 def send(client: TestClient, room: JsonObject, action: str) -> Response:
-    """Relit la salle, replace l'item en cours en tête du premier tier, ou lit les résultats de
-    la partie close."""
     headers: dict[str, str] = room["headers"]
     if action == "results":
         return client.get(f"/results/{room['public_token']}")
@@ -68,5 +62,4 @@ def test_the_number_of_queries_does_not_grow_with_the_items(
         assert response.status_code == 200
         counts.append(len(statements))
 
-    # Le plateau a 3 puis 10 items : autant de requêtes dans les deux cas
     assert counts[0] == counts[1], counts

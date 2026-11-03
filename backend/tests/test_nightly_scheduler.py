@@ -60,5 +60,4 @@ def test_stopping_cancels_the_scheduler():
         await scheduler.stop()
         return started, scheduler.is_running, runs
 
-    # Arrêté bien avant l'heure prévue : aucune exécution
     assert asyncio.run(scenario()) == (True, False, [])

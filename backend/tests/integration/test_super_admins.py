@@ -66,6 +66,5 @@ def test_me_shows_the_role_once_granted(auth_client: TestClient, db_session: Ses
     set_super_admin(lambda: nullcontext(db_session), "carol@example.com", granted=True)
     response: Response = auth_client.get("/auth/me", headers=headers)
 
-    # Pas besoin de se reconnecter : le rôle est relu à chaque requête
     assert response.status_code == 200
     assert response.json()["role"] == "super_admin"

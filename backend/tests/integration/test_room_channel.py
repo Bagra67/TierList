@@ -51,7 +51,6 @@ def alice_room(auth_client: TestClient, db_session: Session, alice: dict[str, st
 
 
 def channel(client: TestClient, code: str, origin: dict[str, str] = APP_ORIGIN) -> Any:
-    # websocket_connect ignore la base_url du client : le chemin complet, sous /api
     return client.websocket_connect(f"{API_PREFIX}/rooms/{code}/ws", headers=origin)
 
 
@@ -60,13 +59,11 @@ def access_token(headers: dict[str, str]) -> str:
 
 
 def authenticate(socket: WebSocketTestSession, headers: dict[str, str] | None) -> None:
-    """Premier message : le token d'un compte, ou rien pour un invité (reconnu par son cookie)."""
     token: str | None = access_token(headers) if headers is not None else None
     socket.send_json({"type": "auth", "access_token": token})
 
 
 def next_event(socket: WebSocketTestSession) -> JsonObject:
-    """Prochain événement de la salle, sans les battements de cœur."""
     while True:
         message: JsonObject = socket.receive_json()
         if message["type"] != "ping":
@@ -82,9 +79,6 @@ def assert_closed_with(socket: WebSocketTestSession, close_code: int, reason: st
 
 def participant(room: JsonObject, name: str) -> JsonObject:
     return next(p for p in room["participants"] if p["display_name"] == name)
-
-
-# --- Connexion et présence ------------------------------------------------------------------
 
 
 def test_an_account_opens_the_channel_and_becomes_present(
@@ -134,7 +128,6 @@ def test_the_room_sees_a_player_arrive_and_leave(
         next_event(alice_socket)
         override_settings(room_presence_grace_seconds=0)
 
-        # Bob rejoint par REST : l'événement part du threadpool vers la boucle des sockets
         channel_client.post(f"/rooms/{code}/join", headers=bob)
         joined: JsonObject = next_event(alice_socket)
         with channel(channel_client, code) as bob_socket:
@@ -149,7 +142,6 @@ def test_the_room_sees_a_player_arrive_and_leave(
     assert joined["data"] == {"participant_id": bob_id}
     assert connected["data"] == {"participant_id": bob_id, "connected": True}
     assert disconnected["data"] == {"participant_id": bob_id, "connected": False}
-    # Chaque événement suit le précédent : les versions se suivent sans trou
     assert [joined["room_version"], connected["room_version"], disconnected["room_version"]] == [
         joined["room_version"],
         joined["room_version"] + 1,
@@ -176,9 +168,6 @@ def test_a_second_tab_keeps_the_participant_connected(
             next_event(alice_socket)
             with channel(channel_client, code) as second_tab:
                 authenticate(second_tab, bob)
-                # Le second onglet ne change rien : pas d'événement de présence
-            # Le second onglet est fermé, le premier reste : Bob reste connecté. Le prochain
-            # événement est donc le changement de réglages, pas un départ
             channel_client.patch(
                 f"/rooms/{code}/settings", json={"admin_plays": False}, headers=alice
             )
@@ -202,7 +191,6 @@ def test_coming_back_within_the_grace_delay_keeps_the_participant_connected(
         with channel(channel_client, code) as bob_socket:
             authenticate(bob_socket, bob)
             next_event(alice_socket)
-        # Rechargement de la page : Bob revient avant la fin du délai de grâce
         with channel(channel_client, code) as bob_socket:
             authenticate(bob_socket, bob)
             time.sleep(0.8)
@@ -212,9 +200,6 @@ def test_coming_back_within_the_grace_delay_keeps_the_participant_connected(
             assert next_event(alice_socket)["type"] == "room.settings_updated"
             room: JsonObject = channel_client.get(f"/rooms/{code}", headers=alice).json()
             assert participant(room, "bob")["connected"] is True
-
-
-# --- Retrait par le room admin ---------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -251,16 +236,12 @@ def test_a_removed_participant_is_disconnected_and_the_room_is_told(
                 headers=alice,
             ).json()
 
-            # Son socket est fermé avant la diffusion : il ne reçoit pas l'événement
             assert_closed_with(bob_socket, close_code, reason)
         assert next_event(alice_socket) == {
             "type": "participant.removed",
             "room_version": removed["version"],
             "data": {"participant_id": bob_id},
         }
-
-
-# --- Refus et fermetures ------------------------------------------------------------------
 
 
 def test_the_channel_closes_without_authentication(
@@ -342,10 +323,8 @@ def test_the_server_pings_and_closes_a_silent_client(
         authenticate(socket, alice)
         next_event(socket)
 
-        # Un pong garde le canal ouvert : un nouveau ping suit
         assert socket.receive_json() == {"type": "ping"}
         socket.send_json({"type": "pong"})
         assert socket.receive_json() == {"type": "ping"}
 
-        # Sans pong, le serveur ferme le canal
         assert_closed_with(socket, CHANNEL_CLOSE_HEARTBEAT_TIMEOUT, ErrorCode.HEARTBEAT_TIMEOUT)

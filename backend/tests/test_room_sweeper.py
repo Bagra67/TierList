@@ -53,5 +53,4 @@ def test_stopping_cancels_the_sweep():
         await asyncio.sleep(0.1)
         return sweeps
 
-    # Arrêté avant son premier intervalle : aucun balayage
     assert asyncio.run(scenario()) == []

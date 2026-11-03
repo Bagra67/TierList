@@ -4,7 +4,6 @@ from pathlib import Path
 
 from app.main import api_app
 
-# Racine du dépôt : le premier dossier parent qui contient à la fois backend/ et frontend/
 REPO_ROOT = next(
     parent
     for parent in Path(__file__).resolve().parents

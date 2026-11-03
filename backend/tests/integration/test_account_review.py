@@ -1,6 +1,3 @@
-"""Comptes vus par les super admins (US-1.8) : la recherche, la page d'un compte, le masquage de
-toutes ses images, et les filtres des derniers envois et du journal sur un compte."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -28,7 +25,6 @@ from tests.integration.helpers import (
 pytestmark = pytest.mark.integration
 
 FILE_CONTENT: bytes = b"webp"
-# Fixe : un identifiant aléatoire dans un parametrize change le nom du test à chaque collecte
 UNKNOWN_ID = "00000000-0000-4000-8000-000000000000"
 
 
@@ -158,7 +154,6 @@ def test_the_account_page_shows_its_details_and_its_templates(
         False,
         "user",
     )
-    # Les templates supprimés n'y sont plus
     [template] = body["templates"]
     assert (template["id"], template["name"], template["tile_count"], template["moderation"]) == (
         template_id,
@@ -201,7 +196,6 @@ def test_hiding_all_the_images_hides_each_visible_one_with_its_log_entry(
     assert all(image.status == ImageStatus.HIDDEN for image in visible)
     assert bob_image.status == ImageStatus.VISIBLE
     entries: list[ModerationAction] = list(db_session.scalars(select(ModerationAction)).all())
-    # Une entrée par image, comme si chacune avait été masquée à part (US-1.4)
     assert {entry.target_id for entry in entries} == {image.id for image in visible}
     assert len(entries) == len(visible)
     assert {(entry.action, entry.reason) for entry in entries} == {
@@ -214,7 +208,6 @@ def test_hiding_all_the_images_hides_each_visible_one_with_its_log_entry(
         headers=nina,
     )
 
-    # Plus rien de visible : relancer ne fait rien
     assert again.json() == {"hidden_count": 0}
 
 
@@ -228,7 +221,6 @@ def test_hiding_all_the_images_skips_an_image_purged_meanwhile(
 ):
     alice_account: User = account(db_session, "alice@example.com")
     visible: Image = add_image(db_session, stored_images, alice_account)
-    # La purge des images orphelines retire une image entre sa lecture et son masquage
     monkeypatch.setattr(
         image_repository,
         "list_visible_image_ids_of_owner",

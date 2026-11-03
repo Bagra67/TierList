@@ -67,9 +67,6 @@ def round_texts(game: Game) -> list[str | None]:
     return [game_round.tile.text for game_round in game.rounds]
 
 
-# --- Démarrage ------------------------------------------------------------------------------
-
-
 def test_the_admin_starts_a_game_on_the_first_item(
     auth_client: TestClient,
     alice: dict[str, str],
@@ -94,13 +91,11 @@ def test_the_admin_starts_a_game_on_the_first_item(
         },
         "ends_at": None,
         "tiers": body["game"]["tiers"],
-        # Personne n'a encore placé l'item
         "placed_participant_ids": [],
         "own_placements": [],
         "cooldown_ends_at": None,
         "missed_items": [],
     }
-    # Les tiers de la version figée : ceux du template, de haut en bas
     assert [tier["name"] for tier in body["game"]["tiers"]] == [name for name, _ in DEFAULT_TIERS]
     started: object = room_events.events[-1][1]
     assert isinstance(started, GameStartedEvent)
@@ -119,7 +114,6 @@ def test_the_game_is_played_on_a_snapshot_with_one_round_per_tile(
     assert game.admin_plays is True
     assert [game_round.number for game_round in game.rounds] == [1, 2, 3]
     assert round_texts(game) == ["Tile 0", "Tile 1", "Tile 2"]
-    # Les tours désignent les tuiles de la version figée, jamais celles du template
     snapshot_tile_ids: set[object] = {tile.id for tile in game.snapshot.tiles}
     assert {game_round.snapshot_tile_id for game_round in game.rounds} == snapshot_tile_ids
     assert game.rounds[0].started_at is not None
@@ -184,7 +178,6 @@ def test_an_image_hidden_during_the_game_is_replaced_for_everyone(
 
     room: JsonObject = auth_client.get(f"/rooms/{alice_room['code']}", headers=alice).json()
 
-    # La partie garde sa version figée, mais l'image masquée n'est plus servie (US-1.4)
     current_item: JsonObject = room["game"]["current_item"]
     assert (current_item["image_url"], current_item["image_removed"]) == (None, True)
 
@@ -247,9 +240,6 @@ def test_an_admin_who_does_not_play_starts_with_a_player(
 
     assert response.status_code == 201
     assert stored_game(db_session).admin_plays is False
-
-
-# --- Refus ----------------------------------------------------------------------------------
 
 
 def test_an_admin_alone_who_does_not_play_cannot_start(
@@ -334,9 +324,6 @@ def test_a_room_whose_template_lost_its_tiles_cannot_start(
     assert response.json()["code"] == ErrorCode.TEMPLATE_HAS_NO_TILES
     assert db_session.scalar(select(func.count()).select_from(Round)) == 0
     assert room_events.events == []
-
-
-# --- Partie et salle ------------------------------------------------------------------------
 
 
 def test_the_game_outlives_its_room(
