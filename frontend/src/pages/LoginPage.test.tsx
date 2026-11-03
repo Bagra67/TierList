@@ -152,12 +152,36 @@ describe('LoginPage', () => {
     );
   });
 
+  it('shows the reason and the end of a ban after a refused Google sign-in', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
+  });
+
+  it('shows the general message when there is no reason to read after Google', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () => new Response(null, { status: 204 }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ce compte est banni. Écrivez-nous pour en savoir plus.',
+    );
+  });
+
   it.each([
     ['google_cancelled', 'Connexion avec Google annulée.'],
     ['google_email_not_verified', "Votre adresse Google n'est pas vérifiée"],
     ['google_unavailable', "La connexion avec Google n'est pas disponible"],
     ['google_failed', 'La connexion avec Google a échoué'],
-    ['google_account_banned', 'Ce compte est banni : connectez-vous avec votre mot de passe'],
     ['unknown_code', 'La connexion avec Google a échoué'],
   ])('explains the Google error %s', (code, message) => {
     stubBackend({});

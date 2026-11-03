@@ -105,6 +105,7 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.cookies.session'),
             t('privacy.cookies.google'),
+            t('privacy.cookies.banNotice'),
             t('privacy.cookies.guest'),
             t('privacy.cookies.local'),
           ]}

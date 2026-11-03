@@ -138,7 +138,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones. The owner of a template hidden by the moderation sees the reason for the decision, and a banned person sees the reason for the ban when trying to sign in.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -159,6 +159,8 @@ export const en: Translation = {
         'TierList only uses cookies strictly needed for it to work, with no audience measurement or advertising: no consent is therefore asked.',
       session: 'Session cookie: keeps you signed in (30 days).',
       google: 'Google sign-in cookie: for the time of the sign-in (10 minutes).',
+      banNotice:
+        'Ban cookie: after a refused Google sign-in, lets the page show the reason (10 minutes).',
       guest: 'Guest cookie: recognises you in a room (30 days at most).',
       local: 'Browser local storage: the chosen theme and language.',
     },
