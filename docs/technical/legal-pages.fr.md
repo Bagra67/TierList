@@ -31,7 +31,7 @@ Les textes ont été rédigés à partir du code (inventaire des données de #20
 
 ### Signalements
 
-Un contenu illicite se signale par e-mail à `LEGAL_CONTACT_EMAIL`, en attendant le signalement dans l'application (#126). La section dit quoi indiquer (lien, contenu, motif, une adresse pour répondre) et la suite (retrait, suspension ou suppression du compte, à la main pour l'instant). La politique de confidentialité décrit les données d'un signalement et leur durée de conservation.
+Un contenu se signale avec le bouton de l'application, avec ou sans compte ([guide de la modération](moderation.fr.md)). La section donne aussi `LEGAL_CONTACT_EMAIL`, pour les autres contenus et pour qui veut une réponse, et dit quoi indiquer (lien, contenu, motif, une adresse pour répondre) et la suite (retrait, suspension ou suppression du compte, à la main pour l'instant). La politique de confidentialité décrit les données d'un signalement et leur durée de conservation.
 
 ## 2. Garder les pages à jour
 

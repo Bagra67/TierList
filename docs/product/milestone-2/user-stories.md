@@ -36,6 +36,7 @@ As **anyone** (user, participant or visitor), I want to report a template, an im
 - _Given_ I already reported the same content, _when_ I report it again, _then_ no second report is created, and I am told it is already reported.
 - _Given_ I send many reports in a short time, _then_ the next ones are refused for a while with a message (rate limit).
 - _Given_ a report, _then_ the reported person **never learns** who reported them.
+- Without an account, the browser is recognized by a cookie only: clearing it gets around the last two rules. A public template becomes reportable with its page (US-3.3).
 
 ### US-1.3 Handle the reports — Must
 
