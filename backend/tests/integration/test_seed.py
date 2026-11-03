@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.models.account_ban import AccountBan
 from app.models.enums import (
     GameStatus,
+    ModerationActionKind,
     ModerationTargetType,
     PlacementPhase,
     ReportStatus,
@@ -47,6 +48,7 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.hidden_images
     + SMALL_SIZE.deleted_images
     + SMALL_SIZE.hidden_templates
+    + SMALL_SIZE.templates_deleted_by_moderation
     + SMALL_SIZE.temporarily_banned_accounts
     + SMALL_SIZE.permanently_banned_accounts
     + 2 * SMALL_SIZE.accounts_with_a_lifted_ban
@@ -100,7 +102,7 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         db_session.scalar(
             select(func.count()).select_from(Template).where(Template.deleted_at.is_not(None))
         )
-        == SMALL_SIZE.deleted_templates
+        == SMALL_SIZE.deleted_templates + SMALL_SIZE.templates_deleted_by_moderation
     )
     assert count(db_session, Image) == summary.images
     hidden_keys: list[str] = list(
@@ -160,6 +162,26 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(hidden_template_ids) == SMALL_SIZE.hidden_templates
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Template)
+            .join(ModerationAction, ModerationAction.target_id == Template.id)
+            .where(
+                Template.deleted_at.is_not(None),
+                ModerationAction.action == ModerationActionKind.DELETE,
+            )
+        )
+        == SMALL_SIZE.templates_deleted_by_moderation
+    )
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Image)
+            .where(Image.status != ImageStatus.VISIBLE, Image.moderation_reason.is_(None))
+        )
+        == 0
+    )
     assert db_session.scalar(
         select(func.count())
         .select_from(Room)

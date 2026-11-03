@@ -88,7 +88,7 @@ def run_seed(
             size.moderation_actions,
             accounts.super_admins,
             moderation_targets,
-            [*templates.playable, *templates.deleted],
+            templates.playable,
             rng,
         )
         moderated_images: int = moderate_images(
@@ -106,6 +106,7 @@ def run_seed(
             settings,
             accounts.super_admins,
             _templates_to_hide(played, templates, size.hidden_templates),
+            [template.id for template in templates.empty[: size.templates_deleted_by_moderation]],
             rng,
         )
         still_banned: int = size.temporarily_banned_accounts + size.permanently_banned_accounts

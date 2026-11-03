@@ -121,16 +121,23 @@ def moderate_templates(
     session: Session,
     settings: Settings,
     super_admins: list[User],
-    template_ids: list[uuid.UUID],
+    template_ids_to_hide: list[uuid.UUID],
+    template_ids_to_delete: list[uuid.UUID],
     rng: random.Random,
 ) -> int:
     service: TemplateModerationService = TemplateModerationService(
         session, ModerationLogService(session, settings)
     )
-    for template_id in template_ids:
+    for template_id in template_ids_to_hide:
         service.hide(rng.choice(super_admins), template_id, rng.choice(TEMPLATE_REASONS))
-    logger.info("Modèles masqués : %d", len(template_ids))
-    return len(template_ids)
+    for template_id in template_ids_to_delete:
+        service.delete(rng.choice(super_admins), template_id, rng.choice(TEMPLATE_REASONS))
+    logger.info(
+        "Modèles modérés : %d masqués, %d supprimés",
+        len(template_ids_to_hide),
+        len(template_ids_to_delete),
+    )
+    return len(template_ids_to_hide) + len(template_ids_to_delete)
 
 
 def ban_accounts(
