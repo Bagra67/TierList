@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.exceptions.auth import UserNotFoundError
-from app.exceptions.images import ImageModerationConflictError
+from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
 from app.models.user import User
 from app.repositories import images as image_repository
 from app.repositories import users as user_repository
@@ -68,8 +68,9 @@ class AccountReviewService:
         for image_id in image_ids:
             try:
                 self._image_moderation.hide(super_admin, image_id, reason)
-            except ImageModerationConflictError:
-                # Masquée ou supprimée entre-temps par un autre super admin : rien à faire
+            except ImageModerationConflictError, ImageNotFoundError:
+                # Masquée ou supprimée entre-temps par un autre super admin, ou retirée par la
+                # purge des images orphelines : rien à faire
                 continue
             hidden_count += 1
         logger.info(

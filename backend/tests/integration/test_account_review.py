@@ -16,6 +16,7 @@ from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
+from app.repositories import images as image_repository
 from app.services.image_storage import quarantine_key
 from tests.integration.helpers import (
     JsonObject,
@@ -215,6 +216,35 @@ def test_hiding_all_the_images_hides_each_visible_one_with_its_log_entry(
 
     # Plus rien de visible : relancer ne fait rien
     assert again.json() == {"hidden_count": 0}
+
+
+def test_hiding_all_the_images_skips_an_image_purged_meanwhile(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    visible: Image = add_image(db_session, stored_images, alice_account)
+    # La purge des images orphelines retire une image entre sa lecture et son masquage
+    monkeypatch.setattr(
+        image_repository,
+        "list_visible_image_ids_of_owner",
+        lambda _session, _owner_id: [uuid.UUID(UNKNOWN_ID), visible.id],
+    )
+
+    response: Response = auth_client.post(
+        f"/moderation/accounts/{alice_account.id}/hide-images",
+        json={"reason": "Spam"},
+        headers=nina,
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"hidden_count": 1}
+    db_session.expire_all()
+    assert visible.status == ImageStatus.HIDDEN
 
 
 def test_hiding_all_the_images_of_an_unknown_account_is_not_found(
