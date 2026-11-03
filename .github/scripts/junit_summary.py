@@ -1,10 +1,3 @@
-"""Turn a JUnit XML test report (pytest, Vitest) into a Markdown summary for GitHub Actions.
-
-Usage: python junit_summary.py <title> <junit.xml>
-The Markdown is printed on stdout; the CI appends it to $GITHUB_STEP_SUMMARY.
-Standard library only, so it runs on any runner without installing anything.
-"""
-
 import os
 import re
 import sys
@@ -69,7 +62,6 @@ def parse_report(path: Path) -> list[TestResult]:
 
 
 def cell(text: str) -> str:
-    """Make a value safe for a Markdown table cell."""
     return text.replace("|", "\\|").replace("\n", " ")
 
 
@@ -145,7 +137,6 @@ def main() -> int:
         return 2
     title, report = sys.argv[1], Path(sys.argv[2])
     if not report.is_file():
-        # Tests crashed before writing the report: say so instead of failing silently.
         print(f"## {title} tests — ⚠️ no report\n\n`{report}` was not generated.\n")
         return 0
     print(render(title, parse_report(report)))

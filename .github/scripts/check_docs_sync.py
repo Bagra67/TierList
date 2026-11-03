@@ -22,9 +22,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ENGLISH_ONLY = {"AGENTS.md"}
-# The PR template is read by GitHub, not by people browsing the docs.
 EXCLUDED_DIRS = (".github/",)
-# The switcher sits on the first line, or just under the title.
 SWITCHER_MAX_LINE = 5
 TESTING_GUIDE = ("docs/technical/testing.md", "docs/technical/testing.fr.md")
 SKIP_LABEL = "skip-docs-sync"
@@ -45,7 +43,6 @@ def is_french(path: str) -> bool:
 
 
 def counterpart(path: str) -> str:
-    """`docs/technical/i18n.md` <-> `docs/technical/i18n.fr.md`."""
     if is_french(path):
         return path.removesuffix(".fr.md") + ".md"
     return path.removesuffix(".md") + ".fr.md"
@@ -93,7 +90,6 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
 
 
 def is_test_file(path: str) -> bool:
-    """Tests, fixtures and test tools that docs/technical/testing.md describes."""
     return path.startswith(("backend/tests/", "frontend/src/test/", ".github/scripts/test_")) or (
         path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx"))
     )
@@ -119,7 +115,6 @@ def run_checks(
     markdown_paths: list[str],
     changed_paths: list[str] | None,
 ) -> list[Problem]:
-    """`changed_paths` is None when the sync checks are skipped (no base, or skip label)."""
     problems = find_unpaired_docs(markdown_paths)
     problems += find_bad_language_switchers(root, markdown_paths)
     if changed_paths is not None:

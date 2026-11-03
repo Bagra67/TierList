@@ -1,13 +1,3 @@
-"""Crée le jeu de données de test (docs/technical/seed-data.md) : comptes, modèles, parties
-terminées, salles ouvertes et journal de modération.
-
-Usage (dans backend/) : uv run python scripts/seed.py
-Relancer remplace tout ce qu'il avait créé (comptes seed-…@seed.example.com), sans toucher aux
-autres comptes. Seulement sur la base locale (tierlist) ou une base de staging (…_staging), jamais
-en production. Sur staging, SEED_PASSWORD donne le mot de passe des comptes ; le workflow GitHub
-« Seed staging » le lance.
-"""
-
 import logging
 import os
 import sys
@@ -16,12 +6,10 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-# Dossier backend/ : le premier dossier parent qui contient alembic.ini
 BACKEND_DIR = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
 )
 
-# Permet `python scripts/seed.py` : le paquet `app` est dans backend/.
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 

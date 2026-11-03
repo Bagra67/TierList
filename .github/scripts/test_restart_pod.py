@@ -1,8 +1,3 @@
-"""Tests of restart_pod.sh, against a local HTTP server standing for the MineStrator panel.
-
-Usage (from the repo root): python -m unittest discover -s .github/scripts
-"""
-
 import json
 import os
 import shutil
@@ -17,8 +12,6 @@ SCRIPT = Path(__file__).with_name("restart_pod.sh")
 
 
 class FakePanel:
-    """Answers each request with the next status of `statuses`, and keeps the requests."""
-
     def __init__(self, statuses: list[int]) -> None:
         self.statuses = list(statuses)
         self.requests: list[dict] = []
@@ -56,7 +49,6 @@ class FakePanel:
 
 
 def run_script(**env: str) -> tuple[int, str, str]:
-    """Runs the script; returns its exit code, the job summary and the step outputs."""
     with tempfile.TemporaryDirectory() as folder:
         summary = Path(folder, "summary")
         outputs = Path(folder, "outputs")
