@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Exists, ScalarSelect, Select, func, or_, select
+from sqlalchemy import Exists, ScalarSelect, Select, func, or_, select, update
 from sqlalchemy.orm import Session, selectinload, with_expression
 
 from app.models.enums import GameStatus
@@ -55,7 +55,11 @@ def get_snapshot_tile(session: Session, tile_id: uuid.UUID) -> SnapshotTile | No
 def get_closed_game_by_token(session: Session, public_token: str) -> Game | None:
     statement: Select[Game] = (
         select(Game)
-        .where(Game.public_token == public_token, Game.status == GameStatus.CLOSED)
+        .where(
+            Game.public_token == public_token,
+            Game.status == GameStatus.CLOSED,
+            Game.hidden_at.is_(None),
+        )
         .options(
             selectinload(Game.snapshot).selectinload(TemplateSnapshot.tiers),
             selectinload(Game.snapshot)
@@ -109,3 +113,43 @@ def public_tokens_by_game(
 ) -> dict[uuid.UUID, str | None]:
     statement = select(Game.id, Game.public_token).where(Game.id.in_(game_ids))
     return {game_id: token for game_id, token in session.execute(statement).all()}
+
+
+def get_game_for_update(session: Session, game_id: uuid.UUID) -> Game | None:
+    return session.get(Game, game_id, with_for_update=True)
+
+
+def list_hidden_games(session: Session, limit: int, offset: int) -> list[Game]:
+    statement: Select[Game] = (
+        select(Game)
+        .where(Game.hidden_at.is_not(None))
+        .options(selectinload(Game.snapshot))
+        .order_by(Game.hidden_at.desc(), Game.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(session.scalars(statement).all())
+
+
+def list_guest_players_of_room(
+    session: Session, room_id: uuid.UUID, nickname: str
+) -> list[GamePlayer]:
+    statement: Select[GamePlayer] = (
+        select(GamePlayer)
+        .join(Game, Game.id == GamePlayer.game_id)
+        .where(
+            Game.room_id == room_id,
+            GamePlayer.user_id.is_(None),
+            GamePlayer.display_name == nickname,
+        )
+    )
+    return list(session.scalars(statement).all())
+
+
+def rename_players_of_account(session: Session, user_id: uuid.UUID, display_name: str) -> None:
+    session.execute(
+        update(GamePlayer)
+        .where(GamePlayer.user_id == user_id)
+        .values(display_name=display_name)
+        .execution_options(synchronize_session=False)
+    )

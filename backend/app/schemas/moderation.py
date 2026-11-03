@@ -96,6 +96,28 @@ class OpenReportCountResponse(BaseModel):
     open_contents: int
 
 
+class RemoveNicknameRequest(ModerationReasonRequest):
+    """Retirer un pseudo signalé, définitivement. target_id est celui du signalement : un compte,
+    un participant ou un joueur."""
+
+    target_id: uuid.UUID
+
+
+class HiddenGameResponse(BaseModel):
+    """Une partie masquée par la modération : son lien de résultats est introuvable."""
+
+    id: uuid.UUID
+    template_name: str
+    hidden_at: datetime
+
+
+class HiddenGamesResponse(BaseModel):
+    """Une page des parties masquées, les plus récentes d'abord."""
+
+    games: list[HiddenGameResponse]
+    has_more: bool
+
+
 class RecentUploadResponse(BaseModel):
     """Une image des derniers envois (US-1.7)."""
 

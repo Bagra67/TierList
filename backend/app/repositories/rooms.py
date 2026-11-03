@@ -61,6 +61,13 @@ def get_participant(session: Session, participant_id: uuid.UUID) -> Participant 
     return session.get(Participant, participant_id)
 
 
+def get_guest_of_room(session: Session, room_id: uuid.UUID, nickname: str) -> Participant | None:
+    statement: Select[Participant] = select(Participant).where(
+        Participant.room_id == room_id, Participant.nickname == nickname
+    )
+    return session.scalars(statement).one_or_none()
+
+
 def get_room_of_participant(
     session: Session, participant_id: uuid.UUID, for_update: bool = False
 ) -> Room | None:

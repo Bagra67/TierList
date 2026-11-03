@@ -157,7 +157,7 @@ class ReportService:
 
     def _closed_game(self, game_id: uuid.UUID) -> ReportedContent:
         game: Game | None = game_repository.get_game(self._session, game_id)
-        if game is None or game.status is not GameStatus.CLOSED:
+        if game is None or game.status is not GameStatus.CLOSED or game.hidden_at is not None:
             raise ReportTargetNotFoundError
         return ReportedContent(
             ModerationTargetType.GAME, game.id, game.snapshot.name, game.admin_id

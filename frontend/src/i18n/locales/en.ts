@@ -1008,6 +1008,11 @@ export const en: Translation = {
       report_details_required: 'Add details to your report for the reason "Other".',
       reports_not_open:
         'This content has no open report any more: it may already have been handled.',
+      nickname_not_found:
+        'This nickname could not be found: the person may have deleted their account.',
+      game_not_found: 'This game could not be found.',
+      game_moderation_conflict:
+        'This action does not apply to the game as it is now: it may already be hidden or visible.',
       report_limit_reached:
         'You sent {{max_reports}} reports in the last hour: try again a little later.',
       image_moderation_conflict:

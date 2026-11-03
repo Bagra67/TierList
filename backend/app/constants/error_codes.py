@@ -72,3 +72,6 @@ class ErrorCode(StrEnum):
     REPORT_DETAILS_REQUIRED = "report_details_required"
     REPORT_LIMIT_REACHED = "report_limit_reached"
     REPORTS_NOT_OPEN = "reports_not_open"
+    NICKNAME_NOT_FOUND = "nickname_not_found"
+    GAME_NOT_FOUND = "game_not_found"
+    GAME_MODERATION_CONFLICT = "game_moderation_conflict"
