@@ -8,19 +8,20 @@ How templates are stored and exposed by the API: data model, endpoints, soft del
 
 A template is what gets ranked: its **tiers** (the rows of the tier list) and its **tiles** (the items to rank). It is **private** to its owner.
 
-| Action            | Endpoint                                 | Result                                                                                                      |
-| ----------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Create a template | `POST /templates`                        | A template with the six default tiers (S to E) and no tile.                                                 |
-| List my templates | `GET /templates`                         | My active templates, with their number of tiles, the most recently modified first.                          |
-| Open a template   | `GET /templates/{id}`                    | The template, its tiers and its tiles, sorted by position.                                                  |
-| Rename a template | `PATCH /templates/{id}`                  | The new name; the last modification date is updated.                                                        |
-| Add a tier        | `POST /templates/{id}/tiers`             | A tier at the bottom, named `?`, color `#9AA0B4`.                                                           |
-| Change a tier     | `PATCH /templates/{id}/tiers/{tier_id}`  | Its name, its color and/or its position (the others are shifted).                                           |
-| Delete a tier     | `DELETE /templates/{id}/tiers/{tier_id}` | The tier disappears, the others move up; refused for the last tier.                                         |
-| Add a tile        | `POST /templates/{id}/tiles`             | A tile with a text, an image or both, at the end; refused beyond the maximum number of tiles.               |
-| Change a tile     | `PATCH /templates/{id}/tiles/{tile_id}`  | Its text, its image (replace or remove) and/or its position in the template order.                          |
-| Delete a tile     | `DELETE /templates/{id}/tiles/{tile_id}` | The tile disappears, the next ones move up.                                                                 |
-| Delete a template | `DELETE /templates/{id}`                 | The template disappears for its owner at once, and is erased permanently after the retention period (§2.3). |
+| Action                          | Endpoint                                 | Result                                                                                                      |
+| ------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Create a template               | `POST /templates`                        | A template with the six default tiers (S to E) and no tile.                                                 |
+| List my templates               | `GET /templates`                         | My active templates, with their number of tiles, the most recently modified first.                          |
+| See what the moderation deleted | `GET /templates/removed`                 | My templates deleted by the moderation and not purged yet, with the date and the reason.                    |
+| Open a template                 | `GET /templates/{id}`                    | The template, its tiers and its tiles, sorted by position.                                                  |
+| Rename a template               | `PATCH /templates/{id}`                  | The new name; the last modification date is updated.                                                        |
+| Add a tier                      | `POST /templates/{id}/tiers`             | A tier at the bottom, named `?`, color `#9AA0B4`.                                                           |
+| Change a tier                   | `PATCH /templates/{id}/tiers/{tier_id}`  | Its name, its color and/or its position (the others are shifted).                                           |
+| Delete a tier                   | `DELETE /templates/{id}/tiers/{tier_id}` | The tier disappears, the others move up; refused for the last tier.                                         |
+| Add a tile                      | `POST /templates/{id}/tiles`             | A tile with a text, an image or both, at the end; refused beyond the maximum number of tiles.               |
+| Change a tile                   | `PATCH /templates/{id}/tiles/{tile_id}`  | Its text, its image (replace or remove) and/or its position in the template order.                          |
+| Delete a tile                   | `DELETE /templates/{id}/tiles/{tile_id}` | The tile disappears, the next ones move up.                                                                 |
+| Delete a template               | `DELETE /templates/{id}`                 | The template disappears for its owner at once, and is erased permanently after the retention period (§2.3). |
 
 On the frontend, the _My templates_ page lists, creates and deletes templates; the editor renames the template and configures its tiers and its tiles (a text, an image or both). See §3.
 
@@ -139,22 +140,23 @@ Rules (`TemplateService.take_snapshot(owner, template_id)`):
 
 Every route requires the Bearer access token (`401` otherwise).
 
-| Method and path                          | Body                            | Success                      | Errors                     |
-| ---------------------------------------- | ------------------------------- | ---------------------------- | -------------------------- |
-| `POST /templates`                        | `{name}`                        | `201` `TemplateResponse`     | `401`, `422`               |
-| `GET /templates`                         | —                               | `200` `TemplateListResponse` | `401`                      |
-| `GET /templates/{id}`                    | —                               | `200` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}`                  | `{name}`                        | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `POST /templates/{id}/tiers`             | —                               | `201` `TemplateResponse`     | `401`, `404`               |
-| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}`    | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiers/{tier_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`, `409`        |
-| `POST /templates/{id}/tiles`             | `{text?, image_id?}`            | `201` `TemplateResponse`     | `401`, `404`, `409`, `422` |
-| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, image_id?, position?}` | `200` `TemplateResponse`     | `401`, `404`, `422`        |
-| `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`     | `401`, `404`               |
-| `DELETE /templates/{id}`                 | —                               | `204`                        | `401`, `404`               |
+| Method and path                          | Body                            | Success                             | Errors                     |
+| ---------------------------------------- | ------------------------------- | ----------------------------------- | -------------------------- |
+| `POST /templates`                        | `{name}`                        | `201` `TemplateResponse`            | `401`, `422`               |
+| `GET /templates`                         | —                               | `200` `TemplateListResponse`        | `401`                      |
+| `GET /templates/removed`                 | —                               | `200` `RemovedTemplateListResponse` | `401`                      |
+| `GET /templates/{id}`                    | —                               | `200` `TemplateResponse`            | `401`, `404`               |
+| `PATCH /templates/{id}`                  | `{name}`                        | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `POST /templates/{id}/tiers`             | —                               | `201` `TemplateResponse`            | `401`, `404`               |
+| `PATCH /templates/{id}/tiers/{tier_id}`  | `{name?, color?, position?}`    | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiers/{tier_id}` | —                               | `200` `TemplateResponse`            | `401`, `404`, `409`        |
+| `POST /templates/{id}/tiles`             | `{text?, image_id?}`            | `201` `TemplateResponse`            | `401`, `404`, `409`, `422` |
+| `PATCH /templates/{id}/tiles/{tile_id}`  | `{text?, image_id?, position?}` | `200` `TemplateResponse`            | `401`, `404`, `422`        |
+| `DELETE /templates/{id}/tiles/{tile_id}` | —                               | `200` `TemplateResponse`            | `401`, `404`               |
+| `DELETE /templates/{id}`                 | —                               | `204`                               | `401`, `404`               |
 
-- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, position}], max_tiles, moderation, moderation_reason}`, tiers and tiles sorted by `position`; `moderation` and `moderation_reason` are described in §2.7. `image_url` is the public address of the compressed image, `null` for a text-only tile; `template_response` (`api/presenters/templates.py`) builds it with `optional_image_url` (`api/presenters/images.py`), like every image of the API.
-- `TemplateListResponse` is `{items: [{id, name, tile_count, updated_at, moderation, moderation_reason}]}`. An object rather than an array, so that pagination (#105) can add a field without breaking the contract. The list is read in **one query**: the database counts the tiles (no N+1).
+- `TemplateResponse` is `{id, name, created_at, updated_at, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, image_removed, image_status, image_moderation_reason, position}], max_tiles, moderation, moderation_reason}`, tiers and tiles sorted by `position`; `moderation` and `moderation_reason` are described in §2.7. `image_url` is the public address of the compressed image, `null` for a text-only tile; `template_response` (`api/presenters/templates.py`) builds it with `optional_image_url` (`api/presenters/images.py`), like every image of the API.
+- `TemplateListResponse` is `{items: [{id, name, tile_count, updated_at, moderation, moderation_reason, removed_images}]}`. An object rather than an array, so that pagination (#105) can add a field without breaking the contract. The list is read in **one query**: the database counts the tiles (no N+1).
 - The tier and tile routes return the whole template, so that the editor replaces its copy without reading it again. The `404` is `template_not_found` for the template, `tier_not_found` / `tile_not_found` for a tier or a tile that is not in it.
 
 ### 2.7 Moderation
@@ -173,7 +175,9 @@ A super admin can **hide**, **unhide** or **delete** the template of any user, w
 - **Last modification unchanged**: the change goes through an `UPDATE` that keeps `updated_at`, since it is the owner's last change, not a moderation decision. The order of _My templates_ does not move.
 - **What a hidden template blocks**: `RoomService.create` and `TemplateService.take_snapshot` (the game start) raise `TemplateHiddenError`, so `POST /rooms` and `POST /rooms/{code}/game` answer `409` `template_hidden` ([rooms guide](rooms.md), [games guide](games.md)). A game already in progress finishes: it only depends on its snapshot.
 - **What the owner keeps**: a hidden template is still read, listed and edited by its owner. `TemplateResponse` and the items of `TemplateListResponse` carry `moderation` and `moderation_reason`; the room of a hidden template says so with `template.hidden` in `RoomResponse` ([rooms guide](rooms.md)). The [privacy policy](legal-pages.md) says that the owner sees the reason.
+- **What the owner sees of a decision** (US-1.10, #270): `removed_images`, in the items of `TemplateListResponse`, gives for each tile with a removed image its id, text and position, the decision (`hidden` or `deleted`) and the reason; one extra query reads them for all the templates (`list_tiles_with_removed_image_of_owner`). `TileResponse` gives the same with `image_status` and `image_moderation_reason`. A template deleted by the moderation leaves `GET /templates`: `GET /templates/removed` lists it, with its name, the date and the reason, until its purge (§2.3). This route reads the moderation log (`list_templates_deleted_by_moderation`): a deletion by the owner has no entry, so it is not listed, and the retention of the log is much longer than the one of a deleted template. The name of the super admin is never exposed.
 - **Frontend**: the editor shows a notice (`TemplateHiddenNotice`, `role="status"`) with the reason, saying that the template can still be edited but no game can start with it, and has no "Create a room" button; _My templates_ and the recent templates of the home page show a "Hidden" badge (`TemplateHiddenBadge`, a written status, not only a color) instead of that button; the lobby of a room whose template is hidden shows a message instead of the "Start the game" button.
+- **Frontend of the decisions**: _My templates_ shows the reason of a hidden template and, on each row, the removed images (the tile, then `RemovedImageDecision`); the `RemovedTemplates` section lists the templates deleted by the moderation, without a link since they can no longer be opened, and shows nothing when there are none. The editor shows `RemovedImageDecision` under the image of a tile. The moderation dialogs warn the super admin that the owner will see the reason.
 - **Separate from the owner's visibility**: moderation is its own column, apart from the visibility the owner will choose (#271). Unhiding a template gives back the owner's choice.
 - **Super admin screen**: the account page (#127, [moderation guide](moderation.md#28-accounts)) lists the templates of an account with these actions; the reports queue (#269) will call them too.
 
