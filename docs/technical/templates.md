@@ -175,7 +175,7 @@ A super admin can **hide**, **unhide** or **delete** the template of any user, w
 - **What the owner keeps**: a hidden template is still read, listed and edited by its owner. `TemplateResponse` and the items of `TemplateListResponse` carry `moderation` and `moderation_reason`; the room of a hidden template says so with `template.hidden` in `RoomResponse` ([rooms guide](rooms.md)). The [privacy policy](legal-pages.md) says that the owner sees the reason.
 - **Frontend**: the editor shows a notice (`TemplateHiddenNotice`, `role="status"`) with the reason, saying that the template can still be edited but no game can start with it, and has no "Create a room" button; _My templates_ and the recent templates of the home page show a "Hidden" badge (`TemplateHiddenBadge`, a written status, not only a color) instead of that button; the lobby of a room whose template is hidden shows a message instead of the "Start the game" button.
 - **Separate from the owner's visibility**: moderation is its own column, apart from the visibility the owner will choose (#271). Unhiding a template gives back the owner's choice.
-- **No super admin screen yet**: the buttons come with the user page (#127) and the reports queue (#269); until then the routes are called from Swagger (`/docs`).
+- **Super admin screen**: the account page (#127, [moderation guide](moderation.md#28-accounts)) lists the templates of an account with these actions; the reports queue (#269) will call them too.
 
 ### 2.8 Known limitations
 

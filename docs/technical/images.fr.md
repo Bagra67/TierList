@@ -18,7 +18,7 @@ Comment les images des tuiles sont reçues, compressées, stockées, servies, ne
 
 ### Pas encore disponible
 
-Les actions de modération (§2.9) ne sont appelées que depuis la page des derniers envois (#125) : la file des signalements (#269) et la fiche utilisateur (#127) arrivent avec leurs propres issues.
+Les actions de modération (§2.9) sont appelées depuis la page des derniers envois (#125) et depuis la page d'un compte (#127) ; la file des signalements (#269) arrive avec sa propre issue.
 
 ## 2. Conception technique
 
@@ -155,9 +155,9 @@ Tout se fait **dans l'application**, dans des pages super admin, sans outil exte
   - **rôle et autorisation** vérifiés côté serveur (#123) ;
   - **derniers envois** : une grille des dernières images avec auteur, date et nombre d'utilisations, pour une revue proactive, peu coûteuse puisque les images font au plus 512 px (#125, construite : `GET /moderation/images` et `/moderation/uploads`, [guide de la modération](moderation.fr.md)) ;
   - **file des signalements** : images, templates, pseudos et parties signalés par les utilisateurs, invités compris, avec motif et décision ; c'est aussi le mécanisme de notification des contenus illicites (#126) ;
-  - **fiche utilisateur** : toutes les images d'un compte, masquage en masse, sanctions du compte (#127).
+  - **page d'un compte** : toutes les images d'un compte, masquage en masse, sanctions du compte (#127, construite : `/moderation/accounts/{id}`, [guide de la modération](moderation.fr.md#28-comptes)).
 
-  La page des derniers envois appelle les routes ci-dessous ; la file des signalements et la fiche utilisateur le feront aussi.
+  La page des derniers envois et la page d'un compte appellent les routes ci-dessous ; la file des signalements le fera aussi.
 
 **Actions** (#124, US-1.4, US-1.6). Trois routes, protégées par `SuperAdminDep` et qui déclarent `SUPER_ADMIN_RESPONSES` ([guide de la modération](moderation.fr.md)), chacune avec le corps `{reason}` (`ModerationReasonRequest` : 1 à 500 caractères, espaces de début et de fin retirés) et la réponse `204` :
 
@@ -198,7 +198,7 @@ Ajoutées avec #81 :
 - Les images de réponse du mode à l'aveugle et les futures photos de profil réutiliseront ce traitement ; leurs tailles seront décidées avec elles.
 - Les navigateurs qui ont déjà affiché une image masquée peuvent la garder dans leur cache **jusqu'à un jour** (`max-age`). Il n'y a pas encore de CDN : quand il y en aura un, masquer devra aussi purger son cache (§2.9).
 - En développement et en CI, la quarantaine n'est pas privée : SeaweedFS laisse n'importe qui lire tout le bucket (§2.7).
-- Seule la page des derniers envois appelle les actions de modération pour l'instant : la file des signalements (#269) et la fiche utilisateur (#127) restent à faire.
+- Seules la page des derniers envois et la page d'un compte appellent les actions de modération pour l'instant : la file des signalements (#269) reste à faire.
 - L'URL signée d'une image masquée se lit par qui la détient, jusqu'à son expiration (15 minutes).
 - Seul le fichier exact est refusé après une suppression : une copie réencodée ou redimensionnée passe tant qu'il n'y a pas d'empreinte perceptuelle.
 
