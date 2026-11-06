@@ -114,7 +114,7 @@ jobs:
             > "$RUNNER_TEMP/seaweedfs.log" 2>&1 &
 
       # setup-uv publishes no floating major tag: pin the full version (kept up to date by Dependabot).
-      - uses: astral-sh/setup-uv@v10.3.2
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           working-directory: backend
           enable-cache: true
