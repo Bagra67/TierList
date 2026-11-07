@@ -99,7 +99,7 @@ sequenceDiagram
     A-->>B: 401, cookie cleared
 ```
 
-When the page loads, no access token is in memory: the frontend calls `POST /auth/refresh`, and the cookie, if still valid, restores the session.
+When the page loads, no access token is in memory: the frontend calls `POST /auth/refresh`, and the cookie, if still valid, restores the session. Without any refresh cookie (a visitor who never signed in, or after signing out), the answer is `204` without body: being signed out is not an error, so the browser logs nothing in red. An expired or invalid cookie still answers `401` and clears it.
 
 Each sign-in also **deletes the user's expired refresh tokens**, so the table does not grow forever, without a scheduled job. Revoked tokens are kept until they expire: they are what detects a replay. A stolen token replayed after its expiry is therefore simply refused (`401`) without revoking its family; it was unusable anyway.
 
@@ -113,7 +113,7 @@ Every duration and rule that may change per environment is read from `backend/.e
 | -------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `POST /auth/register`                        | — (`language` optional: language of the email)          | `201` `TokenResponse` + refresh cookie; confirmation email sent                                              | `409`, `422`                                                           |
 | `POST /auth/login`                           | —                                                       | `200` `TokenResponse` + refresh cookie                                                                       | `401`, `403` (banned account), `422`                                   |
-| `POST /auth/refresh`                         | refresh cookie                                          | `200` `TokenResponse` + new refresh cookie                                                                   | `401` (cookie cleared)                                                 |
+| `POST /auth/refresh`                         | refresh cookie                                          | `200` `TokenResponse` + new refresh cookie; `204` without any refresh cookie (not signed in)                 | `401` (cookie cleared)                                                 |
 | `POST /auth/logout`                          | refresh cookie (optional)                               | `204`, family revoked, access tokens refused, cookie cleared                                                 | —                                                                      |
 | `GET /auth/me`                               | Bearer                                                  | `200` `UserResponse`                                                                                         | `401` (`WWW-Authenticate: Bearer`)                                     |
 | `POST /auth/email/verification`              | Bearer + `{language}`                                   | `204`; email sent again, unless the address is confirmed or the previous email is too recent                 | `401`                                                                  |
