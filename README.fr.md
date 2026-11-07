@@ -20,6 +20,7 @@ TierList/
 ├── seaweedfs/          # Configuration de SeaweedFS (identités S3), développement et CI seulement
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
 ├── .claude/            # Configuration Claude Code partagée : hooks, skills, sous-agents, plugin
+├── .mcp.json           # Serveurs MCP pour Claude Code : context7, playwright
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement, configurations de débogage…)
 ├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
 ├── .nvmrc              # Version de Node.js (24)
@@ -187,6 +188,9 @@ La configuration Claude Code de `.claude/settings.json` est partagée avec toute
 - **Skills** (`.claude/skills/`) : `/api-sync` régénère `openapi.json` et les types d'API du frontend après un changement de contrat ; `/ship-check` lance en local les vérifications de la CI et la checklist de relecture d'`AGENTS.md`, puis en donne les résultats.
 - **Sous-agents** (`.claude/agents/`, en lecture seule) : `security-reviewer` (autorisations, sessions, envois d'images, salons, modération) et `i18n-docs-reviewer` (traductions, docs bilingues, guide des tests, politique de confidentialité, jeu de données).
 - **Plugin** : `claude-code-setup` (annuaire Anthropic) recommande d'autres automatisations pour le projet ; demander à Claude des « recommandations d'automatisation ».
+- **Serveurs MCP** (`.mcp.json`, à approuver une fois par chaque développeur au démarrage de Claude Code) :
+  - `context7` : documentation des versions des librairies du projet, lue avant d'utiliser une API que le code n'utilise pas encore ;
+  - `playwright` : pilote Chrome (profil en mémoire) sur l'app locale uniquement (`127.0.0.1:5173`, SeaweedFS, Mailpit), pour vérifier un changement du frontend dans un vrai navigateur, aussi depuis `/ship-check`. Il demande les dépendances du frontend et Chrome (sinon `npx playwright install chrome`).
 
 ---
 

@@ -20,6 +20,7 @@ TierList/
 ├── seaweedfs/          # SeaweedFS configuration (S3 identities), development and CI only
 ├── .github/            # CI workflow, Dependabot, pull request template
 ├── .claude/            # Shared Claude Code setup: hooks, skills, subagents, plugin
+├── .mcp.json           # MCP servers for Claude Code: context7, playwright
 ├── .vscode/            # Shared VS Code settings (format on save, debug configurations…)
 ├── .editorconfig       # Encoding, line endings, indentation for every editor
 ├── .nvmrc              # Node.js version (24)
@@ -187,6 +188,9 @@ The Claude Code setup in `.claude/settings.json` is shared with the whole team (
 - **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results.
 - **Subagents** (`.claude/agents/`, read-only): `security-reviewer` (authorization, sessions, uploads, rooms, moderation) and `i18n-docs-reviewer` (translations, bilingual docs, testing guide, privacy policy, seed data).
 - **Plugin**: `claude-code-setup` (Anthropic directory) recommends other automations for the project; ask Claude for "automation recommendations".
+- **MCP servers** (`.mcp.json`, approved once by each developer when Claude Code starts):
+  - `context7`: documentation of the library versions the project uses, read before using an API the code does not use yet;
+  - `playwright`: drives Chrome (in-memory profile) on the local app only (`127.0.0.1:5173`, SeaweedFS, Mailpit), to check a frontend change in a real browser, also from `/ship-check`. It needs the frontend dependencies and Chrome (otherwise `npx playwright install chrome`).
 
 ---
 
