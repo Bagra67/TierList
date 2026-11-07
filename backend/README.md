@@ -385,7 +385,7 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `not_authenticated`          | 401         | Missing or invalid access token                                            |
 | `email_already_registered`   | 409         | Registration with an email already used                                    |
 | `invalid_credentials`        | 401         | Wrong email or password                                                    |
-| `session_expired`            | 401         | Missing, expired or revoked refresh token                                  |
+| `session_expired`            | 401         | Expired or revoked refresh token (no cookie at all: `204`)                 |
 | `incorrect_password`         | 403         | Wrong password when deleting the account                                   |
 | `reauthentication_required`  | 403         | Google account whose last sign-in is too old to confirm the deletion       |
 | `invalid_token`              | 400         | Link received by email invalid, expired, or no longer matching the account |
