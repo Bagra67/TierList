@@ -13,7 +13,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 - [x] Show the TierList pod as online in the MineStrator panel: `deploy/start.sh` prints `change this part` once the app answers (#197).
 - [x] Same for the tunnel pod: print `change this part` in its start command ([pods](docs/technical/deployment.md#51-minestrator-pods-159)).
 - [ ] Harden PostgreSQL: `scram-sha-256`, no remote superuser ([PostgreSQL](docs/technical/deployment.md#52-postgresql)).
-- [ ] Production settings (GitHub environments, [deployment guide](docs/technical/deployment.md#4-github-environments-secrets-and-variables)):
+- [x] Production settings (GitHub environments, [deployment guide](docs/technical/deployment.md#4-github-environments-secrets-and-variables)):
   - a `JWT_SECRET_KEY` different from development;
   - `AUTH_COOKIE_SECURE=true` (the default) and HTTPS;
   - a strong `POSTGRES_PASSWORD`.

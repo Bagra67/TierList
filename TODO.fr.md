@@ -13,7 +13,7 @@
 - [x] Afficher le pod TierList en ligne dans le panel MineStrator : `deploy/start.sh` écrit `change this part` une fois que l'application répond (#197).
 - [x] Pareil pour le pod du tunnel : écrire `change this part` dans sa commande de démarrage ([pods](docs/technical/deployment.fr.md#51-pods-minestrator-159)).
 - [ ] Durcir PostgreSQL : `scram-sha-256`, pas de superutilisateur à distance ([PostgreSQL](docs/technical/deployment.fr.md#52-postgresql)).
-- [ ] Réglages de production (environnements GitHub, [guide du déploiement](docs/technical/deployment.fr.md#4-environnements-secrets-et-variables-github)) :
+- [x] Réglages de production (environnements GitHub, [guide du déploiement](docs/technical/deployment.fr.md#4-environnements-secrets-et-variables-github)) :
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
