@@ -17,7 +17,7 @@ The room admin starts a game from the lobby (US-3.1). The game is frozen on the 
 
 ### Rules
 
-- **Who**: the room admin only (`403` `room_admin_required`); a reader without a seat gets `404` `room_not_found`, like every room route.
+- **Who**: the room admin only (`403` `room_admin_required`); a reader without a seat gets `404` `room_not_found`, like every room route except the reading of the room (`403` `room_not_joined`, [rooms guide](rooms.md)).
 - **One game at a time** (invariant 3): a room already `playing` answers `409` `game_in_progress`. A partial unique index on `games(room_id)` (`status <> 'closed'`) is the last safety net.
 - **Someone must place the items** (US-3.1, US-3.5): the placing participants are the seated participants, minus the room admin when they do not play (`admin_plays` off); they keep only the controls. Without any, `409` `no_placing_participant` (the room admin alone, not playing). Being connected is not required: a participant who is not there gets absent votes, like in any round (#93).
 - **Template**: the template of the room must still exist, not be hidden by the moderation, and have tiles. A purged template answers `409` `template_not_found`, a hidden template `409` `template_hidden` ([templates guide](templates.md#27-moderation)), a template without tiles `409` `template_has_no_tiles`. A game already in progress when the template is hidden finishes: it only depends on its snapshot.

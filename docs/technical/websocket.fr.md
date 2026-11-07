@@ -106,7 +106,7 @@ Le **premier message** doit être `auth`, dans les 5 s (`ROOM_AUTH_TIMEOUT_SECON
 
 - **Compte** : `{"type": "auth", "access_token": "<JWT>"}`. Le serveur le vérifie comme une requête REST (`AuthService.authenticate_access_token`). Le token n'est **jamais mis dans l'URL** (il finirait dans les journaux et l'historique).
 - **Invité** : `{"type": "auth", "access_token": null}`. Le navigateur a déjà envoyé le cookie `guest_token` avec la poignée de main (son chemin est `/api/rooms/<code>`, il ne part donc que vers cette salle).
-- Un compte passe d'abord, comme en REST. Ensuite, le lecteur doit **avoir une place** dans la salle, sinon `4404 room_not_found` (le serveur ne révèle pas que la salle existe).
+- Un compte passe d'abord, comme en REST. Ensuite, le lecteur doit **avoir une place** dans la salle, sinon `4404 room_not_found` (le canal ne distingue pas une salle inconnue d'une place manquante ; la lecture de la salle en REST le fait, voir le [guide des salles](rooms.fr.md)).
 
 ### 2.4 Les messages
 
