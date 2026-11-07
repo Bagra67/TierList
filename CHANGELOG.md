@@ -67,6 +67,7 @@ Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/
 ### Build & CI
 
 - seed the staging database from a manual workflow (#298)
+- docs: exclude claude code skills and agents from the docs sync (#374)
 
 ### Documentation
 
@@ -93,12 +94,17 @@ Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/
 - describe the reports queue (#358)
 - describe the template page of the moderation area (#363)
 - describe the moderation decisions shown to the owner (#367)
+- describe the shared claude code setup (#376)
 
 ### Tests
 
 - backend: remove the comments that repeat the tests (#334)
 - frontend: remove the comments that repeat the tests (#336)
 - pin in tests what the comments said (#340)
+
+### Chores
+
+- claude: share claude code hooks, skills and subagents (#375)
 
 ## [1.0.1] - 2026-10-31
 

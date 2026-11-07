@@ -67,6 +67,7 @@ Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voi
 ### Build & CI
 
 - remplissage de la base de staging par un workflow manuel (#298)
+- docs : skills et agents de Claude Code exclus de la synchro des docs (#374)
 
 ### Documentation
 
@@ -93,12 +94,17 @@ Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voi
 - description de la file des signalements (#358)
 - description de la page d'un modèle dans l'espace de modération (#363)
 - description des décisions de modération montrées au propriétaire (#367)
+- description de la configuration Claude Code partagée (#376)
 
 ### Tests
 
 - backend : retrait des commentaires qui répètent les tests (#334)
 - frontend : retrait des commentaires qui répètent les tests (#336)
 - fixer dans les tests ce que disaient les commentaires (#340)
+
+### Maintenance
+
+- claude : hooks, skills et sous-agents Claude Code partagés (#375)
 
 ## [1.0.1] - 2026-10-31
 
