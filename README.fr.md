@@ -19,6 +19,7 @@ TierList/
 ├── compose.yaml        # Base PostgreSQL, boîte Mailpit et stockage SeaweedFS de développement (Docker)
 ├── seaweedfs/          # Configuration de SeaweedFS (identités S3), développement et CI seulement
 ├── .github/            # Workflow CI, Dependabot, modèle de pull request
+├── .claude/            # Configuration Claude Code partagée : hooks, skills, sous-agents, plugin
 ├── .vscode/            # Config VS Code partagée (format à l'enregistrement, configurations de débogage…)
 ├── .editorconfig       # Encodage, fins de ligne, indentation pour tous les éditeurs
 ├── .nvmrc              # Version de Node.js (24)
@@ -174,6 +175,18 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 - Sur une PR, `Backend` et `Frontend` ne tournent que si la PR touche leur partie (job `Changed parts`) : `frontend/` et `docs/` (vérifié par Prettier) pour Frontend, `backend/` pour Backend, les deux pour `backend/openapi.json` et pour tout autre fichier sauf le Markdown. Un job sauté compte comme réussi. Un push sur `develop` ou `main` lance toujours tout, puisqu'il déploie ou publie une version.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
+
+### Claude Code
+
+La configuration Claude Code de `.claude/settings.json` est partagée avec toute l'équipe (`.claude/settings.local.json` reste personnel). Ses instructions pour les agents sont en anglais seulement, comme `AGENTS.md`.
+
+- **Hooks** (`.claude/hooks/`, demandent Node.js, uv et les dépendances du frontend) :
+  - après chaque modification d'un fichier par Claude, il est corrigé et formaté comme à l'enregistrement : Ruff pour `backend/**/*.py`, ESLint + Prettier pour les scripts du frontend, Prettier pour le JSON, le CSS, le Markdown et le HTML du frontend et de `docs/`. Une erreur impossible à corriger automatiquement est renvoyée à Claude ;
+  - Claude ne peut pas modifier les fichiers `.env` (seulement `.env.example`), `uv.lock`, `pnpm-lock.yaml` ni les fichiers d'API générés `backend/openapi.json` et `frontend/src/api/schema.d.ts` ;
+  - des rappels de suivre `AGENTS.md` au démarrage de la session, à chaque message et avant chaque modification.
+- **Skills** (`.claude/skills/`) : `/api-sync` régénère `openapi.json` et les types d'API du frontend après un changement de contrat ; `/ship-check` lance en local les vérifications de la CI et la checklist de relecture d'`AGENTS.md`, puis en donne les résultats.
+- **Sous-agents** (`.claude/agents/`, en lecture seule) : `security-reviewer` (autorisations, sessions, envois d'images, salons, modération) et `i18n-docs-reviewer` (traductions, docs bilingues, guide des tests, politique de confidentialité, jeu de données).
+- **Plugin** : `claude-code-setup` (annuaire Anthropic) recommande d'autres automatisations pour le projet ; demander à Claude des « recommandations d'automatisation ».
 
 ---
 
