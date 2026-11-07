@@ -250,8 +250,7 @@ jobs:
       - name: Build
         run: pnpm build
 
-  # The real app in real browsers (frontend/e2e/, docs/technical/testing.md §6): the API serves the
-  # frontend build, with PostgreSQL, Mailpit and SeaweedFS. One job per browser, in parallel.
+  # docs/technical/testing.md §6
   e2e:
     name: E2E (${{ matrix.browser }})
     needs: changes
@@ -354,7 +353,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 ../.github/scripts/junit_summary.py "E2E (${{ matrix.browser }})" reports/e2e-junit.xml >> "$GITHUB_STEP_SUMMARY"
 
-      # The HTML report holds the trace, screenshot and video of each failed test.
       - name: Upload the Playwright report
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7
