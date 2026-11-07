@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { aliceRoom, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage } from '../test/renderRoomPage';
@@ -165,9 +165,6 @@ describe('JoinRoomScreen', () => {
   });
 
   it('says when the personal link is no longer valid, then offers to join again', async () => {
-    const silencedQueryCacheErrorLog: MockInstance = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
     stubBackend({
       'POST /rooms/K7P2QX/guest-session': () => errorResponse(404, 'guest_link_invalid'),
     });
@@ -178,6 +175,5 @@ describe('JoinRoomScreen', () => {
       'Ce lien personnel a expiré, ou la salle a été fermée.',
     );
     expect(screen.getByRole('heading', { name: 'Rejoindre la salle' })).toBeInTheDocument();
-    silencedQueryCacheErrorLog.mockRestore();
   });
 });

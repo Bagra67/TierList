@@ -271,7 +271,6 @@ describe('ModerationAccountPage', () => {
   });
 
   it('says when the account does not exist', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({
       'GET /moderation/accounts/max-id': () => errorResponse(404, 'account_not_found'),
     });
