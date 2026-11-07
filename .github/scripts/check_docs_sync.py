@@ -74,8 +74,12 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
 
 
 def is_test_file(path: str) -> bool:
-    return path.startswith(("backend/tests/", "frontend/src/test/", ".github/scripts/test_")) or (
-        path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx"))
+    return (
+        path.startswith(
+            ("backend/tests/", "frontend/src/test/", "frontend/e2e/", ".github/scripts/test_")
+        )
+        or path == "frontend/playwright.config.ts"
+        or (path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx")))
     )
 
 
