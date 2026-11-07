@@ -54,7 +54,16 @@ python -m unittest discover -s .github/scripts
 python .github/scripts/check_docs_sync.py --base origin/develop
 ```
 
-## 5. Review checklist
+## 5. Browser check (frontend changes only)
+
+If `frontend/src/` changed and the app runs locally (`dev.*`, with `docker compose up -d --wait`),
+use the `playwright` MCP server to walk through the screens the PR touches on
+`http://127.0.0.1:5173`: the main flow, the loading, error and empty states, the page in French and
+in English, and `browser_console_messages` for errors. Report it as one line of the table. If the
+app is not running, report it as NOT RUN with the reason: never start it against staging or
+production.
+
+## 6. Review checklist
 
 Read the diff (`git diff origin/develop...HEAD`) and answer each point with yes, no or not concerned:
 
