@@ -136,7 +136,10 @@ async function endCooldown(code: string): Promise<Room> {
 
 function storeRoom(queryClient: QueryClient, room: Room): void {
   const cached: Room | undefined = queryClient.getQueryData<Room>(roomQueryKey(room.code));
-  if (cached !== undefined && isOlder(room, cached)) return;
+  if (cached !== undefined && isOlder(room, cached)) {
+    void queryClient.invalidateQueries({ queryKey: roomQueryKey(room.code) });
+    return;
+  }
   queryClient.setQueryData(roomQueryKey(room.code), room);
 }
 
