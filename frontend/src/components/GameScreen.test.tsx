@@ -296,6 +296,33 @@ describe('GameScreen', () => {
     expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
   });
 
+  it('reads the room again when its own placement comes back after a newer event, so it is not lost', async () => {
+    let roomReads: number = 0;
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => {
+        roomReads += 1;
+        return Response.json(
+          roomReads === 1
+            ? inGame({}, { version: 10 })
+            : inGame({ own_placements: [paprikaInS] }, { version: 11 }),
+        );
+      },
+      [`PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`]: () =>
+        Response.json(inGame({ own_placements: [paprikaInS] }, { version: 9 })),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
+    );
+
+    const tierRow: HTMLElement = await screen.findByRole('list', { name: 'S' });
+    expect(await within(tierRow).findByText('Paprika')).toBeInTheDocument();
+    expect(calledRoutes(fetchMock).filter((route) => route === 'GET /rooms/K7P2QX')).toHaveLength(
+      2,
+    );
+  });
+
   it('shows the current item at its rank among the other items of the tier', async () => {
     const curryInS: OwnPlacement = {
       item: {
