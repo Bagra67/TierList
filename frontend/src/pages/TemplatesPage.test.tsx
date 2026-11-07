@@ -277,7 +277,7 @@ describe('TemplatesPage', () => {
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: '   ' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
-    expect(await within(dialog).findByText('Au moins 1 caractères.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Au moins 1 caractère.')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Nom')).toHaveAttribute('aria-invalid', 'true');
     expect(dialog).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Éditeur' })).not.toBeInTheDocument();

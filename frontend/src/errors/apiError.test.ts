@@ -125,6 +125,21 @@ describe('translateFieldError', () => {
     );
   });
 
+  it('agrees the length with its number, in the interface language', async () => {
+    const tooShort = (minLength: number) => ({
+      field: 'body.name',
+      message: '…',
+      code: 'string_too_short',
+      params: { min_length: minLength },
+    });
+
+    expect(translateFieldError(i18n.t, tooShort(1))).toBe('Au moins 1 caractère.');
+    expect(translateFieldError(i18n.t, tooShort(3))).toBe('Au moins 3 caractères.');
+    await i18n.changeLanguage('en');
+    expect(translateFieldError(i18n.t, tooShort(1))).toBe('At least 1 character.');
+    expect(translateFieldError(i18n.t, tooShort(3))).toBe('At least 3 characters.');
+  });
+
   it('uses a generic message for a Pydantic error type without a dedicated text', () => {
     const fieldError = { field: 'body.email', message: '…', code: 'url_parsing' };
 

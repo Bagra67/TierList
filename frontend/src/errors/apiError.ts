@@ -59,6 +59,13 @@ function withDates(params: ErrorParams): Record<string, unknown> {
   );
 }
 
+function withLengthAsPluralCount(
+  params: ErrorParams | null | undefined,
+): ErrorParams | null | undefined {
+  const length: unknown = params?.min_length ?? params?.max_length;
+  return typeof length === 'number' ? { ...params, count: length } : params;
+}
+
 type TranslateRuntimeKey = (key: string, params: Record<string, unknown>) => string;
 
 function translateCheckedKeyWithRuntimeParams(
@@ -88,7 +95,7 @@ export function translateFieldError(
     return translateCheckedKeyWithRuntimeParams(
       t,
       `errors.field.${fieldError.code}`,
-      fieldError.params,
+      withLengthAsPluralCount(fieldError.params),
     );
   }
   return t('errors.field.invalid');
