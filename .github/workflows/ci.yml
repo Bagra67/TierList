@@ -250,6 +250,122 @@ jobs:
       - name: Build
         run: pnpm build
 
+  # The real app in real browsers (frontend/e2e/, docs/technical/testing.md §6): the API serves the
+  # frontend build, with PostgreSQL, Mailpit and SeaweedFS. One job per browser, in parallel.
+  e2e:
+    name: E2E (${{ matrix.browser }})
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    defaults:
+      run:
+        working-directory: frontend
+    services:
+      postgres:
+        image: postgres:18-alpine
+        # CI-only throwaway credentials, not secrets.
+        env:
+          POSTGRES_USER: tierlist
+          POSTGRES_PASSWORD: tierlist-ci
+          POSTGRES_DB: tierlist
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tierlist -d tierlist"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      POSTGRES_USER: tierlist
+      POSTGRES_PASSWORD: tierlist-ci
+      POSTGRES_DB: tierlist
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      # CI-only throwaway signing key, not a secret: it only signs tokens of the test database.
+      JWT_SECRET_KEY: ci-only-jwt-signing-key-not-a-secret
+      # SeaweedFS started below; its development keys (seaweedfs/s3.json), not secrets.
+      IMAGE_S3_ENDPOINT_URL: http://127.0.0.1:8333
+      IMAGE_S3_ACCESS_KEY_ID: tierlist-dev
+      IMAGE_S3_SECRET_ACCESS_KEY: tierlist-dev-not-a-secret
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same reason as in the Backend job: started in the background while the rest installs.
+      - name: Start the S3 image storage (SeaweedFS) and Mailpit in the background
+        working-directory: .
+        run: |
+          (docker compose up -d --wait seaweedfs mailpit; echo $? > "$RUNNER_TEMP/services.status") \
+            > "$RUNNER_TEMP/services.log" 2>&1 &
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: backend
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The browser binaries depend on the Playwright version, pinned in the lockfile.
+      - name: Cache the Playwright browser
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+
+      - name: Install the Playwright browser and its system libraries
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build the frontend
+        run: pnpm build
+
+      - name: Wait for the S3 image storage and Mailpit
+        run: |
+          for _ in $(seq 120); do
+            [ -f "$RUNNER_TEMP/services.status" ] && break
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/services.log"
+          exit "$(cat "$RUNNER_TEMP/services.status" 2>/dev/null || echo 1)"
+
+      - name: End-to-end tests (Playwright)
+        run: pnpm test:e2e --project=${{ matrix.browser }}
+
+      # Runs even when tests fail, so the summary shows which ones and why.
+      - name: Test report
+        if: ${{ !cancelled() }}
+        run: python3 ../.github/scripts/junit_summary.py "E2E (${{ matrix.browser }})" reports/e2e-junit.xml >> "$GITHUB_STEP_SUMMARY"
+
+      # The HTML report holds the trace, screenshot and video of each failed test.
+      - name: Upload the Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report-${{ matrix.browser }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
   secrets:
     name: Secrets
     runs-on: ubuntu-latest
