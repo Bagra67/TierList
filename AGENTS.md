@@ -57,7 +57,10 @@ expected behavior.
 -   Identify affected files and dependencies before making changes.
 -   Prefer incremental changes over large rewrites.
 -   Validate assumptions against the codebase instead of relying on
-    generic framework knowledge.
+    generic framework knowledge. With Claude Code, read the
+    documentation of the installed library version through the
+    `context7` MCP server before using an API the codebase does not
+    use yet.
 -   Explain important architectural decisions when they are not obvious.
 
 ## MUST NOT
@@ -148,7 +151,8 @@ Before finishing:
 -   Check error handling.
 -   Check security implications.
 -   Check API compatibility.
--   Check frontend loading/error/empty states.
+-   Check frontend loading/error/empty states. With Claude Code, check
+    them in the running local app through the `playwright` MCP server.
 -   Check tests.
 
 ## Step 6 --- Report
