@@ -70,6 +70,7 @@ GAME_NOT_FOUND = "No closed game has this id"
 GAME_MODERATION_CONFLICT = "This action does not apply to the current status of the game"
 
 UNAUTHORIZED_DESCRIPTION = "Not authenticated"
+NO_SESSION_COOKIE_DESCRIPTION = "No session cookie: the visitor is not signed in"
 SUPER_ADMIN_REQUIRED_DESCRIPTION = "Not a super admin"
 ACCOUNT_NOT_FOUND_DESCRIPTION = "Account not found"
 ACCOUNT_BANNED_DESCRIPTION = "Account banned"

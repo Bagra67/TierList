@@ -2593,6 +2593,13 @@ export interface operations {
                     "application/json": components["schemas"]["TokenResponse"];
                 };
             };
+            /** @description No session cookie: the visitor is not signed in */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
