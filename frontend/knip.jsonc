@@ -5,6 +5,8 @@
   // Lancés hors de package.json : git-cliff par scripts/prepare-release.sh
   // (frontend/node_modules/.bin/git-cliff), @playwright/mcp par Claude Code (.mcp.json)
   "ignoreDependencies": ["git-cliff", "@playwright/mcp"],
+  // Outil Python du backend (README > Prérequis), lancé par e2e/start-app.ts : pas un paquet npm
+  "ignoreBinaries": ["uv"],
   // Composants shadcn/ui copiés tels quels : ils exportent aussi des variantes et sous-composants
   // pas encore utilisés (buttonVariants, CardTitle…), gardés pour rester proches de la version générée
   "ignoreIssues": {

@@ -29,6 +29,7 @@ export default defineConfig({
     // au lieu de les recréer (près de la moitié du temps des tests). src/test/setup.ts remet
     // l'état partagé à zéro après chaque test.
     isolate: false,
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
