@@ -103,15 +103,11 @@ describe('TemplateEditorPage', () => {
   });
 
   it('shows an error when the template does not exist', async () => {
-    const consoleError: MockInstance<typeof console.error> = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
     stubBackend({ [`GET ${templateUrl}`]: () => errorResponse(404, 'template_not_found') });
 
     renderEditor();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
-    consoleError.mockRestore();
   });
 
   it('says why a template hidden by the moderation can no longer start a room', async () => {

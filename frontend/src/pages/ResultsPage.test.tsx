@@ -372,7 +372,6 @@ describe('ResultsPage', () => {
   });
 
   it('says why playing again failed, and stays on the results', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({
       [resultsRoute]: () => Response.json(closedGameResults),
       'POST /rooms/K7P2QX/game': () => errorResponse(409, 'game_in_progress'),
@@ -420,7 +419,6 @@ describe('ResultsPage', () => {
   });
 
   it('says when the results link is unknown', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({ [resultsRoute]: () => errorResponse(404, 'results_not_found') });
 
     renderResultsPage();

@@ -60,7 +60,9 @@ export function refreshAccessToken(): Promise<boolean> {
     .POST('/auth/refresh')
     .then(({ data, error, response }) => {
       setAccessToken(data?.access_token ?? null);
-      if (data === undefined && response.status !== HTTP_STATUS.UNAUTHORIZED) {
+      const hasNoSession: boolean =
+        response.status === HTTP_STATUS.NO_CONTENT || response.status === HTTP_STATUS.UNAUTHORIZED;
+      if (data === undefined && !hasNoSession) {
         throw new ApiError(response.status, error);
       }
       if (data === undefined && hadSession) {
