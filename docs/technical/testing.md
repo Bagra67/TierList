@@ -14,6 +14,8 @@ This guide explains how the TierList tests work: the tools used, what each test 
 
 Both test suites also run on **every pull request** in the CI (`.github/workflows/ci.yml`). A PR cannot be merged into `develop` or `main` while a test fails.
 
+A few critical journeys are also tested **end to end**, in real browsers against the real app: see [§6](#6-end-to-end-tests-playwright).
+
 ---
 
 ## 1. Backend (pytest)
@@ -2226,3 +2228,42 @@ Its tests use `unittest` (standard library, nothing to install) and run first in
 | `test_a_429_is_retried_once`                                  | `429`, then `200`.                                   | Rate limiting is temporary.               | Exit `0`, `restarted=true`, two requests.                                                                                                      |
 | `test_a_second_429_fails`                                     | `429` twice.                                         | No endless retries.                       | Exit `1`, "even after a new try" in the summary, two requests.                                                                                 |
 | `test_an_unreachable_panel_fails`                             | The panel address no longer answers.                 | A network failure fails the step clearly. | Exit `1`, "could not be reached" in the summary.                                                                                               |
+
+## 6. End-to-end tests (Playwright)
+
+The tests above never see the whole app in a real browser: Vitest runs in jsdom with a stubbed backend, a fake WebSocket and an imitated `<dialog>`, and pytest tests the API without a browser. The end-to-end tests drive **Chromium, Firefox and WebKit** (Safari's engine) against the real app, to cover what only a real browser and the real backend do: the HttpOnly session cookie and its refresh, the WebSocket, the drag and drop, the `<dialog>`, the layout, the image storage and the emails.
+
+They stay **few**: a journey is added only when a regression on it would be serious and a Vitest or pytest test cannot see it.
+
+### 6.1 How they run
+
+- **Tool**: [Playwright](https://playwright.dev/) (`@playwright/test`), configured in `frontend/playwright.config.ts`, one project per browser.
+- **The app under test**: `frontend/e2e/start-app.ts` (started by Playwright's `webServer`) creates the `tierlist_e2e` database if needed, runs `alembic upgrade head`, then starts uvicorn on `http://127.0.0.1:8100`, serving the API and the frontend build (`frontend/dist`) from **one origin**, as in production. `FRONTEND_BASE_URL` is that origin, so the WebSocket origin check and the email links work; emails go to Mailpit, images to SeaweedFS. The development database is never touched.
+- **Data**: each test creates its own accounts (`e2e-<uuid>@e2e.example.com`, a reserved domain) and data, so the tests are independent and run in parallel without resetting the database.
+- **Selectors**: roles and accessible names, in French (the default language), as in the Vitest tests.
+- **Failures**: on CI, a failed test is retried twice and its trace is kept; locally, `test-results/` keeps the screenshot and the video.
+
+**Run them** (in `frontend/`, with `docker compose up -d --wait` started):
+
+```bash
+pnpm exec playwright install chromium firefox webkit   # once
+pnpm build                                              # the tests use the build
+pnpm test:e2e                                           # every browser
+pnpm test:e2e --project=chromium                        # one browser
+pnpm test:e2e:ui                                        # interactive mode
+```
+
+### 6.2 Helpers (`frontend/e2e/support/`)
+
+| File          | Purpose                                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `app.ts`      | Port, URL and database of the app under test, URL of the Mailpit API.                                                              |
+| `accounts.ts` | `newAccount(name)`: a display name, a unique address on the reserved domain and a random password.                                 |
+| `mailpit.ts`  | `linkSentTo(request, address, path)`: waits for the latest email sent to the address in Mailpit and returns its link to that path. |
+
+### 6.3 Tests: `e2e/account.spec.ts`
+
+| Test                                                                                    | What it does                                                                                                                                       | Purpose                                                                                                                                                               | Expected result                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `registers, confirms the email, signs out and in, and keeps the session after a reload` | Registers, opens the confirmation link read in Mailpit, confirms, signs out, signs in again, reloads the page, signs out, then opens `/templates`. | The real session: the HttpOnly refresh cookie (`SameSite=strict`, path `/api/auth`) and the session refresh on page load, the email sent through SMTP, the redirects. | The home greets `Camille`; the confirmation banner shows the address, then disappears once confirmed; after the reload the user is still signed in; signing out goes to `/login`, and `/templates` then sends back to `/login`. |
+| `refuses a wrong password without revealing more`                                       | Signs in with an unknown address.                                                                                                                  | The refusal is the generic message of the real backend.                                                                                                               | The `alert` reads `E-mail ou mot de passe incorrect`.                                                                                                                                                                           |

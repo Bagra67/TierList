@@ -14,6 +14,8 @@ Ce guide explique le fonctionnement des tests de TierList : les outils utilisés
 
 Les deux suites de tests tournent aussi sur **chaque pull request** dans la CI (`.github/workflows/ci.yml`). Une PR ne peut pas être fusionnée dans `develop` ou `main` tant qu'un test échoue.
 
+Quelques parcours critiques sont aussi testés **de bout en bout**, dans de vrais navigateurs face à la vraie application : voir le [§6](#6-tests-de-bout-en-bout-playwright).
+
 ---
 
 ## 1. Backend (pytest)
@@ -2226,3 +2228,42 @@ Ses tests utilisent `unittest` (bibliothèque standard, rien à installer) et to
 | `test_a_429_is_retried_once`                                  | `429`, puis `200`.                                   | La limitation de débit est passagère.             | Code `0`, `restarted=true`, deux requêtes.                                                                                                         |
 | `test_a_second_429_fails`                                     | `429` deux fois.                                     | Pas de nouveaux essais sans fin.                  | Code `1`, « even after a new try » dans le résumé, deux requêtes.                                                                                  |
 | `test_an_unreachable_panel_fails`                             | L'adresse du panel ne répond plus.                   | Une panne réseau fait échouer l'étape clairement. | Code `1`, « could not be reached » dans le résumé.                                                                                                 |
+
+## 6. Tests de bout en bout (Playwright)
+
+Les tests ci-dessus ne voient jamais l'application entière dans un vrai navigateur : Vitest tourne dans jsdom avec un backend remplacé, un faux WebSocket et un `<dialog>` imité, et pytest teste l'API sans navigateur. Les tests de bout en bout pilotent **Chromium, Firefox et WebKit** (le moteur de Safari) face à la vraie application, pour couvrir ce que seuls un vrai navigateur et le vrai backend font : le cookie de session HttpOnly et son rafraîchissement, le WebSocket, le glisser-déposer, le `<dialog>`, la mise en page, le stockage des images et les e-mails.
+
+Ils restent **peu nombreux** : on n'ajoute un parcours que si une régression dessus serait grave et qu'un test Vitest ou pytest ne peut pas la voir.
+
+### 6.1 Comment ils tournent
+
+- **Outil** : [Playwright](https://playwright.dev/) (`@playwright/test`), configuré dans `frontend/playwright.config.ts`, un projet par navigateur.
+- **L'application testée** : `frontend/e2e/start-app.ts` (lancé par le `webServer` de Playwright) crée la base `tierlist_e2e` si besoin, lance `alembic upgrade head`, puis démarre uvicorn sur `http://127.0.0.1:8100`, qui sert l'API et le build du frontend (`frontend/dist`) depuis **une seule origine**, comme en production. `FRONTEND_BASE_URL` est cette origine : la vérification d'origine du WebSocket et les liens des e-mails fonctionnent ; les e-mails partent vers Mailpit, les images vers SeaweedFS. La base de développement n'est jamais touchée.
+- **Données** : chaque test crée ses propres comptes (`e2e-<uuid>@e2e.example.com`, un domaine réservé) et ses données : les tests sont indépendants et tournent en parallèle sans remise à zéro de la base.
+- **Sélecteurs** : rôles et noms accessibles, en français (la langue par défaut), comme dans les tests Vitest.
+- **Échecs** : en CI, un test en échec est relancé deux fois et sa trace est gardée ; en local, `test-results/` garde la capture d'écran et la vidéo.
+
+**Les lancer** (dans `frontend/`, avec `docker compose up -d --wait` démarré) :
+
+```bash
+pnpm exec playwright install chromium firefox webkit   # une fois
+pnpm build                                              # les tests utilisent le build
+pnpm test:e2e                                           # tous les navigateurs
+pnpm test:e2e --project=chromium                        # un seul navigateur
+pnpm test:e2e:ui                                        # mode interactif
+```
+
+### 6.2 Outils (`frontend/e2e/support/`)
+
+| Fichier       | Rôle                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `app.ts`      | Port, URL et base de l'application testée, URL de l'API de Mailpit.                                                                 |
+| `accounts.ts` | `newAccount(name)` : un nom affiché, une adresse unique sur le domaine réservé et un mot de passe aléatoire.                        |
+| `mailpit.ts`  | `linkSentTo(request, address, path)` : attend le dernier e-mail envoyé à l'adresse dans Mailpit et renvoie son lien vers ce chemin. |
+
+### 6.3 Tests : `e2e/account.spec.ts`
+
+| Test                                                                                    | Ce qu'il fait                                                                                                                                               | But                                                                                                                                                                                  | Résultat attendu                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `registers, confirms the email, signs out and in, and keeps the session after a reload` | S'inscrit, ouvre le lien de confirmation lu dans Mailpit, confirme, se déconnecte, se reconnecte, recharge la page, se déconnecte, puis ouvre `/templates`. | La vraie session : le cookie de refresh HttpOnly (`SameSite=strict`, chemin `/api/auth`) et le rafraîchissement de session au chargement, l'e-mail envoyé en SMTP, les redirections. | L'accueil salue `Camille` ; le bandeau de confirmation montre l'adresse, puis disparaît une fois confirmée ; après le rechargement l'utilisateur est toujours connecté ; la déconnexion mène à `/login`, et `/templates` renvoie alors vers `/login`. |
+| `refuses a wrong password without revealing more`                                       | Se connecte avec une adresse inconnue.                                                                                                                      | Le refus est le message générique du vrai backend.                                                                                                                                   | L'`alert` affiche `E-mail ou mot de passe incorrect`.                                                                                                                                                                                                 |
