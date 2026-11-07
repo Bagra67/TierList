@@ -1,13 +1,14 @@
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
-import { E2E_APP_PORT, E2E_APP_URL, E2E_DATABASE } from './support/app.ts';
-
-const FRONTEND_DIR: string = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BACKEND_DIR: string = resolve(FRONTEND_DIR, '..', 'backend');
-const FRONTEND_BUILD_DIR: string = resolve(FRONTEND_DIR, 'dist');
+import { E2E_APP_PORT } from './support/app.ts';
+import {
+  appEnvironment,
+  BACKEND_DIR,
+  FRONTEND_BUILD_DIR,
+  runInBackend,
+} from './support/backend.ts';
 
 const CREATE_DATABASE_IF_MISSING: string = `
 from sqlalchemy import create_engine, text
@@ -23,32 +24,6 @@ with engine.connect() as connection:
         quoted = connection.dialect.identifier_preparer.quote(settings.postgres_db)
         connection.execute(text(f"CREATE DATABASE {quoted}"))
 `;
-
-const appEnvironment: NodeJS.ProcessEnv = {
-  ...process.env,
-  VIRTUAL_ENV: undefined,
-  PYTHONUTF8: '1',
-  POSTGRES_DB: E2E_DATABASE,
-  FRONTEND_DIST: FRONTEND_BUILD_DIR,
-  FRONTEND_BASE_URL: E2E_APP_URL,
-  AUTH_COOKIE_SECURE: 'false',
-  SMTP_HOST: '127.0.0.1',
-  SMTP_PORT: '1025',
-  SMTP_STARTTLS: 'false',
-  MAINTENANCE_ENABLED: 'false',
-};
-
-function runInBackend(args: string[]): void {
-  const result = spawnSync('uv', ['run', ...args], {
-    cwd: BACKEND_DIR,
-    env: appEnvironment,
-    stdio: 'inherit',
-  });
-  if (result.status !== 0) {
-    console.error(`e2e: "uv run ${args.join(' ')}" failed`);
-    process.exit(result.status ?? 1);
-  }
-}
 
 if (!existsSync(resolve(FRONTEND_BUILD_DIR, 'index.html'))) {
   console.error('e2e: no frontend build in frontend/dist: run "pnpm build" first.');
