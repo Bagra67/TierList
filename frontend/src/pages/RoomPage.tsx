@@ -83,7 +83,7 @@ export function RoomPage() {
   }, [guestToken, isSuccess, location.pathname, navigate]);
 
   const errorCode: string | undefined = error instanceof ApiError ? error.code : undefined;
-  const visitorHasNoSeatYet: boolean = viewer === 'guest' && errorCode === 'room_not_found';
+  const visitorHasNoSeatYet: boolean = viewer === 'guest' && errorCode === 'room_not_joined';
   const canJoinAsGuest: boolean =
     visitorHasNoSeatYet || (viewer === 'guest' && errorCode === 'guest_link_invalid');
   const showError: boolean = error !== null && !visitorHasNoSeatYet;

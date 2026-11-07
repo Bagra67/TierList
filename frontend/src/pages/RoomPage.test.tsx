@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
-import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
@@ -172,7 +172,7 @@ describe('RoomPage', () => {
   it('says a banned account cannot join the room again', async () => {
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => errorResponse(403, 'room_banned'),
     });
 
@@ -254,7 +254,7 @@ describe('RoomPage', () => {
     const bobRoom: Room = { ...aliceRoom, is_admin: false };
     const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
 
@@ -269,13 +269,9 @@ describe('RoomPage', () => {
   });
 
   it('says the room cannot be found', async () => {
-    const silencedQueryCacheErrorLog: MockInstance = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
       'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
-      'POST /rooms/ZZZZZZ/join': () => errorResponse(404, 'room_not_found'),
     });
 
     renderRoomPage('ZZZZZZ');
@@ -283,16 +279,25 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est introuvable ou a été fermée.',
     );
-    silencedQueryCacheErrorLog.mockRestore();
+    expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/ZZZZZZ/join');
+  });
+
+  it('tells a visitor at once that the room cannot be found, without the join form', async () => {
+    stubBackend({ 'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found') });
+
+    renderRoomPage('ZZZZZZ');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cette salle est introuvable ou a été fermée.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Pseudo' })).not.toBeInTheDocument();
   });
 
   it('says the room is full, with the limit sent by the backend', async () => {
-    const silencedQueryCacheErrorLog: MockInstance = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () =>
         errorResponse(409, 'room_full', { params: { max_participants: 10 } }),
     });
@@ -302,7 +307,6 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est pleine : 10 participants au plus.',
     );
-    silencedQueryCacheErrorLog.mockRestore();
   });
 
   it('warns when the template of the room was deleted', async () => {
