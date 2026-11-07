@@ -35,6 +35,7 @@ from app.exceptions.rooms import (
     RoomFullError,
     RoomLockedError,
     RoomNotFoundError,
+    RoomNotJoinedError,
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import (
@@ -332,14 +333,14 @@ class RoomService:
             guest: Participant | None = self._find_guest(room, viewer.guest_token)
             if guest is not None:
                 return guest
-        raise RoomNotFoundError
+        raise RoomNotJoinedError
 
     @staticmethod
     def seat_in(room: Room, user: User) -> Participant:
         for participant in room.participants:
             if participant.user_id == user.id:
                 return participant
-        raise RoomNotFoundError
+        raise RoomNotJoinedError
 
     def set_presence(self, participant_id: uuid.UUID, connected: bool) -> Room | None:
         room: Room | None = room_repository.get_room_of_participant(

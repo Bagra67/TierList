@@ -198,17 +198,25 @@ def test_the_admin_reads_the_room_by_its_code_in_any_case(
     assert response.json() == alice_room
 
 
-def test_a_room_is_not_found_for_a_user_without_a_seat(
+def test_a_user_without_a_seat_is_told_to_join_the_room(
     auth_client: TestClient, bob: dict[str, str], alice_room: JsonObject
 ):
     response: Response = auth_client.get(f"/rooms/{alice_room['code']}", headers=bob)
+
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.ROOM_NOT_JOINED
+    assert "participants" not in response.json()
+
+
+def test_an_unknown_code_is_not_found(auth_client: TestClient, alice: dict[str, str]):
+    response: Response = auth_client.get("/rooms/ZZZZZZ", headers=alice)
 
     assert response.status_code == 404
     assert response.json()["code"] == ErrorCode.ROOM_NOT_FOUND
 
 
-def test_an_unknown_code_is_not_found(auth_client: TestClient, alice: dict[str, str]):
-    response: Response = auth_client.get("/rooms/ZZZZZZ", headers=alice)
+def test_an_unknown_code_is_not_found_for_a_visitor(auth_client: TestClient):
+    response: Response = auth_client.get("/rooms/ZZZZZZ")
 
     assert response.status_code == 404
     assert response.json()["code"] == ErrorCode.ROOM_NOT_FOUND

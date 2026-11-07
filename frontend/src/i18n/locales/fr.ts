@@ -1087,6 +1087,7 @@ export const fr = {
       template_moderation_conflict:
         "Cette action ne s'applique pas au modèle dans son état actuel : il est peut-être déjà masqué, visible ou supprimé.",
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
+      room_not_joined: "Vous n'avez pas encore de place dans cette salle : rejoignez-la d'abord.",
       room_admin_required: "Seul l'hôte peut faire cela.",
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
       game_in_progress: 'Une partie est déjà en cours dans cette salle.',
