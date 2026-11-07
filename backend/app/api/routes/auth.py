@@ -181,15 +181,22 @@ def login(
     return _token_response(response, tokens, settings)
 
 
-@router.post("/refresh", responses=UNAUTHORIZED_RESPONSE)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        204: {"description": messages.NO_SESSION_COOKIE_DESCRIPTION},
+    },
+)
 def refresh(
     response: Response,
     service: AuthServiceDep,
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
-) -> TokenResponse:
+) -> TokenResponse | Response:
     if refresh_token is None:
-        raise _session_expired(settings)
+        return Response(status_code=204)
     try:
         tokens = service.refresh(refresh_token)
     except InvalidRefreshTokenError as exc:

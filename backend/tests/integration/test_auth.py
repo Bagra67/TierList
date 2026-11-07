@@ -344,8 +344,12 @@ def test_logout_revokes_the_access_tokens_of_every_device(auth_client: TestClien
     assert me.status_code == 200
 
 
-def test_refresh_without_cookie_is_rejected(auth_client: TestClient):
-    assert auth_client.post("/auth/refresh").status_code == 401
+def test_refresh_without_cookie_answers_no_session_without_an_error(auth_client: TestClient):
+    response = auth_client.post("/auth/refresh")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert "set-cookie" not in response.headers
 
 
 def test_logout_without_session_succeeds(auth_client: TestClient):

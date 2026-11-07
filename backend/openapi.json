@@ -194,6 +194,9 @@
               }
             }
           },
+          "204": {
+            "description": "No session cookie: the visitor is not signed in"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
