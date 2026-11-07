@@ -5,6 +5,10 @@ class RoomNotFoundError(Exception):
     pass
 
 
+class RoomNotJoinedError(RoomNotFoundError):
+    pass
+
+
 class RoomAdminRequiredError(Exception):
     pass
 

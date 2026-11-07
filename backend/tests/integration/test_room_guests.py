@@ -95,11 +95,14 @@ def test_the_cookie_gives_access_to_the_room(auth_client: TestClient, alice_room
     assert "guest_link" not in response.json()
 
 
-def test_without_a_seat_the_room_is_not_found(auth_client: TestClient, alice_room: JsonObject):
+def test_without_a_seat_the_visitor_is_told_to_join_the_room(
+    auth_client: TestClient, alice_room: JsonObject
+):
     response: Response = auth_client.get(f"/rooms/{alice_room['code']}")
 
-    assert response.status_code == 404
-    assert response.json()["code"] == ErrorCode.ROOM_NOT_FOUND
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.ROOM_NOT_JOINED
+    assert "participants" not in response.json()
 
 
 def test_the_cookie_of_a_room_does_not_open_another_one(
@@ -114,7 +117,8 @@ def test_the_cookie_of_a_room_does_not_open_another_one(
 
     response: Response = auth_client.get(f"/rooms/{other_room['code']}")
 
-    assert response.status_code == 404
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.ROOM_NOT_JOINED
 
 
 @pytest.mark.parametrize(
@@ -267,7 +271,7 @@ def test_an_expired_seat_is_lost_and_frees_its_nickname(
     auth_client.cookies.clear()
     new_lou: Response = join_as_guest(auth_client, code, "lou")
 
-    assert by_cookie.status_code == 404
+    assert by_cookie.status_code == 403
     assert by_link.json()["code"] == ErrorCode.GUEST_LINK_INVALID
     assert [p["display_name"] for p in seen_by_alice.json()["participants"]] == ["alice"]
     assert new_lou.status_code == 201
@@ -318,7 +322,7 @@ def test_an_account_is_served_before_a_guest_cookie(
 
     response: Response = auth_client.get(f"/rooms/{alice_room['code']}", headers=bob)
 
-    assert response.status_code == 404
+    assert response.status_code == 403
 
 
 def test_an_invalid_token_answers_401_even_with_a_guest_cookie(

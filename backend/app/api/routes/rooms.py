@@ -41,6 +41,7 @@ from app.exceptions.rooms import (
     RoomFullError,
     RoomLockedError,
     RoomNotFoundError,
+    RoomNotJoinedError,
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import (
@@ -173,12 +174,24 @@ def create_room(
     return room_response(room, service.seat_in(room, user), service, storage)
 
 
-@router.get("/{code}", responses=ROOM_NOT_FOUND_RESPONSES)
+@router.get(
+    "/{code}",
+    responses={
+        **ROOM_NOT_FOUND_RESPONSES,
+        403: {"model": ErrorResponse, "description": messages.ROOM_NOT_JOINED_DESCRIPTION},
+    },
+)
 def get_room(
     code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
     try:
         seat: Participant = service.seat_of(viewer, code)
+    except RoomNotJoinedError as exc:
+        raise AppHTTPException(
+            status_code=403,
+            code=ErrorCode.ROOM_NOT_JOINED,
+            detail=messages.ROOM_NOT_JOINED,
+        ) from exc
     except RoomNotFoundError as exc:
         raise _room_not_found() from exc
     return room_response(seat.room, seat, service, storage)

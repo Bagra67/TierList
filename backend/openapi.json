@@ -2011,6 +2011,16 @@
               }
             }
           },
+          "403": {
+            "description": "The room exists, but the viewer has no seat in it: join it first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

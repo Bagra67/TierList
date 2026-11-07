@@ -35,6 +35,7 @@ class ErrorCode(StrEnum):
     TILE_EMPTY = "tile_empty"
 
     ROOM_NOT_FOUND = "room_not_found"
+    ROOM_NOT_JOINED = "room_not_joined"
     ROOM_ADMIN_REQUIRED = "room_admin_required"
     ROOM_SETTINGS_LOCKED = "room_settings_locked"
     ROOM_FULL = "room_full"
