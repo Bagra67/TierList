@@ -106,7 +106,7 @@ The **first message** must be `auth`, within 5 s (`ROOM_AUTH_TIMEOUT_SECONDS`):
 
 - **Account**: `{"type": "auth", "access_token": "<JWT>"}`. The server checks it like a REST request (`AuthService.authenticate_access_token`). The token is **never put in the URL** (it would end up in logs and history).
 - **Guest**: `{"type": "auth", "access_token": null}`. The browser already sent the `guest_token` cookie with the handshake (its path is `/api/rooms/<code>`, so it only goes to that room).
-- An account comes first, like in REST. Then the reader must **hold a seat** in the room, otherwise `4404 room_not_found` (the server does not reveal that the room exists).
+- An account comes first, like in REST. Then the reader must **hold a seat** in the room, otherwise `4404 room_not_found` (the channel does not tell an unknown room apart from a missing seat; reading the room in REST does, see the [rooms guide](rooms.md)).
 
 ### 2.4 Messages
 
