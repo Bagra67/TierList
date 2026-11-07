@@ -9,7 +9,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCi,
   retries: isCi ? 2 : 0,
-  reporter: isCi ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  reporter: isCi
+    ? [['github'], ['html', { open: 'never' }], ['junit', { outputFile: 'reports/e2e-junit.xml' }]]
+    : [['list']],
   use: {
     baseURL: E2E_APP_URL,
     locale: 'fr-FR',

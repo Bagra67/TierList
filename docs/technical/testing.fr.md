@@ -2243,6 +2243,7 @@ Ils restent **peu nombreux** : on n'ajoute un parcours que si une régression de
 - **Données** : chaque test crée ses propres comptes (`e2e-<uuid>@e2e.example.com`, un domaine réservé) et ses données : les tests sont indépendants et tournent en parallèle sans remise à zéro de la base.
 - **Sélecteurs** : rôles et noms accessibles, en français (la langue par défaut), comme dans les tests Vitest.
 - **Échecs** : en CI, un test en échec est relancé deux fois et sa trace est gardée ; en local, `test-results/` garde la capture d'écran et la vidéo.
+- **En CI** : les jobs `E2E (chromium)`, `E2E (firefox)` et `E2E (webkit)` de `ci.yml` tournent en parallèle dès que le job Backend ou Frontend tourne (voir le [§2 du guide de la CI](ci.fr.md#2-seulement-ce-quune-pr-touche)), et à chaque push sur `develop` et `main`. Chacun démarre PostgreSQL, Mailpit et SeaweedFS, compile le frontend et lance son navigateur. Le rapport JUnit (`reports/e2e-junit.xml`) alimente le résumé du job ; quand un test échoue, le rapport HTML avec sa trace, sa capture d'écran et sa vidéo est envoyé comme artefact `e2e-report-<navigateur>` (14 jours). Ces jobs ne sont pas encore des checks obligatoires : ils le deviennent une fois leur stabilité prouvée.
 
 **Les lancer** (dans `frontend/`, avec `docker compose up -d --wait` démarré) :
 
