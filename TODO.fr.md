@@ -9,32 +9,34 @@
 - [x] Choisir un hébergement : pods MineStrator derrière un Cloudflare Tunnel ([guide du déploiement](docs/technical/deployment.fr.md)).
 - [x] Bundle de release, script de démarrage du pod et déploiement continu (#158, #160, #161).
 - [x] Créer les pods, le tunnel et les environnements GitHub, puis déployer le staging : [premier déploiement](docs/technical/deployment.fr.md#5-premier-déploiement-pas-à-pas) (#159, #163).
-- [ ] Pareil pour la production ([production](docs/technical/deployment.fr.md#59-production)) : pod de production, base `tierlist_prod`, route `tierlist.ladwein.dev`, environnements `production` et `backup-production`.
+- [x] Pareil pour la production ([production](docs/technical/deployment.fr.md#59-production)) : pod de production, base `tierlist_prod`, route `tierlist.ladwein.dev`, environnements `production` et `backup-production`.
 - [x] Afficher le pod TierList en ligne dans le panel MineStrator : `deploy/start.sh` écrit `change this part` une fois que l'application répond (#197).
-- [ ] Pareil pour le pod du tunnel : écrire `change this part` dans sa commande de démarrage ([pods](docs/technical/deployment.fr.md#51-pods-minestrator-159)).
+- [x] Pareil pour le pod du tunnel : écrire `change this part` dans sa commande de démarrage ([pods](docs/technical/deployment.fr.md#51-pods-minestrator-159)).
 - [ ] Durcir PostgreSQL : `scram-sha-256`, pas de superutilisateur à distance ([PostgreSQL](docs/technical/deployment.fr.md#52-postgresql)).
 - [ ] Réglages de production (environnements GitHub, [guide du déploiement](docs/technical/deployment.fr.md#4-environnements-secrets-et-variables-github)) :
   - une `JWT_SECRET_KEY` différente de celle de développement ;
   - `AUTH_COOKIE_SECURE=true` (la valeur par défaut) et HTTPS ;
   - un `POSTGRES_PASSWORD` robuste.
-- [ ] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Fait sur le staging : Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
-- [ ] Limiter les tentatives répétées (connexion, inscription, emails, codes de salle : `GET /rooms/{code}` et `POST /rooms/{code}/guests` disent si un code existe) au niveau de l'hébergeur (règles de limitation de Cloudflare). Seul le tunnel joint l'application, et lui seul peut poser les en-têtes de proxy (`TRUSTED_PROXY_IPS`).
-- [ ] Google en production : ajouter l'URI de redirection HTTPS au client OAuth, y faire pointer `GOOGLE_REDIRECT_URI`, et publier l'écran de consentement (en mode « Test », seuls les utilisateurs test peuvent se connecter).
+- [x] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
+- [ ] Vérifier si des règles de limitation existent dans Cloudflare, sinon les créer : limiter les tentatives répétées (connexion, inscription, emails, codes de salle : `GET /rooms/{code}` et `POST /rooms/{code}/guests` disent si un code existe) au niveau de l'hébergeur (règles de limitation de Cloudflare). Seul le tunnel joint l'application, et lui seul peut poser les en-têtes de proxy (`TRUSTED_PROXY_IPS`).
+- [ ] Google en production : l'URI de redirection HTTPS est réglée (`GOOGLE_REDIRECT_URI`) ; vérifier que l'écran de consentement est publié dans la console Google Cloud (en mode « Test », seuls les utilisateurs test peuvent se connecter).
 - [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
-- [ ] Sauvegardes de la base : configurer les environnements `backup-*` et essayer une restauration sur le staging (#162).
+- [ ] Sauvegardes de la base : les environnements `backup-*` tournent chaque nuit ; essayer une restauration sur le staging ([sauvegardes](docs/technical/deployment.fr.md#8-sauvegardes), #162).
 - [x] Politique de confidentialité : page publique `/privacy`, liée depuis le pied de page et le panneau de paramètres ([pages légales](docs/technical/legal-pages.fr.md), #200).
-- [ ] Conditions d'utilisation (#201) et export des données du compte dans l'application (#202).
-- [ ] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub (fait sur le staging ; chaque image est envoyée avec l'ACL `public-read`, [Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)) ; plus tard, un CDN capable de **purger une URL** (nécessaire pour masquer une image).
+- [x] Conditions d'utilisation : page publique `/terms` (#201).
+- [ ] Export des données du compte dans l'application (#202).
+- [x] Images des tuiles ([guide des images](docs/technical/images.fr.md#27-stockage-et-service)), une fois #81 construite : Scaleway Object Storage, un bucket par environnement en lecture publique, les réglages `IMAGE_*` dans les environnements GitHub (chaque image est envoyée avec l'ACL `public-read`, [Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
+- [ ] Plus tard, un CDN devant les images, capable de **purger une URL** (nécessaire pour masquer une image).
 
 ## 2. Décisions à prendre
 
-- [ ] Fonctionnalités pas encore disponibles ([guide de l'authentification](docs/technical/authentication.fr.md#pas-encore-disponible)) : autres fournisseurs d'identité (Discord, GitHub…), à ajouter avec le premier réellement voulu. La limitation des tentatives est prévue au niveau de l'hébergeur (voir « Avant le premier déploiement »).
+- [ ] Fonctionnalités pas encore disponibles ([guide de l'authentification](docs/technical/authentication.fr.md#pas-encore-disponible)) : autres fournisseurs d'identité (Discord, GitHub…), à ajouter avec le premier réellement voulu.
 - [x] Charte graphique (couleur d'accent, typographie, logo), conçue sur les vrais écrans (#213 à #218) : la palette « Le Plateau » dans les jetons du thème de `frontend/src/index.css`, Anybody pour les titres et Geist pour le texte, un logo en trois barres ([README du frontend](frontend/README.fr.md#10-composants-dinterface)). Les couleurs des tiers restent des données de chaque template : nouvelles valeurs par défaut (`DEFAULT_TIERS`), avec une couleur de texte calculée pour le contraste.
-- [ ] Passage en version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`), quand l'API sera jugée stable.
+- [x] Passage en version 1.0.0 (`scripts/prepare-release.sh --version 1.0.0`) : publiée, puis v1.1.0.
 
 ## 3. Outillage
 
-- [ ] **Tests de bout en bout (Playwright)**, à mettre en place **avec l'éditeur de tier list**, pas avant.
+- [ ] **Tests de bout en bout (Playwright)** : la prochaine étape, maintenant que l'éditeur de tier list et son glisser-déposer existent.
   - _Ce qu'ils apportent_ : les tests actuels tournent dans Vitest avec jsdom, un navigateur simulé avec un backend remplacé. Ils ne voient pas ce que seul un vrai navigateur fait : les cookies HttpOnly et le rafraîchissement de session face au vrai backend, le focus et `Échap` dans le `<dialog>` (`src/test/setup.ts` note que jsdom ne sait pas les tester), la mise en page, et surtout le **glisser-déposer** de l'éditeur. Playwright pilote Chromium, Firefox ou WebKit sur l'application lancée (backend + PostgreSQL + Mailpit).
   - _Coût_ : un job CI qui démarre PostgreSQL, Mailpit, le backend et le frontend (quelques minutes par PR) ; des tests plus lents et parfois instables (délais, animations) ; et de la maintenance à chaque changement d'écran (sélecteurs, parcours).
   - _Recommandation_ : **pas un test par écran**. Une poignée de parcours critiques (« smoke tests ») : inscription → confirmation de l'email (lien lu via l'API de Mailpit) → connexion → déconnexion, puis créer une tier list et déplacer des éléments entre les tiers. Tout le reste reste dans Vitest, rapide et stable. On n'ajoute un parcours que si une régression dessus serait grave et que jsdom ne peut pas la voir.
