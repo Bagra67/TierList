@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ENGLISH_ONLY = {"AGENTS.md"}
-EXCLUDED_DIRS = (".github/",)
+EXCLUDED_DIRS = (".github/", ".claude/")
 SWITCHER_MAX_LINE = 5
 TESTING_GUIDE = ("docs/technical/testing.md", "docs/technical/testing.fr.md")
 SKIP_LABEL = "skip-docs-sync"

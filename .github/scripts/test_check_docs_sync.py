@@ -38,7 +38,16 @@ class UnpairedDocsTest(unittest.TestCase):
         self.assertIn("README.md", problems[0].message)
 
     def test_english_only_files_are_ignored(self):
-        self.assertEqual(find_unpaired_docs(["AGENTS.md", ".github/pull_request_template.md"]), [])
+        self.assertEqual(
+            find_unpaired_docs(
+                [
+                    "AGENTS.md",
+                    ".github/pull_request_template.md",
+                    ".claude/skills/api-sync/SKILL.md",
+                ]
+            ),
+            [],
+        )
 
 
 class LanguageSwitcherTest(unittest.TestCase):
@@ -82,7 +91,14 @@ class OneSidedChangesTest(unittest.TestCase):
 
     def test_english_only_files_are_ignored(self):
         self.assertEqual(
-            find_one_sided_changes(["AGENTS.md", ".github/pull_request_template.md"]), []
+            find_one_sided_changes(
+                [
+                    "AGENTS.md",
+                    ".github/pull_request_template.md",
+                    ".claude/agents/security-reviewer.md",
+                ]
+            ),
+            [],
         )
 
 

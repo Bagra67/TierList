@@ -1047,7 +1047,8 @@ MUST exist in **English and French**:
 
 Exceptions:
 
--   `AGENTS.md` stays English-only (instructions for agents).
+-   `AGENTS.md` and the Claude Code skills and agents (`.claude/`)
+    stay English-only (instructions for agents).
 -   `LICENSE` is already bilingual in a single file.
 -   Code comments are not concerned.
 
