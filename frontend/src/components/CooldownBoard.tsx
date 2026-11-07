@@ -53,6 +53,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const pending: boolean = placeMutation.isPending;
   const [chosenId, setChosenId] = useState<string | null>(null);
+  const [buttonPlacementAnnouncement, setButtonPlacementAnnouncement] = useState<string>('');
 
   function inTier(tierId: string): OwnPlacement[] {
     return game.own_placements.filter((placement) => placement.tier_id === tierId);
@@ -116,7 +117,16 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
       return;
     }
     const end: number = currentIndex === -1 ? tierItemIds.length : tierItemIds.length - 1;
-    if (await placeAt(itemId, tierId, end)) setChosenId(null);
+    if (await placeAt(itemId, tierId, end)) {
+      setChosenId(null);
+      setButtonPlacementAnnouncement(
+        t('rooms.game.dnd.dropped', {
+          item: itemLabel(itemId),
+          tier: tierName(tierId),
+          position: end + 1,
+        }),
+      );
+    }
   }
 
   function toggleChosen(itemId: string) {
@@ -248,6 +258,9 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
         </aside>
         <DragPreview previewOf={previewOf} />
       </DndContext>
+      <p role="status" className="sr-only">
+        {buttonPlacementAnnouncement}
+      </p>
     </section>
   );
 }

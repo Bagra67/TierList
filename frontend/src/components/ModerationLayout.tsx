@@ -10,7 +10,7 @@ export function ModerationLayout() {
 
   function linkClassName({ isActive }: { isActive: boolean }) {
     return cn(
-      'block rounded-lg px-3 py-2 text-sm hover:bg-muted',
+      'block rounded-lg px-3 py-2 text-sm whitespace-nowrap hover:bg-muted',
       isActive ? 'bg-muted font-semibold' : 'text-muted-foreground',
     );
   }
@@ -18,7 +18,7 @@ export function ModerationLayout() {
   return (
     <PageContainer width="app" className="flex flex-col gap-6 md:flex-row">
       <nav aria-label={t('moderation.nav.label')} className="shrink-0 md:w-48">
-        <ul className="flex gap-1 md:flex-col">
+        <ul className="flex flex-wrap gap-1 md:flex-col">
           <li>
             <NavLink to={ROUTES.MODERATION_REPORTS} className={linkClassName}>
               {t('moderation.nav.reports')}

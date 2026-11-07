@@ -243,7 +243,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(nameField, { target: { value: '   ' } });
       fireEvent.blur(nameField);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(nameField).toHaveAttribute('aria-invalid', 'true');
     });
   });
@@ -1130,7 +1130,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(tileText, { target: { value: '   ' } });
       fireEvent.blur(tileText);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: '   ' });
     });
@@ -1223,7 +1223,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(firstTierName, { target: { value: '   ' } });
       fireEvent.blur(firstTierName);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 

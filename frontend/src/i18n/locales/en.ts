@@ -1123,6 +1123,7 @@ export const en: Translation = {
       invalid: 'Invalid value.',
       missing: 'This field is required.',
       string_too_short: 'At least {{min_length}} characters.',
+      string_too_short_one: 'At least {{min_length}} character.',
       string_too_long: 'At most {{max_length}} characters.',
       value_error: 'Invalid value.',
       string_pattern_mismatch: 'Invalid format.',

@@ -7,7 +7,7 @@ import {
 } from '@dnd-kit/core';
 import { cn } from 'cn';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -59,6 +59,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
   const pending: boolean = placeMutation.isPending;
+  const [buttonPlacementAnnouncement, setButtonPlacementAnnouncement] = useState<string>('');
 
   function itemIdsInServerOrder(tierId: string): string[] {
     return game.own_placements
@@ -77,13 +78,26 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   async function placeAt(tierId: string, position: number, focusKeysByPriority: string[]) {
-    if (pending) return;
+    if (pending) return false;
     focus.focusFirstEnabledAfterUpdate(focusKeysByPriority);
     try {
       await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
       focus.cancel();
-      return;
+      return false;
+    }
+    return true;
+  }
+
+  async function placeWithButton(tierId: string, position: number, focusKeysByPriority: string[]) {
+    if (await placeAt(tierId, position, focusKeysByPriority)) {
+      setButtonPlacementAnnouncement(
+        t('rooms.game.dnd.dropped', {
+          item: itemLabel,
+          tier: tierName(tierId),
+          position: position + 1,
+        }),
+      );
     }
   }
 
@@ -205,13 +219,16 @@ export function GameBoard({ room, game }: GameBoardProps) {
               itemLabel={itemLabel}
               pending={pending}
               onPlace={(position, focusKeysByPriority) =>
-                void placeAt(tier.id, position, focusKeysByPriority)
+                void placeWithButton(tier.id, position, focusKeysByPriority)
               }
             />
           ))}
         </ol>
         <DragPreview previewOf={previewOf} />
       </DndContext>
+      <p role="status" className="sr-only">
+        {buttonPlacementAnnouncement}
+      </p>
       {placeMutation.isError && (
         <div className="lg:col-start-2">
           <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
