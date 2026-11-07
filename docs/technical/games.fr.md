@@ -176,7 +176,7 @@ La salle se charge avec tout ce que sa réponse montre (`_room_with_details`) en
 - **Les mutations relisent la salle après leur commit.** Le commit expire la session : `start`, `place`, `next_round`, `end_cooldown` et `remove_participant` relisent donc la salle en une fois (`_reloaded`, `_reloaded_seat`) au lieu de laisser la réponse la recharger objet par objet.
 - **Pas de plateau pour le room admin qui ne joue pas.** Il ne reçoit ni `own_placements` ni `missed_items`.
 
-Le frontend ignore une réponse plus ancienne que la salle qu'il a déjà (`storeRoom`) : une version plus petite, ou à version égale une partie en retard (tour, statut), puisqu'un déplacement ne change pas la version.
+Le frontend ne garde pas une réponse plus ancienne que la salle qu'il a déjà (`storeRoom`) : une version plus petite, ou à version égale une partie en retard (tour, statut), puisqu'un déplacement ne change pas la version. Il relit la salle à la place : l'événement du placement d'un autre joueur peut arriver avant la réponse à son propre placement, et ne dit que « quelqu'un a placé » ; ignorer la réponse ferait perdre son propre placement jusqu'au rechargement.
 
 ## 3. Dans le code
 

@@ -156,8 +156,9 @@ Manual commands:
 | Unused code      | —                           | `pnpm knip`              |
 | Tests            | `uv run pytest`             | `pnpm test`              |
 | Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
+| End-to-end tests | —                           | `pnpm test:e2e`          |
 
-Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). How each test works and what it checks: [docs/technical/testing.md](docs/technical/testing.md).
+Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). The end-to-end tests (Playwright) run the real app in Chromium, Firefox and WebKit: they need the same services, the browsers (`pnpm exec playwright install chromium firefox webkit`, once) and the frontend build (`pnpm build`). How each test works and what it checks: [docs/technical/testing.md](docs/technical/testing.md).
 
 ### Continuous integration (GitHub Actions)
 

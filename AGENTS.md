@@ -1655,8 +1655,8 @@ npm run build                  PASS
 If something was not executed:
 
 ``` text
-npm run e2e                    NOT RUN
-Reason: requires the external staging environment.
+pnpm test:e2e                  NOT RUN
+Reason: Docker services not started (docker compose up -d --wait).
 ```
 
 With Claude Code, the `ship-check` skill runs every CI check locally and

@@ -43,9 +43,14 @@ pnpm typecheck
 pnpm knip
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
 
 If `gen:api` changes `schema.d.ts`, the API types were out of date: use `/api-sync`.
+
+`pnpm test:e2e` runs the Playwright tests on the build, on Chromium, Firefox and WebKit. It needs
+`docker compose up -d --wait` and the browsers (`pnpm exec playwright install chromium firefox
+webkit`); without them, report it as NOT RUN with the reason.
 
 ## 4. Docs (from the repo root)
 

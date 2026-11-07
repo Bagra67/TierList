@@ -176,7 +176,7 @@ The room is loaded with everything its answer shows (`_room_with_details`) in a 
 - **Mutations read the room again after their commit.** The commit expires the session, so `start`, `place`, `next_round`, `end_cooldown` and `remove_participant` read the room again in one go (`_reloaded`, `_reloaded_seat`) instead of letting the answer reload it object by object.
 - **No board for the room admin who does not play.** They get neither `own_placements` nor `missed_items`.
 
-The frontend ignores an answer older than the room it already has (`storeRoom`): a smaller version, or at equal version a game behind (round, status), since a move does not change the version.
+The frontend does not store an answer older than the room it already has (`storeRoom`): a smaller version, or at equal version a game behind (round, status), since a move does not change the version. It reads the room again instead: the event of another player's placement can arrive before the answer to one's own placement, and only carries "someone placed", so dropping the answer would lose one's own placement until a reload.
 
 ## 3. In the code
 

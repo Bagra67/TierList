@@ -36,7 +36,5 @@
 
 ## 3. Outillage
 
-- [ ] **Tests de bout en bout (Playwright)** : la prochaine étape, maintenant que l'éditeur de tier list et son glisser-déposer existent.
-  - _Ce qu'ils apportent_ : les tests actuels tournent dans Vitest avec jsdom, un navigateur simulé avec un backend remplacé. Ils ne voient pas ce que seul un vrai navigateur fait : les cookies HttpOnly et le rafraîchissement de session face au vrai backend, le focus et `Échap` dans le `<dialog>` (`src/test/setup.ts` note que jsdom ne sait pas les tester), la mise en page, et surtout le **glisser-déposer** de l'éditeur. Playwright pilote Chromium, Firefox ou WebKit sur l'application lancée (backend + PostgreSQL + Mailpit).
-  - _Coût_ : un job CI qui démarre PostgreSQL, Mailpit, le backend et le frontend (quelques minutes par PR) ; des tests plus lents et parfois instables (délais, animations) ; et de la maintenance à chaque changement d'écran (sélecteurs, parcours).
-  - _Recommandation_ : **pas un test par écran**. Une poignée de parcours critiques (« smoke tests ») : inscription → confirmation de l'email (lien lu via l'API de Mailpit) → connexion → déconnexion, puis créer une tier list et déplacer des éléments entre les tiers. Tout le reste reste dans Vitest, rapide et stable. On n'ajoute un parcours que si une régression dessus serait grave et que jsdom ne peut pas la voir.
+- [x] **Tests de bout en bout (Playwright)** : compte, éditeur de modèle, partie en direct à deux et petits écrans, sur Chromium, Firefox et WebKit, en local et en CI ([guide des tests](docs/technical/testing.fr.md#6-tests-de-bout-en-bout-playwright)).
+- [ ] Rendre obligatoires les checks `E2E (chromium)`, `E2E (firefox)` et `E2E (webkit)` dans le ruleset de `develop`, après deux semaines sans exécution instable (vers le 2026-11-21).
