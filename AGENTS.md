@@ -763,7 +763,9 @@ The backend API is the authoritative contract.
     backend OpenAPI schema. After a contract change, run
     `uv run python scripts/export_openapi.py` (backend) then
     `pnpm gen:api` (frontend), and commit `backend/openapi.json` and
-    `frontend/src/api/schema.d.ts` together.
+    `frontend/src/api/schema.d.ts` together. With Claude Code, the
+    `api-sync` skill runs both steps, and a hook blocks hand edits of
+    these two files and of the lock files.
 -   Add or update tests when contracts change.
 
 For breaking changes:
@@ -965,6 +967,9 @@ Do not add these tools if the project has intentionally chosen
 alternatives.
 
 Do not reformat unrelated code.
+
+With Claude Code, a hook runs Ruff, ESLint and Prettier on each edited
+file.
 
 ------------------------------------------------------------------------
 
@@ -1293,6 +1298,11 @@ actually performed.
     CI is green, mark it **ready for review** (`gh pr ready <N>`) without
     waiting to be asked, and tick its CI checkbox.
 -   In a stack, each PR is marked ready once its own work is finished.
+-   With Claude Code, before marking a PR ready, run the
+    `i18n-docs-reviewer` subagent (translations, bilingual docs, testing
+    guide, privacy policy, seed data, comments) and, when the PR touches
+    the API, authentication, sessions, uploads, rooms or moderation, the
+    `security-reviewer` subagent.
 -   Ready does not mean merged: merging still waits for an explicit
     request.
 
@@ -1644,6 +1654,9 @@ If something was not executed:
 npm run e2e                    NOT RUN
 Reason: requires the external staging environment.
 ```
+
+With Claude Code, the `ship-check` skill runs every CI check locally and
+produces this table.
 
 ## Notes
 
