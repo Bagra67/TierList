@@ -120,6 +120,10 @@ describe('GameScreen', () => {
     );
     expect(screen.getByRole('button', { name: 'Avancer Paprika dans son tier' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reculer Paprika dans son tier' })).toBeDisabled();
+    expect(await screen.findByText('Paprika déposé dans S, position 1.')).toHaveAttribute(
+      'role',
+      'status',
+    );
   });
 
   it('shows a preview of the item while it is dragged', async () => {
@@ -479,6 +483,10 @@ describe('GameScreen', () => {
 
       await vi.waitFor(() => expect(bodies).toEqual([{ tier_id: tierA.id, position: 0 }]));
       expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
+      expect(await screen.findByText('Paprika déposé dans A, position 1.')).toHaveAttribute(
+        'role',
+        'status',
+      );
     });
 
     it('keeps the choice and its buttons when the move fails, so that the focus stays and a retry is possible', async () => {

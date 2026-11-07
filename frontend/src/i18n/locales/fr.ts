@@ -1143,6 +1143,7 @@ export const fr = {
       invalid: 'Valeur invalide.',
       missing: 'Ce champ est obligatoire.',
       string_too_short: 'Au moins {{min_length}} caractères.',
+      string_too_short_one: 'Au moins {{min_length}} caractère.',
       string_too_long: 'Au plus {{max_length}} caractères.',
       value_error: 'Valeur invalide.',
       string_pattern_mismatch: 'Format invalide.',
