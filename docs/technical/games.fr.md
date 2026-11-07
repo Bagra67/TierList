@@ -17,7 +17,7 @@ Le room admin lance une partie depuis le lobby (US-3.1). La partie est figée su
 
 ### Règles
 
-- **Qui** : le room admin seulement (`403` `room_admin_required`) ; un lecteur sans place reçoit `404` `room_not_found`, comme pour toutes les routes des salles.
+- **Qui** : le room admin seulement (`403` `room_admin_required`) ; un lecteur sans place reçoit `404` `room_not_found`, comme pour toutes les routes des salles sauf la lecture de la salle (`403` `room_not_joined`, [guide des salles](rooms.fr.md)).
 - **Une partie à la fois** (invariant 3) : une salle déjà `playing` répond `409` `game_in_progress`. Un index unique partiel sur `games(room_id)` (`status <> 'closed'`) est le dernier filet.
 - **Quelqu'un doit placer les items** (US-3.1, US-3.5) : les participants qui placent sont les participants qui ont une place, moins le room admin quand il ne joue pas (`admin_plays` désactivé) ; il garde alors seulement les commandes. Sans aucun, `409` `no_placing_participant` (le room admin seul, qui ne joue pas). Être connecté n'est pas exigé : un participant absent reçoit des votes absents, comme à n'importe quel tour (#93).
 - **Template** : le template de la salle doit encore exister, ne pas être masqué par la modération, et avoir des tuiles. Un template purgé répond `409` `template_not_found`, un modèle masqué `409` `template_hidden` ([guide des templates](templates.fr.md#27-modération)), un template sans tuile `409` `template_has_no_tiles`. Une partie déjà en cours quand le modèle est masqué se termine : elle ne dépend que de son instantané.
