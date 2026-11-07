@@ -147,17 +147,18 @@ Si une erreur ne peut pas être corrigée automatiquement, le commit est bloqué
 
 Commandes manuelles :
 
-|                    | Backend (`cd backend`)      | Frontend (`cd frontend`) |
-| ------------------ | --------------------------- | ------------------------ |
-| Lint               | `uv run ruff check .`       | `pnpm lint`              |
-| Corriger           | `uv run ruff check . --fix` | `pnpm lint:fix`          |
-| Formater           | `uv run ruff format .`      | `pnpm format`            |
-| Types              | `uv run pyright`            | `pnpm typecheck`         |
-| Code inutilisé     | —                           | `pnpm knip`              |
-| Tests              | `uv run pytest`             | `pnpm test`              |
-| Tests + couverture | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
+|                       | Backend (`cd backend`)      | Frontend (`cd frontend`) |
+| --------------------- | --------------------------- | ------------------------ |
+| Lint                  | `uv run ruff check .`       | `pnpm lint`              |
+| Corriger              | `uv run ruff check . --fix` | `pnpm lint:fix`          |
+| Formater              | `uv run ruff format .`      | `pnpm format`            |
+| Types                 | `uv run pyright`            | `pnpm typecheck`         |
+| Code inutilisé        | —                           | `pnpm knip`              |
+| Tests                 | `uv run pytest`             | `pnpm test`              |
+| Tests + couverture    | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
+| Tests de bout en bout | —                           | `pnpm test:e2e`          |
 
-Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour les tests du stockage des images : `docker compose up -d --wait` (sinon ils sont ignorés en local). Fonctionnement et but de chaque test : [docs/technical/testing.fr.md](docs/technical/testing.fr.md).
+Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour les tests du stockage des images : `docker compose up -d --wait` (sinon ils sont ignorés en local). Les tests de bout en bout (Playwright) lancent la vraie application dans Chromium, Firefox et WebKit : ils ont besoin des mêmes services, des navigateurs (`pnpm exec playwright install chromium firefox webkit`, une fois) et du build du frontend (`pnpm build`). Fonctionnement et but de chaque test : [docs/technical/testing.fr.md](docs/technical/testing.fr.md).
 
 ### Intégration continue (GitHub Actions)
 
@@ -168,12 +169,13 @@ Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour 
 | **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest avec couverture sur un service PostgreSQL 18 et le SeaweedFS de `compose.yaml`, en Python 3.15 (celui des pods de production) |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest avec couverture, build de production                                                                            |
 | **Secrets**  | gitleaks sur chaque commit de la PR (ou du push)                                                                                                                                        |
+| **E2E**      | un job par navigateur (Chromium, Firefox, WebKit) : PostgreSQL, Mailpit et SeaweedFS, build du frontend, tests Playwright `pnpm test:e2e --project=<navigateur>`                        |
 
 `.github/workflows/docs.yml` lance le job **Docs** sur les mêmes événements : chaque doc a sa version anglaise et française avec leur sélecteur de langue et, sur une PR, les deux versions changent ensemble et un test modifié est accompagné des deux guides des tests (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). Pour une exception justifiée (par ex. une coquille corrigée dans une seule langue), ajouter le label `skip-docs-sync` à la PR et expliquer pourquoi. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#5-tests-des-scripts-de-ci-githubscripts).
 
 - Le résumé de l'exécution affiche un **rapport de tests** pour chaque job (résultat et durée de chaque test, détail des échecs, raisons des tests ignorés, tests les plus lents) et la couverture (sans seuil bloquant). Les rapports bruts sont conservés comme artefacts pendant 14 jours. Voir [docs/technical/testing.fr.md](docs/technical/testing.fr.md#31-rapport-de-tests-en-ci).
-- Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue.
-- Sur une PR, `Backend` et `Frontend` ne tournent que si la PR touche leur partie (job `Changed parts`) : `frontend/` et `docs/` (vérifié par Prettier) pour Frontend, `backend/` pour Backend, les deux pour `backend/openapi.json` et pour tout autre fichier sauf le Markdown. Un job sauté compte comme réussi. Un push sur `develop` ou `main` lance toujours tout, puisqu'il déploie ou publie une version.
+- Les quatre jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) sont des **contrôles requis** sur `develop` et `main` : une PR ne peut pas être fusionnée tant que la CI échoue. Les jobs `E2E` ne sont pas encore requis (voir le TODO).
+- Sur une PR, `Backend` et `Frontend` ne tournent que si la PR touche leur partie (job `Changed parts`) : `frontend/` et `docs/` (vérifié par Prettier) pour Frontend, `backend/` pour Backend, les deux pour `backend/openapi.json` et pour tout autre fichier sauf le Markdown. `E2E` tourne dès que l'un des deux tourne. Un job sauté compte comme réussi. Un push sur `develop` ou `main` lance toujours tout, puisqu'il déploie ou publie une version.
 - **Dependabot** (`.github/dependabot.yml`) ouvre chaque semaine des PR de mise à jour vers `develop` pour uv, pnpm, GitHub Actions et l'image Docker.
 - Les nouvelles PR sont pré-remplies par `.github/pull_request_template.md`.
 

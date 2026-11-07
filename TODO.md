@@ -36,7 +36,5 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
 
 ## 3. Tooling
 
-- [ ] **End-to-end tests (Playwright)**: the next step, now that the tier list editor and its drag and drop exist.
-  - _What they add_: today's tests run in Vitest with jsdom, a simulated browser with a stubbed backend. They cannot see what only a real browser does: HttpOnly cookies and the session refresh against the real backend, focus and `Escape` in the `<dialog>` (`src/test/setup.ts` notes jsdom cannot test them), layout, and above all the **drag and drop** of the editor. Playwright drives Chromium, Firefox or WebKit against the running app (backend + PostgreSQL + Mailpit).
-  - _Cost_: a CI job that starts PostgreSQL, Mailpit, the backend and the frontend (a few minutes per PR); tests that are slower and sometimes flaky (timing, animations); and maintenance each time a screen changes (selectors, flows).
-  - _Recommendation_: **not one test per screen**. A handful of critical journeys ("smoke tests"): register → confirm the email (link read from Mailpit's API) → sign in → sign out, then create a tier list and move items between tiers. Everything else stays in Vitest, which is fast and stable. A journey is added only when a regression on it would be serious and jsdom cannot catch it.
+- [x] **End-to-end tests (Playwright)**: account, template editor, live game between two players and small screens, on Chromium, Firefox and WebKit, locally and on CI ([testing guide](docs/technical/testing.md#6-end-to-end-tests-playwright)).
+- [ ] Make the `E2E (chromium)`, `E2E (firefox)` and `E2E (webkit)` checks required in the `develop` ruleset, after two weeks without a flaky run (around 2026-11-21).
