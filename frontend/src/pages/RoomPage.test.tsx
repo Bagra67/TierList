@@ -172,7 +172,7 @@ describe('RoomPage', () => {
   it('says a banned account cannot join the room again', async () => {
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => errorResponse(403, 'room_banned'),
     });
 
@@ -254,7 +254,7 @@ describe('RoomPage', () => {
     const bobRoom: Room = { ...aliceRoom, is_admin: false };
     const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
 
@@ -272,10 +272,9 @@ describe('RoomPage', () => {
     const silencedQueryCacheErrorLog: MockInstance = vi
       .spyOn(console, 'error')
       .mockImplementation(() => {});
-    stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
       'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
-      'POST /rooms/ZZZZZZ/join': () => errorResponse(404, 'room_not_found'),
     });
 
     renderRoomPage('ZZZZZZ');
@@ -283,6 +282,23 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est introuvable ou a été fermée.',
     );
+    expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/ZZZZZZ/join');
+    silencedQueryCacheErrorLog.mockRestore();
+  });
+
+  it('tells a visitor at once that the room cannot be found, without the join form', async () => {
+    const silencedQueryCacheErrorLog: MockInstance = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    stubBackend({ 'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found') });
+
+    renderRoomPage('ZZZZZZ');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cette salle est introuvable ou a été fermée.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Pseudo' })).not.toBeInTheDocument();
     silencedQueryCacheErrorLog.mockRestore();
   });
 
@@ -292,7 +308,7 @@ describe('RoomPage', () => {
       .mockImplementation(() => {});
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () =>
         errorResponse(409, 'room_full', { params: { max_participants: 10 } }),
     });

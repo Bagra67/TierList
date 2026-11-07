@@ -14,7 +14,7 @@ async function requestBody(fetchMock: BackendMock, route: string): Promise<unkno
 }
 
 const visitorWithoutSeat = {
-  'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+  'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
 };
 
 describe('JoinRoomScreen', () => {
