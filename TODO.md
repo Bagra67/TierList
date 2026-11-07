@@ -19,7 +19,7 @@ Manual steps left to do: configuration, checks in a browser, merges and decision
   - a strong `POSTGRES_PASSWORD`.
 - [x] Emails in production ([emails guide](docs/technical/emails.md#4-in-production)): choose an SMTP provider, authorize the domain (SPF, DKIM, DMARC), set `SMTP_*`, `EMAIL_FROM` and `FRONTEND_BASE_URL`. Scaleway Transactional Email, domain `ladwein.dev` verified ([Scaleway](docs/technical/deployment.md#54-scaleway-163)).
 - [ ] Check whether Cloudflare rate limiting rules exist, otherwise create them: limit repeated attempts (sign-in, registration, emails, room codes: `GET /rooms/{code}` and `POST /rooms/{code}/guests` tell whether a code exists) at the host level (Cloudflare rate limiting rules). Only the tunnel reaches the app, and only it may set the proxy headers (`TRUSTED_PROXY_IPS`).
-- [ ] Google in production: the HTTPS redirect URI is set (`GOOGLE_REDIRECT_URI`); check that the consent screen is published in the Google Cloud console (in "Testing" mode, only test users can sign in).
+- [x] Google in production: the HTTPS redirect URI is set (`GOOGLE_REDIRECT_URI`) and the consent screen is published.
 - [x] Purge of deleted templates and unused images every night: in the app process (#192, `MAINTENANCE_ENABLED`).
 - [ ] Database backups: the `backup-*` environments run every night; try a restore on staging ([backups](docs/technical/deployment.md#8-backups), #162).
 - [x] Privacy policy: public `/privacy` page, linked from the footer and the settings panel ([legal pages](docs/technical/legal-pages.md), #200).

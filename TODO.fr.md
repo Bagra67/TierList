@@ -19,7 +19,7 @@
   - un `POSTGRES_PASSWORD` robuste.
 - [x] Emails en production ([guide des emails](docs/technical/emails.fr.md#4-en-production)) : choisir un fournisseur SMTP, autoriser le domaine (SPF, DKIM, DMARC), renseigner `SMTP_*`, `EMAIL_FROM` et `FRONTEND_BASE_URL`. Scaleway Transactional Email, domaine `ladwein.dev` vérifié ([Scaleway](docs/technical/deployment.fr.md#54-scaleway-163)).
 - [ ] Vérifier si des règles de limitation existent dans Cloudflare, sinon les créer : limiter les tentatives répétées (connexion, inscription, emails, codes de salle : `GET /rooms/{code}` et `POST /rooms/{code}/guests` disent si un code existe) au niveau de l'hébergeur (règles de limitation de Cloudflare). Seul le tunnel joint l'application, et lui seul peut poser les en-têtes de proxy (`TRUSTED_PROXY_IPS`).
-- [ ] Google en production : l'URI de redirection HTTPS est réglée (`GOOGLE_REDIRECT_URI`) ; vérifier que l'écran de consentement est publié dans la console Google Cloud (en mode « Test », seuls les utilisateurs test peuvent se connecter).
+- [x] Google en production : l'URI de redirection HTTPS est réglée (`GOOGLE_REDIRECT_URI`) et l'écran de consentement est publié.
 - [x] Purge des templates supprimés et des images inutilisées chaque nuit : dans le processus de l'application (#192, `MAINTENANCE_ENABLED`).
 - [ ] Sauvegardes de la base : les environnements `backup-*` tournent chaque nuit ; essayer une restauration sur le staging ([sauvegardes](docs/technical/deployment.fr.md#8-sauvegardes), #162).
 - [x] Politique de confidentialité : page publique `/privacy`, liée depuis le pied de page et le panneau de paramètres ([pages légales](docs/technical/legal-pages.fr.md), #200).
