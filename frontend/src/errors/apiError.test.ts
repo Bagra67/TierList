@@ -66,6 +66,22 @@ describe('translateError', () => {
     expect(translateError(i18n.t, error)).toBe('Incorrect email or password');
   });
 
+  it('shows a date sent as text, such as the end of a ban, in the interface language', async () => {
+    const error: ApiError = new ApiError(403, {
+      detail: 'This account is banned',
+      code: 'account_banned_until',
+      params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+    });
+
+    expect(translateError(i18n.t, error)).toMatch(
+      /^Ce compte est banni jusqu'au .*2026.* : Spam\.$/,
+    );
+    await i18n.changeLanguage('en');
+    expect(translateError(i18n.t, error)).toMatch(
+      /^This account is banned until .*2026.*: Spam\.$/,
+    );
+  });
+
   it('shows a size sent in bytes in megabytes, in the interface language', async () => {
     const error: ApiError = new ApiError(413, {
       detail: 'The file is larger than 10485760 bytes',
@@ -73,7 +89,6 @@ describe('translateError', () => {
       params: { max_bytes: 10485760 },
     });
 
-    // Intl sépare le nombre et l'unité par une espace insécable, selon la langue
     expect(translateError(i18n.t, error)).toMatch(
       /^L'image est trop lourde : 10\sMo au maximum\.$/,
     );

@@ -5,6 +5,7 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
+from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
@@ -21,11 +22,6 @@ def add_snapshot(session: Session, snapshot: TemplateSnapshot) -> None:
 def get_owned_template(
     session: Session, template_id: uuid.UUID, owner_id: uuid.UUID, for_update: bool = False
 ) -> Template | None:
-    """Template actif (non supprimé) du propriétaire, avec ses tiers et ses tuiles.
-
-    for_update verrouille la ligne du template jusqu'à la fin de la transaction : deux
-    modifications du même template passent l'une après l'autre, chacune voyant le résultat de
-    la précédente (sinon deux suppressions simultanées pourraient retirer le dernier tier)."""
     statement: Select[Template] = (
         select(Template)
         .where(
@@ -40,25 +36,50 @@ def get_owned_template(
     return session.scalars(statement).one_or_none()
 
 
+def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
+    statement: Select[Template] = (
+        select(Template)
+        .where(Template.id == template_id, Template.deleted_at.is_(None))
+        .options(selectinload(Template.tiers), selectinload(Template.tiles))
+    )
+    return session.scalars(statement).one_or_none()
+
+
+def get_template_for_update(session: Session, template_id: uuid.UUID) -> Template | None:
+    return session.get(Template, template_id, with_for_update=True)
+
+
 def list_owned_templates_with_tile_count(
     session: Session, owner_id: uuid.UUID
 ) -> list[tuple[Template, int]]:
-    """Templates actifs du propriétaire et leur nombre de tuiles, le plus récemment modifié
-    d'abord. Une seule requête : le nombre de tuiles est compté par la base (pas de N+1)."""
     statement: Select[Template, int] = (
         select(Template, func.count(Tile.id))
         .outerjoin(Tile, Tile.template_id == Template.id)
         .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
         .group_by(Template.id)
-        # id départage deux templates modifiés au même instant : l'ordre reste stable
         .order_by(Template.updated_at.desc(), Template.id)
     )
     return [(template, tile_count) for template, tile_count in session.execute(statement)]
 
 
+def list_tiles_with_removed_image_of_owner(
+    session: Session, owner_id: uuid.UUID
+) -> list[tuple[Tile, Image]]:
+    statement: Select[Tile, Image] = (
+        select(Tile, Image)
+        .join(Image, Tile.image_id == Image.id)
+        .join(Template, Tile.template_id == Template.id)
+        .where(
+            Template.owner_id == owner_id,
+            Template.deleted_at.is_(None),
+            Image.status != ImageStatus.VISIBLE,
+        )
+        .order_by(Tile.position, Tile.id)
+    )
+    return [(tile, image) for tile, image in session.execute(statement)]
+
+
 def delete_templates_deleted_before(session: Session, limit: datetime) -> int:
-    """Supprime définitivement les templates supprimés logiquement avant limit ; leurs tiers et
-    tuiles partent avec eux (ON DELETE CASCADE). Renvoie le nombre de templates supprimés."""
     statement: ReturningDelete[uuid.UUID] = (
         delete(Template).where(Template.deleted_at < limit).returning(Template.id)
     )

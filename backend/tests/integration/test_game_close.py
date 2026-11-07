@@ -1,6 +1,3 @@
-"""Clôture et sauvegarde d'une partie (US-5.1) : à la fin du cooldown, les joueurs sont figés et
-la partie ne dépend plus des places de la salle."""
-
 import uuid
 
 import pytest
@@ -60,7 +57,6 @@ def user_id(db_session: Session, email: str) -> uuid.UUID:
 
 
 def players(db_session: Session) -> list[tuple[str, uuid.UUID | None]]:
-    """Les joueurs figés : (nom, compte), par nom."""
     return sorted(
         (player.display_name, player.user_id) for player in db_session.scalars(select(GamePlayer))
     )
@@ -77,8 +73,6 @@ def closed_game(
     bob: dict[str, str],
     alice_room: JsonObject,
 ) -> JsonObject:
-    """Alice, Bob et l'invitée Lou jouent ; Alice et Bob placent le premier item, Lou rien ; le
-    room admin termine le cooldown."""
     code: str = alice_room["code"]
     auth_client.post(f"/rooms/{code}/join", headers=bob)
     assert auth_client.post(f"/rooms/{code}/guests", json={"nickname": "Lou"}).status_code == 201
@@ -97,7 +91,6 @@ def test_closing_freezes_every_player_and_their_placements(
         ("bob", user_id(db_session, "bob@example.com")),
     ]
     game: Game = stored_game(db_session)
-    # Les placements de tour (votes absents compris) et finaux passent tous aux joueurs figés
     assert game.placements
     assert all(
         placement.participant_id is None and placement.player_id is not None
@@ -159,7 +152,6 @@ def test_deleting_an_account_keeps_the_closed_game(
 
     assert deleted.status_code == 204
     assert placement_count(db_session) == count
-    # Le joueur reste dans la partie, sans compte : la partie n'est plus dans un historique
     assert ("bob", None) in players(db_session)
 
 
@@ -190,7 +182,6 @@ def test_a_new_game_starts_after_a_closed_one(
     place_current_in_first_tier(auth_client, started, alice)
 
     room: JsonObject = auth_client.get(f"/rooms/{closed_game['code']}", headers=alice).json()
-    # Le plateau de la nouvelle partie ne contient que son propre placement
     assert len(room["game"]["own_placements"]) == 1
     assert db_session.scalar(select(func.count()).select_from(Game)) == 2
 
@@ -206,3 +197,29 @@ def test_a_placement_belongs_to_a_seat_or_a_player(db_session: Session, closed_g
 
     with pytest.raises(IntegrityError):
         db_session.flush()
+
+
+def test_a_closed_game_needs_its_results_link(db_session: Session, closed_game: JsonObject):
+    stored_game(db_session).public_token = None
+
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+
+
+def test_an_account_plays_a_game_once_but_guests_can_be_several(
+    db_session: Session, closed_game: JsonObject
+):
+    game: Game = stored_game(db_session)
+    alice_id: uuid.UUID = user_id(db_session, "alice@example.com")
+
+    with pytest.raises(IntegrityError), db_session.begin_nested():
+        db_session.add(GamePlayer(game_id=game.id, user_id=alice_id, display_name="alice"))
+        db_session.flush()
+
+    db_session.add_all(
+        [
+            GamePlayer(game_id=game.id, user_id=None, display_name="Max"),
+            GamePlayer(game_id=game.id, user_id=None, display_name="Noa"),
+        ]
+    )
+    db_session.flush()

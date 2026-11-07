@@ -7,8 +7,6 @@ interface GuestLinkNoticeProps {
   guestRoom: GuestRoom;
 }
 
-// Lien perso d'un invité qui vient d'arriver (US-5.4) : il le ramène à sa place depuis
-// n'importe quel appareil. Montré une seule fois : le serveur n'en garde que l'empreinte.
 export function GuestLinkNotice({ guestRoom }: GuestLinkNoticeProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 

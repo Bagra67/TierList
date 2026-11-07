@@ -7,7 +7,7 @@ import { pathAfterSignIn } from '../auth/signInRedirect';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { GoogleSignInLink } from '../components/GoogleSignInLink';
 import { TermsAcceptance } from '../components/TermsAcceptance';
@@ -32,19 +32,17 @@ export function RegisterPage() {
         display_name: String(form.get('display_name')),
       });
     } catch {
-      return; // l'erreur est affichée depuis registerMutation.error
+      return;
     }
-    // Comme après une connexion : retour à la page privée demandée (ex. le lien d'une salle)
     await navigate(pathAfterSignIn(location), { replace: true });
   }
 
   return (
-    <AuthPageShell
+    <CenteredCardPage
       title={t('auth.register.title')}
       footer={
         <p>
           {t('auth.register.hasAccount')}{' '}
-          {/* L'état garde la page demandée, pour y revenir après la connexion */}
           <Link to={ROUTES.LOGIN} state={location.state} className={textLinkClassName}>
             {t('auth.register.loginLink')}
           </Link>
@@ -86,6 +84,6 @@ export function RegisterPage() {
       </form>
       <GoogleSignInLink />
       <TermsAcceptance i18nKey="auth.acceptTerms.register" />
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

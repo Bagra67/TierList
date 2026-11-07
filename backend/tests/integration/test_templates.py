@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,29 +17,23 @@ from app.constants.templates import (
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
+from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
 from tests.image_files import make_image_file
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL
+from tests.integration.helpers import JsonObject
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
-# Modèle, tier ou tuile qui n'existe pas. Fixe, pas uuid4() : les noms des tests paramétrés
-# doivent être les mêmes à chaque collecte, sinon les workers de pytest-xdist refusent de démarrer
 UNKNOWN_ID: uuid.UUID = uuid.UUID("00000000-0000-4000-8000-000000000000")
 
 PASSWORD = "correct horse battery staple"
 
-# Objet JSON renvoyé par l'API (template, tier, tuile…) : sa forme est vérifiée par les tests
-JsonObject = dict[str, Any]
-
 
 def register(client: TestClient, email: str) -> dict[str, str]:
-    """Crée un compte et renvoie l'en-tête Authorization de son access token."""
     response: Response = client.post(
         "/auth/register",
         json={"email": email, "password": PASSWORD, "display_name": email.split("@")[0]},
@@ -65,8 +59,6 @@ def create_template(client: TestClient, headers: dict[str, str], name: str) -> J
 
 
 def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    """Ajoute des tuiles directement en base : plus rapide que l'API quand un test a besoin de
-    beaucoup de tuiles (ex. atteindre la limite)."""
     for position in range(count):
         db_session.add(
             Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
@@ -149,6 +141,25 @@ def test_list_shows_the_last_modified_template_first(
     assert [item["name"] for item in response.json()["items"]] == ["First, renamed", "Second"]
 
 
+def test_list_orders_the_templates_of_the_same_instant_by_their_id(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    same_instant: datetime = datetime(2026, 1, 1, tzinfo=UTC)
+    ids_in_insertion_order: list[uuid.UUID] = [uuid.UUID(int=number) for number in (3, 2, 1)]
+    for template_id in ids_in_insertion_order:
+        db_session.add(
+            Template(id=template_id, owner_id=owner.id, name="Same", updated_at=same_instant)
+        )
+        db_session.flush()
+
+    response: Response = auth_client.get("/templates", headers=alice)
+
+    assert [item["id"] for item in response.json()["items"]] == [
+        str(template_id) for template_id in reversed(ids_in_insertion_order)
+    ]
+
+
 def test_get_template_returns_its_tiers_and_tiles(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):
@@ -187,7 +198,6 @@ def test_delete_template_is_a_soft_delete(
     assert response.status_code == 204
     assert auth_client.get("/templates", headers=alice).json() == {"items": []}
     assert auth_client.get(f"/templates/{template['id']}", headers=alice).status_code == 404
-    # Toujours en base, avec ses tiers, jusqu'à la purge
     stored: Template = db_session.scalars(select(Template)).one()
     assert stored.deleted_at is not None
     assert len(db_session.scalars(select(Tier)).all()) == len(DEFAULT_TIERS)
@@ -218,7 +228,6 @@ def test_templates_of_other_users_are_not_found(
     for response in responses:
         assert response.status_code == 404
         assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
-    # Le template d'Alice n'a pas changé
     unchanged: JsonObject = auth_client.get(url, headers=alice).json()
     assert unchanged["name"] == "Alice's template"
     assert unchanged["tiers"] == template["tiers"]
@@ -277,9 +286,6 @@ def test_deleting_the_account_deletes_its_templates(
     assert db_session.scalars(select(Tier)).all() == []
 
 
-# --- Tiers ---------------------------------------------------------------------------------
-
-
 def tier_names(template: JsonObject) -> list[str]:
     return [tier["name"] for tier in template["tiers"]]
 
@@ -321,7 +327,6 @@ def test_rename_and_recolor_a_tier(auth_client: TestClient, alice: dict[str, str
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiers"][0]["name"] == "Masterpiece"
-    # Enregistrée en majuscules
     assert body["tiers"][0]["color"] == "#A1B2C3"
     assert tier_names(body)[1:] == ["A", "B", "C", "D", "E"]
     assert body["updated_at"] > template["updated_at"]
@@ -356,13 +361,9 @@ def test_update_tier_validates_the_fields(
 @pytest.mark.parametrize(
     ("name", "position", "expected_names"),
     [
-        # Vers le bas
         ("S", 2, ["A", "B", "S", "C", "D", "E"]),
-        # Vers le haut
         ("D", 0, ["D", "S", "A", "B", "C", "E"]),
-        # Au-delà de la fin : en dernier
         ("B", 99, ["S", "A", "C", "D", "E", "B"]),
-        # Sur place
         ("C", 3, ["S", "A", "B", "C", "D", "E"]),
     ],
 )
@@ -381,7 +382,6 @@ def test_move_a_tier_keeps_the_positions_continuous(
     assert response.status_code == 200
     assert tier_names(response.json()) == expected_names
     assert tier_positions(response.json()) == list(range(len(DEFAULT_TIERS)))
-    # Relu depuis la base : l'ordre est bien enregistré
     stored: JsonObject = auth_client.get(f"/templates/{template['id']}", headers=alice).json()
     assert tier_names(stored) == expected_names
 
@@ -398,7 +398,6 @@ def test_an_empty_tier_update_changes_nothing(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiers"] == template["tiers"]
-    # Rien n'a changé : la date de dernière modification non plus
     assert body["updated_at"] == template["updated_at"]
     unknown_url: str = f"/templates/{template['id']}/tiers/{uuid.uuid4()}"
     assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
@@ -440,8 +439,9 @@ def test_the_last_tier_cannot_be_deleted(auth_client: TestClient, alice: dict[st
 def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str]):
     template: JsonObject = create_template(auth_client, alice, "Movies")
     other: JsonObject = create_template(auth_client, alice, "Books")
-    # Un tier inconnu, puis un tier d'un autre template du même utilisateur
-    for unknown_tier_id in (str(uuid.uuid4()), tier_id(other, "S")):
+    never_created_tier_id: str = str(uuid.uuid4())
+    tier_of_another_template: str = tier_id(other, "S")
+    for unknown_tier_id in (never_created_tier_id, tier_of_another_template):
         url: str = f"/templates/{template['id']}/tiers/{unknown_tier_id}"
         for response in (
             auth_client.patch(url, json={"name": "New name"}, headers=alice),
@@ -451,13 +451,9 @@ def test_unknown_tier_is_not_found(auth_client: TestClient, alice: dict[str, str
             assert response.json()["code"] == ErrorCode.TIER_NOT_FOUND
 
 
-# --- Tuiles --------------------------------------------------------------------------------
-
-
 def add_tile(
     client: TestClient, headers: dict[str, str], template_id: str, text: str
 ) -> JsonObject:
-    """Ajoute une tuile par l'API et renvoie la tuile créée (la dernière)."""
     response: Response = client.post(
         f"/templates/{template_id}/tiles", json={"text": text}, headers=headers
     )
@@ -496,7 +492,6 @@ def test_add_tile_validates_the_text(auth_client: TestClient, alice: dict[str, s
         f"/templates/{template['id']}/tiles", json={"text": text}, headers=alice
     )
 
-    # Un texte vide n'est pas « pas de texte » : envoyer null pour une tuile image seule
     assert response.status_code == 422
     errors: list[JsonObject] = response.json()["errors"]
     assert [error["field"] for error in errors] == ["body.text"]
@@ -580,7 +575,6 @@ def test_move_a_tile_keeps_the_positions_continuous(
     assert tile_texts(stored) == expected_texts
 
 
-# Une position null est ignorée ; un texte null, lui, retire le texte (tests des tuiles image)
 @pytest.mark.parametrize("payload", [{}, {"position": None}])
 def test_an_empty_tile_update_changes_nothing(
     auth_client: TestClient, alice: dict[str, str], payload: JsonObject
@@ -595,7 +589,6 @@ def test_an_empty_tile_update_changes_nothing(
     assert response.status_code == 200
     body: JsonObject = response.json()
     assert body["tiles"] == before["tiles"]
-    # Rien n'a changé : la date de dernière modification non plus
     assert body["updated_at"] == before["updated_at"]
     unknown_url: str = f"/templates/{template['id']}/tiles/{uuid.uuid4()}"
     assert auth_client.patch(unknown_url, json=payload, headers=alice).status_code == 404
@@ -624,9 +617,9 @@ def test_delete_a_tile_renumbers_the_others(
 def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str]):
     template: JsonObject = create_template(auth_client, alice, "Food")
     other: JsonObject = create_template(auth_client, alice, "Drinks")
-    other_tile: JsonObject = add_tile(auth_client, alice, other["id"], "Water")
-    # Une tuile inconnue, puis une tuile d'un autre template du même utilisateur
-    for unknown_tile_id in (str(uuid.uuid4()), other_tile["id"]):
+    never_created_tile_id: str = str(uuid.uuid4())
+    tile_of_another_template: JsonObject = add_tile(auth_client, alice, other["id"], "Water")
+    for unknown_tile_id in (never_created_tile_id, tile_of_another_template["id"]):
         url: str = f"/templates/{template['id']}/tiles/{unknown_tile_id}"
         for response in (
             auth_client.patch(url, json={"text": "New text"}, headers=alice),
@@ -636,11 +629,7 @@ def test_unknown_tile_is_not_found(auth_client: TestClient, alice: dict[str, str
             assert response.json()["code"] == ErrorCode.TILE_NOT_FOUND
 
 
-# --- Tuiles image --------------------------------------------------------------------------
-
-
 def upload_image(client: TestClient, headers: dict[str, str]) -> JsonObject:
-    """Envoie une image par l'API (stockage factice) et renvoie {id, url, width, height}."""
     response: Response = client.post(
         "/images",
         files={"file": ("photo.png", make_image_file((100, 100), "PNG"), "image/png")},
@@ -667,6 +656,28 @@ def test_add_an_image_only_tile(auth_client: TestClient, alice: dict[str, str]):
     assert tile["text"] is None
     assert tile["image_url"] == image["url"]
     assert tile["image_url"].startswith(FAKE_IMAGE_BASE_URL)
+    assert tile["image_removed"] is False
+
+
+@pytest.mark.parametrize("status", [ImageStatus.HIDDEN, ImageStatus.DELETED])
+def test_a_tile_whose_image_is_removed_by_the_moderation_has_no_image_url(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    status: ImageStatus,
+):
+    template: JsonObject = create_template(auth_client, alice, "Food")
+    image: JsonObject = upload_image(auth_client, alice)
+    auth_client.post(tiles_url(template), json={"image_id": image["id"]}, headers=alice)
+    stored_image: Image | None = db_session.get(Image, uuid.UUID(image["id"]))
+    assert stored_image is not None
+    stored_image.status = status
+    db_session.flush()
+
+    response: Response = auth_client.get(f"/templates/{template['id']}", headers=alice)
+
+    [tile] = response.json()["tiles"]
+    assert (tile["image_url"], tile["image_removed"]) == (None, True)
 
 
 def test_add_a_tile_with_a_text_and_an_image(auth_client: TestClient, alice: dict[str, str]):
@@ -680,7 +691,6 @@ def test_add_a_tile_with_a_text_and_an_image(auth_client: TestClient, alice: dic
     assert response.status_code == 201
     tile: JsonObject = response.json()["tiles"][0]
     assert (tile["text"], tile["image_url"]) == ("Pizza", image["url"])
-    # Une tuile texte n'a pas d'image
     text_tile: JsonObject = add_tile(auth_client, alice, template["id"], "Sushi")
     assert text_tile["image_url"] is None
 

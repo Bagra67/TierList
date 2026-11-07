@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { type InitialEntry, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
@@ -7,12 +7,15 @@ import i18n from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
 import { LoginPage } from './LoginPage';
+import { RegisterPage } from './RegisterPage';
 
-function renderLoginPage(path = '/login') {
+function renderLoginPage(entry: InitialEntry = '/login') {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[entry]}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/r/K7P2QX" element={<h1>Lobby</h1>} />
         <Route path="/" element={<h1>Accueil</h1>} />
       </Routes>
     </MemoryRouter>,
@@ -48,6 +51,24 @@ describe('LoginPage', () => {
     });
   });
 
+  it('keeps the requested page when the visitor goes on to create an account', async () => {
+    stubBackend({
+      'POST /auth/register': tokenResponse('new-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderLoginPage({ pathname: '/login', state: { from: '/r/K7P2QX' } });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Créer un compte' }));
+    fireEvent.change(screen.getByLabelText('Nom affiché'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), {
+      target: { value: 'correct horse battery staple' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+  });
+
   it('shows the backend message when the credentials are wrong', async () => {
     stubBackend({
       'POST /auth/login': () => errorResponse(401, 'invalid_credentials'),
@@ -58,6 +79,22 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou mot de passe incorrect');
     expect(screen.getByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
+  });
+
+  it('shows the reason and the end of a ban', async () => {
+    stubBackend({
+      'POST /auth/login': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage();
+
+    fillAndSubmit('alice@example.com', 'correct horse battery staple');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
   });
 
   it('shows the page and the backend error in English', async () => {
@@ -133,6 +170,31 @@ describe('LoginPage', () => {
     expect(screen.getByRole('link', { name: 'Mot de passe oublié ?' })).toHaveAttribute(
       'href',
       '/forgot-password',
+    );
+  });
+
+  it('shows the reason and the end of a ban after a refused Google sign-in', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () =>
+        errorResponse(403, 'account_banned_until', {
+          params: { reason: 'Spam', ends_at: '2026-11-15T12:00:00Z' },
+        }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Ce compte est banni jusqu'au .*2026.* : Spam\./,
+    );
+  });
+
+  it('shows the general message when there is no reason to read after Google', async () => {
+    stubBackend({
+      'GET /auth/google/ban-notice': () => new Response(null, { status: 204 }),
+    });
+    renderLoginPage('/login?error=google_account_banned');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ce compte est banni. Écrivez-nous pour en savoir plus.',
     );
   });
 

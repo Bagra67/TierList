@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 
@@ -12,7 +13,7 @@ from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.user import User
 from app.services.maintenance import purge_deleted_templates, purge_unused_images
-from app.services.nightly_scheduler import nightly_scheduler
+from app.services.nightly_scheduler import NightlyJob, nightly_scheduler
 from tests.integration.conftest import FakeImageStorage
 
 pytestmark = pytest.mark.integration
@@ -80,6 +81,27 @@ def test_the_nightly_tasks_start_with_the_app(client: TestClient):
     with client:
         assert nightly_scheduler.is_running
     assert not nightly_scheduler.is_running
+
+
+def test_the_nightly_tasks_purge_the_templates_the_images_the_log_and_the_reports(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+):
+    started_jobs: list[str] = []
+    original_start = nightly_scheduler.start
+
+    def record_jobs(hour_utc: int, jobs: Mapping[str, NightlyJob]) -> None:
+        started_jobs.extend(jobs)
+        original_start(hour_utc, jobs)
+
+    monkeypatch.setattr(nightly_scheduler, "start", record_jobs)
+
+    with client:
+        assert started_jobs == [
+            "purge_deleted_templates",
+            "purge_unused_images",
+            "purge_moderation_log",
+            "purge_closed_reports",
+        ]
 
 
 def test_the_nightly_tasks_can_be_disabled(client: TestClient, monkeypatch: pytest.MonkeyPatch):

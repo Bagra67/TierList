@@ -4,8 +4,6 @@ import { LEGAL_CONTACT_EMAIL } from '../constants/legal';
 import { LegalList, LegalSection } from './LegalPage';
 import { textLinkClassName } from './ui/text-link';
 
-// Signaler un contenu illicite (#236), sur les conditions d'utilisation et les mentions
-// légales : par e-mail, en attendant le signalement dans l'application (#126)
 export function ReportContentSection() {
   const { t } = useTranslation();
 

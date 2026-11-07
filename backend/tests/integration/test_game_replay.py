@@ -1,7 +1,3 @@
-"""Rejouer dans la même salle (US-2.9) : après une partie close, une nouvelle partie se lance
-avec le même lien et le même code, sur la version courante du template, avec les participants
-encore dans la salle."""
-
 import uuid
 
 import pytest
@@ -49,7 +45,6 @@ def first_game_closed(
     bob: dict[str, str],
     template_id: str,
 ) -> JsonObject:
-    """Salle d'Alice que Bob a rejointe ; une première partie jouée par les deux, puis close."""
     room: JsonObject = create_room(auth_client, alice, template_id)
     assert auth_client.post(f"/rooms/{room['code']}/join", headers=bob).status_code == 200
     started: JsonObject = start_game(auth_client, room["code"], alice)
@@ -76,7 +71,6 @@ def test_playing_again_keeps_the_room_its_link_and_its_past_game(
     assert replayed["link"] == first_game_closed["link"]
     assert replayed["status"] == "playing"
     assert replayed["game"]["round_number"] == 1
-    # La partie close reste dans les parties passées, avec son lien de résultats
     assert replayed["past_games"] == first_game_closed["past_games"]
 
 
@@ -87,7 +81,6 @@ def test_the_new_game_uses_the_current_version_of_the_template(
     template_id: str,
     first_game_closed: JsonObject,
 ):
-    # Entre les deux parties, Alice ajoute une tuile à son template
     db_session.add(Tile(template_id=uuid.UUID(template_id), text="New tile", position=TILE_COUNT))
     db_session.flush()
 
@@ -96,7 +89,6 @@ def test_the_new_game_uses_the_current_version_of_the_template(
     assert replayed["game"]["round_count"] == TILE_COUNT + 1
     first, second = games_by_start(db_session)
     assert first.snapshot_id != second.snapshot_id
-    # La partie close garde sa version figée (invariant 4)
     assert len(first.snapshot.tiles) == TILE_COUNT
     assert [tile.text for tile in second.snapshot.tiles][-1] == "New tile"
 
@@ -113,7 +105,6 @@ def test_the_new_game_is_played_by_the_participants_still_in_the_room(
         for participant in first_game_closed["participants"]
         if participant["display_name"] == "bob"
     )
-    # Bob quitte la salle, Carol arrive
     removed: Response = auth_client.delete(f"/rooms/{code}/participants/{bob_id}", headers=alice)
     assert removed.status_code == 200
     carol: dict[str, str] = register(auth_client, "carol@example.com")

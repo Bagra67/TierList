@@ -5,6 +5,7 @@ from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.images import IMAGE_SHA256_LENGTH, IMAGE_STORAGE_KEY_MAX_LENGTH
+from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
@@ -19,30 +20,19 @@ class ImageStatus(StrEnum):
 
 
 class Image(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Une image compressée, stockée dans le bucket S3 sous storage_key.
-
-    Immuable : remplacer l'image d'une tuile crée une nouvelle image, un fichier stocké n'est
-    jamais réécrit (docs/technical/images.md).
-    """
-
     __tablename__ = "images"
     __table_args__ = (
-        # Limite d'envois par compte et par heure : compte les images récentes d'un auteur
         Index("ix_images_owner_id_created_at", "owner_id", "created_at"),
+        Index("ix_images_created_at", "created_at"),
     )
 
-    # Toute image a un auteur connu : seuls les comptes en envoient. SET NULL et non CASCADE :
-    # supprimer le compte garde la ligne, pour que le ramasse-miettes retrouve et efface le
-    # fichier une fois l'image inutilisée (une partie passée peut encore l'afficher)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    # Clé aléatoire ({uuid}.webp) : l'URL publique est impossible à deviner
     storage_key: Mapped[str] = mapped_column(String(IMAGE_STORAGE_KEY_MAX_LENGTH), unique=True)
     width: Mapped[int]
     height: Mapped[int]
-    # Taille du fichier stocké (WebP), pas celle du fichier reçu
     size_bytes: Mapped[int]
-    # Empreinte du fichier reçu : permettra de refuser le renvoi d'un fichier banni (#124)
     sha256: Mapped[str] = mapped_column(String(IMAGE_SHA256_LENGTH), index=True)
     status: Mapped[ImageStatus] = mapped_column(
         text_enum(ImageStatus, "image_status"), default=ImageStatus.VISIBLE
     )
+    moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))

@@ -1,6 +1,3 @@
-"""Exemples chiffrés de docs/technical/results.md, recalculés : la doc et le code donnent les mêmes
-résultats. Tiers numérotés de haut en bas (0 = S)."""
-
 import uuid
 from fractions import Fraction
 
@@ -30,7 +27,6 @@ Z: uuid.UUID = uuid.uuid4()
 def ranking(
     tiers: dict[int, list[uuid.UUID]], absent_tile_ids: frozenset[uuid.UUID] = frozenset()
 ) -> PlayerRanking:
-    """Classement final d'un joueur, écrit tier par tier dans l'ordre des tuiles."""
     final_placements: dict[uuid.UUID, FinalPlacement] = {}
     for tier_index, tile_ids in tiers.items():
         for position, tile_id in enumerate(tile_ids):
@@ -38,7 +34,7 @@ def ranking(
     return PlayerRanking(final_placements=final_placements, absent_tile_ids=absent_tile_ids)
 
 
-def test_example_1_median_ranking_without_absent_votes() -> None:
+def test_results_md_example_1_median_ranking_without_absent_votes() -> None:
     alice: PlayerRanking = ranking({S: [PAPRIKA, BARBECUE], A: [NATURE]})
     bob: PlayerRanking = ranking({S: [BARBECUE], A: [PAPRIKA, NATURE]})
     chloe: PlayerRanking = ranking({S: [PAPRIKA], A: [BARBECUE], B: [NATURE]})
@@ -78,7 +74,7 @@ def test_example_1_median_ranking_without_absent_votes() -> None:
     assert results.unranked_tile_ids == ()
 
 
-def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
+def test_results_md_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
     players: list[PlayerRanking] = [
         ranking({A: [PAPRIKA]}),
         ranking({A: [PAPRIKA]}),
@@ -124,19 +120,19 @@ def test_example_2_even_vote_count_keeps_the_worse_middle_tier() -> None:
         ),
     ],
 )
-def test_example_3_absent_votes_with_and_without_the_toggle(
+def test_results_md_example_3_absent_votes_with_and_without_the_toggle(
     include_absent_votes: bool,
     expected_barbecue: ItemResults,
     expected_ranking: tuple[tuple[uuid.UUID, ...], ...],
 ) -> None:
     alice: PlayerRanking = ranking({S: [BARBECUE], A: [PAPRIKA]})
-    # Dan a raté Barbecue au tour et l'a rattrapé au cooldown, en B
-    dan: PlayerRanking = ranking({S: [PAPRIKA], B: [BARBECUE]}, frozenset({BARBECUE}))
-    # Eve a raté Barbecue et ne l'a jamais placé
-    eve: PlayerRanking = ranking({A: [PAPRIKA]}, frozenset({BARBECUE}))
+    dan_caught_up: PlayerRanking = ranking(
+        {S: [PAPRIKA], B: [BARBECUE]}, absent_tile_ids=frozenset({BARBECUE})
+    )
+    eve_never_placed: PlayerRanking = ranking({A: [PAPRIKA]}, absent_tile_ids=frozenset({BARBECUE}))
 
     results: GameResults = compute_results(
-        3, [PAPRIKA, BARBECUE], [alice, dan, eve], include_absent_votes
+        3, [PAPRIKA, BARBECUE], [alice, dan_caught_up, eve_never_placed], include_absent_votes
     )
 
     assert results.items[BARBECUE] == expected_barbecue
@@ -155,7 +151,7 @@ def test_example_3_absent_votes_with_and_without_the_toggle(
 @pytest.mark.parametrize(
     ("include_absent_votes", "expected_absent_indexes"), [(True, (0, 1)), (False, ())]
 )
-def test_example_4_an_item_nobody_placed_is_unranked(
+def test_results_md_example_4_an_item_nobody_placed_is_unranked(
     include_absent_votes: bool, expected_absent_indexes: tuple[int, ...]
 ) -> None:
     alice: PlayerRanking = ranking({S: [PAPRIKA]}, frozenset({VINAIGRE}))
@@ -178,7 +174,24 @@ def test_example_4_an_item_nobody_placed_is_unranked(
     assert results.median_ranking == ((), (PAPRIKA,), ())
 
 
-def test_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
+def test_unchecked_absent_votes_leave_the_absent_row_empty_for_an_item_never_played() -> None:
+    placed_only_the_first_item: PlayerRanking = ranking({S: [PAPRIKA]})
+
+    checked: GameResults = compute_results(
+        3, [PAPRIKA, VINAIGRE], [placed_only_the_first_item], True
+    )
+    unchecked: GameResults = compute_results(
+        3, [PAPRIKA, VINAIGRE], [placed_only_the_first_item], False
+    )
+
+    assert checked.items[VINAIGRE].absent_player_indexes == (0,)
+    assert checked.items[VINAIGRE].absent_count == 1
+    assert unchecked.items[VINAIGRE].absent_player_indexes == ()
+    assert unchecked.items[VINAIGRE].absent_count == 0
+    assert unchecked.unranked_tile_ids == (VINAIGRE,)
+
+
+def test_results_md_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     alice: PlayerRanking = ranking({A: [X, Y, Z]})
     bob: PlayerRanking = ranking({A: [Y, X, Z]})
     chloe: PlayerRanking = ranking({S: [Y, X, Z]})
@@ -189,11 +202,10 @@ def test_example_5_equal_median_scores_are_ordered_by_mean_score() -> None:
     assert results.items[Y].median_score == Fraction(7, 6)
     assert results.items[X].mean_score == Fraction(19, 18)
     assert results.items[Y].mean_score == Fraction(17, 18)
-    # Y passe avant X, pourtant premier dans le template, grâce à son score moyen
     assert results.median_ranking[A][:2] == (Y, X)
 
 
-def test_example_5_equal_median_and_mean_scores_keep_the_template_order() -> None:
+def test_results_md_example_5_equal_median_and_mean_scores_keep_the_template_order() -> None:
     alice: PlayerRanking = ranking({S: [X, Y]})
     bob: PlayerRanking = ranking({S: [Y, X]})
 

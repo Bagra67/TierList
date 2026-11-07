@@ -8,7 +8,6 @@ import { changeLanguage } from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { stubBackend, unauthorized } from '../test/stubBackend';
 
-// L'application entière, sans session : la page doit s'ouvrir sans demander de se connecter
 function renderTermsPage() {
   stubBackend({ 'POST /auth/refresh': unauthorized });
   return renderWithQueryClient(

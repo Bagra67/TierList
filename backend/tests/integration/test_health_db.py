@@ -1,8 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 

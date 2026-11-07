@@ -8,7 +8,6 @@ function rect(left: number, width: number): ClientRect {
 }
 
 describe('dropPosition', () => {
-  // Le tier S contient A, B, C, dans cet ordre
   const tierS: string[] = ['A', 'B', 'C'];
 
   it('keeps a tile dropped on itself where it is', () => {
@@ -16,13 +15,19 @@ describe('dropPosition', () => {
   });
 
   it('moves a tile before or after a tile of its own tier', () => {
-    // A après B : B passe au rang 0, A au rang 1
-    expect(dropPosition(tierS, 'A', { tierId: 'S', itemId: 'B' }, 'after')).toBe(1);
+    expect(dropPosition(tierS, 'A', { tierId: 'S', itemId: 'C' }, 'before')).toBe(1);
     expect(dropPosition(tierS, 'C', { tierId: 'S', itemId: 'A' }, 'before')).toBe(0);
   });
 
+  it('counts the rank once the moved tile has left its tier', () => {
+    const rankOfAAfterBOnceBIsFirst: number = 1;
+
+    expect(dropPosition(tierS, 'A', { tierId: 'S', itemId: 'B' }, 'after')).toBe(
+      rankOfAAfterBOnceBIsFirst,
+    );
+  });
+
   it('ignores a drop that would leave the tile in place', () => {
-    // A avant B : A y est déjà
     expect(dropPosition(tierS, 'A', { tierId: 'S', itemId: 'B' }, 'before')).toBeNull();
     expect(dropPosition(tierS, 'C', { tierId: 'S', itemId: null }, 'before')).toBeNull();
   });

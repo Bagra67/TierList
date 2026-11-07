@@ -2,15 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 
 import { useVerifyEmail } from '../api/auth';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { Button } from '../components/ui/button';
 import { ROUTES, TOKEN_PARAM } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 
-// Page du lien reçu par email. La confirmation attend un clic : un outil qui ouvre les liens
-// des emails pour les analyser (antispam) ne confirme donc pas l'adresse à la place de
-// l'utilisateur.
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get(TOKEN_PARAM);
@@ -18,7 +15,7 @@ export function VerifyEmailPage() {
   const { t } = useTranslation();
 
   return (
-    <AuthPageShell title={t('auth.verifyEmail.title')}>
+    <CenteredCardPage title={t('auth.verifyEmail.title')}>
       {token === null ? (
         <ErrorMessage>{t('auth.verifyEmail.missingToken')}</ErrorMessage>
       ) : verifyMutation.isSuccess ? (
@@ -46,6 +43,6 @@ export function VerifyEmailPage() {
           </Button>
         </>
       )}
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

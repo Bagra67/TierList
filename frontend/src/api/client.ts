@@ -5,24 +5,17 @@ import { HTTP_STATUS } from '../constants/http';
 import { ApiError } from '../errors/apiError';
 import type { paths } from './schema';
 
-// Client HTTP commun : chemins, paramètres et réponses typés par schema.d.ts (pnpm gen:api).
-// L'API est servie sous '/api' sur l'origine de la page : par FastAPI en production, à travers
-// le proxy Vite en développement (vite.config.ts).
 export const apiClient = createClient<paths>({
-  // URL absolue : openapi-fetch crée un Request, que Node (tests) refuse avec une URL relative
   baseUrl: `${window.location.origin}/api`,
-  // openapi-fetch mémorise fetch à la création : on le résout à chaque appel pour pouvoir le remplacer dans les tests
   fetch: (request) => fetch(request),
 });
 
-// Résultat d'un appel apiClient : data en cas de succès, sinon error (corps de la réponse)
 interface ApiResult<T> {
   data?: T;
   error?: unknown;
   response: Response;
 }
 
-// Corps d'une réponse réussie ; lève ApiError pour toute réponse hors 2xx.
 export function dataOrThrow<T>({ data, error, response }: ApiResult<T>): T {
   if (data === undefined) {
     throw new ApiError(response.status, error);
@@ -30,36 +23,28 @@ export function dataOrThrow<T>({ data, error, response }: ApiResult<T>): T {
   return data;
 }
 
-// Pour les réponses sans corps (ex. 204) : lève ApiError si la réponse n'est pas un succès.
 export function throwIfError({ error, response }: ApiResult<unknown>): void {
   if (!response.ok) {
     throw new ApiError(response.status, error);
   }
 }
 
-// Access token (JWT, ~15 min) gardé en mémoire seulement : jamais dans localStorage, lisible
-// par un script injecté. Le refresh token, lui, est un cookie HttpOnly géré par le navigateur.
-let accessToken: string | null = null;
+let inMemoryAccessToken: string | null = null;
 
 export function setAccessToken(token: string | null): void {
-  accessToken = token;
+  inMemoryAccessToken = token;
 }
 
-// Token du canal temps réel, qui ne passe pas par ce client (premier message du WebSocket)
 export function getAccessToken(): string | null {
-  return accessToken;
+  return inMemoryAccessToken;
 }
 
 export function hasAccessToken(): boolean {
-  return accessToken !== null;
+  return inMemoryAccessToken !== null;
 }
 
-// Prévenus quand une session ouverte se termine sans « Se déconnecter » (refresh token expiré
-// ou révoqué, déconnexion dans un autre onglet, compte supprimé ailleurs). Ce module n'a pas
-// accès au cache des requêtes : c'est l'abonné (useForgetEndedSession) qui le vide.
 const sessionEndedListeners = new Set<() => void>();
 
-// Renvoie la fonction de désabonnement
 export function onSessionEnded(listener: () => void): () => void {
   sessionEndedListeners.add(listener);
   return () => {
@@ -69,13 +54,8 @@ export function onSessionEnded(listener: () => void): () => void {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
-// Renvoie false si la session est expirée (401), lève ApiError si le backend est injoignable.
-// Un seul rafraîchissement à la fois : le backend révoque toute la session si le même
-// refresh token est présenté deux fois (détection de vol).
 export function refreshAccessToken(): Promise<boolean> {
-  // Sans token en mémoire (chargement de la page), un 401 veut seulement dire « pas de
-  // session » : aucune session ne se termine, il n'y a personne à prévenir
-  const hadSession: boolean = accessToken !== null;
+  const hadSession: boolean = inMemoryAccessToken !== null;
   refreshInFlight ??= apiClient
     .POST('/auth/refresh')
     .then(({ data, error, response }) => {
@@ -94,21 +74,19 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshInFlight;
 }
 
-// Copies des requêtes en cours : le corps d'une Request ne peut être lu qu'une fois,
-// il en faut une copie intacte pour la renvoyer après un rafraîchissement.
-const pendingRequests = new Map<string, Request>();
+const requestCopiesForRetry = new Map<string, Request>();
 
 apiClient.use({
   onRequest({ request, id }) {
-    if (accessToken !== null) {
-      request.headers.set('Authorization', `Bearer ${accessToken}`);
+    if (inMemoryAccessToken !== null) {
+      request.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
     }
-    pendingRequests.set(id, request.clone());
+    requestCopiesForRetry.set(id, request.clone());
     return request;
   },
   async onResponse({ response, schemaPath, id }) {
-    const original = pendingRequests.get(id);
-    pendingRequests.delete(id);
+    const original = requestCopiesForRetry.get(id);
+    requestCopiesForRetry.delete(id);
     if (
       response.status !== HTTP_STATUS.UNAUTHORIZED ||
       SESSION_PATHS.has(schemaPath) ||
@@ -119,10 +97,10 @@ apiClient.use({
     if (!(await refreshAccessToken())) {
       return response;
     }
-    original.headers.set('Authorization', `Bearer ${accessToken}`);
+    original.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
     return fetch(original);
   },
   onError({ id }) {
-    pendingRequests.delete(id);
+    requestCopiesForRetry.delete(id);
   },
 });

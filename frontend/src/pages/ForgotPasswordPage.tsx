@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { useForgotPassword } from '../api/auth';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
@@ -22,7 +22,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthPageShell
+    <CenteredCardPage
       title={t('auth.forgotPassword.title')}
       footer={
         <Link to={ROUTES.LOGIN} className={textLinkClassName}>
@@ -31,7 +31,6 @@ export function ForgotPasswordPage() {
       }
     >
       {forgotMutation.isSuccess ? (
-        // Même message que le compte existe ou non : la page ne révèle pas qui est inscrit
         <p role="status">{t('auth.forgotPassword.sent')}</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -54,6 +53,6 @@ export function ForgotPasswordPage() {
           </Button>
         </form>
       )}
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

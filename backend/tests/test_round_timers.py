@@ -20,9 +20,6 @@ def in_seconds(seconds: float) -> datetime:
 
 
 class RecordingDeadlines:
-    """Transitions factices : gardent les tours terminés au timer, (partie, numéro du tour), et
-    les cooldowns terminés, (partie)."""
-
     def __init__(self) -> None:
         self.ended: list[tuple[uuid.UUID, int]] = []
         self.cooldowns_ended: list[uuid.UUID] = []
@@ -62,7 +59,6 @@ def test_a_new_round_replaces_the_deadline_of_the_game():
         timers.schedule(OTHER_GAME, 1, in_seconds(0.05))
         await asyncio.sleep(0.15)
 
-        # Le tour 1 de GAME est fini avant son timer : seule l'échéance du tour 2 compte
         assert sorted(deadlines.ended) == sorted([(GAME, 2), (OTHER_GAME, 1)])
         await timers.stop()
 
@@ -75,7 +71,6 @@ def test_a_deadline_already_passed_fires_at_once():
         timers: RoundTimers = RoundTimers()
         timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
 
-        # Le serveur était arrêté quand le timer a expiré
         timers.schedule(GAME, 3, in_seconds(-10))
         await asyncio.sleep(0.01)
 
@@ -85,13 +80,12 @@ def test_a_deadline_already_passed_fires_at_once():
     run(scenario)
 
 
-def test_a_deadline_can_be_scheduled_from_another_thread():
+def test_a_deadline_can_be_scheduled_from_a_sync_route_thread():
     async def scenario() -> None:
         deadlines: RecordingDeadlines = RecordingDeadlines()
         timers: RoundTimers = RoundTimers()
         timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
 
-        # Une route REST synchrone tourne dans le threadpool
         thread: threading.Thread = threading.Thread(
             target=timers.schedule, args=(GAME, 1, in_seconds(0.02))
         )
@@ -117,7 +111,6 @@ def test_stopping_cancels_the_pending_deadlines():
         await asyncio.sleep(0.1)
 
         assert deadlines.ended == []
-        # Arrêtés, les timers n'acceptent plus d'échéance : elles seront relues au démarrage
         timers.schedule(GAME, 2, in_seconds(0))
         await asyncio.sleep(0.01)
         assert deadlines.ended == []
@@ -144,7 +137,6 @@ def test_a_failing_transition_does_not_stop_the_other_deadlines():
         timers.schedule(OTHER_GAME, 1, in_seconds(0.02))
         await asyncio.sleep(0.1)
 
-        # L'erreur est journalisée, l'autre partie avance quand même
         assert ended == [OTHER_GAME]
         await timers.stop()
 
@@ -157,7 +149,6 @@ def test_the_cooldown_end_replaces_the_deadline_of_the_last_round():
         timers: RoundTimers = RoundTimers()
         timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
 
-        # "Suivant" sur le dernier tour avant son timer : le cooldown commence
         timers.schedule(GAME, 3, in_seconds(0.05))
         timers.schedule_cooldown_end(GAME, in_seconds(0.08))
         await asyncio.sleep(0.15)
@@ -175,7 +166,6 @@ def test_an_older_deadline_never_replaces_a_newer_one():
         timers: RoundTimers = RoundTimers()
         timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
 
-        # Le timer du tour 1 et « suivant » se croisent : le tour 3 est programmé avant le 2
         timers.schedule(GAME, 3, in_seconds(0.05))
         timers.schedule(GAME, 2, in_seconds(0.02))
         timers.schedule_cooldown_end(OTHER_GAME, in_seconds(0.02))
@@ -207,8 +197,24 @@ def test_a_failing_transition_is_tried_again():
         timers.schedule(GAME, 1, in_seconds(0))
         await asyncio.sleep(0.1)
 
-        # Un premier échec, puis la transition réussit au deuxième essai, et s'arrête là
         assert attempts == [1, 1]
         await timers.stop()
+
+    run(scenario)
+
+
+def test_a_replaced_deadline_leaves_its_replacement_to_be_stopped():
+    async def scenario() -> None:
+        deadlines: RecordingDeadlines = RecordingDeadlines()
+        timers: RoundTimers = RoundTimers()
+        timers.start(asyncio.get_running_loop(), deadlines, deadlines.end_cooldown)
+        timers.schedule(GAME, 1, in_seconds(60))
+        await asyncio.sleep(0.01)
+        timers.schedule(GAME, 2, in_seconds(60))
+        await asyncio.sleep(0.01)
+
+        await timers.stop()
+
+        assert asyncio.all_tasks() == {asyncio.current_task()}
 
     run(scenario)

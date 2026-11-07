@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
 
 import { useResetPassword } from '../api/auth';
-import { AuthPageShell } from '../components/AuthPageShell';
+import { CenteredCardPage } from '../components/CenteredCardPage';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
@@ -11,7 +11,6 @@ import { PASSWORD_MAX_LENGTH } from '../constants/auth';
 import { ROUTES, TOKEN_PARAM } from '../constants/routes';
 import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
 
-// Page du lien reçu par email : choisit un nouveau mot de passe
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get(TOKEN_PARAM);
@@ -28,7 +27,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthPageShell title={t('auth.resetPassword.title')}>
+    <CenteredCardPage title={t('auth.resetPassword.title')}>
       {token === null ? (
         <ErrorMessage>{t('auth.resetPassword.missingToken')}</ErrorMessage>
       ) : resetMutation.isSuccess ? (
@@ -59,6 +58,6 @@ export function ResetPasswordPage() {
           </Button>
         </form>
       )}
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

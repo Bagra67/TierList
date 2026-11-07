@@ -1,9 +1,12 @@
 import logging
+import threading
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Engine, delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -13,6 +16,7 @@ from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories import images as image_repository
 from app.services.images import ImageService
 from tests.integration.conftest import FailingImageStorage, FakeImageStorage
 
@@ -38,7 +42,6 @@ def create_image(
     created_days_ago: int,
     status: ImageStatus = ImageStatus.VISIBLE,
 ) -> Image:
-    """Image envoyée il y a created_days_ago jours, avec son fichier dans le stockage factice."""
     image: Image = Image(
         owner_id=owner.id if owner is not None else None,
         storage_key=f"{uuid.uuid4()}.webp",
@@ -62,8 +65,7 @@ def use_in_a_tile(db_session: Session, owner: User, image: Image) -> None:
     db_session.flush()
 
 
-def use_in_a_snapshot(db_session: Session, image: Image) -> None:
-    """Snapshot dont le template n'existe plus (purgé) : seule la snapshot garde l'image."""
+def use_only_in_a_snapshot_of_a_purged_template(db_session: Session, image: Image) -> None:
     snapshot: TemplateSnapshot = TemplateSnapshot(template_id=None, name="Food")
     snapshot.tiles.append(SnapshotTile(text=None, image_id=image.id, position=0))
     db_session.add(snapshot)
@@ -81,7 +83,6 @@ def test_purge_erases_the_unused_images_older_than_the_retention(
     recent_unused: Image = create_image(db_session, stored_images, alice, created_days_ago=6)
     old_used: Image = create_image(db_session, stored_images, alice, created_days_ago=30)
     use_in_a_tile(db_session, alice, old_used)
-    # Lues avant la purge : l'image supprimée ne peut plus être rechargée ensuite
     kept_ids: set[uuid.UUID] = {recent_unused.id, old_used.id}
     kept_keys: set[str] = {recent_unused.storage_key, old_used.storage_key}
     purged_key: str = old_unused.storage_key
@@ -101,7 +102,7 @@ def test_purge_keeps_the_images_used_only_by_a_snapshot(
     db_session: Session, stored_images: dict[str, bytes], alice: User
 ):
     image: Image = create_image(db_session, stored_images, alice, created_days_ago=30)
-    use_in_a_snapshot(db_session, image)
+    use_only_in_a_snapshot_of_a_purged_template(db_session, image)
 
     purged_count: int = ImageService(
         db_session, settings_with_retention(7), FakeImageStorage(stored_images)
@@ -175,6 +176,58 @@ def test_a_file_that_cannot_be_erased_is_logged_and_the_others_are_still_erased(
 
     assert purged_count == 2
     assert stored_image_ids(db_session) == set()
-    # Seul le fichier en échec reste, et sa clé est journalisée pour l'effacer à la main
     assert set(stored_images) == {failing_key}
     assert failing_key in caplog.text
+
+
+def test_a_tile_attached_during_the_purge_fails_on_the_foreign_key(migrated_engine: Engine):
+    with Session(migrated_engine) as setup:
+        owner: User = User(email=f"purge-{uuid.uuid4()}@example.com", display_name="Purge")
+        setup.add(owner)
+        setup.flush()
+        template: Template = Template(owner_id=owner.id, name="Food")
+        image: Image = Image(
+            owner_id=owner.id,
+            storage_key=f"{uuid.uuid4()}.webp",
+            width=512,
+            height=512,
+            size_bytes=4,
+            sha256="0" * 64,
+            created_at=datetime.now(UTC) - timedelta(days=30),
+        )
+        setup.add_all([template, image])
+        setup.commit()
+        owner_id: uuid.UUID = owner.id
+        template_id: uuid.UUID = template.id
+        image_id: uuid.UUID = image.id
+    errors: list[Exception] = []
+
+    def attach_the_image_to_a_tile() -> None:
+        with Session(migrated_engine) as attach_request:
+            attach_request.add(Tile(template_id=template_id, image_id=image_id, position=0))
+            try:
+                attach_request.commit()
+            except IntegrityError as error:
+                errors.append(error)
+
+    try:
+        with Session(migrated_engine) as purge_request:
+            purged_keys: list[str] = image_repository.delete_unused_images_created_before(
+                purge_request, datetime.now(UTC)
+            )
+            assert len(purged_keys) == 1
+            attach_thread: threading.Thread = threading.Thread(target=attach_the_image_to_a_tile)
+            attach_thread.start()
+            time.sleep(0.3)
+            purge_request.commit()
+            attach_thread.join(timeout=10)
+
+        assert len(errors) == 1
+        with Session(migrated_engine) as session:
+            assert session.scalars(select(Tile).where(Tile.template_id == template_id)).all() == []
+    finally:
+        with Session(migrated_engine) as cleanup:
+            cleanup.execute(delete(Tile).where(Tile.template_id == template_id))
+            cleanup.execute(delete(Image).where(Image.id == image_id))
+            cleanup.execute(delete(User).where(User.id == owner_id))
+            cleanup.commit()

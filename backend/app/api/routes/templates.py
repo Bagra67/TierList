@@ -27,6 +27,8 @@ from app.models.template import Template
 from app.schemas.templates import (
     CreateTemplateRequest,
     CreateTileRequest,
+    RemovedTemplateListResponse,
+    RemovedTemplateResponse,
     RenameTemplateRequest,
     TemplateListResponse,
     TemplateResponse,
@@ -34,7 +36,7 @@ from app.schemas.templates import (
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.templates import TemplateSummary, TierChanges, TileChanges
+from app.services.templates import RemovedTemplate, TemplateSummary, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -116,6 +118,16 @@ def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> Templat
     return TemplateListResponse(items=items)
 
 
+@router.get("/removed", responses=UNAUTHORIZED_RESPONSE)
+def list_removed_templates(
+    user: CurrentUserDep, service: TemplateServiceDep
+) -> RemovedTemplateListResponse:
+    removed_templates: list[RemovedTemplate] = service.list_removed_by_moderation(user)
+    return RemovedTemplateListResponse(
+        items=[RemovedTemplateResponse.model_validate(template) for template in removed_templates]
+    )
+
+
 @router.get("/{template_id}", responses=TEMPLATE_NOT_FOUND_RESPONSES)
 def get_template(
     template_id: uuid.UUID,
@@ -178,7 +190,6 @@ def update_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    # Seuls les champs envoyés (non nuls) changent
     changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
@@ -247,7 +258,6 @@ def add_tile(
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     except TileLimitReachedError as exc:
-        # La limite part en param : le frontend l'affiche sans la recopier dans ses traductions
         raise AppHTTPException(
             status_code=409,
             code=ErrorCode.TILE_LIMIT_REACHED,
@@ -276,8 +286,6 @@ def update_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    # Seuls les champs envoyés changent : null retire le texte ou l'image, mais une position
-    # null est ignorée (une tuile a toujours une place)
     changes: TileChanges = TileChanges(**payload.model_dump(exclude_unset=True))
     if payload.position is None:
         changes.pop("position", None)

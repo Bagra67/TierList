@@ -48,7 +48,6 @@ const secondPage: HistoryPageData = {
   has_more: false,
 };
 
-// Le faux backend répond selon l'offset demandé, et garde les offsets reçus
 function stubHistory(): string[] {
   const offsets: string[] = [];
   stubBackend({
@@ -101,7 +100,6 @@ describe('HistoryPage', () => {
 
     expect(await screen.findByText('Fruits')).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
-    // La page suivante commence après les 2 parties déjà lues ; plus rien ensuite
     expect(offsets).toEqual(['0', '2']);
     expect(screen.queryByRole('button', { name: 'Voir plus' })).not.toBeInTheDocument();
   });

@@ -36,7 +36,7 @@ Constraints:
 | File                                                                | Role                                                                                                                                                                   |
 | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/app/main.py`                                               | `app`, the root application started by uvicorn: mounts the API (`api_app`) under `/api`, serves the frontend, runs the lifespan (timers, room sweeper, nightly tasks). |
-| `backend/app/core/frontend.py`                                      | `mount_frontend`: serves the Vite build (§2.1).                                                                                                                        |
+| `backend/app/core/frontend.py`                                      | `mount_frontend_after_api`: serves the Vite build (§2.1).                                                                                                              |
 | `backend/app/services/nightly_scheduler.py`, `maintenance.py`       | Nightly tasks in the process (§2.3).                                                                                                                                   |
 | `deploy/build_bundle.sh`                                            | Builds `tierlist-<version>.tar.gz` (§2.4).                                                                                                                             |
 | `deploy/start.sh`                                                   | Start of a version, at the root of the bundle (§2.4).                                                                                                                  |
@@ -79,7 +79,7 @@ The scheme seen by the app does not drive anything sensitive: the cookies are `S
 
 There is no cron on the pods. The lifespan starts a small scheduler next to the inactive-room sweeper (`nightly_scheduler.py`, same style: an asyncio task, no scheduling library for one run a day):
 
-- every night at `MAINTENANCE_HOUR_UTC` (UTC), it purges the deleted templates, then the unused images (`maintenance.py`, also called by `scripts/purge_*.py` from the command line);
+- every night at `MAINTENANCE_HOUR_UTC` (UTC), it purges the deleted templates, then the unused images, then the moderation log entries older than `MODERATION_LOG_RETENTION_DAYS` ([moderation guide](moderation.md#24-purge)), then the reports closed for longer than `CLOSED_REPORT_RETENTION_DAYS` (`maintenance.py`, also called by `scripts/purge_*.py` from the command line);
 - each task logs its result; an exception is logged without stopping the next tasks, the next nights or the app;
 - the purges only delete what has expired: running them twice is harmless;
 - `MAINTENANCE_ENABLED=false` turns it off.
@@ -248,6 +248,18 @@ Run the Backup workflow by hand once, then try a restore on staging (§8, #162).
 - Google: [Cloud console, credentials](https://console.cloud.google.com/apis/credentials)
 - GitHub: repository Settings → Environments, Actions → Deploy / Backup
 
+### 5.12 Super admins
+
+Super admins moderate the application ([authentication guide](authentication.md#super-admins)). The role is never granted by the app, and the TierList pod has no shell: grant it in the console of the **PostgreSQL pod** (`psql` as superuser, §5.2), once the account exists (the person has registered):
+
+```sql
+\c tierlist_staging   -- or tierlist_prod
+UPDATE users SET role = 'super_admin' WHERE email = lower('<email>');
+SELECT email, role FROM users WHERE role = 'super_admin';
+```
+
+`UPDATE 1` confirms it; `UPDATE 0` means no account has this email. To revoke, run the same command with `'user'`. It applies to the next request; the person reloads the page to see the moderation link. `scripts/set_super_admin.py` does the same in local development only: it is not in the bundle.
+
 ## 6. Deploying
 
 | Event                                                       | Target         | Version (`APP_RELEASE`) | Approval        |
@@ -301,6 +313,8 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 - The pod restart, as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it (set up on staging: the restart is automatic there).
 - Redeploying after a change of a secret or a variable (§5.8).
 - Approving each production deployment.
+- Granting or revoking the super admin role (§5.12).
+- Filling staging with the seed data, by hand (Actions → Seed staging, [seed data guide](seed-data.md)).
 - Testing a restore (#162), then after each major PostgreSQL upgrade.
 
 ## 10. Trying the production layout locally

@@ -1,7 +1,7 @@
 import { useId, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { LANGUAGE_NAMES, SUPPORTED_LANGUAGES } from '../constants/i18n';
+import { LANGUAGE_ENDONYMS, SUPPORTED_LANGUAGES } from '../constants/i18n';
 import { changeLanguage, isSupportedLanguage } from '../i18n';
 import { Label } from './ui/label';
 import { NativeSelect } from './ui/native-select';
@@ -22,9 +22,8 @@ export function LanguageSwitcher() {
       <Label htmlFor={id}>{t('common.language')}</Label>
       <NativeSelect id={id} value={i18n.resolvedLanguage} onChange={handleChange}>
         {SUPPORTED_LANGUAGES.map((language) => (
-          // lang : chaque nom de langue est lu dans sa propre langue par les lecteurs d'écran
           <option key={language} value={language} lang={language}>
-            {LANGUAGE_NAMES[language]}
+            {LANGUAGE_ENDONYMS[language]}
           </option>
         ))}
       </NativeSelect>

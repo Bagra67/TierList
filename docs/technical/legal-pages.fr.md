@@ -31,14 +31,14 @@ Les textes ont été rédigés à partir du code (inventaire des données de #20
 
 ### Signalements
 
-Un contenu illicite se signale par e-mail à `LEGAL_CONTACT_EMAIL`, en attendant le signalement dans l'application (#126). La section dit quoi indiquer (lien, contenu, motif, une adresse pour répondre) et la suite (retrait, suspension ou suppression du compte, à la main pour l'instant). La politique de confidentialité décrit les données d'un signalement et leur durée de conservation.
+Un contenu se signale avec le bouton de l'application, avec ou sans compte ([guide de la modération](moderation.fr.md)). La section donne aussi `LEGAL_CONTACT_EMAIL`, pour les autres contenus et pour qui veut une réponse, et dit quoi indiquer (lien, contenu, motif, une adresse pour répondre) et la suite (retrait, suspension ou suppression du compte, à la main pour l'instant). La politique de confidentialité décrit les données d'un signalement et leur durée de conservation.
 
 ## 2. Garder les pages à jour
 
 **Mettre à jour la politique de confidentialité dans la même PR** que tout changement de ce qu'elle décrit (AGENTS.md §51 : vérifié à chaque changement) :
 
 - un nouveau type de donnée personnelle collectée, ou une donnée collectée pour une nouvelle finalité ;
-- une durée de conservation (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, la durée des liens envoyés par email) ;
+- une durée de conservation (`REFRESH_TOKEN_TTL_DAYS`, `GUEST_LINK_TTL_DAYS`, `DELETED_TEMPLATE_RETENTION_DAYS`, `UNUSED_IMAGE_RETENTION_DAYS`, `MODERATION_LOG_RETENTION_DAYS`, `ROOM_INACTIVITY_HOURS`, `BACKUP_RETENTION_DAYS`, la durée des liens envoyés par email) ;
 - un nouveau prestataire, ou un prestataire dans un nouveau pays ([guide du déploiement](deployment.fr.md)) ;
 - un nouveau cookie ou une nouvelle clé de stockage local (un cookie de mesure d'audience demanderait aussi un bandeau de consentement) ;
 - ce que les autres utilisateurs peuvent voir (salles, liens de résultats, historique).

@@ -1,5 +1,9 @@
+import uuid
+from datetime import datetime
+
+
 class InvalidAccessTokenError(Exception):
-    """Access token absent, mal formé, falsifié, expiré ou d'un autre type."""
+    pass
 
 
 class EmailAlreadyRegisteredError(Exception):
@@ -19,12 +23,28 @@ class IncorrectPasswordError(Exception):
 
 
 class GoogleEmailNotVerifiedError(Exception):
-    """Google ne garantit pas que l'adresse appartient à ce compte : elle ne peut servir."""
+    pass
 
 
 class InvalidEmailTokenError(Exception):
-    """Lien envoyé par email mal formé, falsifié, expiré, ou qui ne correspond plus au compte."""
+    pass
 
 
 class ReauthenticationRequiredError(Exception):
-    """Compte sans mot de passe dont la dernière connexion est trop ancienne pour confirmer."""
+    pass
+
+
+class UserNotFoundError(Exception):
+    pass
+
+
+class AccountBannedError(Exception):
+    def __init__(self, user_id: uuid.UUID, reason: str, ends_at: datetime | None) -> None:
+        super().__init__(reason)
+        self.user_id = user_id
+        self.reason = reason
+        self.ends_at = ends_at
+
+
+class InvalidBanNoticeError(Exception):
+    pass

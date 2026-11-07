@@ -1,11 +1,10 @@
-// Langue de référence : ses clés définissent le type Translation, que chaque autre langue doit
-// respecter exactement (une clé absente ou en trop fait échouer pnpm typecheck).
 export const fr = {
   common: {
     loading: 'Chargement…',
     backendUnreachable: 'Le serveur ne répond pas. Réessayez dans un instant.',
     language: 'Langue',
     theme: 'Thème',
+    imageRemoved: 'Image retirée',
   },
   home: {
     visitor: {
@@ -62,6 +61,9 @@ export const fr = {
     home: 'Accueil',
     templates: 'Mes modèles',
     history: 'Historique',
+    moderation: 'Modération',
+    openReports_one: '{{count}} contenu signalé',
+    openReports_other: '{{count}} contenus signalés',
   },
   settings: {
     open: 'Paramètres',
@@ -93,11 +95,14 @@ export const fr = {
       guest:
         'Invités : le pseudo choisi pour rejoindre une salle, et un cookie qui vous reconnaît dans cette salle.',
       content:
-        'Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS).',
+        "Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS). L'empreinte de chaque fichier envoyé est gardée, pour refuser le renvoi d'une image supprimée par la modération.",
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       reports:
-        "Signalements : l'adresse e-mail de la personne qui signale un contenu, et ce que contient son message.",
+        "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
+      bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
+      moderation:
+        "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
       technical:
         'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
     },
@@ -108,6 +113,8 @@ export const fr = {
       security:
         'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
       reports: 'Traiter les signalements de contenus illicites (obligation légale).',
+      moderation:
+        "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, retrouver les sanctions passées d'un compte, et refuser qu'une image supprimée par la modération soit envoyée à nouveau.",
       noAds: 'Vos données ne sont ni vendues, ni utilisées pour de la publicité ou du profilage.',
     },
     retention: {
@@ -121,17 +128,23 @@ export const fr = {
         "Lien personnel d'un invité : 30 jours. Une salle inactive est fermée après 24 heures.",
       deleted:
         'Modèles supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
+      moderatedImages:
+        "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée. Le motif de la décision est gardé avec l'image pour que son propriétaire puisse le lire, jusqu'à la suppression de son compte.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
+      bans: "Bannissements : jusqu'à la suppression du compte, pour repérer une récidive.",
+      moderation: 'Journal de modération : 3 ans après chaque décision.',
     },
     visibility: {
       title: 'Qui voit vos données',
       room: "Les participants d'une salle voient le modèle utilisé, les pseudos et les placements de la partie.",
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
+      moderation:
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
-        "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
+        "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
     processors: {
       title: 'Prestataires',
@@ -153,7 +166,11 @@ export const fr = {
         "TierList n'utilise que des cookies strictement nécessaires à son fonctionnement, sans mesure d'audience ni publicité : aucun consentement n'est donc demandé.",
       session: 'Cookie de session : garde votre connexion (30 jours).',
       google: 'Cookie de connexion avec Google : le temps de la connexion (10 minutes).',
+      banNotice:
+        'Cookie de bannissement : après une connexion avec Google refusée, permet de montrer le motif (10 minutes).',
       guest: "Cookie d'invité : vous reconnaît dans une salle (30 jours au plus).",
+      report:
+        'Cookie de signalement : après un signalement sans compte, évite les doublons et limite leur fréquence (1 an).',
       local: 'Stockage local du navigateur : le thème et la langue choisis.',
     },
     security: {
@@ -179,13 +196,13 @@ export const fr = {
     report: {
       title: 'Signaler un contenu',
       intro:
-        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), signalez-le par e-mail :",
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo ou d'une partie, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
       include: 'Pour que le signalement puisse être traité, indiquez :',
       page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
       content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',
       reason: 'le motif du signalement ;',
       reply: 'une adresse e-mail pour vous répondre.',
-      next: "Chaque signalement est examiné rapidement. Un contenu illicite est retiré, et le compte qui l'a publié peut être suspendu ou supprimé. Vous recevez une réponse avec la décision prise.",
+      next: "Chaque signalement est examiné rapidement. Un contenu illicite est retiré, et le compte qui l'a publié peut être suspendu ou supprimé. Si vous écrivez par e-mail, vous recevez une réponse avec la décision prise.",
     },
   },
   terms: {
@@ -286,6 +303,297 @@ export const fr = {
     openLabel: 'Voir les résultats de la partie {{name}}',
     more: 'Voir plus',
   },
+  moderation: {
+    nav: {
+      label: 'Espace de modération',
+      reports: 'Signalements',
+      uploads: 'Derniers envois',
+      accounts: 'Comptes',
+      log: 'Journal',
+    },
+    log: {
+      title: 'Journal de modération',
+      intro:
+        'Chaque action : qui, quand, quoi et pourquoi. Aucune entrée ne se modifie ni ne se supprime.',
+      target: 'Cible',
+      targetPlaceholder: 'Modèle, image, compte…',
+      search: 'Rechercher',
+      superAdmin: 'Super admin',
+      allSuperAdmins: 'Tous',
+      empty: "Aucune action de modération pour l'instant.",
+      emptyFiltered: 'Aucune action ne correspond à ces filtres.',
+      columns: {
+        at: 'Quand',
+        actor: 'Qui',
+        action: 'Action',
+        target: 'Cible',
+        reason: 'Motif',
+      },
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      targetCell: '{{type}} « {{label}} »',
+      more: 'Voir plus',
+    },
+    actions: {
+      dismiss: 'Classer sans suite',
+      hide: 'Masquer',
+      unhide: 'Réafficher',
+      delete: 'Supprimer',
+      ban: 'Bannir',
+      lift_ban: 'Lever le bannissement',
+    },
+    targets: {
+      template: 'Modèle',
+      image: 'Image',
+      account: 'Compte',
+      nickname: 'Pseudo',
+      game: 'Partie',
+    },
+    reports: {
+      title: 'Signalements',
+      intro:
+        "Les signalements ouverts, regroupés par contenu, les plus signalés d'abord. Chaque décision est écrite au journal.",
+      empty: 'Aucun signalement ouvert.',
+      more: 'Voir plus',
+      type: {
+        template: 'Modèle',
+        image: 'Image',
+        account: 'Compte',
+        nickname: 'Pseudo',
+        game: 'Partie',
+      },
+      noOwner: 'Invité',
+      count_one: '{{count}} signalement',
+      count_other: '{{count}} signalements',
+      since: 'depuis le {{date, datetime(dateStyle: medium)}}',
+      reason: '{{reason}} ×{{count}}',
+      viewAccount: 'Voir le compte',
+      viewResults: 'Voir les résultats',
+      decisions: {
+        dismiss: {
+          open: 'Classer sans suite',
+          openLabel: 'Classer sans suite : {{name}}',
+          title: 'Classer sans suite ?',
+          description:
+            'Les signalements ouverts de ce contenu sont fermés, et le contenu reste tel quel.',
+          submit: 'Classer sans suite',
+          submitting: 'Classement…',
+        },
+        hide_image: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer cette image ?',
+          description:
+            'Elle est remplacée partout par le visuel « image retirée », et ses signalements ouverts sont fermés. Elle peut être réaffichée depuis les derniers envois.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+        delete_image: {
+          open: 'Supprimer',
+          openLabel: 'Supprimer : {{name}}',
+          title: 'Supprimer cette image ?',
+          description:
+            'Son fichier est effacé et ne pourra plus être envoyé. Ses signalements ouverts sont fermés. Cette action est définitive.',
+          submit: 'Supprimer',
+          submitting: 'Suppression…',
+        },
+        remove_nickname: {
+          open: 'Retirer le pseudo',
+          openLabel: 'Retirer le pseudo : {{name}}',
+          title: 'Retirer ce pseudo ?',
+          description:
+            "Il est remplacé par un code neutre dans les salles et les résultats, et ses signalements ouverts sont fermés. Cette action est définitive : l'ancien pseudo ne reste qu'au journal.",
+          submit: 'Retirer le pseudo',
+          submitting: 'Retrait…',
+        },
+        hide_game: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer cette partie ?',
+          description:
+            'Son lien de résultats devient introuvable, et ses signalements ouverts sont fermés. Elle peut être réaffichée.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+      },
+      hiddenGames: {
+        title: 'Parties masquées',
+        hiddenAt: 'masquée le {{date, datetime(dateStyle: medium)}}',
+        unhide: 'Réafficher',
+        unhideLabel: 'Réafficher : {{name}}',
+        unhiding: 'Réaffichage…',
+        dialogTitle: 'Réafficher cette partie ?',
+        dialogDescription: 'Son lien de résultats fonctionne à nouveau.',
+      },
+    },
+    uploads: {
+      title: 'Derniers envois',
+      intro:
+        "Les images envoyées, des plus récentes aux plus anciennes, pour repérer un problème avant qu'on le signale.",
+      author: 'Auteur',
+      authorPlaceholder: 'Nom ou e-mail',
+      search: 'Rechercher',
+      from: 'Du',
+      to: 'Au',
+      status: 'Statut',
+      allStatuses: 'Toutes',
+      visible: 'Visibles',
+      hidden: 'Masquées',
+      hiddenBadge: 'Masquée',
+      empty: "Aucune image n'a encore été envoyée.",
+      emptyFiltered: 'Aucune image ne correspond à ces filtres.',
+      more: 'Voir plus',
+      deletedAccount: 'Compte supprimé',
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      imageAlt:
+        'Image envoyée par {{author}} le {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      templates_one: '{{count}} modèle',
+      templates_other: '{{count}} modèles',
+      games_one: '{{count}} partie',
+      games_other: '{{count}} parties',
+      templateNames: 'Modèles : {{names, list}}',
+      actionLabel: {
+        hide: "Masquer l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        unhide:
+          "Réafficher l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        delete:
+          "Supprimer l'image de {{author}} du {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+      },
+    },
+    accounts: {
+      title: 'Comptes',
+      intro: 'Trouvez un compte par son nom ou son e-mail, puis ouvrez sa page.',
+      query: 'Nom ou e-mail',
+      queryPlaceholder: 'Max, max@exemple.fr…',
+      search: 'Rechercher',
+      empty: 'Aucun compte ne correspond.',
+      more: 'Voir plus',
+      createdAt: 'Créé le {{date, datetime(dateStyle: medium)}}',
+      superAdmin: 'Super admin',
+      banned: 'Banni',
+    },
+    account: {
+      reports: 'Signalements sur ses contenus',
+      reportsEmpty: 'Aucun signalement ouvert sur ses contenus.',
+      email: 'E-mail',
+      createdAt: 'Création',
+      date: '{{date, datetime(dateStyle: medium)}}',
+      emailVerified: 'E-mail confirmé',
+      yes: 'Oui',
+      no: 'Non',
+      templates: 'Modèles',
+      noTemplates: "Ce compte n'a aucun modèle.",
+      templateActionLabel: {
+        hide: 'Masquer le modèle {{name}}',
+        unhide: 'Réafficher le modèle {{name}}',
+        delete: 'Supprimer le modèle {{name}}',
+      },
+      images: 'Images envoyées',
+      noImages: "Ce compte n'a envoyé aucune image visible ou masquée.",
+      hideAll: 'Masquer toutes ses images',
+      hiddenCount_one: '{{count}} image masquée.',
+      hiddenCount_other: '{{count}} images masquées.',
+      history: 'Historique de modération',
+      noHistory: "Aucune décision n'a encore été prise sur ce compte ni sur son contenu.",
+    },
+    template: {
+      unknownOwner: 'Compte inconnu',
+      updatedAt: 'modifié le {{date, datetime(dateStyle: medium)}}',
+      hiddenReason: 'Motif : {{reason}}',
+      tiers: 'Tiers',
+      tiles_one: '{{count}} tuile',
+      tiles_other: '{{count}} tuiles',
+      noTiles: "Ce modèle n'a aucune tuile.",
+      tileImage: 'Image de la tuile {{number}}',
+      imageHidden: 'Image masquée par la modération',
+    },
+    templateDialog: {
+      hide: {
+        title: 'Masquer le modèle « {{name}} »',
+        description:
+          'Plus aucune salle ni partie ne pourra être lancée avec. Son propriétaire le verra, avec le motif, et pourra encore le modifier.',
+        submit: 'Masquer',
+        submitting: 'Masquage…',
+      },
+      unhide: {
+        title: 'Réafficher le modèle « {{name}} »',
+        description:
+          'Il retrouvera son état d’avant : des parties pourront de nouveau être lancées avec.',
+        submit: 'Réafficher',
+        submitting: 'Réaffichage…',
+      },
+      delete: {
+        title: 'Supprimer le modèle « {{name}} »',
+        description:
+          'Il sera supprimé comme si son propriétaire le faisait, mais celui-ci verra la décision et le motif. Les parties déjà jouées gardent leur version.',
+        submit: 'Supprimer',
+        submitting: 'Suppression…',
+      },
+    },
+    ban: {
+      section: 'Bannissement',
+      none: "Ce compte n'est pas banni.",
+      superAdmin: 'Un super admin ne peut pas être banni.',
+      open: 'Bannir ce compte',
+      change: 'Modifier le bannissement',
+      lift: 'Lever le bannissement',
+      activePermanent: 'Banni définitivement',
+      activeUntil: "Banni jusqu'au {{date, datetime(dateStyle: long; timeStyle: short)}}",
+      activeReason: 'Motif : {{reason}}',
+      activeBy: 'Par {{name}}, le {{date, datetime(dateStyle: medium)}}',
+      pastTitle: 'Bannissements passés',
+      pastLifted:
+        'Banni le {{start, datetime(dateStyle: medium)}}, levé ou remplacé le {{end, datetime(dateStyle: medium)}}',
+      pastEnded:
+        "Banni le {{start, datetime(dateStyle: medium)}}, jusqu'au {{end, datetime(dateStyle: medium)}}",
+      pastBy: 'Par {{name}}',
+      title: 'Bannir {{name}}',
+      hint: 'Le compte est déconnecté partout et ne peut plus se connecter avant la fin du bannissement.',
+      duration: 'Durée',
+      temporary: 'Temporairement',
+      until: "Jusqu'au (inclus)",
+      permanent: 'Définitivement',
+      reason: 'Motif (visible par la personne)',
+      submit: 'Bannir',
+      submitting: 'Bannissement…',
+    },
+    liftDialog: {
+      title: 'Lever le bannissement de {{name}}',
+      description: 'Le compte pourra de nouveau se connecter.',
+      submit: 'Lever le bannissement',
+      submitting: 'Levée…',
+    },
+    hideAllDialog: {
+      title: 'Masquer toutes les images de {{name}}',
+      description:
+        'Chaque image visible sera remplacée par « Image retirée » partout où elle apparaît. Son propriétaire verra le motif. Vous pourrez les réafficher une à une.',
+      submit: 'Tout masquer',
+      submitting: 'Masquage…',
+    },
+    reasonDialog: {
+      reason: 'Motif',
+      cancel: 'Annuler',
+      hide: {
+        title: 'Masquer cette image',
+        description:
+          'Elle sera remplacée par « Image retirée » partout où elle apparaît. Son propriétaire verra le motif. Vous pourrez la réafficher.',
+        submit: 'Masquer',
+        submitting: 'Masquage…',
+      },
+      unhide: {
+        title: 'Réafficher cette image',
+        description: 'Elle sera de nouveau affichée partout où elle est utilisée.',
+        submit: 'Réafficher',
+        submitting: 'Réaffichage…',
+      },
+      delete: {
+        title: 'Supprimer cette image',
+        description:
+          'Son fichier sera effacé définitivement, et le même fichier ne pourra plus être envoyé. Son propriétaire verra le motif. Cette action ne peut pas être annulée.',
+        submit: 'Supprimer',
+        submitting: 'Suppression…',
+      },
+    },
+  },
   renderError: {
     title: 'Une erreur est survenue',
     message:
@@ -378,6 +686,20 @@ export const fr = {
   },
   templates: {
     title: 'Mes modèles',
+    hidden: {
+      badge: 'Masqué',
+      title: 'Masqué par la modération',
+      reason: 'Motif : {{reason}}',
+      hint: 'Vous pouvez encore le modifier, mais plus lancer de partie avec.',
+    },
+    removedImage: {
+      hidden: 'Image masquée par la modération',
+      deleted: 'Image supprimée par la modération',
+    },
+    removed: {
+      title: 'Supprimés par la modération',
+      date: 'Supprimé le {{date, datetime(dateStyle: long)}}',
+    },
     empty: "Vous n'avez encore aucun modèle : créez-en un pour commencer.",
     tileCount_one: '{{count}} tuile',
     tileCount_other: '{{count}} tuiles',
@@ -406,7 +728,6 @@ export const fr = {
       addTier: 'Ajouter un tier',
       tierName: 'Nom du tier {{position}}',
       tierColor: 'Couleur du tier {{name}}',
-      // Sélecteur de couleur d'un tier (react-colorful)
       color: {
         area: 'Saturation et luminosité',
         areaValue: 'Saturation {{saturation}} %, luminosité {{brightness}} %',
@@ -428,9 +749,7 @@ export const fr = {
       addTile: 'Ajouter la tuile',
       addingTile: 'Ajout…',
       tileText: 'Texte de la tuile {{position}}',
-      // Nom d'une tuile qui n'a qu'une image, dans les libellés des boutons
       tileName: 'Tuile {{position}}',
-      // Vignette d'image : clic pour choisir un fichier, ou glisser-déposer
       bulk: {
         progress: 'Envoi des images : {{done}} / {{total}}',
         added_one: '{{count}} tuile ajoutée.',
@@ -455,7 +774,6 @@ export const fr = {
       moveBefore: 'Déplacer {{name}} avant',
       moveAfter: 'Déplacer {{name}} après',
       deleteTile: 'Supprimer la tuile {{name}}',
-      // Annonces des lecteurs d'écran pendant un glisser-déposer au clavier
       dnd: {
         instructions:
           'Pour déplacer un élément, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.',
@@ -465,6 +783,33 @@ export const fr = {
         cancelled: 'Déplacement de {{item}} annulé.',
       },
     },
+  },
+  report: {
+    open: 'Signaler',
+    openLabel: 'Signaler : {{name}}',
+    title: {
+      item: 'Signaler cette image',
+      participant: 'Signaler ce pseudo',
+      player: 'Signaler ce pseudo',
+      game: 'Signaler cette partie',
+    },
+    anonymous: "Votre signalement est anonyme : la personne signalée ne saura pas qui l'a envoyé.",
+    reason: 'Motif',
+    reasons: {
+      illegal: 'Contenu illégal',
+      sexual: 'Contenu sexuel',
+      violence_or_hate: 'Violence ou haine',
+      harassment: 'Harcèlement',
+      spam: 'Spam',
+      other: 'Autre',
+    },
+    detailsOptional: 'Précisions (facultatif)',
+    detailsRequired: 'Précisions',
+    submit: 'Envoyer le signalement',
+    submitting: 'Envoi…',
+    cancel: 'Annuler',
+    sent: 'Merci : votre signalement est envoyé.',
+    close: 'Fermer',
   },
   results: {
     title: 'Résultats : {{name}}',
@@ -513,6 +858,8 @@ export const fr = {
     lobby: {
       title: 'Salle {{code}}',
       template: 'Modèle : {{name}}',
+      templateHidden:
+        'Le modèle de cette salle est masqué par la modération : aucune nouvelle partie ne peut y être lancée.',
       templateDeleted:
         'Le modèle de cette salle a été supprimé : aucune nouvelle partie ne peut y démarrer.',
       code: 'Code de la salle',
@@ -637,7 +984,6 @@ export const fr = {
           submitting: 'Fin…',
         },
       },
-      // Annonces des lecteurs d'écran pendant un glisser-déposer
       dnd: {
         instructions:
           "Pour placer l'élément, appuyez sur Espace ou Entrée, utilisez les flèches, puis Espace ou Entrée pour le déposer, ou Échap pour annuler.",
@@ -694,7 +1040,6 @@ export const fr = {
       cancel: 'Annuler',
       submit: 'Enregistrer',
       submitting: 'Enregistrement…',
-      // Résumé affiché dans le lobby, à tous les participants
       summary: {
         itemOrder: {
           template: 'Ordre du modèle',
@@ -715,13 +1060,20 @@ export const fr = {
   },
   errors: {
     unknown: 'Une erreur est survenue, veuillez réessayer.',
-    // Une clé par code d'erreur de l'API (backend/app/constants/error_codes.py)
     api: {
       internal_error: 'Erreur interne du serveur, veuillez réessayer.',
       validation_error: 'Certains champs sont invalides.',
       http_error: 'La requête a échoué.',
       database_unavailable: 'Base de données indisponible.',
       not_authenticated: 'Authentification requise.',
+      super_admin_required: 'Seul un super admin peut faire cela.',
+      account_not_found: 'Ce compte est introuvable.',
+      account_banned: 'Ce compte est banni définitivement : {{reason}}.',
+      account_banned_until:
+        "Ce compte est banni jusqu'au {{ends_at, datetime(dateStyle: long; timeStyle: short)}} : {{reason}}.",
+      cannot_ban_super_admin: 'Un super admin ne peut pas être banni.',
+      account_not_banned: "Ce compte n'est pas banni.",
+      ban_end_in_past: 'La fin du bannissement doit être dans le futur.',
       email_already_registered: 'Cet e-mail est déjà utilisé',
       invalid_credentials: 'E-mail ou mot de passe incorrect',
       session_expired: 'Session expirée, veuillez vous reconnecter.',
@@ -730,6 +1082,10 @@ export const fr = {
       invalid_token: 'Ce lien est invalide ou a expiré.',
       template_not_found: 'Ce modèle est introuvable.',
       template_has_no_tiles: 'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
+      template_hidden:
+        'Ce modèle est masqué par la modération : plus aucune partie ne peut être lancée avec.',
+      template_moderation_conflict:
+        "Cette action ne s'applique pas au modèle dans son état actuel : il est peut-être déjà masqué, visible ou supprimé.",
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
       room_admin_required: "Seul l'hôte peut faire cela.",
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
@@ -767,8 +1123,22 @@ export const fr = {
       image_upload_limit_reached:
         "Vous avez envoyé {{max_uploads}} images dans l'heure : réessayez un peu plus tard.",
       image_not_found: 'Cette image est introuvable.',
+      report_target_not_found:
+        'Ce contenu ne peut pas être signalé : il a peut-être déjà été retiré.',
+      report_already_open: 'Vous avez déjà signalé ce contenu : il sera bientôt examiné.',
+      report_details_required: 'Précisez votre signalement pour le motif « Autre ».',
+      reports_not_open:
+        "Ce contenu n'a plus de signalement ouvert : la file a peut-être déjà été traitée.",
+      nickname_not_found:
+        'Ce pseudo est introuvable : la personne a peut-être supprimé son compte.',
+      game_not_found: 'Cette partie est introuvable.',
+      game_moderation_conflict:
+        "Cette action ne s'applique pas à la partie dans son état actuel : elle est peut-être déjà masquée ou visible.",
+      report_limit_reached:
+        "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
+      image_moderation_conflict:
+        "Cette action ne s'applique pas à l'image dans son état actuel : elle est peut-être déjà masquée, visible ou supprimée.",
     },
-    // Une clé par code d'erreur de champ de la 422 (type Pydantic ou code dédié), avec ses params
     field: {
       invalid: 'Valeur invalide.',
       missing: 'Ce champ est obligatoire.',
@@ -780,17 +1150,16 @@ export const fr = {
       less_than_equal: 'Au plus {{le}}.',
       password_too_short: 'Le mot de passe doit contenir au moins {{min_length}} caractères',
     },
-    // Codes du retour de Google (backend : /auth/google/callback → /login?error=<code>)
     google: {
       google_cancelled: 'Connexion avec Google annulée.',
       google_email_not_verified:
         "Votre adresse Google n'est pas vérifiée : elle ne peut pas servir à vous connecter.",
       google_unavailable: "La connexion avec Google n'est pas disponible pour le moment.",
       google_failed: 'La connexion avec Google a échoué, veuillez réessayer.',
+      google_account_banned: 'Ce compte est banni. Écrivez-nous pour en savoir plus.',
     },
   },
 } as const;
 
-// Même forme que fr, avec des textes quelconques
 type Widen<T> = { readonly [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
 export type Translation = Widen<typeof fr>;

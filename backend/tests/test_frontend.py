@@ -1,18 +1,18 @@
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx2 import Response
 
-from app.core.frontend import mount_frontend
+from app.core.frontend import mount_frontend_after_api
 
 INDEX_HTML = "<!doctype html><title>TierList</title>"
 
 
 @pytest.fixture
 def client(tmp_path: Path) -> TestClient:
-    """Application neuve qui sert un faux build : index.html, un fichier hashé dans assets/, un
-    favicon, et un fichier hors du build qui ne doit jamais être servi."""
     dist: Path = tmp_path / "frontend_dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text(INDEX_HTML, encoding="utf-8")
@@ -20,7 +20,7 @@ def client(tmp_path: Path) -> TestClient:
     (dist / "favicon.svg").write_text("<svg/>", encoding="utf-8")
     (tmp_path / "secret.txt").write_text("secret", encoding="utf-8")
     frontend_app: FastAPI = FastAPI()
-    mount_frontend(frontend_app, dist)
+    mount_frontend_after_api(frontend_app, dist)
     return TestClient(frontend_app)
 
 
@@ -32,7 +32,6 @@ def test_hashed_assets_are_cached_for_a_long_time(client: TestClient):
 
 
 def test_a_missing_asset_is_a_404_not_the_page(client: TestClient):
-    # Un ancien fichier hashé, après un déploiement : pas de index.html servi comme du JavaScript
     assert client.get("/assets/index-old.js").status_code == 404
 
 
@@ -63,6 +62,23 @@ def test_root_files_of_the_build_are_served(client: TestClient):
 @pytest.mark.parametrize("path", ["/../secret.txt", "/%2e%2e/secret.txt", "/..%2fsecret.txt"])
 def test_files_outside_the_build_are_never_served(client: TestClient, path: str):
     response = client.get(path)
+
+    assert "secret" not in response.text
+
+
+def test_a_link_out_of_the_build_is_never_served(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    outside_file: Path = tmp_path / "secret.txt"
+    (tmp_path / "frontend_dist" / "link.txt").write_text("secret", encoding="utf-8")
+    real_resolve: Callable[[Path, bool], Path] = Path.resolve
+
+    def resolve_the_link_like_the_file_system(path: Path, strict: bool = False) -> Path:
+        return outside_file if path.name == "link.txt" else real_resolve(path, strict)
+
+    monkeypatch.setattr(Path, "resolve", resolve_the_link_like_the_file_system)
+
+    response: Response = client.get("/link.txt")
 
     assert "secret" not in response.text
 

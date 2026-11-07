@@ -3,6 +3,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { PlayerResults } from '../api/results';
 import type { GameTier } from '../api/rooms';
+import { ReportButton } from './ReportButton';
 import { ResultsTierList } from './ResultsTierList';
 import type { ItemSelection, ResultItems } from './resultsViews';
 import { NativeSelect } from './ui/native-select';
@@ -13,13 +14,10 @@ interface ResultsPlayerViewProps {
   items: ResultItems;
   selection: ItemSelection;
   reveal: boolean;
-  // Change à chaque « Rejouer la révélation » : seule la tier list est montée à nouveau
   revealRun: number;
   onRevealStarted: () => void;
 }
 
-// Vue « par joueur » (US-5.2) : le classement final du joueur choisi, avec les items qu'il n'a
-// jamais placés
 export function ResultsPlayerView({
   tiers,
   players,
@@ -51,13 +49,18 @@ export function ResultsPlayerView({
             setPlayerIndex(Number(event.target.value))
           }
         >
-          {/* La réponse ne donne pas d'identifiant aux joueurs : leur rang, fixe, sert de valeur */}
           {players.map((candidate: PlayerResults, index: number) => (
             <option key={index} value={index}>
               {candidate.display_name}
             </option>
           ))}
         </NativeSelect>
+        <ReportButton
+          key={player.id}
+          targetKind="player"
+          targetId={player.id}
+          contentName={player.display_name}
+        />
       </div>
       <ResultsTierList
         key={revealRun}
@@ -66,7 +69,7 @@ export function ResultsPlayerView({
         items={items}
         extraRow={{ label: t('results.players.unplaced'), itemIds: player.unplaced_item_ids }}
         selection={selection}
-        reveal={reveal}
+        revealOnMount={reveal}
         onRevealStarted={onRevealStarted}
       />
     </div>

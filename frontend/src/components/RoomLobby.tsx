@@ -9,6 +9,7 @@ import { ErrorMessage } from './ErrorMessage';
 import { GameScreen } from './GameScreen';
 import { PastGames } from './PastGames';
 import { RemoveParticipantDialog } from './RemoveParticipantDialog';
+import { ReportButton } from './ReportButton';
 import { RoomBans } from './RoomBans';
 import { RoomInvite } from './RoomInvite';
 import { RoomSettingsDialog } from './RoomSettingsDialog';
@@ -20,12 +21,8 @@ interface RoomLobbyProps {
   room: Room;
 }
 
-// Lobby d'une salle (US-2.2, US-2.3) : code et lien à partager, participants (comptes et
-// invités), réglages ; seul le room admin peut les modifier, et retirer ou bannir un participant
-// (US-2.11, US-2.12), et fermer la salle (US-2.7). Pendant une partie, l'écran de jeu passe en tête
 export function RoomLobby({ room }: RoomLobbyProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Reçoit le focus quand l'écran de jeu disparaît sous le clavier (fin du cooldown)
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
@@ -41,13 +38,14 @@ export function RoomLobby({ room }: RoomLobbyProps) {
         )}
       </div>
       {room.template === null && <ErrorMessage>{t('rooms.lobby.templateDeleted')}</ErrorMessage>}
+      {room.template?.hidden === true && (
+        <ErrorMessage>{t('rooms.lobby.templateHidden')}</ErrorMessage>
+      )}
       {room.game !== null && (
         <GameScreen room={room} game={room.game} onGameEnded={() => headingRef.current?.focus()} />
       )}
-      {/* Le plateau prend toute la largeur de la page ; le salon reste une colonne étroite */}
       <div className={cn(CONTENT_COLUMN_CLASS, 'flex flex-col items-start gap-6')}>
-        {/* Sans template (purgé), le démarrage serait refusé : l'avertissement ci-dessus suffit */}
-        {room.is_admin && room.game === null && room.template !== null && (
+        {room.is_admin && room.game === null && room.template !== null && !room.template.hidden && (
           <StartGameButton code={room.code} replay={room.past_games.length > 0} />
         )}
         <RoomInvite room={room} />
@@ -58,7 +56,6 @@ export function RoomLobby({ room }: RoomLobbyProps) {
           <ul className={panelVariants({ variant: 'list' })}>
             {room.participants.map((participant) => (
               <li key={participant.id} className="flex items-center gap-2 px-4 py-2">
-                {/* Pleine en ligne, creuse hors ligne : la forme suffit, sans compter sur la couleur */}
                 <span
                   aria-hidden="true"
                   className={
@@ -77,10 +74,18 @@ export function RoomLobby({ room }: RoomLobbyProps) {
                 {participant.is_guest && (
                   <span className="text-sm text-muted-foreground">({t('rooms.lobby.guest')})</span>
                 )}
-                {/* Le room admin ne peut pas se retirer lui-même */}
-                {room.is_admin && !participant.is_admin && (
-                  <RemoveParticipantDialog code={room.code} participant={participant} />
-                )}
+                <span className="ml-auto flex items-center gap-2">
+                  {!participant.is_you && (
+                    <ReportButton
+                      targetKind="participant"
+                      targetId={participant.id}
+                      contentName={participant.display_name}
+                    />
+                  )}
+                  {room.is_admin && !participant.is_admin && (
+                    <RemoveParticipantDialog code={room.code} participant={participant} />
+                  )}
+                </span>
               </li>
             ))}
           </ul>

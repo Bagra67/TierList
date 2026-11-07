@@ -1,5 +1,3 @@
-"""Format d'erreur unique de l'API : toute réponse d'erreur a la forme ErrorResponse."""
-
 import logging
 from collections.abc import Awaitable, Callable, Mapping
 
@@ -20,13 +18,11 @@ logger = logging.getLogger(__name__)
 class FieldError(BaseModel):
     field: str
     message: str
-    # Type d'erreur Pydantic (missing, string_too_short…) ou code dédié (password_too_short)
     code: str
     params: dict[str, ErrorParamValue] | None = None
 
 
 class ErrorResponse(BaseModel):
-    # Texte anglais pour les développeurs : le frontend traduit à partir de code et params
     detail: str
     code: str
     params: dict[str, ErrorParamValue] | None = None
@@ -34,8 +30,6 @@ class ErrorResponse(BaseModel):
 
 
 def _scalar_params(context: Mapping[str, object] | None) -> dict[str, ErrorParamValue] | None:
-    # Le contexte Pydantic peut contenir des objets (ex. l'exception d'un validateur) :
-    # seules les valeurs simples, utiles à la traduction, sont exposées.
     if not context:
         return None
     params = {key: value for key, value in context.items() if isinstance(value, str | int | float)}
@@ -52,7 +46,6 @@ def _error_response(
 
 async def handle_http_exception(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, StarletteHTTPException)
-    # Les en-têtes sont conservés : WWW-Authenticate, effacement du cookie de session…
     if not is_body_allowed_for_status_code(exc.status_code):
         return Response(status_code=exc.status_code, headers=exc.headers)
     if isinstance(exc, AppHTTPException):
@@ -82,11 +75,9 @@ async def handle_validation_error(request: Request, exc: Exception) -> JSONRespo
 async def handle_unexpected_error(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
-    # Middleware plutôt qu'exception_handler(Exception) : Starlette relancerait l'exception
-    # après la réponse, et uvicorn journaliserait la même trace une seconde fois.
     try:
         return await call_next(request)
-    except Exception:  # dernier filet : toute exception non prévue devient une 500 générique
+    except Exception:
         logger.exception("Erreur non gérée sur %s %s", request.method, request.url.path)
         body = ErrorResponse(detail=messages.INTERNAL_ERROR, code=ErrorCode.INTERNAL_ERROR)
         return _error_response(500, body)

@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
@@ -7,6 +8,7 @@ import { latestSocket } from '../test/fakeWebSocket';
 import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
 import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
+import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
   calledRoutes,
   errorResponse,
@@ -14,8 +16,8 @@ import {
   signedInSession,
   type BackendMock,
 } from '../test/stubBackend';
+import { RoomPage } from './RoomPage';
 
-// Presse-papiers simulé : jsdom n'en fournit pas
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 }
@@ -32,7 +34,6 @@ describe('RoomPage', () => {
 
     renderRoomPage();
 
-    // Le squelette de chargement (son texte « Chargement… » arrive au rendu suivant)
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
     expect(screen.getByText('Modèle : Chips')).toBeInTheDocument();
@@ -52,6 +53,14 @@ describe('RoomPage', () => {
       expect(within(summary).getByText(line)).toBeInTheDocument();
     }
     expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
+  });
+
+  it('reports the nickname of the others, not ones own', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+
+    expect(await screen.findByRole('button', { name: 'Signaler : Bob' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Signaler : Alice' })).not.toBeInTheDocument();
   });
 
   it('shows who is online', async () => {
@@ -98,7 +107,6 @@ describe('RoomPage', () => {
     const reads: number = calledRoutes(fetchMock).filter(
       (route) => route === 'GET /rooms/K7P2QX',
     ).length;
-    // Une relecture ferait rejoindre à nouveau le compte : il revient seulement s'il le demande
     act(() => window.dispatchEvent(new Event('focus')));
     expect(calledRoutes(fetchMock).filter((route) => route === 'GET /rooms/K7P2QX')).toHaveLength(
       reads,
@@ -173,6 +181,41 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Vous avez été banni de cette salle.')).toBeInTheDocument();
   });
 
+  it('forgets a removal when another room is opened', async () => {
+    stubBackend({
+      ...signedInSession,
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+      'GET /rooms/AAAAAA': () => Response.json({ ...aliceRoom, code: 'AAAAAA' }),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={['/r/K7P2QX']}>
+        <Link to="/r/AAAAAA">Autre salle</Link>
+        <Routes>
+          <Route path="/r/:code" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Salle K7P2QX' });
+    act(() => latestSocket().closeFromServer(4410));
+    expect(screen.getByRole('status')).toHaveTextContent("L'hôte vous a retiré de cette salle.");
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autre salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle AAAAAA' })).toBeInTheDocument();
+    expect(screen.queryByText("L'hôte vous a retiré de cette salle.")).not.toBeInTheDocument();
+  });
+
+  it('opens the same room from a code typed in lowercase or with spaces', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
+    });
+
+    renderRoomPage('%20k7p2qx%20');
+
+    expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('GET /rooms/K7P2QX');
+  });
+
   it('copies the link and announces it', async () => {
     const writeText: (text: string) => Promise<void> = vi.fn(async () => {});
     stubClipboard(writeText);
@@ -197,6 +240,16 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('copiez-le à la main');
   });
 
+  it('asks to copy the link by hand on a page without clipboard', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
+
+    expect(navigator.clipboard).toBeUndefined();
+    expect(await screen.findByRole('alert')).toHaveTextContent('copiez-le à la main');
+  });
+
   it('joins the room as a player when the user has no seat yet', async () => {
     const bobRoom: Room = { ...aliceRoom, is_admin: false };
     const fetchMock: BackendMock = stubBackend({
@@ -205,7 +258,6 @@ describe('RoomPage', () => {
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
 
-    // Code tapé en minuscules : la salle est lue et rejointe sous son code canonique
     renderRoomPage('k7p2qx');
 
     expect(await screen.findByRole('heading', { name: 'Salle K7P2QX' })).toBeInTheDocument();
@@ -217,8 +269,9 @@ describe('RoomPage', () => {
   });
 
   it('says the room cannot be found', async () => {
-    // Le cache de requêtes journalise l'erreur attendue
-    const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const silencedQueryCacheErrorLog: MockInstance = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     stubBackend({
       ...signedInSession,
       'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
@@ -230,12 +283,13 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est introuvable ou a été fermée.',
     );
-    consoleError.mockRestore();
+    silencedQueryCacheErrorLog.mockRestore();
   });
 
   it('says the room is full, with the limit sent by the backend', async () => {
-    // Le cache de requêtes journalise l'erreur attendue
-    const consoleError: MockInstance = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const silencedQueryCacheErrorLog: MockInstance = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     stubBackend({
       ...signedInSession,
       'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
@@ -248,7 +302,7 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est pleine : 10 participants au plus.',
     );
-    consoleError.mockRestore();
+    silencedQueryCacheErrorLog.mockRestore();
   });
 
   it('warns when the template of the room was deleted', async () => {
@@ -260,6 +314,20 @@ describe('RoomPage', () => {
       'Le modèle de cette salle a été supprimé',
     );
     expect(screen.queryByText(/Template :/)).not.toBeInTheDocument();
+  });
+
+  it('warns when the template of the room is hidden by the moderation', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({ ...aliceRoom, template: { ...aliceRoom.template, hidden: true } }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Le modèle de cette salle est masqué par la modération',
+    );
+    expect(screen.queryByRole('button', { name: 'Lancer la partie' })).not.toBeInTheDocument();
   });
 
   it('lists the past games of the room with a link to their results', async () => {
@@ -340,7 +408,6 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Partie en cours')).toBeInTheDocument();
     expect(screen.getByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
-    // Le texte est affiché : l'image n'est pas relue par les lecteurs d'écran
     expect(screen.getByRole('presentation')).toHaveAttribute(
       'src',
       'https://images.example.com/paprika.webp',

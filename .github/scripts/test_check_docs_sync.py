@@ -1,8 +1,6 @@
-"""Tests of check_docs_sync.py.
-
-Usage (from the repo root): python -m unittest discover -s .github/scripts
-"""
-
+import ast
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,13 +14,18 @@ from check_docs_sync import (
 )
 
 
+SCRIPT = Path(__file__).with_name("check_docs_sync.py")
+
+
 def paths_of(problems):
     return [problem.path for problem in problems]
 
 
 class UnpairedDocsTest(unittest.TestCase):
     def test_a_complete_pair_is_accepted(self):
-        self.assertEqual(find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), [])
+        self.assertEqual(
+            find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), []
+        )
 
     def test_an_english_doc_without_french_is_reported(self):
         problems = find_unpaired_docs(["docs/new.md"])
@@ -35,7 +38,16 @@ class UnpairedDocsTest(unittest.TestCase):
         self.assertIn("README.md", problems[0].message)
 
     def test_english_only_files_are_ignored(self):
-        self.assertEqual(find_unpaired_docs(["AGENTS.md", ".github/pull_request_template.md"]), [])
+        self.assertEqual(
+            find_unpaired_docs(
+                [
+                    "AGENTS.md",
+                    ".github/pull_request_template.md",
+                    ".claude/skills/api-sync/SKILL.md",
+                ]
+            ),
+            [],
+        )
 
 
 class LanguageSwitcherTest(unittest.TestCase):
@@ -79,7 +91,14 @@ class OneSidedChangesTest(unittest.TestCase):
 
     def test_english_only_files_are_ignored(self):
         self.assertEqual(
-            find_one_sided_changes(["AGENTS.md", ".github/pull_request_template.md"]), []
+            find_one_sided_changes(
+                [
+                    "AGENTS.md",
+                    ".github/pull_request_template.md",
+                    ".claude/agents/security-reviewer.md",
+                ]
+            ),
+            [],
         )
 
 
@@ -132,6 +151,35 @@ class RunChecksTest(unittest.TestCase):
         self.assertEqual(run_checks(self.root, self.markdown, None), [])
         problems = run_checks(self.root, ["README.md"], None)
         self.assertEqual(paths_of(problems), ["README.md"])
+
+
+class CommandLineTest(unittest.TestCase):
+    def run_in_a_repository_with_an_unpaired_doc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
+            (Path(directory) / "new.md").write_text("English | [Français](new.fr.md)\n")
+            subprocess.run(["git", "add", "new.md"], cwd=directory, check=True)
+            return subprocess.run(
+                [sys.executable, str(SCRIPT)],
+                cwd=directory,
+                capture_output=True,
+                text=True,
+            )
+
+    def test_a_problem_is_a_github_annotation_and_fails_the_run(self):
+        completed = self.run_in_a_repository_with_an_unpaired_doc()
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("::error file=new.md::", completed.stdout)
+
+    def test_the_script_only_imports_the_standard_library(self):
+        tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        imported_modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_modules.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                imported_modules.add((node.module or "").split(".")[0])
+        self.assertLessEqual(imported_modules, set(sys.stdlib_module_names))
 
 
 if __name__ == "__main__":

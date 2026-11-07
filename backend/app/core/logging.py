@@ -5,14 +5,12 @@ from typing import Literal
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.constants.logging import APP_LOGGER
+from app.constants.logging import APP_LOG_HANDLER, APP_LOGGER
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class LoggingSettings(BaseSettings):
-    # Séparé de Settings : l'application doit pouvoir journaliser même si la
-    # configuration PostgreSQL est absente.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     log_level: LogLevel = "INFO"
@@ -29,11 +27,9 @@ def get_logging_settings() -> LoggingSettings:
 
 
 def configure_logging(level: LogLevel) -> None:
-    """Envoie les logs de l'application sur stderr, au même format que ceux d'uvicorn."""
     logging.config.dictConfig(
         {
             "version": 1,
-            # Ne pas désactiver les loggers déjà configurés (uvicorn, SQLAlchemy…).
             "disable_existing_loggers": False,
             "formatters": {
                 "default": {
@@ -42,14 +38,14 @@ def configure_logging(level: LogLevel) -> None:
                 },
             },
             "handlers": {
-                "default": {
+                APP_LOG_HANDLER: {
                     "class": "logging.StreamHandler",
                     "formatter": "default",
                     "stream": "ext://sys.stderr",
                 },
             },
             "loggers": {
-                APP_LOGGER: {"handlers": ["default"], "level": level, "propagate": False},
+                APP_LOGGER: {"handlers": [APP_LOG_HANDLER], "level": level, "propagate": False},
             },
         }
     )

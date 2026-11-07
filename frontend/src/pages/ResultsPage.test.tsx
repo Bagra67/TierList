@@ -11,11 +11,11 @@ import type { GameResults } from '../api/results';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoomInGame } from '../test/fixtures/rooms';
 import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import type { ResultsLinkState } from '../constants/routes';
 import { ResultsPage } from './ResultsPage';
 
-// La page ouverte par son lien ; state : l'état de navigation posé par le lobby
-function renderResultsPage(state?: unknown) {
-  const entry: InitialEntry = { pathname: `/results/${RESULTS_TOKEN}`, state };
+function renderResultsPage(stateFromLobby?: ResultsLinkState) {
+  const entry: InitialEntry = { pathname: `/results/${RESULTS_TOKEN}`, state: stateFromLobby };
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
@@ -26,9 +26,9 @@ function renderResultsPage(state?: unknown) {
   );
 }
 
+const ANIMATION_END_EVENT_HEARD_BY_REACT_IN_JSDOM: string = 'webkitAnimationEnd';
 const resultsRoute: string = `GET /results/${RESULTS_TOKEN}`;
 
-// Le faux backend répond selon la case envoyée, et garde les valeurs reçues
 function stubResults(): { includeAbsentVotes: string[] } {
   const received: string[] = [];
   stubBackend({
@@ -43,22 +43,22 @@ function stubResults(): { includeAbsentVotes: string[] } {
   return { includeAbsentVotes: received };
 }
 
-// Le texte des items de la ligne d'un tier (ou de « Non classés », « Jamais placés ») : chaque
-// ligne est un groupe nommé par son tier
 function rowItems(label: string): string[] {
   return within(screen.getByRole('group', { name: label }))
     .queryAllByRole('listitem')
     .map((item: HTMLElement) => item.textContent ?? '');
 }
 
-// Les lignes du panneau des votes d'un item : nom du tier (ou « Absents »), nombre de votes, noms
 function voteLines(item: string): string[] {
   return within(screen.getByRole('region', { name: `Votes : ${item}` }))
     .getAllByRole('listitem')
     .map((line: HTMLElement) => line.textContent ?? '');
 }
 
-// Presse-papiers simulé : jsdom n'en fournit pas
+function fireAnimationEnd(element: HTMLElement): void {
+  fireEvent(element, new Event(ANIMATION_END_EVENT_HEARD_BY_REACT_IN_JSDOM, { bubbles: true }));
+}
+
 function stubClipboard(writeText: (text: string) => Promise<void>): void {
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 }
@@ -125,7 +125,6 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
-    // Le tier du haut apparaît en dernier ; l'animation est sous motion-safe (mouvement réduit)
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
     expect(tierS).toHaveStyle({ animationDelay: '520ms' });
     expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
@@ -140,7 +139,6 @@ describe('ResultsPage', () => {
     await screen.findByRole('group', { name: 'S' });
 
     fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
-    // Le tableau global ne se révèle pas
     expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: 'Médian' }));
     expect(screen.getByRole('group', { name: 'S' })).not.toHaveClass('motion-safe:animate-reveal');
@@ -161,13 +159,29 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
+  it('stops the reveal once the top row has appeared: a row added later is not animated', async () => {
+    stubResults();
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    const tierS: HTMLElement = screen.getByRole('group', { name: 'S' });
+
+    fireAnimationEnd(within(tierS).getAllByRole('listitem')[0]);
+    expect(tierS).toHaveClass('motion-safe:animate-reveal');
+
+    fireAnimationEnd(tierS);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+
+    expect(screen.getByRole('group', { name: 'Jamais placés' })).not.toHaveClass(
+      'motion-safe:animate-reveal',
+    );
+  });
+
   it('does not reveal again when the absent votes box is toggled', async () => {
     stubResults();
     renderResultsPage();
     await screen.findByRole('group', { name: 'S' });
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
-    // Pendant la lecture de l'autre variante, rien à rejouer
     expect(screen.queryByRole('button', { name: 'Rejouer la révélation' })).not.toBeInTheDocument();
 
     expect(await screen.findByRole('group', { name: 'S' })).not.toHaveClass(
@@ -195,7 +209,6 @@ describe('ResultsPage', () => {
 
     expect(chorizo).toHaveAttribute('aria-current', 'true');
     expect(voteLines('Chorizo')).toEqual(['S0 vote', 'A1 voteAlice', 'Absents1 voteLou']);
-    // Le choix reste d'une vue à l'autre
     fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
     expect(screen.getByRole('region', { name: 'Votes : Chorizo' })).toBeInTheDocument();
   });
@@ -207,8 +220,6 @@ describe('ResultsPage', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
 
-    // Le vote rattrapé de Lou ne compte plus, et aucun nom n'est affiché : il dirait qui a
-    // rattrapé l'item
     await vi.waitFor(() => expect(voteLines('Paprika')).toEqual(['S1 vote', 'A0 vote']));
   });
 
@@ -236,10 +247,18 @@ describe('ResultsPage', () => {
     expect(overall).toHaveFocus();
     const panel: HTMLElement = screen.getByRole('tabpanel');
     expect(panel).toHaveAttribute('aria-labelledby', overall.id);
-    // Ses items sont des boutons : le panneau lui-même n'est pas un arrêt de tabulation
-    expect(panel).not.toHaveAttribute('tabindex');
     fireEvent.keyDown(overall, { key: 'End' });
     expect(screen.getByRole('tab', { name: 'Par joueur' })).toHaveFocus();
+  });
+
+  it('leaves out of the tab order a panel whose items are buttons', async () => {
+    stubResults();
+    renderResultsPage();
+
+    expect(await screen.findByRole('tabpanel')).not.toHaveAttribute('tabindex');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Global' }));
+    expect(screen.getByRole('tabpanel')).not.toHaveAttribute('tabindex');
   });
 
   it('copies the public link of the results and announces it', async () => {
@@ -291,6 +310,23 @@ describe('ResultsPage', () => {
     ).toEqual(["Image de l'élément 1", "Image de l'élément 2", "Image de l'élément 3"]);
   });
 
+  it('shows an image removed by the moderation instead of the image', async () => {
+    const removedImage: GameResults = {
+      ...closedGameResults,
+      items: closedGameResults.items.map((item, index: number) =>
+        index === 0 ? { ...item, text: null, image_url: null, image_removed: true } : item,
+      ),
+    };
+    stubBackend({ [resultsRoute]: () => Response.json(removedImage) });
+    renderResultsPage();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Global' }));
+
+    const [firstHeader] = screen.getAllByRole('rowheader');
+    expect(within(firstHeader).getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+    expect(firstHeader.querySelector('img')).toBeNull();
+  });
+
   it('keeps the box and says so when reading the other variant fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({
@@ -306,12 +342,9 @@ describe('ResultsPage', () => {
 
     fireEvent.click(box);
 
-    // L'erreur prend la place des statistiques, jamais celles de l'autre variante ; une erreur
-    // serveur est réessayée une fois avant d'être montrée
     expect(await within(screen.getByRole('tabpanel')).findByRole('alert')).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'A' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Résultats : Épices' })).toBeInTheDocument();
-    // Recocher remontre tout de suite la variante déjà lue
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
     expect(rowItems('A')).toEqual(['Paprika', 'Chorizo']);
   });
@@ -365,8 +398,6 @@ describe('ResultsPage', () => {
     renderResultsPage();
 
     await screen.findByRole('heading', { name: 'Résultats : Épices' });
-    // En dehors des onglets, seuls le bouton de copie, celui qui rejoue la révélation et les
-    // éléments (qui ouvrent leurs votes) sont des boutons : ni « Rejouer », ni commande de salle
     expect(
       screen
         .getAllByRole('button')
@@ -374,6 +405,7 @@ describe('ResultsPage', () => {
           (button: HTMLElement) =>
             button.textContent !== 'Copier le lien' &&
             button.textContent !== 'Rejouer la révélation' &&
+            button.textContent !== 'Signaler' &&
             !(button.getAttribute('aria-label') ?? '').startsWith('Voir les votes : '),
         ),
     ).toEqual([]);
@@ -396,5 +428,39 @@ describe('ResultsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ce lien de résultats ne correspond à aucune partie terminée.',
     );
+  });
+
+  it('reports the game and the chosen player, even for a visitor', async () => {
+    stubResults();
+    renderResultsPage();
+
+    expect(await screen.findByRole('button', { name: 'Signaler : Épices' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Par joueur' }));
+    expect(screen.getByRole('button', { name: 'Signaler : Alice' })).toBeInTheDocument();
+  });
+
+  it('reports the image of the chosen item, not a text nor a removed image', async () => {
+    const [paprika, chorizo, curry]: GameResults['items'] = closedGameResults.items;
+    stubBackend({
+      [resultsRoute]: () =>
+        Response.json({
+          ...closedGameResults,
+          items: [
+            { ...paprika, image_url: 'https://images.example.com/paprika.webp', text: null },
+            { ...chorizo, image_removed: true, text: null },
+            curry,
+          ],
+        }),
+    });
+    renderResultsPage();
+
+    expect(
+      await screen.findByRole('button', { name: "Signaler : Image de l'élément 1" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: "Voir les votes : Image de l'élément 2" }));
+    expect(
+      screen.queryByRole('button', { name: /^Signaler : Image de l'élément/ }),
+    ).not.toBeInTheDocument();
   });
 });

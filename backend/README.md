@@ -202,7 +202,9 @@ backend/
 │       └── session.py     # Engine, session (FastAPI dependency), database ping
 ├── migrations/            # Alembic migrations (env.py, versions/)
 ├── scripts/
-│   └── export_openapi.py  # Writes the API contract to openapi.json
+│   ├── export_openapi.py  # Writes the API contract to openapi.json
+│   ├── set_super_admin.py # Grants or revokes the super admin role (local development)
+│   └── seed.py            # Fills the local or staging database with test data (docs/technical/seed-data.md)
 ├── tests/
 │   ├── test_main.py       # Unit tests with TestClient (no real database)
 │   ├── test_errors.py     # Error format tests (500, 422, HTTPException, error codes)
@@ -258,6 +260,7 @@ Copy `.env.example` to `.env` (in `backend/`) and adjust the values:
 | `AUTH_COOKIE_SECURE`                    | Refresh cookie sent over HTTPS only; set `false` locally (HTTP)                                                                                                              | `true`                                           |
 | `AUTH_COOKIE_PATH`                      | Refresh cookie path: the authentication routes, under `/api`                                                                                                                 | `/api/auth`                                      |
 | `DELETED_TEMPLATE_RETENTION_DAYS`       | Days a deleted template stays in the database before being purged                                                                                                            | `30`                                             |
+| `MODERATION_LOG_RETENTION_DAYS`         | Days an entry of the moderation log is kept (3 years, announced by the privacy policy)                                                                                       | `1095`                                           |
 | `ROOM_DEFAULT_TIMER_SECONDS`            | Timer per item of a new room, in seconds (5 to 300)                                                                                                                          | `30`                                             |
 | `ROOM_DEFAULT_COOLDOWN_SECONDS`         | Final cooldown of a new room, in seconds (10 to 600)                                                                                                                         | `60`                                             |
 | `GUEST_LINK_TTL_DAYS`                   | Validity of a guest's personal link, in days (30 at most)                                                                                                                    | `30`                                             |
@@ -302,6 +305,17 @@ Models must inherit from `app.db.base.Base` and be imported by `migrations/env.p
 Constraint and index names follow the naming convention of `app/db/base.py` (`pk_users`, `uq_users_email`, `fk_refresh_tokens_user_id_users`, `ix_refresh_tokens_user_id`…): a migration can refer to them by name without guessing what PostgreSQL chose.
 
 `tests/integration/test_migrations.py` fails when the models and the migrations no longer describe the same schema, or when a migration cannot be rolled back.
+
+### Super admin role (local)
+
+Super admins moderate the application ([authentication guide](../docs/technical/authentication.md#super-admins)). The role is never granted by the API: in local development, give it to an existing account with
+
+```bash
+uv run python scripts/set_super_admin.py alice@example.com            # grant
+uv run python scripts/set_super_admin.py alice@example.com --revoke   # revoke
+```
+
+The email is case-insensitive; an unknown email exits with code `1`. Reload the page to see the moderation link. In staging and production, use the SQL command of the [deployment guide](../docs/technical/deployment.md#512-super-admins).
 
 ---
 

@@ -14,21 +14,16 @@ import { Label } from './ui/label';
 
 interface InlineEditFieldProps {
   label: string;
-  // Libellé lu par les lecteurs d'écran seulement (ex. un champ par ligne d'une liste)
   hideLabel?: boolean;
   value: string;
   maxLength: number;
-  // false : le champ peut être vidé (ex. le texte d'une tuile qui a une image)
   required?: boolean;
-  // true : le texte passe à la ligne et le champ grandit, pour qu'un long nom se lise en entier
-  // dans une colonne étroite. La valeur reste sur une seule ligne (Entrée enregistre).
-  multiline?: boolean;
+  wrapsLongValue?: boolean;
   error?: string;
   onSave: (value: string) => void;
   className?: string;
 }
 
-// Attributs communs au champ d'une ligne (<input>) et à la zone de texte (<textarea>)
 interface SharedFieldProps {
   id: string;
   value: string;
@@ -39,22 +34,18 @@ interface SharedFieldProps {
   onBlur: () => void;
 }
 
-// Champ enregistré dès qu'on le valide (Entrée) ou qu'on le quitte, s'il a changé ; Échap
-// rétablit la valeur enregistrée. Le parent lui donne key={value} : une nouvelle valeur
-// enregistrée remplace le brouillon. Après un échec, valider à nouveau renvoie la valeur.
 export function InlineEditField({
   label,
   hideLabel = false,
   value,
   maxLength,
   required = true,
-  multiline = false,
+  wrapsLongValue = false,
   error,
   onSave,
   className,
 }: InlineEditFieldProps) {
   const [draft, setDraft] = useState<string>(value);
-  // Brouillon envoyé avec Entrée : quitter ensuite le champ sans rien changer ne le renvoie pas
   const draftSentWithEnter: RefObject<string | null> = useRef<string | null>(null);
   const textAreaRef: RefObject<HTMLTextAreaElement | null> = useRef<HTMLTextAreaElement>(null);
   const id: string = useId();
@@ -88,7 +79,6 @@ export function InlineEditField({
 
   function handleChange(newDraft: string) {
     draftSentWithEnter.current = null;
-    // Un retour à la ligne collé devient une espace : le passage à la ligne n'est qu'un affichage
     setDraft(newDraft.replace(/\r?\n/g, ' '));
   }
 
@@ -97,9 +87,8 @@ export function InlineEditField({
       setDraft(value);
       return;
     }
-    // Dans une zone de texte, Entrée ajouterait un retour à la ligne : elle enregistre, comme
-    // dans un champ d'une ligne (sauf pendant une saisie IME, où elle valide un caractère)
-    if (multiline && event.key === 'Enter' && !event.nativeEvent.isComposing) {
+    const enterConfirmsImeCharacter: boolean = event.nativeEvent.isComposing;
+    if (wrapsLongValue && event.key === 'Enter' && !enterConfirmsImeCharacter) {
       event.preventDefault();
       event.currentTarget.form?.requestSubmit();
     }
@@ -120,7 +109,7 @@ export function InlineEditField({
       <Label htmlFor={id} className={cn(hideLabel && 'sr-only')}>
         {label}
       </Label>
-      {multiline ? (
+      {wrapsLongValue ? (
         <textarea
           ref={textAreaRef}
           rows={1}

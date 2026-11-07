@@ -10,13 +10,13 @@ C'est de la **conception métier**, pas de la documentation technique : ni table
 
 ## Pages
 
-| Page                                    | Contenu                                                                                 |
-| --------------------------------------- | --------------------------------------------------------------------------------------- |
-| [User stories](user-stories.fr.md)      | Ce que chaque acteur peut faire, avec des critères d'acceptation, regroupé par épopée.  |
-| [Modèle de domaine](domain-model.fr.md) | Les concepts métier, leurs relations et leurs invariants (diagramme de classes).        |
-| [Cycles de vie](lifecycles.fr.md)       | Les états d'une room, d'une partie, d'un tour et d'un participant (diagrammes d'états). |
-| [Déroulé](game-flow.fr.md)              | Qui fait quoi, dans quel ordre, du template aux résultats (diagrammes de séquence).     |
-| [Écrans](screens.fr.md)                 | Les wireframes basse fidélité de chaque écran, avec les stories qu'ils couvrent.        |
+| Page                                    | Contenu                                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [User stories](user-stories.fr.md)      | Ce que chaque acteur peut faire, avec des critères d'acceptation, regroupé par épopée.    |
+| [Modèle de domaine](domain-model.fr.md) | Les concepts métier, leurs relations et leurs invariants (diagramme de classes).          |
+| [Cycles de vie](lifecycles.fr.md)       | Les états d'une room, d'une partie, d'un tour et d'un participant (diagrammes d'états).   |
+| [Déroulé](game-flow.fr.md)              | Qui fait quoi, dans quel ordre, du template aux résultats (diagrammes de séquence).       |
+| [Écrans](screens.fr.md)                 | Les wireframes de chaque écran sur l'identité visuelle, avec les stories qu'ils couvrent. |
 
 ## Périmètre
 

@@ -1,7 +1,9 @@
 from ipaddress import ip_network
+from pathlib import Path
 
 import pytest
 from starlette.applications import Starlette
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route, WebSocketRoute
@@ -10,7 +12,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from app.core.proxy import TrustedProxyMiddleware
 
-# Le tunnel joint le pod depuis ce réseau ; 91.197.6.107 est un client qui vise le port directement
+START_SCRIPT: Path = Path(__file__).resolve().parents[2] / "deploy" / "start.sh"
 PROXY_ADDRESS: str = "10.0.0.7"
 DIRECT_CLIENT_ADDRESS: str = "91.197.6.107"
 
@@ -90,3 +92,11 @@ def test_a_websocket_that_bypasses_the_proxy_is_refused():
 def test_a_websocket_through_the_proxy_is_served():
     with make_client(PROXY_ADDRESS).websocket_connect("/ws") as websocket:
         assert websocket.receive_text() == "hello"
+
+
+def test_uvicorn_leaves_the_proxy_headers_to_the_app():
+    assert "--no-proxy-headers" in START_SCRIPT.read_text(encoding="utf-8")
+
+
+def test_the_guard_adds_no_task_per_request():
+    assert not issubclass(TrustedProxyMiddleware, BaseHTTPMiddleware)

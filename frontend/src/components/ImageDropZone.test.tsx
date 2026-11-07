@@ -13,15 +13,21 @@ interface Handlers {
 }
 
 function renderZone(
-  props: Partial<{ imageUrl: string | null; isUploading: boolean; disabled: boolean }> = {},
+  props: Partial<{
+    imageUrl: string | null;
+    imageRemoved: boolean;
+    isUploading: boolean;
+    disabled: boolean;
+  }> = {},
 ): Handlers {
   const handlers: Handlers = { onSelect: vi.fn(), onRemove: vi.fn(), onRefuse: vi.fn() };
   render(
     <ImageDropZone
       label="Ajouter une image"
       removeLabel="Retirer l'image"
-      size="large"
+      size="addFormThumbnail"
       imageUrl={props.imageUrl ?? null}
+      imageRemoved={props.imageRemoved ?? false}
       isUploading={props.isUploading ?? false}
       disabled={props.disabled ?? false}
       {...handlers}
@@ -47,6 +53,15 @@ describe('ImageDropZone', () => {
     expect(zone().querySelector('img')).toBeNull();
   });
 
+  it('shows an image removed by the moderation, which can still be replaced or removed', () => {
+    const handlers: Handlers = renderZone({ imageRemoved: true });
+
+    expect(screen.getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+    expect(zone()).not.toHaveTextContent('Glisser une image ou cliquer');
+    fireEvent.click(screen.getByRole('button', { name: "Retirer l'image" }));
+    expect(handlers.onRemove).toHaveBeenCalledOnce();
+  });
+
   it('opens the file picker on click, which only proposes JPEG, PNG and WebP', () => {
     renderZone();
     const click: Mock<() => void> = vi.fn();
@@ -56,7 +71,6 @@ describe('ImageDropZone', () => {
 
     expect(click).toHaveBeenCalledOnce();
     expect(fileInput()).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp');
-    // Le champ caché n'est pas atteignable au clavier : la vignette, un vrai bouton, l'est
     expect(fileInput()).toHaveAttribute('tabindex', '-1');
   });
 
@@ -118,7 +132,7 @@ describe('ImageDropZone', () => {
     const { rerender }: RenderResult = render(
       <ImageDropZone
         label="Ajouter une image"
-        size="large"
+        size="addFormThumbnail"
         imageUrl={null}
         isUploading={false}
         {...handlers}
@@ -129,7 +143,7 @@ describe('ImageDropZone', () => {
     rerender(
       <ImageDropZone
         label="Ajouter une image"
-        size="large"
+        size="addFormThumbnail"
         imageUrl={null}
         isUploading
         {...handlers}
@@ -158,7 +172,7 @@ describe('ImageDropZone', () => {
       <ImageDropZone
         label="Remplacer l'image"
         removeLabel="Retirer l'image"
-        size="fill"
+        size="fullWidthSquare"
         imageUrl="https://images.example.com/a.webp"
         isUploading={false}
         onSelect={vi.fn()}
@@ -168,7 +182,6 @@ describe('ImageDropZone', () => {
     );
     const fillZone: HTMLElement = screen.getByRole('button', { name: "Remplacer l'image" });
 
-    // Carré sur toute la largeur de la carte ; l'image entière, sans recadrage
     expect(fillZone.parentElement).toHaveClass('aspect-square', 'w-full');
     expect(fillZone.querySelector('img')).toHaveClass('object-contain');
     expect(screen.getByRole('button', { name: "Retirer l'image" })).toBeInTheDocument();
@@ -196,7 +209,7 @@ describe('ImageDropZone', () => {
       render(
         <ImageDropZone
           label="Ajouter une image"
-          size="large"
+          size="addFormThumbnail"
           imageUrl={null}
           isUploading={false}
           {...handlers}

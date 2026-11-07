@@ -9,11 +9,17 @@ from app.exceptions.images import ImageTooManyPixelsError, ImageUnsupportedForma
 from app.services.image_processing import CompressedImage, compress_image
 from tests.image_files import make_image_file
 
-# Assez grand pour les images des tests, comme la valeur par défaut de IMAGE_MAX_SOURCE_PIXELS
 MAX_SOURCE_PIXELS: int = 40_000_000
-# Balise EXIF Orientation : 6 = l'image doit être tournée de 90° dans le sens horaire
 EXIF_ORIENTATION_TAG: int = 0x0112
+EXIF_ORIENTATION_ROTATE_90_CLOCKWISE: int = 6
 EXIF_MAKE_TAG: int = 0x010F
+
+
+def png_with_a_corrupted_chunk() -> bytes:
+    content: bytearray = bytearray(make_image_file((40, 40), "PNG"))
+    first_byte_of_the_pixels: int = content.index(b"IDAT") + len(b"IDAT")
+    content[first_byte_of_the_pixels] ^= 0xFF
+    return bytes(content)
 
 
 def open_output(compressed: CompressedImage) -> Image.Image:
@@ -21,7 +27,6 @@ def open_output(compressed: CompressedImage) -> Image.Image:
 
 
 def pixel_channels(image: Image.Image, position: tuple[int, int]) -> tuple[int, ...]:
-    """Valeurs des canaux d'un pixel d'une image en couleurs (RGB ou RGBA)."""
     channels: object = image.getpixel(position)
     assert isinstance(channels, tuple)
     return channels
@@ -46,16 +51,25 @@ def test_accepted_formats_are_reencoded_in_webp(image_format: str) -> None:
             b'<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', id="svg"
         ),
         pytest.param(b"just some text", id="text"),
-        # Début d'un fichier HEIC (photo d'iPhone) : Pillow n'a pas de décodeur HEIC
         pytest.param(b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00mif1heic", id="heic"),
         pytest.param(b"", id="empty"),
-        # JPEG coupé en deux : l'en-tête est valide, les pixels manquent
         pytest.param(make_image_file((600, 400), "JPEG")[:300], id="truncated-jpeg"),
+        pytest.param(png_with_a_corrupted_chunk(), id="corrupted-png"),
     ],
 )
 def test_other_files_are_refused(content: bytes) -> None:
     with pytest.raises(ImageUnsupportedFormatError):
         compress_image(content, MAX_SOURCE_PIXELS)
+
+
+@pytest.mark.parametrize("image_format", ["PNG", "WEBP"])
+def test_a_payload_appended_to_an_image_is_not_kept(image_format: str) -> None:
+    payload: bytes = b"<script>payload</script>"
+    content: bytes = make_image_file((40, 40), image_format) + payload
+
+    compressed: CompressedImage = compress_image(content, MAX_SOURCE_PIXELS)
+
+    assert payload not in compressed.data
 
 
 def test_too_many_pixels_are_refused_before_decoding() -> None:
@@ -81,7 +95,6 @@ def test_the_pixel_limit_is_inclusive() -> None:
         pytest.param((200, 100), (512, 256), id="small-landscape"),
         pytest.param((30, 60), (256, 512), id="small-portrait"),
         pytest.param((1, 1), (512, 512), id="single-pixel"),
-        # Le petit côté s'arrondirait à 0 px : il est gardé à 1 px
         pytest.param((2000, 1), (512, 1), id="extremely-elongated"),
         pytest.param((512, 300), (512, 300), id="already-512"),
     ],
@@ -102,8 +115,7 @@ def test_the_longest_side_is_resized_to_512_keeping_proportions(
     [
         pytest.param((4000, 3000), (512, 384), id="photo-landscape"),
         pytest.param((3000, 4000), (384, 512), id="photo-portrait"),
-        # Petit côté sous 512 px : le décodeur ne réduit pas l'image en la lisant
-        pytest.param((4000, 300), (512, 38), id="panorama"),
+        pytest.param((4000, 300), (512, 38), id="short-side-under-512-not-reduced-by-the-decoder"),
     ],
 )
 def test_a_large_jpeg_decoded_at_a_reduced_scale_keeps_the_exact_output_size(
@@ -117,7 +129,6 @@ def test_a_large_jpeg_decoded_at_a_reduced_scale_keeps_the_exact_output_size(
 
 
 def test_a_large_jpeg_is_decoded_at_a_reduced_scale(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Créé avant d'espionner load : seul le décodage par compress_image est observé
     content: bytes = make_image_file((4000, 3000), "JPEG")
     decoded_sizes: list[tuple[int, int]] = []
     original_load: Callable[[Image.Image], object] = Image.Image.load
@@ -128,7 +139,6 @@ def test_a_large_jpeg_is_decoded_at_a_reduced_scale(monkeypatch: pytest.MonkeyPa
         return loaded
 
     monkeypatch.setattr(Image.Image, "load", record_load)
-    # 4000 × 3000 : réduite au 1/4 en lisant (1000 × 750), le 1/8 passerait sous 512 px
     compress_image(content, MAX_SOURCE_PIXELS)
 
     assert (1000, 750) in decoded_sizes
@@ -137,8 +147,7 @@ def test_a_large_jpeg_is_decoded_at_a_reduced_scale(monkeypatch: pytest.MonkeyPa
 
 def test_exif_orientation_is_applied() -> None:
     exif: Image.Exif = Image.Exif()
-    exif[EXIF_ORIENTATION_TAG] = 6
-    # Photo prise téléphone tourné : stockée en paysage, à afficher en portrait
+    exif[EXIF_ORIENTATION_TAG] = EXIF_ORIENTATION_ROTATE_90_CLOCKWISE
     content: bytes = make_image_file((400, 200), "JPEG", exif=exif.tobytes())
 
     compressed: CompressedImage = compress_image(content, MAX_SOURCE_PIXELS)

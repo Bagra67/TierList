@@ -6,8 +6,6 @@ interface RoomSettingsSummaryProps {
   settings: RoomSettings;
 }
 
-// Réglages de la prochaine partie, lus par tous les participants (le room admin les modifie
-// dans RoomSettingsDialog)
 export function RoomSettingsSummary({ settings }: RoomSettingsSummaryProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const lines: string[] = [

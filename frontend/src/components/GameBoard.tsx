@@ -39,7 +39,6 @@ import {
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
 
-// Clés de focus de l'item en cours (useFocusAfterUpdate)
 const CURRENT_FOCUS = { drag: 'current:drag', earlier: 'current:earlier', later: 'current:later' };
 
 interface GameBoardProps {
@@ -47,10 +46,6 @@ interface GameBoardProps {
   game: CurrentGame;
 }
 
-// Le plateau privé du lecteur (US-3.3) : à gauche, la carte de l'élément en cours ; à droite, ses
-// tiers et les items qu'il a déjà placés (ils ne bougent plus avant le cooldown). L'élément en cours
-// se dépose dans un tier à la position voulue : à la souris ou au doigt en glissant sa carte ; au
-// clavier par les boutons « Placer dans » et ←/→.
 export function GameBoard({ room, game }: GameBoardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placeMutation = usePlaceItem(room.code);
@@ -58,16 +53,14 @@ export function GameBoard({ room, game }: GameBoardProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
   const currentItem: GameItem = game.current_item;
-  // L'id du glisser porte l'item : un glisser commencé avant la fin du tour ne pose pas le suivant
-  const draggableId: string = `current:${currentItem.id}`;
+  const currentRoundDraggableId: string = `current:${currentItem.id}`;
   const currentPlacement: OwnPlacement | undefined = game.own_placements.find(
     (placement) => placement.item.id === currentItem.id,
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
   const pending: boolean = placeMutation.isPending;
 
-  // Les items d'un tier, l'item en cours compris s'il y est, dans l'ordre (le serveur les trie)
-  function idsIn(tierId: string): string[] {
+  function itemIdsInServerOrder(tierId: string): string[] {
     return game.own_placements
       .filter((placement) => placement.tier_id === tierId)
       .map((placement) => placement.item.id);
@@ -83,19 +76,19 @@ export function GameBoard({ room, game }: GameBoardProps) {
     return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
   }
 
-  async function placeAt(tierId: string, position: number, focusKeys: string[]) {
+  async function placeAt(tierId: string, position: number, focusKeysByPriority: string[]) {
     if (pending) return;
-    focus.request(focusKeys);
+    focus.focusFirstEnabledAfterUpdate(focusKeysByPriority);
     try {
       await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
       focus.cancel();
-      return; // l'erreur est affichée depuis placeMutation.error
+      return;
     }
   }
 
   function positionFor(target: BoardDropTarget, side: DropSide): number | null {
-    return dropPosition(idsIn(target.tierId), currentItem.id, target, side);
+    return dropPosition(itemIdsInServerOrder(target.tierId), currentItem.id, target, side);
   }
 
   function describe(target: BoardDropTarget, side: DropSide): string {
@@ -134,28 +127,26 @@ export function GameBoard({ room, game }: GameBoardProps) {
     onDragCancel: () => t('rooms.game.dnd.cancelled', { item: itemLabel }),
   };
 
-  // Seul l'élément en cours se glisse : un glisser commencé au tour précédent n'a pas d'aperçu.
-  // L'aperçu a la forme de ce qu'on glisse : la carte tant qu'il n'est pas placé, sa puce ensuite
   function previewOf(id: string): DragPreviewContent | undefined {
-    if (id !== draggableId) return undefined;
+    if (id !== currentRoundDraggableId) return undefined;
     if (currentPlacement === undefined) {
       return {
         item: currentItem,
         label: itemLabel,
-        className: cn(ITEM_CHIP_CLASS, CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS),
+        sourceShapeClassName: cn(ITEM_CHIP_CLASS, CURRENT_CARD_CLASS, EMPHASIZED_BORDER_CLASS),
         size: 'large',
       };
     }
     return {
       item: currentItem,
       label: itemLabel,
-      className: cn(ITEM_CHIP_CLASS, EMPHASIZED_BORDER_CLASS),
+      sourceShapeClassName: cn(ITEM_CHIP_CLASS, EMPHASIZED_BORDER_CLASS),
       size: 'small',
     };
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
-    if (active.id !== draggableId || over?.data.current === undefined) return;
+    if (active.id !== currentRoundDraggableId || over?.data.current === undefined) return;
     const target: BoardDropTarget = over.data.current as BoardDropTarget;
     const position: number | null = positionFor(
       target,
@@ -180,11 +171,9 @@ export function GameBoard({ room, game }: GameBoardProps) {
         }}
       >
         <div className="flex flex-col items-center gap-3 lg:row-span-2">
-          {/* Pas encore placé : la carte elle-même se glisse ; placé, elle reste en vue et c'est sa
-              puce, dans le tier, qui bouge */}
           {currentPlacement === undefined ? (
             <DraggableItem
-              id={draggableId}
+              id={currentRoundDraggableId}
               label={itemLabel}
               ariaLabel={t('rooms.game.dragHandleLabel', { item: itemLabel })}
               focusKey={CURRENT_FOCUS.drag}
@@ -208,14 +197,16 @@ export function GameBoard({ room, game }: GameBoardProps) {
               key={tier.id}
               tier={tier}
               others={othersIn(tier.id)}
-              currentPlacement={
+              currentPlacementInThisTier={
                 currentPlacement?.tier_id === tier.id ? currentPlacement : undefined
               }
               currentItem={currentItem}
-              draggableId={draggableId}
+              currentRoundDraggableId={currentRoundDraggableId}
               itemLabel={itemLabel}
               pending={pending}
-              onPlace={(position, focusKeys) => void placeAt(tier.id, position, focusKeys)}
+              onPlace={(position, focusKeysByPriority) =>
+                void placeAt(tier.id, position, focusKeysByPriority)
+              }
             />
           ))}
         </ol>
@@ -233,35 +224,32 @@ export function GameBoard({ room, game }: GameBoardProps) {
 interface TierRowProps {
   tier: GameTier;
   others: OwnPlacement[];
-  // L'item en cours, s'il est déjà placé dans ce tier
-  currentPlacement: OwnPlacement | undefined;
+  currentPlacementInThisTier: OwnPlacement | undefined;
   currentItem: GameItem;
-  draggableId: string;
+  currentRoundDraggableId: string;
   itemLabel: string;
   pending: boolean;
-  // Place l'item en cours à ce rang du tier, puis rend le focus au premier de ces contrôles
-  onPlace: (position: number, focusKeys: string[]) => void;
+  onPlace: (position: number, focusKeysByPriority: string[]) => void;
 }
 
 function TierRow({
   tier,
   others,
-  currentPlacement,
+  currentPlacementInThisTier,
   currentItem,
-  draggableId,
+  currentRoundDraggableId,
   itemLabel,
   pending,
   onPlace,
 }: TierRowProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  // Rang de l'item en cours parmi les autres items du tier : il est affiché avant others[rank]
-  const currentRank: number | undefined = currentPlacement?.position;
+  const currentRank: number | undefined = currentPlacementInThisTier?.position;
   const placeFocus: string = `place:${tier.id}`;
 
   const currentChip = (
     <li className="flex items-center gap-1">
       <DraggableItem
-        id={draggableId}
+        id={currentRoundDraggableId}
         label={itemLabel}
         focusKey={CURRENT_FOCUS.drag}
         disabled={pending}
@@ -302,8 +290,6 @@ function TierRow({
 
   return (
     <li className="flex w-full rounded-[10px] border bg-card">
-      {/* Coin arrondi du bloc-lettre : le rayon de la ligne moins sa bordure. Pas d'overflow-hidden
-          sur la ligne, qui rognerait l'anneau de focus des tuiles */}
       <TierLabel tier={tier} className="rounded-l-[9px]" />
       <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
         <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
@@ -312,7 +298,7 @@ function TierRow({
               key={placement.item.id}
               placement={placement}
               target={{ tierId: tier.id, itemId: placement.item.id }}
-              before={currentRank === index ? currentChip : null}
+              currentItemBefore={currentRank === index ? currentChip : null}
             />
           ))}
           {currentRank !== undefined && currentRank >= others.length && currentChip}
@@ -337,13 +323,10 @@ function TierRow({
 interface PlacedItemSlotProps {
   placement: OwnPlacement;
   target: BoardDropTarget;
-  // L'item en cours, affiché juste avant cet item
-  before: ReactNode;
+  currentItemBefore: ReactNode;
 }
 
-// Un item d'un tour passé : il ne bouge pas, mais déposer l'item en cours dessus le place avant
-// ou après lui, selon le côté où il tombe
-function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
+function PlacedItemSlot({ placement, target, currentItemBefore }: PlacedItemSlotProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({
     id: `${target.tierId}:${placement.item.id}`,
@@ -351,7 +334,7 @@ function PlacedItemSlot({ placement, target, before }: PlacedItemSlotProps) {
   });
   return (
     <>
-      {before}
+      {currentItemBefore}
       <li ref={setNodeRef} className={cn(ITEM_CHIP_CLASS, isOver && 'ring-2 ring-primary')}>
         <GameItemView
           item={placement.item}

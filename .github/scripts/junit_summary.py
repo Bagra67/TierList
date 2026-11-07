@@ -1,10 +1,3 @@
-"""Turn a JUnit XML test report (pytest, Vitest) into a Markdown summary for GitHub Actions.
-
-Usage: python junit_summary.py <title> <junit.xml>
-The Markdown is printed on stdout; the CI appends it to $GITHUB_STEP_SUMMARY.
-Standard library only, so it runs on any runner without installing anything.
-"""
-
 import os
 import re
 import sys
@@ -16,8 +9,9 @@ STATUS_ICONS = {"passed": "✅", "failed": "❌", "skipped": "⏭️"}
 SLOWEST_COUNT = 5
 TRACE_MAX_LINES = 40
 MESSAGE_MAX_CHARS = 300
-# ANSI color codes, raw or XML-escaped (`#x1B[33m`), that test tools may leave in their output.
-ANSI_CODES = re.compile(r"(?:\x1b|#x1B)\[[0-9;]*m")
+RAW_ANSI_ESCAPE = r"\x1b"
+XML_ESCAPED_ANSI_ESCAPE = "#x1B"
+ANSI_CODES = re.compile(rf"(?:{RAW_ANSI_ESCAPE}|{XML_ESCAPED_ANSI_ESCAPE})\[[0-9;]*m")
 
 
 @dataclass
@@ -30,8 +24,6 @@ class TestResult:
 
 
 def display_name(classname: str, name: str) -> str:
-    """`tests.test_main` + `test_hello` -> `tests/test_main.py::test_hello` (pytest);
-    `src/App.test.tsx` + `App > shows…` -> `src/App.test.tsx › App > shows…` (Vitest)."""
     if not classname:
         return name
     if "/" in classname or classname.endswith((".ts", ".tsx", ".js", ".jsx")):
@@ -69,7 +61,6 @@ def parse_report(path: Path) -> list[TestResult]:
 
 
 def cell(text: str) -> str:
-    """Make a value safe for a Markdown table cell."""
     return text.replace("|", "\\|").replace("\n", " ")
 
 
@@ -78,7 +69,7 @@ def guide_link() -> str:
     repository = os.environ.get("GITHUB_REPOSITORY")
     ref = os.environ.get("GITHUB_SHA")
     if server and repository and ref:
-        return f"{server}/{repository}/blob/{ref}/docs/testing.md"
+        return f"{server}/{repository}/blob/{ref}/docs/technical/testing.md"
     return "docs/technical/testing.md"
 
 
@@ -145,7 +136,6 @@ def main() -> int:
         return 2
     title, report = sys.argv[1], Path(sys.argv[2])
     if not report.is_file():
-        # Tests crashed before writing the report: say so instead of failing silently.
         print(f"## {title} tests — ⚠️ no report\n\n`{report}` was not generated.\n")
         return 0
     print(render(title, parse_report(report)))

@@ -1,6 +1,3 @@
-"""Historique d'un compte (US-5.5) : ses parties closes, jouées ou animées comme room admin, de
-la plus récente à la plus ancienne, page par page."""
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
@@ -36,7 +33,6 @@ def bob(auth_client: TestClient) -> dict[str, str]:
 def alice_room(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], bob: dict[str, str]
 ) -> JsonObject:
-    """Salle d'Alice (template « Food », 2 tuiles), que Bob a rejointe."""
     template_id: str = create_template(auth_client, db_session, alice, tile_count=2)
     room: JsonObject = create_room(auth_client, alice, template_id)
     assert auth_client.post(f"/rooms/{room['code']}/join", headers=bob).status_code == 200
@@ -49,7 +45,6 @@ def play_a_game(
     admin: dict[str, str],
     players: list[dict[str, str]],
 ) -> str:
-    """Une partie où ces joueurs placent le premier item, puis close ; renvoie son lien."""
     started: JsonObject = start_game(client, room["code"], admin)
     for player in players:
         place_current_in_first_tier(client, started, player)
@@ -98,7 +93,6 @@ def test_the_room_admin_who_does_not_play_finds_the_game_too(
 
     response: Response = history(auth_client, alice)
 
-    # Alice n'est pas une joueuse figée, mais elle animait la partie (permissions.md)
     assert tokens(response) == [token]
     assert response.json()["games"][0]["player_count"] == 1
 
@@ -164,7 +158,6 @@ def test_a_deleted_account_leaves_the_history_of_the_others_intact(
 
     response: Response = history(auth_client, bob)
 
-    # La salle d'Alice est fermée avec son compte : la partie reste, avec ses deux joueurs
     assert tokens(response) == [token]
     assert response.json()["games"][0]["player_count"] == 2
 
@@ -187,5 +180,4 @@ def test_the_number_of_queries_does_not_grow_with_the_games(
         assert history(auth_client, bob).status_code == 200
     counts.append(len(statements))
 
-    # 1, 2 puis 3 parties : autant de requêtes à chaque fois
     assert counts[0] == counts[1] == counts[2], counts

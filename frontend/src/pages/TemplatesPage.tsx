@@ -6,6 +6,9 @@ import { useTemplates } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
+import { RemovedImageDecision } from '../components/RemovedImageDecision';
+import { RemovedTemplates } from '../components/RemovedTemplates';
+import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
@@ -15,8 +18,6 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 
-// Templates de l'utilisateur (US-1.5) : création (US-1.1), suppression (US-1.6) et création
-// d'une salle pour jouer avec (US-2.1)
 export function TemplatesPage() {
   const { data: templates, isPending, isError, error } = useTemplates();
   const { t } = useTranslation();
@@ -46,15 +47,43 @@ export function TemplatesPage() {
                     <span>{t('templates.tileCount', { count: template.tile_count })}</span>
                     <span>{t('templates.updatedAt', { date: new Date(template.updated_at) })}</span>
                   </p>
+                  {template.moderation === 'hidden' && template.moderation_reason !== null && (
+                    <p className="text-sm break-words">
+                      {t('templates.hidden.reason', { reason: template.moderation_reason })}
+                    </p>
+                  )}
+                  {template.removed_images.length > 0 && (
+                    <ul className="flex flex-col gap-1">
+                      {template.removed_images.map((removedImage) => (
+                        <li key={removedImage.tile_id}>
+                          <p className="text-xs font-medium break-words">
+                            {removedImage.tile_text ??
+                              t('templates.editor.tileName', {
+                                position: removedImage.tile_position + 1,
+                              })}
+                          </p>
+                          <RemovedImageDecision
+                            status={removedImage.status === 'deleted' ? 'deleted' : 'hidden'}
+                            reason={removedImage.reason}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
                 <div className="flex items-start gap-2">
-                  <CreateRoomButton templateId={template.id} templateName={template.name} />
+                  {template.moderation === 'hidden' ? (
+                    <TemplateHiddenBadge />
+                  ) : (
+                    <CreateRoomButton templateId={template.id} templateName={template.name} />
+                  )}
                   <DeleteTemplateDialog template={template} />
                 </div>
               </li>
             ))}
           </ul>
         )}
+        <RemovedTemplates />
       </div>
     </PageContainer>
   );

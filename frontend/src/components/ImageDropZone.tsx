@@ -10,44 +10,33 @@ import {
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import { cn } from 'cn';
-import { ACCEPTED_IMAGE_TYPES } from '../constants/images';
+import { BACKEND_ACCEPTED_IMAGE_TYPES } from '../constants/images';
 import { isAcceptedImageFile } from './imageFiles';
+import { RemovedImage } from './RemovedImage';
 
 interface ImageDropZoneProps {
-  // Nom accessible de la vignette : ce que fait un clic (ajouter ou remplacer l'image)
   label: string;
-  // Image enregistrée, null s'il n'y en a pas
   imageUrl: string | null;
+  imageRemoved?: boolean;
   isUploading: boolean;
   disabled?: boolean;
-  // large : vignette du formulaire d'ajout ; fill : carré sur toute la largeur du parent (carte
-  // d'une tuile). Les deux affichent la consigne quand il n'y a pas d'image.
-  size: 'large' | 'fill';
-  // Bouton pour retirer l'image, affiché seulement s'il y a une image et un libellé
+  size: 'addFormThumbnail' | 'fullWidthSquare';
   removeLabel?: string;
   onSelect: (file: File) => void;
-  // Plusieurs fichiers d'un coup (sélecteur ou dépôt) : sans cette prop, seul le premier compte.
-  // Avec elle, deux fichiers ou plus lui sont passés tels quels (le parent les trie), un seul
-  // suit le chemin habituel (onSelect ou onRefuse)
   onSelectMany?: (files: File[]) => void;
   onRemove?: () => void;
-  // Fichier d'un type connu autre que JPEG, PNG ou WebP : refusé sans être envoyé (un type
-  // inconnu, vide, part au backend)
   onRefuse: () => void;
 }
 
-// Classes de chaque taille de vignette. Le bouton de retrait : sur la petite vignette (large), il
-// déborde de son coin ; sur la carte d'une tuile (fill), il est posé dans le coin de l'image, plus
-// grand pour être facile à viser
 const SIZE_CLASSES = {
-  large: {
+  addFormThumbnail: {
     zone: 'size-24',
     icon: 'size-7',
     hint: 'text-[0.7rem]',
     remove: '-top-1.5 -right-1.5 size-5',
     removeIcon: 'size-3',
   },
-  fill: {
+  fullWidthSquare: {
     zone: 'aspect-square w-full',
     icon: 'size-10',
     hint: 'text-xs',
@@ -60,13 +49,18 @@ function draggedFiles(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes('Files');
 }
 
-// Vignette d'image d'une tuile : un clic (ou Entrée, Espace) ouvre le sélecteur de fichier, et
-// on peut y déposer un fichier. Pendant l'envoi, l'image choisie s'affiche aussitôt, voilée,
-// avec un indicateur ; l'image compressée par le backend la remplace ensuite. Le parent envoie
-// le fichier et affiche les erreurs.
+function allowChoosingSameFileAgain(input: HTMLInputElement): void {
+  input.value = '';
+}
+
+function allowDropping(event: DragEvent<HTMLDivElement>): void {
+  event.preventDefault();
+}
+
 export function ImageDropZone({
   label,
   imageUrl,
+  imageRemoved = false,
   isUploading,
   disabled = false,
   size,
@@ -78,15 +72,13 @@ export function ImageDropZone({
 }: ImageDropZoneProps) {
   const inputRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
-  // dragenter et dragleave se déclenchent aussi en passant sur les éléments enfants : on compte
-  // les entrées pour savoir quand le fichier quitte vraiment la vignette
-  const dragDepth: RefObject<number> = useRef<number>(0);
+  const dragEntersIncludingChildren: RefObject<number> = useRef<number>(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const sizeClasses: (typeof SIZE_CLASSES)[ImageDropZoneProps['size']] = SIZE_CLASSES[size];
   const shownUrl: string | null = isUploading && previewUrl !== null ? previewUrl : imageUrl;
+  const showRemovedImage: boolean = shownUrl === null && imageRemoved;
 
-  // L'aperçu local occupe de la mémoire tant que son URL existe : libérée quand il change
   useEffect(() => {
     return () => {
       if (previewUrl !== null) URL.revokeObjectURL(previewUrl);
@@ -114,39 +106,40 @@ export function ImageDropZone({
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     handleFiles(event.target.files);
-    // Permet de choisir à nouveau le même fichier (ex. après une erreur)
-    event.target.value = '';
+    allowChoosingSameFileAgain(event.target);
   }
 
   function handleDragEnter(event: DragEvent<HTMLDivElement>) {
     if (disabled || !draggedFiles(event)) return;
     event.preventDefault();
-    dragDepth.current += 1;
+    dragEntersIncludingChildren.current += 1;
     setIsDraggingOver(true);
   }
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     if (disabled || !draggedFiles(event)) return;
-    // Sans preventDefault, le navigateur refuse le dépôt (et ouvrirait le fichier)
-    event.preventDefault();
+    allowDropping(event);
     event.dataTransfer.dropEffect = 'copy';
   }
 
   function handleDragLeave() {
-    dragDepth.current = Math.max(0, dragDepth.current - 1);
-    if (dragDepth.current === 0) setIsDraggingOver(false);
+    dragEntersIncludingChildren.current = Math.max(0, dragEntersIncludingChildren.current - 1);
+    if (dragEntersIncludingChildren.current === 0) setIsDraggingOver(false);
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     if (disabled) return;
     event.preventDefault();
-    dragDepth.current = 0;
+    dragEntersIncludingChildren.current = 0;
     setIsDraggingOver(false);
     handleFiles(event.dataTransfer.files);
   }
 
   const showRemove: boolean =
-    removeLabel !== undefined && onRemove !== undefined && imageUrl !== null && !isUploading;
+    removeLabel !== undefined &&
+    onRemove !== undefined &&
+    (imageUrl !== null || imageRemoved) &&
+    !isUploading;
 
   return (
     <div
@@ -167,13 +160,16 @@ export function ImageDropZone({
           'hover:border-primary/60 hover:bg-muted/60 hover:text-foreground',
           'focus-visible:ring-3 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          shownUrl === null ? 'border-dashed border-border bg-muted/30' : 'border-border bg-card',
+          shownUrl === null && !showRemovedImage
+            ? 'border-dashed border-border bg-muted/30'
+            : 'border-border bg-card',
           isDraggingOver && 'border-solid border-primary bg-primary/10 ring-3 ring-primary/30',
         )}
       >
         {shownUrl !== null ? (
-          // contain : l'image entière est visible, sans recadrage, sur le fond de la vignette
           <img src={shownUrl} alt="" className="size-full bg-muted object-contain" />
+        ) : showRemovedImage ? (
+          <RemovedImage className="size-full" showLabel />
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
             <ImageIcon className={sizeClasses.icon} />
@@ -215,11 +211,10 @@ export function ImageDropZone({
           <X className={sizeClasses.removeIcon} />
         </button>
       )}
-      {/* Le vrai champ fichier est caché : la vignette ci-dessus le remplace, au clavier aussi */}
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        accept={BACKEND_ACCEPTED_IMAGE_TYPES.join(',')}
         multiple={onSelectMany !== undefined}
         tabIndex={-1}
         aria-hidden="true"

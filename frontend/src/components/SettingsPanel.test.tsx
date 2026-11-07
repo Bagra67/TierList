@@ -9,7 +9,6 @@ import { DARK_CLASS } from '../constants/theme';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { signedInSession, stubBackend, unauthorized } from '../test/stubBackend';
 
-// L'application entière : le panneau vit dans l'en-tête de Layout, sur toutes les pages
 function renderAppAt(path: string) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>

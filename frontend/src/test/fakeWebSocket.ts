@@ -1,6 +1,3 @@
-// Faux WebSocket : jsdom en ouvrirait un vrai vers le serveur de test. Il garde les messages
-// envoyés par la page, et le test joue le serveur (ouverture, messages, fermeture).
-
 interface FakeSocketEvent {
   data?: string;
   code?: number;
@@ -13,7 +10,6 @@ export class FakeWebSocket {
   static readonly OPEN: number = 1;
   static readonly CLOSING: number = 2;
   static readonly CLOSED: number = 3;
-  // Sockets ouverts depuis le début du test, du plus ancien au plus récent
   static instances: FakeWebSocket[] = [];
 
   readonly url: string;
@@ -39,8 +35,6 @@ export class FakeWebSocket {
     this.readyState = FakeWebSocket.CLOSED;
     this.dispatch('close', { code });
   }
-
-  // --- Le serveur, joué par le test ------------------------------------------------------------
 
   acceptConnection(): void {
     this.readyState = FakeWebSocket.OPEN;

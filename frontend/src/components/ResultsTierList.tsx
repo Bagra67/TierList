@@ -14,32 +14,23 @@ import { panelVariants } from './ui/panel';
 
 interface ResultsTierListProps {
   tiers: GameTier[];
-  // Un élément par tier, de haut en bas
   rows: TierItems[];
   items: ResultItems;
-  // Ligne ajoutée sous les tiers (non classés, jamais placés), absente si elle est vide
   extraRow?: { label: string; itemIds: string[] };
-  // Cliquer un item ouvre ses votes
   selection: ItemSelection;
-  // Les lignes apparaissent une à une, du bas vers le haut (sauf mouvement réduit). Lu au montage
-  // seulement : pour rejouer la révélation, la tier list est montée à nouveau (key)
-  reveal?: boolean;
-  // Appelé quand la révélation commence : la vue compte alors comme révélée
+  revealOnMount?: boolean;
   onRevealStarted?: () => void;
 }
 
-// Classe et délai d'animation d'une ligne pendant la révélation
 type RevealProps = { className?: string; style?: CSSProperties };
 
-// Une tier list en lecture seule : le classement médian, ou le classement final d'un joueur.
-// Chaque ligne est un groupe nommé par son tier, que le lecteur d'écran annonce avec ses items
 export function ResultsTierList({
   tiers,
   rows,
   items,
   extraRow,
   selection,
-  reveal = false,
+  revealOnMount = false,
   onRevealStarted,
 }: ResultsTierListProps) {
   const idPrefix: string = useId();
@@ -49,17 +40,12 @@ export function ResultsTierList({
   const visibleExtraRow: { label: string; itemIds: string[] } | undefined =
     extraRow !== undefined && extraRow.itemIds.length > 0 ? extraRow : undefined;
   const rowCount: number = tiers.length + (visibleExtraRow === undefined ? 0 : 1);
-  // Figé au montage, puis éteint quand la ligne du haut a fini d'apparaître : une ligne ajoutée
-  // ensuite (autre joueur, autre variante) n'est pas animée seule. En mouvement réduit, rien ne
-  // s'anime (motion-safe) et la fin n'arrive jamais, sans effet
-  const [revealing, setRevealing] = useState<boolean>(reveal);
+  const [revealing, setRevealing] = useState<boolean>(revealOnMount);
 
   useEffect(() => {
     if (revealing) onRevealStarted?.();
   }, [revealing, onRevealStarted]);
 
-  // Ligne d'indice index (0 = en haut) : la dernière apparaît la première, le tier du haut en
-  // dernier, pour garder le suspense
   function revealProps(index: number): RevealProps {
     if (!revealing) return {};
     return {
@@ -137,7 +123,7 @@ function ItemList({ itemIds, items, selection }: ItemListProps) {
             <ResultItemButton
               resultItem={resultItem}
               selection={selection}
-              labelled
+              accessibleNameIsAction
               className={cn(ITEM_CHIP_CLASS, 'hover:border-primary')}
             >
               <GameItemView

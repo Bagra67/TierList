@@ -10,25 +10,22 @@ import { cn } from 'cn';
 
 interface GuestLinkSectionProps {
   code: string;
-  // Lien perso connu de cette page (juste après l'arrivée ou un renouvellement), sinon null
-  guestRoom: GuestRoom | null;
+  justIssuedGuestLink: GuestRoom | null;
   onRenewed: (guestRoom: GuestRoom) => void;
 }
 
-// Lien perso d'un invité (US-5.4). Le serveur n'en garde que l'empreinte : après un rechargement,
-// il n'est plus affichable, mais l'invité, reconnu par son cookie, peut en demander un nouveau.
-export function GuestLinkSection({ code, guestRoom, onRenewed }: GuestLinkSectionProps) {
+export function GuestLinkSection({ code, justIssuedGuestLink, onRenewed }: GuestLinkSectionProps) {
   const renewMutation = useRenewGuestLink(code);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  if (guestRoom !== null) return <GuestLinkNotice guestRoom={guestRoom} />;
+  if (justIssuedGuestLink !== null) return <GuestLinkNotice guestRoom={justIssuedGuestLink} />;
 
   async function renew() {
     let renewed: GuestRoom;
     try {
       renewed = await renewMutation.mutateAsync();
     } catch {
-      return; // l'erreur est affichée depuis renewMutation.error
+      return;
     }
     onRenewed(renewed);
   }

@@ -9,8 +9,6 @@ from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 
 
 class OAuthAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Identité externe (ex. compte Google) rattachée à un utilisateur."""
-
     __tablename__ = "oauth_accounts"
     __table_args__ = (UniqueConstraint("provider", "provider_subject"),)
 
@@ -18,6 +16,5 @@ class OAuthAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     provider: Mapped[str] = mapped_column(String(PROVIDER_MAX_LENGTH))
-    # Identifiant stable du compte chez le fournisseur (claim « sub ») ; l'email peut changer
     provider_subject: Mapped[str] = mapped_column(String(PROVIDER_SUBJECT_MAX_LENGTH))
     email: Mapped[str] = mapped_column(String(EMAIL_MAX_LENGTH))

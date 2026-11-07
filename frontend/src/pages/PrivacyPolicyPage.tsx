@@ -9,8 +9,6 @@ import {
   PRIVACY_POLICY_UPDATED_AT,
 } from '../constants/legal';
 
-// Politique de confidentialité (#200), lisible sans compte. Le texte vient des locales
-// (privacy.*) ; ce qu'il décrit est l'inventaire de docs/technical/legal-pages.md.
 export function PrivacyPolicyPage() {
   const { t } = useTranslation();
 
@@ -38,6 +36,8 @@ export function PrivacyPolicyPage() {
             t('privacy.data.content'),
             t('privacy.data.games'),
             t('privacy.data.reports'),
+            t('privacy.data.bans'),
+            t('privacy.data.moderation'),
             t('privacy.data.technical'),
           ]}
         />
@@ -49,6 +49,7 @@ export function PrivacyPolicyPage() {
             t('privacy.purposes.service'),
             t('privacy.purposes.security'),
             t('privacy.purposes.reports'),
+            t('privacy.purposes.moderation'),
           ]}
         />
         <p>{t('privacy.purposes.noAds')}</p>
@@ -62,8 +63,11 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.links'),
             t('privacy.retention.guests'),
             t('privacy.retention.deleted'),
+            t('privacy.retention.moderatedImages'),
             t('privacy.retention.backups'),
             t('privacy.retention.reports'),
+            t('privacy.retention.bans'),
+            t('privacy.retention.moderation'),
           ]}
         />
       </LegalSection>
@@ -73,6 +77,7 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.visibility.room'),
             t('privacy.visibility.results'),
+            t('privacy.visibility.moderation'),
             t('privacy.visibility.deletedAccount'),
           ]}
         />
@@ -98,7 +103,9 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.cookies.session'),
             t('privacy.cookies.google'),
+            t('privacy.cookies.banNotice'),
             t('privacy.cookies.guest'),
+            t('privacy.cookies.report'),
             t('privacy.cookies.local'),
           ]}
         />

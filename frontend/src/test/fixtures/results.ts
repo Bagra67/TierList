@@ -8,9 +8,8 @@ const CURRY: string = '7c1d2e3f-0000-4000-8000-000000000003';
 
 export const RESULTS_TOKEN: string = 'k9Xq2LmZ7rT4vB1nW8sY3a';
 
-// Résultats d'une partie close, avec les votes absents : Alice et Lou ont joué. Paprika : Alice
-// en S, Lou en A ; Chorizo : Alice en A, Lou absente ; Curry : personne
 export const closedGameResults: GameResults = {
+  game_id: '3f0a1b2c-0000-4000-8000-000000000001',
   template_name: 'Épices',
   closed_at: '2026-10-17T18:30:00Z',
   include_absent_votes: true,
@@ -19,9 +18,9 @@ export const closedGameResults: GameResults = {
     { id: A, name: 'A', color: '#FFBF7F' },
   ],
   items: [
-    { id: PAPRIKA, text: 'Paprika', image_url: null },
-    { id: CHORIZO, text: 'Chorizo', image_url: null },
-    { id: CURRY, text: 'Curry', image_url: null },
+    { id: PAPRIKA, text: 'Paprika', image_url: null, image_removed: false },
+    { id: CHORIZO, text: 'Chorizo', image_url: null, image_removed: false },
+    { id: CURRY, text: 'Curry', image_url: null, image_removed: false },
   ],
   median_ranking: [
     { tier_id: S, item_ids: [] },
@@ -29,7 +28,6 @@ export const closedGameResults: GameResults = {
   ],
   unranked_item_ids: [CURRY],
   distribution: [
-    // Indices des joueurs : 0 = Alice, 1 = Lou
     {
       item_id: PAPRIKA,
       votes_per_tier: [1, 1],
@@ -57,6 +55,7 @@ export const closedGameResults: GameResults = {
   ],
   players: [
     {
+      id: '4a0b1c2d-0000-4000-8000-000000000001',
       display_name: 'Alice',
       tiers: [
         { tier_id: S, item_ids: [PAPRIKA] },
@@ -65,6 +64,7 @@ export const closedGameResults: GameResults = {
       unplaced_item_ids: [CURRY],
     },
     {
+      id: '4a0b1c2d-0000-4000-8000-000000000002',
       display_name: 'Lou',
       tiers: [
         { tier_id: S, item_ids: [] },
@@ -75,8 +75,6 @@ export const closedGameResults: GameResults = {
   ],
 };
 
-// Les mêmes résultats sans les votes absents : plus de colonne des absents, et Lou avait rattrapé
-// Paprika (raté au tour) : son vote ne compte plus. Le serveur ne donne alors aucun nom de votant
 export const closedGameResultsWithoutAbsents: GameResults = {
   ...closedGameResults,
   include_absent_votes: false,

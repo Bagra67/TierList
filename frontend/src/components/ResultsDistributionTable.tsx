@@ -15,8 +15,6 @@ interface ResultsDistributionTableProps {
   selection: ItemSelection;
 }
 
-// Vue globale (US-5.2) : pour chaque item, combien de joueurs l'ont mis dans chaque tier, et
-// combien étaient absents. Le tableau défile seul sur un petit écran, pas la page
 export function ResultsDistributionTable({
   tiers,
   items,
@@ -59,11 +57,10 @@ export function ResultsDistributionTable({
             return (
               <tr key={entry.item_id} className="border-b last:border-0">
                 <th scope="row" className="px-3 py-2 text-left font-normal">
-                  {/* Le bouton garde le nom de l'item : il nomme aussi la ligne du tableau */}
                   <ResultItemButton
                     resultItem={resultItem}
                     selection={selection}
-                    labelled={false}
+                    accessibleNameIsAction={false}
                     className="rounded-md p-1 hover:bg-muted"
                   >
                     <GameItemView

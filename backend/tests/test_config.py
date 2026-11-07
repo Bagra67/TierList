@@ -5,8 +5,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.db import session as session_module
 
-# Seuls les champs obligatoires : les autres prennent leur valeur par défaut
 REQUIRED_SETTINGS: dict[str, object] = {
     "postgres_user": "tierlist",
     "postgres_password": "unit-test-password",
@@ -32,8 +32,6 @@ IMAGE_SETTINGS_ENV_VARS: tuple[str, ...] = (
 
 @pytest.fixture(autouse=True)
 def isolate_from_local_configuration(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    # Settings lit l'environnement et le .env du dossier courant : un dossier vide et des variables
-    # retirées garantissent que seules les valeurs par défaut du code sont testées
     monkeypatch.chdir(tmp_path)
     for env_var in IMAGE_SETTINGS_ENV_VARS:
         monkeypatch.delenv(env_var, raising=False)
@@ -71,7 +69,6 @@ def test_image_limits_must_be_positive(field_name: str, invalid_value: int) -> N
 def test_image_storage_defaults_to_the_development_bucket_without_credentials() -> None:
     settings: Settings = make_settings()
 
-    # Sans adresse ni clés, boto3 vise AWS S3 avec ses identifiants habituels
     assert settings.image_s3_endpoint_url is None
     assert settings.image_s3_access_key_id is None
     assert settings.image_s3_secret_access_key is None
@@ -114,3 +111,35 @@ def test_an_invalid_trusted_proxy_is_refused(
 
     with pytest.raises(ValidationError):
         make_settings()
+
+
+def test_the_moderation_log_is_kept_the_3_years_stated_by_the_privacy_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("MODERATION_LOG_RETENTION_DAYS", raising=False)
+
+    assert make_settings().moderation_log_retention_days == 3 * 365
+
+
+@pytest.mark.parametrize("invalid_value", [0, -1])
+def test_the_moderation_log_retention_must_be_positive(invalid_value: int) -> None:
+    with pytest.raises(ValidationError):
+        make_settings(moderation_log_retention_days=invalid_value)
+
+
+def test_the_engine_uses_the_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings: Settings = make_settings(database_connect_timeout_seconds=7)
+    engine_arguments: dict[str, object] = {}
+
+    def record_engine_arguments(url: object, **arguments: object) -> None:
+        engine_arguments.update(arguments)
+
+    def settings_of_the_test() -> Settings:
+        return settings
+
+    monkeypatch.setattr(session_module, "create_engine", record_engine_arguments)
+    monkeypatch.setattr(session_module, "get_settings", settings_of_the_test)
+
+    session_module.get_engine.__wrapped__()
+
+    assert engine_arguments["connect_args"] == {"connect_timeout": 7}

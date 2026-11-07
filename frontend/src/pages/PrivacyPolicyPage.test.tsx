@@ -8,7 +8,6 @@ import { changeLanguage } from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { stubBackend, unauthorized } from '../test/stubBackend';
 
-// L'application entière, sans session : la page doit s'ouvrir sans demander de se connecter
 function renderPrivacyPage() {
   stubBackend({ 'POST /auth/refresh': unauthorized });
   return renderWithQueryClient(
@@ -63,9 +62,29 @@ describe('PrivacyPolicyPage', () => {
   it('describes the data of a content report and how long it is kept', async () => {
     renderPrivacyPage();
 
-    expect(await screen.findByText(/^Signalements : l'adresse e-mail/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Signalements : dans l'application/)).toBeInTheDocument();
     expect(screen.getByText(/^Traiter les signalements de contenus illicites/)).toBeInTheDocument();
     expect(screen.getByText(/^Signalements : le temps de les traiter/)).toBeInTheDocument();
+  });
+
+  it('describes the cookie of a report without an account', async () => {
+    renderPrivacyPage();
+
+    expect(await screen.findByText(/^Cookie de signalement : .* \(1 an\)\.$/)).toBeInTheDocument();
+  });
+
+  it('describes the moderation log, who sees it and how long it is kept', async () => {
+    renderPrivacyPage();
+
+    expect(
+      await screen.findByText(/^Journal de modération : pour chaque décision/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Garder la trace des décisions de modération/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Journal de modération : 3 ans après chaque décision.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Seuls les super admins/)).toBeInTheDocument();
+    expect(screen.getByText(/Le journal de modération garde aussi votre nom/)).toBeInTheDocument();
   });
 
   it('links to the CNIL complaint page in a new tab', async () => {

@@ -6,6 +6,7 @@ export const en: Translation = {
     backendUnreachable: 'The server is not responding. Try again in a moment.',
     language: 'Language',
     theme: 'Theme',
+    imageRemoved: 'Image removed',
   },
   home: {
     visitor: {
@@ -61,6 +62,9 @@ export const en: Translation = {
     home: 'Home',
     templates: 'My templates',
     history: 'History',
+    moderation: 'Moderation',
+    openReports_one: '{{count}} reported content',
+    openReports_other: '{{count}} reported contents',
   },
   settings: {
     open: 'Settings',
@@ -92,10 +96,13 @@ export const en: Translation = {
       guest:
         'Guests: the display name chosen to join a room, and a cookie that recognises you in that room.',
       content:
-        'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position).',
+        'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position). The fingerprint of each uploaded file is kept, to refuse an image deleted by the moderation if it is uploaded again.',
       games: 'Games: the rooms you join, your placements and the results of the games.',
       reports:
-        'Reports: the email address of the person who reports content, and what their message contains.',
+        'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
+      bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
+      moderation:
+        'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
       technical:
         'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
     },
@@ -106,6 +113,8 @@ export const en: Translation = {
       security:
         'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
       reports: 'Handling the reports of illegal content (legal obligation).',
+      moderation:
+        "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, finding an account's past sanctions, and refusing an image deleted by the moderation if it is uploaded again.",
       noAds: 'Your data is neither sold nor used for advertising or profiling.',
     },
     retention: {
@@ -117,17 +126,23 @@ export const en: Translation = {
       guests: "A guest's personal link: 30 days. An inactive room is closed after 24 hours.",
       deleted:
         'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
+      moderatedImages:
+        'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again. The reason for the decision is kept with the image so that its owner can read it, until their account is deleted.',
       backups: 'Database backups: 14 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
+      bans: 'Bans: until the account is deleted, to spot repeated abuse.',
+      moderation: 'Moderation log: 3 years after each decision.',
     },
     visibility: {
       title: 'Who sees your data',
       room: 'The participants of a room see the template used, the display names and the placements of the game.',
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
+      moderation:
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
       deletedAccount:
-        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. You can ask by email for your display name to be erased.",
+        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
     processors: {
       title: 'Service providers',
@@ -146,7 +161,11 @@ export const en: Translation = {
         'TierList only uses cookies strictly needed for it to work, with no audience measurement or advertising: no consent is therefore asked.',
       session: 'Session cookie: keeps you signed in (30 days).',
       google: 'Google sign-in cookie: for the time of the sign-in (10 minutes).',
+      banNotice:
+        'Ban cookie: after a refused Google sign-in, lets the page show the reason (10 minutes).',
       guest: 'Guest cookie: recognises you in a room (30 days at most).',
+      report:
+        'Report cookie: after a report without an account, avoids duplicates and limits their frequency (1 year).',
       local: 'Browser local storage: the chosen theme and language.',
     },
     security: {
@@ -172,13 +191,13 @@ export const en: Translation = {
     report: {
       title: 'Report content',
       intro:
-        "If content published on TierList seems illegal to you (hateful, sexual, infringing someone's rights or against the law), report it by email:",
+        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname or a game, with or without an account. For any other content, or to get an answer, write to:',
       include: 'So that the report can be handled, give:',
       page: 'the link of the page where the content is (template, room or results);',
       content: 'the content concerned: a tile (its text or image), a template or a nickname;',
       reason: 'the reason for the report;',
       reply: 'an email address to answer you.',
-      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. You receive an answer with the decision taken.',
+      next: 'Every report is reviewed promptly. Illegal content is removed, and the account that published it may be suspended or deleted. If you write by email, you receive an answer with the decision taken.',
     },
   },
   terms: {
@@ -277,6 +296,294 @@ export const en: Translation = {
     openLabel: 'See the results of the {{name}} game',
     more: 'See more',
   },
+  moderation: {
+    nav: {
+      label: 'Moderation area',
+      reports: 'Reports',
+      uploads: 'Recent uploads',
+      accounts: 'Accounts',
+      log: 'Log',
+    },
+    log: {
+      title: 'Moderation log',
+      intro: 'Every action: who, when, what and why. No entry can be edited or deleted.',
+      target: 'Target',
+      targetPlaceholder: 'Template, image, account…',
+      search: 'Search',
+      superAdmin: 'Super admin',
+      allSuperAdmins: 'All',
+      empty: 'No moderation action yet.',
+      emptyFiltered: 'No action matches these filters.',
+      columns: {
+        at: 'When',
+        actor: 'Who',
+        action: 'Action',
+        target: 'Target',
+        reason: 'Reason',
+      },
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      targetCell: '{{type}} "{{label}}"',
+      more: 'See more',
+    },
+    actions: {
+      dismiss: 'Dismiss',
+      hide: 'Hide',
+      unhide: 'Unhide',
+      delete: 'Delete',
+      ban: 'Ban',
+      lift_ban: 'Lift the ban',
+    },
+    targets: {
+      template: 'Template',
+      image: 'Image',
+      account: 'Account',
+      nickname: 'Nickname',
+      game: 'Game',
+    },
+    reports: {
+      title: 'Reports',
+      intro:
+        'The open reports, grouped by content, the most reported first. Every decision is written to the log.',
+      empty: 'No open report.',
+      more: 'See more',
+      type: {
+        template: 'Template',
+        image: 'Image',
+        account: 'Account',
+        nickname: 'Nickname',
+        game: 'Game',
+      },
+      noOwner: 'Guest',
+      count_one: '{{count}} report',
+      count_other: '{{count}} reports',
+      since: 'since {{date, datetime(dateStyle: medium)}}',
+      reason: '{{reason}} ×{{count}}',
+      viewAccount: 'View the account',
+      viewResults: 'View the results',
+      decisions: {
+        dismiss: {
+          open: 'Dismiss',
+          openLabel: 'Dismiss: {{name}}',
+          title: 'Dismiss the reports?',
+          description:
+            'The open reports of this content are closed, and the content stays as it is.',
+          submit: 'Dismiss',
+          submitting: 'Dismissing…',
+        },
+        hide_image: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this image?',
+          description:
+            'It is replaced everywhere by the "image removed" visual, and its open reports are closed. It can be shown again from the recent uploads.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+        delete_image: {
+          open: 'Delete',
+          openLabel: 'Delete: {{name}}',
+          title: 'Delete this image?',
+          description:
+            'Its file is erased and cannot be uploaded again. Its open reports are closed. This cannot be undone.',
+          submit: 'Delete',
+          submitting: 'Deleting…',
+        },
+        remove_nickname: {
+          open: 'Remove the nickname',
+          openLabel: 'Remove the nickname: {{name}}',
+          title: 'Remove this nickname?',
+          description:
+            'It is replaced by a neutral code in the rooms and the results, and its open reports are closed. This cannot be undone: the old nickname stays in the log only.',
+          submit: 'Remove the nickname',
+          submitting: 'Removing…',
+        },
+        hide_game: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this game?',
+          description:
+            'Its results link can no longer be found, and its open reports are closed. It can be shown again.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+      },
+      hiddenGames: {
+        title: 'Hidden games',
+        hiddenAt: 'hidden on {{date, datetime(dateStyle: medium)}}',
+        unhide: 'Show again',
+        unhideLabel: 'Show again: {{name}}',
+        unhiding: 'Showing…',
+        dialogTitle: 'Show this game again?',
+        dialogDescription: 'Its results link works again.',
+      },
+    },
+    uploads: {
+      title: 'Recent uploads',
+      intro: 'Uploaded images, newest first, to spot a problem before anyone reports it.',
+      author: 'Author',
+      authorPlaceholder: 'Name or email',
+      search: 'Search',
+      from: 'From',
+      to: 'To',
+      status: 'Status',
+      allStatuses: 'All',
+      visible: 'Visible',
+      hidden: 'Hidden',
+      hiddenBadge: 'Hidden',
+      empty: 'No image has been uploaded yet.',
+      emptyFiltered: 'No image matches these filters.',
+      more: 'Show more',
+      deletedAccount: 'Deleted account',
+      at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      imageAlt:
+        'Image uploaded by {{author}} on {{date, datetime(dateStyle: medium; timeStyle: short)}}',
+      templates_one: '{{count}} template',
+      templates_other: '{{count}} templates',
+      games_one: '{{count}} game',
+      games_other: '{{count}} games',
+      templateNames: 'Templates: {{names, list}}',
+      actionLabel: {
+        hide: "Hide {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        unhide:
+          "Unhide {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+        delete:
+          "Delete {{author}}'s image of {{date, datetime(dateStyle: medium; timeStyle: short)}}",
+      },
+    },
+    accounts: {
+      title: 'Accounts',
+      intro: 'Find an account by its name or email, then open its page.',
+      query: 'Name or email',
+      queryPlaceholder: 'Max, max@example.com…',
+      search: 'Search',
+      empty: 'No account matches.',
+      more: 'Show more',
+      createdAt: 'Created on {{date, datetime(dateStyle: medium)}}',
+      superAdmin: 'Super admin',
+      banned: 'Banned',
+    },
+    account: {
+      reports: 'Reports on their content',
+      reportsEmpty: 'No open report on their content.',
+      email: 'Email',
+      createdAt: 'Created',
+      date: '{{date, datetime(dateStyle: medium)}}',
+      emailVerified: 'Email confirmed',
+      yes: 'Yes',
+      no: 'No',
+      templates: 'Templates',
+      noTemplates: 'This account has no template.',
+      templateActionLabel: {
+        hide: 'Hide the template {{name}}',
+        unhide: 'Unhide the template {{name}}',
+        delete: 'Delete the template {{name}}',
+      },
+      images: 'Uploaded images',
+      noImages: 'This account has uploaded no visible or hidden image.',
+      hideAll: 'Hide all their images',
+      hiddenCount_one: '{{count}} image hidden.',
+      hiddenCount_other: '{{count}} images hidden.',
+      history: 'Moderation history',
+      noHistory: 'No decision has been taken yet on this account or its content.',
+    },
+    template: {
+      unknownOwner: 'Unknown account',
+      updatedAt: 'edited on {{date, datetime(dateStyle: medium)}}',
+      hiddenReason: 'Reason: {{reason}}',
+      tiers: 'Tiers',
+      tiles_one: '{{count}} tile',
+      tiles_other: '{{count}} tiles',
+      noTiles: 'This template has no tile.',
+      tileImage: 'Image of tile {{number}}',
+      imageHidden: 'Image hidden by the moderation',
+    },
+    templateDialog: {
+      hide: {
+        title: 'Hide the template "{{name}}"',
+        description:
+          'No room or game can start with it any more. Its owner will see it, with the reason, and can still edit it.',
+        submit: 'Hide',
+        submitting: 'Hiding…',
+      },
+      unhide: {
+        title: 'Unhide the template "{{name}}"',
+        description: 'It will be as it was before: games can start with it again.',
+        submit: 'Unhide',
+        submitting: 'Unhiding…',
+      },
+      delete: {
+        title: 'Delete the template "{{name}}"',
+        description:
+          'It will be deleted as if its owner did it, except that they will see the decision and the reason. The games already played keep their version.',
+        submit: 'Delete',
+        submitting: 'Deleting…',
+      },
+    },
+    ban: {
+      section: 'Ban',
+      none: 'This account is not banned.',
+      superAdmin: 'A super admin cannot be banned.',
+      open: 'Ban this account',
+      change: 'Change the ban',
+      lift: 'Lift the ban',
+      activePermanent: 'Banned for good',
+      activeUntil: 'Banned until {{date, datetime(dateStyle: long; timeStyle: short)}}',
+      activeReason: 'Reason: {{reason}}',
+      activeBy: 'By {{name}}, on {{date, datetime(dateStyle: medium)}}',
+      pastTitle: 'Past bans',
+      pastLifted:
+        'Banned on {{start, datetime(dateStyle: medium)}}, lifted or replaced on {{end, datetime(dateStyle: medium)}}',
+      pastEnded:
+        'Banned on {{start, datetime(dateStyle: medium)}}, until {{end, datetime(dateStyle: medium)}}',
+      pastBy: 'By {{name}}',
+      title: 'Ban {{name}}',
+      hint: 'The account is signed out everywhere and cannot sign in before the end of the ban.',
+      duration: 'Duration',
+      temporary: 'Temporarily',
+      until: 'Until (included)',
+      permanent: 'For good',
+      reason: 'Reason (shown to the person)',
+      submit: 'Ban',
+      submitting: 'Banning…',
+    },
+    liftDialog: {
+      title: 'Lift the ban of {{name}}',
+      description: 'The account will be able to sign in again.',
+      submit: 'Lift the ban',
+      submitting: 'Lifting…',
+    },
+    hideAllDialog: {
+      title: 'Hide all the images of {{name}}',
+      description:
+        'Each visible image will be replaced by "Image removed" everywhere it appears. Its owner will see the reason. You can unhide them one by one.',
+      submit: 'Hide all',
+      submitting: 'Hiding…',
+    },
+    reasonDialog: {
+      reason: 'Reason',
+      cancel: 'Cancel',
+      hide: {
+        title: 'Hide this image',
+        description:
+          'It will be replaced by "Image removed" everywhere it appears. Its owner will see the reason. You can unhide it later.',
+        submit: 'Hide',
+        submitting: 'Hiding…',
+      },
+      unhide: {
+        title: 'Unhide this image',
+        description: 'It will be shown again everywhere it is used.',
+        submit: 'Unhide',
+        submitting: 'Unhiding…',
+      },
+      delete: {
+        title: 'Delete this image',
+        description:
+          'Its file will be erased for good, and the same file can no longer be uploaded. Its owner will see the reason. This cannot be undone.',
+        submit: 'Delete',
+        submitting: 'Deleting…',
+      },
+    },
+  },
   renderError: {
     title: 'Something went wrong',
     message:
@@ -367,6 +674,20 @@ export const en: Translation = {
   },
   templates: {
     title: 'My templates',
+    hidden: {
+      badge: 'Hidden',
+      title: 'Hidden by the moderation',
+      reason: 'Reason: {{reason}}',
+      hint: 'You can still edit it, but no game can start with it any more.',
+    },
+    removedImage: {
+      hidden: 'Image hidden by the moderation',
+      deleted: 'Image deleted by the moderation',
+    },
+    removed: {
+      title: 'Deleted by the moderation',
+      date: 'Deleted on {{date, datetime(dateStyle: long)}}',
+    },
     empty: 'You have no template yet: create one to get started.',
     tileCount_one: '{{count}} tile',
     tileCount_other: '{{count}} tiles',
@@ -450,6 +771,33 @@ export const en: Translation = {
       },
     },
   },
+  report: {
+    open: 'Report',
+    openLabel: 'Report: {{name}}',
+    title: {
+      item: 'Report this image',
+      participant: 'Report this nickname',
+      player: 'Report this nickname',
+      game: 'Report this game',
+    },
+    anonymous: 'Your report is anonymous: the reported person will not know who sent it.',
+    reason: 'Reason',
+    reasons: {
+      illegal: 'Illegal content',
+      sexual: 'Sexual content',
+      violence_or_hate: 'Violence or hate',
+      harassment: 'Harassment',
+      spam: 'Spam',
+      other: 'Other',
+    },
+    detailsOptional: 'Details (optional)',
+    detailsRequired: 'Details',
+    submit: 'Send the report',
+    submitting: 'Sending…',
+    cancel: 'Cancel',
+    sent: 'Thank you: your report is sent.',
+    close: 'Close',
+  },
   results: {
     title: 'Results: {{name}}',
     closedAt: 'Game finished on {{date, datetime(dateStyle: long; timeStyle: short)}}',
@@ -497,6 +845,8 @@ export const en: Translation = {
     lobby: {
       title: 'Room {{code}}',
       template: 'Template: {{name}}',
+      templateHidden:
+        'The template of this room is hidden by the moderation: no new game can start in it.',
       templateDeleted: 'The template of this room was deleted: no new game can start in it.',
       code: 'Room code',
       link: 'Room link',
@@ -618,7 +968,6 @@ export const en: Translation = {
           submitting: 'Ending…',
         },
       },
-      // Screen reader announcements during a drag and drop
       dnd: {
         instructions:
           'To place the item, press Space or Enter, use the arrow keys, then Space or Enter to drop it, or Escape to cancel.',
@@ -700,6 +1049,14 @@ export const en: Translation = {
       http_error: 'The request failed.',
       database_unavailable: 'Database unavailable.',
       not_authenticated: 'Authentication required.',
+      super_admin_required: 'Only a super admin can do this.',
+      account_not_found: 'This account could not be found.',
+      account_banned: 'This account is banned for good: {{reason}}.',
+      account_banned_until:
+        'This account is banned until {{ends_at, datetime(dateStyle: long; timeStyle: short)}}: {{reason}}.',
+      cannot_ban_super_admin: 'A super admin cannot be banned.',
+      account_not_banned: 'This account is not banned.',
+      ban_end_in_past: 'The end of the ban must be in the future.',
       email_already_registered: 'This email is already registered',
       invalid_credentials: 'Incorrect email or password',
       session_expired: 'Session expired, please sign in again.',
@@ -708,6 +1065,9 @@ export const en: Translation = {
       invalid_token: 'This link is invalid or has expired.',
       template_not_found: 'This template could not be found.',
       template_has_no_tiles: 'Add at least one tile to this template to play with it.',
+      template_hidden: 'This template is hidden by the moderation: no game can start with it.',
+      template_moderation_conflict:
+        'This action does not apply to the template as it is now: it may already be hidden, visible or deleted.',
       room_not_found: 'This room could not be found or has been closed.',
       room_admin_required: 'Only the host can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
@@ -744,6 +1104,20 @@ export const en: Translation = {
       image_upload_limit_reached:
         'You uploaded {{max_uploads}} images in the last hour: try again a little later.',
       image_not_found: 'This image could not be found.',
+      report_target_not_found: 'This content cannot be reported: it may already have been removed.',
+      report_already_open: 'You already reported this content: it will be reviewed soon.',
+      report_details_required: 'Add details to your report for the reason "Other".',
+      reports_not_open:
+        'This content has no open report any more: it may already have been handled.',
+      nickname_not_found:
+        'This nickname could not be found: the person may have deleted their account.',
+      game_not_found: 'This game could not be found.',
+      game_moderation_conflict:
+        'This action does not apply to the game as it is now: it may already be hidden or visible.',
+      report_limit_reached:
+        'You sent {{max_reports}} reports in the last hour: try again a little later.',
+      image_moderation_conflict:
+        'This action does not apply to the image as it is now: it may already be hidden, visible or deleted.',
     },
     field: {
       invalid: 'Invalid value.',
@@ -762,6 +1136,7 @@ export const en: Translation = {
         'Your Google address is not verified: it cannot be used to sign in.',
       google_unavailable: 'Google sign-in is not available at the moment.',
       google_failed: 'Google sign-in failed, please try again.',
+      google_account_banned: 'This account is banned. Write to us to find out more.',
     },
   },
 };

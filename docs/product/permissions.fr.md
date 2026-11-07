@@ -62,7 +62,7 @@ La taille de la room est limitée par l'**offre de l'admin de la room** (voir [g
 
 ## Modération
 
-- N'importe quel utilisateur peut **signaler** un contenu.
+- N'importe qui peut **signaler** un contenu, avec ou sans compte.
 - Chaque signalement est traité **à la main**, dans un **panel admin** qui montre le nombre de signalements et leur détail.
 - Les **super admins voient tout** (vues fondateurs) et peuvent **tout modérer** : templates, médias, pseudos, parties…
 - Sanctions : **masquer**, **supprimer**, **bannir temporairement**, **bannir définitivement**, **retirer une offre achetée**.

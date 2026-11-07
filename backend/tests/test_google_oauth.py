@@ -17,14 +17,11 @@ REDIRECT_URI = "http://localhost:5173/api/auth/google/callback"
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
 ATTEMPT_TTL = timedelta(minutes=10)
 
-# Clés RSA générées pour les tests : elles jouent le rôle des clés de signature de Google
 GOOGLE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
 class StaticJWKClient(jwt.PyJWKClient):
-    """Renvoie toujours la clé publique de test, sans télécharger le JWKS de Google."""
-
     def __init__(self) -> None:
         jwk = json.loads(RSAAlgorithm.to_jwk(GOOGLE_KEY.public_key()))
         self._signing_key = jwt.PyJWK(jwk, algorithm="RS256")
@@ -87,23 +84,25 @@ def test_login_attempt_cookie_signed_with_another_key_is_rejected():
 
 
 def test_login_attempt_cookie_expires_after_its_ttl():
-    # Durée négative : le cookie est déjà expiré au moment où on le relit
     cookie = GoogleLoginAttempt.start(None).to_cookie(SECRET_KEY, timedelta(seconds=-1))
 
     with pytest.raises(GoogleAuthError):
         GoogleLoginAttempt.from_cookie(cookie, SECRET_KEY)
 
 
+RFC_7636_APPENDIX_B_VERIFIER: str = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+RFC_7636_APPENDIX_B_CHALLENGE: str = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+
+
 def test_code_challenge_is_the_s256_hash_of_the_verifier():
-    # Exemple de la RFC 7636 (annexe B)
     attempt = GoogleLoginAttempt(
         state="s",
         nonce="n",
-        code_verifier="dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+        code_verifier=RFC_7636_APPENDIX_B_VERIFIER,
         next_step=None,
     )
 
-    assert attempt.code_challenge == "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+    assert attempt.code_challenge == RFC_7636_APPENDIX_B_CHALLENGE
 
 
 def test_authorization_url_asks_for_openid_with_pkce():
@@ -158,7 +157,6 @@ def test_fetch_identity_exchanges_the_code_and_verifies_the_id_token():
 
 
 def test_id_token_issued_slightly_in_the_future_is_accepted():
-    # Horloge de Google légèrement en avance sur la nôtre : le token reste valide
     attempt = GoogleLoginAttempt.start(None)
     id_token = make_id_token(attempt.nonce, iat=datetime.now(UTC) + timedelta(seconds=30))
 
@@ -205,3 +203,29 @@ def test_token_endpoint_failures_are_reported(response: httpx.Response):
 
     with pytest.raises(GoogleAuthError):
         client.fetch_identity("auth-code", GoogleLoginAttempt.start(None))
+
+
+def test_pkce_verifier_length_follows_rfc_7636():
+    assert 43 <= len(GoogleLoginAttempt.start(None).code_verifier) <= 128
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        pytest.param(httpx.Response(400, json={"error": "invalid_grant"}), id="refused"),
+        pytest.param(httpx.Response(500), id="google-error"),
+        pytest.param(httpx.Response(200, text="not json"), id="not-json"),
+        pytest.param(httpx.Response(200, json={}), id="no-id-token"),
+    ],
+)
+def test_google_failures_do_not_leak_secrets(response: httpx.Response):
+    client: GoogleOAuthClient = google_client(httpx.MockTransport(lambda request: response))
+    attempt: GoogleLoginAttempt = GoogleLoginAttempt.start(None)
+
+    with pytest.raises(GoogleAuthError) as failure:
+        client.fetch_identity("auth-code", attempt)
+
+    message: str = str(failure.value)
+    assert "test-client-secret" not in message
+    assert "auth-code" not in message
+    assert attempt.code_verifier not in message

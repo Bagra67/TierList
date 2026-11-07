@@ -7,14 +7,12 @@ import { BULK_IMAGE_UPLOAD_CONCURRENCY } from '../constants/images';
 import { translateError } from '../errors/apiError';
 import { isAcceptedImageFile } from './imageFiles';
 
-// Image du lot qui n'a pas donné de tuile, avec la raison, déjà traduite
 export interface SkippedImage {
   fileName: string;
   reason: string;
 }
 
 export interface BulkImageTiles {
-  // Images à envoyer, et combien sont traitées (ajoutées ou en échec)
   total: number;
   done: number;
   addedCount: number;
@@ -22,11 +20,8 @@ export interface BulkImageTiles {
   isRunning: boolean;
 }
 
-// Envoi d'une image, toujours résolu : un échec attend son tour au lieu de rester une promesse
-// rejetée que personne n'écoute encore
 type UploadOutcome = { image: UploadedImage } | { error: unknown };
 
-// Lance les envois limit par limit, dans l'ordre ; chaque promesse se résout à la fin de son envoi
 function uploadAll(files: File[], limit: number): Promise<UploadOutcome>[] {
   let running: number = 0;
   const waiting: (() => void)[] = [];
@@ -39,7 +34,6 @@ function uploadAll(files: File[], limit: number): Promise<UploadOutcome>[] {
   };
   const endTurn = (): void => {
     const next: (() => void) | undefined = waiting.shift();
-    // Le tour passe directement au suivant : running ne change pas
     if (next === undefined) running -= 1;
     else next();
   };
@@ -54,18 +48,11 @@ function uploadAll(files: File[], limit: number): Promise<UploadOutcome>[] {
   );
 }
 
-// Ajout de plusieurs images d'un coup (#242) : une tuile image (sans texte) par fichier, dans
-// l'ordre de la sélection. Les images partent BULK_IMAGE_UPLOAD_CONCURRENCY à la fois par l'envoi
-// habituel (POST /images : formats, taille, limite par heure), puis chaque tuile est créée à son
-// tour. Un échec ne bloque pas les autres. Avant tout envoi, un type refusé et ce qui dépasse les
-// places libres du modèle sont mis de côté
 export function useBulkImageTiles(template: Template) {
-  // Une mutation à part : ses erreurs vont dans le bilan, pas sous le formulaire d'ajout
-  const addMutation: TemplateChange<NewTile> = useAddTile(template.id);
+  const addMutationForBulkSummary: TemplateChange<NewTile> = useAddTile(template.id);
   const [state, setState] = useState<BulkImageTiles | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // Renvoie les ids des tuiles ajoutées, dans l'ordre
   async function addImages(files: File[]): Promise<string[]> {
     const skipped: SkippedImage[] = [];
     const accepted: File[] = [];
@@ -97,8 +84,9 @@ export function useBulkImageTiles(template: Template) {
       let failure: unknown = 'error' in outcome ? outcome.error : null;
       if ('image' in outcome) {
         try {
-          const updated: Template = await addMutation.mutateAsync({ image_id: outcome.image.id });
-          // Une tuile ajoutée va en dernier
+          const updated: Template = await addMutationForBulkSummary.mutateAsync({
+            image_id: outcome.image.id,
+          });
           const added: Template['tiles'][number] | undefined = updated.tiles.at(-1);
           if (added !== undefined) addedTileIds.push(added.id);
         } catch (error: unknown) {

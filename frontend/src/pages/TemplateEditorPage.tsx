@@ -6,21 +6,22 @@ import { cn } from 'cn';
 
 import { type Template, useTemplate } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
+import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
 import { textLinkClassName } from '../components/ui/text-link';
+import {
+  EDITOR_COLUMNS_FITTING_FULL_TIER_ROW_CLASS,
+  FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
+} from '../constants/layout';
 import { ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 
-// Éditeur d'un template : son nom, ses tiers (US-1.4) et ses tuiles (US-1.2, US-1.3). Sur grand
-// écran, les tiers sont à gauche et la grille des tuiles à droite, pour profiter de la largeur
-// plutôt que d'empiler toute la page.
 export function TemplateEditorPage() {
-  // Toujours présent : la route TEMPLATE_EDITOR déclare ce paramètre
   const { templateId = '' }: Readonly<Params> = useParams();
   const {
     data: template,
@@ -30,8 +31,6 @@ export function TemplateEditorPage() {
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
-  // Un fichier lâché à côté d'une vignette d'image serait ouvert par le navigateur, qui quitterait
-  // l'éditeur : hors des vignettes (qui gèrent elles-mêmes le dépôt), il est ignoré
   useEffect(() => {
     function ignoreFileDropOutsideDropZones(event: DragEvent) {
       const carriesFiles: boolean = event.dataTransfer?.types.includes('Files') ?? false;
@@ -48,11 +47,12 @@ export function TemplateEditorPage() {
   }, []);
 
   return (
-    // Sur grand écran, l'éditeur remplit exactement la hauteur sous l'en-tête : la page ne défile
-    // pas, ce sont la colonne des tiers et la grille des tuiles qui défilent (chacune de son côté)
     <PageContainer
       width="app"
-      className="flex flex-col items-start gap-6 lg:min-h-0 lg:flex-1 lg:gap-4 lg:py-6"
+      className={cn(
+        'flex flex-col items-start gap-6 lg:gap-4 lg:py-6',
+        FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
+      )}
     >
       <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
         {t('templates.editor.back')}
@@ -63,14 +63,22 @@ export function TemplateEditorPage() {
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-semibold">{template.name}</h1>
-            <CreateRoomButton templateId={template.id} templateName={template.name} />
+            {template.moderation !== 'hidden' && (
+              <CreateRoomButton templateId={template.id} templateName={template.name} />
+            )}
           </div>
-          {/* Un nom n'a pas besoin de toute la largeur de la page */}
+          {template.moderation === 'hidden' && (
+            <TemplateHiddenNotice reason={template.moderation_reason} />
+          )}
           <div className="w-full max-w-xl">
             <TemplateNameField template={template} />
           </div>
-          {/* 22rem : la poignée, la pastille, le nom et les trois boutons d'un tier */}
-          <div className="grid w-full gap-8 lg:min-h-0 lg:flex-1 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+          <div
+            className={cn(
+              'grid w-full gap-8 lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)]',
+              EDITOR_COLUMNS_FITTING_FULL_TIER_ROW_CLASS,
+            )}
+          >
             <TierEditor template={template} />
             <TileEditor template={template} />
           </div>

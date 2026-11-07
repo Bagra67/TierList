@@ -33,8 +33,6 @@ UPLOAD_IMAGE_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 
-# def et non async def : la compression utilise le processeur, FastAPI exécute donc la route dans
-# son pool de threads sans bloquer la boucle d'événements
 @router.post("", status_code=201, responses=UPLOAD_IMAGE_RESPONSES)
 def upload_image(
     file: UploadFile,
@@ -53,7 +51,6 @@ def upload_image(
             params={"max_uploads": exc.max_uploads},
         ) from exc
     except ImageTooLargeError as exc:
-        # La limite part en param : le frontend l'affiche sans la recopier dans ses traductions
         raise AppHTTPException(
             status_code=413,
             code=ErrorCode.IMAGE_TOO_LARGE,

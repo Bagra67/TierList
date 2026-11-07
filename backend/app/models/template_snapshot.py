@@ -15,22 +15,12 @@ if TYPE_CHECKING:
 
 
 class TemplateSnapshot(UUIDPrimaryKeyMixin, Base):
-    """Copie figée des tiers et des tuiles d'un template, prise au démarrage d'une partie.
-
-    Immuable : modifier, supprimer ou purger le template ne la change jamais, d'où l'absence de
-    updated_at et de suppression logique (docs/technical/templates.md).
-    """
-
     __tablename__ = "template_snapshots"
 
-    # Template d'origine, pour information. SET NULL et non CASCADE : la purge du template
-    # supprimé ou la suppression du compte ne doivent pas effacer les parties jouées avec
     template_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("templates.id", ondelete="SET NULL"), index=True
     )
-    # Nom du template au moment de la copie
     name: Mapped[str] = mapped_column(String(TEMPLATE_NAME_MAX_LENGTH))
-    # clock_timestamp() comme TimestampMixin : l'heure réelle de la copie
     taken_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp()
     )

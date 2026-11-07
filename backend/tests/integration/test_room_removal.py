@@ -6,14 +6,20 @@ from httpx2 import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_room_event_publisher
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import CHANNEL_CLOSE_BANNED, CHANNEL_CLOSE_REMOVED
-from app.models.enums import RoomStatus
-from app.models.room import Room
+from app.main import api_app
 from app.models.room_ban import RoomBan
-from app.schemas.room_events import ParticipantRemovedEvent
+from app.schemas.room_events import ParticipantRemovedEvent, RoomEvent
 from tests.integration.conftest import RecordingRoomEventPublisher
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    create_room,
+    create_template,
+    mark_game_in_progress,
+    register,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -60,9 +66,6 @@ def display_names(room: JsonObject) -> list[str]:
     return [p["display_name"] for p in room["participants"]]
 
 
-# --- Retirer un participant -----------------------------------------------------------------
-
-
 def test_the_admin_removes_a_player(
     auth_client: TestClient,
     alice: dict[str, str],
@@ -86,8 +89,38 @@ def test_the_admin_removes_a_player(
     assert str(removed.data.participant_id) == bob_id
     assert removed.room_version == body["version"]
     assert room_events.disconnections == [(uuid.UUID(bob_id), CHANNEL_CLOSE_REMOVED)]
-    # Il n'a plus de place : la salle lui est introuvable
     assert auth_client.get(f"/rooms/{code}", headers=bob).status_code == 404
+
+
+class CallOrderRecordingPublisher(RecordingRoomEventPublisher):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[str] = []
+
+    def publish(self, room_id: uuid.UUID, event: RoomEvent) -> None:
+        self.calls.append(event.type)
+
+    def disconnect_participant(
+        self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
+    ) -> None:
+        self.calls.append("disconnect")
+
+
+def test_the_removed_participant_is_disconnected_before_the_room_is_told(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    code: str = alice_room["code"]
+    bob_id: str = seat_id(join(auth_client, code, bob).json(), "bob")
+    publisher: CallOrderRecordingPublisher = CallOrderRecordingPublisher()
+    api_app.dependency_overrides[get_room_event_publisher] = lambda: publisher
+
+    remove(auth_client, code, bob_id, alice)
+
+    assert publisher.calls == ["disconnect", ParticipantRemovedEvent.model_fields["type"].default]
 
 
 def test_a_removed_player_can_join_again(
@@ -128,9 +161,7 @@ def test_the_admin_removes_a_participant_during_a_game(
 ):
     code: str = alice_room["code"]
     bob_id: str = seat_id(join(auth_client, code, bob).json(), "bob")
-    # Une partie est en cours (posé par le démarrage, #91)
-    db_session.scalars(select(Room).where(Room.code == code)).one().status = RoomStatus.PLAYING
-    db_session.flush()
+    mark_game_in_progress(db_session, code)
 
     response: Response = remove(auth_client, code, bob_id, alice)
 
@@ -192,9 +223,6 @@ def test_removing_requires_authentication(auth_client: TestClient, alice_room: J
     assert response.status_code == 401
 
 
-# --- Bannir ---------------------------------------------------------------------------------
-
-
 def test_a_banned_account_cannot_join_again(
     auth_client: TestClient,
     alice: dict[str, str],
@@ -222,7 +250,6 @@ def test_a_banned_guest_cannot_join_again_from_the_same_browser(
 ):
     code: str = alice_room["code"]
     guest: JsonObject = join_as_guest(auth_client, code, "Lou").json()
-    # Le client de test garde le cookie de l'invité, comme son navigateur
     remove(auth_client, code, seat_id(guest, "Lou"), alice, ban=True)
 
     refused: Response = join_as_guest(auth_client, code, "Lou2")
@@ -234,7 +261,6 @@ def test_a_banned_guest_cannot_join_again_from_the_same_browser(
 def test_a_banned_guest_without_their_cookie_is_not_recognized(
     auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
 ):
-    # Limite assumée (US-2.12) : sans compte ni cookie, rien ne reconnaît le banni
     code: str = alice_room["code"]
     guest: JsonObject = join_as_guest(auth_client, code, "Lou").json()
     remove(auth_client, code, seat_id(guest, "Lou"), alice, ban=True)
@@ -273,9 +299,6 @@ def test_only_the_admin_sees_the_bans(
 
     assert len(auth_client.get(f"/rooms/{code}", headers=alice).json()["bans"]) == 1
     assert auth_client.get(f"/rooms/{code}", headers=carol).json()["bans"] == []
-
-
-# --- Débannir -------------------------------------------------------------------------------
 
 
 def test_an_unbanned_account_can_join_again(

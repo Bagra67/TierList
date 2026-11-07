@@ -1,8 +1,3 @@
-"""Tests of write_env.py.
-
-Usage (from the repo root): python -m unittest discover -s .github/scripts
-"""
-
 import shutil
 import subprocess
 import unittest
@@ -17,11 +12,11 @@ def complete_environment(**changes: str) -> dict[str, str]:
 
 
 def source_with_bash(content: str, name: str) -> str:
-    """Value of `name` once the file is sourced by bash, as the pod start script does."""
     script = f"set -a\n{content}set +a\nprintf '%s' \"${name}\""
-    # Full path: under Windows, a bare "bash" can resolve to the WSL launcher of System32
-    bash = shutil.which("bash") or "bash"
-    return subprocess.run([bash, "-c", script], capture_output=True, text=True, check=True).stdout
+    full_bash_path_not_wsl_launcher = shutil.which("bash") or "bash"
+    return subprocess.run(
+        [full_bash_path_not_wsl_launcher, "-c", script], capture_output=True, text=True, check=True
+    ).stdout
 
 
 class RenderEnvFileTest(unittest.TestCase):

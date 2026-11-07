@@ -13,8 +13,6 @@ interface MissedItemsPanelProps {
   onChoose: (itemId: string) => void;
 }
 
-// Les éléments manqués (votes absents, arrivée en retard), à placer avant la fin des retouches
-// (US-4.6) : on les glisse dans un tier, ou on les choisit puis « Déplacer ici »
 export function MissedItemsPanel({
   items,
   labelOf,
@@ -42,7 +40,6 @@ export function MissedItemsPanel({
                 pending={pending}
                 onChoose={onChoose}
               />
-              {/* Le mot accompagne la couleur, qui ne suffirait pas seule */}
               <span className="rounded-sm bg-destructive/10 px-1.5 text-sm font-semibold text-destructive">
                 {t('rooms.game.cooldown.absent')}
               </span>

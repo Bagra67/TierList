@@ -16,7 +16,7 @@ This is **business design**, not technical documentation: no tables, endpoints o
 | [Domain model](domain-model.md) | The business concepts, their relations and their invariants (class diagram).         |
 | [Lifecycles](lifecycles.md)     | The states of a room, a game, a round and a participant (state diagrams).            |
 | [Game flow](game-flow.md)       | Who does what, in which order, from the template to the results (sequence diagrams). |
-| [Screens](screens.md)           | Low-fidelity wireframes of each screen, with the stories they cover.                 |
+| [Screens](screens.md)           | Wireframes of each screen on the visual identity, with the stories they cover.       |
 
 ## Scope
 

@@ -1,7 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AuthPageShell } from './AuthPageShell';
+import { CenteredCardPage } from './CenteredCardPage';
 import { Button } from './ui/button';
 
 interface ErrorBoundaryProps {
@@ -12,8 +12,6 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-// Une erreur pendant le rendu laisserait sinon une page blanche. React journalise déjà l'erreur
-// dans la console (onCaughtError) : rien à ajouter ici.
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { hasError: false };
 
@@ -30,11 +28,11 @@ function RenderErrorFallback() {
   const { t } = useTranslation();
 
   return (
-    <AuthPageShell title={t('renderError.title')}>
+    <CenteredCardPage title={t('renderError.title')}>
       <p>{t('renderError.message')}</p>
       <Button type="button" className="w-full" onClick={() => window.location.reload()}>
         {t('renderError.reload')}
       </Button>
-    </AuthPageShell>
+    </CenteredCardPage>
   );
 }

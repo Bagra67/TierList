@@ -5,7 +5,6 @@ import { translateError } from '../errors/apiError';
 import { Button } from './ui/button';
 import { ErrorMessage } from './ErrorMessage';
 
-// Invite à confirmer l'adresse tant qu'elle ne l'est pas ; la connexion reste possible sans
 export function EmailVerificationBanner({ user }: { user: User }) {
   const resendMutation = useRequestEmailVerification();
   const { t } = useTranslation();

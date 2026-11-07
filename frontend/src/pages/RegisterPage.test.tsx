@@ -3,16 +3,26 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
+import i18n from '../i18n';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, errorResponse, stubBackend, tokenResponse } from '../test/stubBackend';
+import {
+  alice,
+  type BackendMock,
+  errorResponse,
+  stubBackend,
+  tokenResponse,
+} from '../test/stubBackend';
+import { LoginPage } from './LoginPage';
 import { RegisterPage } from './RegisterPage';
 
-// from : la page privée demandée avant d'arriver sur l'inscription (cf. RequireAuth)
-function renderRegisterPage(from?: string) {
+function renderRegisterPage(requestedPrivatePath?: string) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[{ pathname: '/register', state: { from } }]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: '/register', state: { from: requestedPrivatePath } }]}
+    >
       <Routes>
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<h1>Accueil</h1>} />
         <Route path="/r/K7P2QX" element={<h1>Lobby</h1>} />
       </Routes>
@@ -49,9 +59,44 @@ describe('RegisterPage', () => {
       email: 'alice@example.com',
       password: 'correct horse battery staple',
       display_name: 'Alice',
-      // Langue de l'email de vérification : celle de l'interface
       language: 'fr',
     });
+  });
+
+  it('sends the interface language for the verification email', async () => {
+    await i18n.changeLanguage('en');
+    const fetchMock: BackendMock = stubBackend({
+      'POST /auth/register': tokenResponse('new-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderRegisterPage();
+
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'correct horse battery staple' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Create my account' }));
+
+    expect(await screen.findByRole('heading', { name: 'Accueil' })).toBeInTheDocument();
+    await expect(fetchMock.mock.calls[0][0].json()).resolves.toMatchObject({ language: 'en' });
+  });
+
+  it('keeps the requested page when the visitor goes on to sign in', async () => {
+    stubBackend({
+      'POST /auth/login': tokenResponse('login-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderRegisterPage('/r/K7P2QX');
+
+    fireEvent.click(screen.getByRole('link', { name: 'Se connecter' }));
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), {
+      target: { value: 'correct horse battery staple' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
   });
 
   it('goes back to the requested page after the sign-up', async () => {

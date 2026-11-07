@@ -10,10 +10,17 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
 from app.core.config import get_settings
+from app.core.security import hash_guest_token
 from app.models.participant import Participant
 from app.services.rooms import RoomService
 from tests.integration.conftest import RecordingRoomEventPublisher
-from tests.integration.helpers import JsonObject, create_room, create_template, register
+from tests.integration.helpers import (
+    JsonObject,
+    create_room,
+    create_template,
+    register,
+    start_game,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -34,15 +41,11 @@ def join_as_guest(client: TestClient, code: str, nickname: str) -> Response:
 
 
 def token_of(guest_link: str) -> str:
-    """Jeton porté par le fragment du lien perso (#guest=<jeton>)."""
     return guest_link.split("#guest=", 1)[1]
 
 
 def guest_seat(db_session: Session, nickname: str) -> Participant:
     return db_session.scalars(select(Participant).where(Participant.nickname == nickname)).one()
-
-
-# --- Rejoindre en invité --------------------------------------------------------------------
 
 
 def test_a_guest_joins_with_a_nickname_and_gets_a_cookie_and_a_personal_link(
@@ -106,7 +109,6 @@ def test_the_cookie_of_a_room_does_not_open_another_one(
         auth_client, alice, create_template(auth_client, db_session, alice)
     )
     guest_link: str = join_as_guest(auth_client, alice_room["code"], "Lou").json()["guest_link"]
-    # Le jeton de la première salle, envoyé sur les routes de l'autre
     auth_client.cookies.clear()
     auth_client.cookies.set(GUEST_COOKIE, token_of(guest_link), path=f"/rooms/{other_room['code']}")
 
@@ -128,11 +130,16 @@ def test_an_invalid_nickname_is_refused(
     assert response.json()["errors"][0]["code"] == error_code
 
 
-@pytest.mark.parametrize("nickname", ["LOU", "ALICE"])
+@pytest.mark.parametrize(
+    "nickname",
+    [
+        pytest.param("LOU", id="a_guest_in_another_case"),
+        pytest.param("ALICE", id="the_room_admin_in_another_case"),
+    ],
+)
 def test_a_nickname_already_used_in_the_room_is_refused(
     auth_client: TestClient, alice_room: JsonObject, nickname: str
 ):
-    # « Lou » est un invité, « alice » le nom affiché du room admin : la casse ne compte pas
     join_as_guest(auth_client, alice_room["code"], "Lou")
     auth_client.cookies.clear()
 
@@ -142,11 +149,9 @@ def test_a_nickname_already_used_in_the_room_is_refused(
     assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN
 
 
-def test_the_nickname_index_refusal_is_a_conflict_too(
+def test_the_nickname_index_refuses_a_duplicate_the_service_did_not_see(
     auth_client: TestClient, alice_room: JsonObject, monkeypatch: pytest.MonkeyPatch
 ):
-    # Le service ne voit aucun nom pris (comme quand lower() diffère entre Python et PostgreSQL) :
-    # c'est l'index unique de la base qui refuse le doublon
     join_as_guest(auth_client, alice_room["code"], "Lou")
     auth_client.cookies.clear()
     monkeypatch.setattr(RoomService, "_taken_names", staticmethod(lambda room: set()))
@@ -155,6 +160,34 @@ def test_the_nickname_index_refusal_is_a_conflict_too(
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN
+
+
+def test_the_nickname_index_refusal_is_a_conflict_during_a_game_too(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    join_as_guest(auth_client, alice_room["code"], "Lou")
+    auth_client.cookies.clear()
+    start_game(auth_client, alice_room["code"], alice)
+    monkeypatch.setattr(RoomService, "_taken_names", staticmethod(lambda room: set()))
+
+    response: Response = join_as_guest(auth_client, alice_room["code"], "lou")
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.NICKNAME_TAKEN
+
+
+def test_the_guest_token_is_stored_only_as_its_fingerprint(
+    auth_client: TestClient, db_session: Session, alice_room: JsonObject
+):
+    guest_link: str = join_as_guest(auth_client, alice_room["code"], "Lou").json()["guest_link"]
+
+    stored_hash: str | None = guest_seat(db_session, "Lou").guest_token_hash
+
+    assert stored_hash == hash_guest_token(token_of(guest_link))
+    assert stored_hash != token_of(guest_link)
 
 
 def test_joining_an_unknown_room_as_a_guest_is_not_found(auth_client: TestClient):
@@ -176,15 +209,11 @@ def test_the_link_validity_is_a_setting(
     assert "Max-Age=604" in response.headers["set-cookie"]
 
 
-# --- Lien perso -----------------------------------------------------------------------------
-
-
 def test_the_personal_link_gives_the_seat_back_on_another_device(
     auth_client: TestClient, alice_room: JsonObject
 ):
     code: str = alice_room["code"]
     joined: JsonObject = join_as_guest(auth_client, code, "Lou").json()
-    # Autre appareil : aucun cookie
     auth_client.cookies.clear()
 
     response: Response = auth_client.post(
@@ -254,10 +283,8 @@ def test_a_guest_who_lost_the_link_gets_a_new_one(auth_client: TestClient, alice
     assert response.status_code == 200
     renewed: JsonObject = response.json()
     assert renewed["guest_link"] != joined["guest_link"]
-    # La place n'est pas prolongée
     assert renewed["guest_link_expires_at"] == joined["guest_link_expires_at"]
     assert renewed["participants"] == joined["participants"]
-    # Le cookie porte le nouveau jeton : la salle reste lisible depuis ce navigateur
     assert auth_client.get(f"/rooms/{code}").status_code == 200
     auth_client.cookies.clear()
     old_link: Response = auth_client.post(
@@ -283,19 +310,28 @@ def test_a_new_link_needs_a_guest_seat(
     assert as_account.status_code == 404
 
 
-# --- Compte et invité -----------------------------------------------------------------------
-
-
 def test_an_account_is_served_before_a_guest_cookie(
     auth_client: TestClient, alice_room: JsonObject
 ):
     join_as_guest(auth_client, alice_room["code"], "Lou")
     bob: dict[str, str] = register(auth_client, "bob@example.com")
 
-    # Bob n'a pas de place : son compte passe avant le cookie d'invité du même navigateur
     response: Response = auth_client.get(f"/rooms/{alice_room['code']}", headers=bob)
 
     assert response.status_code == 404
+
+
+def test_an_invalid_token_answers_401_even_with_a_guest_cookie(
+    auth_client: TestClient, alice_room: JsonObject
+):
+    join_as_guest(auth_client, alice_room["code"], "Lou")
+
+    response: Response = auth_client.get(
+        f"/rooms/{alice_room['code']}", headers={"Authorization": "Bearer not-a-valid-token"}
+    )
+
+    assert response.status_code == 401
+    assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
 
 
 def test_a_guest_cannot_change_the_settings_nor_join_as_a_player(

@@ -11,13 +11,16 @@ from app.schemas.room_events import RoomSettingsUpdatedEvent
 from app.services.room_channel import ConnectionRegistry
 
 
-class FakeSocket:
-    """Socket factice : garde les messages reçus, ou échoue à l'envoi."""
+def run_in_thread_like_a_sync_route(target: Callable[..., None], *args: object) -> None:
+    thread: threading.Thread = threading.Thread(target=target, args=args)
+    thread.start()
+    thread.join()
 
+
+class FakeSocket:
     def __init__(self, failing: bool = False) -> None:
         self.messages: list[str] = []
         self.failing = failing
-        # Code et raison de la fermeture demandée par le serveur
         self.closed_with: tuple[int, str] | None = None
 
     async def send_text(self, message: str) -> None:
@@ -32,7 +35,6 @@ class FakeSocket:
 
 
 def as_websocket(socket: FakeSocket) -> WebSocket:
-    """Le registre n'utilise que send_text et close : le faux socket suffit."""
     return cast(WebSocket, socket)
 
 
@@ -70,12 +72,9 @@ def test_a_publication_from_another_thread_reaches_only_the_room_sockets():
         registry.add(ROOM, ALICE, as_websocket(in_room))
         registry.add(OTHER_ROOM, BOB, as_websocket(elsewhere))
 
-        # Comme une route REST synchrone, depuis le threadpool
-        publisher: threading.Thread = threading.Thread(
-            target=registry.publish, args=(ROOM, RoomSettingsUpdatedEvent(room_version=7))
+        run_in_thread_like_a_sync_route(
+            registry.publish, ROOM, RoomSettingsUpdatedEvent(room_version=7)
         )
-        publisher.start()
-        publisher.join()
         await asyncio.sleep(0.05)
 
         assert in_room.messages == ['{"type":"room.settings_updated","room_version":7,"data":{}}']
@@ -126,7 +125,6 @@ def test_a_participant_back_during_the_departure_write_is_set_connected_again():
         async def set_presence(connected: bool) -> None:
             calls.append(connected)
             if not connected:
-                # Le participant revient pendant que « déconnecté » s'écrit
                 registry.add(ROOM, ALICE, as_websocket(FakeSocket()))
 
         registry.schedule_disconnect(ROOM, ALICE, 0, set_presence)
@@ -146,13 +144,11 @@ def test_a_replaced_pending_disconnection_does_not_remove_its_replacement():
             calls.append(connected)
 
         registry.schedule_disconnect(ROOM, ALICE, 0.05, set_presence)
-        # Le second départ remplace le premier, qui est annulé
         registry.schedule_disconnect(ROOM, ALICE, 0.1, set_presence)
         await asyncio.sleep(0.01)
         registry.cancel_pending_disconnect(ALICE)
         await asyncio.sleep(0.15)
 
-        # Annuler a bien retiré la remplaçante : aucun départ n'a eu lieu
         assert calls == []
 
     run(scenario)
@@ -170,20 +166,15 @@ def test_disconnecting_a_participant_closes_only_their_sockets_in_that_room():
         registry.add(ROOM, BOB, as_websocket(other_participant))
         registry.add(OTHER_ROOM, ALICE, as_websocket(other_room))
 
-        # Comme une route REST synchrone, depuis le threadpool
-        disconnecting: threading.Thread = threading.Thread(
-            target=registry.disconnect_participant,
-            args=(ROOM, ALICE, 4410, ErrorCode.REMOVED_FROM_ROOM),
+        run_in_thread_like_a_sync_route(
+            registry.disconnect_participant, ROOM, ALICE, 4410, ErrorCode.REMOVED_FROM_ROOM
         )
-        disconnecting.start()
-        disconnecting.join()
         await asyncio.sleep(0.05)
 
         assert first_tab.closed_with == (4410, "removed_from_room")
         assert second_tab.closed_with == (4410, "removed_from_room")
         assert other_participant.closed_with is None
         assert other_room.closed_with is None
-        # Retirés du registre : ils ne reçoivent plus les événements de la salle
         assert not registry.is_connected(ROOM, ALICE)
         assert registry.is_connected(OTHER_ROOM, ALICE)
 
@@ -199,7 +190,6 @@ def test_disconnecting_cancels_the_pending_departure():
             calls.append(connected)
 
         registry.add(ROOM, BOB, as_websocket(FakeSocket()))
-        # Sa place est supprimée pendant le délai de grâce : plus de départ à écrire
         registry.schedule_disconnect(ROOM, ALICE, 0.05, set_presence)
         registry.disconnect_participant(ROOM, ALICE, 4411, ErrorCode.ROOM_BANNED)
         await asyncio.sleep(0.1)
@@ -235,10 +225,7 @@ def test_closing_a_room_closes_every_socket_of_that_room_only():
         registry.add(ROOM, BOB, as_websocket(bob_tab))
         registry.add(OTHER_ROOM, ALICE, as_websocket(other_room))
 
-        # Comme une route REST synchrone, depuis le threadpool
-        closing: threading.Thread = threading.Thread(target=registry.close_room, args=(ROOM,))
-        closing.start()
-        closing.join()
+        run_in_thread_like_a_sync_route(registry.close_room, ROOM)
         await asyncio.sleep(0.05)
 
         assert alice_tab.closed_with == (4412, "room_closed")
@@ -249,3 +236,24 @@ def test_closing_a_room_closes_every_socket_of_that_room_only():
         assert registry.is_connected(OTHER_ROOM, ALICE)
 
     run(scenario)
+
+
+def test_a_socket_is_out_of_the_registry_before_it_closes():
+    registry: ConnectionRegistry = ConnectionRegistry()
+    connected_while_closing: list[bool] = []
+
+    class SocketCheckingTheRegistryWhenItCloses(FakeSocket):
+        async def close(self, code: int, reason: str) -> None:
+            connected_while_closing.append(registry.is_connected(ROOM, ALICE))
+
+    async def scenario() -> None:
+        registry.add(ROOM, ALICE, as_websocket(SocketCheckingTheRegistryWhenItCloses()))
+
+        run_in_thread_like_a_sync_route(
+            registry.disconnect_participant, ROOM, ALICE, 4410, ErrorCode.REMOVED_FROM_ROOM
+        )
+        await asyncio.sleep(0.05)
+
+    run(scenario)
+
+    assert connected_while_closing == [False]

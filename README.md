@@ -9,7 +9,7 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.15+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Tile images (formats, compression, S3 storage, SeaweedFS, moderation): [docs/technical/images.md](docs/technical/images.md). Results computation (median ranking, absent votes, worked examples): [docs/technical/results.md](docs/technical/results.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Legal pages (privacy policy): [docs/technical/legal-pages.md](docs/technical/legal-pages.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Tile images (formats, compression, S3 storage, SeaweedFS, moderation): [docs/technical/images.md](docs/technical/images.md). Results computation (median ranking, absent votes, worked examples): [docs/technical/results.md](docs/technical/results.md). Moderation (moderation log): [docs/technical/moderation.md](docs/technical/moderation.md). Test data for local development and staging: [docs/technical/seed-data.md](docs/technical/seed-data.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Visual identity (colors, type, shapes): [docs/technical/visual-identity.md](docs/technical/visual-identity.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Legal pages (privacy policy): [docs/technical/legal-pages.md](docs/technical/legal-pages.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
@@ -19,6 +19,7 @@ TierList/
 ├── compose.yaml        # Development PostgreSQL database, Mailpit inbox and SeaweedFS storage (Docker)
 ├── seaweedfs/          # SeaweedFS configuration (S3 identities), development and CI only
 ├── .github/            # CI workflow, Dependabot, pull request template
+├── .claude/            # Shared Claude Code setup: hooks, skills, subagents, plugin
 ├── .vscode/            # Shared VS Code settings (format on save, debug configurations…)
 ├── .editorconfig       # Encoding, line endings, indentation for every editor
 ├── .nvmrc              # Node.js version (24)
@@ -174,6 +175,18 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 - On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
+
+### Claude Code
+
+The Claude Code setup in `.claude/settings.json` is shared with the whole team (`.claude/settings.local.json` stays personal). Its instructions for agents are in English only, like `AGENTS.md`.
+
+- **Hooks** (`.claude/hooks/`, need Node.js, uv and the frontend dependencies):
+  - after Claude edits a file, it is fixed and formatted like on save: Ruff for `backend/**/*.py`, ESLint + Prettier for frontend scripts, Prettier for frontend and `docs/` JSON, CSS, Markdown and HTML. An error that cannot be fixed automatically is sent back to Claude;
+  - Claude cannot edit `.env` files (only `.env.example`), `uv.lock`, `pnpm-lock.yaml` or the generated API files `backend/openapi.json` and `frontend/src/api/schema.d.ts`;
+  - reminders to follow `AGENTS.md` at session start, on each prompt and before each edit.
+- **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results.
+- **Subagents** (`.claude/agents/`, read-only): `security-reviewer` (authorization, sessions, uploads, rooms, moderation) and `i18n-docs-reviewer` (translations, bilingual docs, testing guide, privacy policy, seed data).
+- **Plugin**: `claude-code-setup` (Anthropic directory) recommends other automations for the project; ask Claude for "automation recommendations".
 
 ---
 

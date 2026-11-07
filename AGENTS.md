@@ -103,6 +103,16 @@ Define:
 -   How frontend and backend changes interact.
 -   What tests are required.
 -   Potential compatibility or migration concerns.
+-   How the change is split into pull requests (see "Splitting a
+    feature" in §40).
+
+A non-trivial plan MUST also contain:
+
+-   A **Deliverable** section: what exists once the work is merged, and
+    what is explicitly out of scope.
+-   A **Deployment** section: migrations, the staging then production
+    rollout, manual steps (e.g. a SQL command run by hand), new
+    environment variables or secrets, or "nothing to do".
 
 For significant tasks, present the plan before implementation when
 practical.
@@ -753,7 +763,9 @@ The backend API is the authoritative contract.
     backend OpenAPI schema. After a contract change, run
     `uv run python scripts/export_openapi.py` (backend) then
     `pnpm gen:api` (frontend), and commit `backend/openapi.json` and
-    `frontend/src/api/schema.d.ts` together.
+    `frontend/src/api/schema.d.ts` together. With Claude Code, the
+    `api-sync` skill runs both steps, and a hook blocks hand edits of
+    these two files and of the lock files.
 -   Add or update tests when contracts change.
 
 For breaking changes:
@@ -893,6 +905,20 @@ the guide always matches the actual tests. The `Docs` CI check enforces
 it; the `skip-docs-sync` PR label is reserved for justified exceptions,
 explained in the PR description.
 
+## Seed data
+
+`backend/app/seed/` creates a realistic set of test data for local
+development and staging (`scripts/seed.py`, the `Seed staging` workflow;
+`docs/technical/seed-data.md`).
+
+For every feature, when planning and again when reviewing, check whether
+the seed data has to cover its new data or cases (e.g. reports, public
+templates, likes). When it does, update `app/seed/` in the same stack:
+the new data in the matching module, its quantity in `sizes.py`, its
+deletion in `cleanup.py` when a new link to the accounts is `SET NULL`,
+and `tests/integration/test_seed.py`. Say in the plan and the final
+report whether the seed data changed or needed no change.
+
 ## MUST NOT
 
 -   Delete failing tests merely to make CI pass.
@@ -942,23 +968,37 @@ alternatives.
 
 Do not reformat unrelated code.
 
+With Claude Code, a hook runs Ruff, ESLint and Prettier on each edited
+file.
+
 ------------------------------------------------------------------------
 
 # 31. Comments and Documentation
 
+Good code reads by itself. Comments are hard to keep in line with the code, and AI agents trust
+them more than the code.
+
 ## MUST
 
-Write comments when they explain:
+-   Write no comment by default.
+-   Say it in the code first: a name, a type, a named constant, an extracted function or a test.
+-   Keep a comment only if all three can be shown:
+    1.  What breaks without it: the reasonable change a developer would make, and its concrete
+        consequence.
+    2.  Why the code cannot say it: which name, type, constant or test was tried.
+    3.  Why no test catches it.
+-   Remove a comment that the code makes obsolete, in the same change.
 
--   Why something is necessary.
--   A non-obvious constraint.
--   A business rule.
--   A workaround.
--   A compatibility requirement.
+Not concerned: docstrings published in the OpenAPI schema (routes and Pydantic schemas), which
+are the API contract and must stay true, and tool directives (`noqa`, `type: ignore`,
+`eslint-disable`...).
 
 ## MUST NOT
 
-Use comments to explain obvious syntax.
+-   Repeat in a comment what the code, a name or a type already says.
+-   Add section banners, or references to issues or user stories that say nothing else.
+-   Describe the history of the code.
+-   Leave a misleading comment.
 
 Bad:
 
@@ -967,16 +1007,18 @@ Bad:
 i += 1
 ```
 
-Good:
+Bad, because a name says it:
 
 ``` python
 # The external API rejects requests made within 500 ms of the previous request.
 await asyncio.sleep(0.5)
 ```
 
-Do not leave misleading comments.
+Good:
 
-Update comments when behavior changes.
+``` python
+await asyncio.sleep(EXTERNAL_API_MIN_SECONDS_BETWEEN_REQUESTS)
+```
 
 ## Documentation location
 
@@ -1010,7 +1052,8 @@ MUST exist in **English and French**:
 
 Exceptions:
 
--   `AGENTS.md` stays English-only (instructions for agents).
+-   `AGENTS.md` and the Claude Code skills and agents (`.claude/`)
+    stay English-only (instructions for agents).
 -   `LICENSE` is already bilingual in a single file.
 -   Code comments are not concerned.
 
@@ -1246,6 +1289,41 @@ The PR description should explain:
 Do not create a PR claiming successful validation if validation was not
 actually performed.
 
+## Draft and ready
+
+-   Push the work branch and open the PR as a **draft** right after its
+    first commit, so that progress (diff, CI) can be followed on GitHub.
+-   A draft only means "work in progress". As soon as the work of the PR
+    is finished (code, tests, documentation, final diff reviewed) and its
+    CI is green, mark it **ready for review** (`gh pr ready <N>`) without
+    waiting to be asked, and tick its CI checkbox.
+-   In a stack, each PR is marked ready once its own work is finished.
+-   With Claude Code, before marking a PR ready, run the
+    `i18n-docs-reviewer` subagent (translations, bilingual docs, testing
+    guide, privacy policy, seed data, comments) and, when the PR touches
+    the API, authentication, sessions, uploads, rooms or moderation, the
+    `security-reviewer` subagent.
+-   Ready does not mean merged: merging still waits for an explicit
+    request.
+
+## Splitting a feature
+
+A feature that spans several layers is split into **one PR per layer**
+(e.g. backend, backend scripts, frontend; more PRs when a layer is large),
+so that each one can be reviewed on its own:
+
+-   The PRs are **always stacked** with `gh stack` (`--base develop`) and
+    **merged together** with `gh stack merge` (see Merging), never one by
+    one.
+-   The technical and product documentation goes into a **final PR that
+    only contains documentation**, at the top of the stack. It carries
+    `Closes #N`.
+-   Exception: the testing guide (§28) stays in the PR that changes the
+    tests, since the `Docs` CI check requires both in the same PR. The
+    same goes for the translations of a new `ErrorCode` (§50).
+-   Each PR must pass the CI on its own (lint, types, tests, generated
+    API types).
+
 ## Merging
 
 Pull requests MUST be merged with a **squash merge**: each PR becomes a
@@ -1286,7 +1364,7 @@ gh pr merge <N> --merge --subject "chore(release): <summary> (#<N>)" --body "<sh
 These merge methods are also enforced by the GitHub rulesets: `develop`
 only allows squash merges, `main` only allows merge commits.
 
-**Exception — stacked PRs (`gh stack`)** MAY be merged in one go with
+**Exception — stacked PRs (`gh stack`)** are merged in one go with
 `gh stack merge`, which merges the whole stack atomically but cannot set
 the squash message. GitHub's default message is then accepted:
 
@@ -1536,6 +1614,8 @@ A task is considered complete only when:
     language (§50).
 -   [ ] The privacy policy was checked, and updated when the change
     affects what it describes (§51).
+-   [ ] The seed data was checked, and updated when the feature adds data
+    or cases worth trying for real (§28, "Seed data").
 -   [ ] Backend validation was executed when relevant.
 -   [ ] Final Git diff was reviewed.
 -   [ ] No unrelated changes were introduced.
@@ -1574,6 +1654,9 @@ If something was not executed:
 npm run e2e                    NOT RUN
 Reason: requires the external staging environment.
 ```
+
+With Claude Code, the `ship-check` skill runs every CI check locally and
+produces this table.
 
 ## Notes
 

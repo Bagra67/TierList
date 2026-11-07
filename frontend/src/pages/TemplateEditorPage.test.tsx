@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { UploadedImage } from '../api/images';
 import type { Template, Tier, Tile } from '../api/templates';
+import { BULK_IMAGE_UPLOAD_CONCURRENCY } from '../constants/images';
 import { type FileDataTransfer, fileDataTransfer } from '../test/fileDataTransfer';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoom } from '../test/fixtures/rooms';
@@ -12,13 +13,22 @@ import { TemplateEditorPage } from './TemplateEditorPage';
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
 const templateUrl: string = `/templates/${templateId}`;
+const neverAnswers = (): Promise<Response> => new Promise<Response>(() => {});
 
 function makeTier(name: string, position: number, color = '#FF7F7F'): Tier {
   return { id: `tier-${name}`, name, color, position };
 }
 
 function makeTile(text: string, position: number): Tile {
-  return { id: `tile-${text}`, text, image_url: null, position };
+  return {
+    id: `tile-${text}`,
+    text,
+    image_url: null,
+    image_removed: false,
+    image_status: null,
+    image_moderation_reason: null,
+    position,
+  };
 }
 
 function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Template {
@@ -30,6 +40,8 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
     tiers: tiers.map((tier, position) => ({ ...tier, position })),
     tiles: tiles.map((tile, position) => ({ ...tile, position })),
     max_tiles: 32,
+    moderation: 'none',
+    moderation_reason: null,
   };
 }
 
@@ -52,14 +64,12 @@ function withTiles(tiles: Tile[]): Template {
   return makeTemplate([tierS, tierA, tierB], 'Chips', tiles);
 }
 
-// Textes des tuiles dans l'ordre affiché (un champ de texte par tuile)
 function displayedTileTexts(): string[] {
   return screen
     .queryAllByRole('textbox', { name: /^Texte de la tuile/ })
     .map((input) => (input as HTMLInputElement).value);
 }
 
-// Noms des tiers dans l'ordre affiché (un champ de nom par ligne)
 function displayedTierNames(): string[] {
   return screen
     .getAllByRole('textbox', { name: /^Nom du tier/ })
@@ -104,6 +114,27 @@ describe('TemplateEditorPage', () => {
     consoleError.mockRestore();
   });
 
+  it('says why a template hidden by the moderation can no longer start a room', async () => {
+    stubBackend({
+      [`GET ${templateUrl}`]: () =>
+        Response.json({ ...chips, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+    });
+
+    renderEditor();
+
+    const title: HTMLElement = await screen.findByRole('heading', {
+      name: 'Masqué par la modération',
+    });
+    const notice: HTMLElement = title.closest('section') as HTMLElement;
+    expect(notice).toHaveAttribute('role', 'status');
+    expect(notice).toHaveTextContent('Motif : Harcèlement');
+    expect(notice).toHaveTextContent('Vous pouvez encore le modifier');
+    expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'Créer une salle avec Chips' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('creates a room from the open template and opens its lobby', async () => {
     const fetchMock: BackendMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(chips),
@@ -134,6 +165,44 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByRole('heading', { name: 'Crisps' })).toBeInTheDocument();
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ name: 'Crisps' });
+    });
+
+    it('replaces the draft with the name saved by the backend', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}`]: () =>
+          Response.json(makeTemplate([tierS, tierA, tierB], 'Name saved by the backend')),
+      });
+      renderEditor();
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du modèle',
+      });
+
+      fireEvent.change(nameField, { target: { value: 'Crisps' } });
+      fireEvent.blur(nameField);
+
+      await waitFor(() =>
+        expect(screen.getByRole('textbox', { name: 'Nom du modèle' })).toHaveValue(
+          'Name saved by the backend',
+        ),
+      );
+    });
+
+    it('brings back the saved name with Escape, and leaving the field then sends nothing', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
+      renderEditor();
+      const nameField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du modèle',
+      });
+
+      fireEvent.change(nameField, { target: { value: 'Crisps' } });
+      fireEvent.keyDown(nameField, { key: 'Escape' });
+      fireEvent.blur(nameField);
+
+      expect(nameField).toHaveValue('Chips');
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
     });
 
     it('sends nothing when the name did not change', async () => {
@@ -210,10 +279,8 @@ describe('TemplateEditorPage', () => {
         name: 'Nom du tier 1',
       });
 
-      // Une zone de texte passe à la ligne au lieu de couper le nom
       expect(firstTierName.tagName).toBe('TEXTAREA');
       fireEvent.change(firstTierName, { target: { value: longName } });
-      // Entrée enregistre, sans ajouter de retour à la ligne
       const enterKept: boolean = fireEvent.keyDown(firstTierName, { key: 'Enter' });
 
       expect(enterKept).toBe(false);
@@ -236,6 +303,23 @@ describe('TemplateEditorPage', () => {
       fireEvent.blur(firstTierName);
 
       await expect.poll(() => requestBody(fetchMock, 'PATCH')).toEqual({ name: 'Très bon' });
+    });
+
+    it('replaces the draft with the tier name saved by the backend', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([{ ...tierS, name: 'Saved' }, tierA, tierB])),
+      });
+      renderEditor();
+      const tierField: HTMLElement = await screen.findByRole('textbox', {
+        name: 'Nom du tier 1',
+      });
+
+      fireEvent.change(tierField, { target: { value: 'Draft' } });
+      fireEvent.blur(tierField);
+
+      await waitFor(() => expect(displayedTierNames()).toEqual(['Saved', 'A', 'B']));
     });
 
     it('moves a tier with the move down button', async () => {
@@ -339,7 +423,6 @@ describe('TemplateEditorPage', () => {
 
       await waitFor(() => expect(displayedTileTexts()).toEqual(['Pizza', 'Tacos']));
       await expect(requestBody(fetchMock, 'POST')).resolves.toEqual({ text: 'Tacos' });
-      // Le champ est vidé pour la tuile suivante
       expect(newTileField).toHaveValue('');
     });
 
@@ -456,6 +539,49 @@ describe('TemplateEditorPage', () => {
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: 'Pizza 4 fromages' });
     });
 
+    it('replaces the draft with the tile text saved by the backend', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () =>
+          Response.json(withTiles([{ ...pizza, text: 'Saved' }, sushi])),
+      });
+      renderEditor();
+      await screen.findByText('2 / 32 tuiles');
+      const tileField: HTMLElement = screen.getAllByRole('textbox', {
+        name: /^Texte de la tuile/,
+      })[0];
+
+      fireEvent.change(tileField, { target: { value: 'Draft' } });
+      fireEvent.blur(tileField);
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Saved', 'Sushi']));
+    });
+
+    it('shows a moved tile at once, before the answer', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: neverAnswers,
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Déplacer Pizza après' }));
+
+      await waitFor(() => expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']));
+    });
+
+    it('puts a tile back when its move cannot be saved', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => errorResponse(500, 'internal_error'),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Déplacer Pizza après' }));
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(displayedTileTexts()).toEqual(['Pizza', 'Sushi']);
+    });
+
     it('moves a tile with the move after button', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
@@ -494,6 +620,9 @@ describe('TemplateEditorPage', () => {
       id: 'tile-image-only',
       text: null,
       image_url: 'https://images.example.com/only.webp',
+      image_removed: false,
+      image_status: 'visible',
+      image_moderation_reason: null,
       position: 0,
     };
 
@@ -501,7 +630,6 @@ describe('TemplateEditorPage', () => {
       return new File(['png-bytes'], name, { type: 'image/png' });
     }
 
-    // Champ fichier caché d'une vignette, trouvé par le nom accessible de la vignette
     function fileInputOf(zoneName: string): HTMLInputElement {
       const zone: HTMLElement = screen.getByRole('button', { name: zoneName });
       const input: HTMLInputElement | null | undefined =
@@ -518,10 +646,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.drop(zone, { dataTransfer });
     }
 
-    // La requête est-elle un envoi multipart avec un champ file ? Lu dans le corps brut : sous
-    // jsdom, undici ne sait ni relire ce FormData ni lire le contenu d'un File de jsdom (le
-    // contenu envoyé est vérifié par les tests du backend)
-    async function sendsAFileField(request: Request): Promise<boolean> {
+    async function rawBodyHasMultipartFileField(request: Request): Promise<boolean> {
       const contentType: string = request.headers.get('content-type') ?? '';
       const body: string = await request.text();
       return contentType.startsWith('multipart/form-data') && body.includes('name="file"');
@@ -538,12 +663,44 @@ describe('TemplateEditorPage', () => {
       expect(zone.querySelector('img')).toHaveAttribute('src', pizzaWithImage.image_url);
     });
 
+    it('shows an image removed by the moderation, that the owner can replace', async () => {
+      const removedImageTile: Tile = { ...imageOnlyTile, image_url: null, image_removed: true };
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([removedImageTile])) });
+
+      renderEditor();
+
+      const zone: HTMLElement = await screen.findByRole('button', {
+        name: "Remplacer l'image de Tuile 1",
+      });
+      expect(within(zone).getByRole('img', { name: 'Image retirée' })).toBeInTheDocument();
+      expect(zone.querySelector('img')).toBeNull();
+    });
+
+    it.each([
+      ['hidden', 'Image masquée par la modération'],
+      ['deleted', 'Image supprimée par la modération'],
+    ] as const)('says why an image is %s on its tile', async (imageStatus, decision) => {
+      const removedImageTile: Tile = {
+        ...imageOnlyTile,
+        image_url: null,
+        image_removed: true,
+        image_status: imageStatus,
+        image_moderation_reason: 'Violence',
+      };
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(withTiles([removedImageTile])) });
+
+      renderEditor();
+
+      expect(await screen.findByText(decision)).toBeInTheDocument();
+      expect(screen.getByText('Motif : Violence')).toBeInTheDocument();
+    });
+
     it('adds a tile with an image chosen with the file picker', async () => {
       const uploads: boolean[] = [];
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
         'POST /images': async (request) => {
-          uploads.push(await sendsAFileField(request));
+          uploads.push(await rawBodyHasMultipartFileField(request));
           return Response.json(uploadedImage, { status: 201 });
         },
         [`POST ${templateUrl}/tiles`]: () =>
@@ -572,7 +729,6 @@ describe('TemplateEditorPage', () => {
         .map(([request]) => request)
         .find((request) => request.url.endsWith('/tiles'));
       await expect(addRequest?.json()).resolves.toEqual({ image_id: uploadedImage.id });
-      // Le formulaire est vidé, image comprise, pour la tuile suivante
       expect(
         screen.getByRole('button', { name: 'Ajouter une image à la nouvelle tuile' }),
       ).toBeInTheDocument();
@@ -631,7 +787,7 @@ describe('TemplateEditorPage', () => {
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ image_id: null });
     });
 
-    it('keeps the image of an image-only tile, whose text is optional', async () => {
+    it('offers no image removal on an image-only tile, which would leave it empty, and keeps its text optional', async () => {
       const fetchMock: BackendMock = stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([imageOnlyTile])),
       });
@@ -639,7 +795,6 @@ describe('TemplateEditorPage', () => {
 
       await screen.findByRole('button', { name: "Remplacer l'image de Tuile 1" });
 
-      // Sans texte, retirer l'image laisserait la tuile vide : le bouton n'existe pas
       expect(screen.queryByRole('button', { name: /^Retirer l'image/ })).not.toBeInTheDocument();
       expect(screen.getByRole('textbox', { name: 'Texte de la tuile 1' })).not.toBeRequired();
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
@@ -678,7 +833,6 @@ describe('TemplateEditorPage', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         /^L'image est trop lourde : 10\sMo au maximum\.$/,
       );
-      // L'aperçu disparaît : aucune image n'est rattachée à la nouvelle tuile
       expect(
         screen.getByRole('button', { name: 'Ajouter une image à la nouvelle tuile' }),
       ).toBeInTheDocument();
@@ -688,7 +842,6 @@ describe('TemplateEditorPage', () => {
       let uploadCount: number = 0;
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([])),
-        // Le premier envoi réussit, le remplacement est refusé
         'POST /images': () => {
           uploadCount += 1;
           return uploadCount === 1
@@ -721,10 +874,11 @@ describe('TemplateEditorPage', () => {
       const title: HTMLElement = await screen.findByRole('heading', { name: 'Tuiles' });
       const dataTransfer: FileDataTransfer = fileDataTransfer(pngFile());
 
-      // fireEvent renvoie false quand l'action par défaut (le navigateur ouvre le fichier) est
-      // empêchée
-      expect(fireEvent.dragOver(title, { dataTransfer })).toBe(false);
-      expect(fireEvent.drop(title, { dataTransfer })).toBe(false);
+      const browserMayRefuseDragOver: boolean = fireEvent.dragOver(title, { dataTransfer });
+      const browserMayOpenFileOnDrop: boolean = fireEvent.drop(title, { dataTransfer });
+
+      expect(browserMayRefuseDragOver).toBe(false);
+      expect(browserMayOpenFileOnDrop).toBe(false);
       expect(dataTransfer.dropEffect).toBe('none');
     });
 
@@ -764,7 +918,6 @@ describe('TemplateEditorPage', () => {
     });
 
     describe('several images at once', () => {
-      // Une image envoyée par appel, dans l'ordre des appels : img-1, img-2…
       function imageNumber(index: number): UploadedImage {
         return {
           ...uploadedImage,
@@ -773,8 +926,6 @@ describe('TemplateEditorPage', () => {
         };
       }
 
-      // Faux backend qui garde les tuiles : chaque ajout renvoie le modèle avec la nouvelle tuile
-      // en dernier ; addedImageIds note l'image de chaque ajout, dans l'ordre
       function stubBulkBackend(
         startTiles: Tile[],
         upload: (index: number) => Response | Promise<Response> = (index) =>
@@ -796,6 +947,9 @@ describe('TemplateEditorPage', () => {
               id: `tile-${image_id}`,
               text: null,
               image_url: `https://images.example.com/${image_id}.webp`,
+              image_removed: false,
+              image_status: 'visible',
+              image_moderation_reason: null,
               position: tiles.length,
             });
             return Response.json(withTiles(tiles), { status: 201 });
@@ -833,15 +987,46 @@ describe('TemplateEditorPage', () => {
             'border-primary',
           );
         }
-        // La tuile d'avant n'est pas mise en avant
         expect(document.querySelector('[data-tile-id="tile-Pizza"]')).not.toHaveClass(
           'border-primary',
         );
       });
 
+      it('uploads three images at a time, the next one starting when one ends', async () => {
+        const answerUpload: (() => void)[] = [];
+        const { fetchMock } = stubBulkBackend(
+          [],
+          (index: number) =>
+            new Promise<Response>((resolve) => {
+              answerUpload.push(() => resolve(Response.json(imageNumber(index), { status: 201 })));
+            }),
+        );
+        renderEditor();
+        await screen.findByText('0 / 32 tuiles');
+
+        dropFiles(['a.png', 'b.png', 'c.png', 'd.png', 'e.png'].map(pngFile));
+
+        await waitFor(() =>
+          expect(imageUploads(fetchMock)).toHaveLength(BULK_IMAGE_UPLOAD_CONCURRENCY),
+        );
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
+        expect(imageUploads(fetchMock)).toHaveLength(BULK_IMAGE_UPLOAD_CONCURRENCY);
+
+        answerUpload[0]();
+        await waitFor(() =>
+          expect(imageUploads(fetchMock)).toHaveLength(BULK_IMAGE_UPLOAD_CONCURRENCY + 1),
+        );
+
+        answerUpload[1]();
+        await waitFor(() => expect(imageUploads(fetchMock)).toHaveLength(5));
+        answerUpload.slice(2).forEach((answer: () => void) => answer());
+        expect(await screen.findByText('5 tuiles ajoutées.')).toBeInTheDocument();
+      });
+
       it('keeps the order of the selection when a later image is uploaded first', async () => {
         const { addedImageIds } = stubBulkBackend([], async (index) => {
-          // La première image met plus de temps que la seconde
           if (index === 1) await new Promise((resolve) => setTimeout(resolve, 50));
           return Response.json(imageNumber(index), { status: 201 });
         });
@@ -947,15 +1132,13 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      // Une tuile sans image garde son texte : il est envoyé tel quel, pas retiré (null)
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: '   ' });
     });
 
     it('disables the drag and drop of tiles while a tile move is being saved', async () => {
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
-        // L'enregistrement du déplacement ne répond jamais : il reste en cours
-        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: () => new Promise<Response>(() => {}),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: neverAnswers,
       });
       renderEditor();
 
@@ -1047,8 +1230,7 @@ describe('TemplateEditorPage', () => {
     it('disables drag and drop while a move is being saved', async () => {
       stubBackend({
         [`GET ${templateUrl}`]: () => Response.json(chips),
-        // L'enregistrement du déplacement ne répond jamais : il reste en cours
-        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () => new Promise<Response>(() => {}),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: neverAnswers,
       });
       renderEditor();
       const dragHandle: HTMLElement = await screen.findByRole('button', { name: 'Déplacer S' });
@@ -1080,7 +1262,6 @@ describe('TemplateEditorPage', () => {
   });
 
   describe('tier color', () => {
-    // Ouvre le sélecteur de couleur du tier A et renvoie son contenu
     async function openColorPicker(): Promise<HTMLElement> {
       fireEvent.click(await screen.findByRole('button', { name: 'Couleur du tier A' }));
       return screen.findByRole('dialog');

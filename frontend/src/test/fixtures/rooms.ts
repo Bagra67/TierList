@@ -1,12 +1,11 @@
 import type { GuestRoom, Room } from '../../api/rooms';
 
-// Salle d'Alice (room admin) avec Bob, telle que la renvoie GET /rooms/{code}
 export const aliceRoom: Room = {
   code: 'K7P2QX',
   version: 3,
   link: 'http://localhost:5173/r/K7P2QX',
   status: 'open',
-  template: { id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', name: 'Chips' },
+  template: { id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', name: 'Chips', hidden: false },
   settings: {
     item_order: 'template',
     auto_advance: 'none',
@@ -39,7 +38,6 @@ export const aliceRoom: Room = {
   past_games: [],
 };
 
-// La même salle pendant une partie : tour 1 sur 3, telle que la renvoie POST /rooms/{code}/game
 export const aliceRoomInGame: Room = {
   ...aliceRoom,
   version: 4,
@@ -52,6 +50,7 @@ export const aliceRoomInGame: Room = {
       id: '7c1d2e3f-0000-4000-8000-000000000001',
       text: 'Paprika',
       image_url: 'https://images.example.com/paprika.webp',
+      image_removed: false,
     },
     ends_at: null,
     tiers: [
@@ -65,11 +64,9 @@ export const aliceRoomInGame: Room = {
   },
 };
 
-// Salle rejointe par Lou en invité, avec son lien perso, telle que la renvoie POST /guests
 export const lousRoom: GuestRoom = {
   ...aliceRoom,
   is_admin: false,
-  // Vue de Lou : sa place est la sienne, plus celle d'Alice
   participants: [
     ...aliceRoom.participants.map((participant) => ({ ...participant, is_you: false })),
     {

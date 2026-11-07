@@ -13,12 +13,9 @@ import { Button } from './ui/button';
 
 interface CloseRoomDialogProps {
   code: string;
-  // Une partie est en cours : elle sera close d'abord, le dialogue le dit
   gameInProgress: boolean;
 }
 
-// « Fermer la salle » (US-2.7), réservé au room admin : la salle est supprimée pour tous, d'où la
-// confirmation dans un <dialog> natif (focus piégé, fermeture avec Échap)
 export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeMutation = useCloseRoom(code);
@@ -26,17 +23,19 @@ export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) 
   const queryClient: QueryClient = useQueryClient();
   const { t } = useTranslation();
 
+  function leaveClosedRoom() {
+    void navigate(ROUTES.HOME);
+    queryClient.removeQueries({ queryKey: roomQueryKey(canonicalRoomCode(code)) });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       await closeMutation.mutateAsync();
     } catch {
-      return; // l'erreur est affichée depuis closeMutation.error
+      return;
     }
-    // La salle n'existe plus : retour à l'accueil, puis la salle sort du cache (la relire
-    // donnerait room_not_found)
-    void navigate(ROUTES.HOME);
-    queryClient.removeQueries({ queryKey: roomQueryKey(canonicalRoomCode(code)) });
+    leaveClosedRoom();
   }
 
   return (

@@ -12,8 +12,6 @@ interface RemoveParticipantDialogProps {
   participant: Participant;
 }
 
-// Confirmation avant de retirer un participant (US-2.11), ou de le bannir (US-2.12), dans un
-// <dialog> natif (focus piégé, fermeture avec Échap). Réservé au room admin.
 export function RemoveParticipantDialog({ code, participant }: RemoveParticipantDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const removeMutation = useRemoveParticipant(code);
@@ -26,9 +24,8 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
     try {
       await removeMutation.mutateAsync({ participantId: participant.id, ban });
     } catch {
-      return; // l'erreur est affichée depuis removeMutation.error
+      return;
     }
-    // La salle renvoyée ne contient plus ce participant : la ligne et son dialogue disparaissent
     dialogRef.current?.close();
   }
 
@@ -43,7 +40,6 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
         type="button"
         variant="outline"
         size="sm"
-        className="ml-auto"
         aria-label={t('rooms.lobby.remove.openLabel', { name })}
         onClick={() => dialogRef.current?.showModal()}
       >
@@ -64,7 +60,6 @@ export function RemoveParticipantDialog({ code, participant }: RemoveParticipant
             />
             {t('rooms.lobby.remove.ban')}
           </label>
-          {/* Un invité n'a pas de compte : seul son navigateur est reconnu (US-2.12) */}
           {ban && participant.is_guest && (
             <p className="text-muted-foreground">{t('rooms.lobby.remove.guestWarning')}</p>
           )}

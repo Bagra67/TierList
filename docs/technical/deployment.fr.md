@@ -36,7 +36,7 @@ Contraintes :
 | Fichier                                                             | Rôle                                                                                                                                                                     |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `backend/app/main.py`                                               | `app`, l'application racine lancée par uvicorn : monte l'API (`api_app`) sous `/api`, sert le frontend, lance le lifespan (timers, balayage des salles, tâches de nuit). |
-| `backend/app/core/frontend.py`                                      | `mount_frontend` : sert le build Vite (§2.1).                                                                                                                            |
+| `backend/app/core/frontend.py`                                      | `mount_frontend_after_api` : sert le build Vite (§2.1).                                                                                                                  |
 | `backend/app/services/nightly_scheduler.py`, `maintenance.py`       | Tâches de nuit dans le processus (§2.3).                                                                                                                                 |
 | `deploy/build_bundle.sh`                                            | Construit `tierlist-<version>.tar.gz` (§2.4).                                                                                                                            |
 | `deploy/start.sh`                                                   | Démarrage d'une version, à la racine du bundle (§2.4).                                                                                                                   |
@@ -79,7 +79,7 @@ Le schéma vu par l'application ne pilote rien de sensible : les cookies sont `S
 
 Il n'y a pas de cron dans les pods. Le lifespan lance un petit planificateur à côté du balayage des salles inactives (`nightly_scheduler.py`, même style : une tâche asyncio, sans bibliothèque de planification pour une exécution par jour) :
 
-- chaque nuit à `MAINTENANCE_HOUR_UTC` (UTC), il purge les templates supprimés, puis les images inutilisées (`maintenance.py`, appelé aussi par `scripts/purge_*.py` en ligne de commande) ;
+- chaque nuit à `MAINTENANCE_HOUR_UTC` (UTC), il purge les templates supprimés, puis les images inutilisées, puis les entrées du journal de modération plus anciennes que `MODERATION_LOG_RETENTION_DAYS` ([guide de la modération](moderation.fr.md#24-purge)), puis les signalements fermés depuis plus de `CLOSED_REPORT_RETENTION_DAYS` (`maintenance.py`, appelé aussi par `scripts/purge_*.py` en ligne de commande) ;
 - chaque tâche journalise son résultat ; une exception est journalisée sans arrêter les tâches suivantes, les nuits suivantes ni l'application ;
 - les purges ne suppriment que ce qui a expiré : les lancer deux fois ne pose aucun problème ;
 - `MAINTENANCE_ENABLED=false` le désactive.
@@ -248,6 +248,18 @@ Lancer une fois le workflow Backup à la main, puis essayer une restauration sur
 - Google : [console Cloud, identifiants](https://console.cloud.google.com/apis/credentials)
 - GitHub : Settings → Environments du dépôt, Actions → Deploy / Backup
 
+### 5.12 Super admins
+
+Les super admins modèrent l'application ([guide de l'authentification](authentication.fr.md#super-admins)). Le rôle n'est jamais donné par l'application, et le pod TierList n'a pas de shell : donnez-le dans la console du **pod PostgreSQL** (`psql` en superutilisateur, §5.2), une fois le compte créé (la personne s'est inscrite) :
+
+```sql
+\c tierlist_staging   -- ou tierlist_prod
+UPDATE users SET role = 'super_admin' WHERE email = lower('<e-mail>');
+SELECT email, role FROM users WHERE role = 'super_admin';
+```
+
+`UPDATE 1` le confirme ; `UPDATE 0` veut dire qu'aucun compte n'a cet e-mail. Pour retirer le rôle, même requête avec `'user'`. Le changement vaut dès la requête suivante ; la personne recharge la page pour voir le lien « Modération ». `scripts/set_super_admin.py` fait la même chose en développement local seulement : il n'est pas dans le bundle.
+
 ## 6. Déployer
 
 | Événement                                                          | Cible          | Version (`APP_RELEASE`) | Approbation           |
@@ -301,6 +313,8 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 - Le redémarrage du pod, tant que `PANEL_SERVER_ID` et `PANEL_API_KEY` ne sont pas définis, ou quand le panel le refuse (en place sur le staging : le redémarrage y est automatique).
 - Redéployer après le changement d'un secret ou d'une variable (§5.8).
 - Approuver chaque déploiement en production.
+- Donner ou retirer le rôle super admin (§5.12).
+- Remplir staging avec le jeu de données de test, à la main (Actions → Seed staging, [guide du jeu de données](seed-data.fr.md)).
 - Tester une restauration (#162), puis après chaque montée de version majeure de PostgreSQL.
 
 ## 10. Essayer l'organisation de production en local

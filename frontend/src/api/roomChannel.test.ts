@@ -14,20 +14,18 @@ import { type RemovalReason, useRoomEvents } from './roomChannel';
 
 const bobId: string = aliceRoom.participants[1].id;
 
-// Canal de la salle d'Alice (version 3 en cache), suivi par ce lecteur. onRemoved est créé une
-// seule fois : sa référence reste la même d'un rendu à l'autre, comme dans la page
 function followRoom(viewer: RoomViewer = 'account') {
   const queryClient = createQueryClient({ queries: { retry: false } });
   queryClient.setQueryData(roomQueryKey(aliceRoom.code), aliceRoom);
-  const onRemoved = vi.fn<(reason: RemovalReason) => void>();
+  const stableOnRemoved = vi.fn<(reason: RemovalReason) => void>();
   const hook = renderHook(
-    () => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true, onRemoved),
+    () => useRoomEvents(aliceRoom.code.toLowerCase(), viewer, true, stableOnRemoved),
     {
       wrapper: ({ children }: { children: ReactNode }) =>
         createElement(QueryClientProvider, { client: queryClient }, children),
     },
   );
-  return { queryClient, onRemoved, ...hook };
+  return { queryClient, onRemoved: stableOnRemoved, ...hook };
 }
 
 function cachedRoom(queryClient: ReturnType<typeof createQueryClient>): Room | undefined {
@@ -167,8 +165,8 @@ describe('useRoomEvents', () => {
   it('reads the room again after a missed event', () => {
     const { queryClient } = followRoom();
 
-    // Version 5 alors que la salle en cache est en version 3 : la 4 a été manquée
-    latestSocket().receive(presence(5, true));
+    const versionAfterAGap: number = aliceRoom.version + 2;
+    latestSocket().receive(presence(versionAfterAGap, true));
 
     expect(isInvalidated(queryClient)).toBe(true);
     expect(cachedRoom(queryClient)?.participants[1].connected).toBe(false);
@@ -222,7 +220,6 @@ describe('useRoomEvents', () => {
         { type: 'auth', access_token: 'fresh-token' },
       ]),
     );
-    // Refusé une seconde fois d'affilée : la session est vraiment finie
     latestSocket().closeFromServer(4401);
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(FakeWebSocket.instances).toHaveLength(2);
@@ -261,7 +258,6 @@ describe('useRoomEvents', () => {
 
   it('keeps retrying after a connection that was open', () => {
     vi.useFakeTimers();
-    // Invité : l'ouverture n'a pas besoin de rafraîchir un token
     followRoom('guest');
 
     for (let drop = 0; drop < 6; drop += 1) {

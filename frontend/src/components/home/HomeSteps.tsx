@@ -2,10 +2,8 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LOGO_BARS } from '../../constants/brand';
-import { readableTextColor } from '../../theme/contrast';
+import { readableTextColor } from '../../theme/wcagContrast';
 
-// Les étapes d'une partie, dans l'ordre (home.steps.*), numérotées aux couleurs du logo : une
-// étape de plus doit choisir sa couleur. C'est une vraie séquence, d'où les numéros
 const HOME_STEPS = [
   { key: 'template', color: LOGO_BARS[0].color },
   { key: 'room', color: LOGO_BARS[1].color },
@@ -24,7 +22,6 @@ export function HomeSteps() {
       <ol className="grid gap-4 md:grid-cols-3">
         {HOME_STEPS.map((step, index: number) => (
           <li key={step.key} className="flex items-start gap-3">
-            {/* La liste numérotée annonce déjà le rang : le chiffre affiché est décoratif */}
             <span
               aria-hidden="true"
               style={{ backgroundColor: step.color, color: readableTextColor(step.color) }}

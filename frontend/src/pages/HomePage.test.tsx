@@ -21,7 +21,6 @@ function renderHomePage() {
   );
 }
 
-// Quatre modèles et quatre parties : l'accueil n'en montre que trois de chaque
 const fourTemplates = ['Épices', 'Fromages', 'Fruits', 'Desserts'].map((name, index) => ({
   id: `template-${index}`,
   name,
@@ -66,7 +65,6 @@ describe('HomePage', () => {
       'href',
       '/login',
     );
-    // Rien de personnel n'est lu sans session
     expect(calledRoutes(backend)).not.toContain('GET /templates');
     expect(calledRoutes(backend)).not.toContain('GET /history');
   });
@@ -92,7 +90,6 @@ describe('HomePage', () => {
     expect(within(board).getByText(/^Exemple de tier list/)).toBeInTheDocument();
     const pizza: HTMLElement = within(board).getByText('Pizza');
     expect(pizza.closest('[aria-hidden="true"]')).not.toBeNull();
-    // Les éléments apparaissent un à un, sauf en mouvement réduit (classe motion-safe)
     expect(pizza.parentElement).toHaveClass('motion-safe:animate-reveal');
   });
 
@@ -118,7 +115,6 @@ describe('HomePage', () => {
     expect(
       within(games).getByRole('link', { name: 'Voir les résultats de la partie Épices' }),
     ).toHaveAttribute('href', '/results/token-0');
-    // Pas de vitrine pour un joueur connecté
     expect(screen.queryByRole('link', { name: 'Créer un compte' })).not.toBeInTheDocument();
   });
 

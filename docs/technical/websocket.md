@@ -176,7 +176,7 @@ This is the subtle part of the backend:
 
 Two consequences:
 
-1. From the WebSocket route, every database call goes through `run_in_threadpool`, with a **short session** opened by `get_session_factory` (the socket lives long; it must not hold a database connection).
+1. From the WebSocket route, every database call goes through `run_in_threadpool`, with a **short session** opened by `get_short_lived_session_factory` (the socket lives long; it must not hold a database connection).
 2. A REST route (in a thread) that publishes an event cannot write to a socket directly: `ConnectionRegistry.publish` hands the broadcast over to the loop with `loop.call_soon_threadsafe`. The registry itself is only modified inside the loop.
 
 ### 2.9 The connection registry
@@ -187,13 +187,13 @@ Because it is in memory, **the backend must run with one worker**: with several 
 
 ### 2.10 The frontend
 
-`useRoomEvents(code, viewer, enabled, onRemoved)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
+`useRoomEvents(code, viewer, viewerHasSeat, stableOnRemoved)` (`frontend/src/api/roomChannel.ts`) owns the socket; components never touch it. It is enabled by `RoomPage` once the room is loaded (the reader has a seat). It:
 
 - opens `ws(s)://<page host>/api/rooms/<CODE>/ws` and sends `auth` (the in-memory access token, refreshed if missing; `null` for a guest);
 - answers `pong` to `ping`;
 - applies the events to the TanStack Query cache (§2.5);
 - reads the room again after each (re)connection;
-- after `4410`, `4411` or `4412`, calls `onRemoved(reason)` (`removed`, `banned` or `closed`) and stops: `RoomPage` shows the message and stops reading the room;
+- after `4410`, `4411` or `4412`, calls `stableOnRemoved(reason)` (`removed`, `banned` or `closed`) and stops: `RoomPage` shows the message and stops reading the room;
 - reconnects with backoff and jitter (0.5 s to 10 s), not after `4404`; after `4401`, an account retries once with a refreshed token (the access token lasts 15 minutes);
 - gives up after 5 openings in a row that never opened, and returns `unavailable: true` (the lobby then shows "Live updates are unavailable: reload the page");
 - closes the socket (`1000`) when the page leaves the room.
@@ -205,12 +205,12 @@ In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite
 | File                                                          | What to look at                                                                                                                                                                                                                         |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/app/api/routes/room_channel.py`                      | The WebSocket route: origin check, `_receive_auth`, `_find_seat`, `_serve` (registration and presence), `_heartbeat`, `_receive_text` (rejects binary frames); raises `ChannelClosedError` (`exceptions/rooms.py`: close code + reason) |
-| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`, `disconnect_participant`, `close_room`                                                          |
+| `backend/app/services/room_channel.py`                        | `PostCommitRoomPublisher` (what the services call) and `ConnectionRegistry` (`room_connections`): sockets, `publish`, `schedule_disconnect`, `disconnect_participant`, `close_room`                                                     |
 | `backend/app/services/rooms.py`                               | Changes of the room that publish after the commit (`join`, `join_as_guest`, `update_settings`, `remove_participant`), `seat_of`, `set_presence`, `reset_presence`                                                                       |
 | `backend/app/schemas/room_events.py`                          | Event and message models                                                                                                                                                                                                                |
 | `backend/app/constants/rooms.py`                              | Close codes (`CHANNEL_CLOSE_*`), guest cookie                                                                                                                                                                                           |
 | `backend/app/core/config.py`                                  | The four timings, `app_origin`                                                                                                                                                                                                          |
-| `backend/app/api/dependencies.py`                             | `get_connection_registry`, `get_room_event_publisher`, `get_session_factory`                                                                                                                                                            |
+| `backend/app/api/dependencies.py`                             | `get_connection_registry`, `get_room_event_publisher`, `get_short_lived_session_factory`                                                                                                                                                |
 | `backend/app/main.py`                                         | Lifespan (presence reset), message schemas added to OpenAPI                                                                                                                                                                             |
 | `frontend/src/api/roomChannel.ts`                             | `useRoomEvents`, `applyRoomEvent`                                                                                                                                                                                                       |
 | `frontend/src/components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot, "live updates unavailable" message, removed or banned message                                                                                                                                                             |

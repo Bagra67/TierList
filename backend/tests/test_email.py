@@ -18,8 +18,6 @@ EMAIL = Email(
 
 
 class FakeSMTP:
-    """Remplace smtplib.SMTP : garde les appels au lieu de contacter un serveur."""
-
     instances: list[FakeSMTP] = []
 
     def __init__(self, host: str, port: int, timeout: float) -> None:
@@ -53,7 +51,6 @@ def fake_smtp(monkeypatch: pytest.MonkeyPatch) -> type[FakeSMTP]:
 
 
 def smtp_settings(**changes: object) -> Settings:
-    # model_construct : réglages SMTP seuls, sans les variables obligatoires de la base
     settings = Settings.model_construct(
         smtp_host="smtp.example.com", email_from="TierList <no-reply@example.com>"
     )

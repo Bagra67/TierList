@@ -14,13 +14,12 @@ import { LoadingSkeleton } from '../LoadingSkeleton';
 import { panelVariants } from '../ui/panel';
 import { textLinkClassName } from '../ui/text-link';
 
-// Accueil connecté : les dernières parties closes (l'historique est trié de la plus récente à la
-// plus ancienne), avec le lien de leurs résultats
 export function RecentGames() {
   const { data, isPending, isError, error } = useHistory();
   const { t } = useTranslation();
   const headingId: string = useId();
-  const games: PastGame[] = data?.pages[0]?.games.slice(0, HOME_RECENT_COUNT) ?? [];
+  const gamesNewestFirst: PastGame[] = data?.pages[0]?.games ?? [];
+  const games: PastGame[] = gamesNewestFirst.slice(0, HOME_RECENT_COUNT);
 
   return (
     <section aria-labelledby={headingId} className="flex min-w-0 flex-col items-start gap-3">

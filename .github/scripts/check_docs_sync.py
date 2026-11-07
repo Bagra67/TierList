@@ -1,19 +1,3 @@
-"""Check that bilingual docs and the testing guide stay in sync (AGENTS.md §28 and §31).
-
-Usage: python check_docs_sync.py [--base <commit>] [--skip-sync]
-
-Always checked, on every tracked Markdown file:
-- every `name.md` has its `name.fr.md` in the same directory, and the other way round;
-- each file has its language switcher near the top.
-
-Checked on the changes since `--base` (the PR base), unless `--skip-sync`:
-- an English doc is never changed without its French version, and the other way round;
-- a changed test, test fixture or test tool comes with `docs/technical/testing.md` and `docs/technical/testing.fr.md`.
-
-Errors are printed as GitHub Actions annotations; the exit code is 1 when there is one.
-Standard library only, so it runs on any runner without installing anything.
-"""
-
 import argparse
 import subprocess
 import sys
@@ -22,9 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ENGLISH_ONLY = {"AGENTS.md"}
-# The PR template is read by GitHub, not by people browsing the docs.
-EXCLUDED_DIRS = (".github/",)
-# The switcher sits on the first line, or just under the title.
+EXCLUDED_DIRS = (".github/", ".claude/")
 SWITCHER_MAX_LINE = 5
 TESTING_GUIDE = ("docs/technical/testing.md", "docs/technical/testing.fr.md")
 SKIP_LABEL = "skip-docs-sync"
@@ -45,7 +27,6 @@ def is_french(path: str) -> bool:
 
 
 def counterpart(path: str) -> str:
-    """`docs/technical/i18n.md` <-> `docs/technical/i18n.fr.md`."""
     if is_french(path):
         return path.removesuffix(".fr.md") + ".md"
     return path.removesuffix(".md") + ".fr.md"
@@ -93,7 +74,6 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
 
 
 def is_test_file(path: str) -> bool:
-    """Tests, fixtures and test tools that docs/technical/testing.md describes."""
     return path.startswith(("backend/tests/", "frontend/src/test/", ".github/scripts/test_")) or (
         path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx"))
     )
@@ -119,7 +99,6 @@ def run_checks(
     markdown_paths: list[str],
     changed_paths: list[str] | None,
 ) -> list[Problem]:
-    """`changed_paths` is None when the sync checks are skipped (no base, or skip label)."""
     problems = find_unpaired_docs(markdown_paths)
     problems += find_bad_language_switchers(root, markdown_paths)
     if changed_paths is not None:
@@ -135,8 +114,14 @@ def git_lines(root: Path, *args: str) -> list[str]:
     return [line for line in output.splitlines() if line]
 
 
+def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[str]:
+    return git_lines(root, "diff", "--name-only", "--no-renames", f"{base}...HEAD")
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Check that bilingual docs and the testing guide stay in sync."
+    )
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
     parser.add_argument("--skip-sync", action="store_true", help="skip the checks on changes")
     args = parser.parse_args()
@@ -145,10 +130,7 @@ def main() -> int:
     markdown_paths = git_lines(root, "ls-files", "--", "*.md")
     changed_paths = None
     if args.base and not args.skip_sync:
-        # --no-renames: a renamed doc counts as deleted + added, so both paths are checked.
-        changed_paths = git_lines(
-            root, "diff", "--name-only", "--no-renames", f"{args.base}...HEAD"
-        )
+        changed_paths = changed_paths_with_renames_as_delete_and_add(root, args.base)
 
     problems = run_checks(root, markdown_paths, changed_paths)
     for problem in problems:

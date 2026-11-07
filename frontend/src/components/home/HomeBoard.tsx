@@ -4,22 +4,17 @@ import { useTranslation } from 'react-i18next';
 
 import {
   HOME_BOARD,
-  HOME_BOARD_ITEM_MS,
+  HOME_BOARD_ITEM_APPEAR_MS,
   HOME_BOARD_PLAYER_COLORS,
-  HOME_BOARD_STEP_MS,
+  HOME_BOARD_ITEM_STAGGER_MS,
   type HomeBoardItem,
   type HomeBoardRow,
 } from '../../constants/home';
 import { ITEM_CHIP_CLASS, TIER_LABEL_CLASS, tierColorStyle } from '../boardStyles';
 
-// Le moment fort de l'accueil : une tier list d'exemple qui se remplit au chargement, élément par
-// élément, avec les initiales des joueurs qui ont voté. Faite des mêmes styles que le plateau du
-// jeu. Décorative pour les lecteurs d'écran (une phrase la résume) ; en mouvement réduit, elle
-// s'affiche déjà remplie (motion-safe)
 export function HomeBoard({ className }: { className?: string }) {
   const { t } = useTranslation();
-  // Rang de chaque élément dans l'ordre d'apparition, toutes lignes confondues
-  let order: number = 0;
+  let appearanceRankAcrossRows: number = 0;
 
   return (
     <figure className={cn('flex flex-col gap-2', className)}>
@@ -38,8 +33,8 @@ export function HomeBoard({ className }: { className?: string }) {
             <div className="flex flex-wrap items-center gap-2 p-2">
               {row.items.map((item: HomeBoardItem) => {
                 const timing: CSSProperties = {
-                  animationDelay: `${order++ * HOME_BOARD_STEP_MS}ms`,
-                  animationDuration: `${HOME_BOARD_ITEM_MS}ms`,
+                  animationDelay: `${appearanceRankAcrossRows++ * HOME_BOARD_ITEM_STAGGER_MS}ms`,
+                  animationDuration: `${HOME_BOARD_ITEM_APPEAR_MS}ms`,
                 };
                 return (
                   <span
@@ -48,7 +43,7 @@ export function HomeBoard({ className }: { className?: string }) {
                     className={cn(ITEM_CHIP_CLASS, 'relative px-2 motion-safe:animate-reveal')}
                   >
                     <span className="text-sm font-medium">{t(`home.board.items.${item.key}`)}</span>
-                    {item.voters.length > 0 && <Voters voters={item.voters} />}
+                    {item.voterInitials.length > 0 && <Voters voterInitials={item.voterInitials} />}
                   </span>
                 );
               })}
@@ -61,11 +56,10 @@ export function HomeBoard({ className }: { className?: string }) {
   );
 }
 
-// Initiales des joueurs, en pastilles au coin de l'élément
-function Voters({ voters }: { voters: readonly string[] }) {
+function Voters({ voterInitials }: { voterInitials: readonly string[] }) {
   return (
     <span className="absolute -top-2.5 -right-2 flex gap-0.5">
-      {voters.map((initial: string) => (
+      {voterInitials.map((initial: string) => (
         <span
           key={initial}
           style={tierColorStyle(HOME_BOARD_PLAYER_COLORS[initial] ?? '')}

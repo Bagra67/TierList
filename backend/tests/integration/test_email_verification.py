@@ -16,8 +16,6 @@ from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import link_token
 
-# Tous les tests de ce fichier ont besoin d'un vrai PostgreSQL : `pytest -m "not integration"`
-# les saute (marqueur déclaré dans pyproject.toml)
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
@@ -63,7 +61,6 @@ def test_registration_sends_a_verification_link(auth_client: TestClient, sent_em
 def test_the_link_does_not_reveal_the_address(auth_client: TestClient, sent_emails: list[Email]):
     register(auth_client)
 
-    # Un JWT se lit sans la clé : l'adresse ne doit pas y figurer en clair
     claims = jwt.decode(link_token(sent_emails[0]), options={"verify_signature": False})
 
     assert "alice@example.com" not in json.dumps(claims)

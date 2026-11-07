@@ -14,7 +14,6 @@ from app.main import api_app
 
 @pytest.fixture
 def no_env_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.MonkeyPatch:
-    # Dossier sans .env : seules les variables d'environnement du test comptent.
     monkeypatch.chdir(tmp_path)
     return monkeypatch
 
@@ -29,6 +28,13 @@ def restore_default_logging() -> Iterator[None]:
 def test_log_level_defaults_to_info(no_env_file: pytest.MonkeyPatch):
     no_env_file.delenv("LOG_LEVEL", raising=False)
     assert LoggingSettings().log_level == "INFO"
+
+
+def test_logging_settings_need_no_database_configuration(no_env_file: pytest.MonkeyPatch):
+    for variable in ("POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "JWT_SECRET_KEY"):
+        no_env_file.delenv(variable, raising=False)
+
+    LoggingSettings()
 
 
 def test_log_level_is_case_insensitive(no_env_file: pytest.MonkeyPatch):

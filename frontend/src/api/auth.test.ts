@@ -127,7 +127,6 @@ describe('auth API', () => {
   it('forgets the rooms seen as a visitor after signing in', async () => {
     stubBackend({ 'POST /auth/login': tokenResponse('alice-token') });
     const queryClient = createQueryClient();
-    // Salle lue avant la connexion (vue d'invité) : elle ne doit pas s'afficher au compte
     queryClient.setQueryData(roomQueryKey(aliceRoom.code), { ...aliceRoom, is_admin: false });
     const { result } = renderHook(() => useLogin(), {
       wrapper: ({ children }: { children: ReactNode }) =>

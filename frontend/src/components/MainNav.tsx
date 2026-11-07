@@ -2,14 +2,15 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 
 import { useCurrentUser } from '../api/auth';
+import { useOpenReportCount } from '../api/moderation';
+import { isSuperAdmin } from '../auth/superAdmin';
 import { ROUTES } from '../constants/routes';
 import { cn } from 'cn';
 
-// Liens vers les pages privées, affichés seulement une fois connecté. NavLink pose
-// aria-current="page" sur le lien de la page affichée.
 export function MainNav() {
   const { data: user } = useCurrentUser();
   const { t } = useTranslation();
+  const { data: openReports } = useOpenReportCount(user !== undefined && isSuperAdmin(user));
 
   if (!user) return null;
 
@@ -38,6 +39,21 @@ export function MainNav() {
             {t('nav.history')}
           </NavLink>
         </li>
+        {isSuperAdmin(user) && (
+          <li>
+            <NavLink to={ROUTES.MODERATION} className={linkClassName}>
+              {t('nav.moderation')}
+              {openReports !== undefined && openReports > 0 && (
+                <span
+                  aria-label={t('nav.openReports', { count: openReports })}
+                  className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground"
+                >
+                  {openReports}
+                </span>
+              )}
+            </NavLink>
+          </li>
+        )}
       </ul>
     </nav>
   );

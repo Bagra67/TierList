@@ -176,7 +176,7 @@ C'est la partie subtile du backend :
 
 Deux conséquences :
 
-1. Depuis la route WebSocket, chaque appel à la base passe par `run_in_threadpool`, avec une **session courte** ouverte par `get_session_factory` (le socket vit longtemps ; il ne doit pas garder une connexion à la base).
+1. Depuis la route WebSocket, chaque appel à la base passe par `run_in_threadpool`, avec une **session courte** ouverte par `get_short_lived_session_factory` (le socket vit longtemps ; il ne doit pas garder une connexion à la base).
 2. Une route REST (dans un thread) qui publie un événement ne peut pas écrire directement sur un socket : `ConnectionRegistry.publish` confie la diffusion à la boucle avec `loop.call_soon_threadsafe`. Le registre lui-même n'est modifié que dans la boucle.
 
 ### 2.9 Le registre des connexions
@@ -187,13 +187,13 @@ Comme il est en mémoire, **le backend doit tourner avec un seul worker** : avec
 
 ### 2.10 Le frontend
 
-`useRoomEvents(code, viewer, enabled, onRemoved)` (`frontend/src/api/roomChannel.ts`) possède le socket ; les composants n'y touchent jamais. `RoomPage` l'active une fois la salle chargée (le lecteur a une place). Il :
+`useRoomEvents(code, viewer, viewerHasSeat, stableOnRemoved)` (`frontend/src/api/roomChannel.ts`) possède le socket ; les composants n'y touchent jamais. `RoomPage` l'active une fois la salle chargée (le lecteur a une place). Il :
 
 - ouvre `ws(s)://<hôte de la page>/api/rooms/<CODE>/ws` et envoie `auth` (l'access token en mémoire, rafraîchi s'il manque ; `null` pour un invité) ;
 - répond `pong` au `ping` ;
 - applique les événements au cache TanStack Query (§2.5) ;
 - relit la salle après chaque (re)connexion ;
-- après `4410`, `4411` ou `4412`, appelle `onRemoved(reason)` (`removed`, `banned` ou `closed`) et s'arrête : `RoomPage` affiche le message et ne lit plus la salle ;
+- après `4410`, `4411` ou `4412`, appelle `stableOnRemoved(reason)` (`removed`, `banned` ou `closed`) et s'arrête : `RoomPage` affiche le message et ne lit plus la salle ;
 - se reconnecte avec backoff et gigue (0,5 s à 10 s), pas après `4404` ; après `4401`, un compte réessaie une fois avec un token rafraîchi (l'access token dure 15 minutes) ;
 - abandonne après 5 ouvertures d'affilée qui n'ont jamais abouti, et renvoie `unavailable: true` (le lobby affiche alors « Mises à jour en direct indisponibles : rechargez la page ») ;
 - ferme le socket (`1000`) quand la page quitte la salle.
@@ -205,12 +205,12 @@ En développement, le proxy Vite transmet le socket (`ws: true` dans `frontend/v
 | Fichier                                                       | Ce qu'il faut y regarder                                                                                                                                                                                                                                      |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/app/api/routes/room_channel.py`                      | La route WebSocket : contrôle de l'origine, `_receive_auth`, `_find_seat`, `_serve` (enregistrement et présence), `_heartbeat`, `_receive_text` (refuse les trames binaires) ; lève `ChannelClosedError` (`exceptions/rooms.py` : code + raison de fermeture) |
-| `backend/app/services/room_channel.py`                        | `RoomEventPublisher` (ce qu'appellent les services) et `ConnectionRegistry` (`room_connections`) : sockets, `publish`, `schedule_disconnect`, `disconnect_participant`, `close_room`                                                                          |
+| `backend/app/services/room_channel.py`                        | `PostCommitRoomPublisher` (ce qu'appellent les services) et `ConnectionRegistry` (`room_connections`) : sockets, `publish`, `schedule_disconnect`, `disconnect_participant`, `close_room`                                                                     |
 | `backend/app/services/rooms.py`                               | Les changements de la salle qui publient après le commit (`join`, `join_as_guest`, `update_settings`, `remove_participant`), `seat_of`, `set_presence`, `reset_presence`                                                                                      |
 | `backend/app/schemas/room_events.py`                          | Modèles des événements et des messages                                                                                                                                                                                                                        |
 | `backend/app/constants/rooms.py`                              | Codes de fermeture (`CHANNEL_CLOSE_*`), cookie d'invité                                                                                                                                                                                                       |
 | `backend/app/core/config.py`                                  | Les quatre durées, `app_origin`                                                                                                                                                                                                                               |
-| `backend/app/api/dependencies.py`                             | `get_connection_registry`, `get_room_event_publisher`, `get_session_factory`                                                                                                                                                                                  |
+| `backend/app/api/dependencies.py`                             | `get_connection_registry`, `get_room_event_publisher`, `get_short_lived_session_factory`                                                                                                                                                                      |
 | `backend/app/main.py`                                         | Lifespan (remise à zéro de la présence), schémas des messages ajoutés à OpenAPI                                                                                                                                                                               |
 | `frontend/src/api/roomChannel.ts`                             | `useRoomEvents`, `applyRoomEvent`                                                                                                                                                                                                                             |
 | `frontend/src/components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Pastille de présence, message « mises à jour en direct indisponibles », message de retrait ou de bannissement                                                                                                                                                 |

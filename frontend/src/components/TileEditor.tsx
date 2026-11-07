@@ -17,10 +17,16 @@ import {
   useUpdateTile,
 } from '../api/templates';
 import { TILE_TEXT_MAX_LENGTH } from '../constants/templates';
-import { getFieldErrors, translateError, translateFieldError } from '../errors/apiError';
+import {
+  getFieldErrors,
+  hasNoFieldError,
+  translateError,
+  translateFieldError,
+} from '../errors/apiError';
 import { EMPHASIZED_BORDER_CLASS } from './boardStyles';
 import { ErrorMessage } from './ErrorMessage';
 import { ImageDropZone } from './ImageDropZone';
+import { RemovedImageDecision } from './RemovedImageDecision';
 import { InlineEditField } from './InlineEditField';
 import { SortableList } from './SortableList';
 import { TextField } from './TextField';
@@ -31,10 +37,10 @@ interface TileEditorProps {
   template: Template;
 }
 
-// Tuiles d'un template (US-1.2, US-1.3), dans l'ordre du template : un texte, une image, ou les
-// deux. Chaque action est enregistrée tout de suite ; une image est envoyée dès qu'elle est
-// choisie (le backend la compresse), puis rattachée à la tuile. Le nombre maximal vient du
-// backend (max_tiles).
+function hasImageEvenIfRemoved(tile: Tile): boolean {
+  return tile.image_url !== null || tile.image_removed;
+}
+
 export function TileEditor({ template }: TileEditorProps) {
   const titleId: string = useId();
   const addFormRef: RefObject<HTMLFormElement | null> = useRef<HTMLFormElement>(null);
@@ -44,24 +50,19 @@ export function TileEditor({ template }: TileEditorProps) {
   const deleteMutation: TemplateChange<string> = useDeleteTile(template.id);
   const newImageUpload: UseMutationResult<UploadedImage, Error, File> = useUploadImage();
   const tileImageUpload: UseMutationResult<UploadedImage, Error, File> = useUploadImage();
-  // Plusieurs images déposées d'un coup sur la vignette de la nouvelle tuile (#242)
   const bulk = useBulkImageTiles(template);
-  // Tuiles du dernier ajout (une seule, ou tout un lot) : mises en avant jusqu'au suivant
   const [lastAddedTileIds, setLastAddedTileIds] = useState<string[]>([]);
-  // Image envoyée pour la tuile en cours d'ajout, rattachée à l'ajout
-  const [newImage, setNewImage] = useState<UploadedImage | null>(null);
-  // Tuile dont l'image est en cours d'envoi puis d'enregistrement
-  const [imageTileId, setImageTileId] = useState<string | null>(null);
-  // Erreurs vues avant tout envoi (fichier refusé, tuile vide), une par zone ; celle des tuiles
-  // disparaît à la prochaine action sur une tuile
+  const [uploadedImageForNewTile, setUploadedImageForNewTile] = useState<UploadedImage | null>(
+    null,
+  );
+  const [tileIdWithImageBeingSaved, setTileIdWithImageBeingSaved] = useState<string | null>(null);
   const [newTileLocalError, setNewTileLocalError] = useState<string | null>(null);
   const [tilesLocalError, setTilesLocalError] = useState<string | null>(null);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const tiles: Tile[] = template.tiles;
   const isFull: boolean = tiles.length >= template.max_tiles;
   const isAddingImages: boolean = bulk.state?.isRunning ?? false;
-  // Une seule modification de l'ordre à la fois : les réponses arrivent dans l'ordre des clics
-  const isChangingOrder: boolean = updateMutation.isPending || deleteMutation.isPending;
+  const isWaitingForOrderResponse: boolean = updateMutation.isPending || deleteMutation.isPending;
   const failedTileId: string | undefined = updateMutation.variables?.tileId;
   const textError: string | undefined = translateFieldError(
     t,
@@ -73,13 +74,10 @@ export function TileEditor({ template }: TileEditorProps) {
   );
   const lastError: Error | null =
     updateMutation.error ?? deleteMutation.error ?? tileImageUpload.error;
-  // Une erreur de champ (422) s'affiche déjà sous son champ : pas de second message
-  const showLastError: boolean =
-    lastError !== null && Object.keys(getFieldErrors(lastError)).length === 0;
+  const showLastError: boolean = lastError !== null && hasNoFieldError(lastError);
   const newTileError: Error | null = addMutation.error ?? newImageUpload.error;
   const unsupportedImageMessage: string = t('errors.api.image_unsupported_format');
 
-  // La dernière tuile ajoutée défile dans la vue quand la grille défile (grand écran)
   useEffect(() => {
     const lastTileId: string | undefined = lastAddedTileIds.at(-1);
     if (lastTileId === undefined) return;
@@ -103,10 +101,8 @@ export function TileEditor({ template }: TileEditorProps) {
     deleteMutation.mutate(tile.id);
   }
 
-  // Une tuile qui a une image peut perdre son texte : un texte vidé part en null. Sans image, le
-  // texte est envoyé tel quel : le backend le refuse, et l'erreur s'affiche sous le champ
   function saveTileText(tile: Tile, text: string) {
-    const removesTheText: boolean = text.trim() === '' && tile.image_url !== null;
+    const removesTheText: boolean = text.trim() === '' && hasImageEvenIfRemoved(tile);
     setTilesLocalError(null);
     updateMutation.mutate({
       tileId: tile.id,
@@ -116,14 +112,14 @@ export function TileEditor({ template }: TileEditorProps) {
 
   async function replaceTileImage(tile: Tile, file: File) {
     setTilesLocalError(null);
-    setImageTileId(tile.id);
+    setTileIdWithImageBeingSaved(tile.id);
     try {
       const image: UploadedImage = await tileImageUpload.mutateAsync(file);
       await updateMutation.mutateAsync({ tileId: tile.id, changes: { image_id: image.id } });
     } catch {
-      // l'erreur est affichée depuis tileImageUpload.error ou updateMutation.error
+      return;
     } finally {
-      setImageTileId(null);
+      setTileIdWithImageBeingSaved(null);
     }
   }
 
@@ -136,10 +132,9 @@ export function TileEditor({ template }: TileEditorProps) {
     setNewTileLocalError(null);
     addMutation.reset();
     bulk.clear();
-    newImageUpload.mutate(file, { onSuccess: setNewImage });
+    newImageUpload.mutate(file, { onSuccess: setUploadedImageForNewTile });
   }
 
-  // Plusieurs images d'un coup : une tuile par image, sans passer par le formulaire
   async function addManyImages(files: File[]) {
     setNewTileLocalError(null);
     addMutation.reset();
@@ -147,38 +142,34 @@ export function TileEditor({ template }: TileEditorProps) {
     setLastAddedTileIds(await bulk.addImages(files));
   }
 
-  // Retire aussi l'erreur d'un envoi précédent : elle ne concerne plus l'image affichée
   function removeNewImage() {
-    setNewImage(null);
+    setUploadedImageForNewTile(null);
     newImageUpload.reset();
   }
 
   async function handleAdd(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text: string = String(new FormData(event.currentTarget).get('text')).trim();
-    if (text === '' && newImage === null) {
-      // Le backend le refuserait aussi (tile_empty) : inutile de l'interroger
+    if (text === '' && uploadedImageForNewTile === null) {
       setNewTileLocalError(t('errors.api.tile_empty'));
       return;
     }
     setNewTileLocalError(null);
     bulk.clear();
     setLastAddedTileIds([]);
-    // Seuls les champs renseignés sont envoyés
     const newTile: NewTile = {};
     if (text !== '') newTile.text = text;
-    if (newImage !== null) newTile.image_id = newImage.id;
+    if (uploadedImageForNewTile !== null) newTile.image_id = uploadedImageForNewTile.id;
     let updated: Template;
     try {
       updated = await addMutation.mutateAsync(newTile);
     } catch {
-      return; // l'erreur est affichée depuis addMutation.error
+      return;
     }
-    // Une tuile ajoutée va en dernier
     const added: Tile | undefined = updated.tiles.at(-1);
     if (added !== undefined) setLastAddedTileIds([added.id]);
     addFormRef.current?.reset();
-    setNewImage(null);
+    setUploadedImageForNewTile(null);
     newImageUpload.reset();
   }
 
@@ -193,8 +184,6 @@ export function TileEditor({ template }: TileEditorProps) {
         </p>
       </div>
       {tiles.length > 0 && (
-        // Grand écran : seule la grille défile, le compteur et le formulaire d'ajout restent
-        // visibles. content-start : les rangées gardent leur hauteur au lieu de s'étirer
         <ol
           ref={tileListRef}
           className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:min-h-0 lg:flex-1 lg:content-start lg:overflow-y-auto lg:p-1 xl:grid-cols-4"
@@ -204,9 +193,8 @@ export function TileEditor({ template }: TileEditorProps) {
             strategy={rectSortingStrategy}
             getItemLabel={tileLabel}
             onMove={moveTile}
-            disabled={isChangingOrder}
+            disabled={isWaitingForOrderResponse}
             renderItem={(tile, { setNodeRef, style, handleProps }) => (
-              // Carte : l'image sur toute la largeur, son texte dessous, puis les actions
               <li
                 ref={setNodeRef}
                 style={style}
@@ -217,16 +205,16 @@ export function TileEditor({ template }: TileEditorProps) {
                 )}
               >
                 <ImageDropZone
-                  size="fill"
+                  size="fullWidthSquare"
                   label={
-                    tile.image_url === null
+                    !hasImageEvenIfRemoved(tile)
                       ? t('templates.editor.image.addTo', { name: tileLabel(tile) })
                       : t('templates.editor.image.replace', { name: tileLabel(tile) })
                   }
                   imageUrl={tile.image_url}
-                  isUploading={imageTileId === tile.id}
-                  disabled={imageTileId !== null}
-                  // Sans texte, retirer l'image laisserait la tuile vide : pas de bouton
+                  imageRemoved={tile.image_removed}
+                  isUploading={tileIdWithImageBeingSaved === tile.id}
+                  disabled={tileIdWithImageBeingSaved !== null}
                   removeLabel={
                     tile.text === null
                       ? undefined
@@ -236,14 +224,20 @@ export function TileEditor({ template }: TileEditorProps) {
                   onRemove={() => removeTileImage(tile)}
                   onRefuse={() => setTilesLocalError(unsupportedImageMessage)}
                 />
+                {tile.image_removed && (
+                  <RemovedImageDecision
+                    status={tile.image_status === 'deleted' ? 'deleted' : 'hidden'}
+                    reason={tile.image_moderation_reason}
+                  />
+                )}
                 <InlineEditField
                   key={tile.text ?? ''}
                   label={t('templates.editor.tileText', { position: tile.position + 1 })}
                   hideLabel
                   value={tile.text ?? ''}
                   maxLength={TILE_TEXT_MAX_LENGTH}
-                  required={tile.image_url === null}
-                  multiline
+                  required={!hasImageEvenIfRemoved(tile)}
+                  wrapsLongValue
                   error={failedTileId === tile.id ? textError : undefined}
                   onSave={(text) => saveTileText(tile, text)}
                 />
@@ -262,7 +256,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.moveBefore', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder || tile.position === 0}
+                      disabled={isWaitingForOrderResponse || tile.position === 0}
                       onClick={() => moveTile(tile, tile.position - 1)}
                     >
                       <ArrowLeft />
@@ -272,7 +266,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.moveAfter', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder || tile.position === tiles.length - 1}
+                      disabled={isWaitingForOrderResponse || tile.position === tiles.length - 1}
                       onClick={() => moveTile(tile, tile.position + 1)}
                     >
                       <ArrowRight />
@@ -282,7 +276,7 @@ export function TileEditor({ template }: TileEditorProps) {
                       variant="ghost"
                       size="icon"
                       aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
-                      disabled={isChangingOrder}
+                      disabled={isWaitingForOrderResponse}
                       onClick={() => deleteTile(tile)}
                     >
                       <Trash2 />
@@ -300,13 +294,13 @@ export function TileEditor({ template }: TileEditorProps) {
       )}
       <form ref={addFormRef} onSubmit={handleAdd} className="flex w-full flex-wrap items-end gap-3">
         <ImageDropZone
-          size="large"
+          size="addFormThumbnail"
           label={
-            newImage === null
+            uploadedImageForNewTile === null
               ? t('templates.editor.image.addToNew')
               : t('templates.editor.image.replaceNew')
           }
-          imageUrl={newImage?.url ?? null}
+          imageUrl={uploadedImageForNewTile?.url ?? null}
           isUploading={newImageUpload.isPending}
           disabled={isFull || isAddingImages}
           removeLabel={t('templates.editor.image.removeNew')}
@@ -334,7 +328,6 @@ export function TileEditor({ template }: TileEditorProps) {
         </Button>
       </form>
       {bulk.state !== null && <BulkImageTilesReport report={bulk.state} />}
-      {/* La limite est vérifiée par le backend ; l'interface l'annonce avant qu'on essaie */}
       {isFull && (
         <p className="text-sm text-muted-foreground">
           {t('errors.api.tile_limit_reached', { max_tiles: template.max_tiles })}
@@ -348,8 +341,6 @@ export function TileEditor({ template }: TileEditorProps) {
   );
 }
 
-// Progression puis bilan d'un ajout de plusieurs images : combien de tuiles ont été ajoutées, et
-// chaque image ignorée avec sa raison. Un seul status : les lecteurs d'écran lisent l'avancée
 function BulkImageTilesReport({ report }: { report: BulkImageTiles }) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const progress: number = report.total === 0 ? 100 : (report.done / report.total) * 100;

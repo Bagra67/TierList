@@ -5,22 +5,18 @@ import type { Participant } from '../api/rooms';
 import { panelVariants } from './ui/panel';
 
 interface PlacedListProps {
-  // Les participants qui placent les items
   placingParticipants: Participant[];
   placedParticipantIds: string[];
 }
 
 type PlacedStatus = 'placed' | 'waiting' | 'disconnected';
 
-// Pastille de chaque état ; le mot l'accompagne toujours, la forme ne suffit pas seule
 const STATUS_ICONS: Record<PlacedStatus, LucideIcon> = {
   placed: Check,
   waiting: Circle,
   disconnected: CircleDashed,
 };
 
-// Qui a placé l'item en cours, jamais où (plateau privé, US-3.3). Le compteur n'attend que les
-// participants connectés (US-3.4)
 export function PlacedList({ placingParticipants, placedParticipantIds }: PlacedListProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const placed: Set<string> = new Set(placedParticipantIds);

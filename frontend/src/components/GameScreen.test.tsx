@@ -5,26 +5,30 @@ import type { CurrentGame, OwnPlacement, Room } from '../api/rooms';
 import { aliceRoom, aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { latestSocket } from '../test/fakeWebSocket';
 import { renderRoomPage } from '../test/renderRoomPage';
-import { calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
+import { type BackendMock, calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 
 const game: CurrentGame = aliceRoomInGame.game as CurrentGame;
 const [tierS, tierA]: CurrentGame['tiers'] = game.tiers;
 const bobId: string = aliceRoomInGame.participants[1].id;
 
-// La salle d'Alice pendant la partie, avec ces changements de la partie
+const SHAKING_BLOCK_SELECTOR: string = '[class~="motion-safe:animate-shake"]';
+
 function inGame(changes: Partial<CurrentGame>, roomChanges: Partial<Room> = {}): Room {
   return { ...aliceRoomInGame, ...roomChanges, game: { ...game, ...changes } };
 }
 
-// Alice a placé l'item en cours, Paprika, en tête de S
 const paprikaInS: OwnPlacement = { item: game.current_item, tier_id: tierS.id, position: 0 };
 const chorizoInS: OwnPlacement = {
-  item: { id: '7c1d2e3f-0000-4000-8000-000000000009', text: 'Chorizo', image_url: null },
+  item: {
+    id: '7c1d2e3f-0000-4000-8000-000000000009',
+    text: 'Chorizo',
+    image_url: null,
+    image_removed: false,
+  },
   tier_id: tierS.id,
   position: 1,
 };
 
-// La liste « qui a placé » : le lobby, en dessous, nomme aussi les participants
 async function findPlacedList(): Promise<HTMLElement> {
   await screen.findByRole('heading', { name: /^Placé/ });
   return placedList();
@@ -45,14 +49,15 @@ describe('GameScreen', () => {
   });
 
   it('shows the current item, its progress and who has placed it', async () => {
+    const disconnectedBobId: string = bobId;
     stubBackend({
-      'GET /rooms/K7P2QX': () => Response.json(inGame({ placed_participant_ids: [bobId] })),
+      'GET /rooms/K7P2QX': () =>
+        Response.json(inGame({ placed_participant_ids: [disconnectedBobId] })),
     });
     renderRoomPage();
 
     expect(await screen.findByText('Élément 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('Paprika')).toBeInTheDocument();
-    // Bob, déconnecté, a placé : le compteur n'attend que les connectés (Alice)
     expect(screen.getByRole('heading', { name: 'Placé 0 / 1 connecté' })).toBeInTheDocument();
     expect(within(placedList()).getByText('Alice (vous)').parentElement).toHaveTextContent(
       'en attente',
@@ -113,7 +118,6 @@ describe('GameScreen', () => {
     expect(calledRoutes(fetchMock)).toContain(
       `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`,
     );
-    // Seul dans son tier : il ne peut ni avancer ni reculer
     expect(screen.getByRole('button', { name: 'Avancer Paprika dans son tier' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reculer Paprika dans son tier' })).toBeDisabled();
   });
@@ -127,7 +131,6 @@ describe('GameScreen', () => {
     expect(screen.getAllByText('Paprika')).toHaveLength(1);
 
     fireEvent.keyDown(handle, { code: 'Space', key: ' ' });
-    // L'aperçu, une copie de l'item, suit le glisser
     await waitFor(() => expect(screen.getAllByText('Paprika')).toHaveLength(2));
 
     fireEvent.keyDown(handle, { code: 'Escape', key: 'Escape' });
@@ -173,6 +176,7 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
     const fetchMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame),
@@ -201,7 +205,6 @@ describe('GameScreen', () => {
 
     expect(await screen.findByRole('button', { name: 'Élément suivant' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
-    // Il n'est pas attendu : seul Bob compte
     expect(within(placedList()).queryByText('Alice (vous)')).not.toBeInTheDocument();
     expect(within(placedList()).getByText('Bob')).toBeInTheDocument();
   });
@@ -268,21 +271,73 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
-    stubBackend({
+    const lateAnswerFromRound1: Room = inGame({ own_placements: [paprikaInS] });
+    const placeBarbecue: string = `PUT /rooms/K7P2QX/game/placements/${barbecue.id}`;
+    const fetchMock: BackendMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(inGame({ round_number: 2, current_item: barbecue })),
-      // Le tour 2 a commencé entre-temps : cette réponse du tour 1 arrive trop tard
-      [`PUT /rooms/K7P2QX/game/placements/${barbecue.id}`]: () =>
-        Response.json(inGame({ own_placements: [paprikaInS] })),
+      [placeBarbecue]: () => Response.json(lateAnswerFromRound1),
     });
     renderRoomPage();
 
-    fireEvent.click(
-      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
-    );
+    const placeInS: HTMLElement = await screen.findByRole('button', {
+      name: "Placer dans S : l'élément en cours, à la fin",
+    });
+    fireEvent.click(placeInS);
 
-    await vi.waitFor(() => expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument());
+    await vi.waitFor(() => expect(calledRoutes(fetchMock)).toContain(placeBarbecue));
+    await vi.waitFor(() => expect(placeInS).toHaveAttribute('aria-disabled', 'false'));
+    expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument();
     expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
+  });
+
+  it('shows the current item at its rank among the other items of the tier', async () => {
+    const curryInS: OwnPlacement = {
+      item: {
+        id: '7c1d2e3f-0000-4000-8000-000000000010',
+        text: 'Curry',
+        image_url: null,
+        image_removed: false,
+      },
+      tier_id: tierS.id,
+      position: 2,
+    };
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json(
+          inGame({
+            own_placements: [
+              { ...chorizoInS, position: 0 },
+              { ...paprikaInS, position: 1 },
+              curryInS,
+            ],
+          }),
+        ),
+    });
+    renderRoomPage();
+
+    const tierSList: HTMLElement = await screen.findByRole('list', { name: 'S' });
+
+    expect(
+      within(tierSList)
+        .getAllByRole('listitem')
+        .map((listItem: HTMLElement) => listItem.textContent)
+        .filter((text: string | null) => text !== ''),
+    ).toEqual(['Chorizo', 'Paprika', 'Curry']);
+  });
+
+  it('rounds the tier letter inside its row, without clipping the focus ring of the tiles', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    renderRoomPage();
+
+    const tierSList: HTMLElement = await screen.findByRole('list', { name: 'S' });
+    const tierRow: HTMLElement | null = tierSList.closest('li');
+    if (tierRow === null) throw new Error('No tier row');
+
+    expect(tierRow).toHaveClass('rounded-[10px]');
+    expect(tierRow).not.toHaveClass('overflow-hidden');
+    expect(within(tierRow).getByTitle('S')).toHaveClass('rounded-l-[9px]');
   });
 
   it('does not shake during a round, even in its last seconds', async () => {
@@ -292,9 +347,8 @@ describe('GameScreen', () => {
     });
     const { container } = renderRoomPage();
 
-    // La pastille de la manche passe à l'accent, mais rien ne tremble
     expect(await screen.findByRole('timer')).toHaveClass('bg-primary');
-    expect(container.querySelector('[class~="motion-safe:animate-shake"]')).toBeNull();
+    expect(container.querySelector(SHAKING_BLOCK_SELECTOR)).toBeNull();
   });
 
   describe('during the final cooldown', () => {
@@ -302,10 +356,10 @@ describe('GameScreen', () => {
       id: '7c1d2e3f-0000-4000-8000-000000000002',
       text: 'Barbecue',
       image_url: null,
+      image_removed: false,
     };
     const paprikaPut = `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`;
 
-    // Alice a placé Paprika puis Chorizo en S, et a manqué Barbecue ; fin dans endsInMs
     function inCooldown(roomChanges: Partial<Room> = {}, endsInMs: number = 60_000): Room {
       return inGame(
         {
@@ -318,7 +372,6 @@ describe('GameScreen', () => {
       );
     }
 
-    // Le bloc du cooldown : le cadre sombre qui contient le chrono
     async function findCooldownStage(): Promise<{ stage: HTMLElement; timer: HTMLElement }> {
       const timer: HTMLElement = await screen.findByRole('timer', { name: 'Fin des retouches' });
       const stage: HTMLElement | null = timer.closest('.dark');
@@ -337,14 +390,15 @@ describe('GameScreen', () => {
 
     it('shakes harder each second in the last seconds, with a pink timer', async () => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      // 4,5 s restantes : la cinquième seconde avant la fin
-      stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, 4_500)) });
+      const inFifthLastSecondMs: number = 4_500;
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown({}, inFifthLastSecondMs)),
+      });
       renderRoomPage();
 
       const { stage, timer } = await findCooldownStage();
       expect(stage).toHaveClass('motion-safe:animate-shake');
-      // Le sélecteur du test des manches trouve bien un bloc qui tremble
-      expect(document.querySelector('[class~="motion-safe:animate-shake"]')).toBe(stage);
+      expect(document.querySelector(SHAKING_BLOCK_SELECTOR)).toBe(stage);
       expect(stage.style.getPropertyValue('--shake-px')).toBe('0.5px');
       expect(timer).toHaveClass('text-primary');
 
@@ -369,7 +423,6 @@ describe('GameScreen', () => {
 
       expect(await screen.findByRole('heading', { name: 'Retouches finales' })).toBeInTheDocument();
       expect(screen.getByRole('timer', { name: 'Fin des retouches' })).toBeInTheDocument();
-      // Le glisser-déposer a sa propre zone d'annonces (status) : le texte du bandeau suffit
       expect(
         screen.getByText(
           "Déplacez n'importe quelle tuile. Placez vos éléments manqués avant la fin.",
@@ -410,7 +463,6 @@ describe('GameScreen', () => {
       });
       renderRoomPage();
 
-      // Rien n'est choisi : pas de « Déplacer ici »
       expect(await screen.findByRole('button', { name: 'Choisir Paprika' })).toHaveAttribute(
         'aria-pressed',
         'false',
@@ -426,11 +478,10 @@ describe('GameScreen', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }));
 
       await vi.waitFor(() => expect(bodies).toEqual([{ tier_id: tierA.id, position: 0 }]));
-      // Une fois déplacée, la tuile n'est plus choisie
       expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
     });
 
-    it('keeps the choice when the move fails', async () => {
+    it('keeps the choice and its buttons when the move fails, so that the focus stays and a retry is possible', async () => {
       stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
         [paprikaPut]: () => errorResponse(409, 'cooldown_not_in_progress'),
@@ -443,11 +494,36 @@ describe('GameScreen', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         'Les retouches finales ne sont pas en cours.',
       );
-      // Le choix et les boutons restent : le focus ne se perd pas, on peut réessayer
       expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'Déplacer Paprika à la fin de A' }),
       ).toBeInTheDocument();
+    });
+
+    it('only marks the move button as busy during a move: focus, choice and single request stay', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        [paprikaPut]: () => new Promise<Response>(() => {}),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Choisir Paprika' }));
+      const moveToA: HTMLElement = screen.getByRole('button', {
+        name: 'Déplacer Paprika à la fin de A',
+      });
+      moveToA.focus();
+      fireEvent.click(moveToA);
+
+      await vi.waitFor(() => expect(moveToA).toHaveAttribute('aria-disabled', 'true'));
+      expect(moveToA).toBeEnabled();
+      expect(moveToA).toHaveFocus();
+
+      fireEvent.click(moveToA);
+
+      expect(screen.getByText('Tuile choisie : Paprika')).toBeInTheDocument();
+      expect(calledRoutes(fetchMock).filter((route: string) => route.startsWith('PUT'))).toEqual([
+        paprikaPut,
+      ]);
     });
 
     it('sends nothing when the chosen tile is already last of the tier', async () => {
@@ -496,11 +572,10 @@ describe('GameScreen', () => {
     });
 
     it('lets the room admin end the cooldown after confirming', async () => {
+      const roomAfterGameEnd: Room = { ...aliceRoom, version: aliceRoomInGame.version + 1 };
       const fetchMock = stubBackend({
         'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
-        // La partie close incrémente la version de la salle
-        'POST /rooms/K7P2QX/game/end': () =>
-          Response.json({ ...aliceRoom, version: aliceRoomInGame.version + 1 }),
+        'POST /rooms/K7P2QX/game/end': () => Response.json(roomAfterGameEnd),
       });
       renderRoomPage();
 
@@ -515,7 +590,6 @@ describe('GameScreen', () => {
         ).not.toBeInTheDocument(),
       );
       expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/end');
-      // Le focus revient au lobby, au lieu de se perdre avec l'écran du cooldown
       expect(screen.getByRole('heading', { name: 'Salle K7P2QX' })).toHaveFocus();
     });
 
@@ -554,7 +628,6 @@ describe('GameScreen', () => {
       renderRoomPage();
 
       fireEvent.click(await screen.findByRole('button', { name: 'Choisir Paprika' }));
-      // Déjà en S : « Déplacer ici » la met à la dernière place du tier
       fireEvent.click(screen.getByRole('button', { name: 'Déplacer Paprika à la fin de S' }));
       await vi.waitFor(() => expect(body).toEqual({ tier_id: tierS.id, position: 1 }));
       const cooldown: Room = inCooldown();
@@ -607,5 +680,25 @@ describe('GameScreen', () => {
       expect(screen.getByText('Les participants finalisent leur classement.')).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Mon classement' })).not.toBeInTheDocument();
     });
+  });
+
+  it('reports the image of the current item, and nothing when it has no image', async () => {
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
+    const { unmount } = renderRoomPage();
+
+    const label: string = "Signaler : Image de l'élément en cours";
+    expect(await screen.findByRole('button', { name: label })).toBeInTheDocument();
+    unmount();
+
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json(
+          inGame({ current_item: { ...game.current_item, image_url: null, image_removed: true } }),
+        ),
+    });
+    renderRoomPage();
+
+    await screen.findByText('Élément 1 sur 3');
+    expect(screen.queryByRole('button', { name: label })).not.toBeInTheDocument();
   });
 });
