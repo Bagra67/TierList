@@ -16,7 +16,7 @@ export function MainNav() {
 
   function linkClassName({ isActive }: { isActive: boolean }) {
     return cn(
-      'text-sm underline-offset-4 hover:underline',
+      'text-sm whitespace-nowrap underline-offset-4 hover:underline',
       isActive ? 'font-semibold' : 'text-muted-foreground',
     );
   }
