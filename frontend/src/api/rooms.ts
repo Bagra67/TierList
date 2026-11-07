@@ -73,7 +73,7 @@ async function enterRoom(code: string, signal?: AbortSignal): Promise<Room> {
   try {
     return await getRoom(code, signal);
   } catch (error) {
-    if (error instanceof ApiError && error.code === 'room_not_found') {
+    if (error instanceof ApiError && error.code === 'room_not_joined') {
       return joinRoom(code, signal);
     }
     throw error;
