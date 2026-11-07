@@ -4,10 +4,15 @@ import { ApiError } from '../errors/apiError';
 
 const RETRIES_BEFORE_SHOWING_ERROR: number = 1;
 
+function isClientError(error: Error): boolean {
+  return error instanceof ApiError && error.status < 500;
+}
+
 export function createQueryClient(defaultOptions?: DefaultOptions): QueryClient {
   return new QueryClient({
     queryCache: new QueryCache({
       onError: (error, query) => {
+        if (isClientError(error)) return;
         console.error(`Échec de la requête ${JSON.stringify(query.queryKey)}`, error);
       },
     }),
@@ -19,8 +24,5 @@ export function createQueryClient(defaultOptions?: DefaultOptions): QueryClient 
 }
 
 export function retryUnlessClientError(failureCount: number, error: Error): boolean {
-  return (
-    !(error instanceof ApiError && error.status < 500) &&
-    failureCount < RETRIES_BEFORE_SHOWING_ERROR
-  );
+  return !isClientError(error) && failureCount < RETRIES_BEFORE_SHOWING_ERROR;
 }
