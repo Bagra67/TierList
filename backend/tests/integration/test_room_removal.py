@@ -89,7 +89,7 @@ def test_the_admin_removes_a_player(
     assert str(removed.data.participant_id) == bob_id
     assert removed.room_version == body["version"]
     assert room_events.disconnections == [(uuid.UUID(bob_id), CHANNEL_CLOSE_REMOVED)]
-    assert auth_client.get(f"/rooms/{code}", headers=bob).status_code == 404
+    assert auth_client.get(f"/rooms/{code}", headers=bob).status_code == 403
 
 
 class CallOrderRecordingPublisher(RecordingRoomEventPublisher):

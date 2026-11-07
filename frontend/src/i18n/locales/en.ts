@@ -1069,6 +1069,7 @@ export const en: Translation = {
       template_moderation_conflict:
         'This action does not apply to the template as it is now: it may already be hidden, visible or deleted.',
       room_not_found: 'This room could not be found or has been closed.',
+      room_not_joined: 'You have no seat in this room yet: join it first.',
       room_admin_required: 'Only the host can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
       game_in_progress: 'A game is already in progress in this room.',
