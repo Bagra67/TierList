@@ -8,7 +8,7 @@ How the GitHub Actions workflows fit together, why the CI is built the way it is
 
 | Workflow           | Starts on                                                         | Does                                                                                                 |
 | ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ci.yml`           | every PR; a push to `develop` or `main`                           | `Changed parts`, `Backend`, `Frontend`, `Secrets`                                                    |
+| `ci.yml`           | every PR; a push to `develop` or `main`                           | `Changed parts`, `Backend`, `Frontend`, `E2E` (×3 browsers), `Secrets`                               |
 | `docs.yml`         | every PR (also when a label changes); a push to `develop`/`main`  | `Docs`: bilingual docs and testing guide in sync                                                     |
 | `deploy.yml`       | a completed `CI` or `Release` run of `develop` or `main`; by hand | staging after a CI push to `develop`, production after `Release` ([deployment guide](deployment.md)) |
 | `release.yml`      | a completed CI push to `main`                                     | tags `vX.Y.Z` and publishes the GitHub Release ([releasing guide](releasing.md))                     |
@@ -35,6 +35,7 @@ The `Changed parts` job (a few seconds) lists the files of the PR through the Gi
 | other Markdown files (README, `AGENTS.md`…)              |         |          |
 | any other file (`.github/`, `compose.yaml`…)             |    ✓    |    ✓     |
 
+- The `E2E` jobs (one per browser, [testing guide §6](testing.md#6-end-to-end-tests-playwright)) run as soon as `Backend` or `Frontend` runs, since they test both.
 - A **skipped job counts as passed** for the required checks: the rulesets need no change.
 - A **push to `develop` or `main` always runs everything**: it deploys staging or creates the release.
 - **When in doubt, everything runs**: an unknown file, an API error or a failed `Changed parts` job.

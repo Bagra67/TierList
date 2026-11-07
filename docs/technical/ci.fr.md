@@ -8,7 +8,7 @@ Comment les workflows GitHub Actions s'enchaînent, pourquoi la CI est construit
 
 | Workflow           | Se lance                                                                       | Fait                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`           | sur chaque PR ; sur un push sur `develop` ou `main`                            | `Changed parts`, `Backend`, `Frontend`, `Secrets`                                                                   |
+| `ci.yml`           | sur chaque PR ; sur un push sur `develop` ou `main`                            | `Changed parts`, `Backend`, `Frontend`, `E2E` (×3 navigateurs), `Secrets`                                           |
 | `docs.yml`         | sur chaque PR (aussi quand un label change) ; sur un push sur `develop`/`main` | `Docs` : docs bilingues et guide des tests synchronisés                                                             |
 | `deploy.yml`       | après un run `CI` ou `Release` terminé de `develop` ou `main` ; à la main      | le staging après un push CI sur `develop`, la production après `Release` ([guide du déploiement](deployment.fr.md)) |
 | `release.yml`      | après un push CI terminé sur `main`                                            | crée le tag `vX.Y.Z` et publie la GitHub Release ([guide des versions](releasing.fr.md))                            |
@@ -35,6 +35,7 @@ Le job `Changed parts` (quelques secondes) liste les fichiers de la PR par l'API
 | autres fichiers Markdown (README, `AGENTS.md`…)            |         |          |
 | tout autre fichier (`.github/`, `compose.yaml`…)           |    ✓    |    ✓     |
 
+- Les jobs `E2E` (un par navigateur, [guide des tests §6](testing.fr.md#6-tests-de-bout-en-bout-playwright)) tournent dès que `Backend` ou `Frontend` tourne, puisqu'ils testent les deux.
 - Un **job sauté compte comme réussi** pour les contrôles requis : les rulesets ne changent pas.
 - Un **push sur `develop` ou `main` lance toujours tout** : il déploie le staging ou crée la release.
 - **Dans le doute, tout tourne** : un fichier inconnu, une erreur de l'API ou un job `Changed parts` en échec.

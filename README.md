@@ -169,12 +169,13 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 | **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service and the SeaweedFS of `compose.yaml`, on Python 3.15 (that of the production pods) |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build                                                                                   |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                                                                                                       |
+| **E2E**      | one job per browser (Chromium, Firefox, WebKit): PostgreSQL, Mailpit and SeaweedFS, frontend build, Playwright tests `pnpm test:e2e --project=<browser>`                                  |
 
 `.github/workflows/docs.yml` runs the **Docs** job on the same events: every doc has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with both testing guides (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). For a justified exception (e.g. a typo fixed in one language), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/technical/testing.md](docs/technical/testing.md#31-test-report-on-ci).
-- The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
-- On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
+- The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails. The `E2E` jobs are not required yet (see the TODO).
+- On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. `E2E` runs as soon as one of them runs. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
 
