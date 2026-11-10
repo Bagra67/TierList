@@ -6,6 +6,8 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.constants.error_codes import ErrorCode
+from app.constants.rooms import CHANNEL_CLOSE_NOT_AUTHENTICATED
 from app.core.security import generate_public_results_token
 from app.exceptions.games import (
     CooldownNotInProgressError,
@@ -361,6 +363,17 @@ class GameService:
             room: Room | None = self._rooms.remove_seat_of_deleted_account(seat_id)
             if room is not None and room.status == RoomStatus.PLAYING:
                 self.advance_if_everyone_placed(room.id)
+
+    def disconnect_banned_account(self, user_id: uuid.UUID) -> None:
+        seats: list[tuple[uuid.UUID, uuid.UUID]] = [
+            (seat.room_id, seat.id)
+            for seat in room_repository.list_seats_of_user(self._session, user_id)
+        ]
+        for room_id, seat_id in seats:
+            self._publisher.disconnect_participant(
+                room_id, seat_id, CHANNEL_CLOSE_NOT_AUTHENTICATED, ErrorCode.NOT_AUTHENTICATED
+            )
+            self.set_presence(seat_id, False)
 
     def close_rooms_of_admin(self, user: User) -> None:
         room_ids: list[uuid.UUID] = room_repository.list_room_ids_of_admin(self._session, user.id)
