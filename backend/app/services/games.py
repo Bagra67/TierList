@@ -99,6 +99,10 @@ def _freeze_players(game: Game) -> None:
         placement.participant = None
 
 
+def places_in_game(room: Room, participant: Participant) -> bool:
+    return room.admin_plays or participant.user_id != room.admin_id
+
+
 def _is_inactive(room: Room, cutoff: datetime) -> bool:
     return room.updated_at < cutoff and not any(
         participant.connected for participant in room.participants
@@ -211,7 +215,7 @@ class GameService:
         return [
             participant
             for participant in self._rooms.seated_participants(room)
-            if room.admin_plays or participant.user_id != room.admin_id
+            if places_in_game(room, participant)
         ]
 
     def place(

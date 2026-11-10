@@ -21,6 +21,7 @@ from app.schemas.rooms import (
     RoomSettingsResponse,
     RoomTemplateResponse,
 )
+from app.services.games import places_in_game
 from app.services.image_storage import ImageStorage
 from app.services.rooms import GuestSeat, RoomService
 
@@ -92,7 +93,7 @@ def current_game_response(
         if placement.snapshot_tile_id == current_round.snapshot_tile_id
         and placement.participant_id is not None
     ]
-    seat_places: bool = game.admin_plays or seat.user_id != seat.room.admin_id
+    seat_places: bool = places_in_game(seat.room, seat)
     board_phase: PlacementPhase = (
         PlacementPhase.FINAL if game.status == GameStatus.COOLDOWN else PlacementPhase.ROUND
     )
