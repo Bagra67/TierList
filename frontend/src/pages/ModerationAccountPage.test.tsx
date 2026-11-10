@@ -188,6 +188,29 @@ describe('ModerationAccountPage', () => {
     await waitFor(() => expect(calls.reportQueries).toHaveLength(2));
   });
 
+  it('stops hiding when a batch hides nothing, even if more is announced', async () => {
+    let hideRequests: number = 0;
+    stubBackend({
+      'GET /moderation/accounts/max-id': () => Response.json(maxAccount),
+      'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'POST /moderation/accounts/max-id/hide-images': () => {
+        hideRequests += 1;
+        return Response.json({ hidden_count: 0, has_more: true });
+      },
+    });
+    renderAccountPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Masquer toutes ses images' }));
+    const dialog = screen.getByRole('dialog', { name: 'Masquer toutes les images de Max' });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Spam' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tout masquer' }));
+
+    expect(await screen.findByText('0 image masquée.')).toBeInTheDocument();
+    expect(hideRequests).toBe(1);
+  });
+
   it('shows an active ban, which can be lifted with a reason', async () => {
     const calls: Calls = { reportQueries: [], imageQueries: [], logQueries: [], posts: [] };
     stubBackend({

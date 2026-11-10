@@ -425,7 +425,7 @@ export function useHideAllImages(): UseMutationResult<number, Error, HideAllImag
           }),
         );
         hiddenCount += batch.hidden_count;
-        hasMore = batch.has_more;
+        hasMore = batch.has_more && batch.hidden_count > 0;
       }
       return hiddenCount;
     },
