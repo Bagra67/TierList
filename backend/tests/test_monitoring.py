@@ -14,7 +14,7 @@ from sentry_sdk.types import Event
 
 import app.core.monitoring as monitoring_module
 from app.core.config import Settings, get_settings
-from app.core.monitoring import configure_sentry, remove_query_string
+from app.core.monitoring import configure_sentry, remove_request_personal_data
 from app.main import api_app, app
 
 FAKE_DSN: str = "https://public-key@sentry.example.invalid/1"
@@ -99,6 +99,8 @@ def test_sentry_starts_with_the_release_and_without_personal_data(
     assert options["send_default_pii"] is False
     assert options["max_request_body_size"] == "never"
     assert options["include_local_variables"] is False
+    assert options["before_send"] is remove_request_personal_data
+    assert options["before_send_transaction"] is remove_request_personal_data
 
 
 def test_an_error_logged_by_the_app_is_sent_to_sentry(transport: CapturingTransport) -> None:
@@ -125,20 +127,34 @@ def test_a_warning_is_not_sent_to_sentry(transport: CapturingTransport) -> None:
     assert transport.events == []
 
 
-def test_the_query_string_is_removed_from_the_event() -> None:
+def test_the_request_keeps_only_its_url_method_and_user_agent() -> None:
     event: Event = {
-        "request": {"url": "https://tierlist.test/api/x", "query_string": "code=s3cr3t"}
+        "request": {
+            "url": "https://tierlist.test/api/auth/google/callback",
+            "method": "GET",
+            "query_string": "code=s3cr3t",
+            "cookies": {"refresh_token": "[Filtered]"},
+            "headers": {
+                "User-Agent": "Firefox",
+                "Cf-Connecting-Ip": "203.0.113.7",
+                "Referer": "https://tierlist.test/reset-password?token=s3cr3t",
+            },
+        }
     }
 
-    cleaned: Event = remove_query_string(event, {})
+    cleaned: Event = remove_request_personal_data(event, {})
 
-    assert cleaned.get("request") == {"url": "https://tierlist.test/api/x"}
+    assert cleaned.get("request") == {
+        "url": "https://tierlist.test/api/auth/google/callback",
+        "method": "GET",
+        "headers": {"User-Agent": "Firefox"},
+    }
 
 
 def test_an_event_without_request_is_left_unchanged() -> None:
     event: Event = {"message": "nightly purge failed"}
 
-    assert remove_query_string(event, {}) == {"message": "nightly purge failed"}
+    assert remove_request_personal_data(event, {}) == {"message": "nightly purge failed"}
 
 
 def test_client_config_without_sentry_sends_a_null_dsn() -> None:
