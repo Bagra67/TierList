@@ -4,6 +4,7 @@ import { cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
+import { alignOnServerClock } from '../api/serverClock';
 import { LANGUAGE_STORAGE_KEY } from '../constants/i18n';
 import { DARK_CLASS, THEME_STORAGE_KEY } from '../constants/theme';
 import i18n from '../i18n';
@@ -30,6 +31,7 @@ afterEach(async () => {
   vi.useRealTimers();
   await letLateResponsesFinish();
   setAccessToken(null);
+  alignOnServerClock(new Date().toISOString());
   vi.unstubAllGlobals();
   localStorage.removeItem(LANGUAGE_STORAGE_KEY);
   localStorage.removeItem(THEME_STORAGE_KEY);
