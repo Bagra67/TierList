@@ -17,9 +17,11 @@ import {
   FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
 } from '../constants/layout';
 import { ROUTES } from '../constants/routes';
+import { isTemplateId } from '../constants/templates';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
+import { NotFoundPage } from './NotFoundPage';
 
 export function TemplateEditorPage() {
   const { templateId = '' }: Readonly<Params> = useParams();
@@ -45,6 +47,8 @@ export function TemplateEditorPage() {
       window.removeEventListener('drop', ignoreFileDropOutsideDropZones);
     };
   }, []);
+
+  if (!isTemplateId(templateId)) return <NotFoundPage />;
 
   return (
     <PageContainer

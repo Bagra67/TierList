@@ -8,12 +8,15 @@ import {
 } from '@tanstack/react-query';
 
 import {
+  isTemplateId,
   REMOVED_TEMPLATES_QUERY_KEY,
-  TEMPLATES_QUERY_KEY,
+  TEMPLATE_LIST_QUERY_KEY,
+  templateChangeMutationKey,
   type TemplateQueryKey,
   templateQueryKey,
 } from '../constants/templates';
 import { apiClient, dataOrThrow, throwIfError } from './client';
+import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
 export type TemplateSummary = components['schemas']['TemplateSummaryResponse'];
@@ -131,8 +134,9 @@ async function deleteTemplate(templateId: string): Promise<void> {
 
 export function useTemplates(): UseQueryResult<TemplateSummary[]> {
   return useQuery({
-    queryKey: TEMPLATES_QUERY_KEY,
+    queryKey: TEMPLATE_LIST_QUERY_KEY,
     queryFn: ({ signal }) => listTemplates(signal),
+    retry: retryUnlessClientError,
   });
 }
 
@@ -140,6 +144,7 @@ export function useRemovedTemplates(): UseQueryResult<RemovedTemplate[]> {
   return useQuery({
     queryKey: REMOVED_TEMPLATES_QUERY_KEY,
     queryFn: ({ signal }) => listRemovedTemplates(signal),
+    retry: retryUnlessClientError,
   });
 }
 
@@ -147,6 +152,8 @@ export function useTemplate(templateId: string): UseQueryResult<Template> {
   return useQuery({
     queryKey: templateQueryKey(templateId),
     queryFn: ({ signal }) => getTemplate(templateId, signal),
+    enabled: isTemplateId(templateId),
+    retry: retryUnlessClientError,
   });
 }
 
@@ -154,7 +161,7 @@ export function useCreateTemplate(): UseMutationResult<Template, Error, CreateTe
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: createTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY }),
+    onSuccess: (template: Template) => storeTemplate(queryClient, template),
   });
 }
 
@@ -162,13 +169,19 @@ export function useDeleteTemplate(): UseMutationResult<void, Error, string> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY }),
+    onSuccess: async (_nothing: void, templateId: string) => {
+      queryClient.removeQueries({ queryKey: templateQueryKey(templateId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: TEMPLATE_LIST_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: REMOVED_TEMPLATES_QUERY_KEY }),
+      ]);
+    },
   });
 }
 
 function storeTemplate(queryClient: QueryClient, template: Template): Promise<void> {
   queryClient.setQueryData(templateQueryKey(template.id), template);
-  return queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY, exact: true });
+  return queryClient.invalidateQueries({ queryKey: TEMPLATE_LIST_QUERY_KEY });
 }
 
 export type TemplateChange<Variables> = UseMutationResult<
@@ -216,6 +229,7 @@ function useTemplateChange<Variables = void>(
   const queryClient: QueryClient = useQueryClient();
   const queryKey: TemplateQueryKey = templateQueryKey(templateId);
   return useMutation({
+    mutationKey: templateChangeMutationKey(templateId),
     mutationFn,
     onMutate: async (variables: Variables): Promise<Template | undefined> => {
       const move: PendingMove | undefined = getMove?.(variables);
@@ -227,10 +241,17 @@ function useTemplateChange<Variables = void>(
       }
       return previous;
     },
-    onError: (_error, _variables, previous) => {
+    onSettled: async (template, _error, _variables, previous) => {
+      const otherChangesPending: boolean =
+        queryClient.isMutating({ mutationKey: templateChangeMutationKey(templateId) }) > 1;
+      if (otherChangesPending) return;
+      if (template !== undefined) {
+        await storeTemplate(queryClient, template);
+        return;
+      }
       if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
+      await queryClient.invalidateQueries({ queryKey });
     },
-    onSuccess: (template) => storeTemplate(queryClient, template),
   });
 }
 
