@@ -95,6 +95,10 @@ class Settings(BaseSettings):
     maintenance_hour_utc: int = Field(default=3, ge=0, le=23)
     trusted_proxy_ips: Annotated[list[IPvAnyNetwork], NoDecode] = []
 
+    sentry_dsn: str | None = None
+    sentry_environment: str = "local"
+    sentry_traces_sample_rate: float = Field(default=0, ge=0, le=1)
+
     @field_validator("trusted_proxy_ips", mode="before")
     @classmethod
     def _split_trusted_proxy_ips(cls, value: object) -> object:

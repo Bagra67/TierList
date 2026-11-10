@@ -235,6 +235,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/client-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Client Config */
+        get: operations["get_client_config_client_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates": {
         parameters: {
             query?: never;
@@ -1197,6 +1214,29 @@ export interface components {
         Body_upload_image_images_post: {
             /** File */
             file: string;
+        };
+        /**
+         * ClientConfigResponse
+         * @description Réglages publics lus par le frontend au démarrage.
+         *
+         *     Le même build du frontend sert tous les environnements.
+         */
+        ClientConfigResponse: {
+            /**
+             * Sentry Dsn
+             * @description DSN Sentry du navigateur ; null quand le suivi des erreurs est désactivé.
+             */
+            sentry_dsn: string | null;
+            /**
+             * Environment
+             * @description Environnement transmis à Sentry (staging, production…).
+             */
+            environment: string;
+            /**
+             * Release
+             * @description Version qui tourne, la même que celle de /health.
+             */
+            release: string;
         };
         /**
          * CreateReportRequest
@@ -3064,6 +3104,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_client_config_client_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientConfigResponse"];
                 };
             };
             /** @description Internal server error */

@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from pathlib import Path
 
@@ -7,8 +8,26 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 
 from app.core.frontend import mount_frontend_after_api
+from app.schemas.client_config import ClientConfigResponse
 
-INDEX_HTML = "<!doctype html><title>TierList</title>"
+PAGE_START = "<!doctype html><head><title>TierList</title>"
+PAGE_END = "</head><body></body>"
+INDEX_HTML = PAGE_START + PAGE_END
+CLIENT_CONFIG: ClientConfigResponse = ClientConfigResponse(
+    sentry_dsn="https://public-key@sentry.example.invalid/1",
+    environment="production",
+    release="v1.2.3</script>",
+)
+CONFIG_ELEMENT_START = '<script type="application/json" id="tierlist-client-config">'
+CONFIG_ELEMENT_END = "</script>"
+
+
+def client_config_of(page: str) -> str:
+    assert page.startswith(PAGE_START + CONFIG_ELEMENT_START)
+    assert page.endswith(CONFIG_ELEMENT_END + PAGE_END)
+    return page.removeprefix(PAGE_START + CONFIG_ELEMENT_START).removesuffix(
+        CONFIG_ELEMENT_END + PAGE_END
+    )
 
 
 @pytest.fixture
@@ -20,7 +39,7 @@ def client(tmp_path: Path) -> TestClient:
     (dist / "favicon.svg").write_text("<svg/>", encoding="utf-8")
     (tmp_path / "secret.txt").write_text("secret", encoding="utf-8")
     frontend_app: FastAPI = FastAPI()
-    mount_frontend_after_api(frontend_app, dist)
+    mount_frontend_after_api(frontend_app, dist, CLIENT_CONFIG)
     return TestClient(frontend_app)
 
 
@@ -40,8 +59,22 @@ def test_frontend_routes_get_the_page_without_cache(client: TestClient, path: st
     response = client.get(path)
 
     assert response.status_code == 200
-    assert response.text == INDEX_HTML
+    assert json.loads(client_config_of(response.text)) == CLIENT_CONFIG.model_dump()
     assert response.headers["cache-control"] == "no-cache"
+
+
+def test_the_index_file_itself_carries_the_client_config(client: TestClient):
+    response: Response = client.get("/index.html")
+
+    assert response.status_code == 200
+    assert json.loads(client_config_of(response.text)) == CLIENT_CONFIG.model_dump()
+
+
+def test_the_client_config_cannot_close_its_script_element(client: TestClient):
+    config_json: str = client_config_of(client.get("/").text)
+
+    assert "<" not in config_json
+    assert json.loads(config_json)["release"] == "v1.2.3</script>"
 
 
 def test_head_requests_get_the_page_headers(client: TestClient):
