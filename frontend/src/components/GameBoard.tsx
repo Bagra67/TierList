@@ -90,6 +90,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   async function placeWithButton(tierId: string, position: number, focusKeysByPriority: string[]) {
+    if (itemIdsInServerOrder(tierId).indexOf(currentItem.id) === position) return;
     if (await placeAt(tierId, position, focusKeysByPriority)) {
       setButtonPlacementAnnouncement(
         t('rooms.game.dnd.dropped', {

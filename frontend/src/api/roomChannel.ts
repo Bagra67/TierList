@@ -130,11 +130,14 @@ export function useRoomEvents(
       current.addEventListener('open', () => {
         opened = true;
         failedOpenings = 0;
-        void channelAccessToken(channelViewer).then((accessToken: string | null) => {
-          if (stopped || current.readyState !== WebSocket.OPEN) return;
-          send(current, { type: 'auth', access_token: accessToken });
-          readRoomAgainAfterMissedEvents();
-        });
+        channelAccessToken(channelViewer).then(
+          (accessToken: string | null) => {
+            if (stopped || current.readyState !== WebSocket.OPEN) return;
+            send(current, { type: 'auth', access_token: accessToken });
+            readRoomAgainAfterMissedEvents();
+          },
+          () => current.close(),
+        );
       });
       current.addEventListener('message', (event: MessageEvent<string>) => {
         const message: RoomServerMessage = JSON.parse(event.data) as RoomServerMessage;
@@ -154,9 +157,9 @@ export function useRoomEvents(
           !retriedWithFreshToken
         ) {
           retriedWithFreshToken = true;
-          void refreshAccessToken().then((refreshed: boolean) => {
+          refreshAccessToken().then((refreshed: boolean) => {
             if (refreshed && !stopped) connect();
-          });
+          }, reconnectLater);
           return;
         }
         const removalReason: RemovalReason | undefined = REMOVAL_REASONS.get(event.code);
@@ -172,9 +175,14 @@ export function useRoomEvents(
             return;
           }
         }
-        retryTimer = setTimeout(connect, exponentialBackoffWithJitterMs(attempt));
-        attempt += 1;
+        reconnectLater();
       });
+    }
+
+    function reconnectLater(): void {
+      if (stopped) return;
+      retryTimer = setTimeout(connect, exponentialBackoffWithJitterMs(attempt));
+      attempt += 1;
     }
 
     connect();
