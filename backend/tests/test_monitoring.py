@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import Iterator
 from functools import partial
 from pathlib import Path
@@ -241,6 +242,16 @@ def test_an_email_address_is_masked_inside_a_text() -> None:
     assert mask_secrets_in_text(database_error) == (
         "DETAIL:  Key (email)=([Filtered]) already exists."
     )
+
+
+def test_a_long_text_without_email_is_masked_in_linear_time() -> None:
+    long_identifier: str = "a" * 100_000
+
+    started_at: float = time.perf_counter()
+    masked: str = mask_secrets_in_text(long_identifier)
+
+    assert masked == long_identifier
+    assert time.perf_counter() - started_at < 1
 
 
 @pytest.mark.parametrize(
