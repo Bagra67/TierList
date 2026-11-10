@@ -208,7 +208,8 @@ Construit dans #85. Ce qui existe aujourd'hui :
   - un compte dont le canal est refusé avec `4401` réessaie **une fois** avec un access token rafraîchi (le token dure 15 minutes ; un lobby ouvert plus longtemps se figerait sinon à sa reconnexion suivante) ; un second `4401` d'affilée l'arrête ;
   - après 5 ouvertures d'affilée qui n'ont jamais abouti (serveur injoignable, origine refusée, que le navigateur signale comme `1006`), le hook s'arrête et le lobby indique que les mises à jour en direct sont indisponibles ;
   - une trame binaire du client ferme le canal avec `4400` `invalid_message` ;
-  - un participant qui revient pendant l'écriture de son départ est remis à connecté (`schedule_disconnect` : l'annulation ne peut pas arrêter le thread qui écrit).
+  - un participant qui revient pendant l'écriture de son départ est remis à connecté (`schedule_disconnect` : une fois le délai de grâce passé, le départ ne peut plus être annulé, sa dernière vérification a donc toujours lieu) ;
+  - les tâches du registre sont gardées par référence jusqu'à leur fin, et une diffusion envoie à tous les sockets de la room en même temps : un socket lent ne retarde pas les autres.
 - **Ordre des événements** : chaque publication est diffusée par sa propre tâche, deux événements publiés en même temps peuvent donc arriver à un socket dans le désordre. Le client voit alors un saut de version et relit la room : le résultat reste juste, au prix d'une requête.
 
 | Couche      | Fichier                                          | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                           |

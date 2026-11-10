@@ -197,6 +197,7 @@ An account can be banned temporarily or permanently (US-1.8). Not to be confused
 
 - **Signed out everywhere**, like after a password reset: the refresh tokens of the account are revoked (no session can be refreshed) and `users.token_version` is incremented, so every access token already issued is refused at the next request ([authentication guide](authentication.md#banned-accounts)).
 - **Sign-in refused** while the ban is active, with a password or with Google, with the reason and the end ([authentication guide](authentication.md#banned-accounts)). Refreshing is refused too, for a session that a sign-in in progress would have opened during the ban.
+- **Realtime sockets closed**: once the ban is committed, the open sockets of the account in every room are closed with `4401` and its seats are set disconnected ([authentication guide](authentication.md#banned-accounts)).
 - Lifting a ban only lets the account sign in again; its sessions stay closed.
 
 The frontend:
@@ -207,7 +208,6 @@ The frontend:
 
 **Known limitations**:
 
-- The realtime sockets already open are not closed at once: they only signal that the room must be read again, and every REST call of the banned account fails from then on.
 - The public templates of a banned account are not hidden from a marketplace yet: there is no marketplace (#277).
 
 ### 2.10 Content reports

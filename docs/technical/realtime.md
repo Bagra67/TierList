@@ -208,7 +208,8 @@ Built in #85. What exists today:
   - an account whose channel is refused with `4401` retries **once** with a refreshed access token (the token lasts 15 minutes; a lobby left open longer would otherwise freeze at its next reconnection); a second `4401` in a row stops it;
   - after 5 openings in a row that never opened (server unreachable, origin refused, which the browser reports as `1006`), the hook stops and the lobby says live updates are unavailable;
   - a binary frame from the client closes the channel with `4400` `invalid_message`;
-  - a participant who comes back while their departure is being written is set connected again (`schedule_disconnect`: the cancellation cannot stop the thread that writes).
+  - a participant who comes back while their departure is being written is set connected again (`schedule_disconnect`: once the grace delay is over, the departure can no longer be cancelled, so its last check always runs);
+  - the tasks of the registry are kept by reference until they end, and a broadcast sends to every socket of the room at once, so a slow socket does not hold the others back.
 - **Event order**: each publication is broadcast by its own task, so two events published at the same time may reach a socket in the wrong order. The client then sees a version gap and reads the room again: the result stays right, at the cost of one request.
 
 | Layer        | File                                             | Content                                                                                                                                                                                                                                                                                                                                                                                                                   |

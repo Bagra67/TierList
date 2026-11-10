@@ -180,6 +180,7 @@ A super admin can ban an account, temporarily or permanently, with a reason (US-
   - **with a password**, the ban is checked **after** the password: a wrong password still gets `401` `invalid_credentials`, so the answer tells nothing about an account to whoever does not know its password. With the right password, the answer is `403` `account_banned` (permanent ban, `params.reason`) or `account_banned_until` (temporary ban, `params.reason` and `params.ends_at`, an ISO date); the login page shows the reason and the end (`translateError` turns the `*_at` params into dates for the i18next `datetime` formatter);
   - **with Google**, the ban is checked once the account is found, linked or created; the callback redirects to `/login?error=google_account_banned`. The reason and the date have no place in a URL (they would end up in logs and in the history), and an account created with Google has no password to read them with. So the callback also sets the **`google_ban_notice` cookie**: a JWT signed with `JWT_SECRET_KEY` that only names the account, `HttpOnly`, limited to `/api/auth/google`, for `GOOGLE_LOGIN_ATTEMPT_TTL_MINUTES`. The login page then calls `GET /auth/google/ban-notice` (`useGoogleBanNotice`), which reads the active ban again and answers the same `403` as a password sign-in. If there is nothing to show (`204`: ban lifted or over, cookie expired) or the call fails, the page shows a general message.
 - **Refreshing** is refused too (`401` `session_expired`, and the token family is revoked). A ban revokes the sessions, but not the token of a sign-in or a refresh still in progress, which it cannot see: without this check, that token would keep the banned account signed in, rotation after rotation.
+- **Realtime sockets** of the account are closed with `4401` `not_authenticated` once the ban is committed, and its seats are set disconnected, so an "everyone placed" round does not wait for it (`GameService.disconnect_banned_account`, passed as `after_ban`); the client tries one refresh, which is refused, and stops.
 - A temporary ban ends by itself (the end is compared with the current time at each sign-in); a lifted ban lets the account sign in again. Neither opens a session: the person signs in again.
 - A super admin can never be banned.
 
@@ -245,8 +246,8 @@ Without these two variables, the "Continuer avec Google" link leads back to `/lo
 
 ### Known limitations
 
+- **A realtime channel opened at the very moment of a ban** (its token checked just before the ban is committed, its socket registered just after the sockets are closed) stays open until its next disconnection. It only receives the events of rooms where the account already has a seat.
 - **A banned account created with Google** has no password to read the reason of its ban at sign-in: it can set one with "Mot de passe oublié ?", or write to us.
-- **Realtime sockets** already open when an account is banned are not closed at once: they only signal that the room must be read again, and every REST call of the account fails from then on.
 - **Several tabs restoring the session at the same moment** (e.g. reopening the browser with many tabs) can present the same refresh token twice. The second one is treated as a theft and the session is closed: the user signs in again. Within one tab, refreshes are shared so this cannot happen.
 
 ## 3. In the code
