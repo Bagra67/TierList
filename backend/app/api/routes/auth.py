@@ -269,7 +269,9 @@ def delete_me(
     settings: SettingsDep,
 ) -> None:
     try:
-        service.delete_account(session, payload.password, before_delete=games.close_rooms_of_admin)
+        service.delete_account(
+            session, payload.password, before_delete=games.leave_rooms_of_deleted_account
+        )
     except IncorrectPasswordError as exc:
         raise AppHTTPException(
             status_code=403,

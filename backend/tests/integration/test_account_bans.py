@@ -6,22 +6,33 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import Engine, delete, select
+from sqlalchemy import Engine, delete, select, update
 from sqlalchemy.orm import Session
 
 from app.constants.auth import REFRESH_TOKEN_COOKIE
 from app.constants.error_codes import ErrorCode
+from app.constants.rooms import CHANNEL_CLOSE_NOT_AUTHENTICATED
 from app.core.config import get_settings
 from app.core.security import generate_refresh_token, hash_refresh_token
 from app.models.account_ban import AccountBan
 from app.models.enums import ModerationActionKind, ModerationTargetType, UserRole
 from app.models.moderation_action import ModerationAction
+from app.models.participant import Participant
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories import users as user_repository
+from app.schemas.room_events import ParticipantPresenceEvent
 from app.services.account_bans import AccountBanService
 from app.services.moderation_log import ModerationLogService
-from tests.integration.helpers import PASSWORD, JsonObject, register, register_super_admin
+from tests.integration.conftest import RecordingRoomEventPublisher
+from tests.integration.helpers import (
+    PASSWORD,
+    JsonObject,
+    create_room,
+    create_template,
+    register,
+    register_super_admin,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -100,6 +111,32 @@ def test_a_temporary_ban_signs_the_account_out_and_refuses_its_sign_in_until_the
         alice_account.id,
         "alice",
     )
+
+
+def test_a_ban_closes_the_room_channels_of_the_account_and_sets_it_disconnected(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    room_events: RecordingRoomEventPublisher,
+):
+    template_id: str = create_template(auth_client, db_session, nina)
+    code: str = create_room(auth_client, nina, template_id)["code"]
+    joined: JsonObject = auth_client.post(f"/rooms/{code}/join", headers=alice).json()
+    alice_seat: uuid.UUID = uuid.UUID(
+        next(p["id"] for p in joined["participants"] if p["display_name"] == "alice")
+    )
+    db_session.execute(update(Participant).values(connected=True))
+
+    assert ban(auth_client, nina, account(db_session, "alice@example.com").id).status_code == 204
+
+    assert room_events.disconnections == [(alice_seat, CHANNEL_CLOSE_NOT_AUTHENTICATED)]
+    db_session.expire_all()
+    assert db_session.get_one(Participant, alice_seat).connected is False
+    presence: object = room_events.events[-1][1]
+    assert isinstance(presence, ParticipantPresenceEvent)
+    assert presence.data.participant_id == alice_seat
+    assert presence.data.connected is False
 
 
 def test_a_session_opened_while_the_ban_was_decided_cannot_be_refreshed(

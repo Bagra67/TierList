@@ -7,6 +7,7 @@ from pydantic import AwareDatetime
 from app.api.dependencies import (
     AccountBanServiceDep,
     AccountReviewServiceDep,
+    GameServiceDep,
     ImageModerationServiceDep,
     ImageStorageDep,
     ModerationLogServiceDep,
@@ -544,9 +545,16 @@ def ban_account(
     body: BanAccountRequest,
     super_admin: SuperAdminDep,
     service: AccountBanServiceDep,
+    games: GameServiceDep,
 ) -> None:
     try:
-        service.ban(super_admin, user_id, body.reason, body.ends_at)
+        service.ban(
+            super_admin,
+            user_id,
+            body.reason,
+            body.ends_at,
+            after_ban=games.disconnect_banned_account,
+        )
     except UserNotFoundError as exc:
         raise _account_not_found() from exc
     except CannotBanSuperAdminError as exc:

@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -36,7 +37,12 @@ class AccountBanService:
         return account_ban_repository.banned_user_ids(self._session, user_ids, datetime.now(UTC))
 
     def ban(
-        self, super_admin: User, user_id: uuid.UUID, reason: str, ends_at: datetime | None
+        self,
+        super_admin: User,
+        user_id: uuid.UUID,
+        reason: str,
+        ends_at: datetime | None,
+        after_ban: Callable[[uuid.UUID], None] | None = None,
     ) -> AccountBan:
         now: datetime = datetime.now(UTC)
         user: User = self._get_user_for_update(user_id)
@@ -74,6 +80,8 @@ class AccountBanService:
             ends_at is None,
             super_admin.id,
         )
+        if after_ban is not None:
+            after_ban(user.id)
         return ban
 
     def lift(self, super_admin: User, user_id: uuid.UUID, reason: str) -> None:

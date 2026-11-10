@@ -288,17 +288,37 @@ class RoomService:
                 display_name=target.display_name,
             )
             room.bans.append(room_ban)
+        close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
+        reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
+        self._remove_seat(room, target, close_code, reason)
+        return room
+
+    def remove_seat_of_deleted_account(self, participant_id: uuid.UUID) -> Room | None:
+        room: Room | None = room_repository.get_room_of_participant(
+            self._session, participant_id, for_update=True
+        )
+        target: Participant | None = None
+        if room is not None:
+            target = next((p for p in room.participants if p.id == participant_id), None)
+        if room is None or target is None:
+            self._release_room_lock()
+            return None
+        self._remove_seat(room, target, CHANNEL_CLOSE_REMOVED, ErrorCode.REMOVED_FROM_ROOM)
+        return room
+
+    def _remove_seat(
+        self, room: Room, target: Participant, close_code: int, reason: ErrorCode
+    ) -> None:
+        participant_id: uuid.UUID = target.id
         room.participants.remove(target)
         room.version += 1
         self._session.commit()
         logger.info(
-            "Participant retiré : room_id=%s participant_id=%s banned=%s",
+            "Participant retiré : room_id=%s participant_id=%s close_code=%s",
             room.id,
             participant_id,
-            ban,
+            close_code,
         )
-        close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
-        reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
         self._publisher.disconnect_participant(room.id, participant_id, close_code, reason)
         self._publisher.publish(
             room.id,
@@ -307,7 +327,6 @@ class RoomService:
                 data=ParticipantRemovedData(participant_id=participant_id),
             ),
         )
-        return room
 
     def unban(self, user: User, code: str, ban_id: uuid.UUID) -> Room:
         room: Room = self.get_for_admin_change(user, code)
