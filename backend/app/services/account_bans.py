@@ -1,11 +1,10 @@
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.constants.error_codes import ErrorCode
-from app.constants.rooms import CHANNEL_CLOSE_NOT_AUTHENTICATED
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.moderation import (
     AccountNotBannedError,
@@ -14,28 +13,19 @@ from app.exceptions.moderation import (
 )
 from app.models.account_ban import AccountBan
 from app.models.enums import ModerationActionKind, ModerationTargetType
-from app.models.participant import Participant
 from app.models.user import User
 from app.repositories import account_bans as account_ban_repository
 from app.repositories import refresh_tokens as refresh_token_repository
-from app.repositories import rooms as room_repository
 from app.repositories import users as user_repository
 from app.services.moderation_log import ModerationLogService
-from app.services.room_channel import PostCommitRoomPublisher
 
 logger = logging.getLogger(__name__)
 
 
 class AccountBanService:
-    def __init__(
-        self,
-        session: Session,
-        moderation_log: ModerationLogService,
-        publisher: PostCommitRoomPublisher,
-    ) -> None:
+    def __init__(self, session: Session, moderation_log: ModerationLogService) -> None:
         self._session = session
         self._moderation_log = moderation_log
-        self._publisher = publisher
 
     def active_ban(self, user_id: uuid.UUID) -> AccountBan | None:
         return account_ban_repository.get_active_ban(self._session, user_id, datetime.now(UTC))
@@ -47,7 +37,12 @@ class AccountBanService:
         return account_ban_repository.banned_user_ids(self._session, user_ids, datetime.now(UTC))
 
     def ban(
-        self, super_admin: User, user_id: uuid.UUID, reason: str, ends_at: datetime | None
+        self,
+        super_admin: User,
+        user_id: uuid.UUID,
+        reason: str,
+        ends_at: datetime | None,
+        after_ban: Callable[[uuid.UUID], None] | None = None,
     ) -> AccountBan:
         now: datetime = datetime.now(UTC)
         user: User = self._get_user_for_update(user_id)
@@ -85,15 +80,9 @@ class AccountBanService:
             ends_at is None,
             super_admin.id,
         )
-        self._close_room_channels(user.id)
+        if after_ban is not None:
+            after_ban(user.id)
         return ban
-
-    def _close_room_channels(self, user_id: uuid.UUID) -> None:
-        seats: list[Participant] = room_repository.list_seats_of_user(self._session, user_id)
-        for seat in seats:
-            self._publisher.disconnect_participant(
-                seat.room_id, seat.id, CHANNEL_CLOSE_NOT_AUTHENTICATED, ErrorCode.NOT_AUTHENTICATED
-            )
 
     def lift(self, super_admin: User, user_id: uuid.UUID, reason: str) -> None:
         now: datetime = datetime.now(UTC)

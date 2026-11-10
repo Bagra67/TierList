@@ -11,7 +11,6 @@ from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
-from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.seats import GUEST_NICKNAMES
 from app.services.account_bans import AccountBanService
 from app.services.image_moderation import ImageModerationService
@@ -150,9 +149,7 @@ def ban_accounts(
     lifted: list[User],
     rng: random.Random,
 ) -> int:
-    service: AccountBanService = AccountBanService(
-        session, ModerationLogService(session, settings), NoOpRoomEventPublisher()
-    )
+    service: AccountBanService = AccountBanService(session, ModerationLogService(session, settings))
     ends_at: datetime = datetime.now(UTC) + timedelta(days=TEMPORARY_BAN_DAYS)
     for user in temporarily:
         service.ban(rng.choice(super_admins), user.id, rng.choice(BAN_REASONS), ends_at)
