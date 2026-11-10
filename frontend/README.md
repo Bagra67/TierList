@@ -166,9 +166,9 @@ Server data goes through **TanStack Query** on top of a shared **openapi-fetch**
 Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, the API `code` and `params`, and the backend `detail` as `message`) is thrown for any non-2xx response. Components display `translateError(t, error)`, never `error.message`. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
-- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure other than a 4xx to the console and to Sentry, in one place.
-- `src/monitoring/sentry.ts`: `initMonitoring()`, called by `main.tsx`, starts Sentry with the settings of `GET /api/client-config`, only when a DSN is set; `reportError()` is used by the error boundary and the query client ([monitoring guide](../docs/technical/monitoring.md)).
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, the API `code` and `params`, and the backend `detail` as `message`) is thrown for any non-2xx response; a failed `fetch` (lost connection, other than an abort) becomes a `NetworkError` (`src/errors/networkError.ts`). Components display `translateError(t, error)`, never `error.message`. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
+- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure other than a 4xx to the console, in one place; only a failure that is neither an `ApiError` nor a `NetworkError` (an error of the code) is also sent to Sentry.
+- `src/monitoring/sentry.ts`: `initMonitoring()`, called by `main.tsx`, starts Sentry with the config the backend writes into `index.html` (or, under Vite, `GET /api/client-config`), only when a DSN is set; `reportError()` is used by the error boundary and the query client ([monitoring guide](../docs/technical/monitoring.md)).
 - TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
 
 To add an endpoint, create `src/api/<resource>.ts` following `auth.ts`, e.g. a read:
