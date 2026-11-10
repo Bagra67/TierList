@@ -2,7 +2,7 @@ import type { ErrorEvent } from '@sentry/react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { type CapturedSentryEvents, captureSentryEvents } from '../test/sentryEvents';
+import { captureSentryEvents } from '../test/sentryEvents';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function Broken(): never {
@@ -44,21 +44,16 @@ describe('ErrorBoundary', () => {
 
   it('reports the crash to Sentry with the component stack', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const captured: CapturedSentryEvents = captureSentryEvents();
-    const events: ErrorEvent[] = captured.events;
+    const events: ErrorEvent[] = captureSentryEvents();
 
-    try {
-      render(
-        <ErrorBoundary>
-          <Broken />
-        </ErrorBoundary>,
-      );
+    render(
+      <ErrorBoundary>
+        <Broken />
+      </ErrorBoundary>,
+    );
 
-      await vi.waitFor(() => expect(events).toHaveLength(1));
-      expect(events[0].exception?.values?.[0].value).toBe('render failed');
-      expect(events[0].contexts?.react?.componentStack).toContain('Broken');
-    } finally {
-      await captured.stop();
-    }
+    await vi.waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0].exception?.values?.[0].value).toBe('render failed');
+    expect(events[0].contexts?.react?.componentStack).toContain('Broken');
   });
 });

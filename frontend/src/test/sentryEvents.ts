@@ -1,13 +1,9 @@
 import * as Sentry from '@sentry/react';
+import { onTestFinished } from 'vitest';
 
-const FAKE_DSN: string = 'https://public-key@sentry.example.invalid/1';
+export const FAKE_DSN: string = 'https://public-key@sentry.example.invalid/1';
 
-export interface CapturedSentryEvents {
-  events: Sentry.ErrorEvent[];
-  stop: () => Promise<void>;
-}
-
-export function captureSentryEvents(): CapturedSentryEvents {
+export function captureSentryEvents(): Sentry.ErrorEvent[] {
   const events: Sentry.ErrorEvent[] = [];
   Sentry.init({
     dsn: FAKE_DSN,
@@ -17,10 +13,8 @@ export function captureSentryEvents(): CapturedSentryEvents {
       return null;
     },
   });
-  return {
-    events,
-    stop: async () => {
-      await Sentry.close();
-    },
-  };
+  onTestFinished(async () => {
+    await Sentry.close();
+  });
+  return events;
 }
