@@ -144,6 +144,16 @@ describe('ModerationLogPage', () => {
     expect(queries.at(-1)?.get('actor_id')).toBe('sam-id');
   });
 
+  it('says why the super admins cannot be listed in the filter', async () => {
+    stubBackend({
+      'GET /moderation/super-admins': () => errorResponse(403, 'super_admin_required'),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+    });
+    renderLogPage();
+
+    expect(await screen.findByText('Seul un super admin peut faire cela.')).toBeInTheDocument();
+  });
+
   it('shows the translated error when the log cannot be read', async () => {
     stubBackend({
       'GET /moderation/super-admins': () => Response.json(superAdmins),

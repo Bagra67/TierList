@@ -2,11 +2,13 @@ import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ModerationLogFilters, type SuperAdmin, useSuperAdmins } from '../api/moderation';
+import { ErrorMessage } from '../components/ErrorMessage';
 import { ModerationLogTable } from '../components/ModerationLogTable';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
+import { translateError } from '../errors/apiError';
 
 export function ModerationLogPage() {
   const { t } = useTranslation();
@@ -49,6 +51,7 @@ export function ModerationLogPage() {
           <NativeSelect
             id={superAdminSelectId}
             value={filters.actorId ?? ''}
+            disabled={superAdmins.isPending}
             onChange={(event) => applyActor(event.target.value)}
           >
             <option value="">{t('moderation.log.allSuperAdmins')}</option>
@@ -58,6 +61,9 @@ export function ModerationLogPage() {
               </option>
             ))}
           </NativeSelect>
+          {superAdmins.isError && (
+            <ErrorMessage>{translateError(t, superAdmins.error)}</ErrorMessage>
+          )}
         </div>
       </form>
 
