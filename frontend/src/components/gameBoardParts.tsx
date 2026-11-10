@@ -52,7 +52,7 @@ interface EndSlotProps {
   data: DropData;
 }
 
-export function EndSlot({ id, data }: EndSlotProps) {
+function EndSlot({ id, data }: EndSlotProps) {
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({ id, data });
   return (
     <li
