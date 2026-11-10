@@ -73,6 +73,10 @@ def test_sentry_settings_default_to_disabled() -> None:
     assert settings.sentry_traces_sample_rate == 0
 
 
+def test_an_empty_dsn_means_no_dsn() -> None:
+    assert make_settings(sentry_dsn="").sentry_dsn is None
+
+
 @pytest.mark.parametrize("sample_rate", [-0.1, 1.1])
 def test_the_traces_sample_rate_stays_between_zero_and_one(sample_rate: float) -> None:
     with pytest.raises(ValueError, match="sentry_traces_sample_rate"):
@@ -239,6 +243,24 @@ def test_an_email_address_is_masked_inside_a_text() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("text", "masked"),
+    [
+        (
+            "Lien https://tierlist.test/r/K7P2QX#guest=s3cr3t invalide",
+            "Lien https://tierlist.test/r/[Filtered]#guest=[Filtered] invalide",
+        ),
+        (
+            "Envoi de https://tierlist.test/reset-password?token=s3cr3t&x=1",
+            "Envoi de https://tierlist.test/reset-password?token=[Filtered]&x=1",
+        ),
+        ("/verify-email?TOKEN=s3cr3t", "/verify-email?TOKEN=[Filtered]"),
+    ],
+)
+def test_a_secret_link_parameter_is_masked_inside_a_text(text: str, masked: str) -> None:
+    assert mask_secrets_in_text(text) == masked
+
+
 def test_an_error_event_loses_the_secrets_of_its_transaction_name() -> None:
     event: Event = {"transaction": "/api/results/s3cr3t"}
 
@@ -270,6 +292,7 @@ def test_a_transaction_loses_the_secrets_of_its_name_and_spans() -> None:
         "transaction": "/api/rooms/K7P2QX",
         "spans": [
             {
+                "op": "http.client",
                 "description": "GET https://oauth2.googleapis.com/token?code=s3cr3t",
                 "data": {"url": "https://oauth2.googleapis.com/token", "http.query": "code=s3cr3t"},
             }
@@ -281,10 +304,18 @@ def test_a_transaction_loses_the_secrets_of_its_name_and_spans() -> None:
     assert scrubbed.get("transaction") == "/api/rooms/[Filtered]"
     assert scrubbed.get("spans") == [
         {
+            "op": "http.client",
             "description": "GET https://oauth2.googleapis.com/token",
             "data": {"url": "https://oauth2.googleapis.com/token"},
         }
     ]
+
+
+def test_a_database_span_keeps_its_query_whole() -> None:
+    query: str = "SELECT data #> '{a}' FROM t WHERE data ? 'key' AND id = %(id)s"
+    transaction: Event = {"type": "transaction", "spans": [{"op": "db", "description": query}]}
+
+    assert scrub_transaction(transaction, {}).get("spans") == [{"op": "db", "description": query}]
 
 
 def test_an_event_without_request_is_left_unchanged() -> None:

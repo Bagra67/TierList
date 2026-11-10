@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     sentry_environment: str = "local"
     sentry_traces_sample_rate: float = Field(default=0, ge=0, le=1)
 
+    @field_validator("sentry_dsn", mode="before")
+    @classmethod
+    def _no_dsn_when_empty(cls, value: object) -> object:
+        return None if value == "" else value
+
     @field_validator("trusted_proxy_ips", mode="before")
     @classmethod
     def _split_trusted_proxy_ips(cls, value: object) -> object:

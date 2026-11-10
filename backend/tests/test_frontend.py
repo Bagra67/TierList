@@ -43,6 +43,32 @@ def client(tmp_path: Path) -> TestClient:
     return TestClient(frontend_app)
 
 
+def test_a_build_without_index_is_not_served_and_does_not_stop_the_app(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+):
+    dist: Path = tmp_path / "frontend_dist"
+    (dist / "assets").mkdir(parents=True)
+    frontend_app: FastAPI = FastAPI()
+
+    mount_frontend_after_api(frontend_app, dist, CLIENT_CONFIG)
+
+    assert TestClient(frontend_app).get("/templates").status_code == 404
+    assert "Frontend non servi" in caplog.text
+
+
+def test_a_page_without_head_end_is_served_as_it_is(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+):
+    dist: Path = tmp_path / "frontend_dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<p>TierList</p>", encoding="utf-8")
+    frontend_app: FastAPI = FastAPI()
+    mount_frontend_after_api(frontend_app, dist, CLIENT_CONFIG)
+
+    assert TestClient(frontend_app).get("/templates").text == "<p>TierList</p>"
+    assert "Config client non écrite" in caplog.text
+
+
 def test_hashed_assets_are_cached_for_a_long_time(client: TestClient):
     response = client.get("/assets/index-abc123.js")
 

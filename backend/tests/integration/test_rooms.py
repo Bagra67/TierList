@@ -156,11 +156,12 @@ def test_create_room_requires_authentication(auth_client: TestClient):
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
 
 
-def test_a_taken_code_is_drawn_again(
+def test_a_taken_code_is_drawn_again_without_writing_any_code_in_the_logs(
     auth_client: TestClient,
     db_session: Session,
     alice: dict[str, str],
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ):
     template_id: str = create_template(auth_client, db_session, alice)
     forced_room_codes(monkeypatch, ["AAAAAA", "AAAAAA", "BBBBBB"])
@@ -171,6 +172,9 @@ def test_a_taken_code_is_drawn_again(
     assert first_room["code"] == "AAAAAA"
     assert second_room["code"] == "BBBBBB"
     assert len(db_session.scalars(select(Room)).all()) == 2
+    assert "Code de salle déjà pris, nouveau tirage" in caplog.text
+    assert "AAAAAA" not in caplog.text
+    assert "BBBBBB" not in caplog.text
 
 
 def test_creation_gives_up_when_no_code_is_free(
