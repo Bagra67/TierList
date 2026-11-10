@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
+from app.models.enums import TemplateModeration
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
@@ -47,6 +48,31 @@ def get_template_for_review(session: Session, template_id: uuid.UUID) -> Templat
 
 def get_template_for_update(session: Session, template_id: uuid.UUID) -> Template | None:
     return session.get(Template, template_id, with_for_update=True)
+
+
+def set_template_moderation(
+    session: Session,
+    template_id: uuid.UUID,
+    moderation: TemplateModeration,
+    moderation_reason: str | None,
+) -> None:
+    session.execute(
+        update(Template)
+        .where(Template.id == template_id)
+        .values(
+            moderation=moderation,
+            moderation_reason=moderation_reason,
+            updated_at=Template.updated_at,
+        )
+    )
+
+
+def mark_template_deleted(session: Session, template_id: uuid.UUID, deleted_at: datetime) -> None:
+    session.execute(
+        update(Template)
+        .where(Template.id == template_id)
+        .values(deleted_at=deleted_at, updated_at=Template.updated_at)
+    )
 
 
 def list_owned_templates_with_tile_count(
