@@ -11,23 +11,16 @@ from httpx2 import Response
 from sentry_sdk.envelope import Envelope
 from sentry_sdk.transport import Transport
 from sentry_sdk.types import Event
-from sqlalchemy.exc import OperationalError
 
 import app.core.monitoring as monitoring_module
-import app.main as main_module
 from app.core.config import Settings, get_settings
 from app.core.monitoring import configure_sentry, remove_request_personal_data
 from app.db.session import get_db_session
 from app.main import api_app, app
+from tests.database_doubles import UnreachableDatabaseSession
+from tests.settings_factory import make_settings
 
 FAKE_DSN: str = "https://public-key@sentry.example.invalid/1"
-
-REQUIRED_SETTINGS: dict[str, object] = {
-    "postgres_user": "tierlist",
-    "postgres_password": "unit-test-password",
-    "postgres_db": "tierlist",
-    "jwt_secret_key": "unit-test-secret-key-of-at-least-32-chars",
-}
 
 
 class CapturingTransport(Transport):
@@ -61,10 +54,6 @@ def transport(monkeypatch: pytest.MonkeyPatch) -> CapturingTransport:
     init_with_transport: partial[Any] = partial(sentry_sdk.init, transport=capturing_transport)
     monkeypatch.setattr(monitoring_module.sentry_sdk, "init", init_with_transport)
     return capturing_transport
-
-
-def make_settings(**overrides: object) -> Settings:
-    return Settings.model_validate({**REQUIRED_SETTINGS, **overrides})
 
 
 def test_sentry_settings_default_to_disabled() -> None:
@@ -122,14 +111,10 @@ def test_an_error_logged_by_the_app_is_sent_to_sentry(transport: CapturingTransp
 
 
 def test_a_server_error_response_is_sent_only_through_its_error_log(
-    transport: CapturingTransport, monkeypatch: pytest.MonkeyPatch
+    transport: CapturingTransport,
 ) -> None:
-    def fail_to_ping(_session: object) -> None:
-        raise OperationalError("SELECT 1", {}, Exception("connection refused"))
-
     configure_sentry(make_settings(sentry_dsn=FAKE_DSN))
-    monkeypatch.setattr(main_module, "ping_database", fail_to_ping)
-    api_app.dependency_overrides[get_db_session] = lambda: iter([None])
+    api_app.dependency_overrides[get_db_session] = UnreachableDatabaseSession
 
     response: Response = TestClient(app).get("/api/health/db")
     sentry_sdk.flush()
@@ -179,24 +164,25 @@ def test_an_event_without_request_is_left_unchanged() -> None:
     assert remove_request_personal_data(event, {}) == {"message": "nightly purge failed"}
 
 
-def test_client_config_without_sentry_sends_a_null_dsn() -> None:
-    api_app.dependency_overrides[get_settings] = lambda: make_settings(app_release="v1.2.3")
+@pytest.mark.parametrize(
+    ("sentry_settings", "expected_config"),
+    [
+        (
+            {"app_release": "v1.2.3"},
+            {"sentry_dsn": None, "environment": "local", "release": "v1.2.3"},
+        ),
+        (
+            {"sentry_dsn": FAKE_DSN, "sentry_environment": "production", "app_release": "v2.0.0"},
+            {"sentry_dsn": FAKE_DSN, "environment": "production", "release": "v2.0.0"},
+        ),
+    ],
+)
+def test_client_config_sends_the_sentry_settings(
+    sentry_settings: dict[str, object], expected_config: dict[str, object]
+) -> None:
+    api_app.dependency_overrides[get_settings] = lambda: make_settings(**sentry_settings)
 
     response: Response = TestClient(app).get("/api/client-config")
 
     assert response.status_code == 200
-    assert response.json() == {"sentry_dsn": None, "environment": "local", "release": "v1.2.3"}
-
-
-def test_client_config_sends_the_sentry_settings() -> None:
-    api_app.dependency_overrides[get_settings] = lambda: make_settings(
-        sentry_dsn=FAKE_DSN, sentry_environment="production", app_release="v2.0.0"
-    )
-
-    response: Response = TestClient(app).get("/api/client-config")
-
-    assert response.json() == {
-        "sentry_dsn": FAKE_DSN,
-        "environment": "production",
-        "release": "v2.0.0",
-    }
+    assert response.json() == expected_config

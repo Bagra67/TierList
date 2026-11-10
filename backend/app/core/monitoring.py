@@ -25,11 +25,11 @@ def remove_request_personal_data(event: Event, _hint: Hint) -> Event:
     for key in SENTRY_REQUEST_REMOVED_KEYS:
         request.pop(key, None)
     headers: dict[str, str] = request.get(SENTRY_REQUEST_HEADERS_KEY) or {}
-    kept_headers: dict[str, str] = {}
-    for name, value in headers.items():
-        if name.lower() in SENTRY_KEPT_REQUEST_HEADERS:
-            kept_headers[name] = value
-    request[SENTRY_REQUEST_HEADERS_KEY] = kept_headers
+    request[SENTRY_REQUEST_HEADERS_KEY] = {
+        name: value
+        for name, value in headers.items()
+        if name.lower() in SENTRY_KEPT_REQUEST_HEADERS
+    }
     return event
 
 
