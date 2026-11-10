@@ -87,7 +87,7 @@ Chaque nouveau modèle s'accompagne d'une migration Alembic (`uv run alembic rev
   - Les migrations Alembic gardent des valeurs en dur : une migration est un instantané du schéma et ne doit pas suivre une constante qui changerait plus tard.
 - **Traductions** : aucun texte destiné à l'utilisateur en dur dans un composant, ni envoyé par le backend : l'API renvoie des codes d'erreur, le frontend les traduit. Chaque clé existe en français et en anglais. Règles : AGENTS.md §50 ; mode d'emploi : [guide i18n](i18n.fr.md).
 - **Exceptions** : les exceptions du domaine vivent dans `app/exceptions/` (backend) et les classes d'erreur dans `src/errors/` (frontend), jamais dans les services, les routes ou les composants.
-- **Logs** : `logging.getLogger(__name__)` dans `app/...`, niveau donné par `LOG_LEVEL`.
+- **Logs** : `logging.getLogger(__name__)` dans `app/...`, niveau donné par `LOG_LEVEL`. Les erreurs (un log `ERROR`, un plantage dans le navigateur) partent aussi vers Sentry quand `SENTRY_DSN` est défini : voir le [guide du suivi des erreurs](monitoring.fr.md).
 - **Tests** : backend dans `backend/tests/` (unitaires, plus `integration/` sur un vrai PostgreSQL), frontend à côté du code (`*.test.tsx`). Chaque test est décrit dans le [guide des tests](testing.fr.md).
 - **Git** : Conventional Commits (vérifiés par commitlint), une branche et une PR fusionnée en squash par changement vers `develop` ; voir AGENTS.md §39–40.
 
