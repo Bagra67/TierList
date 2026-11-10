@@ -220,9 +220,11 @@ class AccountResponse(BaseModel):
 
 
 class HiddenImagesResponse(BaseModel):
-    """Résultat de « masquer toutes ses images »."""
+    """Résultat d'un lot de « masquer toutes ses images » : renvoyer la requête tant que
+    `has_more` est vrai."""
 
     hidden_count: int
+    has_more: bool
 
 
 class BanAccountRequest(BaseModel):

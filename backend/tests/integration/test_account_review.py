@@ -14,6 +14,7 @@ from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
 from app.repositories import images as image_repository
+from app.services import account_review as account_review_module
 from app.services.image_storage import quarantine_key
 from tests.integration.helpers import (
     JsonObject,
@@ -191,7 +192,7 @@ def test_hiding_all_the_images_hides_each_visible_one_with_its_log_entry(
     )
 
     assert response.status_code == 200
-    assert response.json() == {"hidden_count": 2}
+    assert response.json() == {"hidden_count": 2, "has_more": False}
     db_session.expire_all()
     assert all(image.status == ImageStatus.HIDDEN for image in visible)
     assert bob_image.status == ImageStatus.VISIBLE
@@ -208,7 +209,32 @@ def test_hiding_all_the_images_hides_each_visible_one_with_its_log_entry(
         headers=nina,
     )
 
-    assert again.json() == {"hidden_count": 0}
+    assert again.json() == {"hidden_count": 0, "has_more": False}
+
+
+def test_hiding_all_the_images_works_by_batches_until_none_is_left(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    visible: list[Image] = [add_image(db_session, stored_images, alice_account) for _ in range(2)]
+    monkeypatch.setattr(account_review_module, "HIDE_ALL_IMAGES_BATCH_SIZE", 1)
+
+    def hide_a_batch() -> Response:
+        return auth_client.post(
+            f"/moderation/accounts/{alice_account.id}/hide-images",
+            json={"reason": "Spam"},
+            headers=nina,
+        )
+
+    assert hide_a_batch().json() == {"hidden_count": 1, "has_more": True}
+    assert hide_a_batch().json() == {"hidden_count": 1, "has_more": False}
+    db_session.expire_all()
+    assert all(image.status == ImageStatus.HIDDEN for image in visible)
 
 
 def test_hiding_all_the_images_skips_an_image_purged_meanwhile(
@@ -224,7 +250,7 @@ def test_hiding_all_the_images_skips_an_image_purged_meanwhile(
     monkeypatch.setattr(
         image_repository,
         "list_visible_image_ids_of_owner",
-        lambda _session, _owner_id: [uuid.UUID(UNKNOWN_ID), visible.id],
+        lambda _session, _owner_id, _limit: [uuid.UUID(UNKNOWN_ID), visible.id],
     )
 
     response: Response = auth_client.post(
@@ -234,7 +260,7 @@ def test_hiding_all_the_images_skips_an_image_purged_meanwhile(
     )
 
     assert response.status_code == 200
-    assert response.json() == {"hidden_count": 1}
+    assert response.json() == {"hidden_count": 1, "has_more": False}
     db_session.expire_all()
     assert visible.status == ImageStatus.HIDDEN
 

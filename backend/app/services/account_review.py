@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.constants.moderation import HIDE_ALL_IMAGES_BATCH_SIZE
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.images import ImageModerationConflictError, ImageNotFoundError
 from app.models.user import User
@@ -18,6 +19,12 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class AccountSearchPage:
     accounts: list[User]
+    has_more: bool
+
+
+@dataclass(frozen=True)
+class HiddenImagesBatch:
+    hidden_count: int
     has_more: bool
 
 
@@ -46,13 +53,15 @@ class AccountReviewService:
         user: User = self._get_user(user_id)
         return AccountDetails(user=user, templates=self._templates.list_for_owner(user))
 
-    def hide_all_images(self, super_admin: User, user_id: uuid.UUID, reason: str) -> int:
+    def hide_all_images(
+        self, super_admin: User, user_id: uuid.UUID, reason: str
+    ) -> HiddenImagesBatch:
         self._get_user(user_id)
         image_ids: list[uuid.UUID] = image_repository.list_visible_image_ids_of_owner(
-            self._session, user_id
+            self._session, user_id, HIDE_ALL_IMAGES_BATCH_SIZE + 1
         )
         hidden_count: int = 0
-        for image_id in image_ids:
+        for image_id in image_ids[:HIDE_ALL_IMAGES_BATCH_SIZE]:
             try:
                 self._image_moderation.hide(super_admin, image_id, reason)
             except ImageModerationConflictError, ImageNotFoundError:
@@ -64,7 +73,10 @@ class AccountReviewService:
             hidden_count,
             super_admin.id,
         )
-        return hidden_count
+        more_visible: bool = len(image_ids) > HIDE_ALL_IMAGES_BATCH_SIZE
+        return HiddenImagesBatch(
+            hidden_count=hidden_count, has_more=more_visible and hidden_count > 0
+        )
 
     def _get_user(self, user_id: uuid.UUID) -> User:
         user: User | None = user_repository.get_user_by_id(self._session, user_id)
