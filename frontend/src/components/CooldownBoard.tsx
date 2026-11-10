@@ -19,7 +19,13 @@ import {
   usePlaceItem,
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
-import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
+import {
+  type BoardDropTarget,
+  type DropSide,
+  dropPosition,
+  dropSide,
+  tierNameIn,
+} from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import {
   ENTER_CHOOSES_TILE_KEYBOARD_CODES,
@@ -29,11 +35,10 @@ import {
 } from './boardHooks';
 import { ITEM_CHIP_CLASS } from './boardStyles';
 import {
-  type DragPreviewContent,
+  BoardTierRow,
   ChoosableTile,
   DragPreview,
-  EndSlot,
-  TierLabel,
+  type DragPreviewContent,
 } from './gameBoardParts';
 import { MissedItemsPanel } from './MissedItemsPanel';
 import { Button } from './ui/button';
@@ -60,7 +65,7 @@ export function CooldownBoard({ room, game, aside }: CooldownBoardProps) {
   }
 
   function tierName(tierId: string): string {
-    return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
+    return tierNameIn(game, tierId);
   }
 
   const labels: Map<string, string> = new Map();
@@ -288,24 +293,21 @@ function CooldownTierRow({
 }: CooldownTierRowProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (
-    <li className="flex w-full rounded-[10px] border bg-card">
-      <TierLabel tier={tier} className="rounded-l-[9px]" />
-      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
-        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
-          {placements.map((placement) => (
-            <CooldownTile
-              key={placement.item.id}
-              item={placement.item}
-              label={labelOf(placement.item.id)}
-              tierId={tier.id}
-              chosen={chosenId === placement.item.id}
-              pending={pending}
-              onChoose={onChoose}
-            />
-          ))}
-          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-        </ol>
-        {chosenId !== null && (
+    <BoardTierRow
+      tier={tier}
+      items={placements.map((placement) => (
+        <CooldownTile
+          key={placement.item.id}
+          item={placement.item}
+          label={labelOf(placement.item.id)}
+          tierId={tier.id}
+          chosen={chosenId === placement.item.id}
+          pending={pending}
+          onChoose={onChoose}
+        />
+      ))}
+      action={
+        chosenId !== null && (
           <Button
             type="button"
             variant="outline"
@@ -319,9 +321,9 @@ function CooldownTierRow({
           >
             {t('rooms.game.cooldown.moveHere')}
           </Button>
-        )}
-      </div>
-    </li>
+        )
+      }
+    />
   );
 }
 

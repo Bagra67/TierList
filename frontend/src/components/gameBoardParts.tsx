@@ -174,3 +174,24 @@ export function ChoosableTile({ item, label, chosen, pending, onChoose }: Choosa
     </DraggableItem>
   );
 }
+
+interface BoardTierRowProps {
+  tier: GameTier;
+  items: ReactNode;
+  action: ReactNode;
+}
+
+export function BoardTierRow({ tier, items, action }: BoardTierRowProps) {
+  return (
+    <li className="flex w-full rounded-[10px] border bg-card">
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {items}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        {action}
+      </div>
+    </li>
+  );
+}

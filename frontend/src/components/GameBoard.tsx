@@ -19,7 +19,13 @@ import {
   usePlaceItem,
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
-import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
+import {
+  type BoardDropTarget,
+  type DropSide,
+  dropPosition,
+  dropSide,
+  tierNameIn,
+} from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import {
@@ -30,11 +36,10 @@ import {
 } from './boardStyles';
 import { CurrentItemCard } from './CurrentItemCard';
 import {
-  type DragPreviewContent,
+  BoardTierRow,
   DragPreview,
+  type DragPreviewContent,
   DraggableItem,
-  EndSlot,
-  TierLabel,
 } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
@@ -75,7 +80,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   function tierName(tierId: string): string {
-    return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
+    return tierNameIn(game, tierId);
   }
 
   async function placeAt(tierId: string, position: number, focusKeysByPriority: string[]) {
@@ -311,10 +316,10 @@ function TierRow({
   );
 
   return (
-    <li className="flex w-full rounded-[10px] border bg-card">
-      <TierLabel tier={tier} className="rounded-l-[9px]" />
-      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
-        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+    <BoardTierRow
+      tier={tier}
+      items={
+        <>
           {others.map((placement, index) => (
             <PlacedItemSlot
               key={placement.item.id}
@@ -324,8 +329,9 @@ function TierRow({
             />
           ))}
           {currentRank !== undefined && currentRank >= others.length && currentChip}
-          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-        </ol>
+        </>
+      }
+      action={
         <Button
           type="button"
           variant="outline"
@@ -337,8 +343,8 @@ function TierRow({
         >
           {t('rooms.game.placeIn', { tier: tier.name })}
         </Button>
-      </div>
-    </li>
+      }
+    />
   );
 }
 
