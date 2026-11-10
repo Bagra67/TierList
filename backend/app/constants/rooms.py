@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 ROOM_CODE_LENGTH = 6
 ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 ROOM_CODE_MAX_ATTEMPTS = 5
@@ -27,3 +29,11 @@ TIMER_SECONDS_MIN = 5
 TIMER_SECONDS_MAX = 300
 COOLDOWN_SECONDS_MIN = 10
 COOLDOWN_SECONDS_MAX = 600
+
+SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
+
+
+class RoomCloseReason(StrEnum):
+    ADMIN = "admin"
+    ACCOUNT_DELETED = "account_deleted"
+    INACTIVE = "inactive"

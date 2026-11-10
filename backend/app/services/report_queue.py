@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.constants.moderation import REMOVED_NICKNAME_PREFIX, REMOVED_NICKNAME_RANDOM_LENGTH
 from app.core.config import Settings
 from app.exceptions.reports import (
     GameModerationConflictError,
@@ -36,9 +37,6 @@ from app.repositories.reports import OpenReportGroup
 from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
-
-REMOVED_NICKNAME_PREFIX = "#"
-REMOVED_NICKNAME_RANDOM_LENGTH = 8
 
 
 @dataclass(frozen=True)
