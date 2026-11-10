@@ -4,7 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ClientConfig } from '../api/clientConfig';
 import { type CapturedSentryEvents, captureSentryEvents } from '../test/sentryEvents';
 import { stubBackend } from '../test/stubBackend';
-import { buildSentryOptions, initMonitoring, reportError } from './sentry';
+import {
+  buildSentryOptions,
+  initMonitoring,
+  removeBreadcrumbUrlFragments,
+  removeUrlFragment,
+  reportError,
+  type SentryIntegration,
+  withoutConsoleBreadcrumbs,
+} from './sentry';
 
 const DSN: string = 'https://public-key@sentry.example.invalid/1';
 
@@ -22,7 +30,7 @@ describe('buildSentryOptions', () => {
       release: 'v1.2.3',
     });
 
-    expect(options).toEqual({
+    expect(options).toMatchObject({
       dsn: DSN,
       environment: 'production',
       release: 'v1.2.3',
@@ -33,6 +41,52 @@ describe('buildSentryOptions', () => {
         httpBodies: [],
         urlQueryParams: false,
       },
+      beforeSend: removeUrlFragment,
+      beforeBreadcrumb: removeBreadcrumbUrlFragments,
+    });
+    expect(options?.integrations).toBe(withoutConsoleBreadcrumbs);
+  });
+
+  it('keeps the default integrations except the console breadcrumbs', () => {
+    const integrationNames: string[] = withoutConsoleBreadcrumbs(
+      Sentry.getDefaultIntegrations({}),
+    ).map((integration: SentryIntegration) => integration.name);
+
+    expect(integrationNames).toContain('Breadcrumbs');
+    expect(integrationNames).toContain('GlobalHandlers');
+    expect(integrationNames).not.toContain('Console');
+  });
+});
+
+describe('URL fragments', () => {
+  it('removes the guest token of the fragment from the event URL', () => {
+    const event: Sentry.ErrorEvent = {
+      type: undefined,
+      request: { url: 'https://tierlist.test/r/K7P2QX#guest=s3cr3t' },
+    };
+
+    expect(removeUrlFragment(event).request?.url).toBe('https://tierlist.test/r/K7P2QX');
+  });
+
+  it('removes the fragment from the navigation and request breadcrumbs', () => {
+    const breadcrumb: Sentry.Breadcrumb = {
+      category: 'navigation',
+      data: { from: '/r/K7P2QX#guest=s3cr3t', to: '/r/K7P2QX', status_code: 500 },
+    };
+
+    expect(removeBreadcrumbUrlFragments(breadcrumb).data).toEqual({
+      from: '/r/K7P2QX',
+      to: '/r/K7P2QX',
+      status_code: 500,
+    });
+  });
+
+  it('leaves a breadcrumb without data unchanged', () => {
+    const breadcrumb: Sentry.Breadcrumb = { category: 'ui.click', message: 'button' };
+
+    expect(removeBreadcrumbUrlFragments(breadcrumb)).toEqual({
+      category: 'ui.click',
+      message: 'button',
     });
   });
 });

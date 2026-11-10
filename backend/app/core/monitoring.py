@@ -6,17 +6,27 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.types import Event, Hint
 
 from app.constants.monitoring import (
-    SENTRY_EVENT_QUERY_STRING_KEY,
     SENTRY_EVENT_REQUEST_KEY,
+    SENTRY_KEPT_REQUEST_HEADERS,
     SENTRY_REQUEST_BODY_SIZE,
+    SENTRY_REQUEST_HEADERS_KEY,
+    SENTRY_REQUEST_REMOVED_KEYS,
 )
 from app.core.config import Settings
 
 
-def remove_query_string(event: Event, _hint: Hint) -> Event:
+def remove_request_personal_data(event: Event, _hint: Hint) -> Event:
     request: dict[str, Any] | None = event.get(SENTRY_EVENT_REQUEST_KEY)
-    if request is not None:
-        request.pop(SENTRY_EVENT_QUERY_STRING_KEY, None)
+    if request is None:
+        return event
+    for key in SENTRY_REQUEST_REMOVED_KEYS:
+        request.pop(key, None)
+    headers: dict[str, str] = request.get(SENTRY_REQUEST_HEADERS_KEY) or {}
+    kept_headers: dict[str, str] = {}
+    for name, value in headers.items():
+        if name.lower() in SENTRY_KEPT_REQUEST_HEADERS:
+            kept_headers[name] = value
+    request[SENTRY_REQUEST_HEADERS_KEY] = kept_headers
     return event
 
 
@@ -31,7 +41,8 @@ def configure_sentry(settings: Settings) -> bool:
         send_default_pii=False,
         max_request_body_size=SENTRY_REQUEST_BODY_SIZE,
         include_local_variables=False,
-        before_send=remove_query_string,
+        before_send=remove_request_personal_data,
+        before_send_transaction=remove_request_personal_data,
         integrations=[LoggingIntegration(event_level=logging.ERROR)],
     )
     return True
