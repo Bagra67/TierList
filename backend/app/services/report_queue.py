@@ -102,7 +102,9 @@ class ReportQueueService:
         )
         contents: list[ReportedContent] = []
         for group in shown_groups:
-            reports: list[Report] = reports_per_target[(group.target_type, group.target_id)]
+            reports: list[Report] = reports_per_target.get((group.target_type, group.target_id), [])
+            if not reports:
+                continue
             owner: uuid.UUID | None = reports[0].owner_id
             reasons: Counter[ReportReason] = Counter(report.reason for report in reports)
             contents.append(

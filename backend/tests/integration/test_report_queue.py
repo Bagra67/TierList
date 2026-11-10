@@ -20,6 +20,7 @@ from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.report import Report
 from app.models.user import User
+from app.repositories import reports as report_repository
 from app.services.maintenance import purge_closed_reports
 from tests.integration.helpers import (
     JsonObject,
@@ -169,6 +170,36 @@ def test_the_reports_are_grouped_by_content_the_most_reported_first(
     ]
     assert first["details"] == ["Insultes"]
     assert (first["image_url"], first["public_token"]) == (None, None)
+
+
+def test_a_content_closed_by_another_super_admin_while_the_page_is_read_is_left_out(
+    monkeypatch: pytest.MonkeyPatch,
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    owner: User = user_named(db_session, "alice")
+    kept_id: uuid.UUID = uuid.uuid4()
+    closed_id: uuid.UUID = uuid.uuid4()
+    add_report(db_session, ModerationTargetType.NICKNAME, kept_id, owner, label="alice")
+    add_report(db_session, ModerationTargetType.GAME, closed_id, owner, label="Épices")
+    read_open_reports = report_repository.list_open_reports_of_targets
+
+    def reports_after_the_other_decision(session: Session, target_ids: list[uuid.UUID]):
+        return [
+            report
+            for report in read_open_reports(session, target_ids)
+            if report.target_id != closed_id
+        ]
+
+    monkeypatch.setattr(
+        report_repository, "list_open_reports_of_targets", reports_after_the_other_decision
+    )
+
+    body: JsonObject = queue(auth_client, nina)
+
+    assert [content["target_id"] for content in body["contents"]] == [str(kept_id)]
 
 
 def test_contents_equally_reported_are_shown_oldest_first(
