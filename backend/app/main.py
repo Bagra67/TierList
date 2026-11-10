@@ -44,6 +44,7 @@ from app.core.proxy import TrustedProxyMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
+from app.services.client_config import build_client_config
 from app.services.games import GameService
 from app.services.image_storage import create_image_storage
 from app.services.maintenance import (
@@ -255,6 +256,6 @@ app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
-    mount_frontend_after_api(app, _settings.frontend_dist)
+    mount_frontend_after_api(app, _settings.frontend_dist, build_client_config(_settings))
 if _settings.trusted_proxy_ips:
     app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)

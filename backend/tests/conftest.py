@@ -1,9 +1,12 @@
 import logging
+import os
 import sys
 
 import pytest
 
 from app.constants.logging import APP_LOG_HANDLER, APP_LOGGER
+
+os.environ["SENTRY_DSN"] = ""
 
 
 @pytest.fixture(autouse=True)
