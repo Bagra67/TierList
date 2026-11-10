@@ -1139,7 +1139,7 @@ export const fr = {
       game_moderation_conflict:
         "Cette action ne s'applique pas à la partie dans son état actuel : elle est peut-être déjà masquée ou visible.",
       images_hiding_in_progress:
-        'Les images de ce compte sont déjà en cours de masquage par un autre modérateur.',
+        "Les images de ce compte sont déjà en train d'être masquées. Attendez la fin, puis réessayez.",
       report_limit_reached:
         "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:
