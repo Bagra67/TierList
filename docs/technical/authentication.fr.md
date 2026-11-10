@@ -246,6 +246,7 @@ Sans ces deux variables, le lien « Continuer avec Google » ramène sur `/login
 
 ### Limites connues
 
+- **Un canal temps réel ouvert au moment exact d'un bannissement** (son token vérifié juste avant l'enregistrement du bannissement, son socket inscrit juste après la fermeture des sockets) reste ouvert jusqu'à sa prochaine déconnexion. Il ne reçoit que les événements des salles où le compte a déjà une place.
 - **Un compte banni créé avec Google** n'a pas de mot de passe pour lire le motif de son bannissement à la connexion : il peut en définir un par « Mot de passe oublié ? », ou nous écrire.
 - **Plusieurs onglets qui restaurent la session au même instant** (ex. réouverture du navigateur avec beaucoup d'onglets) peuvent présenter deux fois le même refresh token. Le second est traité comme un vol et la session est fermée : l'utilisateur se reconnecte. Dans un même onglet, les rafraîchissements sont mutualisés, donc cela ne peut pas arriver.
 

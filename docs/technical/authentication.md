@@ -246,6 +246,7 @@ Without these two variables, the "Continuer avec Google" link leads back to `/lo
 
 ### Known limitations
 
+- **A realtime channel opened at the very moment of a ban** (its token checked just before the ban is committed, its socket registered just after the sockets are closed) stays open until its next disconnection. It only receives the events of rooms where the account already has a seat.
 - **A banned account created with Google** has no password to read the reason of its ban at sign-in: it can set one with "Mot de passe oublié ?", or write to us.
 - **Several tabs restoring the session at the same moment** (e.g. reopening the browser with many tabs) can present the same refresh token twice. The second one is treated as a theft and the session is closed: the user signs in again. Within one tab, refreshes are shared so this cannot happen.
 
