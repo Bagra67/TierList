@@ -9,6 +9,7 @@ from sentry_sdk.types import Breadcrumb, BreadcrumbHint, Event, Hint
 
 from app.constants.monitoring import (
     SENTRY_CAPTURED_RESPONSE_STATUS_CODES,
+    SENTRY_EMAIL_ADDRESS,
     SENTRY_EVENT_REQUEST_KEY,
     SENTRY_FILTERED,
     SENTRY_IGNORED_LOGGERS,
@@ -33,8 +34,12 @@ def scrub_url(url: str) -> str:
     return mask_secret_paths(SENTRY_URL_QUERY_OR_FRAGMENT.sub("", url))
 
 
+def mask_secrets_in_text(text: str) -> str:
+    return mask_secret_paths(SENTRY_EMAIL_ADDRESS.sub(SENTRY_FILTERED, text))
+
+
 def _mask_if_text(value: object) -> object:
-    return mask_secret_paths(value) if isinstance(value, str) else value
+    return mask_secrets_in_text(value) if isinstance(value, str) else value
 
 
 def _scrub_url_data(data: dict[str, Any]) -> None:
@@ -86,14 +91,14 @@ def scrub_event(event: Event, _hint: Hint) -> Event:
     _scrub_request(event)
     _scrub_log_entry(event)
     _scrub_exception_messages(event)
+    transaction: object = event.get("transaction")
+    if isinstance(transaction, str):
+        event["transaction"] = mask_secret_paths(transaction)
     return event
 
 
 def scrub_transaction(event: Event, hint: Hint) -> Event:
     scrub_event(event, hint)
-    transaction: object = event.get("transaction")
-    if isinstance(transaction, str):
-        event["transaction"] = mask_secret_paths(transaction)
     spans: object = event.get("spans")
     if not isinstance(spans, list):
         return event
@@ -110,7 +115,7 @@ def scrub_transaction(event: Event, hint: Hint) -> Event:
 def scrub_breadcrumb(breadcrumb: Breadcrumb, _hint: BreadcrumbHint) -> Breadcrumb:
     message: object = breadcrumb.get("message")
     if isinstance(message, str):
-        breadcrumb["message"] = mask_secret_paths(message)
+        breadcrumb["message"] = mask_secrets_in_text(message)
     breadcrumb_data: object = breadcrumb.get("data")
     if isinstance(breadcrumb_data, dict):
         _scrub_url_data(breadcrumb_data)
