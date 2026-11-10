@@ -55,8 +55,3 @@ class Room(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         viewonly=True,
         uselist=False,
     )
-    closed_games: Mapped[list[Game]] = relationship(
-        primaryjoin=f"and_(Game.room_id == Room.id, Game.status == '{GameStatus.CLOSED}')",
-        viewonly=True,
-        order_by="Game.closed_at.desc()",
-    )

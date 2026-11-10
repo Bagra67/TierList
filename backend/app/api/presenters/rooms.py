@@ -68,7 +68,7 @@ def room_response(
         is_admin=is_admin,
         bans=bans,
         game=current_game_response(room.current_game, seat, storage),
-        past_games=past_games_response(room.closed_games),
+        past_games=past_games_response(service.closed_games(room)),
     )
 
 

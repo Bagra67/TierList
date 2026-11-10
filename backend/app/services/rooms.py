@@ -57,6 +57,7 @@ from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
+from app.repositories import games as game_repository
 from app.repositories import rooms as room_repository
 from app.repositories import templates as template_repository
 from app.schemas.room_events import (
@@ -236,6 +237,9 @@ class RoomService:
         self._session.commit()
         logger.info("Lien perso renouvelé : room_id=%s participant_id=%s", room.id, guest.id)
         return GuestSeat(room=room, participant=guest, token=token)
+
+    def closed_games(self, room: Room) -> list[Game]:
+        return game_repository.list_closed_games_of_room(self._session, room.id)
 
     def seated_participants(self, room: Room) -> list[Participant]:
         now: datetime = datetime.now(UTC)
