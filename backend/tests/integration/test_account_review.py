@@ -15,6 +15,7 @@ from app.models.template import Template
 from app.models.user import User
 from app.repositories import images as image_repository
 from app.services import account_review as account_review_module
+from app.services.image_hiding_guard import image_hiding_guard
 from app.services.image_storage import quarantine_key
 from tests.integration.helpers import (
     JsonObject,
@@ -235,6 +236,29 @@ def test_hiding_all_the_images_works_by_batches_until_none_is_left(
     assert hide_a_batch().json() == {"hidden_count": 1, "has_more": False}
     db_session.expire_all()
     assert all(image.status == ImageStatus.HIDDEN for image in visible)
+
+
+def test_hiding_the_images_of_an_account_already_being_hidden_is_refused(
+    auth_client: TestClient,
+    db_session: Session,
+    stored_images: dict[str, bytes],
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    alice_account: User = account(db_session, "alice@example.com")
+    visible: Image = add_image(db_session, stored_images, alice_account)
+
+    with image_hiding_guard.hold(alice_account.id):
+        response: Response = auth_client.post(
+            f"/moderation/accounts/{alice_account.id}/hide-images",
+            json={"reason": "Spam"},
+            headers=nina,
+        )
+
+    assert response.status_code == 409
+    assert response.json()["code"] == ErrorCode.IMAGES_HIDING_IN_PROGRESS
+    db_session.expire_all()
+    assert visible.status == ImageStatus.VISIBLE
 
 
 def test_hiding_all_the_images_skips_an_image_purged_meanwhile(

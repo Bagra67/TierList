@@ -218,7 +218,7 @@ def create_templates(
         theme, words = TEXT_THEMES[index % len(TEXT_THEMES)]
         playable.append(with_tiles(next_owner(), theme, [(word, None) for word in words]))
     for index in range(size.image_templates):
-        owner: User = _distinct_image_owner(owners, index)
+        owner: User = _image_owner(owners, index, size.bulk_uploader_image_templates)
         name: str = IMAGE_THEMES[index % len(IMAGE_THEMES)]
         image_tiles: list[tuple[str | None, uuid.UUID | None]] = []
         for tile_number in range(1, size.image_tiles_per_template + 1):
@@ -255,8 +255,10 @@ def create_templates(
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
 
 
-def _distinct_image_owner(owners: list[User], index: int) -> User:
-    return owners[index % len(owners)]
+def _image_owner(owners: list[User], index: int, bulk_uploader_templates: int) -> User:
+    if index < bulk_uploader_templates:
+        return owners[0]
+    return owners[(index - bulk_uploader_templates + 1) % len(owners)]
 
 
 def _generated_image(number: int, rng: random.Random) -> bytes:

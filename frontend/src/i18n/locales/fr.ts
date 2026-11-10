@@ -1138,6 +1138,8 @@ export const fr = {
       game_not_found: 'Cette partie est introuvable.',
       game_moderation_conflict:
         "Cette action ne s'applique pas à la partie dans son état actuel : elle est peut-être déjà masquée ou visible.",
+      images_hiding_in_progress:
+        'Les images de ce compte sont déjà en cours de masquage par un autre modérateur.',
       report_limit_reached:
         "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:

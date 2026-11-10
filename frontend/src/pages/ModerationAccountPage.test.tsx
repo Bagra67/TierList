@@ -188,6 +188,27 @@ describe('ModerationAccountPage', () => {
     await waitFor(() => expect(calls.reportQueries).toHaveLength(2));
   });
 
+  it('says when the images of the account are already being hidden by someone else', async () => {
+    stubBackend({
+      'GET /moderation/accounts/max-id': () => Response.json(maxAccount),
+      'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'POST /moderation/accounts/max-id/hide-images': () =>
+        errorResponse(409, 'images_hiding_in_progress'),
+    });
+    renderAccountPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Masquer toutes ses images' }));
+    const dialog = screen.getByRole('dialog', { name: 'Masquer toutes les images de Max' });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Spam' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tout masquer' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Les images de ce compte sont déjà en cours de masquage par un autre modérateur.',
+    );
+  });
+
   it('stops hiding when a batch hides nothing, even if more is announced', async () => {
     let hideRequests: number = 0;
     stubBackend({
