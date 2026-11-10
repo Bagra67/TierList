@@ -8,12 +8,12 @@ The logs themselves (INFO and above) still only go to the pod console ([backend 
 
 ## 1. What is sent
 
-| Source  | Sent                                                                                                                                                           | Where in the code                                                  |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Backend | Every `ERROR` log of an `app.*` logger, with its exception: unhandled errors (logged by `core/errors.py`, answered with a generic 500), nightly task failures. | `app/core/monitoring.py` (`LoggingIntegration(event_level=ERROR)`) |
-| Browser | Rendering crashes caught by the error boundary, with the React component stack.                                                                                | `src/components/ErrorBoundary.tsx` (`componentDidCatch`)           |
-| Browser | Failed queries other than 4xx (server error, unreachable backend). Expected 4xx are shown by the page and not sent.                                            | `src/api/queryClient.ts`                                           |
-| Browser | Uncaught errors and rejected promises (default integrations of the SDK).                                                                                       | `src/monitoring/sentry.ts`                                         |
+| Source  | Sent                                                                                                                                                                                                    | Where in the code                                                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Backend | Every `ERROR` log, with its exception: the app's `app.*` loggers (unhandled errors logged by `core/errors.py`, answered with a generic 500; nightly task failures), but also uvicorn and the libraries. | `app/core/monitoring.py` (`LoggingIntegration(event_level=ERROR)`) |
+| Browser | Rendering crashes caught by the error boundary, with the React component stack.                                                                                                                         | `src/components/ErrorBoundary.tsx` (`componentDidCatch`)           |
+| Browser | Failed queries other than 4xx (server error, unreachable backend). Expected 4xx are shown by the page and not sent.                                                                                     | `src/api/queryClient.ts`                                           |
+| Browser | Uncaught errors and rejected promises (default integrations of the SDK).                                                                                                                                | `src/monitoring/sentry.ts`                                         |
 
 Each event carries the **release** (`APP_RELEASE`: `vX.Y.Z` or `develop-<commit>`) and the **environment** (`SENTRY_ENVIRONMENT`: `staging` or `production`). Warnings are not sent, to keep the free quota for errors.
 
@@ -21,9 +21,11 @@ Each event carries the **release** (`APP_RELEASE`: `vX.Y.Z` or `develop-<commit>
 
 The privacy policy promises error reports without IP address, cookies or typed content. The code enforces it:
 
-- **Backend** (`configure_sentry`): `send_default_pii=False` (no user IP, no `Authorization` or `Cookie` header, no cookie), `max_request_body_size="never"` (no request body: passwords, emails), `include_local_variables=False` (no variable of the stack frames), and `remove_query_string` drops the query string (a Google `code`, an email searched by a moderator).
-- **Browser** (`buildSentryOptions`): since SDK v11, `dataCollection` collects by default; `userInfo`, `cookies`, `httpHeaders`, `httpBodies` and `urlQueryParams` are all turned off. No Session Replay, no tracing.
+- **Backend** (`configure_sentry`): `send_default_pii=False` (no user IP, no cookie), `max_request_body_size="never"` (no request body: passwords, emails), `include_local_variables=False` (no variable of the stack frames), and `remove_request_personal_data`, on errors and on transactions, drops the query string (a Google `code`, an email searched by a moderator), the cookies and every header but `User-Agent` (behind Cloudflare, `Cf-Connecting-Ip` holds the user IP; a `Referer` can hold a password reset token). The database engine has `hide_parameters=True` (`db/session.py`): a SQL error does not copy the values of its query (emails, typed text) into its message.
+- **Browser** (`buildSentryOptions`): since SDK v11, `dataCollection` collects by default; `userInfo`, `cookies`, `httpHeaders`, `httpBodies` and `urlQueryParams` are all turned off. `removeUrlFragment` and `removeBreadcrumbUrlFragments` drop the URL fragment from the event and the navigation and request breadcrumbs: the guest personal link carries its token there (`/r/<code>#guest=…`). The console breadcrumbs are off (`withoutConsoleBreadcrumbs`): a console message can hold a query key, such as a searched email. No Session Replay, no tracing.
 - **Sentry project**: _Settings → Security & Privacy → Prevent Storing of IP Addresses_ must be on, otherwise the Sentry server records the IP address the browser connects from.
+
+Still sent: the URL path, so room codes (`/r/<code>`) and results links (`/results/<token>`), which are made to be shared and hold no personal data.
 
 Performance tracing is off (`SENTRY_TRACES_SAMPLE_RATE=0`); it can be turned on for the backend without a release.
 
