@@ -4,40 +4,39 @@ import { cn } from 'cn';
 
 import { useHistory } from '../api/history';
 import type { PastGame } from '../api/rooms';
-import { ErrorMessage } from '../components/ErrorMessage';
+import { PagedList } from '../components/PagedList';
 import { EmptyState } from '../components/EmptyState';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES, resultsPath } from '../constants/routes';
-import { translateError } from '../errors/apiError';
 import { panelVariants } from '../components/ui/panel';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 
 export function HistoryPage() {
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useHistory();
+  const query = useHistory();
   const { t } = useTranslation();
-  const games: PastGame[] = data?.pages.flatMap((page) => page.games) ?? [];
+  const games: PastGame[] = query.data?.pages.flatMap((page) => page.games) ?? [];
 
   return (
     <PageContainer width="app">
       <div className={cn(CONTENT_COLUMN_CLASS, 'flex flex-col items-start gap-6')}>
         <h1 className="text-2xl font-semibold">{t('history.title')}</h1>
-        {isPending && <LoadingSkeleton shape="list" />}
-        {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-        {data !== undefined && games.length === 0 && (
-          <EmptyState
-            message={t('history.empty')}
-            action={
-              <Button asChild variant="outline">
-                <Link to={ROUTES.HOME}>{t('history.emptyAction')}</Link>
-              </Button>
-            }
-          />
-        )}
-        {games.length > 0 && (
+        <PagedList
+          query={query}
+          itemCount={games.length}
+          empty={
+            <EmptyState
+              message={t('history.empty')}
+              action={
+                <Button asChild variant="outline">
+                  <Link to={ROUTES.HOME}>{t('history.emptyAction')}</Link>
+                </Button>
+              }
+            />
+          }
+          moreLabel={t('history.more')}
+        >
           <ul className={panelVariants({ variant: 'list' })}>
             {games.map((game: PastGame) => (
               <li
@@ -61,17 +60,7 @@ export function HistoryPage() {
               </li>
             ))}
           </ul>
-        )}
-        {hasNextPage && (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isFetchingNextPage}
-            onClick={() => void fetchNextPage()}
-          >
-            {isFetchingNextPage ? t('common.loading') : t('history.more')}
-          </Button>
-        )}
+        </PagedList>
       </div>
     </PageContainer>
   );

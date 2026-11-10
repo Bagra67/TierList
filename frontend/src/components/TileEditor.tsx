@@ -1,7 +1,5 @@
 import { rectSortingStrategy } from '@dnd-kit/sortable';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, GripVertical, Trash2 } from 'lucide-react';
-import { cn } from 'cn';
 import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
@@ -23,22 +21,18 @@ import {
   translateError,
   translateFieldError,
 } from '../errors/apiError';
-import { EMPHASIZED_BORDER_CLASS } from './boardStyles';
 import { ErrorMessage } from './ErrorMessage';
 import { ImageDropZone } from './ImageDropZone';
-import { RemovedImageDecision } from './RemovedImageDecision';
-import { InlineEditField } from './InlineEditField';
 import { SortableList } from './SortableList';
 import { TextField } from './TextField';
 import { Button } from './ui/button';
-import { type BulkImageTiles, type SkippedImage, useBulkImageTiles } from './useBulkImageTiles';
+import { BulkImageTilesReport } from './BulkImageTilesReport';
+import { TileCard } from './TileCard';
+import { hasImageEvenIfRemoved } from './tileImage';
+import { useBulkImageTiles } from './useBulkImageTiles';
 
 interface TileEditorProps {
   template: Template;
-}
-
-function hasImageEvenIfRemoved(tile: Tile): boolean {
-  return tile.image_url !== null || tile.image_removed;
 }
 
 export function TileEditor({ template }: TileEditorProps) {
@@ -202,95 +196,25 @@ export function TileEditor({ template }: TileEditorProps) {
             onMove={moveTile}
             disabled={isWaitingForOrderResponse}
             renderItem={(tile, { setNodeRef, style, handleProps }) => (
-              <li
-                ref={setNodeRef}
-                style={style}
-                data-tile-id={tile.id}
-                className={cn(
-                  'flex flex-col gap-2 rounded-md border bg-card p-2',
-                  lastAddedTileIds.includes(tile.id) && EMPHASIZED_BORDER_CLASS,
-                )}
-              >
-                <ImageDropZone
-                  size="fullWidthSquare"
-                  label={
-                    !hasImageEvenIfRemoved(tile)
-                      ? t('templates.editor.image.addTo', { name: tileLabel(tile) })
-                      : t('templates.editor.image.replace', { name: tileLabel(tile) })
-                  }
-                  imageUrl={tile.image_url}
-                  imageRemoved={tile.image_removed}
-                  isUploading={tileIdWithImageBeingSaved === tile.id}
-                  disabled={tileIdWithImageBeingSaved !== null}
-                  removeLabel={
-                    tile.text === null
-                      ? undefined
-                      : t('templates.editor.image.remove', { name: tileLabel(tile) })
-                  }
-                  onSelect={(file) => void replaceTileImage(tile, file)}
-                  onRemove={() => removeTileImage(tile)}
-                  onRefuse={() => setTilesLocalError(unsupportedImageMessage)}
-                />
-                {tile.image_removed && (
-                  <RemovedImageDecision
-                    status={tile.image_status === 'deleted' ? 'deleted' : 'hidden'}
-                    reason={tile.image_moderation_reason}
-                  />
-                )}
-                <InlineEditField
-                  key={tile.text ?? ''}
-                  label={t('templates.editor.tileText', { position: tile.position + 1 })}
-                  hideLabel
-                  value={tile.text ?? ''}
-                  maxLength={TILE_TEXT_MAX_LENGTH}
-                  required={!hasImageEvenIfRemoved(tile)}
-                  wrapsLongValue
-                  error={failedTileId === tile.id ? textError : undefined}
-                  onSave={(text) => saveTileText(tile, text)}
-                />
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    {...handleProps}
-                    aria-label={t('templates.editor.dragHandle', { name: tileLabel(tile) })}
-                    className="cursor-grab touch-none rounded px-1 text-muted-foreground"
-                  >
-                    <GripVertical className="size-4" />
-                  </button>
-                  <div className="flex items-center">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('templates.editor.moveBefore', { name: tileLabel(tile) })}
-                      disabled={isWaitingForOrderResponse || tile.position === 0}
-                      onClick={() => moveTile(tile, tile.position - 1)}
-                    >
-                      <ArrowLeft />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('templates.editor.moveAfter', { name: tileLabel(tile) })}
-                      disabled={isWaitingForOrderResponse || tile.position === tiles.length - 1}
-                      onClick={() => moveTile(tile, tile.position + 1)}
-                    >
-                      <ArrowRight />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('templates.editor.deleteTile', { name: tileLabel(tile) })}
-                      disabled={isWaitingForOrderResponse}
-                      onClick={() => deleteTile(tile)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                </div>
-              </li>
+              <TileCard
+                tile={tile}
+                label={tileLabel(tile)}
+                setNodeRef={setNodeRef}
+                sortableStyle={style}
+                handleProps={handleProps}
+                emphasized={lastAddedTileIds.includes(tile.id)}
+                isLast={tile.position === tiles.length - 1}
+                orderLocked={isWaitingForOrderResponse}
+                imageBeingSaved={tileIdWithImageBeingSaved === tile.id}
+                imageLocked={tileIdWithImageBeingSaved !== null}
+                textError={failedTileId === tile.id ? textError : undefined}
+                onReplaceImage={(file: File) => void replaceTileImage(tile, file)}
+                onRemoveImage={() => removeTileImage(tile)}
+                onRefuseImage={() => setTilesLocalError(unsupportedImageMessage)}
+                onSaveText={(text: string) => saveTileText(tile, text)}
+                onMove={(position: number) => moveTile(tile, position)}
+                onDelete={() => deleteTile(tile)}
+              />
             )}
           />
         </ol>
@@ -345,42 +269,5 @@ export function TileEditor({ template }: TileEditorProps) {
         <ErrorMessage>{translateError(t, newTileError)}</ErrorMessage>
       )}
     </section>
-  );
-}
-
-function BulkImageTilesReport({ report }: { report: BulkImageTiles }) {
-  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
-  const progress: number = report.total === 0 ? 100 : (report.done / report.total) * 100;
-
-  return (
-    <div role="status" className="flex w-full flex-col gap-2 text-sm">
-      {report.isRunning ? (
-        <>
-          <p>{t('templates.editor.bulk.progress', { done: report.done, total: report.total })}</p>
-          <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-          </div>
-        </>
-      ) : (
-        <p className="font-medium">
-          {t('templates.editor.bulk.added', { count: report.addedCount })}
-        </p>
-      )}
-      {report.skipped.length > 0 && (
-        <div className="flex flex-col gap-1 text-destructive">
-          <p>{t('templates.editor.bulk.skipped', { count: report.skipped.length })}</p>
-          <ul className="list-disc pl-5">
-            {report.skipped.map((skippedImage: SkippedImage, index: number) => (
-              <li key={`${skippedImage.fileName}-${index}`}>
-                {t('templates.editor.bulk.skippedImage', {
-                  name: skippedImage.fileName,
-                  reason: skippedImage.reason,
-                })}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
   );
 }

@@ -9,12 +9,10 @@ import {
   useRecentUploads,
 } from '../api/moderation';
 import { translateError } from '../errors/apiError';
+import { PagedList } from './PagedList';
 import { EmptyState } from './EmptyState';
-import { ErrorMessage } from './ErrorMessage';
-import { LoadingSkeleton } from './LoadingSkeleton';
 import { ModerationReasonDialog } from './ModerationReasonDialog';
 import { UploadCard } from './UploadCard';
-import { Button } from './ui/button';
 
 interface UploadGridProps {
   filters: RecentUploadsFilters;
@@ -28,9 +26,8 @@ interface PendingAction {
 
 export function UploadGrid({ filters, emptyMessage }: UploadGridProps) {
   const { t } = useTranslation();
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useRecentUploads(filters);
-  const uploads: RecentUpload[] = data?.pages.flatMap((page) => page.images) ?? [];
+  const query = useRecentUploads(filters);
+  const uploads: RecentUpload[] = query.data?.pages.flatMap((page) => page.images) ?? [];
 
   const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
   const [pending, setPending] = useState<PendingAction | null>(null);
@@ -64,26 +61,18 @@ export function UploadGrid({ filters, emptyMessage }: UploadGridProps) {
 
   return (
     <>
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && uploads.length === 0 && <EmptyState message={emptyMessage} />}
-      {uploads.length > 0 && (
+      <PagedList
+        query={query}
+        itemCount={uploads.length}
+        empty={<EmptyState message={emptyMessage} />}
+        moreLabel={t('moderation.uploads.more')}
+      >
         <ul className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {uploads.map((upload: RecentUpload) => (
             <UploadCard key={upload.id} upload={upload} onAction={openDialog} />
           ))}
         </ul>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.uploads.more')}
-        </Button>
-      )}
+      </PagedList>
 
       <ModerationReasonDialog
         dialogRef={dialogRef}
