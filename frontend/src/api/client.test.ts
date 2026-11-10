@@ -66,7 +66,7 @@ describe('apiClient authentication middleware', () => {
     expect(error).toMatchObject({ status: 401 });
   });
 
-  it('keeps a token set during a refresh that finds no session', async () => {
+  it('keeps a token set during a refresh that finds no session, without counting it as refreshed', async () => {
     let answerRefresh: ((response: Response) => void) | undefined;
     stubBackend({
       'POST /auth/refresh': () =>
@@ -80,7 +80,28 @@ describe('apiClient authentication middleware', () => {
     setAccessToken('signed-in-meanwhile');
     answerRefresh?.(new Response(null, { status: 204 }));
 
-    await expect(refreshed).resolves.toBe(true);
+    await expect(refreshed).resolves.toBe(false);
+    expect(getAccessToken()).toBe('signed-in-meanwhile');
+  });
+
+  it('does not replay a request under a token set by a sign-in during its refresh', async () => {
+    let answerRefresh: ((response: Response) => void) | undefined;
+    const fetchMock = stubBackend({
+      'GET /auth/me': unauthorized,
+      'POST /auth/refresh': () =>
+        new Promise<Response>((resolve) => {
+          answerRefresh = resolve;
+        }),
+    });
+    setAccessToken('expired-token');
+
+    const read: Promise<unknown> = getMe().catch((caught: unknown) => caught);
+    await vi.waitFor(() => expect(answerRefresh).toBeDefined());
+    setAccessToken('signed-in-meanwhile');
+    answerRefresh?.(unauthorized());
+
+    await expect(read).resolves.toMatchObject({ status: 401 });
+    expect(calledRoutes(fetchMock)).toEqual(['GET /auth/me', 'POST /auth/refresh']);
     expect(getAccessToken()).toBe('signed-in-meanwhile');
   });
 

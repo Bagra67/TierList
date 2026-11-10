@@ -69,9 +69,7 @@ export function refreshAccessToken(): Promise<boolean> {
       if (!hasNoSession) {
         throw new ApiError(response.status, error);
       }
-      if (inMemoryAccessToken !== tokenBeforeRefresh) {
-        return inMemoryAccessToken !== null;
-      }
+      if (inMemoryAccessToken !== tokenBeforeRefresh) return false;
       setAccessToken(null);
       if (tokenBeforeRefresh !== null) {
         sessionEndedListeners.forEach((listener) => listener());
