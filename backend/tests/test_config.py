@@ -143,3 +143,20 @@ def test_the_engine_uses_the_connect_timeout(monkeypatch: pytest.MonkeyPatch) ->
     session_module.get_engine.__wrapped__()
 
     assert engine_arguments["connect_args"] == {"connect_timeout": 7}
+
+
+def test_the_engine_hides_the_query_parameters(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine_arguments: dict[str, object] = {}
+
+    def record_engine_arguments(url: object, **arguments: object) -> None:
+        engine_arguments.update(arguments)
+
+    def settings_of_the_test() -> Settings:
+        return make_settings()
+
+    monkeypatch.setattr(session_module, "create_engine", record_engine_arguments)
+    monkeypatch.setattr(session_module, "get_settings", settings_of_the_test)
+
+    session_module.get_engine.__wrapped__()
+
+    assert engine_arguments["hide_parameters"] is True
