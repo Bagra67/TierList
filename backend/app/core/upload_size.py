@@ -1,6 +1,6 @@
 from fastapi.responses import JSONResponse
 from starlette import status
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.constants import messages
 from app.constants.api import CONTENT_LENGTH_HEADER
@@ -16,19 +16,44 @@ class ImageUploadSizeMiddleware:
         self.max_body_bytes: int = max_image_bytes + IMAGE_UPLOAD_MULTIPART_OVERHEAD_BYTES
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self._is_image_upload(scope) and self._declared_too_large(scope):
-            body: ErrorResponse = ErrorResponse(
-                detail=messages.IMAGE_TOO_LARGE.format(max_bytes=self.max_image_bytes),
-                code=ErrorCode.IMAGE_TOO_LARGE,
-                params={"max_bytes": self.max_image_bytes},
-            )
-            response: JSONResponse = JSONResponse(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                content=body.model_dump(exclude_none=True),
-            )
-            await response(scope, receive, send)
+        if not self._is_image_upload(scope):
+            await self.app(scope, receive, send)
             return
-        await self.app(scope, receive, send)
+        if self._declared_too_large(scope):
+            await self._refuse(scope, receive, send)
+            return
+        received_bytes: int = 0
+        refused: bool = False
+
+        async def receive_within_limit() -> Message:
+            nonlocal received_bytes, refused
+            message: Message = await receive()
+            if message["type"] != "http.request" or refused:
+                return message
+            received_bytes += len(message.get("body", b""))
+            if received_bytes <= self.max_body_bytes:
+                return message
+            refused = True
+            await self._refuse(scope, receive, send)
+            return {"type": "http.disconnect"}
+
+        async def send_unless_refused(message: Message) -> None:
+            if not refused:
+                await send(message)
+
+        await self.app(scope, receive_within_limit, send_unless_refused)
+
+    async def _refuse(self, scope: Scope, receive: Receive, send: Send) -> None:
+        body: ErrorResponse = ErrorResponse(
+            detail=messages.IMAGE_TOO_LARGE.format(max_bytes=self.max_image_bytes),
+            code=ErrorCode.IMAGE_TOO_LARGE,
+            params={"max_bytes": self.max_image_bytes},
+        )
+        response: JSONResponse = JSONResponse(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            content=body.model_dump(exclude_none=True),
+        )
+        await response(scope, receive, send)
 
     @staticmethod
     def _is_image_upload(scope: Scope) -> bool:

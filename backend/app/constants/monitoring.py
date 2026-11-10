@@ -18,7 +18,7 @@ SENTRY_SECRET_PATH_SEGMENT: re.Pattern[str] = re.compile(
 SENTRY_SECRET_LINK_PARAM: re.Pattern[str] = re.compile(
     rf"([?&#](?:{TOKEN_PARAM}|{GUEST_LINK_FRAGMENT})=)[^&#\s\"']+", re.IGNORECASE
 )
-SENTRY_EMAIL_ADDRESS: re.Pattern[str] = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+SENTRY_EMAIL_ADDRESS: re.Pattern[str] = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 SENTRY_URL_QUERY_OR_FRAGMENT: re.Pattern[str] = re.compile(r"[?#].*", re.DOTALL)
 SENTRY_URL_DATA_KEYS: tuple[str, ...] = ("url", "aws.request.url")
 SENTRY_REMOVED_URL_DATA_KEYS: tuple[str, ...] = ("http.query", "http.fragment")
