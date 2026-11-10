@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import type { components } from '../api/schema';
+import { GATEWAY_ERROR_STATUSES } from '../constants/http';
 import { hasTranslation } from '../i18n/hasTranslation';
 import { fr } from '../i18n/locales/fr';
 
@@ -77,8 +78,11 @@ function translateCheckedKeyWithRuntimeParams(
 }
 
 export function translateError(t: TFunction, error: unknown): string {
-  if (!(error instanceof ApiError) || error.code === undefined) {
-    return t('common.backendUnreachable');
+  if (!(error instanceof ApiError)) return t('common.backendUnreachable');
+  if (error.code === undefined) {
+    return GATEWAY_ERROR_STATUSES.has(error.status)
+      ? t('common.backendUnreachable')
+      : t('errors.unknown');
   }
   if (hasTranslation(fr.errors.api, error.code)) {
     return translateCheckedKeyWithRuntimeParams(t, `errors.api.${error.code}`, error.params);
