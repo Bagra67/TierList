@@ -16,6 +16,7 @@ from app.api.dependencies import (
     SuperAdminDep,
     TemplateModerationServiceDep,
 )
+from app.api.errors import image_not_found, template_not_found
 from app.api.presenters.images import recent_upload_response
 from app.api.presenters.reports import reported_content_response
 from app.api.presenters.templates import reviewed_template_response
@@ -126,27 +127,11 @@ def _ban_response(ban: AccountBan | None) -> AccountBanResponse | None:
     return AccountBanResponse.model_validate(ban) if ban is not None else None
 
 
-def _template_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.TEMPLATE_NOT_FOUND,
-        detail=messages.TEMPLATE_NOT_FOUND,
-    )
-
-
 def _template_moderation_conflict() -> AppHTTPException:
     return AppHTTPException(
         status_code=409,
         code=ErrorCode.TEMPLATE_MODERATION_CONFLICT,
         detail=messages.TEMPLATE_MODERATION_CONFLICT,
-    )
-
-
-def _image_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.IMAGE_NOT_FOUND,
-        detail=messages.IMAGE_NOT_FOUND,
     )
 
 
@@ -331,7 +316,7 @@ def hide_image(
     try:
         service.hide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -346,7 +331,7 @@ def unhide_image(
     try:
         service.unhide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -361,7 +346,7 @@ def delete_image(
     try:
         service.delete(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -413,7 +398,7 @@ def get_template_for_review(
     try:
         reviewed: ReviewedTemplate = service.review(template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return reviewed_template_response(reviewed, storage)
 
 
@@ -429,7 +414,7 @@ def hide_template(
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
@@ -446,7 +431,7 @@ def unhide_template(
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
@@ -463,7 +448,7 @@ def delete_template(
     try:
         service.delete(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
