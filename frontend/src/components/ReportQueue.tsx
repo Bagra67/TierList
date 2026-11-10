@@ -10,9 +10,8 @@ import {
 } from '../api/moderation';
 import { moderationAccountPath, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { PagedList } from './PagedList';
 import { EmptyState } from './EmptyState';
-import { ErrorMessage } from './ErrorMessage';
-import { LoadingSkeleton } from './LoadingSkeleton';
 import { ModerationReasonDialog } from './ModerationReasonDialog';
 import { Button } from './ui/button';
 import { panelVariants } from './ui/panel';
@@ -36,9 +35,8 @@ interface PendingDecision {
 
 export function ReportQueue({ ownerId, emptyMessage }: ReportQueueProps) {
   const { t } = useTranslation();
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useReportQueue(ownerId);
-  const contents: ReportedContent[] = data?.pages.flatMap((page) => page.contents) ?? [];
+  const query = useReportQueue(ownerId);
+  const contents: ReportedContent[] = query.data?.pages.flatMap((page) => page.contents) ?? [];
 
   const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
   const [pending, setPending] = useState<PendingDecision | null>(null);
@@ -68,10 +66,12 @@ export function ReportQueue({ ownerId, emptyMessage }: ReportQueueProps) {
 
   return (
     <>
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && contents.length === 0 && <EmptyState message={emptyMessage} />}
-      {contents.length > 0 && (
+      <PagedList
+        query={query}
+        itemCount={contents.length}
+        empty={<EmptyState message={emptyMessage} />}
+        moreLabel={t('moderation.reports.more')}
+      >
         <ul className="flex w-full flex-col gap-4">
           {contents.map((content: ReportedContent) => (
             <ReportedContentCard
@@ -81,17 +81,7 @@ export function ReportQueue({ ownerId, emptyMessage }: ReportQueueProps) {
             />
           ))}
         </ul>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.reports.more')}
-        </Button>
-      )}
+      </PagedList>
 
       <ModerationReasonDialog
         dialogRef={dialogRef}

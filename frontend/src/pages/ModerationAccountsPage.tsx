@@ -3,22 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { type AccountSummary, useAccountSearch } from '../api/moderation';
+import { PagedList } from '../components/PagedList';
 import { EmptyState } from '../components/EmptyState';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
 import { moderationAccountPath } from '../constants/routes';
-import { translateError } from '../errors/apiError';
 
 export function ModerationAccountsPage() {
   const { t } = useTranslation();
   const [queryDraft, setQueryDraft] = useState<string>('');
   const [query, setQuery] = useState<string | undefined>(undefined);
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAccountSearch(query);
-  const accounts: AccountSummary[] = data?.pages.flatMap((page) => page.accounts) ?? [];
+  const accountSearch = useAccountSearch(query);
+  const accounts: AccountSummary[] =
+    accountSearch.data?.pages.flatMap((page) => page.accounts) ?? [];
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,12 +44,12 @@ export function ModerationAccountsPage() {
         </Button>
       </form>
 
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && accounts.length === 0 && (
-        <EmptyState message={t('moderation.accounts.empty')} />
-      )}
-      {accounts.length > 0 && (
+      <PagedList
+        query={accountSearch}
+        itemCount={accounts.length}
+        empty={<EmptyState message={t('moderation.accounts.empty')} />}
+        moreLabel={t('moderation.accounts.more')}
+      >
         <ul className={panelVariants({ variant: 'list', className: 'w-full' })}>
           {accounts.map((account: AccountSummary) => (
             <li key={account.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
@@ -78,17 +76,7 @@ export function ModerationAccountsPage() {
             </li>
           ))}
         </ul>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.accounts.more')}
-        </Button>
-      )}
+      </PagedList>
     </div>
   );
 }
