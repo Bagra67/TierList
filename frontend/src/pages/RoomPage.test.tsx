@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -266,6 +266,29 @@ describe('RoomPage', () => {
 
     expect(await screen.findByText('Lien copié')).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith(aliceRoom.link);
+  });
+
+  it('clears the copy message when the link is copied again, so it is announced again', async () => {
+    let finishSecondCopy: (() => void) | undefined;
+    let copies: number = 0;
+    stubClipboard(
+      () =>
+        new Promise<void>((resolve) => {
+          copies += 1;
+          if (copies === 1) resolve();
+          else finishSecondCopy = resolve;
+        }),
+    );
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
+    expect(await screen.findByText('Lien copié')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien' }));
+
+    await waitFor(() => expect(screen.queryByText('Lien copié')).not.toBeInTheDocument());
+    await act(async () => finishSecondCopy?.());
+    expect(await screen.findByText('Lien copié')).toBeInTheDocument();
   });
 
   it('asks to copy the link by hand when the clipboard refuses', async () => {

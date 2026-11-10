@@ -44,11 +44,9 @@ export function MainNav() {
             <NavLink to={ROUTES.MODERATION} className={linkClassName}>
               {t('nav.moderation')}
               {openReports !== undefined && openReports > 0 && (
-                <span
-                  aria-label={t('nav.openReports', { count: openReports })}
-                  className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground"
-                >
-                  {openReports}
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground">
+                  <span aria-hidden="true">{openReports}</span>
+                  <span className="sr-only">{t('nav.openReports', { count: openReports })}</span>
                 </span>
               )}
             </NavLink>

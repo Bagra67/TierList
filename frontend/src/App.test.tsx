@@ -199,7 +199,7 @@ describe('App', () => {
     renderAppAt('/');
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
-    expect(await within(nav).findByLabelText('3 contenus signalés')).toHaveTextContent('3');
+    expect(await within(nav).findByText('3 contenus signalés')).toHaveClass('sr-only');
     fireEvent.click(within(nav).getByRole('link', { name: /^Modération/ }));
 
     expect(await screen.findByRole('heading', { name: 'Signalements' })).toBeInTheDocument();

@@ -719,6 +719,7 @@ export const en: Translation = {
       addTier: 'Add a tier',
       tierName: 'Name of tier {{position}}',
       tierColor: 'Color of tier {{name}}',
+      colorTrigger: '{{label}}, currently {{color}}',
       color: {
         area: 'Saturation and brightness',
         areaValue: 'Saturation {{saturation}}%, brightness {{brightness}}%',
