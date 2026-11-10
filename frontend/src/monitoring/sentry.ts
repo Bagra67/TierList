@@ -17,8 +17,7 @@ const NO_PERSONAL_DATA: Sentry.BrowserOptions['dataCollection'] = {
 };
 
 function withoutFragment(url: string): string {
-  const fragmentStart: number = url.indexOf('#');
-  return fragmentStart === -1 ? url : url.slice(0, fragmentStart);
+  return url.split('#')[0];
 }
 
 export function removeUrlFragment(event: Sentry.ErrorEvent): Sentry.ErrorEvent {

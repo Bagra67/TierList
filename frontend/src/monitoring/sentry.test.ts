@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ClientConfig } from '../api/clientConfig';
-import { type CapturedSentryEvents, captureSentryEvents } from '../test/sentryEvents';
+import { captureSentryEvents, FAKE_DSN } from '../test/sentryEvents';
 import { stubBackend } from '../test/stubBackend';
 import {
   buildSentryOptions,
@@ -14,8 +14,6 @@ import {
   withoutConsoleBreadcrumbs,
 } from './sentry';
 
-const DSN: string = 'https://public-key@sentry.example.invalid/1';
-
 const disabledConfig: ClientConfig = { sentry_dsn: null, environment: 'local', release: 'dev' };
 
 describe('buildSentryOptions', () => {
@@ -25,13 +23,13 @@ describe('buildSentryOptions', () => {
 
   it('sends the environment and the release, without any personal data', () => {
     const options: Sentry.BrowserOptions | null = buildSentryOptions({
-      sentry_dsn: DSN,
+      sentry_dsn: FAKE_DSN,
       environment: 'production',
       release: 'v1.2.3',
     });
 
     expect(options).toMatchObject({
-      dsn: DSN,
+      dsn: FAKE_DSN,
       environment: 'production',
       release: 'v1.2.3',
       dataCollection: {
@@ -105,20 +103,12 @@ describe('initMonitoring', () => {
 });
 
 describe('reportError', () => {
-  let captured: CapturedSentryEvents | null = null;
-
-  afterEach(async () => {
-    await captured?.stop();
-    captured = null;
-  });
-
   it('does nothing while Sentry is not started', () => {
     expect(() => reportError(new Error('ignored'))).not.toThrow();
   });
 
   it('sends the error with the React component stack', async () => {
-    captured = captureSentryEvents();
-    const events: Sentry.ErrorEvent[] = captured.events;
+    const events: Sentry.ErrorEvent[] = captureSentryEvents();
 
     reportError(new Error('render failed'), '\n    at Broken');
 
