@@ -192,6 +192,7 @@ backend/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, HTTPException, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
+│   │   ├── monitoring.py  # Suivi des erreurs avec Sentry (SENTRY_DSN)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
 │   ├── models/            # Modèles SQLAlchemy, un par fichier : user.py, refresh_token.py, oauth_account.py…
 │   ├── repositories/      # Requêtes en base (users, refresh_tokens, oauth_accounts)
@@ -325,7 +326,8 @@ Les logs de l'application (loggers sous `app`, par ex. `logging.getLogger(__name
 
 - écrits sur stderr au **même format qu'uvicorn**, avec en plus le nom du logger : `ERROR:    app.main - Échec de la connexion à la base de données` ;
 - niveau réglé par `LOG_LEVEL` (dans `.env` ou l'environnement, `INFO` par défaut) ; une valeur invalide arrête l'application au démarrage avec une erreur claire ;
-- les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler.
+- les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler ;
+- les logs `ERROR` partent aussi vers Sentry quand `SENTRY_DSN` est défini (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` ; `app/core/monitoring.py`) : voir le [guide du suivi des erreurs](../docs/technical/monitoring.fr.md).
 
 ---
 
