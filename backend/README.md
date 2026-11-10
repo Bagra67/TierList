@@ -384,7 +384,7 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `validation_error`             | 422             | Invalid request (see `errors`)                                                                                                     |
 | `http_error`                   | any             | `HTTPException` without a dedicated code                                                                                           |
 | `database_unavailable`         | 503             | `GET /health/db`: the database does not answer                                                                                     |
-| `not_authenticated`            | 401             | Missing or invalid access token                                                                                                    |
+| `not_authenticated`            | 401 / WS `4401` | Missing or invalid access token (realtime channel: no `auth` in time, or banned account)                                           |
 | `email_already_registered`     | 409             | Registration with an email already used                                                                                            |
 | `invalid_credentials`          | 401             | Wrong email or password                                                                                                            |
 | `session_expired`              | 401             | Expired or revoked refresh token (no cookie at all: `204`)                                                                         |
@@ -409,7 +409,7 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `template_has_no_tiles`        | 409             | Room created, or game started, with a template without tiles                                                                       |
 | `template_hidden`              | 409             | Game started with a template hidden by the moderation                                                                              |
 | `template_moderation_conflict` | 409             | Moderation action that does not fit the state of the template                                                                      |
-| `tier_not_found`               | 404             | Unknown tier of the template                                                                                                       |
+| `tier_not_found`               | 404             | Unknown tier of the template (or of the game when placing)                                                                         |
 | `last_tier`                    | 409             | Deleting the last tier of a template                                                                                               |
 | `tile_not_found`               | 404             | Unknown tile of the template                                                                                                       |
 | `tile_limit_reached`           | 409             | Template already at its tile limit; `params.max_tiles`                                                                             |

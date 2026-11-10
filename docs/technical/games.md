@@ -225,7 +225,7 @@ The frontend does not store an answer older than the room it already has (`store
 ## 4. Known limitations
 
 - Drag and drop with a pointer is not covered by the automated tests (jsdom has no layout): they place with the buttons, and `boardPositions.test.ts` covers the position computations.
-- "Who places" is computed by the backend (`placing_participants`) and again by the screen (`GameScreen`, from `admin_plays` and `is_admin`) to show the board and the counter.
+- "Who places" is computed by the backend (`places_in_game`, used by `placing_participants` and the room answer) and again by the screen (`GameScreen`, from `admin_plays` and `is_admin`) to show the board and the counter.
 - The history of the accounts comes with #103.
 - Closing a room during a game closes the game first ([rooms guide](rooms.md#26-closing-a-room)); during a round, the current rankings become the final boards. Games left without a room by an older version (before #89) are skipped at startup.
 - "A game is in progress" lives in two places: `rooms.status = playing` and a `games` row not `closed`. The start writes both in one transaction, under the room lock; the end of the cooldown sets the room back to `open` in the same transaction as the game.
