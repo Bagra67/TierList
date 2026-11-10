@@ -104,14 +104,14 @@ export const en: Translation = {
       moderation:
         'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
       technical:
-        'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
+        'Technical data: the cookies and local storage described below, technical logs (internal identifiers, never your passwords) and, when an error occurs, an error report (the page, the browser, the TierList version and the technical details of the error, without your IP address, your cookies or what you typed).',
     },
     purposes: {
       title: 'Why this data',
       service:
         'Providing the service you ask for by using TierList (performance of a contract): creating your account, signing you in, running the games, sending the email address verification and password reset emails.',
       security:
-        'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
+        'Keeping the service secure and working (legitimate interest): technical logs, error reports to fix failures, backups, automatic deletion of expired data.',
       reports: 'Handling the reports of illegal content (legal obligation).',
       moderation:
         "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, finding an account's past sanctions, and refusing an image deleted by the moderation if it is uploaded again.",
@@ -129,6 +129,7 @@ export const en: Translation = {
       moderatedImages:
         'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again. The reason for the decision is kept with the image so that its owner can read it, until their account is deleted.',
       backups: 'Database backups: 14 days.',
+      errorReports: 'Error reports: 30 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
       bans: 'Bans: until the account is deleted, to spot repeated abuse.',
@@ -152,6 +153,8 @@ export const en: Translation = {
       cloudflare: 'Cloudflare: domain name, HTTPS encryption and traffic routing (United States).',
       google: 'Google: sign-in with a Google account, if you choose it (United States).',
       github: 'GitHub: deployment of the application and transfer of the backups (United States).',
+      sentry:
+        'Sentry (Functional Software): error monitoring of the application (data stored in the European Union, company based in the United States).',
       transfers:
         'Transfers to the United States rely on the safeguards provided by the GDPR, such as the standard contractual clauses of the European Commission.',
     },

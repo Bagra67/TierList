@@ -6,9 +6,14 @@ import { BrowserRouter } from 'react-router';
 import { createQueryClient } from './api/queryClient';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { initMonitoring } from './monitoring/sentry';
 import './index.css';
 import './i18n';
 import './theme';
+
+initMonitoring().catch((error: unknown) => {
+  console.warn('Suivi des erreurs non démarré', error);
+});
 
 const queryClient = createQueryClient();
 

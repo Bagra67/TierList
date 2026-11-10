@@ -1,6 +1,7 @@
-import { Component, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { reportError } from '../monitoring/sentry';
 import { CenteredCardPage } from './CenteredCardPage';
 import { Button } from './ui/button';
 
@@ -17,6 +18,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    reportError(error, info.componentStack ?? undefined);
   }
 
   render() {
