@@ -1,5 +1,5 @@
 import { cn } from 'cn';
-import { type CSSProperties, type ReactNode, useId } from 'react';
+import { type CSSProperties, type ReactNode, useId, useMemo } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import type { ItemDistribution } from '../api/results';
@@ -32,10 +32,10 @@ export function ItemVotesPanel({
   const { t, i18n }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
   const playerCount: number = Math.max(playerNames.length, 1);
-  const nameList: Intl.ListFormat = new Intl.ListFormat(i18n.language, {
-    style: 'long',
-    type: 'conjunction',
-  });
+  const nameList: Intl.ListFormat = useMemo(
+    () => new Intl.ListFormat(i18n.language, { style: 'long', type: 'conjunction' }),
+    [i18n.language],
+  );
 
   function namesOf(indexes: number[] | undefined): string | undefined {
     if (indexes === undefined || indexes.length === 0) return undefined;
