@@ -380,6 +380,23 @@ describe('TemplateEditorPage', () => {
       await waitFor(() => expect(displayedTierNames()).toEqual(['S', 'B']));
     });
 
+    it('clears the error of a failed deletion once another change succeeds', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`DELETE ${templateUrl}/tiers/${tierB.id}`]: () => errorResponse(500, 'internal_error'),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([tierA, tierS, tierB])),
+      });
+      renderEditor();
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier B' }));
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Descendre S' }));
+
+      await waitFor(() => expect(displayedTierNames()).toEqual(['A', 'S', 'B']));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it('cannot delete the only tier left', async () => {
       stubBackend({ [`GET ${templateUrl}`]: () => Response.json(makeTemplate([tierS])) });
 
