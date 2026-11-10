@@ -65,7 +65,7 @@ Les valeurs fixes sont des constantes dans `app/constants/images.py` (`IMAGE_OUT
 
 10 Mio acceptent une photo de téléphone ; 40 Mpx acceptent les plus grands capteurs de téléphones et d'appareils photo.
 
-Starlette reçoit tout le corps multipart, et l'écrit dans un fichier temporaire, **avant** que la route s'exécute : un corps qui **annonce** une taille au-delà de `IMAGE_UPLOAD_MAX_BYTES` plus 64 Kio d'enveloppe multipart (`Content-Length`) est donc refusé avant, avec le même `413` `image_too_large`, par un middleware ASGI pur sur l'API (`ImageUploadSizeMiddleware`, `app/core/upload_size.py`). La route refuse ensuite un fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` (elle lit au plus un octet de plus, le fichier n'entre donc jamais en mémoire) ; pour un corps envoyé sans `Content-Length`, seule la **limite du proxy** arrête un corps énorme avant sa réception : Cloudflare refuse les corps de plus de 100 Mo ([guide du déploiement](deployment.fr.md)).
+Starlette reçoit tout le corps multipart, et l'écrit dans un fichier temporaire, **avant** que la route s'exécute : un corps qui **annonce** une taille au-delà de `IMAGE_UPLOAD_MAX_BYTES` plus 64 Kio d'enveloppe multipart (`Content-Length`) est donc refusé avant, avec le même `413` `image_too_large`, par un middleware ASGI pur sur l'API (`ImageUploadSizeMiddleware`, `app/core/upload_size.py`). Un corps envoyé sans `Content-Length` (par morceaux) est compté au fil de l'eau et refusé de la même façon une fois cette taille dépassée. La route refuse ensuite un fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` (elle lit au plus un octet de plus, le fichier n'entre donc jamais en mémoire). Cloudflare refuse aussi les corps de plus de 100 Mo ([guide du déploiement](deployment.fr.md)).
 
 Réglages du stockage :
 
