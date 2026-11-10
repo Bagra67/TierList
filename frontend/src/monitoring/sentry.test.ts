@@ -73,6 +73,7 @@ describe('URL scrubbing', () => {
   it.each([
     ['https://tierlist.test/results/s3cr3t', 'https://tierlist.test/results/[Filtered]'],
     ['https://tierlist.test/r/K7P2QX#guest=s3cr3t', 'https://tierlist.test/r/[Filtered]'],
+    ['/Results/s3cr3t', '/Results/[Filtered]'],
     [
       'https://tierlist.test/api/rooms/K7P2QX/join?x=1',
       'https://tierlist.test/api/rooms/[Filtered]/join',
