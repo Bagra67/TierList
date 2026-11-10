@@ -126,6 +126,22 @@ describe('GameScreen', () => {
     );
   });
 
+  it('sends nothing when the current item is already last of the tier', async () => {
+    const fetchMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(inGame({ own_placements: [paprikaInS] })),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(calledRoutes(fetchMock)).not.toContain(
+      `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`,
+    );
+  });
+
   it('shows a preview of the item while it is dragged', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();
@@ -626,6 +642,24 @@ describe('GameScreen', () => {
       );
       expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/end');
       expect(screen.getByRole('heading', { name: 'Salle K7P2QX' })).toHaveFocus();
+    });
+
+    it('closes the confirmation once the end is sent, even if the answer is older than the room shown', async () => {
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        'POST /rooms/K7P2QX/game/end': () => Response.json(inCooldown()),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Terminer maintenant' }));
+      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer les retouches ?' });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Terminer' }));
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Terminer les retouches ?' }),
+        ).not.toBeInTheDocument(),
+      );
     });
 
     it('sends nothing when the end is cancelled, and says why it failed', async () => {

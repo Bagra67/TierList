@@ -24,6 +24,7 @@ export function EndCooldownDialog({ code, onEnded }: EndCooldownDialogProps) {
     } catch {
       return;
     }
+    dialogRef.current?.close();
     onEnded();
   }
 
