@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import build_game_service
 from app.core.config import get_settings
+from app.models.enums import GameStatus
+from app.models.game import Game
 from app.models.participant import Participant
 from app.models.room import Room
 from app.repositories import rooms as room_repository
@@ -104,7 +106,7 @@ def test_a_room_with_someone_connected_stays_open(
     assert room_codes(db_session) == [alice_room["code"]]
 
 
-def test_a_room_in_game_is_never_closed_for_inactivity(
+def test_an_abandoned_game_is_closed_and_kept_in_the_history(
     auth_client: TestClient,
     db_session: Session,
     alice: dict[str, str],
@@ -113,14 +115,16 @@ def test_a_room_in_game_is_never_closed_for_inactivity(
     round_scheduler: RecordingRoundScheduler,
 ):
     start_game(auth_client, alice_room["code"], alice)
-    last_changed(db_session, alice_room["code"], hours_ago=25)
+    room_id: uuid.UUID = last_changed(db_session, alice_room["code"], hours_ago=25)
 
     closed_count: int = games(db_session, room_events, round_scheduler).close_inactive_rooms(
         INACTIVE_FOR
     )
 
-    assert closed_count == 0
-    assert room_codes(db_session) == [alice_room["code"]]
+    assert closed_count == 1
+    assert room_codes(db_session) == []
+    assert room_events.closed_rooms == [room_id]
+    assert db_session.scalars(select(Game.status)).one() == GameStatus.CLOSED
 
 
 def test_a_room_active_again_is_checked_under_its_lock(

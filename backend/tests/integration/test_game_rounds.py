@@ -20,6 +20,7 @@ from app.services.rooms import RoomService
 from app.services.templates import TemplateService
 from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRoundScheduler
 from tests.integration.helpers import (
+    PASSWORD,
     JsonObject,
     create_room,
     create_template,
@@ -368,6 +369,28 @@ def test_a_departure_can_end_the_round(
         seat_id_of(db_session, "bob"), False
     )
 
+    assert stored_game(db_session).current_round_number == 2
+
+
+def test_deleting_the_account_of_the_only_player_still_awaited_ends_the_round(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    settings(auth_client, code, alice, auto_advance="everyone_placed")
+    join(auth_client, code, bob)
+    start_game(auth_client, code, alice)
+    set_connected(db_session, {"alice", "bob"})
+    place_current(auth_client, db_session, code, alice)
+
+    deleted: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=bob
+    )
+
+    assert deleted.status_code == 204
     assert stored_game(db_session).current_round_number == 2
 
 
