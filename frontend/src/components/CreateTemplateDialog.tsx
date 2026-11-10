@@ -33,7 +33,8 @@ export function CreateTemplateDialog() {
     } catch {
       return;
     }
-    dialogRef.current?.close();
+    if (dialogRef.current?.open !== true) return;
+    dialogRef.current.close();
     await navigate(templateEditorPath(template.id));
   }
 

@@ -52,6 +52,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   const sensors = useBoardSensors();
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
+  const placing = useRef<boolean>(false);
   const currentItem: GameItem = game.current_item;
   const currentRoundDraggableId: string = `current:${currentItem.id}`;
   const currentPlacement: OwnPlacement | undefined = game.own_placements.find(
@@ -78,13 +79,16 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   async function placeAt(tierId: string, position: number, focusKeysByPriority: string[]) {
-    if (pending) return false;
+    if (placing.current) return false;
+    placing.current = true;
     focus.focusFirstEnabledAfterUpdate(focusKeysByPriority);
     try {
       await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
       focus.cancel();
       return false;
+    } finally {
+      placing.current = false;
     }
     return true;
   }

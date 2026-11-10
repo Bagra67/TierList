@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
@@ -253,6 +253,32 @@ describe('TemplatesPage', () => {
       ([request]) => request.method === 'POST',
     );
     await expect(createCall?.[0].json()).resolves.toEqual({ name: 'Fromages' });
+  });
+
+  it('stays on the list when the creation is cancelled before its answer', async () => {
+    let answerCreation: ((response: Response) => void) | undefined;
+    stubTemplatesBackend({
+      'GET /templates': listOf([]),
+      'POST /templates': () =>
+        new Promise<Response>((resolve) => {
+          answerCreation = resolve;
+        }),
+    });
+    renderTemplatesPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau modèle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau modèle' });
+    fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: 'Fromages' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
+    await waitFor(() => expect(answerCreation).toBeDefined());
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    await act(async () => {
+      answerCreation?.(Response.json(createdTemplate, { status: 201 }));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    expect(screen.queryByRole('heading', { name: 'Éditeur' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mes modèles' })).toBeInTheDocument();
   });
 
   it('shows the field error when the name is blank', async () => {
