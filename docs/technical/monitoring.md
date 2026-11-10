@@ -17,6 +17,8 @@ The logs themselves (INFO and above) still only go to the pod console ([backend 
 
 Each event carries the **release** (`APP_RELEASE`: `vX.Y.Z` or `develop-<commit>`) and the **environment** (`SENTRY_ENVIRONMENT`: `staging` or `production`). Warnings are not sent, to keep the free quota for errors.
 
+A backend 5xx response is not an event by itself: the FastAPI and Starlette integrations of the SDK capture no status code (`SENTRY_CAPTURED_RESPONSE_STATUS_CODES`, empty). Only the error log written for it is sent, so one failure gives one issue (for example, a database down answers 503 and sends only its `Échec de la connexion à la base de données` log).
+
 ## 2. What is not sent
 
 The privacy policy promises error reports without IP address, cookies or typed content. The code enforces it:

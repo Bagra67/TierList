@@ -17,6 +17,8 @@ Les logs eux-mêmes (INFO et au-dessus) ne vont toujours que dans la console du 
 
 Chaque événement porte la **version** (`APP_RELEASE` : `vX.Y.Z` ou `develop-<commit>`) et l'**environnement** (`SENTRY_ENVIRONMENT` : `staging` ou `production`). Les avertissements ne sont pas envoyés, pour garder le quota gratuit pour les erreurs.
 
+Une réponse 5xx du backend n'est pas un événement à elle seule : les intégrations FastAPI et Starlette du SDK ne capturent aucun code HTTP (`SENTRY_CAPTURED_RESPONSE_STATUS_CODES`, vide). Seul le log d'erreur écrit pour elle est envoyé, donc une panne donne une seule issue (par exemple, une base indisponible répond 503 et n'envoie que son log `Échec de la connexion à la base de données`).
+
 ## 2. Ce qui n'est pas envoyé
 
 La politique de confidentialité promet des rapports d'erreur sans adresse IP, cookies ni contenu saisi. Le code le garantit :
