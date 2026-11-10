@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from typing import Protocol
 
 from pydantic import TypeAdapter
@@ -31,6 +31,7 @@ class ConnectionRegistry:
         self._sockets: dict[uuid.UUID, dict[WebSocket, uuid.UUID]] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
         self._pending_disconnects: dict[uuid.UUID, asyncio.Task[None]] = {}
+        self._background_tasks: set[asyncio.Task[None]] = set()
 
     def add(self, room_id: uuid.UUID, participant_id: uuid.UUID, websocket: WebSocket) -> bool:
         self._loop = asyncio.get_running_loop()
@@ -64,15 +65,15 @@ class ConnectionRegistry:
                 await asyncio.sleep(delay_seconds)
                 if self.is_connected(room_id, participant_id):
                     return
-                await set_presence(False)
-                if self.is_connected(room_id, participant_id):
-                    await set_presence(True)
             finally:
                 if self._pending_disconnects.get(participant_id) is asyncio.current_task():
                     self._pending_disconnects.pop(participant_id, None)
+            await set_presence(False)
+            if self.is_connected(room_id, participant_id):
+                await set_presence(True)
 
         self.cancel_pending_disconnect(participant_id)
-        self._pending_disconnects[participant_id] = asyncio.create_task(disconnect_after_delay())
+        self._pending_disconnects[participant_id] = self._spawn(disconnect_after_delay())
 
     def cancel_pending_disconnect(self, participant_id: uuid.UUID) -> None:
         pending: asyncio.Task[None] | None = self._pending_disconnects.pop(participant_id, None)
@@ -115,7 +116,7 @@ class ConnectionRegistry:
     def _schedule_close(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
     ) -> None:
-        asyncio.create_task(self._close_participant(room_id, participant_id, close_code, reason))
+        self._spawn(self._close_participant(room_id, participant_id, close_code, reason))
 
     async def _close_participant(
         self, room_id: uuid.UUID, participant_id: uuid.UUID, close_code: int, reason: ErrorCode
@@ -133,14 +134,26 @@ class ConnectionRegistry:
                 logger.debug("Fermeture impossible d'un socket déjà fermé : room_id=%s", room_id)
 
     def _schedule_broadcast(self, room_id: uuid.UUID, message: str) -> None:
-        asyncio.create_task(self._broadcast(room_id, message))
+        self._spawn(self._broadcast(room_id, message))
+
+    def _spawn(self, coroutine: Coroutine[None, None, None]) -> asyncio.Task[None]:
+        task: asyncio.Task[None] = asyncio.create_task(coroutine)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
+        return task
 
     async def _broadcast(self, room_id: uuid.UUID, message: str) -> None:
-        for websocket in list(self._sockets.get(room_id, {})):
-            try:
-                await websocket.send_text(message)
-            except RuntimeError, OSError:
-                logger.debug("Envoi impossible sur un socket fermé : room_id=%s", room_id)
+        room_sockets: list[WebSocket] = list(self._sockets.get(room_id, {}))
+        await asyncio.gather(
+            *(self._send(room_id, websocket, message) for websocket in room_sockets)
+        )
+
+    @staticmethod
+    async def _send(room_id: uuid.UUID, websocket: WebSocket, message: str) -> None:
+        try:
+            await websocket.send_text(message)
+        except RuntimeError, OSError:
+            logger.debug("Envoi impossible sur un socket fermé : room_id=%s", room_id)
 
 
 room_connections: ConnectionRegistry = ConnectionRegistry()
