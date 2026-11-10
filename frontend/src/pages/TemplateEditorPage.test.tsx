@@ -1320,7 +1320,9 @@ describe('TemplateEditorPage', () => {
 
   describe('tier color', () => {
     async function openColorPicker(): Promise<HTMLElement> {
-      fireEvent.click(await screen.findByRole('button', { name: 'Couleur du tier A' }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+      );
       return screen.findByRole('dialog');
     }
 
@@ -1374,7 +1376,9 @@ describe('TemplateEditorPage', () => {
       fireEvent.keyDown(picker, { key: 'Escape' });
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-      expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+      expect(
+        screen.getByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+      ).toHaveStyle({
         backgroundColor: tierA.color,
       });
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
@@ -1409,7 +1413,9 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+        expect(
+          screen.getByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+        ).toHaveStyle({
           backgroundColor: tierA.color,
         }),
       );

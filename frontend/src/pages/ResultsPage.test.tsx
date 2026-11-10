@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { type InitialEntry, Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -170,15 +170,49 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
+  it('keeps the chosen player when the results come back in another order', async () => {
+    stubBackend({
+      [resultsRoute]: (request: Request) => {
+        const included: string | null = new URL(request.url).searchParams.get(
+          'include_absent_votes',
+        );
+        return Response.json(
+          included === 'false'
+            ? { ...closedGameResults, players: [...closedGameResults.players].reverse() }
+            : closedGameResults,
+        );
+      },
+    });
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    const chosen: string = closedGameResults.players[1].id;
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: chosen },
+    });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('combobox', { name: 'Joueur' })).getAllByRole('option')[0],
+      ).toHaveValue(closedGameResults.players.at(-1)?.id),
+    );
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue(chosen);
+  });
+
   it('keeps the chosen player when the reveal is replayed', async () => {
     stubResults();
     renderResultsPage();
     fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
 
-    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue('1');
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue(
+      closedGameResults.players[1].id,
+    );
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
@@ -192,7 +226,9 @@ describe('ResultsPage', () => {
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
 
     fireAnimationEnd(tierS);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     expect(screen.getByRole('group', { name: 'Jamais placés' })).not.toHaveClass(
       'motion-safe:animate-reveal',
@@ -252,7 +288,9 @@ describe('ResultsPage', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
     expect(rowItems('S')).toEqual(['Paprika']);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     expect(rowItems('A')).toEqual(['Paprika']);
     expect(rowItems('Jamais placés')).toEqual(['Chorizo', 'Curry']);

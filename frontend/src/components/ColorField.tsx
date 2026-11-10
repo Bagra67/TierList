@@ -78,7 +78,7 @@ export function ColorField({ label, savedColor, onSave }: ColorFieldProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={label}
+          aria-label={t('templates.editor.colorTrigger', { label, color: draft })}
           className="size-8 shrink-0 cursor-pointer rounded-full border-2 border-background ring-1 ring-foreground/20"
           style={{ backgroundColor: draft }}
         />

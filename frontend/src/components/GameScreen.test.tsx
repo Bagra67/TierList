@@ -160,6 +160,28 @@ describe('GameScreen', () => {
     );
   });
 
+  it('sends one placement for two quick clicks on a place button', async () => {
+    let placements: number = 0;
+    stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame),
+      [`PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`]: async () => {
+        placements += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return Response.json(inGame({ own_placements: [paprikaInS] }));
+      },
+    });
+    renderRoomPage();
+    const placeInS: HTMLElement = await screen.findByRole('button', {
+      name: "Placer dans S : l'élément en cours, à la fin",
+    });
+
+    fireEvent.click(placeInS);
+    fireEvent.click(placeInS);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(placements).toBe(1);
+  });
+
   it('shows a preview of the item while it is dragged', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();

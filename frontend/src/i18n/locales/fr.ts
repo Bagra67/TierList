@@ -731,6 +731,7 @@ export const fr = {
       addTier: 'Ajouter un tier',
       tierName: 'Nom du tier {{position}}',
       tierColor: 'Couleur du tier {{name}}',
+      colorTrigger: '{{label}}, actuellement {{color}}',
       color: {
         area: 'Saturation et luminosité',
         areaValue: 'Saturation {{saturation}} %, luminosité {{brightness}} %',
