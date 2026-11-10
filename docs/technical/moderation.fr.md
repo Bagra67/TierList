@@ -197,6 +197,7 @@ Un compte peut être banni temporairement ou définitivement (US-1.8). À ne pas
 
 - **Déconnecté partout**, comme après une réinitialisation du mot de passe : les refresh tokens du compte sont révoqués (aucune session ne peut être rafraîchie) et `users.token_version` est incrémenté, si bien que chaque access token déjà émis est refusé à la requête suivante ([guide de l'authentification](authentication.fr.md#comptes-bannis)).
 - **Connexion refusée** tant que le bannissement est actif, par mot de passe ou par Google, avec le motif et la fin ([guide de l'authentification](authentication.fr.md#comptes-bannis)). Le rafraîchissement est refusé lui aussi, pour la session qu'une connexion en cours aurait ouverte pendant le bannissement.
+- **Sockets temps réel fermées** : une fois le bannissement enregistré, les sockets ouvertes du compte dans chaque salle sont fermées avec `4401` ([guide de l'authentification](authentication.fr.md#comptes-bannis)).
 - Lever un bannissement permet seulement au compte de se connecter de nouveau ; ses sessions restent fermées.
 
 Le frontend :
@@ -207,7 +208,6 @@ Le frontend :
 
 **Limites connues** :
 
-- Les sockets temps réel déjà ouvertes ne sont pas fermées tout de suite : elles signalent seulement que la salle doit être relue, et chaque appel REST du compte banni échoue dès lors.
 - Les modèles publics d'un compte banni ne sont pas encore masqués d'une place de marché : il n'y en a pas encore (#277).
 
 ### 2.10 Signalements de contenus

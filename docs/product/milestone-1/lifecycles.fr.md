@@ -17,6 +17,7 @@ stateDiagram-v2
     Ouverte --> Fermee : l'admin la ferme
     Ouverte --> Fermee : délai d'inactivité atteint
     EnPartie --> Fermee : l'admin la ferme (partie clôturée d'abord)
+    EnPartie --> Fermee : délai d'inactivité atteint (partie clôturée d'abord)
     Fermee --> [*]
 ```
 
@@ -26,12 +27,12 @@ stateDiagram-v2
 | **En partie** | Une partie est en cours. Les réglages sont verrouillés, sauf les arrivées.                                                                                                         | Si les arrivées sont acceptées (≤ 10)        |
 | **Fermée**    | Définitif : la room **n'est pas gardée** (lien et code supprimés, liens perso des invités morts). Seules ses **parties** sont gardées : historique et liens publics des résultats. | Personne                                     |
 
-| Transition          | Déclenchée par                                                                        | Story          |
-| ------------------- | ------------------------------------------------------------------------------------- | -------------- |
-| Ouverte → En partie | L'admin de la room lance une partie.                                                  | US-3.1         |
-| En partie → Ouverte | La partie est clôturée (fin du cooldown).                                             | US-5.1         |
-| Ouverte → Fermée    | L'admin de la room ferme la room, ou le délai d'inactivité est atteint.               | US-2.7, US-2.8 |
-| En partie → Fermée  | L'admin de la room ferme la room après confirmation ; la partie est clôturée d'abord. | US-2.7         |
+| Transition          | Déclenchée par                                                                                                              | Story          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Ouverte → En partie | L'admin de la room lance une partie.                                                                                        | US-3.1         |
+| En partie → Ouverte | La partie est clôturée (fin du cooldown).                                                                                   | US-5.1         |
+| Ouverte → Fermée    | L'admin de la room ferme la room, ou le délai d'inactivité est atteint.                                                     | US-2.7, US-2.8 |
+| En partie → Fermée  | L'admin de la room ferme la room après confirmation, ou le délai d'inactivité est atteint ; la partie est clôturée d'abord. | US-2.7, US-2.8 |
 
 ## Partie
 

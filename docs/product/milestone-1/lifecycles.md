@@ -14,6 +14,7 @@ stateDiagram-v2
     Open --> Closed : room admin closes it
     Open --> Closed : inactivity delay reached
     Playing --> Closed : room admin closes it (game closed first)
+    Playing --> Closed : inactivity delay reached (game closed first)
     Closed --> [*]
 ```
 
@@ -23,12 +24,12 @@ stateDiagram-v2
 | **Playing** | A game is in progress. Settings are locked, except late arrivals.                                                                               | If late arrivals are allowed (≤ 10) |
 | **Closed**  | Final: the room is **not kept** (link and code gone, guest personal links dead). Only its **games** are kept: history and public results links. | Nobody                              |
 
-| Transition       | Triggered by                                                               | Story          |
-| ---------------- | -------------------------------------------------------------------------- | -------------- |
-| Open → Playing   | The room admin starts a game.                                              | US-3.1         |
-| Playing → Open   | The game is closed (end of the cooldown).                                  | US-5.1         |
-| Open → Closed    | The room admin closes the room, or the inactivity delay is reached.        | US-2.7, US-2.8 |
-| Playing → Closed | The room admin closes the room after confirming; the game is closed first. | US-2.7         |
+| Transition       | Triggered by                                                                                                   | Story          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------- | -------------- |
+| Open → Playing   | The room admin starts a game.                                                                                  | US-3.1         |
+| Playing → Open   | The game is closed (end of the cooldown).                                                                      | US-5.1         |
+| Open → Closed    | The room admin closes the room, or the inactivity delay is reached.                                            | US-2.7, US-2.8 |
+| Playing → Closed | The room admin closes the room after confirming, or the inactivity delay is reached; the game is closed first. | US-2.7, US-2.8 |
 
 ## Game
 
