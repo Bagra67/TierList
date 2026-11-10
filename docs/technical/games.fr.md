@@ -225,7 +225,7 @@ Le frontend ne garde pas une réponse plus ancienne que la salle qu'il a déjà 
 ## 4. Limites connues
 
 - Le glisser-déposer au pointeur n'est pas couvert par les tests automatiques (jsdom n'a pas de mise en page) : ils placent avec les boutons, et `boardPositions.test.ts` couvre le calcul des positions.
-- « Qui place » est calculé par le backend (`placing_participants`) et de nouveau par l'écran (`GameScreen`, depuis `admin_plays` et `is_admin`) pour afficher le plateau et le compteur.
+- « Qui place » est calculé par le backend (`places_in_game`, utilisé par `placing_participants` et la réponse de salle) et de nouveau par l'écran (`GameScreen`, depuis `admin_plays` et `is_admin`) pour afficher le plateau et le compteur.
 - L'historique des comptes arrive avec #103.
 - Fermer une salle pendant une partie clôture d'abord la partie ([guide des salles](rooms.fr.md#26-fermer-une-salle)) ; pendant un tour, les classements du moment deviennent les plateaux finaux. Les parties laissées sans salle par une version antérieure (avant #89) sont ignorées au démarrage.
 - « Une partie est en cours » vit à deux endroits : `rooms.status = playing` et une ligne `games` qui n'est pas `closed`. Le démarrage écrit les deux dans une seule transaction, sous le verrou de la salle ; la fin du cooldown repasse la salle en `open` dans la même transaction que la partie.

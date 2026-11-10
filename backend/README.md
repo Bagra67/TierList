@@ -378,26 +378,75 @@ Every error response of the API has the same JSON shape, `ErrorResponse` (`app/c
 
 Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 
-| Code                         | Status      | Meaning                                                                    |
-| ---------------------------- | ----------- | -------------------------------------------------------------------------- |
-| `internal_error`             | 500         | Unexpected error                                                           |
-| `validation_error`           | 422         | Invalid request (see `errors`)                                             |
-| `http_error`                 | any         | `HTTPException` without a dedicated code                                   |
-| `database_unavailable`       | 503         | `GET /health/db`: the database does not answer                             |
-| `not_authenticated`          | 401         | Missing or invalid access token                                            |
-| `email_already_registered`   | 409         | Registration with an email already used                                    |
-| `invalid_credentials`        | 401         | Wrong email or password                                                    |
-| `session_expired`            | 401         | Expired or revoked refresh token (no cookie at all: `204`)                 |
-| `incorrect_password`         | 403         | Wrong password when deleting the account                                   |
-| `reauthentication_required`  | 403         | Google account whose last sign-in is too old to confirm the deletion       |
-| `invalid_token`              | 400         | Link received by email invalid, expired, or no longer matching the account |
-| `password_too_short`         | 422 (field) | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`           |
-| `template_not_found`         | 404         | Template unknown, deleted or owned by another user (indistinguishable)     |
-| `image_unsupported_format`   | 415         | `POST /images`: not a JPEG, PNG or WebP image, or unreadable               |
-| `image_too_large`            | 413         | `POST /images`: file over `IMAGE_UPLOAD_MAX_BYTES`; `params.max_bytes`     |
-| `image_too_many_pixels`      | 422         | `POST /images`: decoded image over `IMAGE_MAX_SOURCE_PIXELS`               |
-| `image_upload_limit_reached` | 429         | `POST /images`: `IMAGE_UPLOADS_PER_HOUR_MAX` reached; `params.max_uploads` |
-| `image_not_found`            | 404         | Tile `image_id` unknown or of another user                                 |
-| `tile_empty`                 | 422         | Tile without text nor image                                                |
+| Code                           | Status          | Meaning                                                                                                                            |
+| ------------------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `internal_error`               | 500             | Unexpected error                                                                                                                   |
+| `validation_error`             | 422             | Invalid request (see `errors`)                                                                                                     |
+| `http_error`                   | any             | `HTTPException` without a dedicated code                                                                                           |
+| `database_unavailable`         | 503             | `GET /health/db`: the database does not answer                                                                                     |
+| `not_authenticated`            | 401 / WS `4401` | Missing or invalid access token (realtime channel: no `auth` in time, or banned account)                                           |
+| `email_already_registered`     | 409             | Registration with an email already used                                                                                            |
+| `invalid_credentials`          | 401             | Wrong email or password                                                                                                            |
+| `session_expired`              | 401             | Expired or revoked refresh token (no cookie at all: `204`)                                                                         |
+| `incorrect_password`           | 403             | Wrong password when deleting the account                                                                                           |
+| `reauthentication_required`    | 403             | Google account whose last sign-in is too old to confirm the deletion                                                               |
+| `invalid_token`                | 400             | Link received by email invalid, expired, or no longer matching the account                                                         |
+| `password_too_short`           | 422 (field)     | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`                                                                   |
+| `template_not_found`           | 404 / 409       | Template unknown, deleted or owned by another user (indistinguishable); `409` when a game starts with a template deleted meanwhile |
+| `image_unsupported_format`     | 415             | `POST /images`: not a JPEG, PNG or WebP image, or unreadable                                                                       |
+| `image_too_large`              | 413             | `POST /images`: file over `IMAGE_UPLOAD_MAX_BYTES`; `params.max_bytes`                                                             |
+| `image_too_many_pixels`        | 422             | `POST /images`: decoded image over `IMAGE_MAX_SOURCE_PIXELS`                                                                       |
+| `image_upload_limit_reached`   | 429             | `POST /images`: `IMAGE_UPLOADS_PER_HOUR_MAX` reached; `params.max_uploads`                                                         |
+| `image_not_found`              | 404             | Tile `image_id` unknown or of another user                                                                                         |
+| `tile_empty`                   | 422             | Tile without text nor image                                                                                                        |
+| `super_admin_required`         | 403             | Route reserved to a super admin                                                                                                    |
+| `account_not_found`            | 404             | Moderation: unknown account                                                                                                        |
+| `account_banned`               | 403             | Sign-in of an account banned for good; `params.reason`                                                                             |
+| `account_banned_until`         | 403             | Sign-in of an account banned until a date; `params.reason`, `params.ends_at`                                                       |
+| `cannot_ban_super_admin`       | 409             | A super admin cannot be banned                                                                                                     |
+| `account_not_banned`           | 409             | Lifting a ban on an account that has none                                                                                          |
+| `ban_end_in_past`              | 422             | End of a ban not in the future                                                                                                     |
+| `template_has_no_tiles`        | 409             | Room created, or game started, with a template without tiles                                                                       |
+| `template_hidden`              | 409             | Game started with a template hidden by the moderation                                                                              |
+| `template_moderation_conflict` | 409             | Moderation action that does not fit the state of the template                                                                      |
+| `tier_not_found`               | 404             | Unknown tier of the template (or of the game when placing)                                                                         |
+| `last_tier`                    | 409             | Deleting the last tier of a template                                                                                               |
+| `tile_not_found`               | 404             | Unknown tile of the template                                                                                                       |
+| `tile_limit_reached`           | 409             | Template already at its tile limit; `params.max_tiles`                                                                             |
+| `room_not_found`               | 404 / WS `4404` | Unknown or closed room code                                                                                                        |
+| `room_not_joined`              | 403             | Reading a room without a seat in it                                                                                                |
+| `room_admin_required`          | 403             | Action reserved to the room admin                                                                                                  |
+| `room_settings_locked`         | 409             | Setting changed during a game (only late arrivals can be)                                                                          |
+| `room_full`                    | 409             | Room already full; `params.max_participants`                                                                                       |
+| `room_locked`                  | 409             | Joining during a game whose room is locked                                                                                         |
+| `nickname_taken`               | 409             | Guest nickname already used in the room                                                                                            |
+| `guest_link_invalid`           | 404             | Guest personal link expired, or its room closed                                                                                    |
+| `participant_not_found`        | 404             | Unknown participant of the room                                                                                                    |
+| `cannot_remove_room_admin`     | 409             | Removing the room admin from their room                                                                                            |
+| `room_banned`                  | 403 / WS `4411` | Account or browser banned from the room                                                                                            |
+| `ban_not_found`                | 404             | Unknown ban of the room                                                                                                            |
+| `invalid_message`              | WS `4400`       | Realtime channel: message that is not expected                                                                                     |
+| `heartbeat_timeout`            | WS `4408`       | Realtime channel: no answer to the heartbeat                                                                                       |
+| `removed_from_room`            | WS `4410`       | Realtime channel: removed by the room admin (or account deleted)                                                                   |
+| `room_closed`                  | WS `4412`       | Realtime channel: the room was closed                                                                                              |
+| `game_in_progress`             | 409             | Starting a game while another one is in progress                                                                                   |
+| `no_placing_participant`       | 409             | Starting a game where nobody places the items                                                                                      |
+| `round_not_in_progress`        | 409             | Placing, or moving on, when no round is in progress                                                                                |
+| `not_a_placing_participant`    | 403             | The room admin who does not play places an item                                                                                    |
+| `item_not_current`             | 409             | Placing an item that is not the one of the current round                                                                           |
+| `item_not_in_game`             | 404             | Placing, during the final touches, an item that is not in the game                                                                 |
+| `cooldown_not_in_progress`     | 409             | Ending the final touches when they are not in progress                                                                             |
+| `cooldown_over`                | 409             | Placing after the end of the final touches                                                                                         |
+| `results_not_found`            | 404             | Unknown results link (or game hidden by the moderation)                                                                            |
+| `image_moderation_conflict`    | 409             | Moderation action that does not fit the status of the image                                                                        |
+| `report_target_not_found`      | 404             | Reporting a content that is unknown or already removed                                                                             |
+| `report_already_open`          | 409             | Content already reported by the same person                                                                                        |
+| `report_details_required`      | 422             | Reason `other` without details                                                                                                     |
+| `report_limit_reached`         | 429             | Report limit per hour reached; `params.max_reports`                                                                                |
+| `reports_not_open`             | 404             | Dismissing a content that has no open report                                                                                       |
+| `nickname_not_found`           | 404             | Removing a nickname of no account nor guest                                                                                        |
+| `game_not_found`               | 404             | Moderation: unknown closed game                                                                                                    |
+| `game_moderation_conflict`     | 409             | Moderation action that does not fit the status of the game                                                                         |
+| `images_hiding_in_progress`    | 409             | `POST /moderation/accounts/{id}/hide-images` while a batch of the same account runs                                                |
 
 For expected errors (not found, conflict…), raise an `AppHTTPException` with an `ErrorCode` and an English `detail` (`app/constants/messages.py`), and let unexpected errors reach the generic handler: never catch `Exception` in a route just to return a 500. **A new error code must be translated in every frontend language.** On the frontend, `ApiError` exposes `status`, `body`, and `detail` as its `message`.
