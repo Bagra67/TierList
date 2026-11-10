@@ -2,10 +2,13 @@ import logging
 from typing import Any
 
 import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.types import Event, Hint
 
 from app.constants.monitoring import (
+    SENTRY_CAPTURED_RESPONSE_STATUS_CODES,
     SENTRY_EVENT_REQUEST_KEY,
     SENTRY_KEPT_REQUEST_HEADERS,
     SENTRY_REQUEST_BODY_SIZE,
@@ -43,6 +46,10 @@ def configure_sentry(settings: Settings) -> bool:
         include_local_variables=False,
         before_send=remove_request_personal_data,
         before_send_transaction=remove_request_personal_data,
-        integrations=[LoggingIntegration(event_level=logging.ERROR)],
+        integrations=[
+            LoggingIntegration(event_level=logging.ERROR),
+            StarletteIntegration(failed_request_status_codes=SENTRY_CAPTURED_RESPONSE_STATUS_CODES),
+            FastApiIntegration(failed_request_status_codes=SENTRY_CAPTURED_RESPONSE_STATUS_CODES),
+        ],
     )
     return True
