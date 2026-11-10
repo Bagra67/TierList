@@ -18,6 +18,7 @@ from app.core.config import Settings, get_settings
 from app.core.monitoring import (
     configure_sentry,
     mask_secret_paths,
+    mask_secrets_in_text,
     scrub_breadcrumb,
     scrub_event,
     scrub_transaction,
@@ -213,6 +214,7 @@ def test_the_request_keeps_only_its_masked_url_method_and_user_agent() -> None:
             "https://tierlist.test/api/rooms/[Filtered]/join",
         ),
         ("/r/K7P2QX#guest=s3cr3t", "/r/[Filtered]"),
+        ("/R/K7P2QX", "/R/[Filtered]"),
         ("https://oauth2.googleapis.com/token?code=s3cr3t", "https://oauth2.googleapis.com/token"),
         ("/api/templates/42/rooms", "/api/templates/42/rooms"),
     ],
@@ -227,6 +229,20 @@ def test_a_secret_segment_is_masked_inside_a_text() -> None:
     assert mask_secret_paths("Erreur sur GET /api/rooms/K7P2QX/game ?") == (
         "Erreur sur GET /api/rooms/[Filtered]/game ?"
     )
+
+
+def test_an_email_address_is_masked_inside_a_text() -> None:
+    database_error: str = "DETAIL:  Key (email)=(alice.martin+tl@example.co.uk) already exists."
+
+    assert mask_secrets_in_text(database_error) == (
+        "DETAIL:  Key (email)=([Filtered]) already exists."
+    )
+
+
+def test_an_error_event_loses_the_secrets_of_its_transaction_name() -> None:
+    event: Event = {"transaction": "/api/results/s3cr3t"}
+
+    assert scrub_event(event, {}).get("transaction") == "/api/results/[Filtered]"
 
 
 def test_an_http_breadcrumb_loses_its_query_and_its_secret_segments() -> None:
