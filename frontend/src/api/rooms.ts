@@ -9,6 +9,7 @@ import {
 
 import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ApiError } from '../errors/apiError';
+import { alignOnServerClock } from './serverClock';
 import { apiClient, dataOrThrow, throwIfError } from './client';
 import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
@@ -134,7 +135,13 @@ async function endCooldown(code: string): Promise<Room> {
   );
 }
 
+function alignedOnServerClock<Answer extends Room>(room: Answer): Answer {
+  alignOnServerClock(room.server_now);
+  return room;
+}
+
 function storeRoom(queryClient: QueryClient, room: Room): void {
+  alignOnServerClock(room.server_now);
   const cached: Room | undefined = queryClient.getQueryData<Room>(roomQueryKey(room.code));
   if (cached !== undefined && isOlder(room, cached)) {
     void queryClient.invalidateQueries({ queryKey: roomQueryKey(room.code) });
@@ -168,10 +175,12 @@ export function useRoom(
   const roomCode: string = canonicalRoomCode(code);
   return useQuery({
     queryKey: roomQueryKey(roomCode),
-    queryFn: ({ signal }) => {
-      if (viewer === 'account') return enterRoom(roomCode, signal);
-      if (guestToken !== null) return restoreGuestSession(roomCode, guestToken, signal);
-      return getRoom(roomCode, signal);
+    queryFn: async ({ signal }) => {
+      if (viewer === 'account') return alignedOnServerClock(await enterRoom(roomCode, signal));
+      if (guestToken !== null) {
+        return alignedOnServerClock(await restoreGuestSession(roomCode, guestToken, signal));
+      }
+      return alignedOnServerClock(await getRoom(roomCode, signal));
     },
     enabled: viewer !== undefined,
     retry: retryUnlessClientError,

@@ -89,7 +89,8 @@ function stubAccount(
     'POST /moderation/templates/teachers-id/unhide': recordPost,
     'POST /moderation/accounts/max-id/hide-images': async (request: Request) => {
       calls.posts.push({ path: new URL(request.url).pathname, body: await request.json() });
-      return Response.json({ hidden_count: 3 });
+      const batches: number = calls.posts.length;
+      return Response.json({ hidden_count: batches === 1 ? 2 : 1, has_more: batches === 1 });
     },
   });
   return calls;
@@ -169,7 +170,7 @@ describe('ModerationAccountPage', () => {
     );
   });
 
-  it('hides all the images of the account, says how many and reads its reports again', async () => {
+  it('hides all the images of the account batch by batch, says how many and reads its reports again', async () => {
     const calls: Calls = stubAccount();
     renderAccountPage();
     await screen.findByText('Max le spammeur');
@@ -182,8 +183,53 @@ describe('ModerationAccountPage', () => {
     expect(await screen.findByText('3 images masquées.')).toBeInTheDocument();
     expect(calls.posts).toEqual([
       { path: '/api/moderation/accounts/max-id/hide-images', body: { reason: 'Spam' } },
+      { path: '/api/moderation/accounts/max-id/hide-images', body: { reason: 'Spam' } },
     ]);
     await waitFor(() => expect(calls.reportQueries).toHaveLength(2));
+  });
+
+  it('says when the images of the account are already being hidden', async () => {
+    stubBackend({
+      'GET /moderation/accounts/max-id': () => Response.json(maxAccount),
+      'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'POST /moderation/accounts/max-id/hide-images': () =>
+        errorResponse(409, 'images_hiding_in_progress'),
+    });
+    renderAccountPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Masquer toutes ses images' }));
+    const dialog = screen.getByRole('dialog', { name: 'Masquer toutes les images de Max' });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Spam' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tout masquer' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      "Les images de ce compte sont déjà en train d'être masquées. Attendez la fin, puis réessayez.",
+    );
+  });
+
+  it('stops hiding when a batch hides nothing, even if more is announced', async () => {
+    let hideRequests: number = 0;
+    stubBackend({
+      'GET /moderation/accounts/max-id': () => Response.json(maxAccount),
+      'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
+      'GET /moderation/images': () => Response.json({ images: [], has_more: false }),
+      'GET /moderation/log': () => Response.json({ entries: [], has_more: false }),
+      'POST /moderation/accounts/max-id/hide-images': () => {
+        hideRequests += 1;
+        return Response.json({ hidden_count: 0, has_more: true });
+      },
+    });
+    renderAccountPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Masquer toutes ses images' }));
+    const dialog = screen.getByRole('dialog', { name: 'Masquer toutes les images de Max' });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Spam' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Tout masquer' }));
+
+    expect(await screen.findByText('0 image masquée.')).toBeInTheDocument();
+    expect(hideRequests).toBe(1);
   });
 
   it('shows an active ban, which can be lifted with a reason', async () => {
