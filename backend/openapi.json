@@ -5389,6 +5389,16 @@
               }
             }
           },
+          "409": {
+            "description": "The images of this account are already being hidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {

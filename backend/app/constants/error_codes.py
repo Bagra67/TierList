@@ -76,3 +76,4 @@ class ErrorCode(StrEnum):
     NICKNAME_NOT_FOUND = "nickname_not_found"
     GAME_NOT_FOUND = "game_not_found"
     GAME_MODERATION_CONFLICT = "game_moderation_conflict"
+    IMAGES_HIDING_IN_PROGRESS = "images_hiding_in_progress"
