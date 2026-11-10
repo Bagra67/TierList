@@ -65,6 +65,7 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.deleted'),
             t('privacy.retention.moderatedImages'),
             t('privacy.retention.backups'),
+            t('privacy.retention.errorReports'),
             t('privacy.retention.reports'),
             t('privacy.retention.bans'),
             t('privacy.retention.moderation'),
@@ -92,6 +93,7 @@ export function PrivacyPolicyPage() {
             t('privacy.processors.cloudflare'),
             t('privacy.processors.google'),
             t('privacy.processors.github'),
+            t('privacy.processors.sentry'),
           ]}
         />
         <p>{t('privacy.processors.transfers')}</p>

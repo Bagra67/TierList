@@ -104,14 +104,14 @@ export const fr = {
       moderation:
         "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
       technical:
-        'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
+        "Données techniques : les cookies et le stockage local décrits plus bas, des journaux techniques (identifiants internes, jamais vos mots de passe) et, quand une erreur survient, un rapport d'erreur (la page, le navigateur, la version de TierList et le détail technique de l'erreur, sans votre adresse IP, vos cookies ni ce que vous avez saisi).",
     },
     purposes: {
       title: 'Pourquoi ces données',
       service:
         "Fournir le service que vous demandez en utilisant TierList (exécution du contrat) : créer votre compte, vous connecter, faire jouer les parties, envoyer les e-mails de vérification de l'adresse et de réinitialisation du mot de passe.",
       security:
-        'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
+        "Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, rapports d'erreur pour corriger les pannes, sauvegardes, suppression automatique des données expirées.",
       reports: 'Traiter les signalements de contenus illicites (obligation légale).',
       moderation:
         "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, retrouver les sanctions passées d'un compte, et refuser qu'une image supprimée par la modération soit envoyée à nouveau.",
@@ -131,6 +131,7 @@ export const fr = {
       moderatedImages:
         "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée. Le motif de la décision est gardé avec l'image pour que son propriétaire puisse le lire, jusqu'à la suppression de son compte.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
+      errorReports: "Rapports d'erreur : 30 jours.",
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
       bans: "Bannissements : jusqu'à la suppression du compte, pour repérer une récidive.",
@@ -157,6 +158,8 @@ export const fr = {
         'Cloudflare : nom de domaine, chiffrement HTTPS et acheminement du trafic (États-Unis).',
       google: 'Google : connexion avec un compte Google, si vous la choisissez (États-Unis).',
       github: "GitHub : déploiement de l'application et transfert des sauvegardes (États-Unis).",
+      sentry:
+        "Sentry (Functional Software) : suivi des erreurs de l'application (données stockées dans l'Union européenne, société établie aux États-Unis).",
       transfers:
         'Les transferts vers les États-Unis reposent sur les garanties prévues par le RGPD, comme les clauses contractuelles types de la Commission européenne.',
     },
