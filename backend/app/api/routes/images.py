@@ -11,6 +11,7 @@ from app.api.presenters.images import image_url
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.constants.images import IMAGES_ROUTE_PREFIX
 from app.core.errors import ErrorResponse
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import (
@@ -22,7 +23,7 @@ from app.exceptions.images import (
 from app.models.image import Image
 from app.schemas.images import ImageUploadResponse
 
-router = APIRouter(prefix="/images", tags=["images"])
+router = APIRouter(prefix=IMAGES_ROUTE_PREFIX, tags=["images"])
 
 UPLOAD_IMAGE_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
