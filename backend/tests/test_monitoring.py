@@ -11,10 +11,13 @@ from httpx2 import Response
 from sentry_sdk.envelope import Envelope
 from sentry_sdk.transport import Transport
 from sentry_sdk.types import Event
+from sqlalchemy.exc import OperationalError
 
 import app.core.monitoring as monitoring_module
+import app.main as main_module
 from app.core.config import Settings, get_settings
 from app.core.monitoring import configure_sentry, remove_request_personal_data
+from app.db.session import get_db_session
 from app.main import api_app, app
 
 FAKE_DSN: str = "https://public-key@sentry.example.invalid/1"
@@ -116,6 +119,25 @@ def test_an_error_logged_by_the_app_is_sent_to_sentry(transport: CapturingTransp
     event: Event = transport.events[0]
     assert event.get("logentry", {}).get("message") == "Erreur non gérée"
     assert event.get("exception", {})["values"][0]["type"] == "RuntimeError"
+
+
+def test_a_server_error_response_is_sent_only_through_its_error_log(
+    transport: CapturingTransport, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_to_ping(_session: object) -> None:
+        raise OperationalError("SELECT 1", {}, Exception("connection refused"))
+
+    configure_sentry(make_settings(sentry_dsn=FAKE_DSN))
+    monkeypatch.setattr(main_module, "ping_database", fail_to_ping)
+    api_app.dependency_overrides[get_db_session] = lambda: iter([None])
+
+    response: Response = TestClient(app).get("/api/health/db")
+    sentry_sdk.flush()
+
+    assert response.status_code == 503
+    assert len(transport.events) == 1
+    event: Event = transport.events[0]
+    assert event.get("logentry", {}).get("message") == "Échec de la connexion à la base de données"
 
 
 def test_a_warning_is_not_sent_to_sentry(transport: CapturingTransport) -> None:
