@@ -14,6 +14,10 @@ on:
         description: Release name (APP_RELEASE), e.g. v1.2.0 or develop-1a2b3c4
         required: true
         type: string
+    secrets:
+      SENTRY_AUTH_TOKEN:
+        description: Sentry token allowed to upload the sourcemaps; without it, none is uploaded
+        required: false
 
 permissions:
   contents: read
@@ -42,6 +46,11 @@ jobs:
 
       - name: Build the frontend
         working-directory: frontend
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_RELEASE: ${{ inputs.version }}
         run: |
           pnpm install --frozen-lockfile
           pnpm build
