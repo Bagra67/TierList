@@ -22,6 +22,7 @@ from app.api.dependencies import (
 )
 from app.api.routes import (
     auth,
+    client_config,
     history,
     images,
     moderation,
@@ -38,6 +39,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
 from app.core.frontend import mount_frontend_after_api
 from app.core.logging import configure_logging, get_logging_settings
+from app.core.monitoring import configure_sentry
 from app.core.proxy import TrustedProxyMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
@@ -57,6 +59,7 @@ from app.services.rooms import RoomService
 from app.services.round_timers import round_timers
 
 configure_logging(get_logging_settings().log_level)
+configure_sentry(get_settings())
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +183,7 @@ api_app = FastAPI(
 )
 register_error_handlers(api_app)
 api_app.include_router(auth.router)
+api_app.include_router(client_config.router)
 api_app.include_router(templates.router)
 api_app.include_router(images.router)
 api_app.include_router(rooms.router)

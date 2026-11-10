@@ -808,6 +808,37 @@
         }
       }
     },
+    "/client-config": {
+      "get": {
+        "tags": [
+          "client-config"
+        ],
+        "summary": "Get Client Config",
+        "operationId": "get_client_config_client_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientConfigResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/templates": {
       "get": {
         "tags": [
@@ -6026,6 +6057,40 @@
           "file"
         ],
         "title": "Body_upload_image_images_post"
+      },
+      "ClientConfigResponse": {
+        "properties": {
+          "sentry_dsn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentry Dsn",
+            "description": "DSN Sentry du navigateur ; null quand le suivi des erreurs est désactivé."
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "description": "Environnement transmis à Sentry (staging, production…)."
+          },
+          "release": {
+            "type": "string",
+            "title": "Release",
+            "description": "Version qui tourne, la même que celle de /health."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sentry_dsn",
+          "environment",
+          "release"
+        ],
+        "title": "ClientConfigResponse",
+        "description": "Réglages publics lus par le frontend au démarrage.\n\nLe même build du frontend sert tous les environnements."
       },
       "CreateReportRequest": {
         "properties": {
