@@ -130,6 +130,10 @@ class RoomResponse(BaseModel):
     bans: list[RoomBanResponse]
     game: CurrentGameResponse | None
     past_games: list[PastGameResponse]
+    server_now: datetime = Field(
+        description="Heure du serveur au moment de la réponse : le client en déduit le décalage "
+        "de son horloge, pour que ses minuteurs suivent ceux du serveur."
+    )
 
 
 class JoinAsGuestRequest(BaseModel):

@@ -43,6 +43,7 @@ from app.exceptions.moderation import (
     AccountNotBannedError,
     BanEndInPastError,
     CannotBanSuperAdminError,
+    ImagesHidingInProgressError,
 )
 from app.exceptions.reports import (
     GameModerationConflictError,
@@ -75,7 +76,7 @@ from app.schemas.moderation import (
     SuperAdminResponse,
 )
 from app.schemas.templates import TemplateSummaryResponse
-from app.services.account_review import AccountDetails, AccountSearchPage
+from app.services.account_review import AccountDetails, AccountSearchPage, HiddenImagesBatch
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
 from app.services.report_queue import HiddenGamesPage, ReportQueuePage
@@ -525,7 +526,13 @@ def get_account(
     )
 
 
-@router.post("/accounts/{user_id}/hide-images", responses=ACCOUNT_RESPONSES)
+HIDE_IMAGES_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **ACCOUNT_RESPONSES,
+    409: {"model": ErrorResponse, "description": messages.IMAGES_HIDING_IN_PROGRESS_DESCRIPTION},
+}
+
+
+@router.post("/accounts/{user_id}/hide-images", responses=HIDE_IMAGES_RESPONSES)
 def hide_account_images(
     user_id: uuid.UUID,
     body: ModerationReasonRequest,
@@ -533,10 +540,16 @@ def hide_account_images(
     service: AccountReviewServiceDep,
 ) -> HiddenImagesResponse:
     try:
-        hidden_count: int = service.hide_all_images(super_admin, user_id, body.reason)
+        batch: HiddenImagesBatch = service.hide_all_images(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:
         raise _account_not_found() from exc
-    return HiddenImagesResponse(hidden_count=hidden_count)
+    except ImagesHidingInProgressError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.IMAGES_HIDING_IN_PROGRESS,
+            detail=messages.IMAGES_HIDING_IN_PROGRESS,
+        ) from exc
+    return HiddenImagesResponse(hidden_count=batch.hidden_count, has_more=batch.has_more)
 
 
 @router.post("/accounts/{user_id}/ban", status_code=204, responses=BAN_RESPONSES)

@@ -40,6 +40,19 @@ def list_history(session: Session, user_id: uuid.UUID, limit: int, offset: int) 
     return list(session.scalars(statement).all())
 
 
+def list_closed_games_of_room(session: Session, room_id: uuid.UUID) -> list[Game]:
+    statement: Select[Game] = (
+        select(Game)
+        .where(Game.room_id == room_id, Game.status == GameStatus.CLOSED)
+        .order_by(Game.closed_at.desc(), Game.id)
+        .options(
+            selectinload(Game.snapshot),
+            with_expression(Game.player_count, player_count_expression()),
+        )
+    )
+    return list(session.scalars(statement).all())
+
+
 def get_game(session: Session, game_id: uuid.UUID) -> Game | None:
     return session.get(Game, game_id)
 

@@ -13,6 +13,7 @@ class SeedSize:
     full_templates: int
     deleted_templates: int
     image_tiles_per_template: int
+    bulk_uploader_image_templates: int
     closed_games: int
     history_games: int
     open_rooms_with_past_games: int
@@ -43,6 +44,7 @@ FULL_SIZE: SeedSize = SeedSize(
     full_templates=6,
     deleted_templates=6,
     image_tiles_per_template=12,
+    bulk_uploader_image_templates=3,
     closed_games=75,
     history_games=62,
     open_rooms_with_past_games=3,
@@ -73,6 +75,7 @@ SMALL_SIZE: SeedSize = SeedSize(
     full_templates=1,
     deleted_templates=1,
     image_tiles_per_template=3,
+    bulk_uploader_image_templates=1,
     closed_games=23,
     history_games=22,
     open_rooms_with_past_games=1,

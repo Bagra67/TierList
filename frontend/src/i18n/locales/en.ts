@@ -1118,6 +1118,8 @@ export const en: Translation = {
       game_not_found: 'This game could not be found.',
       game_moderation_conflict:
         'This action does not apply to the game as it is now: it may already be hidden or visible.',
+      images_hiding_in_progress:
+        'The images of this account are already being hidden. Wait for it to finish, then try again.',
       report_limit_reached:
         'You sent {{max_reports}} reports in the last hour: try again a little later.',
       image_moderation_conflict:

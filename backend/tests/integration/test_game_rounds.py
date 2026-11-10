@@ -22,6 +22,7 @@ from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRou
 from tests.integration.helpers import (
     PASSWORD,
     JsonObject,
+    counted_queries,
     create_room,
     create_template,
     register,
@@ -306,6 +307,32 @@ def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
     main_module._reschedule_rounds(lambda: nullcontext(db_session))
 
     assert recorded.deadlines == []
+
+
+def test_a_placement_reads_the_closed_games_of_the_room_only_for_its_answer(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    start_game(auth_client, code, alice)
+    game: Game = stored_game(db_session)
+    tile_id: uuid.UUID = game.current_round.snapshot_tile_id
+    tier_id: uuid.UUID = game.snapshot.tiers[0].id
+
+    with counted_queries(db_session) as statements:
+        response: Response = auth_client.put(
+            f"/rooms/{code}/game/placements/{tile_id}",
+            json={"tier_id": str(tier_id), "position": 0},
+            headers=alice,
+        )
+
+    assert response.status_code == 200
+    closed_game_reads: list[str] = [
+        statement for statement in statements if "count(game_players.id)" in statement
+    ]
+    assert len(closed_game_reads) == 1
 
 
 def test_everyone_placed_ends_the_round(

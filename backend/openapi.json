@@ -5389,6 +5389,16 @@
               }
             }
           },
+          "409": {
+            "description": "The images of this account are already being hidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -6682,6 +6692,12 @@
             "type": "array",
             "title": "Past Games"
           },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now",
+            "description": "Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur."
+          },
           "guest_link": {
             "type": "string",
             "title": "Guest Link"
@@ -6705,6 +6721,7 @@
           "bans",
           "game",
           "past_games",
+          "server_now",
           "guest_link",
           "guest_link_expires_at"
         ],
@@ -6795,14 +6812,19 @@
           "hidden_count": {
             "type": "integer",
             "title": "Hidden Count"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
           }
         },
         "type": "object",
         "required": [
-          "hidden_count"
+          "hidden_count",
+          "has_more"
         ],
         "title": "HiddenImagesResponse",
-        "description": "Résultat de « masquer toutes ses images »."
+        "description": "Résultat d'un lot de « masquer toutes ses images » : renvoyer la requête tant que\n`has_more` est vrai."
       },
       "HistoryResponse": {
         "properties": {
@@ -7971,6 +7993,12 @@
             },
             "type": "array",
             "title": "Past Games"
+          },
+          "server_now": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Now",
+            "description": "Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur."
           }
         },
         "type": "object",
@@ -7985,7 +8013,8 @@
           "is_admin",
           "bans",
           "game",
-          "past_games"
+          "past_games",
+          "server_now"
         ],
         "title": "RoomResponse"
       },

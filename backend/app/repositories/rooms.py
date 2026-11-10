@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Exists, Select, select, update
-from sqlalchemy.orm import Session, selectinload, with_expression
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql.dml import ReturningUpdate
 
@@ -12,7 +12,6 @@ from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
 from app.models.template_snapshot import TemplateSnapshot
-from app.repositories import games as game_repository
 
 
 def add_room(session: Session, room: Room) -> None:
@@ -29,10 +28,6 @@ def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room
         .selectinload(Game.snapshot)
         .selectinload(TemplateSnapshot.tiers),
         selectinload(Room.current_game).selectinload(Game.placements).selectinload(Placement.tile),
-        selectinload(Room.closed_games).options(
-            selectinload(Game.snapshot),
-            with_expression(Game.player_count, game_repository.player_count_expression()),
-        ),
     )
     if for_update:
         statement = statement.with_for_update(of=Room)

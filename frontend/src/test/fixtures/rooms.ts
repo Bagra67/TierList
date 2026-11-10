@@ -36,6 +36,7 @@ export const aliceRoom: Room = {
   bans: [],
   game: null,
   past_games: [],
+  server_now: new Date().toISOString(),
 };
 
 export const aliceRoomInGame: Room = {
