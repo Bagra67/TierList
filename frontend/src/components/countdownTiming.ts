@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 
+import { serverTimeMs } from '../api/serverClock';
 import { COOLDOWN_SHAKE_STEP_PX, COUNTDOWN_URGENT_SECONDS } from '../constants/rooms';
 
 const SECOND_MS = 1000;
 
 export function useRemainingSeconds(endsAt: string): number {
-  const [now, setNow] = useState<number>(() => Date.now());
+  const [now, setNow] = useState<number>(() => serverTimeMs());
 
   useEffect(() => {
-    const interval: number = window.setInterval(() => setNow(Date.now()), SECOND_MS);
+    const interval: number = window.setInterval(() => setNow(serverTimeMs()), SECOND_MS);
     return () => window.clearInterval(interval);
   }, []);
 

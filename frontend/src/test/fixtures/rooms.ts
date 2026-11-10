@@ -36,11 +36,16 @@ export const aliceRoom: Room = {
   bans: [],
   game: null,
   past_games: [],
-  server_now: new Date().toISOString(),
+  get server_now(): string {
+    return new Date().toISOString();
+  },
 };
 
 export const aliceRoomInGame: Room = {
   ...aliceRoom,
+  get server_now(): string {
+    return new Date().toISOString();
+  },
   version: 4,
   status: 'playing',
   game: {
@@ -67,6 +72,9 @@ export const aliceRoomInGame: Room = {
 
 export const lousRoom: GuestRoom = {
   ...aliceRoom,
+  get server_now(): string {
+    return new Date().toISOString();
+  },
   is_admin: false,
   participants: [
     ...aliceRoom.participants.map((participant) => ({ ...participant, is_you: false })),

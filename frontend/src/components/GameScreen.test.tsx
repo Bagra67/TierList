@@ -75,6 +75,24 @@ describe('GameScreen', () => {
     );
   });
 
+  it('counts down on the server clock when the device clock is ahead', async () => {
+    const deviceAheadMs: number = 40_000;
+    const serverNow: number = Date.now() - deviceAheadMs;
+    const endsAt: string = new Date(serverNow + 75_000).toISOString();
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...inGame({ ends_at: endsAt }),
+          server_now: new Date(serverNow).toISOString(),
+        }),
+    });
+    renderRoomPage();
+
+    expect(await screen.findByRole('timer', { name: 'Temps restant' })).toHaveTextContent(
+      /^1:1[45]$/,
+    );
+  });
+
   it('shows the progress of the game', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();
