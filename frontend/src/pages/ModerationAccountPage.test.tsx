@@ -169,9 +169,10 @@ describe('ModerationAccountPage', () => {
     );
   });
 
-  it('hides all the images of the account and says how many', async () => {
+  it('hides all the images of the account, says how many and reads its reports again', async () => {
     const calls: Calls = stubAccount();
     renderAccountPage();
+    await screen.findByText('Max le spammeur');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Masquer toutes ses images' }));
     const dialog = screen.getByRole('dialog', { name: 'Masquer toutes les images de Max' });
@@ -182,6 +183,7 @@ describe('ModerationAccountPage', () => {
     expect(calls.posts).toEqual([
       { path: '/api/moderation/accounts/max-id/hide-images', body: { reason: 'Spam' } },
     ]);
+    await waitFor(() => expect(calls.reportQueries).toHaveLength(2));
   });
 
   it('shows an active ban, which can be lifted with a reason', async () => {

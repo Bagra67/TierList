@@ -393,7 +393,10 @@ export function useModerateTemplate(): UseMutationResult<void, Error, TemplateMo
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: moderateTemplate,
-    onSuccess: async () => {
+    onSuccess: async (_nothing: void, { templateId, action }: TemplateModeration) => {
+      if (action === 'delete') {
+        queryClient.removeQueries({ queryKey: [...REVIEWED_TEMPLATE_QUERY_KEY, templateId] });
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
@@ -424,6 +427,7 @@ export function useHideAllImages(): UseMutationResult<number, Error, HideAllImag
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        invalidateReports(queryClient),
       ]);
     },
   });
