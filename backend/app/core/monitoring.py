@@ -12,6 +12,7 @@ from app.constants.monitoring import (
     SENTRY_EMAIL_ADDRESS,
     SENTRY_EVENT_REQUEST_KEY,
     SENTRY_FILTERED,
+    SENTRY_HTTP_SPAN_OP_PREFIX,
     SENTRY_IGNORED_LOGGERS,
     SENTRY_KEPT_REQUEST_HEADERS,
     SENTRY_REMOVED_URL_DATA_KEYS,
@@ -19,6 +20,7 @@ from app.constants.monitoring import (
     SENTRY_REQUEST_HEADERS_KEY,
     SENTRY_REQUEST_REMOVED_KEYS,
     SENTRY_REQUEST_URL_KEY,
+    SENTRY_SECRET_LINK_PARAM,
     SENTRY_SECRET_PATH_SEGMENT,
     SENTRY_URL_DATA_KEYS,
     SENTRY_URL_QUERY_OR_FRAGMENT,
@@ -35,7 +37,11 @@ def scrub_url(url: str) -> str:
 
 
 def mask_secrets_in_text(text: str) -> str:
-    return mask_secret_paths(SENTRY_EMAIL_ADDRESS.sub(SENTRY_FILTERED, text))
+    without_emails: str = SENTRY_EMAIL_ADDRESS.sub(SENTRY_FILTERED, text)
+    without_link_secrets: str = SENTRY_SECRET_LINK_PARAM.sub(
+        rf"\g<1>{SENTRY_FILTERED}", without_emails
+    )
+    return mask_secret_paths(without_link_secrets)
 
 
 def _mask_if_text(value: object) -> object:
@@ -105,7 +111,11 @@ def scrub_transaction(event: Event, hint: Hint) -> Event:
     for span in spans:
         description: object = span.get("description")
         if isinstance(description, str):
-            span["description"] = scrub_url(description)
+            span["description"] = (
+                scrub_url(description)
+                if str(span.get("op", "")).startswith(SENTRY_HTTP_SPAN_OP_PREFIX)
+                else mask_secrets_in_text(description)
+            )
         span_data: object = span.get("data")
         if isinstance(span_data, dict):
             _scrub_url_data(span_data)

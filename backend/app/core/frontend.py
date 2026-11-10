@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -16,6 +17,8 @@ from app.constants.api import (
     FRONTEND_NO_CACHE,
 )
 from app.schemas.client_config import ClientConfigResponse
+
+logger = logging.getLogger(__name__)
 
 
 class _ImmutableStaticFiles(StaticFiles):
@@ -41,6 +44,9 @@ def _index_with_client_config(index_html: str, client_config: ClientConfigRespon
         f'<script type="application/json" id="{FRONTEND_CLIENT_CONFIG_ELEMENT_ID}">'
         f"{config_json}</script>"
     )
+    if FRONTEND_HEAD_END not in index_html:
+        logger.error("Config client non écrite : pas de %s dans index.html", FRONTEND_HEAD_END)
+        return index_html
     return index_html.replace(FRONTEND_HEAD_END, config_element + FRONTEND_HEAD_END, 1)
 
 
@@ -49,6 +55,9 @@ def mount_frontend_after_api(
 ) -> None:
     resolved_dist: Path = existing_dist.resolve()
     index_file: Path = resolved_dist / FRONTEND_INDEX_FILE
+    if not index_file.is_file():
+        logger.error("Frontend non servi : %s introuvable", index_file)
+        return
     index_html: str = _index_with_client_config(
         index_file.read_text(encoding="utf-8"), client_config
     )

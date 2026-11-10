@@ -41,6 +41,7 @@ from app.core.frontend import mount_frontend_after_api
 from app.core.logging import configure_logging, get_logging_settings
 from app.core.monitoring import configure_sentry
 from app.core.proxy import TrustedProxyMiddleware
+from app.core.upload_size import ImageUploadSizeMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
@@ -183,6 +184,9 @@ api_app = FastAPI(
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(api_app)
+api_app.add_middleware(
+    ImageUploadSizeMiddleware, max_image_bytes=get_settings().image_upload_max_bytes
+)
 api_app.include_router(auth.router)
 api_app.include_router(client_config.router)
 api_app.include_router(templates.router)

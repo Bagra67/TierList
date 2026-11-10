@@ -140,9 +140,8 @@ class RoomService:
             if self._insert_unless_code_taken(room):
                 self._session.commit()
                 logger.info(
-                    "Salle créée : room_id=%s code=%s admin_id=%s template_id=%s",
+                    "Salle créée : room_id=%s admin_id=%s template_id=%s",
                     room.id,
-                    room.code,
                     owner.id,
                     template.id,
                 )
@@ -458,7 +457,7 @@ class RoomService:
                 room_repository.add_room(self._session, room)
         except IntegrityError as exc:
             if violates_unique(exc, ROOM_CODE_CONSTRAINT):
-                logger.info("Code de salle déjà pris, nouveau tirage : code=%s", room.code)
+                logger.info("Code de salle déjà pris, nouveau tirage")
                 return False
             raise
         return True
