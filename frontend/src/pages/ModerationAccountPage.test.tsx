@@ -89,7 +89,8 @@ function stubAccount(
     'POST /moderation/templates/teachers-id/unhide': recordPost,
     'POST /moderation/accounts/max-id/hide-images': async (request: Request) => {
       calls.posts.push({ path: new URL(request.url).pathname, body: await request.json() });
-      return Response.json({ hidden_count: 3 });
+      const batches: number = calls.posts.length;
+      return Response.json({ hidden_count: batches === 1 ? 2 : 1, has_more: batches === 1 });
     },
   });
   return calls;
@@ -169,7 +170,7 @@ describe('ModerationAccountPage', () => {
     );
   });
 
-  it('hides all the images of the account, says how many and reads its reports again', async () => {
+  it('hides all the images of the account batch by batch, says how many and reads its reports again', async () => {
     const calls: Calls = stubAccount();
     renderAccountPage();
     await screen.findByText('Max le spammeur');
@@ -181,6 +182,7 @@ describe('ModerationAccountPage', () => {
 
     expect(await screen.findByText('3 images masquées.')).toBeInTheDocument();
     expect(calls.posts).toEqual([
+      { path: '/api/moderation/accounts/max-id/hide-images', body: { reason: 'Spam' } },
       { path: '/api/moderation/accounts/max-id/hide-images', body: { reason: 'Spam' } },
     ]);
     await waitFor(() => expect(calls.reportQueries).toHaveLength(2));

@@ -415,13 +415,19 @@ export function useHideAllImages(): UseMutationResult<number, Error, HideAllImag
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ accountId, reason }: HideAllImages): Promise<number> => {
-      const result = dataOrThrow(
-        await apiClient.POST('/moderation/accounts/{user_id}/hide-images', {
-          params: { path: { user_id: accountId } },
-          body: { reason },
-        }),
-      );
-      return result.hidden_count;
+      let hiddenCount: number = 0;
+      let hasMore: boolean = true;
+      while (hasMore) {
+        const batch = dataOrThrow(
+          await apiClient.POST('/moderation/accounts/{user_id}/hide-images', {
+            params: { path: { user_id: accountId } },
+            body: { reason },
+          }),
+        );
+        hiddenCount += batch.hidden_count;
+        hasMore = batch.has_more;
+      }
+      return hiddenCount;
     },
     onSuccess: async () => {
       await Promise.all([
