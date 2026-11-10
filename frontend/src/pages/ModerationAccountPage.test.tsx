@@ -188,7 +188,7 @@ describe('ModerationAccountPage', () => {
     await waitFor(() => expect(calls.reportQueries).toHaveLength(2));
   });
 
-  it('says when the images of the account are already being hidden by someone else', async () => {
+  it('says when the images of the account are already being hidden', async () => {
     stubBackend({
       'GET /moderation/accounts/max-id': () => Response.json(maxAccount),
       'GET /moderation/reports': () => Response.json({ contents: [], has_more: false }),
@@ -205,7 +205,7 @@ describe('ModerationAccountPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tout masquer' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'Les images de ce compte sont déjà en cours de masquage par un autre modérateur.',
+      "Les images de ce compte sont déjà en train d'être masquées. Attendez la fin, puis réessayez.",
     );
   });
 
