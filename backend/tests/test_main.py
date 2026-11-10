@@ -7,7 +7,6 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from httpx2 import Response
 from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.routing import BaseRoute
@@ -26,6 +25,7 @@ from app.api.routes import (
 from app.db.session import get_db_session
 from app.main import api_app, app
 from app.services.round_timers import round_timers
+from tests.database_doubles import UnreachableDatabaseSession
 
 client = TestClient(app)
 
@@ -54,11 +54,6 @@ def test_health_db_ok():
     response = client.get("/api/health/db")
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "release": "dev"}
-
-
-class UnreachableDatabaseSession:
-    def execute(self, *args: object, **kwargs: object) -> None:
-        raise OperationalError("SELECT 1", {}, Exception("connection refused"))
 
 
 def test_health_answers_when_the_database_is_down():
