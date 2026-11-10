@@ -17,15 +17,26 @@ export const TIER_COLOR_PRESETS: readonly string[] = [
   '#9AA0B4',
 ];
 
-export const TEMPLATES_QUERY_KEY: readonly ['templates'] = ['templates'];
+const TEMPLATE_ID_PATTERN: RegExp =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isTemplateId(value: string): boolean {
+  return TEMPLATE_ID_PATTERN.test(value);
+}
+
+export const TEMPLATE_LIST_QUERY_KEY: readonly ['templates', 'list'] = ['templates', 'list'];
 
 export const REMOVED_TEMPLATES_QUERY_KEY: readonly ['templates', 'removed'] = [
-  ...TEMPLATES_QUERY_KEY,
+  'templates',
   'removed',
 ];
 
-export type TemplateQueryKey = readonly ['templates', string];
+export type TemplateQueryKey = readonly ['templates', 'detail', string];
 
 export function templateQueryKey(templateId: string): TemplateQueryKey {
-  return [...TEMPLATES_QUERY_KEY, templateId];
+  return ['templates', 'detail', templateId];
+}
+
+export function templateChangeMutationKey(templateId: string): readonly string[] {
+  return [...templateQueryKey(templateId), 'change'];
 }

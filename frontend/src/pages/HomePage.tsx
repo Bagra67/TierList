@@ -16,7 +16,7 @@ import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 
 export function HomePage() {
-  const { data: user, isPending, isError } = useCurrentUser();
+  const { data: user, isPending } = useCurrentUser();
   const { t } = useTranslation();
 
   if (isPending) {
@@ -26,7 +26,7 @@ export function HomePage() {
       </PageContainer>
     );
   }
-  if (isError) {
+  if (user === undefined) {
     return (
       <PageContainer width="app">
         <ErrorMessage>{t('common.backendUnreachable')}</ErrorMessage>

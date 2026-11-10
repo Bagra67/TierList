@@ -91,19 +91,26 @@ export function TileEditor({ template }: TileEditorProps) {
     return tile.text ?? t('templates.editor.tileName', { position: tile.position + 1 });
   }
 
-  function moveTile(tile: Tile, position: number) {
+  function clearTileErrors() {
     setTilesLocalError(null);
+    updateMutation.reset();
+    deleteMutation.reset();
+    tileImageUpload.reset();
+  }
+
+  function moveTile(tile: Tile, position: number) {
+    clearTileErrors();
     updateMutation.mutate({ tileId: tile.id, changes: { position } });
   }
 
   function deleteTile(tile: Tile) {
-    setTilesLocalError(null);
+    clearTileErrors();
     deleteMutation.mutate(tile.id);
   }
 
   function saveTileText(tile: Tile, text: string) {
     const removesTheText: boolean = text.trim() === '' && hasImageEvenIfRemoved(tile);
-    setTilesLocalError(null);
+    clearTileErrors();
     updateMutation.mutate({
       tileId: tile.id,
       changes: { text: removesTheText ? null : text },
@@ -111,7 +118,7 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   async function replaceTileImage(tile: Tile, file: File) {
-    setTilesLocalError(null);
+    clearTileErrors();
     setTileIdWithImageBeingSaved(tile.id);
     try {
       const image: UploadedImage = await tileImageUpload.mutateAsync(file);
@@ -124,7 +131,7 @@ export function TileEditor({ template }: TileEditorProps) {
   }
 
   function removeTileImage(tile: Tile) {
-    setTilesLocalError(null);
+    clearTileErrors();
     updateMutation.mutate({ tileId: tile.id, changes: { image_id: null } });
   }
 

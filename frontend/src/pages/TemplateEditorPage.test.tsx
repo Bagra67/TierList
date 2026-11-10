@@ -48,9 +48,9 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
 const [tierS, tierA, tierB]: Tier[] = [makeTier('S', 0), makeTier('A', 1), makeTier('B', 2)];
 const chips: Template = makeTemplate([tierS, tierA, tierB]);
 
-function renderEditor() {
+function renderEditor(url: string = templateUrl) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[templateUrl]}>
+    <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/templates/:templateId" element={<TemplateEditorPage />} />
         <Route path="/r/:code" element={<h1>Lobby</h1>} />
@@ -108,6 +108,15 @@ describe('TemplateEditorPage', () => {
     renderEditor();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
+  });
+
+  it('shows the not found page for an address that is not a template, without a request', async () => {
+    const fetchMock: BackendMock = stubBackend({});
+
+    renderEditor('/templates/removed');
+
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toEqual([]);
   });
 
   it('says why a template hidden by the moderation can no longer start a room', async () => {
@@ -371,6 +380,23 @@ describe('TemplateEditorPage', () => {
       await waitFor(() => expect(displayedTierNames()).toEqual(['S', 'B']));
     });
 
+    it('clears the error of a failed deletion once another change succeeds', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`DELETE ${templateUrl}/tiers/${tierB.id}`]: () => errorResponse(500, 'internal_error'),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([tierA, tierS, tierB])),
+      });
+      renderEditor();
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier B' }));
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Descendre S' }));
+
+      await waitFor(() => expect(displayedTierNames()).toEqual(['A', 'S', 'B']));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
     it('cannot delete the only tier left', async () => {
       stubBackend({ [`GET ${templateUrl}`]: () => Response.json(makeTemplate([tierS])) });
 
@@ -576,6 +602,41 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByRole('alert')).toBeInTheDocument();
       expect(displayedTileTexts()).toEqual(['Pizza', 'Sushi']);
+    });
+
+    it('keeps a tile move on screen when a tier move started earlier is answered first', async () => {
+      const answers: Map<string, (response: Response) => void> = new Map();
+      const answerLater = (name: string) => (): Promise<Response> =>
+        new Promise<Response>((resolve) => answers.set(name, resolve));
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: answerLater('tier'),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: answerLater('tile'),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Descendre S' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Pizza après' }));
+      await waitFor(() => expect(answers.size).toBe(2));
+      await act(async () => {
+        answers.get('tier')?.(
+          Response.json(makeTemplate([tierA, tierS, tierB], 'Chips', [pizza, sushi])),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+
+      expect(displayedTierNames()).toEqual(['A', 'S', 'B']);
+      expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']);
+
+      await act(async () => {
+        answers.get('tile')?.(
+          Response.json(makeTemplate([tierA, tierS, tierB], 'Chips', [sushi, pizza])),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+
+      expect(displayedTierNames()).toEqual(['A', 'S', 'B']);
+      expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']);
     });
 
     it('moves a tile with the move after button', async () => {

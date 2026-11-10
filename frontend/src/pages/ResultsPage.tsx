@@ -30,6 +30,10 @@ import { PageContainer } from '../components/PageContainer';
 
 export function ResultsPage() {
   const { token = '' }: Readonly<Params> = useParams();
+  return <GameResults key={token} token={token} />;
+}
+
+function GameResults({ token }: { token: string }) {
   const location: Location = useLocation();
   const [includeAbsentVotes, setIncludeAbsentVotes] = useState<boolean>(true);
   const [view, setView] = useState<ResultsView>('median');

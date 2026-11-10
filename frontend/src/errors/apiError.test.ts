@@ -102,6 +102,12 @@ describe('translateError', () => {
     expect(translateError(i18n.t, error)).toBe('Une erreur est survenue, veuillez réessayer.');
   });
 
+  it('falls back to a generic message for another response that is not from the API', () => {
+    expect(translateError(i18n.t, new ApiError(413, 'Request Entity Too Large'))).toBe(
+      'Une erreur est survenue, veuillez réessayer.',
+    );
+  });
+
   it('reports an unreachable backend when the response is not from the API', () => {
     expect(translateError(i18n.t, new ApiError(502, 'Bad Gateway'))).toBe(
       'Le serveur ne répond pas. Réessayez dans un instant.',

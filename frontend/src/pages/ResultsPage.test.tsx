@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
-import { type InitialEntry, MemoryRouter, Route, Routes } from 'react-router';
+import { type InitialEntry, Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -118,6 +118,29 @@ describe('ResultsPage', () => {
       expect(screen.queryByRole('columnheader', { name: 'Absents' })).not.toBeInTheDocument(),
     );
     expect(includeAbsentVotes).toEqual(['true', 'false']);
+  });
+
+  it('starts again from the default choices when another results link is opened', async () => {
+    stubBackend({
+      [resultsRoute]: () => Response.json(closedGameResults),
+      'GET /results/other-token': () => Response.json(closedGameResults),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={[`/results/${RESULTS_TOKEN}`]}>
+        <Link to="/results/other-token">Autres résultats</Link>
+        <Routes>
+          <Route path="/results/:token" element={<ResultsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Inclure les votes absents' }));
+    expect(screen.getByRole('checkbox', { name: 'Inclure les votes absents' })).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autres résultats' }));
+
+    expect(
+      await screen.findByRole('checkbox', { name: 'Inclure les votes absents' }),
+    ).toBeChecked();
   });
 
   it('reveals the tiers one by one, from the bottom, when the results open', async () => {
