@@ -95,7 +95,7 @@ A new action or target type is a new enum value: `text_enum` stores text with a 
 
 `ModerationLogPage` shows a table (when, who, action, target, reason) that scrolls on its own on a small screen. The **Cible** filter is applied when the search is sent (button or Enter): one request per search, not one per key; the **Super admin** filter is applied at once. The filters are part of the query key of `useModerationLog`, so changing them starts again from the first page.
 
-The table and its "Voir plus" are the shared `ModerationLogTable` component, which takes the filters and the empty message: the log page and the history of an account page (§2.8) both use it. A target of type `account` is a link to the page of that account (an account deleted since then shows the not found error there).
+The table and its "Voir plus" are the shared `ModerationLogTable` component, which takes the filters and the empty message: the log page and the history of an account page (§2.8) both use it. A target of type `account` is a link to the page of that account (an account deleted since then shows the not found error there). Its loading, error, empty and "Voir plus" states come from `PagedList`.
 
 ### 2.6 Recent uploads
 
@@ -124,7 +124,7 @@ The page, `RecentUploadsPage` (`/moderation/uploads`):
 - **Actions**, according to the status: **Masquer** and **Supprimer** on a visible image, **Réafficher** and **Supprimer** on a hidden one. Their accessible names give the author and the date of the image.
 - Each action opens **`ModerationReasonDialog`**, a generic dialog (title, description, button labels, destructive or not) also used by the account page (§2.8) and meant for the reports queue (#269). The reason is required and cannot be only spaces, at most 500 characters (`MODERATION_REASON_MAX_LENGTH`, mirrored in `frontend/src/constants/moderation.ts`; the backend stays the authority). The button is red for a deletion and disabled while the action runs (no double submission); a failure shows its translated error in the dialog, which closes once the action succeeded.
 - `useModerateImage` calls the action route (§2.2), then invalidates the recent uploads and the log, which are read again.
-- The grid, its "Voir plus" and the image actions are the shared `UploadGrid` component, which takes the filters and the empty message: the recent uploads page and the account page (§2.8, filtered on `ownerId`) both use it. The day filters are turned into dates by `components/localDays.ts`, shared with the ban dialog (§2.9).
+- The grid, its "Voir plus" and the image actions are the shared `UploadGrid` component, which takes the filters and the empty message: the recent uploads page and the account page (§2.8, filtered on `ownerId`) both use it. The day filters are turned into dates by `components/localDays.ts`, shared with the ban dialog (§2.9). Its loading, error, empty and "Voir plus" states come from `PagedList`.
 
 ### 2.7 Settings
 

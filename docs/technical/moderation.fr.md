@@ -95,7 +95,7 @@ Une nouvelle action ou un nouveau type de cible est une nouvelle valeur d'enum :
 
 `ModerationLogPage` affiche un tableau (quand, qui, action, cible, motif) qui défile seul sur un petit écran. Le filtre **Cible** est appliqué à l'envoi de la recherche (bouton ou Entrée) : une requête par recherche, pas une par lettre ; le filtre **Super admin** est appliqué tout de suite. Les filtres font partie de la clé de requête de `useModerationLog` : en changer repart de la première page.
 
-Le tableau et son « Voir plus » sont le composant partagé `ModerationLogTable`, qui reçoit les filtres et le message vide : la page du journal et l'historique de la page d'un compte (§2.8) s'en servent tous les deux. Une cible de type `account` est un lien vers la page de ce compte (un compte supprimé depuis y affiche l'erreur « introuvable »).
+Le tableau et son « Voir plus » sont le composant partagé `ModerationLogTable`, qui reçoit les filtres et le message vide : la page du journal et l'historique de la page d'un compte (§2.8) s'en servent tous les deux. Une cible de type `account` est un lien vers la page de ce compte (un compte supprimé depuis y affiche l'erreur « introuvable »). Ses états de chargement, d'erreur, vide et « Voir plus » viennent de `PagedList`.
 
 ### 2.6 Derniers envois
 
@@ -124,7 +124,7 @@ La page, `RecentUploadsPage` (`/moderation/uploads`) :
 - **Actions**, selon le statut : **Masquer** et **Supprimer** sur une image visible, **Réafficher** et **Supprimer** sur une image masquée. Leurs noms accessibles donnent l'auteur et la date de l'image.
 - Chaque action ouvre **`ModerationReasonDialog`**, un dialogue générique (titre, description, libellés des boutons, destructif ou non) utilisé aussi par la page d'un compte (§2.8) et prévu pour la file des signalements (#269). Le motif est obligatoire et ne peut pas être fait que d'espaces, 500 caractères au plus (`MODERATION_REASON_MAX_LENGTH`, recopiée dans `frontend/src/constants/moderation.ts` ; le backend reste l'autorité). Le bouton est rouge pour une suppression et désactivé pendant l'action (pas de double envoi) ; un échec affiche son erreur traduite dans le dialogue, qui se ferme une fois l'action réussie.
 - `useModerateImage` appelle la route de l'action (§2.2), puis invalide les derniers envois et le journal, qui sont relus.
-- La grille, son « Voir plus » et les actions sur les images sont le composant partagé `UploadGrid`, qui reçoit les filtres et le message vide : la page des derniers envois et la page d'un compte (§2.8, filtrée sur `ownerId`) s'en servent toutes les deux. Les jours des filtres deviennent des dates par `components/localDays.ts`, partagé avec le dialogue de bannissement (§2.9).
+- La grille, son « Voir plus » et les actions sur les images sont le composant partagé `UploadGrid`, qui reçoit les filtres et le message vide : la page des derniers envois et la page d'un compte (§2.8, filtrée sur `ownerId`) s'en servent toutes les deux. Les jours des filtres deviennent des dates par `components/localDays.ts`, partagé avec le dialogue de bannissement (§2.9). Ses états de chargement, d'erreur, vide et « Voir plus » viennent de `PagedList`.
 
 ### 2.7 Réglages
 
