@@ -169,8 +169,9 @@ def get_image_moderation_service(
 def get_account_ban_service(
     session: Annotated[Session, Depends(get_db_session)],
     moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+    publisher: Annotated[PostCommitRoomPublisher, Depends(get_room_event_publisher)],
 ) -> AccountBanService:
-    return AccountBanService(session, moderation_log)
+    return AccountBanService(session, moderation_log, publisher)
 
 
 def get_account_review_service(
