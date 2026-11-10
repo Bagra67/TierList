@@ -1,11 +1,27 @@
 import { fileURLToPath } from 'node:url';
 
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+const sentryAuthToken: string | undefined = process.env.SENTRY_AUTH_TOKEN;
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    sentryVitePlugin({
+      disable: !sentryAuthToken,
+      authToken: sentryAuthToken,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      release: { name: process.env.SENTRY_RELEASE, inject: false },
+      sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+      telemetry: false,
+    }),
+  ],
+  build: { sourcemap: sentryAuthToken ? 'hidden' : false },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

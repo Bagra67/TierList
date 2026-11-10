@@ -1,0 +1,75 @@
+import * as Sentry from '@sentry/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import type { ClientConfig } from '../api/clientConfig';
+import { type CapturedSentryEvents, captureSentryEvents } from '../test/sentryEvents';
+import { stubBackend } from '../test/stubBackend';
+import { buildSentryOptions, initMonitoring, reportError } from './sentry';
+
+const DSN: string = 'https://public-key@sentry.example.invalid/1';
+
+const disabledConfig: ClientConfig = { sentry_dsn: null, environment: 'local', release: 'dev' };
+
+describe('buildSentryOptions', () => {
+  it('starts nothing without a DSN', () => {
+    expect(buildSentryOptions(disabledConfig)).toBeNull();
+  });
+
+  it('sends the environment and the release, without any personal data', () => {
+    const options: Sentry.BrowserOptions | null = buildSentryOptions({
+      sentry_dsn: DSN,
+      environment: 'production',
+      release: 'v1.2.3',
+    });
+
+    expect(options).toEqual({
+      dsn: DSN,
+      environment: 'production',
+      release: 'v1.2.3',
+      dataCollection: {
+        userInfo: false,
+        cookies: false,
+        httpHeaders: false,
+        httpBodies: [],
+        urlQueryParams: false,
+      },
+    });
+  });
+});
+
+describe('initMonitoring', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('does not start Sentry when the backend sends no DSN', async () => {
+    stubBackend({ 'GET /client-config': () => Response.json(disabledConfig) });
+
+    await expect(initMonitoring()).resolves.toBe(false);
+    expect(Sentry.isEnabled()).toBe(false);
+  });
+});
+
+describe('reportError', () => {
+  let captured: CapturedSentryEvents | null = null;
+
+  afterEach(async () => {
+    await captured?.stop();
+    captured = null;
+  });
+
+  it('does nothing while Sentry is not started', () => {
+    expect(() => reportError(new Error('ignored'))).not.toThrow();
+  });
+
+  it('sends the error with the React component stack', async () => {
+    captured = captureSentryEvents();
+    const events: Sentry.ErrorEvent[] = captured.events;
+
+    reportError(new Error('render failed'), '\n    at Broken');
+
+    await vi.waitFor(() => expect(events).toHaveLength(1));
+    expect(events[0].exception?.values?.[0].value).toBe('render failed');
+    expect(events[0].contexts?.react).toEqual({ componentStack: '\n    at Broken' });
+  });
+});
