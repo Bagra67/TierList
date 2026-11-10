@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -55,6 +56,10 @@ def user_with_email(db_session: Session, email: str) -> User:
 def alice_room(auth_client: TestClient, db_session: Session, alice: dict[str, str]) -> JsonObject:
     template_id: str = create_template(auth_client, db_session, alice)
     return create_room(auth_client, alice, template_id)
+
+
+def without_server_time(room: JsonObject) -> JsonObject:
+    return {key: value for key, value in room.items() if key != "server_now"}
 
 
 def stored_room(db_session: Session, code: str) -> Room:
@@ -156,6 +161,17 @@ def test_create_room_requires_authentication(auth_client: TestClient):
     assert response.json()["code"] == ErrorCode.NOT_AUTHENTICATED
 
 
+def test_the_room_answer_gives_the_server_time(
+    auth_client: TestClient, alice: dict[str, str], alice_room: JsonObject
+):
+    before: datetime = datetime.now(UTC)
+
+    body: JsonObject = auth_client.get(f"/rooms/{alice_room['code']}", headers=alice).json()
+
+    server_now: datetime = datetime.fromisoformat(body["server_now"])
+    assert before <= server_now <= datetime.now(UTC)
+
+
 def test_a_taken_code_is_drawn_again_without_writing_any_code_in_the_logs(
     auth_client: TestClient,
     db_session: Session,
@@ -199,7 +215,7 @@ def test_the_admin_reads_the_room_by_its_code_in_any_case(
     response: Response = auth_client.get(f"/rooms/{alice_room['code'].lower()}", headers=alice)
 
     assert response.status_code == 200
-    assert response.json() == alice_room
+    assert without_server_time(response.json()) == without_server_time(alice_room)
 
 
 def test_a_user_without_a_seat_is_told_to_join_the_room(
@@ -297,7 +313,7 @@ def test_the_admin_keeps_their_seat_when_joining(
     response: Response = auth_client.post(f"/rooms/{alice_room['code']}/join", headers=alice)
 
     assert response.status_code == 200
-    assert response.json() == alice_room
+    assert without_server_time(response.json()) == without_server_time(alice_room)
 
 
 def test_joining_an_unknown_code_is_not_found(auth_client: TestClient, bob: dict[str, str]):

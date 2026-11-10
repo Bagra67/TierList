@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from app.api.presenters.games import past_games_response
 from app.api.presenters.items import item_response, tier_response
@@ -69,6 +70,7 @@ def room_response(
         bans=bans,
         game=current_game_response(room.current_game, seat, storage),
         past_games=past_games_response(service.closed_games(room)),
+        server_now=datetime.now(UTC),
     )
 
 

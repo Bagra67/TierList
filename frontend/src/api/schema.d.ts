@@ -1458,6 +1458,12 @@ export interface components {
             game: components["schemas"]["CurrentGameResponse"] | null;
             /** Past Games */
             past_games: components["schemas"]["PastGameResponse"][];
+            /**
+             * Server Now
+             * Format: date-time
+             * @description Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur.
+             */
+            server_now: string;
             /** Guest Link */
             guest_link: string;
             /**
@@ -1508,11 +1514,14 @@ export interface components {
         };
         /**
          * HiddenImagesResponse
-         * @description Résultat de « masquer toutes ses images ».
+         * @description Résultat d'un lot de « masquer toutes ses images » : renvoyer la requête tant que
+         *     `has_more` est vrai.
          */
         HiddenImagesResponse: {
             /** Hidden Count */
             hidden_count: number;
+            /** Has More */
+            has_more: boolean;
         };
         /**
          * HistoryResponse
@@ -2009,6 +2018,12 @@ export interface components {
             game: components["schemas"]["CurrentGameResponse"] | null;
             /** Past Games */
             past_games: components["schemas"]["PastGameResponse"][];
+            /**
+             * Server Now
+             * Format: date-time
+             * @description Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur.
+             */
+            server_now: string;
         };
         /** RoomSettingsResponse */
         RoomSettingsResponse: {
