@@ -51,7 +51,7 @@ export function ColorField({ label, savedColor, onSave }: ColorFieldProps) {
 
   useEffect(() => {
     if (picker !== null) translateHardcodedColorfulLabels(picker, t);
-  });
+  }, [picker, draft, t]);
 
   function saveOnClose() {
     const color: string = toUppercaseSixDigitHex(draft);

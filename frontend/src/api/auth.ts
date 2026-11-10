@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 
 import {
   CURRENT_USER_QUERY_KEY,
+  GOOGLE_BAN_NOTICE_QUERY_KEY,
   GOOGLE_ACCOUNT_BANNED,
   GOOGLE_SIGN_IN_PATH,
   type GoogleNextStep,
@@ -42,7 +43,7 @@ export function googleSignInUrl(next?: GoogleNextStep): string {
 
 export function useGoogleBanNotice(googleError: string | null) {
   return useQuery({
-    queryKey: ['auth', 'google-ban-notice'],
+    queryKey: GOOGLE_BAN_NOTICE_QUERY_KEY,
     queryFn: async ({ signal }): Promise<null> => {
       throwIfError(await apiClient.GET('/auth/google/ban-notice', { signal }));
       return null;
