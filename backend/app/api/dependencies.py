@@ -22,6 +22,7 @@ from app.services.game_results import GameResultsService
 from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.history import HistoryService
+from app.services.image_hiding_guard import ImageHidingGuard, image_hiding_guard
 from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
@@ -61,6 +62,10 @@ def get_short_lived_session_factory() -> ShortLivedSessionFactory:
 
 def get_connection_registry() -> ConnectionRegistry:
     return room_connections
+
+
+def get_image_hiding_guard() -> ImageHidingGuard:
+    return image_hiding_guard
 
 
 def get_room_event_publisher(
@@ -177,8 +182,9 @@ def get_account_review_service(
     session: Annotated[Session, Depends(get_db_session)],
     templates: Annotated[TemplateService, Depends(get_template_service)],
     image_moderation: Annotated[ImageModerationService, Depends(get_image_moderation_service)],
+    hiding_guard: Annotated[ImageHidingGuard, Depends(get_image_hiding_guard)],
 ) -> AccountReviewService:
-    return AccountReviewService(session, templates, image_moderation)
+    return AccountReviewService(session, templates, image_moderation, hiding_guard)
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
