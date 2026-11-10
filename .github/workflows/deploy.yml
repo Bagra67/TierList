@@ -100,6 +100,8 @@ jobs:
     with:
       ref: ${{ needs.plan.outputs.ref }}
       version: ${{ needs.plan.outputs.version }}
+    secrets:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   deploy:
     name: Deploy to ${{ needs.plan.outputs.environment }}
@@ -153,6 +155,9 @@ jobs:
           LOG_LEVEL: ${{ vars.LOG_LEVEL }}
           MAINTENANCE_ENABLED: ${{ vars.MAINTENANCE_ENABLED }}
           MAINTENANCE_HOUR_UTC: ${{ vars.MAINTENANCE_HOUR_UTC }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
+          SENTRY_TRACES_SAMPLE_RATE: ${{ vars.SENTRY_TRACES_SAMPLE_RATE }}
         run: |
           python3 .github/scripts/write_env.py "$RUNNER_TEMP/pod.env"
           printf '%s\n' "$VERSION" > "$RUNNER_TEMP/CURRENT"
