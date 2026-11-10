@@ -10,6 +10,7 @@ import {
 } from '../test/stubBackend';
 import { getMe, login } from './auth';
 import { ApiError } from '../errors/apiError';
+import { NetworkError } from '../errors/networkError';
 import { onSessionEnded, refreshAccessToken, setAccessToken } from './client';
 
 const meAcceptingOnly = (accessToken: string) => (request: Request) =>
@@ -75,6 +76,29 @@ describe('apiClient authentication middleware', () => {
       expect.objectContaining({ status: 401, code: 'invalid_credentials' }),
     );
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/login']);
+  });
+});
+
+describe('apiClient network failures', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('turns a lost connection into a NetworkError that keeps its cause', async () => {
+    const lostConnection: TypeError = new TypeError('Failed to fetch');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(lostConnection));
+
+    const error = await getMe().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(NetworkError);
+    expect(error).toMatchObject({ cause: lostConnection });
+  });
+
+  it('leaves an aborted request as it is', async () => {
+    const abort: DOMException = new DOMException('aborted', 'AbortError');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abort));
+
+    await expect(getMe()).rejects.toBe(abort);
   });
 });
 

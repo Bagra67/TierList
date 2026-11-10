@@ -3,6 +3,7 @@ import createClient from 'openapi-fetch';
 import { SESSION_PATHS } from '../constants/auth';
 import { HTTP_STATUS } from '../constants/http';
 import { ApiError } from '../errors/apiError';
+import { isAbortError, NetworkError } from '../errors/networkError';
 import type { paths } from './schema';
 
 export const apiClient = createClient<paths>({
@@ -102,7 +103,8 @@ apiClient.use({
     original.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
     return fetch(original);
   },
-  onError({ id }) {
+  onError({ id, error }) {
     requestCopiesForRetry.delete(id);
+    return isAbortError(error) ? undefined : new NetworkError(error);
   },
 });
