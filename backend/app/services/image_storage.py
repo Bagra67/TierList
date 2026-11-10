@@ -11,6 +11,8 @@ from app.constants.images import (
     IMAGE_PREVIEW_URL_EXPIRES_SECONDS,
     IMAGE_QUARANTINE_ACL,
     IMAGE_QUARANTINE_PREFIX,
+    IMAGE_STORAGE_MAX_ATTEMPTS,
+    IMAGE_STORAGE_RETRY_MODE,
 )
 from app.core.config import Settings
 
@@ -96,7 +98,7 @@ def _shared_s3_client_for_configuration(
     config: Config = Config(
         connect_timeout=timeout_seconds,
         read_timeout=timeout_seconds,
-        retries={"max_attempts": 2, "mode": "standard"},
+        retries={"max_attempts": IMAGE_STORAGE_MAX_ATTEMPTS, "mode": IMAGE_STORAGE_RETRY_MODE},
     )
     return boto3.client(
         "s3",

@@ -9,7 +9,7 @@ from app.constants.error_codes import ErrorCode
 from app.constants.reports import REPORT_COOKIE, REPORT_COOKIE_MAX_AGE_SECONDS
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
-from app.core.security import generate_guest_token, hash_guest_token
+from app.core.security import generate_guest_token
 from app.exceptions.http import AppHTTPException
 from app.exceptions.reports import (
     ReportAlreadyOpenError,
@@ -19,7 +19,7 @@ from app.exceptions.reports import (
 )
 from app.models.report import Report
 from app.schemas.reports import CreateReportRequest, ReportResponse
-from app.services.reports import AccountReporter, BrowserReporter, Reporter, ReportRequest
+from app.services.reports import Reporter, ReportRequest, reporter_of
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -55,11 +55,7 @@ def create_report(
 ) -> ReportResponse:
     """Signale un contenu, avec un compte ou sans : un cookie reconnaît alors le navigateur."""
     browser_token: str = report_token or generate_guest_token()
-    reporter: Reporter = (
-        AccountReporter(user.id)
-        if user is not None
-        else BrowserReporter(hash_guest_token(browser_token))
-    )
+    reporter: Reporter = reporter_of(user.id if user is not None else None, browser_token)
     try:
         report: Report = service.report(
             reporter,

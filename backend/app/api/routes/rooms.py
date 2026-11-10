@@ -12,6 +12,7 @@ from app.api.dependencies import (
     RoomViewerDep,
     SettingsDep,
 )
+from app.api.errors import template_not_found
 from app.api.presenters.rooms import guest_room_response, room_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
@@ -158,11 +159,7 @@ def create_room(
     try:
         room: Room = service.create(user, template_id)
     except TemplateNotFoundError as exc:
-        raise AppHTTPException(
-            status_code=404,
-            code=ErrorCode.TEMPLATE_NOT_FOUND,
-            detail=messages.TEMPLATE_NOT_FOUND,
-        ) from exc
+        raise template_not_found() from exc
     except TemplateHasNoTilesError as exc:
         raise AppHTTPException(
             status_code=409,

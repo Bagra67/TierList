@@ -183,8 +183,9 @@ def get_account_review_service(
     templates: Annotated[TemplateService, Depends(get_template_service)],
     image_moderation: Annotated[ImageModerationService, Depends(get_image_moderation_service)],
     hiding_guard: Annotated[ImageHidingGuard, Depends(get_image_hiding_guard)],
+    bans: Annotated[AccountBanService, Depends(get_account_ban_service)],
 ) -> AccountReviewService:
-    return AccountReviewService(session, templates, image_moderation, hiding_guard)
+    return AccountReviewService(session, templates, image_moderation, hiding_guard, bans)
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:

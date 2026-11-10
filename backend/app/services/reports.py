@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.reports import REPORT_OPEN_BY_ACCOUNT_INDEX, REPORT_OPEN_BY_BROWSER_INDEX
 from app.core.config import Settings
+from app.core.security import hash_guest_token
 from app.db.errors import violates_unique
 from app.exceptions.reports import (
     ReportAlreadyOpenError,
@@ -40,6 +41,12 @@ class BrowserReporter:
 
 
 Reporter = AccountReporter | BrowserReporter
+
+
+def reporter_of(user_id: uuid.UUID | None, browser_token: str) -> Reporter:
+    if user_id is not None:
+        return AccountReporter(user_id)
+    return BrowserReporter(hash_guest_token(browser_token))
 
 
 @dataclass(frozen=True)

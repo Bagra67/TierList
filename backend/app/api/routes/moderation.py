@@ -16,6 +16,7 @@ from app.api.dependencies import (
     SuperAdminDep,
     TemplateModerationServiceDep,
 )
+from app.api.errors import image_not_found, template_not_found
 from app.api.presenters.images import recent_upload_response
 from app.api.presenters.reports import reported_content_response
 from app.api.presenters.templates import reviewed_template_response
@@ -126,27 +127,11 @@ def _ban_response(ban: AccountBan | None) -> AccountBanResponse | None:
     return AccountBanResponse.model_validate(ban) if ban is not None else None
 
 
-def _template_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.TEMPLATE_NOT_FOUND,
-        detail=messages.TEMPLATE_NOT_FOUND,
-    )
-
-
 def _template_moderation_conflict() -> AppHTTPException:
     return AppHTTPException(
         status_code=409,
         code=ErrorCode.TEMPLATE_MODERATION_CONFLICT,
         detail=messages.TEMPLATE_MODERATION_CONFLICT,
-    )
-
-
-def _image_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.IMAGE_NOT_FOUND,
-        detail=messages.IMAGE_NOT_FOUND,
     )
 
 
@@ -331,7 +316,7 @@ def hide_image(
     try:
         service.hide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -346,7 +331,7 @@ def unhide_image(
     try:
         service.unhide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -361,7 +346,7 @@ def delete_image(
     try:
         service.delete(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except ImageModerationConflictError as exc:
         raise _image_moderation_conflict() from exc
 
@@ -413,7 +398,7 @@ def get_template_for_review(
     try:
         reviewed: ReviewedTemplate = service.review(template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return reviewed_template_response(reviewed, storage)
 
 
@@ -429,7 +414,7 @@ def hide_template(
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
@@ -446,7 +431,7 @@ def unhide_template(
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
@@ -463,7 +448,7 @@ def delete_template(
     try:
         service.delete(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TemplateModerationConflictError as exc:
         raise _template_moderation_conflict() from exc
 
@@ -472,7 +457,6 @@ def delete_template(
 def search_accounts(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
-    bans: AccountBanServiceDep,
     query: Annotated[str | None, Query(max_length=ACCOUNT_SEARCH_QUERY_MAX_LENGTH)] = None,
     limit: Annotated[
         int, Query(ge=1, le=ACCOUNT_SEARCH_PAGE_SIZE_MAX)
@@ -480,7 +464,6 @@ def search_accounts(
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> AccountSearchResponse:
     page: AccountSearchPage = service.search(query, limit, offset)
-    banned: set[uuid.UUID] = bans.banned_user_ids([user.id for user in page.accounts])
     return AccountSearchResponse(
         accounts=[
             AccountSummaryResponse(
@@ -489,7 +472,7 @@ def search_accounts(
                 email=user.email,
                 created_at=user.created_at,
                 role=user.role,
-                banned=user.id in banned,
+                banned=user.id in page.banned_ids,
             )
             for user in page.accounts
         ],
@@ -502,7 +485,6 @@ def get_account(
     user_id: uuid.UUID,
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
-    bans: AccountBanServiceDep,
 ) -> AccountResponse:
     try:
         details: AccountDetails = service.details(user_id)
@@ -515,10 +497,9 @@ def get_account(
         created_at=details.user.created_at,
         email_verified=details.user.email_verified,
         role=details.user.role,
-        ban=_ban_response(bans.active_ban(details.user.id)),
+        ban=_ban_response(details.active_ban),
         past_bans=[
-            AccountPastBanResponse.model_validate(past_ban)
-            for past_ban in bans.past_bans(details.user.id)
+            AccountPastBanResponse.model_validate(past_ban) for past_ban in details.past_bans
         ],
         templates=[
             TemplateSummaryResponse.model_validate(summary) for summary in details.templates

@@ -20,6 +20,7 @@ from app.constants.rooms import (
     ROOM_CODE_CONSTRAINT,
     ROOM_CODE_LENGTH,
     ROOM_CODE_MAX_ATTEMPTS,
+    SETTINGS_CHANGEABLE_DURING_A_GAME,
 )
 from app.core.config import Settings
 from app.core.security import generate_guest_token, hash_guest_token
@@ -85,9 +86,6 @@ class RoomSettingsChanges(TypedDict, total=False):
     cooldown_seconds: int
     admin_plays: bool
     late_arrivals_allowed: bool
-
-
-SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
 
 
 @dataclass(frozen=True)

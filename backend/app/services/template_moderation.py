@@ -2,9 +2,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
 
-from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
@@ -42,13 +40,10 @@ class TemplateModerationService:
         template: Template = self._get_template(template_id)
         if template.deleted_at is not None or template.moderation == TemplateModeration.HIDDEN:
             raise TemplateModerationConflictError
-        self._apply(
-            super_admin,
-            ModerationActionKind.HIDE,
-            template,
-            reason,
-            {"moderation": TemplateModeration.HIDDEN, "moderation_reason": reason},
+        template_repository.set_template_moderation(
+            self._session, template.id, TemplateModeration.HIDDEN, reason
         )
+        self._record_and_commit(super_admin, ModerationActionKind.HIDE, template, reason)
         logger.info(
             "Template masqué : template_id=%s super_admin_id=%s", template_id, super_admin.id
         )
@@ -57,13 +52,10 @@ class TemplateModerationService:
         template: Template = self._get_template(template_id)
         if template.deleted_at is not None or template.moderation != TemplateModeration.HIDDEN:
             raise TemplateModerationConflictError
-        self._apply(
-            super_admin,
-            ModerationActionKind.UNHIDE,
-            template,
-            reason,
-            {"moderation": TemplateModeration.NONE, "moderation_reason": None},
+        template_repository.set_template_moderation(
+            self._session, template.id, TemplateModeration.NONE, None
         )
+        self._record_and_commit(super_admin, ModerationActionKind.UNHIDE, template, reason)
         logger.info(
             "Template réaffiché : template_id=%s super_admin_id=%s", template_id, super_admin.id
         )
@@ -72,13 +64,8 @@ class TemplateModerationService:
         template: Template = self._get_template(template_id)
         if template.deleted_at is not None:
             raise TemplateModerationConflictError
-        self._apply(
-            super_admin,
-            ModerationActionKind.DELETE,
-            template,
-            reason,
-            {"deleted_at": datetime.now(UTC)},
-        )
+        template_repository.mark_template_deleted(self._session, template.id, datetime.now(UTC))
+        self._record_and_commit(super_admin, ModerationActionKind.DELETE, template, reason)
         logger.info(
             "Template supprimé : template_id=%s super_admin_id=%s", template_id, super_admin.id
         )
@@ -91,19 +78,9 @@ class TemplateModerationService:
             raise TemplateNotFoundError
         return template
 
-    def _apply(
-        self,
-        super_admin: User,
-        action: ModerationActionKind,
-        template: Template,
-        reason: str,
-        changes: dict[str, Any],
+    def _record_and_commit(
+        self, super_admin: User, action: ModerationActionKind, template: Template, reason: str
     ) -> None:
-        self._session.execute(
-            update(Template)
-            .where(Template.id == template.id)
-            .values(**changes, updated_at=Template.updated_at)
-        )
         self._moderation_log.record(
             super_admin, action, ModerationTargetType.TEMPLATE, template.id, template.name, reason
         )

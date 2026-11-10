@@ -8,6 +8,7 @@ from app.api.dependencies import (
     ImageStorageDep,
     TemplateServiceDep,
 )
+from app.api.errors import image_not_found, template_not_found
 from app.api.presenters.templates import template_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
@@ -57,14 +58,6 @@ TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
 }
 
 
-def _template_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.TEMPLATE_NOT_FOUND,
-        detail=messages.TEMPLATE_NOT_FOUND,
-    )
-
-
 def _tier_not_found() -> AppHTTPException:
     return AppHTTPException(
         status_code=404,
@@ -78,14 +71,6 @@ def _tile_not_found() -> AppHTTPException:
         status_code=404,
         code=ErrorCode.TILE_NOT_FOUND,
         detail=messages.TILE_NOT_FOUND,
-    )
-
-
-def _image_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.IMAGE_NOT_FOUND,
-        detail=messages.IMAGE_NOT_FOUND,
     )
 
 
@@ -138,7 +123,7 @@ def get_template(
     try:
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return template_response(template, storage)
 
 
@@ -153,7 +138,7 @@ def rename_template(
     try:
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return template_response(template, storage)
 
 
@@ -164,7 +149,7 @@ def delete_template(
     try:
         service.delete(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
 
 
 @router.post("/{template_id}/tiers", status_code=201, responses=TEMPLATE_NOT_FOUND_RESPONSES)
@@ -177,7 +162,7 @@ def add_tier(
     try:
         template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return template_response(template, storage)
 
 
@@ -194,7 +179,7 @@ def update_tier(
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TierNotFoundError as exc:
         raise _tier_not_found() from exc
     return template_response(template, storage)
@@ -217,7 +202,7 @@ def delete_tier(
     try:
         template: Template = service.delete_tier(user, template_id, tier_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TierNotFoundError as exc:
         raise _tier_not_found() from exc
     except LastTierError as exc:
@@ -252,9 +237,9 @@ def add_tile(
     try:
         template: Template = service.add_tile(user, template_id, payload.text, payload.image_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     except TileLimitReachedError as exc:
@@ -292,11 +277,11 @@ def update_tile(
     try:
         template: Template = service.update_tile(user, template_id, tile_id, changes)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TileNotFoundError as exc:
         raise _tile_not_found() from exc
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     return template_response(template, storage)
@@ -313,7 +298,7 @@ def delete_tile(
     try:
         template: Template = service.delete_tile(user, template_id, tile_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TileNotFoundError as exc:
         raise _tile_not_found() from exc
     return template_response(template, storage)
