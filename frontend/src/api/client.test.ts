@@ -11,7 +11,7 @@ import {
 import { getMe, login } from './auth';
 import { ApiError } from '../errors/apiError';
 import { NetworkError } from '../errors/networkError';
-import { onSessionEnded, refreshAccessToken, setAccessToken } from './client';
+import { getAccessToken, onSessionEnded, refreshAccessToken, setAccessToken } from './client';
 
 const meAcceptingOnly = (accessToken: string) => (request: Request) =>
   request.headers.get('Authorization') === `Bearer ${accessToken}`
@@ -66,6 +66,32 @@ describe('apiClient authentication middleware', () => {
     expect(error).toMatchObject({ status: 401 });
   });
 
+  it('keeps a token set during a refresh that finds no session', async () => {
+    let answerRefresh: ((response: Response) => void) | undefined;
+    stubBackend({
+      'POST /auth/refresh': () =>
+        new Promise<Response>((resolve) => {
+          answerRefresh = resolve;
+        }),
+    });
+
+    const refreshed: Promise<boolean> = refreshAccessToken();
+    await vi.waitFor(() => expect(answerRefresh).toBeDefined());
+    setAccessToken('signed-in-meanwhile');
+    answerRefresh?.(new Response(null, { status: 204 }));
+
+    await expect(refreshed).resolves.toBe(true);
+    expect(getAccessToken()).toBe('signed-in-meanwhile');
+  });
+
+  it('keeps the token when the refresh fails on the server side', async () => {
+    stubBackend({ 'POST /auth/refresh': () => errorResponse(503, 'http_error') });
+    setAccessToken('current-token');
+
+    await expect(refreshAccessToken()).rejects.toBeInstanceOf(ApiError);
+    expect(getAccessToken()).toBe('current-token');
+  });
+
   it('never refreshes on a 401 from a session route such as login', async () => {
     const fetchMock = stubBackend({
       'POST /auth/login': () => errorResponse(401, 'invalid_credentials'),
@@ -92,6 +118,26 @@ describe('apiClient network failures', () => {
 
     expect(error).toBeInstanceOf(NetworkError);
     expect(error).toMatchObject({ cause: lostConnection });
+  });
+
+  it('turns a lost connection during the retry after a refresh into a NetworkError', async () => {
+    const lostConnection: TypeError = new TypeError('Failed to fetch');
+    let meCalls: number = 0;
+    stubBackend({
+      'GET /auth/me': () => {
+        meCalls += 1;
+        if (meCalls > 1) throw lostConnection;
+        return unauthorized();
+      },
+      'POST /auth/refresh': tokenResponse('token-2'),
+    });
+    setAccessToken('expired-token');
+
+    const error = await getMe().catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(NetworkError);
+    expect(error).toMatchObject({ cause: lostConnection });
+    setAccessToken(null);
   });
 
   it('leaves an aborted request as it is', async () => {

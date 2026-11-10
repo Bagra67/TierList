@@ -56,20 +56,27 @@ export function onSessionEnded(listener: () => void): () => void {
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function refreshAccessToken(): Promise<boolean> {
-  const hadSession: boolean = inMemoryAccessToken !== null;
+  const tokenBeforeRefresh: string | null = inMemoryAccessToken;
   refreshInFlight ??= apiClient
     .POST('/auth/refresh')
     .then(({ data, error, response }) => {
-      setAccessToken(data?.access_token ?? null);
+      if (data !== undefined) {
+        setAccessToken(data.access_token);
+        return true;
+      }
       const hasNoSession: boolean =
         response.status === HTTP_STATUS.NO_CONTENT || response.status === HTTP_STATUS.UNAUTHORIZED;
-      if (data === undefined && !hasNoSession) {
+      if (!hasNoSession) {
         throw new ApiError(response.status, error);
       }
-      if (data === undefined && hadSession) {
+      if (inMemoryAccessToken !== tokenBeforeRefresh) {
+        return inMemoryAccessToken !== null;
+      }
+      setAccessToken(null);
+      if (tokenBeforeRefresh !== null) {
         sessionEndedListeners.forEach((listener) => listener());
       }
-      return data !== undefined;
+      return false;
     })
     .finally(() => {
       refreshInFlight = null;
@@ -101,7 +108,11 @@ apiClient.use({
       return response;
     }
     original.headers.set('Authorization', `Bearer ${inMemoryAccessToken}`);
-    return fetch(original);
+    try {
+      return await fetch(original);
+    } catch (error: unknown) {
+      throw isAbortError(error) ? error : new NetworkError(error);
+    }
   },
   onError({ id, error }) {
     requestCopiesForRetry.delete(id);
