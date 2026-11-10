@@ -5,10 +5,15 @@ import type { ErrorResponse } from '../errors/apiError';
 
 export type StubbedRoute = (request: Request) => Response | Promise<Response>;
 
+const DEFAULT_ROUTES: Record<string, StubbedRoute> = {
+  'POST /auth/refresh': () => new Response(null, { status: 204 }),
+};
+
 export function stubBackend(routes: Record<string, StubbedRoute>) {
   const fetchMock = vi.fn(async (request: Request) => {
     const path = new URL(request.url).pathname.replace(/^\/api/, '');
-    const route = routes[`${request.method} ${path}`];
+    const route =
+      routes[`${request.method} ${path}`] ?? DEFAULT_ROUTES[`${request.method} ${path}`];
     return route ? route(request) : errorResponse(404, 'http_error');
   });
   vi.stubGlobal('fetch', fetchMock);

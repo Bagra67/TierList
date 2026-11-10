@@ -6,7 +6,7 @@ import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
 import { latestSocket } from '../test/fakeWebSocket';
 import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
-import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
+import { aliceRoom, aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
@@ -203,6 +203,46 @@ describe('RoomPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Salle AAAAAA' })).toBeInTheDocument();
     expect(screen.queryByText("L'hôte vous a retiré de cette salle.")).not.toBeInTheDocument();
+  });
+
+  it('says the server does not answer, instead of treating an account it cannot read as a guest', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchMock: BackendMock = stubBackend({
+      'POST /auth/refresh': () => new Response(null, { status: 502 }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
+    expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).not.toContain('GET /rooms/K7P2QX');
+    consoleError.mockRestore();
+  });
+
+  it('shows the personal link just issued only in its own room', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
+      'POST /rooms/K7P2QX/guests': () => Response.json(lousRoom, { status: 201 }),
+      'GET /rooms/AAAAAA': () => Response.json({ ...lousRoom, code: 'AAAAAA' }),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={['/r/K7P2QX']}>
+        <Link to="/r/AAAAAA">Autre salle</Link>
+        <Routes>
+          <Route path="/r/:code" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.change(await screen.findByLabelText('Pseudo'), { target: { value: 'Lou' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rejoindre en invité' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Votre lien personnel' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autre salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle AAAAAA' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Votre lien personnel' })).not.toBeInTheDocument();
   });
 
   it('opens the same room from a code typed in lowercase or with spaces', async () => {

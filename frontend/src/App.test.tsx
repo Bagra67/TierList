@@ -1,9 +1,12 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from './api/client';
+import { createQueryClient } from './api/queryClient';
 import App from './App';
+import { CURRENT_USER_QUERY_KEY } from './constants/auth';
 import { closedGameResults, RESULTS_TOKEN } from './test/fixtures/results';
 import { renderWithQueryClient } from './test/renderWithQueryClient';
 import {
@@ -59,6 +62,39 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
     consoleError.mockRestore();
   });
+
+  it.each([
+    ['/', 'Prêt pour une partie, Alice ?'],
+    ['/templates', 'Mes modèles'],
+  ])(
+    'keeps %s on screen when a later reading of the account fails',
+    async (path: string, heading: string) => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      let accountReadable: boolean = true;
+      stubBackend({
+        ...signedInSession,
+        'GET /auth/me': () =>
+          accountReadable ? Response.json(alice) : new Response(null, { status: 502 }),
+        'GET /templates': () => Response.json({ items: [] }),
+      });
+      const queryClient: QueryClient = createQueryClient({ queries: { retry: false } });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={[path]}>
+            <App />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      await screen.findByRole('heading', { level: 1, name: heading });
+
+      accountReadable = false;
+      await act(() => queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY }));
+
+      expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+      expect(screen.queryByText(/Le serveur ne répond pas/)).not.toBeInTheDocument();
+      consoleError.mockRestore();
+    },
+  );
 
   it('logs out from the header and goes back to the login page', async () => {
     stubBackend({

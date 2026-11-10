@@ -51,9 +51,9 @@ export function RoomPage() {
   const removal: Removal | null =
     lastRemoval?.roomCode === canonicalRoomCode(code) ? lastRemoval : null;
   const viewer: RoomViewer | undefined =
-    isUserPending || removal !== null
+    isUserPending || user === undefined || removal !== null
       ? undefined
-      : user !== null && user !== undefined
+      : user !== null
         ? 'account'
         : 'guest';
   const guestToken: string | null = viewer === 'guest' ? guestTokenFrom(location.hash) : null;
@@ -73,7 +73,9 @@ export function RoomPage() {
   );
   const viewerHasSeat: boolean = room !== undefined;
   const roomEvents: RoomEventsState = useRoomEvents(code, viewer, viewerHasSeat, handleRemoved);
-  const [justIssuedGuestLink, setJustIssuedGuestLink] = useState<GuestRoom | null>(null);
+  const [lastIssuedGuestLink, setJustIssuedGuestLink] = useState<GuestRoom | null>(null);
+  const justIssuedGuestLink: GuestRoom | null =
+    lastIssuedGuestLink?.code === canonicalRoomCode(code) ? lastIssuedGuestLink : null;
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   useEffect(() => {
@@ -103,6 +105,14 @@ export function RoomPage() {
             <Link to={ROUTES.HOME}>{t('rooms.lobby.backHome')}</Link>
           </Button>
         )}
+      </PageContainer>
+    );
+  }
+
+  if (!isUserPending && user === undefined) {
+    return (
+      <PageContainer width="app">
+        <ErrorMessage>{t('common.backendUnreachable')}</ErrorMessage>
       </PageContainer>
     );
   }
