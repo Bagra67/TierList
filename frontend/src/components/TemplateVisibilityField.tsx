@@ -32,27 +32,29 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
     template.id,
   );
   const fieldId: string = useId();
-  const publicHintId: string = `${fieldId}-public-hint`;
-  const emailNoticeId: string = `${fieldId}-email-notice`;
+  const publicNoteId: string = `${fieldId}-public-note`;
 
   const isPublic: boolean = template.visibility === 'public';
   const isHidden: boolean = template.moderation === 'hidden';
   const emailCachedAsVerified: boolean = user?.email_verified ?? false;
   const emailRefused: boolean = isEmailNotVerified(visibilityMutation.error);
-  const publicBlockedHint: string | null = isPublic ? null : publicBlockedReason();
-  const showsEmailNotice: boolean =
-    !isPublic && publicBlockedHint === null && !emailCachedAsVerified;
 
   function publicBlockedReason(): string | null {
+    if (isPublic) return null;
     if (isHidden) return t('templates.visibility.hiddenCannotBePublic');
     if (template.tiles.length === 0) return t('templates.visibility.needsTiles');
     return null;
   }
 
+  const publicBlockedHint: string | null = publicBlockedReason();
+  const showsEmailNotice: boolean =
+    !isPublic && publicBlockedHint === null && !emailCachedAsVerified;
+  const hasPublicNote: boolean = publicBlockedHint !== null || showsEmailNotice;
+
   function choose(visibility: TemplateVisibility) {
     visibilityMutation.mutate(visibility, {
       onSuccess: () => {
-        if (!emailCachedAsVerified) void refetchUser();
+        if (visibility === 'public' && !emailCachedAsVerified) void refetchUser();
       },
       onError: (error: Error) => {
         if (emailCachedAsVerified && isEmailNotVerified(error)) void refetchUser();
@@ -65,10 +67,8 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
   }
 
   function describedBy(visibility: TemplateVisibility): string {
-    if (visibility === 'private') return descriptionId(visibility);
-    if (publicBlockedHint !== null) return `${descriptionId(visibility)} ${publicHintId}`;
-    if (showsEmailNotice) return `${descriptionId(visibility)} ${emailNoticeId}`;
-    return descriptionId(visibility);
+    const withNote: boolean = visibility === 'public' && hasPublicNote;
+    return withNote ? `${descriptionId(visibility)} ${publicNoteId}` : descriptionId(visibility);
   }
 
   return (
@@ -79,11 +79,9 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
       <div className="flex flex-wrap gap-2">
         {VISIBILITIES.map((visibility) => {
           const isBlocked: boolean = visibility === 'public' && publicBlockedHint !== null;
-          const optionId: string = `${fieldId}-${visibility}`;
           return (
             <label
               key={visibility}
-              htmlFor={optionId}
               className={cn(
                 'flex h-9 items-center gap-2 rounded-lg border-2 bg-card px-3 text-sm font-medium',
                 'has-checked:border-foreground',
@@ -91,7 +89,6 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
               )}
             >
               <input
-                id={optionId}
                 type="radio"
                 name={fieldId}
                 value={visibility}
@@ -131,13 +128,13 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
         <p className="text-sm">{t('templates.visibility.hiddenWhilePublic')}</p>
       )}
       {publicBlockedHint !== null && (
-        <p id={publicHintId} className="text-sm text-muted-foreground">
+        <p id={publicNoteId} className="text-sm text-muted-foreground">
           {publicBlockedHint}
         </p>
       )}
       {showsEmailNotice && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-warning pl-2 text-sm">
-          <p id={emailNoticeId} className="flex items-center gap-1.5">
+          <p id={publicNoteId} className="flex items-center gap-1.5">
             <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
             {t('templates.visibility.emailNotVerified')}
           </p>
