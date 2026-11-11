@@ -1,6 +1,5 @@
 import {
   hashKey,
-  type Query,
   type QueryClient,
   useMutation,
   useQuery,
@@ -118,9 +117,9 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
   }
 }
 
-type CurrentUserQuery = Query<User | null, Error, User | null, typeof CURRENT_USER_QUERY_KEY>;
-
-function refetchWhileEmailUnverified(query: CurrentUserQuery): boolean | 'always' {
+function refetchWhileEmailUnverified(query: {
+  state: { data: User | null | undefined };
+}): boolean | 'always' {
   return query.state.data?.email_verified === false ? 'always' : false;
 }
 
