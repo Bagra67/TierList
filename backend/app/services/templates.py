@@ -189,6 +189,8 @@ class TemplateService:
         self, owner: User, template_id: uuid.UUID, visibility: TemplateVisibility
     ) -> Template:
         template: Template = self._get_for_change(owner, template_id)
+        if template.visibility == visibility:
+            return template
         if visibility == TemplateVisibility.PUBLIC:
             self._check_can_be_made_public(owner, template)
             if template.first_made_public_at is None:
