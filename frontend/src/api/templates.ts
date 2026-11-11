@@ -236,8 +236,13 @@ function applyMove(template: Template, move: PendingMove): Template {
 
 type OptimisticUpdate = (template: Template) => Template;
 
-function moveUpdate(move: PendingMove | undefined): OptimisticUpdate | undefined {
-  return move === undefined ? undefined : (template: Template) => applyMove(template, move);
+function positionUpdate(
+  list: PendingMove['list'],
+  itemId: string,
+  position: number | null | undefined,
+): OptimisticUpdate | undefined {
+  if (position === undefined || position === null) return undefined;
+  return (template: Template) => applyMove(template, { list, itemId, position });
 }
 
 function useTemplateChange<Variables = void>(
@@ -299,12 +304,7 @@ export function useUpdateTier(templateId: string): TemplateChange<TierUpdate> {
   return useTemplateChange(
     templateId,
     ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
-    ({ tierId, changes }: TierUpdate) =>
-      moveUpdate(
-        changes.position === undefined || changes.position === null
-          ? undefined
-          : { list: 'tiers', itemId: tierId, position: changes.position },
-      ),
+    ({ tierId, changes }: TierUpdate) => positionUpdate('tiers', tierId, changes.position),
   );
 }
 
@@ -325,12 +325,7 @@ export function useUpdateTile(templateId: string): TemplateChange<TileUpdate> {
   return useTemplateChange(
     templateId,
     ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
-    ({ tileId, changes }: TileUpdate) =>
-      moveUpdate(
-        changes.position === undefined || changes.position === null
-          ? undefined
-          : { list: 'tiles', itemId: tileId, position: changes.position },
-      ),
+    ({ tileId, changes }: TileUpdate) => positionUpdate('tiles', tileId, changes.position),
   );
 }
 
