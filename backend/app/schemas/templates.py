@@ -15,7 +15,7 @@ from app.constants.templates import (
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
-from app.models.enums import TemplateModeration
+from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import ImageStatus
 
 TemplateName = Annotated[
@@ -30,6 +30,10 @@ class CreateTemplateRequest(BaseModel):
 
 class RenameTemplateRequest(BaseModel):
     name: TemplateName
+
+
+class SetTemplateVisibilityRequest(BaseModel):
+    visibility: TemplateVisibility
 
 
 TierName = Annotated[
@@ -96,6 +100,8 @@ class TemplateResponse(BaseModel):
     max_tiles: int
     moderation: TemplateModeration
     moderation_reason: str | None
+    visibility: TemplateVisibility
+    first_made_public_at: datetime | None
 
 
 class RemovedImageResponse(BaseModel):
@@ -117,6 +123,8 @@ class TemplateSummaryResponse(BaseModel):
     updated_at: datetime
     moderation: TemplateModeration
     moderation_reason: str | None
+    visibility: TemplateVisibility
+    first_made_public_at: datetime | None
     removed_images: list[RemovedImageResponse]
 
 

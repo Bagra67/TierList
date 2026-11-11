@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, text
+from sqlalchemy import DateTime, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
@@ -9,7 +10,7 @@ from app.constants.templates import FREE_PLAN_MAX_TILES, TEMPLATE_NAME_MAX_LENGT
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
-from app.models.enums import TemplateModeration
+from app.models.enums import TemplateModeration, TemplateVisibility
 
 if TYPE_CHECKING:
     from app.models.tier import Tier
@@ -29,6 +30,12 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         server_default=text("'none'"),
     )
     moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
+    visibility: Mapped[TemplateVisibility] = mapped_column(
+        text_enum(TemplateVisibility, "template_visibility"),
+        default=TemplateVisibility.PRIVATE,
+        server_default=text("'private'"),
+    )
+    first_made_public_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     tiers: Mapped[list[Tier]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tier.position"

@@ -24,6 +24,8 @@ const maxAccount: Account = {
       updated_at: '2026-10-20T12:00:00Z',
       moderation: 'none',
       moderation_reason: null,
+      visibility: 'private',
+      first_made_public_at: null,
       removed_images: [],
     },
     {
@@ -33,6 +35,8 @@ const maxAccount: Account = {
       updated_at: '2026-10-21T12:00:00Z',
       moderation: 'hidden',
       moderation_reason: 'Harcèlement',
+      visibility: 'private',
+      first_made_public_at: null,
       removed_images: [],
     },
   ],

@@ -392,6 +392,7 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `reauthentication_required`    | 403             | Google account whose last sign-in is too old to confirm the deletion                                                               |
 | `invalid_token`                | 400             | Link received by email invalid, expired, or no longer matching the account                                                         |
 | `password_too_short`           | 422 (field)     | Password shorter than `PASSWORD_MIN_LENGTH`; `params.min_length`                                                                   |
+| `email_not_verified`           | 403             | Template made public by an account whose email is not confirmed                                                                    |
 | `template_not_found`           | 404 / 409       | Template unknown, deleted or owned by another user (indistinguishable); `409` when a game starts with a template deleted meanwhile |
 | `image_unsupported_format`     | 415             | `POST /images`: not a JPEG, PNG or WebP image, or unreadable                                                                       |
 | `image_too_large`              | 413             | `POST /images`: file over `IMAGE_UPLOAD_MAX_BYTES`; `params.max_bytes`                                                             |
@@ -406,8 +407,8 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `cannot_ban_super_admin`       | 409             | A super admin cannot be banned                                                                                                     |
 | `account_not_banned`           | 409             | Lifting a ban on an account that has none                                                                                          |
 | `ban_end_in_past`              | 422             | End of a ban not in the future                                                                                                     |
-| `template_has_no_tiles`        | 409             | Room created, or game started, with a template without tiles                                                                       |
-| `template_hidden`              | 409             | Game started with a template hidden by the moderation                                                                              |
+| `template_has_no_tiles`        | 409             | Room created, game started, or template made public, with a template without tiles                                                 |
+| `template_hidden`              | 409             | Room created, game started, or template made public, with a template hidden by the moderation                                      |
 | `template_moderation_conflict` | 409             | Moderation action that does not fit the state of the template                                                                      |
 | `tier_not_found`               | 404             | Unknown tier of the template (or of the game when placing)                                                                         |
 | `last_tier`                    | 409             | Deleting the last tier of a template                                                                                               |
