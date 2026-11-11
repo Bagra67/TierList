@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import {
   CURRENT_USER_QUERY_KEY,
   GOOGLE_BAN_NOTICE_QUERY_KEY,
+  UNVERIFIED_ACCOUNT_STALE_MS,
   GOOGLE_ACCOUNT_BANNED,
   GOOGLE_SIGN_IN_PATH,
   type GoogleNextStep,
@@ -117,10 +118,8 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
   }
 }
 
-function refetchWhileEmailUnverified(query: {
-  state: { data: User | null | undefined };
-}): boolean | 'always' {
-  return query.state.data?.email_verified === false ? 'always' : false;
+function staleUntilEmailVerified(query: { state: { data: User | null | undefined } }): number {
+  return query.state.data?.email_verified === false ? UNVERIFIED_ACCOUNT_STALE_MS : Infinity;
 }
 
 interface CurrentUserOptions {
@@ -131,11 +130,7 @@ export function useCurrentUser({ refreshUntilEmailVerified = false }: CurrentUse
   return useQuery({
     queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: ({ signal }) => getCurrentUser(signal),
-    staleTime: Infinity,
-    ...(refreshUntilEmailVerified && {
-      refetchOnMount: refetchWhileEmailUnverified,
-      refetchOnWindowFocus: refetchWhileEmailUnverified,
-    }),
+    staleTime: refreshUntilEmailVerified ? staleUntilEmailVerified : Infinity,
   });
 }
 
