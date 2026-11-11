@@ -23,6 +23,7 @@ class ErrorCode(StrEnum):
     REAUTHENTICATION_REQUIRED = "reauthentication_required"
     INVALID_TOKEN = "invalid_token"
     PASSWORD_TOO_SHORT = "password_too_short"
+    EMAIL_NOT_VERIFIED = "email_not_verified"
 
     TEMPLATE_NOT_FOUND = "template_not_found"
     TEMPLATE_HAS_NO_TILES = "template_has_no_tiles"

@@ -1228,6 +1228,115 @@
         }
       }
     },
+    "/templates/{template_id}/visibility": {
+      "put": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "Set Template Visibility",
+        "description": "Rend un modèle public ou privé, par son propriétaire. Le rendre public demande une adresse\nemail confirmée, un modèle non masqué par la modération et au moins une tuile. La date de la\npremière publication est gardée quand le modèle repasse en privé.",
+        "operationId": "set_template_visibility_templates__template_id__visibility_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTemplateVisibilityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Email address not confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Template hidden by the moderation, or without tiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/templates/{template_id}/tiers": {
       "post": {
         "tags": [
@@ -8087,6 +8196,18 @@
         ],
         "title": "RoomTemplateResponse"
       },
+      "SetTemplateVisibilityRequest": {
+        "properties": {
+          "visibility": {
+            "$ref": "#/components/schemas/TemplateVisibility"
+          }
+        },
+        "type": "object",
+        "required": [
+          "visibility"
+        ],
+        "title": "SetTemplateVisibilityRequest"
+      },
       "SuperAdminResponse": {
         "properties": {
           "id": {
@@ -8184,6 +8305,21 @@
               }
             ],
             "title": "Moderation Reason"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/TemplateVisibility"
+          },
+          "first_made_public_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Made Public At"
           }
         },
         "type": "object",
@@ -8196,7 +8332,9 @@
           "tiles",
           "max_tiles",
           "moderation",
-          "moderation_reason"
+          "moderation_reason",
+          "visibility",
+          "first_made_public_at"
         ],
         "title": "TemplateResponse"
       },
@@ -8234,6 +8372,21 @@
             ],
             "title": "Moderation Reason"
           },
+          "visibility": {
+            "$ref": "#/components/schemas/TemplateVisibility"
+          },
+          "first_made_public_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Made Public At"
+          },
           "removed_images": {
             "items": {
               "$ref": "#/components/schemas/RemovedImageResponse"
@@ -8250,9 +8403,20 @@
           "updated_at",
           "moderation",
           "moderation_reason",
+          "visibility",
+          "first_made_public_at",
           "removed_images"
         ],
         "title": "TemplateSummaryResponse"
+      },
+      "TemplateVisibility": {
+        "type": "string",
+        "enum": [
+          "private",
+          "public"
+        ],
+        "title": "TemplateVisibility",
+        "description": "Visibilité choisie par le propriétaire d'un modèle (US-2.1, US-2.3)."
       },
       "TierItemsResponse": {
         "properties": {

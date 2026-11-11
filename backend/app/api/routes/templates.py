@@ -8,16 +8,25 @@ from app.api.dependencies import (
     ImageStorageDep,
     TemplateServiceDep,
 )
-from app.api.errors import image_not_found, template_not_found
+from app.api.errors import (
+    email_not_verified,
+    image_not_found,
+    template_has_no_tiles,
+    template_hidden,
+    template_not_found,
+)
 from app.api.presenters.templates import template_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.core.errors import ErrorResponse
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     LastTierError,
+    TemplateHasNoTilesError,
+    TemplateHiddenError,
     TemplateNotFoundError,
     TierNotFoundError,
     TileEmptyError,
@@ -31,6 +40,7 @@ from app.schemas.templates import (
     RemovedTemplateListResponse,
     RemovedTemplateResponse,
     RenameTemplateRequest,
+    SetTemplateVisibilityRequest,
     TemplateListResponse,
     TemplateResponse,
     TemplateSummaryResponse,
@@ -52,6 +62,14 @@ TIER_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
 TILE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION},
+}
+SET_VISIBILITY_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **TEMPLATE_NOT_FOUND_RESPONSES,
+    403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
+    409: {
+        "model": ErrorResponse,
+        "description": messages.TEMPLATE_CANNOT_BE_MADE_PUBLIC_DESCRIPTION,
+    },
 }
 TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": messages.TILE_EMPTY_DESCRIPTION},
@@ -139,6 +157,30 @@ def rename_template(
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
+    return template_response(template, storage)
+
+
+@router.put("/{template_id}/visibility", responses=SET_VISIBILITY_RESPONSES)
+def set_template_visibility(
+    template_id: uuid.UUID,
+    payload: SetTemplateVisibilityRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Rend un modèle public ou privé, par son propriétaire. Le rendre public demande une adresse
+    email confirmée, un modèle non masqué par la modération et au moins une tuile. La date de la
+    première publication est gardée quand le modèle repasse en privé."""
+    try:
+        template: Template = service.set_visibility(user, template_id, payload.visibility)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except EmailNotVerifiedError as exc:
+        raise email_not_verified() from exc
+    except TemplateHiddenError as exc:
+        raise template_hidden() from exc
+    except TemplateHasNoTilesError as exc:
+        raise template_has_no_tiles() from exc
     return template_response(template, storage)
 
 

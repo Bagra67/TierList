@@ -23,6 +23,8 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         max_tiles=template.max_tiles,
         moderation=template.moderation,
         moderation_reason=template.moderation_reason,
+        visibility=template.visibility,
+        first_made_public_at=template.first_made_public_at,
     )
 
 

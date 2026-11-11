@@ -42,6 +42,8 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
     max_tiles: 32,
     moderation: 'none',
     moderation_reason: null,
+    visibility: 'private',
+    first_made_public_at: null,
   };
 }
 

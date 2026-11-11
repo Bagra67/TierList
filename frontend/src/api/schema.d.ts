@@ -306,6 +306,28 @@ export interface paths {
         patch: operations["rename_template_templates__template_id__patch"];
         trace?: never;
     };
+    "/templates/{template_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Template Visibility
+         * @description Rend un modèle public ou privé, par son propriétaire. Le rendre public demande une adresse
+         *     email confirmée, un modèle non masqué par la modération et au moins une tuile. La date de la
+         *     première publication est gardée quand le modèle repasse en privé.
+         */
+        put: operations["set_template_visibility_templates__template_id__visibility_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates/{template_id}/tiers": {
         parameters: {
             query?: never;
@@ -2057,6 +2079,10 @@ export interface components {
             /** Hidden */
             hidden: boolean;
         };
+        /** SetTemplateVisibilityRequest */
+        SetTemplateVisibilityRequest: {
+            visibility: components["schemas"]["TemplateVisibility"];
+        };
         /**
          * SuperAdminResponse
          * @description Un super admin, pour filtrer le journal par auteur.
@@ -2109,6 +2135,9 @@ export interface components {
             moderation: components["schemas"]["TemplateModeration"];
             /** Moderation Reason */
             moderation_reason: string | null;
+            visibility: components["schemas"]["TemplateVisibility"];
+            /** First Made Public At */
+            first_made_public_at: string | null;
         };
         /** TemplateSummaryResponse */
         TemplateSummaryResponse: {
@@ -2129,9 +2158,18 @@ export interface components {
             moderation: components["schemas"]["TemplateModeration"];
             /** Moderation Reason */
             moderation_reason: string | null;
+            visibility: components["schemas"]["TemplateVisibility"];
+            /** First Made Public At */
+            first_made_public_at: string | null;
             /** Removed Images */
             removed_images: components["schemas"]["RemovedImageResponse"][];
         };
+        /**
+         * TemplateVisibility
+         * @description Visibilité choisie par le propriétaire d'un modèle (US-2.1, US-2.3).
+         * @enum {string}
+         */
+        TemplateVisibility: "private" | "public";
         /**
          * TierItemsResponse
          * @description Les items d'un tier, dans l'ordre.
@@ -3437,6 +3475,86 @@ export interface operations {
             };
             /** @description Template not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_template_visibility_templates__template_id__visibility_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTemplateVisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Email address not confirmed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template hidden by the moderation, or without tiles */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

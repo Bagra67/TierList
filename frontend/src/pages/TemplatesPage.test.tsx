@@ -21,6 +21,8 @@ const chips: TemplateSummary = {
   updated_at: '2026-10-05T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
   removed_images: [],
 };
 const sodas: TemplateSummary = {
@@ -30,6 +32,8 @@ const sodas: TemplateSummary = {
   updated_at: '2026-10-04T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
   removed_images: [],
 };
 
@@ -43,6 +47,8 @@ const createdTemplate: Template = {
   max_tiles: 32,
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
 };
 
 function renderTemplatesPage() {

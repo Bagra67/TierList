@@ -12,7 +12,7 @@ from app.api.dependencies import (
     RoomViewerDep,
     SettingsDep,
 )
-from app.api.errors import template_not_found
+from app.api.errors import template_has_no_tiles, template_hidden, template_not_found
 from app.api.presenters.rooms import guest_room_response, room_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
@@ -124,14 +124,6 @@ def _room_full(exc: RoomFullError) -> AppHTTPException:
     )
 
 
-def _template_hidden() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=409,
-        code=ErrorCode.TEMPLATE_HIDDEN,
-        detail=messages.TEMPLATE_HIDDEN,
-    )
-
-
 def _room_locked() -> AppHTTPException:
     return AppHTTPException(
         status_code=409,
@@ -161,13 +153,9 @@ def create_room(
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     except TemplateHasNoTilesError as exc:
-        raise AppHTTPException(
-            status_code=409,
-            code=ErrorCode.TEMPLATE_HAS_NO_TILES,
-            detail=messages.TEMPLATE_HAS_NO_TILES,
-        ) from exc
+        raise template_has_no_tiles() from exc
     except TemplateHiddenError as exc:
-        raise _template_hidden() from exc
+        raise template_hidden() from exc
     return room_response(room, service.seat_in(room, user), service, storage)
 
 
@@ -460,13 +448,9 @@ def start_game(
             detail=messages.TEMPLATE_NOT_FOUND,
         ) from exc
     except TemplateHasNoTilesError as exc:
-        raise AppHTTPException(
-            status_code=409,
-            code=ErrorCode.TEMPLATE_HAS_NO_TILES,
-            detail=messages.TEMPLATE_HAS_NO_TILES,
-        ) from exc
+        raise template_has_no_tiles() from exc
     except TemplateHiddenError as exc:
-        raise _template_hidden() from exc
+        raise template_hidden() from exc
     return room_response(room, service.seat_in(room, user), service, storage)
 
 

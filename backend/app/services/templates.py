@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
 from app.core.config import Settings
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     LastTierError,
@@ -20,7 +21,7 @@ from app.exceptions.templates import (
     TileLimitReachedError,
     TileNotFoundError,
 )
-from app.models.enums import TemplateModeration
+from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.snapshot_tier import SnapshotTier
@@ -75,6 +76,8 @@ class TemplateSummary:
     updated_at: datetime
     moderation: TemplateModeration
     moderation_reason: str | None
+    visibility: TemplateVisibility
+    first_made_public_at: datetime | None
     removed_images: list[RemovedImage]
 
 
@@ -126,6 +129,8 @@ class TemplateService:
                 updated_at=template.updated_at,
                 moderation=template.moderation,
                 moderation_reason=template.moderation_reason,
+                visibility=template.visibility,
+                first_made_public_at=template.first_made_public_at,
                 removed_images=removed_images.get(template.id, []),
             )
             summaries.append(summary)
@@ -179,6 +184,32 @@ class TemplateService:
         template.name = name
         self._session.commit()
         return template
+
+    def set_visibility(
+        self, owner: User, template_id: uuid.UUID, visibility: TemplateVisibility
+    ) -> Template:
+        template: Template = self._get_for_change(owner, template_id)
+        if template.visibility == visibility:
+            return template
+        if visibility == TemplateVisibility.PUBLIC:
+            self._check_can_be_made_public(owner, template)
+            if template.first_made_public_at is None:
+                template.first_made_public_at = func.clock_timestamp()
+        template.visibility = visibility
+        self._session.commit()
+        logger.info(
+            "Visibilité du modèle changée : template_id=%s visibility=%s", template.id, visibility
+        )
+        return template
+
+    @staticmethod
+    def _check_can_be_made_public(owner: User, template: Template) -> None:
+        if not owner.email_verified:
+            raise EmailNotVerifiedError
+        if template.moderation == TemplateModeration.HIDDEN:
+            raise TemplateHiddenError
+        if not template.tiles:
+            raise TemplateHasNoTilesError
 
     def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
         template: Template = self._get_for_change(owner, template_id)

@@ -392,6 +392,7 @@ Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 | `reauthentication_required`    | 403             | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression                                                             |
 | `invalid_token`                | 400             | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                                                                             |
 | `password_too_short`           | 422 (champ)     | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                                                                              |
+| `email_not_verified`           | 403             | Modèle rendu public par un compte dont l'email n'est pas confirmé                                                                                    |
 | `template_not_found`           | 404 / 409       | Modèle inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables) ; `409` quand une partie démarre avec un modèle supprimé entre-temps |
 | `image_unsupported_format`     | 415             | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                                                                                       |
 | `image_too_large`              | 413             | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`                                                                    |
@@ -406,8 +407,8 @@ Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 | `cannot_ban_super_admin`       | 409             | Un super admin ne peut pas être banni                                                                                                                |
 | `account_not_banned`           | 409             | Lever le bannissement d'un compte qui n'en a pas                                                                                                     |
 | `ban_end_in_past`              | 422             | Fin d'un bannissement qui n'est pas dans le futur                                                                                                    |
-| `template_has_no_tiles`        | 409             | Salle créée, ou partie lancée, avec un modèle sans tuile                                                                                             |
-| `template_hidden`              | 409             | Partie lancée avec un modèle masqué par la modération                                                                                                |
+| `template_has_no_tiles`        | 409             | Salle créée, partie lancée ou modèle rendu public, avec un modèle sans tuile                                                                         |
+| `template_hidden`              | 409             | Salle créée, partie lancée ou modèle rendu public, avec un modèle masqué par la modération                                                           |
 | `template_moderation_conflict` | 409             | Action de modération qui ne correspond pas à l'état du modèle                                                                                        |
 | `tier_not_found`               | 404             | Tier inconnu du modèle (ou de la partie au placement)                                                                                                |
 | `last_tier`                    | 409             | Supprimer le dernier tier d'un modèle                                                                                                                |

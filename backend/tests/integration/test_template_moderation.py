@@ -24,7 +24,9 @@ from tests.integration.helpers import (
     next_item,
     register,
     register_super_admin,
+    set_hidden,
     start_game,
+    stored_template,
 )
 
 pytestmark = pytest.mark.integration
@@ -59,22 +61,8 @@ def moderate(
     )
 
 
-def stored_template(db_session: Session, template_id: str) -> Template:
-    db_session.expire_all()
-    template: Template | None = db_session.get(Template, uuid.UUID(template_id))
-    assert template is not None
-    return template
-
-
 def logged_actions(db_session: Session) -> list[ModerationAction]:
     return list(db_session.scalars(select(ModerationAction)).all())
-
-
-def set_hidden(db_session: Session, template_id: str) -> None:
-    template: Template = stored_template(db_session, template_id)
-    template.moderation = TemplateModeration.HIDDEN
-    template.moderation_reason = "Harassment"
-    db_session.flush()
 
 
 def test_hiding_a_template_keeps_the_reason_for_its_owner_and_logs_the_action(
