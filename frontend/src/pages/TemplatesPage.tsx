@@ -9,6 +9,7 @@ import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
 import { RemovedImageDecision } from '../components/RemovedImageDecision';
 import { RemovedTemplates } from '../components/RemovedTemplates';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
+import { TemplatePublicBadge } from '../components/TemplatePublicBadge';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
@@ -75,7 +76,10 @@ export function TemplatesPage() {
                   {template.moderation === 'hidden' ? (
                     <TemplateHiddenBadge />
                   ) : (
-                    <CreateRoomButton templateId={template.id} templateName={template.name} />
+                    <>
+                      {template.visibility === 'public' && <TemplatePublicBadge />}
+                      <CreateRoomButton templateId={template.id} templateName={template.name} />
+                    </>
                   )}
                   <DeleteTemplateDialog template={template} />
                 </div>

@@ -681,7 +681,24 @@ export const en: Translation = {
       badge: 'Hidden',
       title: 'Hidden by the moderation',
       reason: 'Reason: {{reason}}',
-      hint: 'You can still edit it, but no game can start with it any more.',
+      hint: 'You can still edit it, but no game can start with it any more, and it cannot be made public.',
+    },
+    visibility: {
+      legend: 'Visibility',
+      badge: 'Public',
+      private: {
+        label: 'Private',
+        description: 'Only you can create a room with this template.',
+      },
+      public: {
+        label: 'Public',
+        description: 'Anyone can find it and play it. Your display name is shown.',
+      },
+      firstMadePublicAt: 'First made public on {{date, datetime(dateStyle: long)}}',
+      hiddenWhilePublic: 'Hidden by the moderation: it does not appear in the public templates.',
+      hiddenCannotBePublic: 'Hidden by the moderation: it cannot be made public.',
+      needsTiles: 'Add at least one tile to make it public.',
+      emailNotVerified: 'Confirm your email address to make a template public.',
     },
     removedImage: {
       hidden: 'Image hidden by the moderation',

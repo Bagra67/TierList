@@ -9,6 +9,7 @@ import { CreateRoomButton } from '../components/CreateRoomButton';
 import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
+import { TemplateVisibilityField } from '../components/TemplateVisibilityField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
 import { textLinkClassName } from '../components/ui/text-link';
@@ -74,8 +75,9 @@ export function TemplateEditorPage() {
           {template.moderation === 'hidden' && (
             <TemplateHiddenNotice reason={template.moderation_reason} />
           )}
-          <div className="w-full max-w-xl">
+          <div className="grid w-full max-w-xl items-start gap-4 lg:max-w-none lg:grid-cols-2">
             <TemplateNameField template={template} />
+            <TemplateVisibilityField template={template} />
           </div>
           <div
             className={cn(

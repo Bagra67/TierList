@@ -2,13 +2,22 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
+import type { User } from '../api/auth';
 import type { UploadedImage } from '../api/images';
 import type { Template, Tier, Tile } from '../api/templates';
 import { BULK_IMAGE_UPLOAD_CONCURRENCY } from '../constants/images';
 import { type FileDataTransfer, fileDataTransfer } from '../test/fileDataTransfer';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoom } from '../test/fixtures/rooms';
-import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  signedInSession,
+  stubBackend,
+  type StubbedRoute,
+  type BackendMock,
+} from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
@@ -50,7 +59,7 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
 const [tierS, tierA, tierB]: Tier[] = [makeTier('S', 0), makeTier('A', 1), makeTier('B', 2)];
 const chips: Template = makeTemplate([tierS, tierA, tierB]);
 
-function renderEditor(url: string = templateUrl) {
+function renderEditor(url: string = templateUrl, currentUser: User = alice) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
@@ -58,6 +67,7 @@ function renderEditor(url: string = templateUrl) {
         <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
+    { currentUser },
   );
 }
 
@@ -153,6 +163,184 @@ describe('TemplateEditorPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
     expect(await requestBody(fetchMock, 'POST')).toEqual({ template_id: templateId });
+  });
+
+  describe('visibility', () => {
+    const visibilityUrl: string = `${templateUrl}/visibility`;
+    const playable: Template = withTiles([pizza]);
+    const madePublic: Template = {
+      ...playable,
+      visibility: 'public',
+      first_made_public_at: '2026-10-31T10:00:00Z',
+    };
+    const unverifiedAlice: User = { ...alice, email_verified: false };
+    const unverifiedSession: Record<string, StubbedRoute> = {
+      ...signedInSession,
+      'GET /auth/me': () => Response.json(unverifiedAlice),
+    };
+    const emailNotice: string = 'Confirmez votre adresse e-mail pour rendre un modèle public.';
+    const publicDescription: string =
+      'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.';
+
+    function visibilityOption(name: 'Privé' | 'Public'): HTMLElement {
+      return screen.getByRole('radio', { name });
+    }
+
+    it('makes the template public and shows the date of its first publication', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => Response.json(madePublic),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+      expect(visibilityOption('Privé')).toBeChecked();
+      expect(visibilityOption('Privé')).toHaveAccessibleDescription(
+        'Vous seul pouvez créer une salle avec ce modèle.',
+      );
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(
+        await screen.findByText('Première publication le 31 octobre 2026'),
+      ).toBeInTheDocument();
+      expect(visibilityOption('Public')).toBeChecked();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ visibility: 'public' });
+    });
+
+    it('shows the choice at once, and takes it back when the backend refuses it', async () => {
+      let answerRefusal: (response: Response) => void = () => {};
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () =>
+          new Promise<Response>((resolve) => {
+            answerRefusal = resolve;
+          }),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      await waitFor(() => expect(visibilityOption('Public')).toBeChecked());
+      answerRefusal(errorResponse(409, 'template_hidden'));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Ce modèle est masqué par la modération',
+      );
+      await waitFor(() => expect(visibilityOption('Privé')).toBeChecked());
+    });
+
+    it('asks to confirm the email first, and sends the email again', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        'POST /auth/email/verification': () => new Response(null, { status: 204 }),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeEnabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} ${emailNotice}`,
+      );
+      fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'e-mail" }));
+
+      expect(await screen.findByText(/^E-mail envoyé\./)).toHaveAttribute('role', 'status');
+      expect(calledRoutes(fetchMock)).toContain('POST /auth/email/verification');
+      expect(calledRoutes(fetchMock)).not.toContain(`PUT ${visibilityUrl}`);
+    });
+
+    it('hides the email notice once the account read again has a confirmed email', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...signedInSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      await waitFor(() => expect(screen.queryByText(emailNotice)).not.toBeInTheDocument());
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(publicDescription);
+    });
+
+    it('reads the account again when an email cached as unconfirmed was confirmed meanwhile', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...signedInSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => Response.json(madePublic),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(
+        await screen.findByText('Première publication le 31 octobre 2026'),
+      ).toBeInTheDocument();
+      await waitFor(() => expect(calledRoutes(fetchMock)).toContain('GET /auth/me'));
+      expect(screen.queryByText(emailNotice)).not.toBeInTheDocument();
+    });
+
+    it('shows the email notice when the backend refuses an unconfirmed email', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => errorResponse(403, 'email_not_verified'),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(await screen.findByText(emailNotice)).toBeInTheDocument();
+      await waitFor(() => expect(visibilityOption('Privé')).toBeChecked());
+      expect(screen.getByRole('button', { name: "Renvoyer l'e-mail" })).toBeVisible();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+    });
+
+    it('cannot make a template without tiles public, and says why', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(chips) });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeDisabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} Ajoutez au moins une tuile pour le rendre public.`,
+      );
+    });
+
+    it('cannot make a hidden template public, and says why', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () =>
+          Response.json({ ...playable, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+      });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeDisabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} Masqué par la modération : il ne peut pas être rendu public.`,
+      );
+    });
+
+    it('says that a hidden public template does not appear among the public templates', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () =>
+          Response.json({ ...madePublic, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+      });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeChecked();
+      expect(visibilityOption('Privé')).toBeEnabled();
+      expect(
+        screen.getByText("Masqué par la modération : il n'apparaît pas dans les modèles publics."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Première publication/)).not.toBeInTheDocument();
+    });
   });
 
   describe('template name', () => {

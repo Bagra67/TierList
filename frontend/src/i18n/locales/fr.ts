@@ -693,7 +693,24 @@ export const fr = {
       badge: 'Masqué',
       title: 'Masqué par la modération',
       reason: 'Motif : {{reason}}',
-      hint: 'Vous pouvez encore le modifier, mais plus lancer de partie avec.',
+      hint: 'Vous pouvez encore le modifier, mais ni lancer de partie avec, ni le rendre public.',
+    },
+    visibility: {
+      legend: 'Visibilité',
+      badge: 'Public',
+      private: {
+        label: 'Privé',
+        description: 'Vous seul pouvez créer une salle avec ce modèle.',
+      },
+      public: {
+        label: 'Public',
+        description: 'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.',
+      },
+      firstMadePublicAt: 'Première publication le {{date, datetime(dateStyle: long)}}',
+      hiddenWhilePublic: "Masqué par la modération : il n'apparaît pas dans les modèles publics.",
+      hiddenCannotBePublic: 'Masqué par la modération : il ne peut pas être rendu public.',
+      needsTiles: 'Ajoutez au moins une tuile pour le rendre public.',
+      emailNotVerified: 'Confirmez votre adresse e-mail pour rendre un modèle public.',
     },
     removedImage: {
       hidden: 'Image masquée par la modération',
