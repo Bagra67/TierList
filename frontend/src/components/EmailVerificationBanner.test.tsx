@@ -1,13 +1,24 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { User } from '../api/auth';
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, calledRoutes, stubBackend } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  signedInSession,
+  stubBackend,
+  type StubbedRoute,
+} from '../test/stubBackend';
 import { EmailVerificationBanner } from './EmailVerificationBanner';
 
 const unverifiedAlice: User = { ...alice, email_verified: false };
+const unverifiedSession: Record<string, StubbedRoute> = {
+  ...signedInSession,
+  'GET /auth/me': () => Response.json(unverifiedAlice),
+};
+const pendingText: string = 'Confirmez votre adresse : un lien a été envoyé à alice@example.com.';
 
 describe('EmailVerificationBanner', () => {
   afterEach(() => {
@@ -15,34 +26,50 @@ describe('EmailVerificationBanner', () => {
     vi.unstubAllGlobals();
   });
 
-  it('asks to confirm an unverified address', () => {
-    stubBackend({});
+  it('asks to confirm an unverified address, still unverified once read again', async () => {
+    const fetchMock = stubBackend(unverifiedSession);
 
-    renderWithQueryClient(<EmailVerificationBanner user={unverifiedAlice} />);
+    renderWithQueryClient(<EmailVerificationBanner />, { currentUser: unverifiedAlice });
 
-    expect(
-      screen.getByText('Confirmez votre adresse : un lien a été envoyé à alice@example.com.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(pendingText)).toBeInTheDocument();
+    await waitFor(() => expect(calledRoutes(fetchMock)).toContain('GET /auth/me'));
+    expect(screen.getByText(pendingText)).toBeInTheDocument();
   });
 
   it('sends the email again in the interface language', async () => {
     const fetchMock = stubBackend({
+      ...unverifiedSession,
       'POST /auth/email/verification': () => new Response(null, { status: 204 }),
     });
-    renderWithQueryClient(<EmailVerificationBanner user={unverifiedAlice} />);
+    renderWithQueryClient(<EmailVerificationBanner />, { currentUser: unverifiedAlice });
 
     fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'e-mail" }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('E-mail envoyé.');
-    expect(calledRoutes(fetchMock)).toEqual(['POST /auth/email/verification']);
-    await expect(fetchMock.mock.calls[0][0].json()).resolves.toEqual({ language: 'fr' });
+    const verificationCall: [request: Request] | undefined = fetchMock.mock.calls.find(
+      ([request]) => new URL(request.url).pathname.endsWith('/auth/email/verification'),
+    );
+    expect(calledRoutes(fetchMock)).toContain('POST /auth/email/verification');
+    await expect(verificationCall?.[0].json()).resolves.toEqual({ language: 'fr' });
   });
 
-  it('shows nothing once the address is confirmed', () => {
-    stubBackend({});
+  it('hides itself once the account read again has a confirmed email', async () => {
+    const fetchMock = stubBackend(signedInSession);
 
-    const { container } = renderWithQueryClient(<EmailVerificationBanner user={alice} />);
+    renderWithQueryClient(<EmailVerificationBanner />, { currentUser: unverifiedAlice });
+
+    await waitFor(() => expect(screen.queryByText(pendingText)).not.toBeInTheDocument());
+    expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+  });
+
+  it('shows nothing once the address is confirmed, without reading the account again', () => {
+    const fetchMock = stubBackend({});
+
+    const { container } = renderWithQueryClient(<EmailVerificationBanner />, {
+      currentUser: alice,
+    });
 
     expect(container).toBeEmptyDOMElement();
+    expect(calledRoutes(fetchMock)).toEqual([]);
   });
 });
