@@ -75,7 +75,7 @@ export function TemplateEditorPage() {
           {template.moderation === 'hidden' && (
             <TemplateHiddenNotice reason={template.moderation_reason} />
           )}
-          <div className="grid w-full items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="grid w-full items-start gap-4 lg:grid-cols-2">
             <TemplateNameField template={template} />
             <TemplateVisibilityField template={template} />
           </div>

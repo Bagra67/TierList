@@ -704,7 +704,7 @@ export const fr = {
       },
       public: {
         label: 'Public',
-        description: "Tout le monde peut le trouver et y jouer. Votre nom d'affichage est visible.",
+        description: 'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.',
       },
       firstMadePublicAt: 'Première publication le {{date, datetime(dateStyle: long)}}',
       hiddenWhilePublic: "Masqué par la modération : il n'apparaît pas dans les modèles publics.",
