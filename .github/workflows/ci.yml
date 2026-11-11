@@ -255,7 +255,9 @@ jobs:
     name: E2E (${{ matrix.browser }})
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true') }}
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest (26.04): its Ubuntu mirrors stopped serving the amd64v3 font packages that
+    # "playwright install --with-deps" needs, so the install timed out. See docs/technical/ci.md.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

@@ -35,7 +35,7 @@ The `Changed parts` job (a few seconds) lists the files of the PR through the Gi
 | other Markdown files (README, `AGENTS.md`…)              |         |          |
 | any other file (`.github/`, `compose.yaml`…)             |    ✓    |    ✓     |
 
-- The `E2E` jobs (one per browser, [testing guide §6](testing.md#6-end-to-end-tests-playwright)) run as soon as `Backend` or `Frontend` runs, since they test both.
+- The `E2E` jobs (one per browser, [testing guide §6](testing.md#6-end-to-end-tests-playwright)) run as soon as `Backend` or `Frontend` runs, since they test both. They run on `ubuntu-24.04`, not `ubuntu-latest`: on 2026-11-11 the Ubuntu 26.04 mirrors stopped serving the `amd64v3` font packages that `playwright install --with-deps` installs, and the step timed out after 10 minutes. Go back to `ubuntu-latest` once an E2E run on it installs Playwright again.
 - A **skipped job counts as passed** for the required checks: the rulesets need no change.
 - A **push to `develop` or `main` always runs everything**: it deploys staging or creates the release.
 - **When in doubt, everything runs**: an unknown file, an API error or a failed `Changed parts` job.

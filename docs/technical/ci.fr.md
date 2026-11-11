@@ -35,7 +35,7 @@ Le job `Changed parts` (quelques secondes) liste les fichiers de la PR par l'API
 | autres fichiers Markdown (README, `AGENTS.md`…)            |         |          |
 | tout autre fichier (`.github/`, `compose.yaml`…)           |    ✓    |    ✓     |
 
-- Les jobs `E2E` (un par navigateur, [guide des tests §6](testing.fr.md#6-tests-de-bout-en-bout-playwright)) tournent dès que `Backend` ou `Frontend` tourne, puisqu'ils testent les deux.
+- Les jobs `E2E` (un par navigateur, [guide des tests §6](testing.fr.md#6-tests-de-bout-en-bout-playwright)) tournent dès que `Backend` ou `Frontend` tourne, puisqu'ils testent les deux. Ils tournent sur `ubuntu-24.04`, pas `ubuntu-latest` : le 2026-11-11, les miroirs d'Ubuntu 26.04 ont cessé de servir les paquets de polices `amd64v3` qu'installe `playwright install --with-deps`, et l'étape expirait au bout de 10 minutes. Revenir à `ubuntu-latest` dès qu'un run E2E dessus installe de nouveau Playwright.
 - Un **job sauté compte comme réussi** pour les contrôles requis : les rulesets ne changent pas.
 - Un **push sur `develop` ou `main` lance toujours tout** : il déploie le staging ou crée la release.
 - **Dans le doute, tout tourne** : un fichier inconnu, une erreur de l'API ou un job `Changed parts` en échec.
