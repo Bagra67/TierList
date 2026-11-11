@@ -9,6 +9,7 @@ from app.api.dependencies import (
     TemplateServiceDep,
 )
 from app.api.errors import (
+    email_not_verified,
     image_not_found,
     template_has_no_tiles,
     template_hidden,
@@ -175,11 +176,7 @@ def set_template_visibility(
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     except EmailNotVerifiedError as exc:
-        raise AppHTTPException(
-            status_code=403,
-            code=ErrorCode.EMAIL_NOT_VERIFIED,
-            detail=messages.EMAIL_NOT_VERIFIED,
-        ) from exc
+        raise email_not_verified() from exc
     except TemplateHiddenError as exc:
         raise template_hidden() from exc
     except TemplateHasNoTilesError as exc:
