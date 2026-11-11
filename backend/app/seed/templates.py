@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import FREE_PLAN_MAX_TILES
 from app.core.config import Settings
+from app.models.enums import TemplateVisibility
 from app.models.image import Image
 from app.models.template import Template
 from app.models.tile import Tile
@@ -253,6 +254,18 @@ def create_templates(
         templates.delete(owner, template.id)
         deleted.append(template)
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
+
+
+def publish_templates(session: Session, settings: Settings, template_ids: list[uuid.UUID]) -> None:
+    templates: TemplateService = TemplateService(session, settings)
+    for template_id in template_ids:
+        template: Template | None = session.get(Template, template_id)
+        assert template is not None
+        owner: User | None = session.get(User, template.owner_id)
+        assert owner is not None
+        name: str = template.name
+        templates.set_visibility(owner, template_id, TemplateVisibility.PUBLIC)
+        logger.info("Modèle public : %s", name)
 
 
 def _image_owner(owners: list[User], index: int, bulk_uploader_templates: int) -> User:

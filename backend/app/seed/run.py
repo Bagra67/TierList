@@ -23,7 +23,7 @@ from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.reports import SeedReports, create_reports
 from app.seed.rooms import SeedRooms, create_open_rooms
 from app.seed.sizes import SeedSize
-from app.seed.templates import SeedTemplates, create_templates
+from app.seed.templates import SeedTemplates, create_templates, publish_templates
 from app.services.image_storage import ImageStorage
 from app.services.rooms import RoomService
 
@@ -101,11 +101,19 @@ def run_seed(
             size.deleted_images,
             rng,
         )
+        templates_to_hide: list[uuid.UUID] = _templates_to_hide(
+            played, templates, size.hidden_templates
+        )
+        publish_templates(
+            session,
+            settings,
+            _templates_to_publish(templates_to_hide, templates, size.public_templates),
+        )
         moderated_templates: int = moderate_templates(
             session,
             settings,
             accounts.super_admins,
-            _templates_to_hide(played, templates, size.hidden_templates),
+            templates_to_hide,
             [template.id for template in templates.empty[: size.templates_deleted_by_moderation]],
             rng,
         )
@@ -144,6 +152,14 @@ def run_seed(
         + reports.moderation_actions,
         reports=reports.reports,
     )
+
+
+def _templates_to_publish(
+    templates_to_hide: list[uuid.UUID], templates: SeedTemplates, count: int
+) -> list[uuid.UUID]:
+    candidates: list[uuid.UUID] = [*templates_to_hide[:1]]
+    candidates.extend(template.id for template in templates.playable)
+    return list(dict.fromkeys(candidates))[:count]
 
 
 def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:
