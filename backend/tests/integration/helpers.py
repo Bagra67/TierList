@@ -2,6 +2,7 @@ import re
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -13,8 +14,9 @@ from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import RoomStatus, UserRole
+from app.models.enums import RoomStatus, TemplateModeration, UserRole
 from app.models.room import Room
+from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
@@ -58,6 +60,26 @@ def register_super_admin(client: TestClient, db_session: Session, email: str) ->
     user.role = UserRole.SUPER_ADMIN
     db_session.flush()
     return headers
+
+
+def confirm_email(db_session: Session, email: str) -> None:
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    user.email_verified_at = datetime.now(UTC)
+    db_session.flush()
+
+
+def stored_template(db_session: Session, template_id: str) -> Template:
+    db_session.expire_all()
+    template: Template | None = db_session.get(Template, uuid.UUID(template_id))
+    assert template is not None
+    return template
+
+
+def set_hidden(db_session: Session, template_id: str) -> None:
+    template: Template = stored_template(db_session, template_id)
+    template.moderation = TemplateModeration.HIDDEN
+    template.moderation_reason = "Harassment"
+    db_session.flush()
 
 
 def create_template(
