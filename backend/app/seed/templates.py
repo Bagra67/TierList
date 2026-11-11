@@ -9,7 +9,7 @@ from itertools import cycle
 
 from PIL import Image as PillowImage
 from PIL import ImageDraw
-from sqlalchemy import select, update
+from sqlalchemy import Select, select, update
 from sqlalchemy.orm import Session
 
 from app.constants.templates import FREE_PLAN_MAX_TILES
@@ -258,15 +258,12 @@ def create_templates(
 
 def publish_templates(session: Session, settings: Settings, template_ids: list[uuid.UUID]) -> None:
     templates: TemplateService = TemplateService(session, settings)
-    to_publish: list[tuple[uuid.UUID, str, User]] = [
-        (template_id, name, owner)
-        for template_id, name, owner in session.execute(
-            select(Template.id, Template.name, User)
-            .join(User, User.id == Template.owner_id)
-            .where(Template.id.in_(template_ids))
-        )
-    ]
-    for template_id, name, owner in to_publish:
+    owners_query: Select[uuid.UUID, str, User] = (
+        select(Template.id, Template.name, User)
+        .join(User, User.id == Template.owner_id)
+        .where(Template.id.in_(template_ids))
+    )
+    for template_id, name, owner in session.execute(owners_query).all():
         templates.set_visibility(owner, template_id, TemplateVisibility.PUBLIC)
         logger.info("Modèle public : %s", name)
 
