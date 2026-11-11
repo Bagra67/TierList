@@ -12,6 +12,8 @@ interface RenderOptions {
 
 export function renderWithQueryClient(ui: ReactElement, { currentUser }: RenderOptions = {}) {
   const queryClient = createQueryClient({ queries: { retry: false } });
-  if (currentUser !== undefined) queryClient.setQueryData(CURRENT_USER_QUERY_KEY, currentUser);
+  if (currentUser !== undefined) {
+    queryClient.setQueryData(CURRENT_USER_QUERY_KEY, currentUser, { updatedAt: 0 });
+  }
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }

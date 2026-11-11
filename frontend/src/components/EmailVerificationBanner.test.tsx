@@ -1,7 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { User } from '../api/auth';
 import { setAccessToken } from '../api/client';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
@@ -9,15 +8,11 @@ import {
   calledRoutes,
   signedInSession,
   stubBackend,
-  type StubbedRoute,
+  unverifiedAlice,
+  unverifiedSession,
 } from '../test/stubBackend';
 import { EmailVerificationBanner } from './EmailVerificationBanner';
 
-const unverifiedAlice: User = { ...alice, email_verified: false };
-const unverifiedSession: Record<string, StubbedRoute> = {
-  ...signedInSession,
-  'GET /auth/me': () => Response.json(unverifiedAlice),
-};
 const pendingText: string = 'Confirmez votre adresse : un lien a été envoyé à alice@example.com.';
 
 describe('EmailVerificationBanner', () => {
@@ -49,7 +44,6 @@ describe('EmailVerificationBanner', () => {
     const verificationCall: [request: Request] | undefined = fetchMock.mock.calls.find(
       ([request]) => new URL(request.url).pathname.endsWith('/auth/email/verification'),
     );
-    expect(calledRoutes(fetchMock)).toContain('POST /auth/email/verification');
     await expect(verificationCall?.[0].json()).resolves.toEqual({ language: 'fr' });
   });
 
