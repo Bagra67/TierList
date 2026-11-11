@@ -14,4 +14,5 @@ export const SESSION_PATHS: ReadonlySet<string> = new Set([
 ]);
 
 export const CURRENT_USER_QUERY_KEY = ['auth', 'me'] as const;
+export const UNVERIFIED_ACCOUNT_STALE_MS: number = 10_000;
 export const GOOGLE_BAN_NOTICE_QUERY_KEY = ['auth', 'google-ban-notice'] as const;
