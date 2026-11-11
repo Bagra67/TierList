@@ -1,5 +1,6 @@
 import {
   hashKey,
+  type Query,
   type QueryClient,
   useMutation,
   useQuery,
@@ -117,11 +118,25 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
   }
 }
 
-export function useCurrentUser() {
+type CurrentUserQuery = Query<User | null, Error, User | null, typeof CURRENT_USER_QUERY_KEY>;
+
+function refetchWhileEmailUnverified(query: CurrentUserQuery): boolean | 'always' {
+  return query.state.data?.email_verified === false ? 'always' : false;
+}
+
+interface CurrentUserOptions {
+  refreshUntilEmailVerified?: boolean;
+}
+
+export function useCurrentUser({ refreshUntilEmailVerified = false }: CurrentUserOptions = {}) {
   return useQuery({
     queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: ({ signal }) => getCurrentUser(signal),
     staleTime: Infinity,
+    ...(refreshUntilEmailVerified && {
+      refetchOnMount: refetchWhileEmailUnverified,
+      refetchOnWindowFocus: refetchWhileEmailUnverified,
+    }),
   });
 }
 

@@ -17,13 +17,17 @@ import { ResendVerificationEmailButton } from './ResendVerificationEmailButton';
 const EMAIL_NOT_VERIFIED_CODE: string = 'email_not_verified';
 const VISIBILITIES: readonly TemplateVisibility[] = ['private', 'public'];
 
+function isEmailNotVerified(error: Error | null): boolean {
+  return error instanceof ApiError && error.code === EMAIL_NOT_VERIFIED_CODE;
+}
+
 interface TemplateVisibilityFieldProps {
   template: Template;
 }
 
 export function TemplateVisibilityField({ template }: TemplateVisibilityFieldProps) {
   const { t } = useTranslation();
-  const { data: user, refetch: refetchUser } = useCurrentUser();
+  const { data: user, refetch: refetchUser } = useCurrentUser({ refreshUntilEmailVerified: true });
   const visibilityMutation: TemplateChange<TemplateVisibility> = useSetTemplateVisibility(
     template.id,
   );
@@ -34,12 +38,10 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
   const isPublic: boolean = template.visibility === 'public';
   const isHidden: boolean = template.moderation === 'hidden';
   const emailCachedAsVerified: boolean = user?.email_verified ?? false;
-  const emailRefused: boolean =
-    visibilityMutation.error instanceof ApiError &&
-    visibilityMutation.error.code === EMAIL_NOT_VERIFIED_CODE;
+  const emailRefused: boolean = isEmailNotVerified(visibilityMutation.error);
   const publicBlockedHint: string | null = isPublic ? null : publicBlockedReason();
   const showsEmailNotice: boolean =
-    !isPublic && publicBlockedHint === null && (!emailCachedAsVerified || emailRefused);
+    !isPublic && publicBlockedHint === null && !emailCachedAsVerified;
 
   function publicBlockedReason(): string | null {
     if (isHidden) return t('templates.visibility.hiddenCannotBePublic');
@@ -51,6 +53,9 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
     visibilityMutation.mutate(visibility, {
       onSuccess: () => {
         if (!emailCachedAsVerified) void refetchUser();
+      },
+      onError: (error: Error) => {
+        if (emailCachedAsVerified && isEmailNotVerified(error)) void refetchUser();
       },
     });
   }

@@ -411,7 +411,7 @@ describe('TemplatesPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Ajoutez au moins une tuile à ce modèle.',
+        'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
       );
       expect(screen.queryByRole('heading', { name: 'Lobby' })).not.toBeInTheDocument();
     });

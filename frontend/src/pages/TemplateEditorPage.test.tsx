@@ -15,6 +15,7 @@ import {
   errorResponse,
   signedInSession,
   stubBackend,
+  type StubbedRoute,
   type BackendMock,
 } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
@@ -173,6 +174,10 @@ describe('TemplateEditorPage', () => {
       first_made_public_at: '2026-10-31T10:00:00Z',
     };
     const unverifiedAlice: User = { ...alice, email_verified: false };
+    const unverifiedSession: Record<string, StubbedRoute> = {
+      ...signedInSession,
+      'GET /auth/me': () => Response.json(unverifiedAlice),
+    };
     const emailNotice: string = 'Confirmez votre adresse e-mail pour rendre un modèle public.';
     const publicDescription: string =
       'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.';
@@ -226,6 +231,7 @@ describe('TemplateEditorPage', () => {
 
     it('asks to confirm the email first, and sends the email again', async () => {
       const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
         [`GET ${templateUrl}`]: () => Response.json(playable),
         'POST /auth/email/verification': () => new Response(null, { status: 204 }),
       });
@@ -239,10 +245,21 @@ describe('TemplateEditorPage', () => {
       fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'e-mail" }));
 
       expect(await screen.findByText(/^E-mail envoyé\./)).toHaveAttribute('role', 'status');
-      expect(calledRoutes(fetchMock)).toEqual([
-        `GET ${templateUrl}`,
-        'POST /auth/email/verification',
-      ]);
+      expect(calledRoutes(fetchMock)).toContain('POST /auth/email/verification');
+      expect(calledRoutes(fetchMock)).not.toContain(`PUT ${visibilityUrl}`);
+    });
+
+    it('hides the email notice once the account read again has a confirmed email', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...signedInSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      await waitFor(() => expect(screen.queryByText(emailNotice)).not.toBeInTheDocument());
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(publicDescription);
     });
 
     it('reads the account again when an email cached as unconfirmed was confirmed meanwhile', async () => {
@@ -264,7 +281,8 @@ describe('TemplateEditorPage', () => {
     });
 
     it('shows the email notice when the backend refuses an unconfirmed email', async () => {
-      stubBackend({
+      const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
         [`GET ${templateUrl}`]: () => Response.json(playable),
         [`PUT ${visibilityUrl}`]: () => errorResponse(403, 'email_not_verified'),
       });
@@ -277,6 +295,7 @@ describe('TemplateEditorPage', () => {
       await waitFor(() => expect(visibilityOption('Privé')).toBeChecked());
       expect(screen.getByRole('button', { name: "Renvoyer l'e-mail" })).toBeVisible();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
     });
 
     it('cannot make a template without tiles public, and says why', async () => {

@@ -157,7 +157,7 @@ def run_seed(
 def _templates_to_publish(
     templates_to_hide: list[uuid.UUID], templates: SeedTemplates, count: int
 ) -> list[uuid.UUID]:
-    candidates: list[uuid.UUID] = [*templates_to_hide[:1]]
+    candidates: list[uuid.UUID] = templates_to_hide[:1]
     candidates.extend(template.id for template in templates.playable)
     return list(dict.fromkeys(candidates))[:count]
 

@@ -1103,7 +1103,7 @@ export const fr = {
       invalid_token: 'Ce lien est invalide ou a expiré.',
       email_not_verified: "Confirmez d'abord votre adresse e-mail.",
       template_not_found: 'Ce modèle est introuvable.',
-      template_has_no_tiles: 'Ajoutez au moins une tuile à ce modèle.',
+      template_has_no_tiles: 'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
       template_hidden:
         'Ce modèle est masqué par la modération : plus aucune partie ne peut être lancée avec.',
       template_moderation_conflict:
