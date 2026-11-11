@@ -1,32 +1,22 @@
-import uuid
-from datetime import UTC, datetime
-
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
-from app.models.enums import TemplateModeration
-from app.models.template import Template
-from app.models.user import User
 from tests.integration.helpers import (
     JsonObject,
+    confirm_email,
     create_template,
     register,
     register_super_admin,
+    set_hidden,
+    stored_template,
 )
 
 pytestmark = pytest.mark.integration
 
 ALICE_EMAIL: str = "alice@example.com"
-
-
-def confirm_email(db_session: Session, email: str) -> None:
-    user: User = db_session.scalars(select(User).where(User.email == email)).one()
-    user.email_verified_at = datetime.now(UTC)
-    db_session.flush()
 
 
 @pytest.fixture
@@ -47,20 +37,6 @@ def set_visibility(
     return client.put(
         f"/templates/{template_id}/visibility", json={"visibility": visibility}, headers=headers
     )
-
-
-def stored_template(db_session: Session, template_id: str) -> Template:
-    db_session.expire_all()
-    template: Template | None = db_session.get(Template, uuid.UUID(template_id))
-    assert template is not None
-    return template
-
-
-def set_hidden(db_session: Session, template_id: str) -> None:
-    template: Template = stored_template(db_session, template_id)
-    template.moderation = TemplateModeration.HIDDEN
-    template.moderation_reason = "Harassment"
-    db_session.flush()
 
 
 def test_a_new_template_is_private(
