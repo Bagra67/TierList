@@ -56,6 +56,13 @@ export const signedInSession: Record<string, StubbedRoute> = {
   'GET /auth/me': () => Response.json(alice),
 };
 
+export const unverifiedAlice: User = { ...alice, email_verified: false };
+
+export const unverifiedSession: Record<string, StubbedRoute> = {
+  ...signedInSession,
+  'GET /auth/me': () => Response.json(unverifiedAlice),
+};
+
 export const superAdminSession: Record<string, StubbedRoute> = {
   ...signedInSession,
   'GET /auth/me': () => Response.json({ ...alice, role: 'super_admin' } satisfies User),

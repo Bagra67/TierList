@@ -15,7 +15,8 @@ import {
   errorResponse,
   signedInSession,
   stubBackend,
-  type StubbedRoute,
+  unverifiedAlice,
+  unverifiedSession,
   type BackendMock,
 } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
@@ -172,11 +173,6 @@ describe('TemplateEditorPage', () => {
       ...playable,
       visibility: 'public',
       first_made_public_at: '2026-10-31T10:00:00Z',
-    };
-    const unverifiedAlice: User = { ...alice, email_verified: false };
-    const unverifiedSession: Record<string, StubbedRoute> = {
-      ...signedInSession,
-      'GET /auth/me': () => Response.json(unverifiedAlice),
     };
     const emailNotice: string = 'Confirmez votre adresse e-mail pour rendre un modèle public.';
     const publicDescription: string =
