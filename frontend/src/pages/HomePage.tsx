@@ -36,7 +36,7 @@ export function HomePage() {
 
   return (
     <PageContainer width="app" className="flex flex-col gap-14">
-      {user !== null && <EmailVerificationBanner user={user} />}
+      <EmailVerificationBanner />
       <section className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
         <div className="flex flex-col items-start gap-6">
           <h1 className="text-5xl leading-[0.95] font-black tracking-tight text-balance font-stretch-125% sm:text-6xl">
