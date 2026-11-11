@@ -30,6 +30,7 @@ type TierChanges = components['schemas']['UpdateTierRequest'];
 export type Tile = Template['tiles'][number];
 export type NewTile = components['schemas']['CreateTileRequest'];
 type TileChanges = components['schemas']['UpdateTileRequest'];
+export type TemplateVisibility = components['schemas']['TemplateVisibility'];
 
 async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
   const data: TemplateList = dataOrThrow(await apiClient.GET('/templates', { signal }));
@@ -61,6 +62,18 @@ async function renameTemplate(templateId: string, name: string): Promise<Templat
     await apiClient.PATCH('/templates/{template_id}', {
       params: { path: { template_id: templateId } },
       body: { name },
+    }),
+  );
+}
+
+async function setTemplateVisibility(
+  templateId: string,
+  visibility: TemplateVisibility,
+): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PUT('/templates/{template_id}/visibility', {
+      params: { path: { template_id: templateId } },
+      body: { visibility },
     }),
   );
 }
@@ -221,10 +234,16 @@ function applyMove(template: Template, move: PendingMove): Template {
   return { ...template, tiles: moveItem(template.tiles, move.itemId, move.position) };
 }
 
+type OptimisticUpdate = (template: Template) => Template;
+
+function moveUpdate(move: PendingMove | undefined): OptimisticUpdate | undefined {
+  return move === undefined ? undefined : (template: Template) => applyMove(template, move);
+}
+
 function useTemplateChange<Variables = void>(
   templateId: string,
   mutationFn: (variables: Variables) => Promise<Template>,
-  getMove?: (variables: Variables) => PendingMove | undefined,
+  getOptimisticUpdate?: (variables: Variables) => OptimisticUpdate | undefined,
 ): TemplateChange<Variables> {
   const queryClient: QueryClient = useQueryClient();
   const queryKey: TemplateQueryKey = templateQueryKey(templateId);
@@ -232,12 +251,12 @@ function useTemplateChange<Variables = void>(
     mutationKey: templateChangeMutationKey(templateId),
     mutationFn,
     onMutate: async (variables: Variables): Promise<Template | undefined> => {
-      const move: PendingMove | undefined = getMove?.(variables);
-      if (move === undefined) return undefined;
+      const optimisticUpdate: OptimisticUpdate | undefined = getOptimisticUpdate?.(variables);
+      if (optimisticUpdate === undefined) return undefined;
       await queryClient.cancelQueries({ queryKey });
       const previous: Template | undefined = queryClient.getQueryData<Template>(queryKey);
       if (previous !== undefined) {
-        queryClient.setQueryData<Template>(queryKey, applyMove(previous, move));
+        queryClient.setQueryData<Template>(queryKey, optimisticUpdate(previous));
       }
       return previous;
     },
@@ -259,6 +278,14 @@ export function useRenameTemplate(templateId: string): TemplateChange<string> {
   return useTemplateChange(templateId, (name: string) => renameTemplate(templateId, name));
 }
 
+export function useSetTemplateVisibility(templateId: string): TemplateChange<TemplateVisibility> {
+  return useTemplateChange(
+    templateId,
+    (visibility: TemplateVisibility) => setTemplateVisibility(templateId, visibility),
+    (visibility: TemplateVisibility) => (template: Template) => ({ ...template, visibility }),
+  );
+}
+
 export function useAddTier(templateId: string): TemplateChange<void> {
   return useTemplateChange(templateId, () => addTier(templateId));
 }
@@ -273,9 +300,11 @@ export function useUpdateTier(templateId: string): TemplateChange<TierUpdate> {
     templateId,
     ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
     ({ tierId, changes }: TierUpdate) =>
-      changes.position === undefined || changes.position === null
-        ? undefined
-        : { list: 'tiers', itemId: tierId, position: changes.position },
+      moveUpdate(
+        changes.position === undefined || changes.position === null
+          ? undefined
+          : { list: 'tiers', itemId: tierId, position: changes.position },
+      ),
   );
 }
 
@@ -297,9 +326,11 @@ export function useUpdateTile(templateId: string): TemplateChange<TileUpdate> {
     templateId,
     ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
     ({ tileId, changes }: TileUpdate) =>
-      changes.position === undefined || changes.position === null
-        ? undefined
-        : { list: 'tiles', itemId: tileId, position: changes.position },
+      moveUpdate(
+        changes.position === undefined || changes.position === null
+          ? undefined
+          : { list: 'tiles', itemId: tileId, position: changes.position },
+      ),
   );
 }
 

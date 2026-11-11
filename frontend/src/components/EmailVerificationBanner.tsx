@@ -1,12 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
-import { useRequestEmailVerification, type User } from '../api/auth';
-import { translateError } from '../errors/apiError';
-import { Button } from './ui/button';
-import { ErrorMessage } from './ErrorMessage';
+import type { User } from '../api/auth';
+import { ResendVerificationEmailButton } from './ResendVerificationEmailButton';
 
 export function EmailVerificationBanner({ user }: { user: User }) {
-  const resendMutation = useRequestEmailVerification();
   const { t } = useTranslation();
 
   if (user.email_verified) return null;
@@ -14,22 +11,7 @@ export function EmailVerificationBanner({ user }: { user: User }) {
   return (
     <section className="flex w-full flex-col gap-2 rounded-lg border bg-muted/50 p-4 text-sm">
       <p>{t('account.verification.pending', { email: user.email })}</p>
-      {resendMutation.isSuccess && <p role="status">{t('account.verification.resent')}</p>}
-      {resendMutation.isError && (
-        <ErrorMessage>{translateError(t, resendMutation.error)}</ErrorMessage>
-      )}
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={resendMutation.isPending}
-          onClick={() => resendMutation.mutate()}
-        >
-          {resendMutation.isPending
-            ? t('account.verification.resending')
-            : t('account.verification.resend')}
-        </Button>
-      </div>
+      <ResendVerificationEmailButton />
     </section>
   );
 }

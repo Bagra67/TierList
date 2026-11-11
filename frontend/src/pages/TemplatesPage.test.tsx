@@ -220,6 +220,24 @@ describe('TemplatesPage', () => {
     ).toBeVisible();
   });
 
+  it('marks the public templates', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([
+        { ...chips, visibility: 'public', first_made_public_at: '2026-10-31T10:00:00Z' },
+        sodas,
+      ]),
+    });
+
+    renderTemplatesPage();
+
+    const [publicTemplate, privateTemplate] = await screen.findAllByRole('listitem');
+    expect(within(publicTemplate).getByText('Public')).toBeInTheDocument();
+    expect(
+      within(publicTemplate).getByRole('button', { name: 'Créer une salle avec Chips' }),
+    ).toBeVisible();
+    expect(within(privateTemplate).queryByText('Public')).not.toBeInTheDocument();
+  });
+
   it('invites to create a template when there is none', async () => {
     stubTemplatesBackend({ 'GET /templates': listOf([]) });
 
@@ -393,7 +411,7 @@ describe('TemplatesPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
+        'Ajoutez au moins une tuile à ce modèle.',
       );
       expect(screen.queryByRole('heading', { name: 'Lobby' })).not.toBeInTheDocument();
     });
