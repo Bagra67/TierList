@@ -11,6 +11,14 @@ def template_not_found() -> AppHTTPException:
     )
 
 
+def email_not_verified() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=403,
+        code=ErrorCode.EMAIL_NOT_VERIFIED,
+        detail=messages.EMAIL_NOT_VERIFIED,
+    )
+
+
 def template_has_no_tiles() -> AppHTTPException:
     return AppHTTPException(
         status_code=409,

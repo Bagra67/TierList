@@ -110,6 +110,7 @@ def test_setting_the_same_visibility_again_changes_nothing(
     assert second.status_code == 200
     assert second.json()["visibility"] == "public"
     assert second.json()["first_made_public_at"] == first["first_made_public_at"]
+    assert second.json()["updated_at"] == first["updated_at"]
 
 
 def test_an_unconfirmed_email_cannot_make_a_template_public(
