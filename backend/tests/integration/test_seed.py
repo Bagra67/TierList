@@ -20,6 +20,7 @@ from app.models.enums import (
     ReportStatus,
     RoomStatus,
     TemplateModeration,
+    TemplateVisibility,
     UserRole,
 )
 from app.models.game import Game
@@ -42,7 +43,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 500
+SMALL_SEED_MAX_QUERIES = 520
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -162,6 +163,17 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(hidden_template_ids) == SMALL_SIZE.hidden_templates
+    public_templates: list[Template] = list(
+        db_session.scalars(
+            select(Template).where(Template.visibility == TemplateVisibility.PUBLIC)
+        ).all()
+    )
+    assert len(public_templates) == SMALL_SIZE.public_templates
+    assert all(template.first_made_public_at is not None for template in public_templates)
+    assert {template.moderation for template in public_templates} == {
+        TemplateModeration.NONE,
+        TemplateModeration.HIDDEN,
+    }
     assert (
         db_session.scalar(
             select(func.count())
