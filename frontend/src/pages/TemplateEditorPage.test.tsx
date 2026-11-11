@@ -175,7 +175,7 @@ describe('TemplateEditorPage', () => {
     const unverifiedAlice: User = { ...alice, email_verified: false };
     const emailNotice: string = 'Confirmez votre adresse e-mail pour rendre un modèle public.';
     const publicDescription: string =
-      "Tout le monde peut le trouver et y jouer. Votre nom d'affichage est visible.";
+      'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.';
 
     function visibilityOption(name: 'Privé' | 'Public'): HTMLElement {
       return screen.getByRole('radio', { name });

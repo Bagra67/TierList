@@ -5,28 +5,38 @@ import { translateError } from '../errors/apiError';
 import { Button } from './ui/button';
 import { ErrorMessage } from './ErrorMessage';
 
-export function ResendVerificationEmailButton() {
+interface ResendVerificationEmailButtonProps {
+  size?: 'default' | 'xs';
+}
+
+export function ResendVerificationEmailButton({
+  size = 'default',
+}: ResendVerificationEmailButtonProps) {
   const resendMutation = useRequestEmailVerification();
   const { t } = useTranslation();
 
   return (
     <>
-      {resendMutation.isSuccess && <p role="status">{t('account.verification.resent')}</p>}
-      {resendMutation.isError && (
-        <ErrorMessage>{translateError(t, resendMutation.error)}</ErrorMessage>
+      <Button
+        type="button"
+        variant="outline"
+        size={size}
+        disabled={resendMutation.isPending}
+        onClick={() => resendMutation.mutate()}
+        className="self-start"
+      >
+        {resendMutation.isPending
+          ? t('account.verification.resending')
+          : t('account.verification.resend')}
+      </Button>
+      {resendMutation.isSuccess && (
+        <p role="status" className="w-full">
+          {t('account.verification.resent')}
+        </p>
       )}
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={resendMutation.isPending}
-          onClick={() => resendMutation.mutate()}
-        >
-          {resendMutation.isPending
-            ? t('account.verification.resending')
-            : t('account.verification.resend')}
-        </Button>
-      </div>
+      {resendMutation.isError && (
+        <ErrorMessage className="w-full">{translateError(t, resendMutation.error)}</ErrorMessage>
+      )}
     </>
   );
 }
