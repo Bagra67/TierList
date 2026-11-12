@@ -72,7 +72,8 @@ production.
 
 Read the diff (`git diff origin/develop...HEAD`) and answer each point with yes, no or not concerned:
 
-- Tests added or updated for the new behavior, and the testing guide updated (§28).
+- Tests added or updated for the new behavior, with names that say the expected behavior, and the
+  testing guide updated if a shared fixture, helper, tool or command changed (§28).
 - Every new user-facing text goes through `t()` and exists in `fr.ts` and `en.ts`; every new
   `ErrorCode` is translated under `errors.*` (§50).
 - Privacy policy: does the change touch personal data, retention, a provider, a cookie or a storage

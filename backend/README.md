@@ -129,7 +129,7 @@ uv run pytest
 
 Verbose mode: `uv run pytest -v` — with coverage: `uv run pytest --cov=app`
 
-What each test does, its purpose and expected result: [testing guide](../docs/technical/testing.md).
+How the tests work (fixtures, integration tests, writing a new test): [testing guide](../docs/technical/testing.md).
 
 ### Integration tests (real PostgreSQL)
 

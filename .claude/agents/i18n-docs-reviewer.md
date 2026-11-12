@@ -39,9 +39,10 @@ base you were given) and read every changed file in full.
 
 ### Testing guide (§28)
 
-- Every added, renamed, changed or removed test, fixture or test tool appears in
-  `docs/technical/testing.md`, with what it does, its purpose and the expected
-  result. Compare test names in the diff with the guide rows.
+- Every new or renamed test has a name that says the expected behavior, as a sentence, and no
+  docstring that repeats it.
+- An added, changed or removed shared fixture, test helper, test tool or test command is reflected
+  in `docs/technical/testing.md`.
 
 ### Privacy policy (§51)
 

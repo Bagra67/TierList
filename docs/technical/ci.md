@@ -1,6 +1,6 @@
 # Continuous integration
 
-How the GitHub Actions workflows fit together, why the CI is built the way it is, and how to keep it fast. The jobs and their steps are listed in the [README](../../README.md#continuous-integration-github-actions); every test is described in the [testing guide](testing.md).
+How the GitHub Actions workflows fit together, why the CI is built the way it is, and how to keep it fast. The jobs and their steps are listed in the [README](../../README.md#continuous-integration-github-actions); how the tests work is in the [testing guide](testing.md).
 
 ## 1. Workflows and how they chain
 
@@ -59,6 +59,6 @@ Kept as they are, on purpose:
 
 ## 4. Keeping it fast and reliable
 
-- Backend tests must work in parallel: no fixed name shared between tests in the database or the S3 bucket, and no random value in a `parametrize` list (every worker must collect the same test names). See the [testing guide](testing.md#15-integration-tests-testsintegration-real-postgresql-and-s3).
+- Backend tests must work in parallel: no fixed name shared between tests in the database or the S3 bucket, and no random value in a `parametrize` list (every worker must collect the same test names). See the [testing guide](testing.md#13-integration-tests-testsintegration-real-postgresql-and-s3).
 - Frontend test files share their modules and jsdom: a file restores what it changes, and the global setup resets the rest. Waits use the common 3 s timeout. See the [testing guide](testing.md).
 - The run summary lists the slowest tests of each job: a test that climbs there is worth a look.

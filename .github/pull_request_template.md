@@ -22,7 +22,7 @@ PRs to develop are squash-merged; the squash subject ends with the PR number, e.
 ## Checklist
 
 - [ ] Tests added or updated, and passing
-- [ ] Testing guide updated if tests changed (`docs/technical/testing.md`)
+- [ ] Testing guide updated if a shared fixture, helper, tool or command changed (`docs/technical/testing.md`)
 - [ ] Lint, formatting and type checks pass (CI green)
 - [ ] Documentation updated (READMEs in **both** English `README.md` and French `README.fr.md`)
 - [ ] If the `skip-docs-sync` label is set: the reason is explained above

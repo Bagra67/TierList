@@ -129,7 +129,7 @@ uv run pytest
 
 Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
 
-Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/technical/testing.md).
+Fonctionnement des tests (fixtures, tests d'intégration, écrire un nouveau test) : [guide des tests](../docs/technical/testing.md).
 
 ### Tests d'intégration (vrai PostgreSQL)
 
