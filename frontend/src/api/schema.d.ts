@@ -656,8 +656,8 @@ export interface paths {
         /**
          * Remove Participant
          * @description Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements
-         *     de la partie en cours partent avec lui. Avec `ban=true`, il ne peut plus revenir : son compte,
-         *     ou pour un invité son navigateur.
+         *     de la partie en cours partent avec lui. Avec `ban=true`, la personne ne peut plus revenir dans
+         *     la salle.
          */
         delete: operations["remove_participant_rooms__code__participants__participant_id__delete"];
         options?: never;
@@ -780,9 +780,8 @@ export interface paths {
         };
         /**
          * Get Game Results
-         * @description Les résultats d'une partie close, par son lien public : aucun compte n'est demandé, le token
-         *     du lien est la seule protection. `include_absent_votes` choisit si les votes absents comptent
-         *     dans le classement (oui par défaut) ; le calcul est refait à chaque requête.
+         * @description Les résultats d'une partie close, par son lien public, sans compte. `include_absent_votes`
+         *     choisit si les votes absents comptent dans le classement (oui par défaut).
          */
         get: operations["get_game_results_results__public_token__get"];
         put?: never;

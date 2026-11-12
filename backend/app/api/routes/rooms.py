@@ -373,8 +373,8 @@ def remove_participant(
     ban: bool = False,
 ) -> RoomResponse:
     """Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements
-    de la partie en cours partent avec lui. Avec `ban=true`, il ne peut plus revenir : son compte,
-    ou pour un invité son navigateur."""
+    de la partie en cours partent avec lui. Avec `ban=true`, la personne ne peut plus revenir dans
+    la salle."""
     try:
         room: Room = games.remove_participant(user, code, participant_id, ban)
     except RoomNotFoundError as exc:
