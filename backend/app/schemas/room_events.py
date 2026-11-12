@@ -152,7 +152,8 @@ class PingMessage(BaseModel):
 
 
 class PongMessage(BaseModel):
-    """Réponse du client au ping du serveur, dans les 5 s."""
+    """Réponse du client au ping du serveur, dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s
+    par défaut)."""
 
     type: Literal["pong"] = "pong"
 

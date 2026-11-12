@@ -37,8 +37,8 @@ class UpdateRoomSettingsRequest(BaseModel):
 
 
 class RoomSettingsResponse(BaseModel):
-    """Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`
-    n'est pas `timer`."""
+    """Réglages de la salle : ceux de la partie en cours pendant une partie, sinon ceux de la
+    prochaine. `timer_seconds` est gardé même quand `auto_advance` n'est pas `timer`."""
 
     model_config = ConfigDict(from_attributes=True)
 

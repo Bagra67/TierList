@@ -202,7 +202,7 @@ def refresh(
 ) -> TokenResponse | Response:
     """Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.
     204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été
-    fermée, avec le cookie effacé."""
+    fermée, ou si le compte est banni, avec le cookie effacé."""
     if refresh_token is None:
         return Response(status_code=204)
     try:
@@ -219,8 +219,9 @@ def logout(
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
 ) -> None:
-    """Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans
-    session."""
+    """Ferme la session de ce navigateur et efface le cookie de refresh. Les access tokens du
+    compte sur les autres appareils sont aussi invalidés : ils passent par /auth/refresh. 204
+    même sans session."""
     if refresh_token is not None:
         service.logout(refresh_token)
     _clear_refresh_cookie(response, settings)
@@ -279,9 +280,9 @@ def delete_me(
     games: GameServiceDep,
     settings: SettingsDep,
 ) -> None:
-    """Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de
-    passe doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie
-    de refresh est effacé."""
+    """Supprime le compte connecté, après avoir fermé les salles dont il est l'admin et l'avoir
+    retiré des autres. Un compte avec mot de passe doit le redonner ; un compte sans mot de passe
+    doit s'être connecté récemment. Le cookie de refresh est effacé."""
     try:
         service.delete_account(
             session, payload.password, before_delete=games.leave_rooms_of_deleted_account

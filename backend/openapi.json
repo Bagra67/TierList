@@ -146,7 +146,7 @@
           "auth"
         ],
         "summary": "Refresh",
-        "description": "Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.\n204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été\nfermée, avec le cookie effacé.",
+        "description": "Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.\n204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été\nfermée, ou si le compte est banni, avec le cookie effacé.",
         "operationId": "refresh_auth_refresh_post",
         "parameters": [
           {
@@ -219,7 +219,7 @@
           "auth"
         ],
         "summary": "Logout",
-        "description": "Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans\nsession.",
+        "description": "Ferme la session de ce navigateur et efface le cookie de refresh. Les access tokens du\ncompte sur les autres appareils sont aussi invalidés : ils passent par /auth/refresh. 204\nmême sans session.",
         "operationId": "logout_auth_logout_post",
         "parameters": [
           {
@@ -317,7 +317,7 @@
           "auth"
         ],
         "summary": "Delete Me",
-        "description": "Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de\npasse doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie\nde refresh est effacé.",
+        "description": "Supprime le compte connecté, après avoir fermé les salles dont il est l'admin et l'avoir\nretiré des autres. Un compte avec mot de passe doit le redonner ; un compte sans mot de passe\ndoit s'être connecté récemment. Le cookie de refresh est effacé.",
         "operationId": "delete_me_auth_me_delete",
         "requestBody": {
           "content": {
@@ -2657,7 +2657,7 @@
           "rooms"
         ],
         "summary": "Update Room Settings",
-        "description": "Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs\nenvoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer.",
+        "description": "Change les réglages de la salle (admin seulement) ; seuls les champs envoyés changent. Hors\npartie, ils valent pour la prochaine ; pendant une partie, seul `late_arrivals_allowed` peut\nchanger, et il s'applique tout de suite.",
         "operationId": "update_room_settings_rooms__code__settings_patch",
         "security": [
           {
@@ -4966,7 +4966,7 @@
           "moderation"
         ],
         "summary": "Hide Template",
-        "description": "Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et\nson propriétaire voit le motif. Écrit au journal.",
+        "description": "Masque un modèle non masqué et non supprimé, public ou privé : il ne peut plus servir à une\nnouvelle partie, et son propriétaire voit le motif. Écrit au journal.",
         "operationId": "hide_template_moderation_templates__template_id__hide_post",
         "security": [
           {
@@ -5068,7 +5068,7 @@
           "moderation"
         ],
         "summary": "Unhide Template",
-        "description": "Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal\navec le motif.",
+        "description": "Lève le masquage d'un modèle non supprimé ; sa visibilité publique ou privée ne change pas,\net le motif est effacé du modèle. Écrit au journal avec le motif.",
         "operationId": "unhide_template_moderation_templates__template_id__unhide_post",
         "security": [
           {
@@ -6511,7 +6511,7 @@
         },
         "type": "object",
         "title": "DeleteAccountRequest",
-        "description": "Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui\nen a un, absent pour un compte Google seul."
+        "description": "Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui\nen a un, absent pour un compte sans mot de passe."
       },
       "DismissReportsRequest": {
         "properties": {
@@ -8237,7 +8237,7 @@
           "late_arrivals_allowed"
         ],
         "title": "RoomSettingsResponse",
-        "description": "Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`\nn'est pas `timer`."
+        "description": "Réglages de la salle : ceux de la partie en cours pendant une partie, sinon ceux de la\nprochaine. `timer_seconds` est gardé même quand `auto_advance` n'est pas `timer`."
       },
       "RoomStatus": {
         "type": "string",
@@ -8856,7 +8856,7 @@
           "created_at"
         ],
         "title": "UserResponse",
-        "description": "Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé\navec Google seul."
+        "description": "Un compte, tel que son propriétaire le voit. `has_password` est faux tant que le compte n'a\npas de mot de passe (compte Google qui n'en a jamais défini)."
       },
       "UserRole": {
         "type": "string",
@@ -9392,7 +9392,7 @@
         "type": "object"
       },
       "PongMessage": {
-        "description": "Réponse du client au ping du serveur, dans les 5 s.",
+        "description": "Réponse du client au ping du serveur, dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s\npar défaut).",
         "properties": {
           "type": {
             "const": "pong",

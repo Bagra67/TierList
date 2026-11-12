@@ -59,8 +59,8 @@ class TokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé
-    avec Google seul."""
+    """Un compte, tel que son propriétaire le voit. `has_password` est faux tant que le compte n'a
+    pas de mot de passe (compte Google qui n'en a jamais défini)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -75,7 +75,7 @@ class UserResponse(BaseModel):
 
 class DeleteAccountRequest(BaseModel):
     """Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
-    en a un, absent pour un compte Google seul."""
+    en a un, absent pour un compte sans mot de passe."""
 
     password: str | None = Field(default=None, min_length=1, max_length=PASSWORD_MAX_LENGTH)
 

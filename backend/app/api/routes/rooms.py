@@ -317,8 +317,9 @@ def update_room_settings(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    """Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs
-    envoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer."""
+    """Change les réglages de la salle (admin seulement) ; seuls les champs envoyés changent. Hors
+    partie, ils valent pour la prochaine ; pendant une partie, seul `late_arrivals_allowed` peut
+    changer, et il s'applique tout de suite."""
     changes: RoomSettingsChanges = RoomSettingsChanges(**payload.model_dump(exclude_none=True))
     try:
         room: Room = service.update_settings(user, code, changes)

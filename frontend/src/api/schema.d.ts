@@ -60,7 +60,7 @@ export interface paths {
          * Refresh
          * @description Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.
          *     204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été
-         *     fermée, avec le cookie effacé.
+         *     fermée, ou si le compte est banni, avec le cookie effacé.
          */
         post: operations["refresh_auth_refresh_post"];
         delete?: never;
@@ -80,8 +80,9 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans
-         *     session.
+         * @description Ferme la session de ce navigateur et efface le cookie de refresh. Les access tokens du
+         *     compte sur les autres appareils sont aussi invalidés : ils passent par /auth/refresh. 204
+         *     même sans session.
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;
@@ -106,9 +107,9 @@ export interface paths {
         post?: never;
         /**
          * Delete Me
-         * @description Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de
-         *     passe doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie
-         *     de refresh est effacé.
+         * @description Supprime le compte connecté, après avoir fermé les salles dont il est l'admin et l'avoir
+         *     retiré des autres. Un compte avec mot de passe doit le redonner ; un compte sans mot de passe
+         *     doit s'être connecté récemment. Le cookie de refresh est effacé.
          */
         delete: operations["delete_me_auth_me_delete"];
         options?: never;
@@ -637,8 +638,9 @@ export interface paths {
         head?: never;
         /**
          * Update Room Settings
-         * @description Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs
-         *     envoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer.
+         * @description Change les réglages de la salle (admin seulement) ; seuls les champs envoyés changent. Hors
+         *     partie, ils valent pour la prochaine ; pendant une partie, seul `late_arrivals_allowed` peut
+         *     changer, et il s'applique tout de suite.
          */
         patch: operations["update_room_settings_rooms__code__settings_patch"];
         trace?: never;
@@ -1118,8 +1120,8 @@ export interface paths {
         put?: never;
         /**
          * Hide Template
-         * @description Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et
-         *     son propriétaire voit le motif. Écrit au journal.
+         * @description Masque un modèle non masqué et non supprimé, public ou privé : il ne peut plus servir à une
+         *     nouvelle partie, et son propriétaire voit le motif. Écrit au journal.
          */
         post: operations["hide_template_moderation_templates__template_id__hide_post"];
         delete?: never;
@@ -1139,8 +1141,8 @@ export interface paths {
         put?: never;
         /**
          * Unhide Template
-         * @description Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal
-         *     avec le motif.
+         * @description Lève le masquage d'un modèle non supprimé ; sa visibilité publique ou privée ne change pas,
+         *     et le motif est effacé du modèle. Écrit au journal avec le motif.
          */
         post: operations["unhide_template_moderation_templates__template_id__unhide_post"];
         delete?: never;
@@ -1570,7 +1572,7 @@ export interface components {
         /**
          * DeleteAccountRequest
          * @description Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
-         *     en a un, absent pour un compte Google seul.
+         *     en a un, absent pour un compte sans mot de passe.
          */
         DeleteAccountRequest: {
             /** Password */
@@ -2340,8 +2342,8 @@ export interface components {
         };
         /**
          * RoomSettingsResponse
-         * @description Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`
-         *     n'est pas `timer`.
+         * @description Réglages de la salle : ceux de la partie en cours pendant une partie, sinon ceux de la
+         *     prochaine. `timer_seconds` est gardé même quand `auto_advance` n'est pas `timer`.
          */
         RoomSettingsResponse: {
             item_order: components["schemas"]["ItemOrder"];
@@ -2599,8 +2601,8 @@ export interface components {
         };
         /**
          * UserResponse
-         * @description Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé
-         *     avec Google seul.
+         * @description Un compte, tel que son propriétaire le voit. `has_password` est faux tant que le compte n'a
+         *     pas de mot de passe (compte Google qui n'en a jamais défini).
          */
         UserResponse: {
             /**
@@ -2898,7 +2900,8 @@ export interface components {
         };
         /**
          * PongMessage
-         * @description Réponse du client au ping du serveur, dans les 5 s.
+         * @description Réponse du client au ping du serveur, dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s
+         *     par défaut).
          */
         PongMessage: {
             /**

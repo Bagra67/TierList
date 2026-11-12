@@ -434,8 +434,8 @@ def hide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
-    """Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et
-    son propriétaire voit le motif. Écrit au journal."""
+    """Masque un modèle non masqué et non supprimé, public ou privé : il ne peut plus servir à une
+    nouvelle partie, et son propriétaire voit le motif. Écrit au journal."""
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -453,8 +453,8 @@ def unhide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
-    """Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal
-    avec le motif."""
+    """Lève le masquage d'un modèle non supprimé ; sa visibilité publique ou privée ne change pas,
+    et le motif est effacé du modèle. Écrit au journal avec le motif."""
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
