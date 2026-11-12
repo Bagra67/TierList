@@ -285,10 +285,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Templates */
+        /**
+         * List Templates
+         * @description Les modèles actifs du compte, avec leur nombre de tuiles, le plus récemment modifié en
+         *     premier. Chaque modèle indique sa décision de modération et les images retirées de ses tuiles.
+         */
         get: operations["list_templates_templates_get"];
         put?: never;
-        /** Create Template */
+        /**
+         * Create Template
+         * @description Crée un modèle avec les six tiers par défaut (S à E) et aucune tuile.
+         */
         post: operations["create_template_templates_post"];
         delete?: never;
         options?: never;
@@ -303,7 +310,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Removed Templates */
+        /**
+         * List Removed Templates
+         * @description Les modèles du compte supprimés par la modération et pas encore purgés, avec la date et le
+         *     motif.
+         */
         get: operations["list_removed_templates_templates_removed_get"];
         put?: never;
         post?: never;
@@ -320,15 +331,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Template */
+        /**
+         * Get Template
+         * @description Un modèle du compte, avec ses tiers et ses tuiles triés par position. 404 pour un modèle
+         *     supprimé ou d'un autre compte.
+         */
         get: operations["get_template_templates__template_id__get"];
         put?: never;
         post?: never;
-        /** Delete Template */
+        /**
+         * Delete Template
+         * @description Supprime un modèle : il disparaît aussitôt pour son propriétaire, et il est effacé pour de
+         *     bon après la durée de rétention. Les parties déjà jouées gardent leur version figée.
+         */
         delete: operations["delete_template_templates__template_id__delete"];
         options?: never;
         head?: never;
-        /** Rename Template */
+        /**
+         * Rename Template
+         * @description Renomme un modèle ; sa date de dernière modification est mise à jour.
+         */
         patch: operations["rename_template_templates__template_id__patch"];
         trace?: never;
     };
@@ -363,7 +385,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Tier */
+        /**
+         * Add Tier
+         * @description Ajoute un tier en bas du modèle, nommé « ? », couleur #9AA0B4.
+         */
         post: operations["add_tier_templates__template_id__tiers_post"];
         delete?: never;
         options?: never;
@@ -381,11 +406,18 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Tier */
+        /**
+         * Delete Tier
+         * @description Supprime un tier ; les suivants remontent. Refusé (409) pour le dernier tier du modèle.
+         */
         delete: operations["delete_tier_templates__template_id__tiers__tier_id__delete"];
         options?: never;
         head?: never;
-        /** Update Tier */
+        /**
+         * Update Tier
+         * @description Change le nom, la couleur et/ou la position d'un tier ; les autres tiers sont décalés. Une
+         *     position au-delà de la fin met le tier en dernier.
+         */
         patch: operations["update_tier_templates__template_id__tiers__tier_id__patch"];
         trace?: never;
     };
@@ -398,7 +430,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Add Tile */
+        /**
+         * Add Tile
+         * @description Ajoute une tuile à la fin du modèle : un texte, une image déjà envoyée par le compte (POST
+         *     /images), ou les deux. Refusé (409) au-delà du nombre maximal de tuiles (`max_tiles`).
+         */
         post: operations["add_tile_templates__template_id__tiles_post"];
         delete?: never;
         options?: never;
@@ -416,11 +452,18 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Tile */
+        /**
+         * Delete Tile
+         * @description Supprime une tuile ; les suivantes remontent.
+         */
         delete: operations["delete_tile_templates__template_id__tiles__tile_id__delete"];
         options?: never;
         head?: never;
-        /** Update Tile */
+        /**
+         * Update Tile
+         * @description Change le texte, l'image et/ou la position d'une tuile. Un `null` explicite retire le texte
+         *     ou l'image, tant que la tuile garde l'autre ; `position: null` est ignoré.
+         */
         patch: operations["update_tile_templates__template_id__tiles__tile_id__patch"];
         trace?: never;
     };
@@ -1310,12 +1353,18 @@ export interface components {
              */
             template_id: string;
         };
-        /** CreateTemplateRequest */
+        /**
+         * CreateTemplateRequest
+         * @description Nom du nouveau modèle ; les espaces autour sont retirés.
+         */
         CreateTemplateRequest: {
             /** Name */
             name: string;
         };
-        /** CreateTileRequest */
+        /**
+         * CreateTileRequest
+         * @description Contenu de la nouvelle tuile : un texte, une image ou les deux, jamais aucun des deux.
+         */
         CreateTileRequest: {
             /** Text */
             text?: string | null;
@@ -1597,7 +1646,11 @@ export interface components {
          * @enum {string}
          */
         ImageStatus: "visible" | "hidden" | "deleted";
-        /** ImageUploadResponse */
+        /**
+         * ImageUploadResponse
+         * @description Image envoyée et compressée : son id, à mettre dans une tuile, son adresse publique et ses
+         *     dimensions en pixels.
+         */
         ImageUploadResponse: {
             /**
              * Id
@@ -1874,7 +1927,11 @@ export interface components {
              */
             target_id: string;
         };
-        /** RemovedImageResponse */
+        /**
+         * RemovedImageResponse
+         * @description Une tuile dont l'image a été masquée ou supprimée par la modération, avec la décision et le
+         *     motif.
+         */
         RemovedImageResponse: {
             /**
              * Tile Id
@@ -1889,12 +1946,18 @@ export interface components {
             /** Reason */
             reason: string | null;
         };
-        /** RemovedTemplateListResponse */
+        /**
+         * RemovedTemplateListResponse
+         * @description Les modèles du compte supprimés par la modération et pas encore purgés.
+         */
         RemovedTemplateListResponse: {
             /** Items */
             items: components["schemas"]["RemovedTemplateResponse"][];
         };
-        /** RemovedTemplateResponse */
+        /**
+         * RemovedTemplateResponse
+         * @description Un modèle supprimé par la modération, pas encore purgé, avec la date et le motif.
+         */
         RemovedTemplateResponse: {
             /**
              * Id
@@ -1911,7 +1974,10 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /** RenameTemplateRequest */
+        /**
+         * RenameTemplateRequest
+         * @description Nouveau nom du modèle ; les espaces autour sont retirés.
+         */
         RenameTemplateRequest: {
             /** Name */
             name: string;
@@ -2125,7 +2191,10 @@ export interface components {
             /** Hidden */
             hidden: boolean;
         };
-        /** SetTemplateVisibilityRequest */
+        /**
+         * SetTemplateVisibilityRequest
+         * @description Visibilité choisie pour le modèle.
+         */
         SetTemplateVisibilityRequest: {
             visibility: components["schemas"]["TemplateVisibility"];
         };
@@ -2142,7 +2211,10 @@ export interface components {
             /** Display Name */
             display_name: string;
         };
-        /** TemplateListResponse */
+        /**
+         * TemplateListResponse
+         * @description Les modèles du compte, le plus récemment modifié en premier.
+         */
         TemplateListResponse: {
             /** Items */
             items: components["schemas"]["TemplateSummaryResponse"][];
@@ -2153,7 +2225,11 @@ export interface components {
          * @enum {string}
          */
         TemplateModeration: "none" | "hidden";
-        /** TemplateResponse */
+        /**
+         * TemplateResponse
+         * @description Un modèle avec ses tiers et ses tuiles triés par position. `max_tiles` est le nombre maximal
+         *     de tuiles ; `first_made_public_at` est gardée quand le modèle repasse en privé.
+         */
         TemplateResponse: {
             /**
              * Id
@@ -2185,7 +2261,11 @@ export interface components {
             /** First Made Public At */
             first_made_public_at: string | null;
         };
-        /** TemplateSummaryResponse */
+        /**
+         * TemplateSummaryResponse
+         * @description Un modèle dans la liste du compte : son nombre de tuiles, sa décision de modération et les
+         *     images retirées de ses tuiles.
+         */
         TemplateSummaryResponse: {
             /**
              * Id
@@ -2229,7 +2309,10 @@ export interface components {
             /** Item Ids */
             item_ids: string[];
         };
-        /** TierResponse */
+        /**
+         * TierResponse
+         * @description Un tier du modèle ; la position 0 est le tier du haut.
+         */
         TierResponse: {
             /**
              * Id
@@ -2243,7 +2326,12 @@ export interface components {
             /** Position */
             position: number;
         };
-        /** TileResponse */
+        /**
+         * TileResponse
+         * @description Une tuile du modèle, dans l'ordre du modèle. `image_removed` est vrai quand la modération a
+         *     masqué ou supprimé l'image : `image_url` est alors null. `image_status` et
+         *     `image_moderation_reason` ne sont montrés qu'au propriétaire.
+         */
         TileResponse: {
             /**
              * Id
@@ -2292,7 +2380,11 @@ export interface components {
             /** Late Arrivals Allowed */
             late_arrivals_allowed?: boolean | null;
         };
-        /** UpdateTierRequest */
+        /**
+         * UpdateTierRequest
+         * @description Changements d'un tier : seuls les champs envoyés changent. La couleur est au format
+         *     #RRGGBB.
+         */
         UpdateTierRequest: {
             /** Name */
             name?: string | null;
@@ -2301,7 +2393,11 @@ export interface components {
             /** Position */
             position?: number | null;
         };
-        /** UpdateTileRequest */
+        /**
+         * UpdateTileRequest
+         * @description Changements d'une tuile : seuls les champs envoyés changent. `null` retire le texte ou
+         *     l'image ; la tuile doit garder l'un des deux.
+         */
         UpdateTileRequest: {
             /** Text */
             text?: string | null;
