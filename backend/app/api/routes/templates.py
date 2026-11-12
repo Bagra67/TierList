@@ -107,12 +107,16 @@ def create_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Crée un modèle avec les six tiers par défaut (S à E) et aucune tuile."""
     template: Template = service.create(user, payload.name)
     return template_response(template, storage)
 
 
 @router.get("", responses=UNAUTHORIZED_RESPONSE)
 def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
+    """Les modèles actifs du compte, avec leur nombre de tuiles, le plus récemment modifié en
+    premier. Chaque modèle indique sa décision de modération et les images retirées de ses tuiles.
+    """
     summaries: list[TemplateSummary] = service.list_for_owner(user)
 
     items: list[TemplateSummaryResponse] = []
@@ -125,6 +129,8 @@ def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> Templat
 def list_removed_templates(
     user: CurrentUserDep, service: TemplateServiceDep
 ) -> RemovedTemplateListResponse:
+    """Les modèles du compte supprimés par la modération et pas encore purgés, avec la date et le
+    motif."""
     removed_templates: list[RemovedTemplate] = service.list_removed_by_moderation(user)
     return RemovedTemplateListResponse(
         items=[RemovedTemplateResponse.model_validate(template) for template in removed_templates]
@@ -138,6 +144,8 @@ def get_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Un modèle du compte, avec ses tiers et ses tuiles triés par position. 404 pour un modèle
+    supprimé ou d'un autre compte."""
     try:
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
@@ -153,6 +161,7 @@ def rename_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Renomme un modèle ; sa date de dernière modification est mise à jour."""
     try:
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
@@ -188,6 +197,8 @@ def set_template_visibility(
 def delete_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
 ) -> None:
+    """Supprime un modèle : il disparaît aussitôt pour son propriétaire, et il est effacé pour de
+    bon après la durée de rétention. Les parties déjà jouées gardent leur version figée."""
     try:
         service.delete(user, template_id)
     except TemplateNotFoundError as exc:
@@ -201,6 +212,7 @@ def add_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Ajoute un tier en bas du modèle, nommé « ? », couleur #9AA0B4."""
     try:
         template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
@@ -217,6 +229,8 @@ def update_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Change le nom, la couleur et/ou la position d'un tier ; les autres tiers sont décalés. Une
+    position au-delà de la fin met le tier en dernier."""
     changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
@@ -241,6 +255,7 @@ def delete_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Supprime un tier ; les suivants remontent. Refusé (409) pour le dernier tier du modèle."""
     try:
         template: Template = service.delete_tier(user, template_id, tier_id)
     except TemplateNotFoundError as exc:
@@ -276,6 +291,8 @@ def add_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Ajoute une tuile à la fin du modèle : un texte, une image déjà envoyée par le compte (POST
+    /images), ou les deux. Refusé (409) au-delà du nombre maximal de tuiles (`max_tiles`)."""
     try:
         template: Template = service.add_tile(user, template_id, payload.text, payload.image_id)
     except TemplateNotFoundError as exc:
@@ -313,6 +330,8 @@ def update_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Change le texte, l'image et/ou la position d'une tuile. Un `null` explicite retire le texte
+    ou l'image, tant que la tuile garde l'autre ; `position: null` est ignoré."""
     changes: TileChanges = TileChanges(**payload.model_dump(exclude_unset=True))
     if payload.position is None:
         changes.pop("position", None)
@@ -337,6 +356,7 @@ def delete_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Supprime une tuile ; les suivantes remontent."""
     try:
         template: Template = service.delete_tile(user, template_id, tile_id)
     except TemplateNotFoundError as exc:

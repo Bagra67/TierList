@@ -851,6 +851,7 @@
           "templates"
         ],
         "summary": "List Templates",
+        "description": "Les modèles actifs du compte, avec leur nombre de tuiles, le plus récemment modifié en\npremier. Chaque modèle indique sa décision de modération et les images retirées de ses tuiles.",
         "operationId": "list_templates_templates_get",
         "responses": {
           "200": {
@@ -895,6 +896,7 @@
           "templates"
         ],
         "summary": "Create Template",
+        "description": "Crée un modèle avec les six tiers par défaut (S à E) et aucune tuile.",
         "operationId": "create_template_templates_post",
         "requestBody": {
           "content": {
@@ -961,6 +963,7 @@
           "templates"
         ],
         "summary": "List Removed Templates",
+        "description": "Les modèles du compte supprimés par la modération et pas encore purgés, avec la date et le\nmotif.",
         "operationId": "list_removed_templates_templates_removed_get",
         "responses": {
           "200": {
@@ -1007,6 +1010,7 @@
           "templates"
         ],
         "summary": "Get Template",
+        "description": "Un modèle du compte, avec ses tiers et ses tuiles triés par position. 404 pour un modèle\nsupprimé ou d'un autre compte.",
         "operationId": "get_template_templates__template_id__get",
         "security": [
           {
@@ -1083,6 +1087,7 @@
           "templates"
         ],
         "summary": "Rename Template",
+        "description": "Renomme un modèle ; sa date de dernière modification est mise à jour.",
         "operationId": "rename_template_templates__template_id__patch",
         "security": [
           {
@@ -1169,6 +1174,7 @@
           "templates"
         ],
         "summary": "Delete Template",
+        "description": "Supprime un modèle : il disparaît aussitôt pour son propriétaire, et il est effacé pour de\nbon après la durée de rétention. Les parties déjà jouées gardent leur version figée.",
         "operationId": "delete_template_templates__template_id__delete",
         "security": [
           {
@@ -1349,6 +1355,7 @@
           "templates"
         ],
         "summary": "Add Tier",
+        "description": "Ajoute un tier en bas du modèle, nommé « ? », couleur #9AA0B4.",
         "operationId": "add_tier_templates__template_id__tiers_post",
         "security": [
           {
@@ -1427,6 +1434,7 @@
           "templates"
         ],
         "summary": "Update Tier",
+        "description": "Change le nom, la couleur et/ou la position d'un tier ; les autres tiers sont décalés. Une\nposition au-delà de la fin met le tier en dernier.",
         "operationId": "update_tier_templates__template_id__tiers__tier_id__patch",
         "security": [
           {
@@ -1523,6 +1531,7 @@
           "templates"
         ],
         "summary": "Delete Tier",
+        "description": "Supprime un tier ; les suivants remontent. Refusé (409) pour le dernier tier du modèle.",
         "operationId": "delete_tier_templates__template_id__tiers__tier_id__delete",
         "security": [
           {
@@ -1621,6 +1630,7 @@
           "templates"
         ],
         "summary": "Add Tile",
+        "description": "Ajoute une tuile à la fin du modèle : un texte, une image déjà envoyée par le compte (POST\n/images), ou les deux. Refusé (409) au-delà du nombre maximal de tuiles (`max_tiles`).",
         "operationId": "add_tile_templates__template_id__tiles_post",
         "security": [
           {
@@ -1719,6 +1729,7 @@
           "templates"
         ],
         "summary": "Update Tile",
+        "description": "Change le texte, l'image et/ou la position d'une tuile. Un `null` explicite retire le texte\nou l'image, tant que la tuile garde l'autre ; `position: null` est ignoré.",
         "operationId": "update_tile_templates__template_id__tiles__tile_id__patch",
         "security": [
           {
@@ -1815,6 +1826,7 @@
           "templates"
         ],
         "summary": "Delete Tile",
+        "description": "Supprime une tuile ; les suivantes remontent.",
         "operationId": "delete_tile_templates__template_id__tiles__tile_id__delete",
         "security": [
           {
@@ -6279,7 +6291,8 @@
         "required": [
           "name"
         ],
-        "title": "CreateTemplateRequest"
+        "title": "CreateTemplateRequest",
+        "description": "Nom du nouveau modèle ; les espaces autour sont retirés."
       },
       "CreateTileRequest": {
         "properties": {
@@ -6310,7 +6323,8 @@
           }
         },
         "type": "object",
-        "title": "CreateTileRequest"
+        "title": "CreateTileRequest",
+        "description": "Contenu de la nouvelle tuile : un texte, une image ou les deux, jamais aucun des deux."
       },
       "CurrentGameResponse": {
         "properties": {
@@ -7003,7 +7017,8 @@
           "width",
           "height"
         ],
-        "title": "ImageUploadResponse"
+        "title": "ImageUploadResponse",
+        "description": "Image envoyée et compressée : son id, à mettre dans une tuile, son adresse publique et ses\ndimensions en pixels."
       },
       "ItemDistributionResponse": {
         "properties": {
@@ -7616,7 +7631,8 @@
           "status",
           "reason"
         ],
-        "title": "RemovedImageResponse"
+        "title": "RemovedImageResponse",
+        "description": "Une tuile dont l'image a été masquée ou supprimée par la modération, avec la décision et le\nmotif."
       },
       "RemovedTemplateListResponse": {
         "properties": {
@@ -7632,7 +7648,8 @@
         "required": [
           "items"
         ],
-        "title": "RemovedTemplateListResponse"
+        "title": "RemovedTemplateListResponse",
+        "description": "Les modèles du compte supprimés par la modération et pas encore purgés."
       },
       "RemovedTemplateResponse": {
         "properties": {
@@ -7662,7 +7679,8 @@
           "removed_at",
           "reason"
         ],
-        "title": "RemovedTemplateResponse"
+        "title": "RemovedTemplateResponse",
+        "description": "Un modèle supprimé par la modération, pas encore purgé, avec la date et le motif."
       },
       "RenameTemplateRequest": {
         "properties": {
@@ -7677,7 +7695,8 @@
         "required": [
           "name"
         ],
-        "title": "RenameTemplateRequest"
+        "title": "RenameTemplateRequest",
+        "description": "Nouveau nom du modèle ; les espaces autour sont retirés."
       },
       "ReportQueueResponse": {
         "properties": {
@@ -8218,7 +8237,8 @@
         "required": [
           "visibility"
         ],
-        "title": "SetTemplateVisibilityRequest"
+        "title": "SetTemplateVisibilityRequest",
+        "description": "Visibilité choisie pour le modèle."
       },
       "SuperAdminResponse": {
         "properties": {
@@ -8254,7 +8274,8 @@
         "required": [
           "items"
         ],
-        "title": "TemplateListResponse"
+        "title": "TemplateListResponse",
+        "description": "Les modèles du compte, le plus récemment modifié en premier."
       },
       "TemplateModeration": {
         "type": "string",
@@ -8348,7 +8369,8 @@
           "visibility",
           "first_made_public_at"
         ],
-        "title": "TemplateResponse"
+        "title": "TemplateResponse",
+        "description": "Un modèle avec ses tiers et ses tuiles triés par position. `max_tiles` est le nombre maximal\nde tuiles ; `first_made_public_at` est gardée quand le modèle repasse en privé."
       },
       "TemplateSummaryResponse": {
         "properties": {
@@ -8419,7 +8441,8 @@
           "first_made_public_at",
           "removed_images"
         ],
-        "title": "TemplateSummaryResponse"
+        "title": "TemplateSummaryResponse",
+        "description": "Un modèle dans la liste du compte : son nombre de tuiles, sa décision de modération et les\nimages retirées de ses tuiles."
       },
       "TemplateVisibility": {
         "type": "string",
@@ -8481,7 +8504,8 @@
           "color",
           "position"
         ],
-        "title": "TierResponse"
+        "title": "TierResponse",
+        "description": "Un tier du modèle ; la position 0 est le tier du haut."
       },
       "TileResponse": {
         "properties": {
@@ -8552,7 +8576,8 @@
           "image_moderation_reason",
           "position"
         ],
-        "title": "TileResponse"
+        "title": "TileResponse",
+        "description": "Une tuile du modèle, dans l'ordre du modèle. `image_removed` est vrai quand la modération a\nmasqué ou supprimé l'image : `image_url` est alors null. `image_status` et\n`image_moderation_reason` ne sont montrés qu'au propriétaire."
       },
       "TokenResponse": {
         "properties": {
@@ -8694,7 +8719,8 @@
           }
         },
         "type": "object",
-        "title": "UpdateTierRequest"
+        "title": "UpdateTierRequest",
+        "description": "Changements d'un tier : seuls les champs envoyés changent. La couleur est au format\n#RRGGBB."
       },
       "UpdateTileRequest": {
         "properties": {
@@ -8737,7 +8763,8 @@
           }
         },
         "type": "object",
-        "title": "UpdateTileRequest"
+        "title": "UpdateTileRequest",
+        "description": "Changements d'une tuile : seuls les champs envoyés changent. `null` retire le texte ou\nl'image ; la tuile doit garder l'un des deux."
       },
       "UserResponse": {
         "properties": {
