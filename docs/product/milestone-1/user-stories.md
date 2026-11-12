@@ -1,7 +1,5 @@
 # Milestone 1 — User stories
 
-English | [Français](user-stories.fr.md)
-
 What each actor can do in [milestone 1](README.md), grouped by epic. Each story has an ID, a priority and acceptance criteria written as _Given / When / Then_. Vocabulary: [product.md](../product.md#glossary). Screens: [screens.md](screens.md).
 
 **Priority**: **Must** = required for the milestone to be playable; **Should** = expected in the milestone, can slip to the next one if needed.

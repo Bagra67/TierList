@@ -1,7 +1,5 @@
 # Templates
 
-English | [Français](templates.fr.md)
-
 How templates are stored and exposed by the API: data model, endpoints, soft deletion and purge, snapshots taken when a game starts, moderation, visibility, and where it lives in the code. What a template is for the user: [product](../product/product.md).
 
 ## 1. Functional overview

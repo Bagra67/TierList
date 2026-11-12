@@ -1,7 +1,5 @@
 # Milestone 1 — Lifecycles
 
-English | [Français](lifecycles.fr.md)
-
 The states of the main concepts of [milestone 1](README.md) and what moves them from one state to another. Concepts: [domain-model.md](domain-model.md). Stories: [user-stories.md](user-stories.md).
 
 ## Room

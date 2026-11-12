@@ -1,7 +1,5 @@
 # Visual identity — "Le Plateau"
 
-English | [Français](visual-identity.fr.md)
-
 The visual identity of TierList, decided on real screens on 2026-10-28 (#213 to #222): the set of a TV game or quiz show, with its light **stage**, its deep **ink**, its **buzzer** and its **spotlight**. This page lists the values and the rules, and where they live in the code. The styled version, with live component previews, is the [design system "TierList — Le Plateau"](https://claude.ai/artifact/1HiN88pvwgBbSjy2p1QysC) (claude.ai, private to its owner, shared on request). When the two differ, **the code is the reference**.
 
 ## 1. Where it lives

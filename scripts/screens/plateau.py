@@ -8,7 +8,7 @@ from typing import NamedTuple
 from xml.sax.saxutils import escape
 
 REPO_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LANGUAGES: tuple[str, ...] = ("en", "fr")
+LANGUAGES: tuple[str, ...] = ("en",)
 FONTTOOLS: str = "fonttools[woff]==4.68.0"
 FONTSOURCE: str = "frontend/node_modules/@fontsource-variable"
 FONT_FILES: dict[str, str] = {

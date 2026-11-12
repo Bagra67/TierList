@@ -1,7 +1,5 @@
 # Game rules
 
-English | [Français](game-rules.fr.md)
-
 The business rules of TierList: how each mode is played, what can be configured, and what is saved. Vocabulary: [product.md](product.md#glossary). Who may do each action: [permissions.md](permissions.md). Most of these rules are not implemented yet, see [roadmap.md](roadmap.md).
 
 ## 1. Room game

@@ -1,5 +1,3 @@
-English | [Français](emails.fr.md)
-
 # Emails
 
 The backend sends transactional emails (email address verification, password reset) over **SMTP**. The provider is only a configuration: changing it does not change the code.

@@ -900,11 +900,11 @@ For new functionality:
 
 ## Testing guide
 
-`docs/technical/testing.md` (English) and `docs/technical/testing.fr.md` (French) describe
-every test: what it does, its purpose and the expected result.
+`docs/technical/testing.md` describes every test: what it does, its
+purpose and the expected result.
 
 Whenever a test, a test fixture or a test tool is added, changed,
-renamed or removed, BOTH files MUST be updated in the same PR, so that
+renamed or removed, the guide MUST be updated in the same PR, so that
 the guide always matches the actual tests. The `Docs` CI check enforces
 it; the `skip-docs-sync` PR label is reserved for justified exceptions,
 explained in the PR description.
@@ -1037,16 +1037,17 @@ Files under `docs/` are split by audience:
 
 ## Documentation language
 
-All human-facing documentation (READMEs, files under `docs/`, guides)
-MUST exist in **English and French**:
+The READMEs (`README.md`, `backend/README.md`, `frontend/README.md`) and
+`CHANGELOG.md` MUST exist in **English and French**:
 
--   `name.md` is the English version and the reference.
--   `name.fr.md` is the French version, in the same directory.
+-   `README.md` is the English version and the reference.
+-   `README.fr.md` is the French version, in the same directory.
 -   Each file starts with a language switcher:
-    `English | [Français](name.fr.md)` in the English file and
-    `[English](name.md) | Français` in the French one.
+    `English | [Français](README.fr.md)` in the English file and
+    `[English](README.md) | Français` in the French one.
 -   Relative links point to files in the same language
-    (e.g. `README.fr.md` links to `backend/README.fr.md`).
+    (e.g. `README.fr.md` links to `backend/README.fr.md`), and to the
+    English docs otherwise.
 -   Both versions MUST be updated in the same PR and stay equivalent in
     content.
 -   The `Docs` CI check enforces the pairs, the switchers and the
@@ -1054,12 +1055,10 @@ MUST exist in **English and French**:
     `skip-docs-sync` PR label is reserved for justified exceptions
     (e.g. a typo fixed in one language), explained in the PR description.
 
-Exceptions:
-
--   `AGENTS.md` and the Claude Code skills and agents (`.claude/`)
-    stay English-only (instructions for agents).
--   `LICENSE` is already bilingual in a single file.
--   Code comments are not concerned.
+Every other doc is **English-only**: files under `docs/`, `TODO.md`,
+`AGENTS.md` and the Claude Code skills and agents (`.claude/`). Do not
+add a `.fr.md` translation for them. `LICENSE` is already bilingual in a
+single file. Code comments are not concerned.
 
 ------------------------------------------------------------------------
 

@@ -1,7 +1,5 @@
 # Authentication
 
-English | [Français](authentication.fr.md)
-
 How users create an account and sign in to TierList: what the user sees, how it works technically, and where it lives in the code.
 
 ## 1. Functional overview

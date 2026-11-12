@@ -1,7 +1,5 @@
 # Milestone 1 — Domain model
 
-English | [Français](domain-model.fr.md)
-
 The business concepts of [milestone 1](README.md), their relations and the rules they must always respect. This is a **conceptual** model: it names what the product manipulates, not how it is stored. Attribute types are business types (text, duration, link…), not database types.
 
 ## Class diagram

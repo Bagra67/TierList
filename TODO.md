@@ -1,7 +1,5 @@
 # TODO
 
-English | [Français](TODO.fr.md)
-
 Manual steps left to do: configuration, checks in a browser, merges and decisions that cannot be done from the code. Tick an item once it is done, and remove a section once it is empty.
 
 ## 1. Before the first deployment
