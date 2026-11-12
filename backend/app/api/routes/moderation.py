@@ -154,6 +154,9 @@ def list_reports(
     offset: Annotated[int, Query(ge=0)] = 0,
     owner_id: uuid.UUID | None = None,
 ) -> ReportQueueResponse:
+    """File des signalements ouverts, regroupés par contenu : le plus signalé en premier, puis le
+    plus ancien. Jamais l'auteur d'un signalement. Paginé par `limit` et `offset` ; `owner_id` garde
+    les contenus d'un compte."""
     page: ReportQueuePage = service.page(limit, offset, owner_id)
     return ReportQueueResponse(
         contents=[reported_content_response(storage, content) for content in page.contents],
@@ -165,6 +168,8 @@ def list_reports(
 def count_reports(
     super_admin: SuperAdminDep, service: ReportQueueServiceDep
 ) -> OpenReportCountResponse:
+    """Nombre de contenus signalés en attente (des contenus, pas des signalements), pour le menu de
+    modération."""
     return OpenReportCountResponse(open_contents=service.count_open_contents())
 
 
@@ -179,6 +184,8 @@ def count_reports(
 def dismiss_reports(
     body: DismissReportsRequest, super_admin: SuperAdminDep, service: ReportQueueServiceDep
 ) -> None:
+    """Classe sans suite les signalements ouverts d'un contenu : le contenu ne change pas. Écrit au
+    journal de modération avec le motif."""
     try:
         service.dismiss(super_admin, body.target_type, body.target_id, body.reason)
     except ReportsNotOpenError as exc:
@@ -217,6 +224,8 @@ def list_hidden_games(
     ] = REPORT_QUEUE_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> HiddenGamesResponse:
+    """Les parties masquées par la modération, pour pouvoir les rendre visibles. Paginé par `limit`
+    et `offset`."""
     page: HiddenGamesPage = service.hidden_games(limit, offset)
     return HiddenGamesResponse(
         games=[
@@ -272,6 +281,8 @@ def unhide_game(
     super_admin: SuperAdminDep,
     service: ReportQueueServiceDep,
 ) -> None:
+    """Rend visible une partie masquée : son lien de résultats remarche. Écrit au journal avec le
+    motif."""
     try:
         service.unhide_game(super_admin, game_id, body.reason)
     except GameNotFoundError as exc:
@@ -292,6 +303,9 @@ def get_moderation_log(
     target: Annotated[str | None, Query(max_length=MODERATION_TARGET_LABEL_MAX_LENGTH)] = None,
     account_id: uuid.UUID | None = None,
 ) -> ModerationLogResponse:
+    """Le journal de modération, le plus récent en premier. Filtres : `actor_id` (un super admin),
+    `target` (texte cherché dans le nom de la cible, sans casse), `account_id` (les décisions sur un
+    compte, ses modèles et ses images). Paginé par `limit` et `offset`."""
     page: ModerationLogPage = service.page(limit, offset, actor_id, target, account_id)
     return ModerationLogResponse(
         entries=[ModerationActionResponse.model_validate(entry) for entry in page.entries],
@@ -303,6 +317,7 @@ def get_moderation_log(
 def list_super_admins(
     super_admin: SuperAdminDep, service: ModerationLogServiceDep
 ) -> list[SuperAdminResponse]:
+    """Les super admins, par nom : les choix du filtre « Super admin » du journal."""
     return [SuperAdminResponse.model_validate(user) for user in service.super_admins()]
 
 
@@ -313,6 +328,8 @@ def hide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Masque une image visible : elle n'est plus servie à son adresse publique et apparaît «
+    retirée » partout. Écrit au journal avec le motif."""
     try:
         service.hide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -328,6 +345,7 @@ def unhide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Rend visible une image masquée. Écrit au journal avec le motif."""
     try:
         service.unhide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -343,6 +361,8 @@ def delete_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Supprime une image, visible ou masquée : son fichier est effacé et elle apparaît « retirée »
+    partout. Écrit au journal avec le motif."""
     try:
         service.delete(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -366,6 +386,9 @@ def list_recent_uploads(
     status: Literal["visible", "hidden"] | None = None,
     owner_id: uuid.UUID | None = None,
 ) -> RecentUploadsResponse:
+    """Les dernières images envoyées, la plus récente en premier, avec leur auteur et leur
+    utilisation (modèles, parties). Filtres : `author` (nom ou e-mail, sans casse),
+    `created_after` et `created_before`, `status`, `owner_id`. Paginé par `limit` et `offset`."""
     page: RecentUploadsPage = service.page(
         limit,
         offset,
@@ -411,6 +434,8 @@ def hide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et
+    son propriétaire voit le motif. Écrit au journal."""
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -428,6 +453,8 @@ def unhide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal
+    avec le motif."""
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -445,6 +472,8 @@ def delete_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Supprime un modèle, visible ou masqué, comme une suppression par son propriétaire ; il voit
+    le motif jusqu'à la purge. Écrit au journal."""
     try:
         service.delete(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -463,6 +492,8 @@ def search_accounts(
     ] = ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> AccountSearchResponse:
+    """Cherche des comptes par nom ou e-mail, triés par nom. Paginé par `limit` et `offset` ;
+    `has_more` dit s'il reste des comptes."""
     page: AccountSearchPage = service.search(query, limit, offset)
     return AccountSearchResponse(
         accounts=[
@@ -486,6 +517,8 @@ def get_account(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
 ) -> AccountResponse:
+    """La page d'un compte : ses informations, son bannissement actif, ses bannissements passés et
+    ses modèles."""
     try:
         details: AccountDetails = service.details(user_id)
     except UserNotFoundError as exc:
@@ -520,6 +553,8 @@ def hide_account_images(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
 ) -> HiddenImagesResponse:
+    """Masque les images visibles d'un compte, par lots. Renvoyer la requête tant que `has_more` est
+    vrai."""
     try:
         batch: HiddenImagesBatch = service.hide_all_images(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:
@@ -541,6 +576,9 @@ def ban_account(
     service: AccountBanServiceDep,
     games: GameServiceDep,
 ) -> None:
+    """Bannit un compte, jusqu'à `ends_at` ou définitivement (`ends_at` null) ; un bannissement
+    actif est d'abord levé. Le compte est déconnecté partout et ne peut plus se connecter ; ses
+    contenus restent en ligne. Écrit au journal."""
     try:
         service.ban(
             super_admin,
@@ -572,6 +610,8 @@ def lift_account_ban(
     super_admin: SuperAdminDep,
     service: AccountBanServiceDep,
 ) -> None:
+    """Lève le bannissement actif d'un compte : il peut se reconnecter ; ses sessions restent
+    fermées. Écrit au journal avec le motif."""
     try:
         service.lift(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:

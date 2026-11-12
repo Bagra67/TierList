@@ -822,7 +822,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Reports */
+        /**
+         * List Reports
+         * @description File des signalements ouverts, regroupés par contenu : le plus signalé en premier, puis le
+         *     plus ancien. Jamais l'auteur d'un signalement. Paginé par `limit` et `offset` ; `owner_id` garde
+         *     les contenus d'un compte.
+         */
         get: operations["list_reports_moderation_reports_get"];
         put?: never;
         post?: never;
@@ -839,7 +844,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Count Reports */
+        /**
+         * Count Reports
+         * @description Nombre de contenus signalés en attente (des contenus, pas des signalements), pour le menu de
+         *     modération.
+         */
         get: operations["count_reports_moderation_reports_count_get"];
         put?: never;
         post?: never;
@@ -858,7 +867,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Dismiss Reports */
+        /**
+         * Dismiss Reports
+         * @description Classe sans suite les signalements ouverts d'un contenu : le contenu ne change pas. Écrit au
+         *     journal de modération avec le motif.
+         */
         post: operations["dismiss_reports_moderation_reports_dismiss_post"];
         delete?: never;
         options?: never;
@@ -894,7 +907,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Hidden Games */
+        /**
+         * List Hidden Games
+         * @description Les parties masquées par la modération, pour pouvoir les rendre visibles. Paginé par `limit`
+         *     et `offset`.
+         */
         get: operations["list_hidden_games_moderation_games_hidden_get"];
         put?: never;
         post?: never;
@@ -933,7 +950,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Unhide Game */
+        /**
+         * Unhide Game
+         * @description Rend visible une partie masquée : son lien de résultats remarche. Écrit au journal avec le
+         *     motif.
+         */
         post: operations["unhide_game_moderation_games__game_id__unhide_post"];
         delete?: never;
         options?: never;
@@ -948,7 +969,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Moderation Log */
+        /**
+         * Get Moderation Log
+         * @description Le journal de modération, le plus récent en premier. Filtres : `actor_id` (un super admin),
+         *     `target` (texte cherché dans le nom de la cible, sans casse), `account_id` (les décisions sur un
+         *     compte, ses modèles et ses images). Paginé par `limit` et `offset`.
+         */
         get: operations["get_moderation_log_moderation_log_get"];
         put?: never;
         post?: never;
@@ -965,7 +991,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Super Admins */
+        /**
+         * List Super Admins
+         * @description Les super admins, par nom : les choix du filtre « Super admin » du journal.
+         */
         get: operations["list_super_admins_moderation_super_admins_get"];
         put?: never;
         post?: never;
@@ -984,7 +1013,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Hide Image */
+        /**
+         * Hide Image
+         * @description Masque une image visible : elle n'est plus servie à son adresse publique et apparaît «
+         *     retirée » partout. Écrit au journal avec le motif.
+         */
         post: operations["hide_image_moderation_images__image_id__hide_post"];
         delete?: never;
         options?: never;
@@ -1001,7 +1034,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Unhide Image */
+        /**
+         * Unhide Image
+         * @description Rend visible une image masquée. Écrit au journal avec le motif.
+         */
         post: operations["unhide_image_moderation_images__image_id__unhide_post"];
         delete?: never;
         options?: never;
@@ -1018,7 +1054,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Delete Image */
+        /**
+         * Delete Image
+         * @description Supprime une image, visible ou masquée : son fichier est effacé et elle apparaît « retirée »
+         *     partout. Écrit au journal avec le motif.
+         */
         post: operations["delete_image_moderation_images__image_id__delete_post"];
         delete?: never;
         options?: never;
@@ -1033,7 +1073,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Recent Uploads */
+        /**
+         * List Recent Uploads
+         * @description Les dernières images envoyées, la plus récente en premier, avec leur auteur et leur
+         *     utilisation (modèles, parties). Filtres : `author` (nom ou e-mail, sans casse),
+         *     `created_after` et `created_before`, `status`, `owner_id`. Paginé par `limit` et `offset`.
+         */
         get: operations["list_recent_uploads_moderation_images_get"];
         put?: never;
         post?: never;
@@ -1072,7 +1117,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Hide Template */
+        /**
+         * Hide Template
+         * @description Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et
+         *     son propriétaire voit le motif. Écrit au journal.
+         */
         post: operations["hide_template_moderation_templates__template_id__hide_post"];
         delete?: never;
         options?: never;
@@ -1089,7 +1138,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Unhide Template */
+        /**
+         * Unhide Template
+         * @description Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal
+         *     avec le motif.
+         */
         post: operations["unhide_template_moderation_templates__template_id__unhide_post"];
         delete?: never;
         options?: never;
@@ -1106,7 +1159,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Delete Template */
+        /**
+         * Delete Template
+         * @description Supprime un modèle, visible ou masqué, comme une suppression par son propriétaire ; il voit
+         *     le motif jusqu'à la purge. Écrit au journal.
+         */
         post: operations["delete_template_moderation_templates__template_id__delete_post"];
         delete?: never;
         options?: never;
@@ -1121,7 +1178,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search Accounts */
+        /**
+         * Search Accounts
+         * @description Cherche des comptes par nom ou e-mail, triés par nom. Paginé par `limit` et `offset` ;
+         *     `has_more` dit s'il reste des comptes.
+         */
         get: operations["search_accounts_moderation_accounts_get"];
         put?: never;
         post?: never;
@@ -1138,7 +1199,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Account */
+        /**
+         * Get Account
+         * @description La page d'un compte : ses informations, son bannissement actif, ses bannissements passés et
+         *     ses modèles.
+         */
         get: operations["get_account_moderation_accounts__user_id__get"];
         put?: never;
         post?: never;
@@ -1157,7 +1222,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Hide Account Images */
+        /**
+         * Hide Account Images
+         * @description Masque les images visibles d'un compte, par lots. Renvoyer la requête tant que `has_more` est
+         *     vrai.
+         */
         post: operations["hide_account_images_moderation_accounts__user_id__hide_images_post"];
         delete?: never;
         options?: never;
@@ -1174,7 +1243,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ban Account */
+        /**
+         * Ban Account
+         * @description Bannit un compte, jusqu'à `ends_at` ou définitivement (`ends_at` null) ; un bannissement
+         *     actif est d'abord levé. Le compte est déconnecté partout et ne peut plus se connecter ; ses
+         *     contenus restent en ligne. Écrit au journal.
+         */
         post: operations["ban_account_moderation_accounts__user_id__ban_post"];
         delete?: never;
         options?: never;
@@ -1191,7 +1265,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Lift Account Ban */
+        /**
+         * Lift Account Ban
+         * @description Lève le bannissement actif d'un compte : il peut se reconnecter ; ses sessions restent
+         *     fermées. Écrit au journal avec le motif.
+         */
         post: operations["lift_account_ban_moderation_accounts__user_id__lift_ban_post"];
         delete?: never;
         options?: never;

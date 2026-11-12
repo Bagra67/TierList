@@ -3565,6 +3565,7 @@
           "moderation"
         ],
         "summary": "List Reports",
+        "description": "File des signalements ouverts, regroupés par contenu : le plus signalé en premier, puis le\nplus ancien. Jamais l'auteur d'un signalement. Paginé par `limit` et `offset` ; `owner_id` garde\nles contenus d'un compte.",
         "operationId": "list_reports_moderation_reports_get",
         "security": [
           {
@@ -3673,6 +3674,7 @@
           "moderation"
         ],
         "summary": "Count Reports",
+        "description": "Nombre de contenus signalés en attente (des contenus, pas des signalements), pour le menu de\nmodération.",
         "operationId": "count_reports_moderation_reports_count_get",
         "responses": {
           "200": {
@@ -3729,6 +3731,7 @@
           "moderation"
         ],
         "summary": "Dismiss Reports",
+        "description": "Classe sans suite les signalements ouverts d'un contenu : le contenu ne change pas. Écrit au\njournal de modération avec le motif.",
         "operationId": "dismiss_reports_moderation_reports_dismiss_post",
         "requestBody": {
           "content": {
@@ -3888,6 +3891,7 @@
           "moderation"
         ],
         "summary": "List Hidden Games",
+        "description": "Les parties masquées par la modération, pour pouvoir les rendre visibles. Paginé par `limit`\net `offset`.",
         "operationId": "list_hidden_games_moderation_games_hidden_get",
         "security": [
           {
@@ -4081,6 +4085,7 @@
           "moderation"
         ],
         "summary": "Unhide Game",
+        "description": "Rend visible une partie masquée : son lien de résultats remarche. Écrit au journal avec le\nmotif.",
         "operationId": "unhide_game_moderation_games__game_id__unhide_post",
         "security": [
           {
@@ -4182,6 +4187,7 @@
           "moderation"
         ],
         "summary": "Get Moderation Log",
+        "description": "Le journal de modération, le plus récent en premier. Filtres : `actor_id` (un super admin),\n`target` (texte cherché dans le nom de la cible, sans casse), `account_id` (les décisions sur un\ncompte, ses modèles et ses images). Paginé par `limit` et `offset`.",
         "operationId": "get_moderation_log_moderation_log_get",
         "security": [
           {
@@ -4324,6 +4330,7 @@
           "moderation"
         ],
         "summary": "List Super Admins",
+        "description": "Les super admins, par nom : les choix du filtre « Super admin » du journal.",
         "operationId": "list_super_admins_moderation_super_admins_get",
         "responses": {
           "200": {
@@ -4384,6 +4391,7 @@
           "moderation"
         ],
         "summary": "Hide Image",
+        "description": "Masque une image visible : elle n'est plus servie à son adresse publique et apparaît «\nretirée » partout. Écrit au journal avec le motif.",
         "operationId": "hide_image_moderation_images__image_id__hide_post",
         "security": [
           {
@@ -4485,6 +4493,7 @@
           "moderation"
         ],
         "summary": "Unhide Image",
+        "description": "Rend visible une image masquée. Écrit au journal avec le motif.",
         "operationId": "unhide_image_moderation_images__image_id__unhide_post",
         "security": [
           {
@@ -4586,6 +4595,7 @@
           "moderation"
         ],
         "summary": "Delete Image",
+        "description": "Supprime une image, visible ou masquée : son fichier est effacé et elle apparaît « retirée »\npartout. Écrit au journal avec le motif.",
         "operationId": "delete_image_moderation_images__image_id__delete_post",
         "security": [
           {
@@ -4687,6 +4697,7 @@
           "moderation"
         ],
         "summary": "List Recent Uploads",
+        "description": "Les dernières images envoyées, la plus récente en premier, avec leur auteur et leur\nutilisation (modèles, parties). Filtres : `author` (nom ou e-mail, sans casse),\n`created_after` et `created_before`, `status`, `owner_id`. Paginé par `limit` et `offset`.",
         "operationId": "list_recent_uploads_moderation_images_get",
         "security": [
           {
@@ -4955,6 +4966,7 @@
           "moderation"
         ],
         "summary": "Hide Template",
+        "description": "Masque un modèle visible et non supprimé : il ne peut plus servir à une nouvelle partie, et\nson propriétaire voit le motif. Écrit au journal.",
         "operationId": "hide_template_moderation_templates__template_id__hide_post",
         "security": [
           {
@@ -5056,6 +5068,7 @@
           "moderation"
         ],
         "summary": "Unhide Template",
+        "description": "Rend visible un modèle masqué, non supprimé ; le motif est effacé du modèle. Écrit au journal\navec le motif.",
         "operationId": "unhide_template_moderation_templates__template_id__unhide_post",
         "security": [
           {
@@ -5157,6 +5170,7 @@
           "moderation"
         ],
         "summary": "Delete Template",
+        "description": "Supprime un modèle, visible ou masqué, comme une suppression par son propriétaire ; il voit\nle motif jusqu'à la purge. Écrit au journal.",
         "operationId": "delete_template_moderation_templates__template_id__delete_post",
         "security": [
           {
@@ -5258,6 +5272,7 @@
           "moderation"
         ],
         "summary": "Search Accounts",
+        "description": "Cherche des comptes par nom ou e-mail, triés par nom. Paginé par `limit` et `offset` ;\n`has_more` dit s'il reste des comptes.",
         "operationId": "search_accounts_moderation_accounts_get",
         "security": [
           {
@@ -5366,6 +5381,7 @@
           "moderation"
         ],
         "summary": "Get Account",
+        "description": "La page d'un compte : ses informations, son bannissement actif, ses bannissements passés et\nses modèles.",
         "operationId": "get_account_moderation_accounts__user_id__get",
         "security": [
           {
@@ -5454,6 +5470,7 @@
           "moderation"
         ],
         "summary": "Hide Account Images",
+        "description": "Masque les images visibles d'un compte, par lots. Renvoyer la requête tant que `has_more` est\nvrai.",
         "operationId": "hide_account_images_moderation_accounts__user_id__hide_images_post",
         "security": [
           {
@@ -5562,6 +5579,7 @@
           "moderation"
         ],
         "summary": "Ban Account",
+        "description": "Bannit un compte, jusqu'à `ends_at` ou définitivement (`ends_at` null) ; un bannissement\nactif est d'abord levé. Le compte est déconnecté partout et ne peut plus se connecter ; ses\ncontenus restent en ligne. Écrit au journal.",
         "operationId": "ban_account_moderation_accounts__user_id__ban_post",
         "security": [
           {
@@ -5663,6 +5681,7 @@
           "moderation"
         ],
         "summary": "Lift Account Ban",
+        "description": "Lève le bannissement actif d'un compte : il peut se reconnecter ; ses sessions restent\nfermées. Écrit au journal avec le motif.",
         "operationId": "lift_account_ban_moderation_accounts__user_id__lift_ban_post",
         "security": [
           {
