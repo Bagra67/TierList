@@ -33,6 +33,9 @@ NewPassword = Annotated[
 
 
 class RegisterRequest(BaseModel):
+    """Inscription par e-mail et mot de passe ; `language` choisit la langue de l'e-mail de
+    vérification."""
+
     email: EmailStr
     password: NewPassword
     display_name: DisplayName
@@ -40,17 +43,25 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    """Connexion par e-mail et mot de passe."""
+
     email: EmailStr
     password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
 class TokenResponse(BaseModel):
+    """Access token à envoyer dans l'en-tête `Authorization: Bearer`, valable `expires_in`
+    secondes. Le refresh token n'est jamais dans le corps : il est dans un cookie HttpOnly."""
+
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
 
 
 class UserResponse(BaseModel):
+    """Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé
+    avec Google seul."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -63,22 +74,33 @@ class UserResponse(BaseModel):
 
 
 class DeleteAccountRequest(BaseModel):
+    """Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
+    en a un, absent pour un compte Google seul."""
+
     password: str | None = Field(default=None, min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
 class EmailVerificationRequest(BaseModel):
+    """Langue du nouvel e-mail de vérification."""
+
     language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class VerifyEmailRequest(BaseModel):
+    """Token du lien de vérification reçu par e-mail."""
+
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
 
 
 class ForgotPasswordRequest(BaseModel):
+    """Adresse du compte, et langue de l'e-mail de réinitialisation."""
+
     email: EmailStr
     language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class ResetPasswordRequest(BaseModel):
+    """Token du lien de réinitialisation reçu par e-mail, et nouveau mot de passe."""
+
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
     password: NewPassword

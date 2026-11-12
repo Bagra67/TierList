@@ -144,6 +144,8 @@ def register(
     email_sender: EmailSenderDep,
     settings: SettingsDep,
 ) -> TokenResponse:
+    """Crée un compte avec e-mail et mot de passe, ouvre sa session et envoie l'e-mail de
+    vérification dans la langue demandée. Le refresh token est posé en cookie HttpOnly."""
     try:
         registration = service.register(
             payload.email, payload.password, payload.display_name, payload.language
@@ -168,6 +170,9 @@ def register(
 def login(
     payload: LoginRequest, response: Response, service: AuthServiceDep, settings: SettingsDep
 ) -> TokenResponse:
+    """Ouvre une session avec e-mail et mot de passe. Le refresh token est posé en cookie
+    HttpOnly ; un compte banni reçoit 403 avec le motif et, s'il y en a une, la fin du
+    bannissement."""
     try:
         tokens = service.login(payload.email, payload.password)
     except InvalidCredentialsError as exc:
@@ -195,6 +200,9 @@ def refresh(
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
 ) -> TokenResponse | Response:
+    """Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.
+    204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été
+    fermée, avec le cookie effacé."""
     if refresh_token is None:
         return Response(status_code=204)
     try:
@@ -211,6 +219,8 @@ def logout(
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
 ) -> None:
+    """Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans
+    session."""
     if refresh_token is not None:
         service.logout(refresh_token)
     _clear_refresh_cookie(response, settings)
@@ -218,6 +228,7 @@ def logout(
 
 @router.get("/me", responses=UNAUTHORIZED_RESPONSE)
 def me(user: CurrentUserDep) -> UserResponse:
+    """Le compte connecté."""
     return UserResponse.model_validate(user)
 
 
@@ -268,6 +279,9 @@ def delete_me(
     games: GameServiceDep,
     settings: SettingsDep,
 ) -> None:
+    """Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de
+    passe doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie
+    de refresh est effacé."""
     try:
         service.delete_account(
             session, payload.password, before_delete=games.leave_rooms_of_deleted_account

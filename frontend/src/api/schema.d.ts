@@ -13,7 +13,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register */
+        /**
+         * Register
+         * @description Crée un compte avec e-mail et mot de passe, ouvre sa session et envoie l'e-mail de
+         *     vérification dans la langue demandée. Le refresh token est posé en cookie HttpOnly.
+         */
         post: operations["register_auth_register_post"];
         delete?: never;
         options?: never;
@@ -30,7 +34,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login */
+        /**
+         * Login
+         * @description Ouvre une session avec e-mail et mot de passe. Le refresh token est posé en cookie
+         *     HttpOnly ; un compte banni reçoit 403 avec le motif et, s'il y en a une, la fin du
+         *     bannissement.
+         */
         post: operations["login_auth_login_post"];
         delete?: never;
         options?: never;
@@ -47,7 +56,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh */
+        /**
+         * Refresh
+         * @description Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.
+         *     204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été
+         *     fermée, avec le cookie effacé.
+         */
         post: operations["refresh_auth_refresh_post"];
         delete?: never;
         options?: never;
@@ -64,7 +78,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Logout */
+        /**
+         * Logout
+         * @description Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans
+         *     session.
+         */
         post: operations["logout_auth_logout_post"];
         delete?: never;
         options?: never;
@@ -79,11 +97,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Me */
+        /**
+         * Me
+         * @description Le compte connecté.
+         */
         get: operations["me_auth_me_get"];
         put?: never;
         post?: never;
-        /** Delete Me */
+        /**
+         * Delete Me
+         * @description Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de
+         *     passe doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie
+         *     de refresh est effacé.
+         */
         delete: operations["delete_me_auth_me_delete"];
         options?: never;
         head?: never;
@@ -1335,7 +1361,11 @@ export interface components {
             /** Image Removed */
             image_removed: boolean;
         };
-        /** DeleteAccountRequest */
+        /**
+         * DeleteAccountRequest
+         * @description Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
+         *     en a un, absent pour un compte Google seul.
+         */
         DeleteAccountRequest: {
             /** Password */
             password?: string | null;
@@ -1354,7 +1384,10 @@ export interface components {
              */
             target_id: string;
         };
-        /** EmailVerificationRequest */
+        /**
+         * EmailVerificationRequest
+         * @description Langue du nouvel e-mail de vérification.
+         */
         EmailVerificationRequest: {
             /**
              * Language
@@ -1389,7 +1422,10 @@ export interface components {
                 [key: string]: string | number;
             } | null;
         };
-        /** ForgotPasswordRequest */
+        /**
+         * ForgotPasswordRequest
+         * @description Adresse du compte, et langue de l'e-mail de réinitialisation.
+         */
         ForgotPasswordRequest: {
             /**
              * Email
@@ -1607,7 +1643,10 @@ export interface components {
             /** Nickname */
             nickname: string;
         };
-        /** LoginRequest */
+        /**
+         * LoginRequest
+         * @description Connexion par e-mail et mot de passe.
+         */
         LoginRequest: {
             /**
              * Email
@@ -1799,7 +1838,11 @@ export interface components {
             /** Has More */
             has_more: boolean;
         };
-        /** RegisterRequest */
+        /**
+         * RegisterRequest
+         * @description Inscription par e-mail et mot de passe ; `language` choisit la langue de l'e-mail de
+         *     vérification.
+         */
         RegisterRequest: {
             /**
              * Email
@@ -1948,7 +1991,10 @@ export interface components {
             /** Public Token */
             public_token: string | null;
         };
-        /** ResetPasswordRequest */
+        /**
+         * ResetPasswordRequest
+         * @description Token du lien de réinitialisation reçu par e-mail, et nouveau mot de passe.
+         */
         ResetPasswordRequest: {
             /** Token */
             token: string;
@@ -2216,7 +2262,11 @@ export interface components {
             /** Position */
             position: number;
         };
-        /** TokenResponse */
+        /**
+         * TokenResponse
+         * @description Access token à envoyer dans l'en-tête `Authorization: Bearer`, valable `expires_in`
+         *     secondes. Le refresh token n'est jamais dans le corps : il est dans un cookie HttpOnly.
+         */
         TokenResponse: {
             /** Access Token */
             access_token: string;
@@ -2260,7 +2310,11 @@ export interface components {
             /** Position */
             position?: number | null;
         };
-        /** UserResponse */
+        /**
+         * UserResponse
+         * @description Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé
+         *     avec Google seul.
+         */
         UserResponse: {
             /**
              * Id
@@ -2303,7 +2357,10 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
-        /** VerifyEmailRequest */
+        /**
+         * VerifyEmailRequest
+         * @description Token du lien de vérification reçu par e-mail.
+         */
         VerifyEmailRequest: {
             /** Token */
             token: string;

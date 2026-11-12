@@ -12,6 +12,7 @@
           "auth"
         ],
         "summary": "Register",
+        "description": "Crée un compte avec e-mail et mot de passe, ouvre sa session et envoie l'e-mail de\nvérification dans la langue demandée. Le refresh token est posé en cookie HttpOnly.",
         "operationId": "register_auth_register_post",
         "requestBody": {
           "content": {
@@ -73,6 +74,7 @@
           "auth"
         ],
         "summary": "Login",
+        "description": "Ouvre une session avec e-mail et mot de passe. Le refresh token est posé en cookie\nHttpOnly ; un compte banni reçoit 403 avec le motif et, s'il y en a une, la fin du\nbannissement.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -144,6 +146,7 @@
           "auth"
         ],
         "summary": "Refresh",
+        "description": "Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.\n204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été\nfermée, avec le cookie effacé.",
         "operationId": "refresh_auth_refresh_post",
         "parameters": [
           {
@@ -216,6 +219,7 @@
           "auth"
         ],
         "summary": "Logout",
+        "description": "Ferme la session de ce navigateur et efface le cookie de refresh ; 204 même sans\nsession.",
         "operationId": "logout_auth_logout_post",
         "parameters": [
           {
@@ -268,6 +272,7 @@
           "auth"
         ],
         "summary": "Me",
+        "description": "Le compte connecté.",
         "operationId": "me_auth_me_get",
         "responses": {
           "200": {
@@ -312,6 +317,7 @@
           "auth"
         ],
         "summary": "Delete Me",
+        "description": "Supprime le compte connecté, après l'avoir retiré de ses salles. Un compte avec mot de\npasse doit le redonner ; un compte Google seul doit s'être connecté récemment. Le cookie\nde refresh est effacé.",
         "operationId": "delete_me_auth_me_delete",
         "requestBody": {
           "content": {
@@ -6452,7 +6458,8 @@
           }
         },
         "type": "object",
-        "title": "DeleteAccountRequest"
+        "title": "DeleteAccountRequest",
+        "description": "Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui\nen a un, absent pour un compte Google seul."
       },
       "DismissReportsRequest": {
         "properties": {
@@ -6493,7 +6500,8 @@
           }
         },
         "type": "object",
-        "title": "EmailVerificationRequest"
+        "title": "EmailVerificationRequest",
+        "description": "Langue du nouvel e-mail de vérification."
       },
       "ErrorResponse": {
         "properties": {
@@ -6619,7 +6627,8 @@
         "required": [
           "email"
         ],
-        "title": "ForgotPasswordRequest"
+        "title": "ForgotPasswordRequest",
+        "description": "Adresse du compte, et langue de l'e-mail de réinitialisation."
       },
       "GameResultsResponse": {
         "properties": {
@@ -7113,7 +7122,8 @@
           "email",
           "password"
         ],
-        "title": "LoginRequest"
+        "title": "LoginRequest",
+        "description": "Connexion par e-mail et mot de passe."
       },
       "ModerationActionKind": {
         "type": "string",
@@ -7536,7 +7546,8 @@
           "password",
           "display_name"
         ],
-        "title": "RegisterRequest"
+        "title": "RegisterRequest",
+        "description": "Inscription par e-mail et mot de passe ; `language` choisit la langue de l'e-mail de\nvérification."
       },
       "RemoveNicknameRequest": {
         "properties": {
@@ -7873,7 +7884,8 @@
           "token",
           "password"
         ],
-        "title": "ResetPasswordRequest"
+        "title": "ResetPasswordRequest",
+        "description": "Token du lien de réinitialisation reçu par e-mail, et nouveau mot de passe."
       },
       "RestoreGuestRequest": {
         "properties": {
@@ -8564,7 +8576,8 @@
           "access_token",
           "expires_in"
         ],
-        "title": "TokenResponse"
+        "title": "TokenResponse",
+        "description": "Access token à envoyer dans l'en-tête `Authorization: Bearer`, valable `expires_in`\nsecondes. Le refresh token n'est jamais dans le corps : il est dans un cookie HttpOnly."
       },
       "UpdateRoomSettingsRequest": {
         "properties": {
@@ -8768,7 +8781,8 @@
           "role",
           "created_at"
         ],
-        "title": "UserResponse"
+        "title": "UserResponse",
+        "description": "Un compte, tel que son propriétaire le voit. `has_password` est faux pour un compte créé\navec Google seul."
       },
       "UserRole": {
         "type": "string",
@@ -8832,7 +8846,8 @@
         "required": [
           "token"
         ],
-        "title": "VerifyEmailRequest"
+        "title": "VerifyEmailRequest",
+        "description": "Token du lien de vérification reçu par e-mail."
       },
       "CooldownStartedData": {
         "properties": {
