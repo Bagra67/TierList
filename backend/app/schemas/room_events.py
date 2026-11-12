@@ -43,6 +43,8 @@ class ParticipantRemovedEvent(BaseModel):
 
 
 class GameStartedData(BaseModel):
+    """Premier tour de la partie ; `ends_at` est la fin du tour quand il a un minuteur."""
+
     round_number: int
     round_count: int
     ends_at: datetime | None
@@ -57,6 +59,8 @@ class GameStartedEvent(BaseModel):
 
 
 class ParticipantPlacedData(BaseModel):
+    """Le participant qui a placé l'item, et le tour concerné."""
+
     participant_id: uuid.UUID
     round_number: int
 
@@ -70,6 +74,8 @@ class ParticipantPlacedEvent(BaseModel):
 
 
 class RoundStartedData(BaseModel):
+    """Nouveau tour ; `ends_at` est la fin du tour quand il a un minuteur."""
+
     round_number: int
     round_count: int
     ends_at: datetime | None
@@ -85,6 +91,8 @@ class RoundStartedEvent(BaseModel):
 
 
 class CooldownStartedData(BaseModel):
+    """Fin du cooldown final."""
+
     ends_at: datetime
 
 
@@ -97,6 +105,8 @@ class CooldownStartedEvent(BaseModel):
 
 
 class GameClosedData(BaseModel):
+    """La partie qui vient d'être close."""
+
     game_id: uuid.UUID
 
 
@@ -142,6 +152,8 @@ class PingMessage(BaseModel):
 
 
 class PongMessage(BaseModel):
+    """Réponse du client au ping du serveur, dans les 5 s."""
+
     type: Literal["pong"] = "pong"
 
 

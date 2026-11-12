@@ -268,7 +268,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Client Config */
+        /**
+         * Get Client Config
+         * @description Configuration publique du navigateur (suivi des erreurs) ; le backend l'écrit aussi dans
+         *     index.html, cette route sert au serveur de développement Vite.
+         */
         get: operations["get_client_config_client_config_get"];
         put?: never;
         post?: never;
@@ -496,7 +500,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Room */
+        /**
+         * Create Room
+         * @description Crée une salle ouverte sur un modèle du compte, non masqué et avec au moins une tuile. Le
+         *     compte en devient l'admin et le premier participant.
+         */
         post: operations["create_room_rooms_post"];
         delete?: never;
         options?: never;
@@ -511,11 +519,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Room */
+        /**
+         * Get Room
+         * @description La salle, ses réglages, ses participants et sa partie en cours, pour un participant (compte,
+         *     ou invité reconnu par le cookie de la salle). 403 sans place dans la salle, pour que la page
+         *     propose de la rejoindre ; 404 pour un code inconnu ou une salle fermée.
+         */
         get: operations["get_room_rooms__code__get"];
         put?: never;
         post?: never;
-        /** Close Room */
+        /**
+         * Close Room
+         * @description Ferme la salle (admin seulement) : une partie en cours est d'abord close et gardée, puis la
+         *     salle, ses places et ses bannissements sont supprimés. Le code et le lien ne marchent plus.
+         */
         delete: operations["close_room_rooms__code__delete"];
         options?: never;
         head?: never;
@@ -531,7 +548,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Join As Guest */
+        /**
+         * Join As Guest
+         * @description Rejoint la salle en invité avec un pseudo. Pose le cookie de la salle et renvoie le lien
+         *     perso, donné une seule fois.
+         */
         post: operations["join_as_guest_rooms__code__guests_post"];
         delete?: never;
         options?: never;
@@ -548,7 +569,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Restore Guest Session */
+        /**
+         * Restore Guest Session
+         * @description Rend sa place à un invité à partir du token de son lien perso, sur n'importe quel appareil,
+         *     et pose le cookie de la salle.
+         */
         post: operations["restore_guest_session_rooms__code__guest_session_post"];
         delete?: never;
         options?: never;
@@ -565,7 +590,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Renew Guest Link */
+        /**
+         * Renew Guest Link
+         * @description Donne un nouveau lien perso à l'invité reconnu par le cookie ; l'ancien ne marche plus.
+         */
         post: operations["renew_guest_link_rooms__code__guest_link_post"];
         delete?: never;
         options?: never;
@@ -582,7 +610,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Join Room */
+        /**
+         * Join Room
+         * @description Donne au compte une place de joueur dans la salle, avec son nom affiché ; rend la même place
+         *     s'il en a déjà une, même salle pleine ou arrivées bloquées.
+         */
         post: operations["join_room_rooms__code__join_post"];
         delete?: never;
         options?: never;
@@ -603,7 +635,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Room Settings */
+        /**
+         * Update Room Settings
+         * @description Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs
+         *     envoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer.
+         */
         patch: operations["update_room_settings_rooms__code__settings_patch"];
         trace?: never;
     };
@@ -617,7 +653,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Remove Participant */
+        /**
+         * Remove Participant
+         * @description Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements
+         *     de la partie en cours partent avec lui. Avec `ban=true`, il ne peut plus revenir : son compte,
+         *     ou pour un invité son navigateur.
+         */
         delete: operations["remove_participant_rooms__code__participants__participant_id__delete"];
         options?: never;
         head?: never;
@@ -634,7 +675,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Unban */
+        /**
+         * Unban
+         * @description Lève un bannissement (admin seulement) : la personne peut revenir.
+         */
         delete: operations["unban_rooms__code__bans__ban_id__delete"];
         options?: never;
         head?: never;
@@ -650,7 +694,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start Game */
+        /**
+         * Start Game
+         * @description Lance une partie (admin seulement) sur la version actuelle du modèle, figée pour toute la
+         *     partie. La salle passe en `playing` et le premier item est montré à tous.
+         */
         post: operations["start_game_rooms__code__game_post"];
         delete?: never;
         options?: never;
@@ -666,7 +714,12 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Place Item */
+        /**
+         * Place Item
+         * @description Place l'item du tour en cours dans un tier, à la position voulue, sur le plateau privé du
+         *     lecteur ; le replacer dans le même tour le déplace. Pendant le cooldown, place ou déplace
+         *     n'importe quel item de la partie, y compris un item manqué.
+         */
         put: operations["place_item_rooms__code__game_placements__tile_id__put"];
         post?: never;
         delete?: never;
@@ -684,7 +737,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Next Round */
+        /**
+         * Next Round
+         * @description Termine le tour en cours (admin seulement) et montre l'item suivant à tous, ou lance le
+         *     cooldown final après le dernier item. Les participants qui n'ont pas placé l'item ont un vote
+         *     absent.
+         */
         post: operations["next_round_rooms__code__game_next_post"];
         delete?: never;
         options?: never;
@@ -701,7 +759,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End Cooldown */
+        /**
+         * End Cooldown
+         * @description Termine le cooldown final (admin seulement) : la partie est close et gardée, la salle repasse
+         *     en `open`.
+         */
         post: operations["end_cooldown_rooms__code__game_end_post"];
         delete?: never;
         options?: never;
@@ -716,7 +778,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Game Results */
+        /**
+         * Get Game Results
+         * @description Les résultats d'une partie close, par son lien public : aucun compte n'est demandé, le token
+         *     du lien est la seule protection. `include_absent_votes` choisit si les votes absents comptent
+         *     dans le classement (oui par défaut) ; le calcul est refait à chaque requête.
+         */
         get: operations["get_game_results_results__public_token__get"];
         put?: never;
         post?: never;
@@ -733,7 +800,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get History */
+        /**
+         * Get History
+         * @description Les parties closes du compte, la plus récente en premier : celles où il a joué et celles des
+         *     salles dont il était l'admin. Paginé par `limit` et `offset` ; `has_more` dit s'il reste des
+         *     parties.
+         */
         get: operations["get_history_history_get"];
         put?: never;
         post?: never;
@@ -1345,7 +1417,10 @@ export interface components {
             /** Details */
             details?: string | null;
         };
-        /** CreateRoomRequest */
+        /**
+         * CreateRoomRequest
+         * @description Modèle de la nouvelle salle.
+         */
         CreateRoomRequest: {
             /**
              * Template Id
@@ -1371,7 +1446,12 @@ export interface components {
             /** Image Id */
             image_id?: string | null;
         };
-        /** CurrentGameResponse */
+        /**
+         * CurrentGameResponse
+         * @description La partie en cours, vue par le lecteur : seuls ses propres placements sont envoyés, avec la
+         *     liste de ceux qui ont placé l'item du tour. `ends_at` est la fin du tour quand il a un minuteur
+         *     ; `cooldown_ends_at` et `missed_items` servent pendant le cooldown final.
+         */
         CurrentGameResponse: {
             status: components["schemas"]["GameStatus"];
             /** Round Number */
@@ -1691,7 +1771,10 @@ export interface components {
          * @enum {string}
          */
         ItemOrder: "template" | "random";
-        /** JoinAsGuestRequest */
+        /**
+         * JoinAsGuestRequest
+         * @description Pseudo de l'invité dans la salle.
+         */
         JoinAsGuestRequest: {
             /** Nickname */
             nickname: string;
@@ -1791,7 +1874,11 @@ export interface components {
             /** Position */
             position: number;
         };
-        /** ParticipantResponse */
+        /**
+         * ParticipantResponse
+         * @description Une place dans la salle : un compte avec son nom affiché, ou un invité avec son pseudo.
+         *     `is_you` désigne la place du lecteur.
+         */
         ParticipantResponse: {
             /**
              * Id
@@ -1827,7 +1914,11 @@ export interface components {
             /** Player Count */
             player_count: number;
         };
-        /** PlaceItemRequest */
+        /**
+         * PlaceItemRequest
+         * @description Tier choisi pour l'item, et position dans ce tier (0 = premier) ; une position au-delà de la
+         *     fin met l'item en dernier.
+         */
         PlaceItemRequest: {
             /**
              * Tier Id
@@ -2067,7 +2158,10 @@ export interface components {
             /** Password */
             password: string;
         };
-        /** RestoreGuestRequest */
+        /**
+         * RestoreGuestRequest
+         * @description Token du lien perso de l'invité.
+         */
         RestoreGuestRequest: {
             /** Token */
             token: string;
@@ -2120,7 +2214,10 @@ export interface components {
             image_url: string | null;
             image_status: components["schemas"]["ImageStatus"] | null;
         };
-        /** RoomBanResponse */
+        /**
+         * RoomBanResponse
+         * @description Un bannissement de la salle, visible de l'admin seulement.
+         */
         RoomBanResponse: {
             /**
              * Id
@@ -2132,7 +2229,12 @@ export interface components {
             /** Is Guest */
             is_guest: boolean;
         };
-        /** RoomResponse */
+        /**
+         * RoomResponse
+         * @description Une salle vue par un participant. `version` augmente à chaque changement de la salle ; `bans`
+         *     n'est rempli que pour l'admin ; `template` est null quand le modèle a été purgé ; `game` est
+         *     null hors partie.
+         */
         RoomResponse: {
             /** Code */
             code: string;
@@ -2159,7 +2261,11 @@ export interface components {
              */
             server_now: string;
         };
-        /** RoomSettingsResponse */
+        /**
+         * RoomSettingsResponse
+         * @description Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`
+         *     n'est pas `timer`.
+         */
         RoomSettingsResponse: {
             item_order: components["schemas"]["ItemOrder"];
             auto_advance: components["schemas"]["AutoAdvance"];
@@ -2179,7 +2285,11 @@ export interface components {
          * @enum {string}
          */
         RoomStatus: "open" | "playing";
-        /** RoomTemplateResponse */
+        /**
+         * RoomTemplateResponse
+         * @description Modèle de la salle ; `hidden` est vrai quand la modération l'a masqué : aucune nouvelle
+         *     partie ne peut alors commencer.
+         */
         RoomTemplateResponse: {
             /**
              * Id
@@ -2367,7 +2477,11 @@ export interface components {
             /** Expires In */
             expires_in: number;
         };
-        /** UpdateRoomSettingsRequest */
+        /**
+         * UpdateRoomSettingsRequest
+         * @description Changements des réglages de la salle : seuls les champs envoyés changent ; une requête sans
+         *     champ ne change rien.
+         */
         UpdateRoomSettingsRequest: {
             item_order?: components["schemas"]["ItemOrder"] | null;
             auto_advance?: components["schemas"]["AutoAdvance"] | null;
@@ -2461,7 +2575,10 @@ export interface components {
             /** Token */
             token: string;
         };
-        /** CooldownStartedData */
+        /**
+         * CooldownStartedData
+         * @description Fin du cooldown final.
+         */
         CooldownStartedData: {
             /**
              * Ends At
@@ -2483,7 +2600,10 @@ export interface components {
             room_version: number;
             data: components["schemas"]["CooldownStartedData"];
         };
-        /** GameClosedData */
+        /**
+         * GameClosedData
+         * @description La partie qui vient d'être close.
+         */
         GameClosedData: {
             /**
              * Game Id
@@ -2506,7 +2626,10 @@ export interface components {
             room_version: number;
             data: components["schemas"]["GameClosedData"];
         };
-        /** GameStartedData */
+        /**
+         * GameStartedData
+         * @description Premier tour de la partie ; `ends_at` est la fin du tour quand il a un minuteur.
+         */
         GameStartedData: {
             /** Round Number */
             round_number: number;
@@ -2551,7 +2674,10 @@ export interface components {
             room_version: number;
             data: components["schemas"]["ParticipantJoinedData"];
         };
-        /** ParticipantPlacedData */
+        /**
+         * ParticipantPlacedData
+         * @description Le participant qui a placé l'item, et le tour concerné.
+         */
         ParticipantPlacedData: {
             /**
              * Participant Id
@@ -2648,7 +2774,10 @@ export interface components {
             room_version: number;
             data?: components["schemas"]["RoomSettingsUpdatedData"];
         };
-        /** RoundStartedData */
+        /**
+         * RoundStartedData
+         * @description Nouveau tour ; `ends_at` est la fin du tour quand il a un minuteur.
+         */
         RoundStartedData: {
             /** Round Number */
             round_number: number;
@@ -2690,7 +2819,10 @@ export interface components {
              */
             access_token: string | null;
         };
-        /** PongMessage */
+        /**
+         * PongMessage
+         * @description Réponse du client au ping du serveur, dans les 5 s.
+         */
         PongMessage: {
             /**
              * @description discriminator enum property added by openapi-typescript

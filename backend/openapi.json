@@ -820,6 +820,7 @@
           "client-config"
         ],
         "summary": "Get Client Config",
+        "description": "Configuration publique du navigateur (suivi des erreurs) ; le backend l'écrit aussi dans\nindex.html, cette route sert au serveur de développement Vite.",
         "operationId": "get_client_config_client_config_get",
         "responses": {
           "200": {
@@ -2012,6 +2013,7 @@
           "rooms"
         ],
         "summary": "Create Room",
+        "description": "Crée une salle ouverte sur un modèle du compte, non masqué et avec au moins une tuile. Le\ncompte en devient l'admin et le premier participant.",
         "operationId": "create_room_rooms_post",
         "requestBody": {
           "content": {
@@ -2098,6 +2100,7 @@
           "rooms"
         ],
         "summary": "Get Room",
+        "description": "La salle, ses réglages, ses participants et sa partie en cours, pour un participant (compte,\nou invité reconnu par le cookie de la salle). 403 sans place dans la salle, pour que la page\npropose de la rejoindre ; 404 pour un code inconnu ou une salle fermée.",
         "operationId": "get_room_rooms__code__get",
         "security": [
           {
@@ -2199,6 +2202,7 @@
           "rooms"
         ],
         "summary": "Close Room",
+        "description": "Ferme la salle (admin seulement) : une partie en cours est d'abord close et gardée, puis la\nsalle, ses places et ses bannissements sont supprimés. Le code et le lien ne marchent plus.",
         "operationId": "close_room_rooms__code__delete",
         "security": [
           {
@@ -2279,6 +2283,7 @@
           "rooms"
         ],
         "summary": "Join As Guest",
+        "description": "Rejoint la salle en invité avec un pseudo. Pose le cookie de la salle et renvoie le lien\nperso, donné une seule fois.",
         "operationId": "join_as_guest_rooms__code__guests_post",
         "parameters": [
           {
@@ -2387,6 +2392,7 @@
           "rooms"
         ],
         "summary": "Restore Guest Session",
+        "description": "Rend sa place à un invité à partir du token de son lien perso, sur n'importe quel appareil,\net pose le cookie de la salle.",
         "operationId": "restore_guest_session_rooms__code__guest_session_post",
         "parameters": [
           {
@@ -2459,6 +2465,7 @@
           "rooms"
         ],
         "summary": "Renew Guest Link",
+        "description": "Donne un nouveau lien perso à l'invité reconnu par le cookie ; l'ancien ne marche plus.",
         "operationId": "renew_guest_link_rooms__code__guest_link_post",
         "security": [
           {
@@ -2552,6 +2559,7 @@
           "rooms"
         ],
         "summary": "Join Room",
+        "description": "Donne au compte une place de joueur dans la salle, avec son nom affiché ; rend la même place\ns'il en a déjà une, même salle pleine ou arrivées bloquées.",
         "operationId": "join_room_rooms__code__join_post",
         "security": [
           {
@@ -2649,6 +2657,7 @@
           "rooms"
         ],
         "summary": "Update Room Settings",
+        "description": "Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs\nenvoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer.",
         "operationId": "update_room_settings_rooms__code__settings_patch",
         "security": [
           {
@@ -2756,6 +2765,7 @@
           "rooms"
         ],
         "summary": "Remove Participant",
+        "description": "Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements\nde la partie en cours partent avec lui. Avec `ban=true`, il ne peut plus revenir : son compte,\nou pour un invité son navigateur.",
         "operationId": "remove_participant_rooms__code__participants__participant_id__delete",
         "security": [
           {
@@ -2873,6 +2883,7 @@
           "rooms"
         ],
         "summary": "Unban",
+        "description": "Lève un bannissement (admin seulement) : la personne peut revenir.",
         "operationId": "unban_rooms__code__bans__ban_id__delete",
         "security": [
           {
@@ -2970,6 +2981,7 @@
           "rooms"
         ],
         "summary": "Start Game",
+        "description": "Lance une partie (admin seulement) sur la version actuelle du modèle, figée pour toute la\npartie. La salle passe en `playing` et le premier item est montré à tous.",
         "operationId": "start_game_rooms__code__game_post",
         "security": [
           {
@@ -3067,6 +3079,7 @@
           "rooms"
         ],
         "summary": "Place Item",
+        "description": "Place l'item du tour en cours dans un tier, à la position voulue, sur le plateau privé du\nlecteur ; le replacer dans le même tour le déplace. Pendant le cooldown, place ou déplace\nn'importe quel item de la partie, y compris un item manqué.",
         "operationId": "place_item_rooms__code__game_placements__tile_id__put",
         "security": [
           {
@@ -3200,6 +3213,7 @@
           "rooms"
         ],
         "summary": "Next Round",
+        "description": "Termine le tour en cours (admin seulement) et montre l'item suivant à tous, ou lance le\ncooldown final après le dernier item. Les participants qui n'ont pas placé l'item ont un vote\nabsent.",
         "operationId": "next_round_rooms__code__game_next_post",
         "security": [
           {
@@ -3297,6 +3311,7 @@
           "rooms"
         ],
         "summary": "End Cooldown",
+        "description": "Termine le cooldown final (admin seulement) : la partie est close et gardée, la salle repasse\nen `open`.",
         "operationId": "end_cooldown_rooms__code__game_end_post",
         "security": [
           {
@@ -3394,6 +3409,7 @@
           "results"
         ],
         "summary": "Get Game Results",
+        "description": "Les résultats d'une partie close, par son lien public : aucun compte n'est demandé, le token\ndu lien est la seule protection. `include_absent_votes` choisit si les votes absents comptent\ndans le classement (oui par défaut) ; le calcul est refait à chaque requête.",
         "operationId": "get_game_results_results__public_token__get",
         "parameters": [
           {
@@ -3467,6 +3483,7 @@
           "history"
         ],
         "summary": "Get History",
+        "description": "Les parties closes du compte, la plus récente en premier : celles où il a joué et celles des\nsalles dont il était l'admin. Paginé par `limit` et `offset` ; `has_more` dit s'il reste des\nparties.",
         "operationId": "get_history_history_get",
         "security": [
           {
@@ -6276,7 +6293,8 @@
         "required": [
           "template_id"
         ],
-        "title": "CreateRoomRequest"
+        "title": "CreateRoomRequest",
+        "description": "Modèle de la nouvelle salle."
       },
       "CreateTemplateRequest": {
         "properties": {
@@ -6409,7 +6427,8 @@
           "cooldown_ends_at",
           "missed_items"
         ],
-        "title": "CurrentGameResponse"
+        "title": "CurrentGameResponse",
+        "description": "La partie en cours, vue par le lecteur : seuls ses propres placements sont envoyés, avec la\nliste de ceux qui ont placé l'item du tour. `ends_at` est la fin du tour quand il a un minuteur\n; `cooldown_ends_at` et `missed_items` servent pendant le cooldown final."
       },
       "CurrentItemResponse": {
         "properties": {
@@ -7116,7 +7135,8 @@
         "required": [
           "nickname"
         ],
-        "title": "JoinAsGuestRequest"
+        "title": "JoinAsGuestRequest",
+        "description": "Pseudo de l'invité dans la salle."
       },
       "LoginRequest": {
         "properties": {
@@ -7348,7 +7368,8 @@
           "connected",
           "is_you"
         ],
-        "title": "ParticipantResponse"
+        "title": "ParticipantResponse",
+        "description": "Une place dans la salle : un compte avec son nom affiché, ou un invité avec son pseudo.\n`is_you` désigne la place du lecteur."
       },
       "PastGameResponse": {
         "properties": {
@@ -7398,7 +7419,8 @@
           "tier_id",
           "position"
         ],
-        "title": "PlaceItemRequest"
+        "title": "PlaceItemRequest",
+        "description": "Tier choisi pour l'item, et position dans ce tier (0 = premier) ; une position au-delà de la\nfin met l'item en dernier."
       },
       "PlayerResultsResponse": {
         "properties": {
@@ -7917,7 +7939,8 @@
         "required": [
           "token"
         ],
-        "title": "RestoreGuestRequest"
+        "title": "RestoreGuestRequest",
+        "description": "Token du lien perso de l'invité."
       },
       "ReviewedTemplateResponse": {
         "properties": {
@@ -8067,7 +8090,8 @@
           "display_name",
           "is_guest"
         ],
-        "title": "RoomBanResponse"
+        "title": "RoomBanResponse",
+        "description": "Un bannissement de la salle, visible de l'admin seulement."
       },
       "RoomResponse": {
         "properties": {
@@ -8156,7 +8180,8 @@
           "past_games",
           "server_now"
         ],
-        "title": "RoomResponse"
+        "title": "RoomResponse",
+        "description": "Une salle vue par un participant. `version` augmente à chaque changement de la salle ; `bans`\nn'est rempli que pour l'admin ; `template` est null quand le modèle a été purgé ; `game` est\nnull hors partie."
       },
       "RoomSettingsResponse": {
         "properties": {
@@ -8192,7 +8217,8 @@
           "admin_plays",
           "late_arrivals_allowed"
         ],
-        "title": "RoomSettingsResponse"
+        "title": "RoomSettingsResponse",
+        "description": "Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`\nn'est pas `timer`."
       },
       "RoomStatus": {
         "type": "string",
@@ -8225,7 +8251,8 @@
           "name",
           "hidden"
         ],
-        "title": "RoomTemplateResponse"
+        "title": "RoomTemplateResponse",
+        "description": "Modèle de la salle ; `hidden` est vrai quand la modération l'a masqué : aucune nouvelle\npartie ne peut alors commencer."
       },
       "SetTemplateVisibilityRequest": {
         "properties": {
@@ -8676,7 +8703,8 @@
           }
         },
         "type": "object",
-        "title": "UpdateRoomSettingsRequest"
+        "title": "UpdateRoomSettingsRequest",
+        "description": "Changements des réglages de la salle : seuls les champs envoyés changent ; une requête sans\nchamp ne change rien."
       },
       "UpdateTierRequest": {
         "properties": {
@@ -8877,6 +8905,7 @@
         "description": "Token du lien de vérification reçu par e-mail."
       },
       "CooldownStartedData": {
+        "description": "Fin du cooldown final.",
         "properties": {
           "ends_at": {
             "format": "date-time",
@@ -8915,6 +8944,7 @@
         "type": "object"
       },
       "GameClosedData": {
+        "description": "La partie qui vient d'être close.",
         "properties": {
           "game_id": {
             "format": "uuid",
@@ -8953,6 +8983,7 @@
         "type": "object"
       },
       "GameStartedData": {
+        "description": "Premier tour de la partie ; `ends_at` est la fin du tour quand il a un minuteur.",
         "properties": {
           "round_number": {
             "title": "Round Number",
@@ -9046,6 +9077,7 @@
         "type": "object"
       },
       "ParticipantPlacedData": {
+        "description": "Le participant qui a placé l'item, et le tour concerné.",
         "properties": {
           "participant_id": {
             "format": "uuid",
@@ -9211,6 +9243,7 @@
         "type": "object"
       },
       "RoundStartedData": {
+        "description": "Nouveau tour ; `ends_at` est la fin du tour quand il a un minuteur.",
         "properties": {
           "round_number": {
             "title": "Round Number",
@@ -9340,6 +9373,7 @@
         "type": "object"
       },
       "PongMessage": {
+        "description": "Réponse du client au ping du serveur, dans les 5 s.",
         "properties": {
           "type": {
             "const": "pong",

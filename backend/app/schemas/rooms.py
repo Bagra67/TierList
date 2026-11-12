@@ -15,6 +15,8 @@ from app.schemas.common import DisplayName
 
 
 class CreateRoomRequest(BaseModel):
+    """Modèle de la nouvelle salle."""
+
     template_id: uuid.UUID
 
 
@@ -23,6 +25,9 @@ CooldownSeconds = Annotated[int, Field(ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECO
 
 
 class UpdateRoomSettingsRequest(BaseModel):
+    """Changements des réglages de la salle : seuls les champs envoyés changent ; une requête sans
+    champ ne change rien."""
+
     item_order: ItemOrder | None = None
     auto_advance: AutoAdvance | None = None
     timer_seconds: TimerSeconds | None = None
@@ -32,6 +37,9 @@ class UpdateRoomSettingsRequest(BaseModel):
 
 
 class RoomSettingsResponse(BaseModel):
+    """Réglages appliqués à la prochaine partie. `timer_seconds` est gardé même quand `auto_advance`
+    n'est pas `timer`."""
+
     model_config = ConfigDict(from_attributes=True)
 
     item_order: ItemOrder
@@ -43,12 +51,18 @@ class RoomSettingsResponse(BaseModel):
 
 
 class RoomTemplateResponse(BaseModel):
+    """Modèle de la salle ; `hidden` est vrai quand la modération l'a masqué : aucune nouvelle
+    partie ne peut alors commencer."""
+
     id: uuid.UUID
     name: str
     hidden: bool
 
 
 class ParticipantResponse(BaseModel):
+    """Une place dans la salle : un compte avec son nom affiché, ou un invité avec son pseudo.
+    `is_you` désigne la place du lecteur."""
+
     id: uuid.UUID
     display_name: str
     is_admin: bool
@@ -85,6 +99,10 @@ class OwnPlacementResponse(BaseModel):
 
 
 class CurrentGameResponse(BaseModel):
+    """La partie en cours, vue par le lecteur : seuls ses propres placements sont envoyés, avec la
+    liste de ceux qui ont placé l'item du tour. `ends_at` est la fin du tour quand il a un minuteur
+    ; `cooldown_ends_at` et `missed_items` servent pendant le cooldown final."""
+
     status: GameStatus
     round_number: int
     round_count: int
@@ -98,11 +116,16 @@ class CurrentGameResponse(BaseModel):
 
 
 class PlaceItemRequest(BaseModel):
+    """Tier choisi pour l'item, et position dans ce tier (0 = premier) ; une position au-delà de la
+    fin met l'item en dernier."""
+
     tier_id: uuid.UUID
     position: Annotated[int, Field(ge=0)]
 
 
 class RoomBanResponse(BaseModel):
+    """Un bannissement de la salle, visible de l'admin seulement."""
+
     id: uuid.UUID
     display_name: str
     is_guest: bool
@@ -119,6 +142,10 @@ class PastGameResponse(BaseModel):
 
 
 class RoomResponse(BaseModel):
+    """Une salle vue par un participant. `version` augmente à chaque changement de la salle ; `bans`
+    n'est rempli que pour l'admin ; `template` est null quand le modèle a été purgé ; `game` est
+    null hors partie."""
+
     code: str
     version: int
     link: str
@@ -137,10 +164,14 @@ class RoomResponse(BaseModel):
 
 
 class JoinAsGuestRequest(BaseModel):
+    """Pseudo de l'invité dans la salle."""
+
     nickname: DisplayName
 
 
 class RestoreGuestRequest(BaseModel):
+    """Token du lien perso de l'invité."""
+
     token: str
 
 

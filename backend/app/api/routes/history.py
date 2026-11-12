@@ -19,5 +19,8 @@ def get_history(
     limit: Annotated[int, Query(ge=1, le=HISTORY_PAGE_SIZE_MAX)] = HISTORY_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> HistoryResponse:
+    """Les parties closes du compte, la plus récente en premier : celles où il a joué et celles des
+    salles dont il était l'admin. Paginé par `limit` et `offset` ; `has_more` dit s'il reste des
+    parties."""
     page: HistoryPage = service.history(user, limit, offset)
     return HistoryResponse(games=past_games_response(page.games), has_more=page.has_more)

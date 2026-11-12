@@ -9,4 +9,6 @@ router = APIRouter(prefix="/client-config", tags=["client-config"])
 
 @router.get("")
 def get_client_config(settings: SettingsDep) -> ClientConfigResponse:
+    """Configuration publique du navigateur (suivi des erreurs) ; le backend l'écrit aussi dans
+    index.html, cette route sert au serveur de développement Vite."""
     return build_client_config(settings)

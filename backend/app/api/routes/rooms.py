@@ -147,6 +147,8 @@ def create_room(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Crée une salle ouverte sur un modèle du compte, non masqué et avec au moins une tuile. Le
+    compte en devient l'admin et le premier participant."""
     template_id: uuid.UUID = payload.template_id
     try:
         room: Room = service.create(user, template_id)
@@ -169,6 +171,9 @@ def create_room(
 def get_room(
     code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
+    """La salle, ses réglages, ses participants et sa partie en cours, pour un participant (compte,
+    ou invité reconnu par le cookie de la salle). 403 sans place dans la salle, pour que la page
+    propose de la rejoindre ; 404 pour un code inconnu ou une salle fermée."""
     try:
         seat: Participant = service.seat_of(viewer, code)
     except RoomNotJoinedError as exc:
@@ -203,6 +208,8 @@ def join_as_guest(
     settings: SettingsDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> GuestRoomResponse:
+    """Rejoint la salle en invité avec un pseudo. Pose le cookie de la salle et renvoie le lien
+    perso, donné une seule fois."""
     try:
         seat: GuestSeat = service.join_as_guest(code, payload.nickname, guest_token)
     except RoomNotFoundError as exc:
@@ -237,6 +244,8 @@ def restore_guest_session(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
+    """Rend sa place à un invité à partir du token de son lien perso, sur n'importe quel appareil,
+    et pose le cookie de la salle."""
     try:
         seat: GuestSeat = service.restore_guest(code, payload.token)
     except GuestLinkInvalidError as exc:
@@ -258,6 +267,7 @@ def renew_guest_link(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
+    """Donne un nouveau lien perso à l'invité reconnu par le cookie ; l'ancien ne marche plus."""
     try:
         seat: GuestSeat = service.renew_guest_link(viewer, code)
     except RoomNotFoundError as exc:
@@ -277,6 +287,8 @@ def renew_guest_link(
 def join_room(
     code: str, user: CurrentUserDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
+    """Donne au compte une place de joueur dans la salle, avec son nom affiché ; rend la même place
+    s'il en a déjà une, même salle pleine ou arrivées bloquées."""
     try:
         room: Room = service.join(user, code)
     except RoomNotFoundError as exc:
@@ -305,6 +317,8 @@ def update_room_settings(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Change les réglages de la prochaine partie (admin de la salle seulement) ; seuls les champs
+    envoyés changent. Pendant une partie, seul `late_arrivals_allowed` peut changer."""
     changes: RoomSettingsChanges = RoomSettingsChanges(**payload.model_dump(exclude_none=True))
     try:
         room: Room = service.update_settings(user, code, changes)
@@ -327,6 +341,8 @@ def update_room_settings(
     responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_ADMIN_REQUIRED_RESPONSE},
 )
 def close_room(code: str, user: CurrentUserDep, games: GameServiceDep) -> None:
+    """Ferme la salle (admin seulement) : une partie en cours est d'abord close et gardée, puis la
+    salle, ses places et ses bannissements sont supprimés. Le code et le lien ne marchent plus."""
     try:
         games.close_room(user, code)
     except RoomNotFoundError as exc:
@@ -356,6 +372,9 @@ def remove_participant(
     storage: ImageStorageDep,
     ban: bool = False,
 ) -> RoomResponse:
+    """Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements
+    de la partie en cours partent avec lui. Avec `ban=true`, il ne peut plus revenir : son compte,
+    ou pour un invité son navigateur."""
     try:
         room: Room = games.remove_participant(user, code, participant_id, ban)
     except RoomNotFoundError as exc:
@@ -392,6 +411,7 @@ def unban(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Lève un bannissement (admin seulement) : la personne peut revenir."""
     try:
         room: Room = service.unban(user, code, ban_id)
     except RoomNotFoundError as exc:
@@ -423,6 +443,8 @@ def start_game(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Lance une partie (admin seulement) sur la version actuelle du modèle, figée pour toute la
+    partie. La salle passe en `playing` et le premier item est montré à tous."""
     try:
         room: Room = games.start(user, code)
     except RoomNotFoundError as exc:
@@ -475,6 +497,9 @@ def place_item(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Place l'item du tour en cours dans un tier, à la position voulue, sur le plateau privé du
+    lecteur ; le replacer dans le même tour le déplace. Pendant le cooldown, place ou déplace
+    n'importe quel item de la partie, y compris un item manqué."""
     try:
         seat: Participant = games.place(viewer, code, tile_id, payload.tier_id, payload.position)
     except RoomNotFoundError as exc:
@@ -533,6 +558,9 @@ def next_round(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Termine le tour en cours (admin seulement) et montre l'item suivant à tous, ou lance le
+    cooldown final après le dernier item. Les participants qui n'ont pas placé l'item ont un vote
+    absent."""
     try:
         room: Room = games.next_round(user, code)
     except RoomNotFoundError as exc:
@@ -563,6 +591,8 @@ def end_cooldown(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Termine le cooldown final (admin seulement) : la partie est close et gardée, la salle repasse
+    en `open`."""
     try:
         room: Room = games.end_cooldown(user, code)
     except RoomNotFoundError as exc:
