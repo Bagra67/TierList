@@ -218,7 +218,7 @@ The frontend does not store an answer older than the room it already has (`store
 
 ### Tests
 
-`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `test_game_cooldown.py`, `test_game_close.py`, `test_game_replay.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `test_game_cooldown.py`, `test_game_close.py`, `test_game_replay.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`.
 
 ## 4. Known limitations
 

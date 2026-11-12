@@ -158,7 +158,7 @@ Commandes manuelles :
 | Tests + couverture    | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 | Tests de bout en bout | —                           | `pnpm test:e2e`          |
 
-Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour les tests du stockage des images : `docker compose up -d --wait` (sinon ils sont ignorés en local). Les tests de bout en bout (Playwright) lancent la vraie application dans Chromium, Firefox et WebKit : ils ont besoin des mêmes services, des navigateurs (`pnpm exec playwright install chromium firefox webkit`, une fois) et du build du frontend (`pnpm build`). Fonctionnement et but de chaque test : [docs/technical/testing.md](docs/technical/testing.md).
+Les tests d'intégration du backend ont besoin de la base, et de SeaweedFS pour les tests du stockage des images : `docker compose up -d --wait` (sinon ils sont ignorés en local). Les tests de bout en bout (Playwright) lancent la vraie application dans Chromium, Firefox et WebKit : ils ont besoin des mêmes services, des navigateurs (`pnpm exec playwright install chromium firefox webkit`, une fois) et du build du frontend (`pnpm build`). Fonctionnement des tests (outils, mise en place commune, commandes) : [docs/technical/testing.md](docs/technical/testing.md).
 
 ### Intégration continue (GitHub Actions)
 

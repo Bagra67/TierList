@@ -7,7 +7,7 @@ How the GitHub Actions workflows fit together, why the CI is built the way it is
 | Workflow           | Starts on                                                         | Does                                                                                                 |
 | ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `ci.yml`           | every PR; a push to `develop` or `main`                           | `Changed parts`, `Backend`, `Frontend`, `E2E` (×3 browsers), `Secrets`                               |
-| `docs.yml`         | every PR (also when a label changes); a push to `develop`/`main`  | `Docs`: bilingual READMEs and testing guide in sync                                                  |
+| `docs.yml`         | every PR (also when a label changes); a push to `develop`/`main`  | `Docs`: bilingual READMEs (and CHANGELOG) in sync, language switchers                                                  |
 | `deploy.yml`       | a completed `CI` or `Release` run of `develop` or `main`; by hand | staging after a CI push to `develop`, production after `Release` ([deployment guide](deployment.md)) |
 | `release.yml`      | a completed CI push to `main`                                     | tags `vX.Y.Z` and publishes the GitHub Release ([releasing guide](releasing.md))                     |
 | `bundle.yml`       | called by `deploy.yml`                                            | builds the archive deployed to the pods                                                              |

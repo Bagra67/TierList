@@ -1322,9 +1322,10 @@ so that each one can be reviewed on its own:
 -   The technical and product documentation goes into a **final PR that
     only contains documentation**, at the top of the stack. It carries
     `Closes #N`.
--   Exception: the testing guide (§28) stays in the PR that changes the
-    tests, since the `Docs` CI check requires both in the same PR. The
-    same goes for the translations of a new `ErrorCode` (§50).
+-   Exception: a testing guide change (§28: a shared fixture, helper,
+    tool or command) stays in the PR that makes that change, so the guide
+    matches the code at every PR. The same goes for the translations of a
+    new `ErrorCode` (§50).
 -   Each PR must pass the CI on its own (lint, types, tests, generated
     API types).
 

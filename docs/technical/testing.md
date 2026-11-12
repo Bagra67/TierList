@@ -81,10 +81,6 @@ The fixtures in `tests/integration/conftest.py` prepare the database in steps. E
 
 **In parallel (`pytest -n auto`)**: pytest-xdist splits the tests among several processes (workers). Each worker gets its own databases, the worker id appended to their names (`tierlist_test_gw0`, `tierlist_test_migrations_gw0`…): it migrates them alone, and its transactions never meet those of the other workers. The S3 tests use unique keys, so they share the bucket. Every worker must collect the same test names: parameters must not be random (e.g. no `uuid4()` in a `parametrize` list). The worker databases stay on the server between runs, like `tierlist_test`. In a worker, `app.main` is imported before pytest captures the output, so the application's log handler would write to the real stderr: the autouse fixture `rebind_app_logs_to_stderr_captured_under_xdist` (`tests/conftest.py`, every test) points it back to the captured stderr, as without xdist. It also covers `test_errors.py`, which calls `configure_logging` again under `capsys`.
 
-| Test                                   | What it does                                           | Purpose                                                                  | Expected result                                 |
-| -------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------- |
-| `test_health_db_against_real_postgres` | Calls `GET /health/db` with the real database session. | Checks the full chain: settings, SQLAlchemy, psycopg driver, PostgreSQL. | `200` and `{"status": "ok", "release": "dev"}`. |
-
 ---
 
 ## 2. Frontend (Vitest)
