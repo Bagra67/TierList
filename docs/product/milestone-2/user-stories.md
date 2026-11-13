@@ -120,7 +120,7 @@ As a **template owner**, I want to make my template public, so that everyone can
 
 As a **template owner**, I want to add tags to my template, so that people find it by subject.
 
-- _Given_ my template, _when_ I add tags, _then_ they are saved, **5 at most**, each one a short word or expression; duplicates (ignoring case and accents) are merged.
+- _Given_ my template, _when_ I add tags, _then_ they are saved, **5 at most**, each one a short word or expression of **30 characters at most**; duplicates (ignoring case and accents) are merged.
 - _Given_ my template, _when_ I remove a tag, _then_ it is no longer used to find the template.
 
 ### US-2.3 Make a public template private again — Must
@@ -158,7 +158,7 @@ As **anyone**, signed in or not, I want to browse the public templates, so that 
 
 As **anyone**, I want to search and sort the marketplace, so that I find a template on a subject.
 
-- _Given_ the marketplace, _when_ I type **keywords**, _then_ I see the templates whose name or tags match, ignoring case and accents.
+- _Given_ the marketplace, _when_ I type **keywords**, _then_ I see the templates whose name or tags match, ignoring case and accents. A keyword matches the **start of a word** (`poke` finds _Pokémon_); every keyword must match, and `|` separates alternatives (`mario film | zelda`: both `mario` and `film`, or `zelda`).
 - _Given_ the marketplace, _when_ I choose a **tag**, _then_ only the templates with that tag are shown.
 - _Given_ the results, _when_ I sort by **popularity** (likes) or **newest** (date it was made public), _then_ the order changes; popularity is the default.
 
