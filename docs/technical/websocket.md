@@ -214,7 +214,7 @@ In development, the Vite proxy forwards the socket (`ws: true` in `frontend/vite
 | `frontend/src/components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot, "live updates unavailable" message, removed or banned message                                                                                                                                                             |
 | `frontend/vite.config.ts`                                     | `ws: true`                                                                                                                                                                                                                              |
 
-Tests: `backend/tests/integration/test_room_channel.py` (route), `backend/tests/test_room_connections.py` (registry), publication tests in `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `frontend/src/api/roomChannel.test.ts` with the fake socket `frontend/src/test/fakeWebSocket.ts`. All are described in the [testing guide](testing.md).
+Tests: `backend/tests/integration/test_room_channel.py` (route), `backend/tests/test_room_connections.py` (registry), publication tests in `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `frontend/src/api/roomChannel.test.ts` with the fake socket `frontend/src/test/fakeWebSocket.ts`.
 
 ## 4. Debugging and changing it
 
@@ -259,7 +259,7 @@ asyncio.run(main())
 2. **Publish**: in the service that makes the change, increment `room.version`, commit, **then** call `self._publisher.publish(room.id, YourEvent(room_version=room.version, data=…))`. Never publish before the commit (the client could read the room before the change is visible).
 3. **Contract**: `uv run python scripts/export_openapi.py` (backend), then `pnpm gen:api` (frontend).
 4. **Client**: in `applyRoomEvent` (`frontend/src/api/roomChannel.ts`), either patch the cache (small, self-contained change) or let it fall to "read the room again" (the default).
-5. **Tests**: a REST test with the `room_events` fixture (the event and its version), a channel test if the socket behaviour changes, a `roomChannel.test.ts` test if the client handles it specially; update the [testing guide](testing.md) and this page.
+5. **Tests**: a REST test with the `room_events` fixture (the event and its version), a channel test if the socket behaviour changes, a `roomChannel.test.ts` test if the client handles it specially; update this page (and the [testing guide](testing.md) only if a shared fixture or helper changes).
 
 ### 4.5 Rules not to break
 

@@ -257,4 +257,4 @@ The template caches have separate keys (`constants/templates.ts`): `['templates'
 
 ### Tests
 
-`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility), against a real PostgreSQL; `frontend/src/pages/TemplatesPage.test.tsx` and `TemplateEditorPage.test.tsx` for the screens. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility), against a real PostgreSQL; `frontend/src/pages/TemplatesPage.test.tsx` and `TemplateEditorPage.test.tsx` for the screens.

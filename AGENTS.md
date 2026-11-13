@@ -900,14 +900,15 @@ For new functionality:
 
 ## Testing guide
 
-`docs/technical/testing.md` describes every test: what it does, its
-purpose and the expected result.
+`docs/technical/testing.md` explains how the tests work: the tools, the
+shared setup (fixtures, helpers), how to run them and how to write one.
+It does not list the tests.
 
-Whenever a test, a test fixture or a test tool is added, changed,
-renamed or removed, the guide MUST be updated in the same PR, so that
-the guide always matches the actual tests. The `Docs` CI check enforces
-it; the `skip-docs-sync` PR label is reserved for justified exceptions,
-explained in the PR description.
+-   Give every test a name that says the expected behavior, as a
+    sentence (e.g. `test_expired_access_token_is_rejected`): the name is
+    its documentation. Do not add a docstring that repeats it (§31).
+-   When a shared fixture, a test helper, a test tool or a test command
+    is added, changed or removed, update the guide in the same PR.
 
 ## Seed data
 
@@ -1321,9 +1322,10 @@ so that each one can be reviewed on its own:
 -   The technical and product documentation goes into a **final PR that
     only contains documentation**, at the top of the stack. It carries
     `Closes #N`.
--   Exception: the testing guide (§28) stays in the PR that changes the
-    tests, since the `Docs` CI check requires both in the same PR. The
-    same goes for the translations of a new `ErrorCode` (§50).
+-   Exception: a testing guide change (§28: a shared fixture, helper,
+    tool or command) stays in the PR that makes that change, so the guide
+    matches the code at every PR. The same goes for the translations of a
+    new `ErrorCode` (§50).
 -   Each PR must pass the CI on its own (lint, types, tests, generated
     API types).
 

@@ -53,4 +53,4 @@ The in-app data export (#202) will have to be added to the "Your rights" section
 
 ## 3. Tests
 
-Described in the [testing guide](testing.md): `src/pages/PrivacyPolicyPage.test.tsx`, `TermsPage.test.tsx` and `LegalNoticePage.test.tsx` (each page without an account, its sections, its links, English), the footer links in `src/App.test.tsx`, the settings panel links in `src/components/SettingsPanel.test.tsx`, and the acceptance sentence in `src/pages/LoginPage.test.tsx` and `RegisterPage.test.tsx`. The parity and non-empty checks of `src/i18n/i18n.test.ts` cover the text.
+Tests: `src/pages/PrivacyPolicyPage.test.tsx`, `TermsPage.test.tsx` and `LegalNoticePage.test.tsx` (each page without an account, its sections, its links, English), the footer links in `src/App.test.tsx`, the settings panel links in `src/components/SettingsPanel.test.tsx`, and the acceptance sentence in `src/pages/LoginPage.test.tsx` and `RegisterPage.test.tsx`. The parity and non-empty checks of `src/i18n/i18n.test.ts` cover the text.

@@ -8,7 +8,6 @@ from pathlib import Path
 from check_docs_sync import (
     find_bad_language_switchers,
     find_one_sided_changes,
-    find_tests_without_guide,
     find_unpaired_docs,
     run_checks,
 )
@@ -104,31 +103,6 @@ class OneSidedChangesTest(unittest.TestCase):
         )
 
 
-class TestsWithoutGuideTest(unittest.TestCase):
-    GUIDE = "docs/technical/testing.md"
-
-    def test_every_kind_of_test_file_requires_the_guide(self):
-        tests = [
-            ".github/scripts/test_check_docs_sync.py",
-            "backend/tests/integration/conftest.py",
-            "backend/tests/test_main.py",
-            "frontend/e2e/account.spec.ts",
-            "frontend/e2e/support/mailpit.ts",
-            "frontend/playwright.config.ts",
-            "frontend/src/App.test.tsx",
-            "frontend/src/api/client.test.ts",
-            "frontend/src/test/setup.ts",
-        ]
-        self.assertEqual(paths_of(find_tests_without_guide(tests)), tests)
-
-    def test_tests_with_the_guide_are_accepted(self):
-        self.assertEqual(find_tests_without_guide(["backend/tests/test_main.py", self.GUIDE]), [])
-
-    def test_non_test_files_do_not_require_the_guide(self):
-        changed = ["backend/app/main.py", "frontend/src/App.tsx", "frontend/src/testing.ts"]
-        self.assertEqual(find_tests_without_guide(changed), [])
-
-
 class RunChecksTest(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -146,7 +120,7 @@ class RunChecksTest(unittest.TestCase):
 
     def test_sync_checks_run_on_changes(self):
         problems = run_checks(self.root, self.markdown, ["README.md", "backend/tests/test_main.py"])
-        self.assertEqual(paths_of(problems), ["README.md", "backend/tests/test_main.py"])
+        self.assertEqual(paths_of(problems), ["README.md"])
 
     def test_skipped_sync_checks_keep_the_pairing_checks(self):
         self.assertEqual(run_checks(self.root, self.markdown, None), [])

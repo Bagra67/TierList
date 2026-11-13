@@ -158,7 +158,7 @@ Manual commands:
 | Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
 | End-to-end tests | —                           | `pnpm test:e2e`          |
 
-Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). The end-to-end tests (Playwright) run the real app in Chromium, Firefox and WebKit: they need the same services, the browsers (`pnpm exec playwright install chromium firefox webkit`, once) and the frontend build (`pnpm build`). How each test works and what it checks: [docs/technical/testing.md](docs/technical/testing.md).
+Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). The end-to-end tests (Playwright) run the real app in Chromium, Firefox and WebKit: they need the same services, the browsers (`pnpm exec playwright install chromium firefox webkit`, once) and the frontend build (`pnpm build`). How the tests work (tools, shared setup, commands): [docs/technical/testing.md](docs/technical/testing.md).
 
 ### Continuous integration (GitHub Actions)
 
@@ -171,7 +171,7 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                                                                                                       |
 | **E2E**      | one job per browser (Chromium, Firefox, WebKit): PostgreSQL, Mailpit and SeaweedFS, frontend build, Playwright tests `pnpm test:e2e --project=<browser>`                                  |
 
-`.github/workflows/docs.yml` runs the **Docs** job on the same events: every README (and the CHANGELOG) has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with the testing guide (`docs/technical/testing.md`). The other docs are English-only. For a justified exception (e.g. a typo fixed in one language of a README), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
+`.github/workflows/docs.yml` runs the **Docs** job on the same events: every README (and the CHANGELOG) has its English and French versions with their language switcher and, on a PR, both versions change together. The other docs are English-only. For a justified exception (e.g. a typo fixed in one language of a README), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/technical/testing.md](docs/technical/testing.md#31-test-report-on-ci).
 - The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails. The `E2E` jobs are not required yet (see the TODO).

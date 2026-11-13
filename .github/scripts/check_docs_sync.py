@@ -8,7 +8,6 @@ from pathlib import Path
 BILINGUAL_NAMES = {"README.md", "CHANGELOG.md"}
 ENGLISH_ONLY_DIRS = ("docs/", ".github/", ".claude/")
 SWITCHER_MAX_LINE = 5
-TESTING_GUIDE = "docs/technical/testing.md"
 SKIP_LABEL = "skip-docs-sync"
 
 
@@ -76,27 +75,6 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
     ]
 
 
-def is_test_file(path: str) -> bool:
-    return (
-        path.startswith(
-            ("backend/tests/", "frontend/src/test/", "frontend/e2e/", ".github/scripts/test_")
-        )
-        or path == "frontend/playwright.config.ts"
-        or (path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx")))
-    )
-
-
-def find_tests_without_guide(changed_paths: Iterable[str]) -> list[Problem]:
-    changed = set(changed_paths)
-    if TESTING_GUIDE in changed:
-        return []
-    return [
-        Problem(path, f"Test changed without the testing guide: update {TESTING_GUIDE}.")
-        for path in sorted(changed)
-        if is_test_file(path)
-    ]
-
-
 def run_checks(
     root: Path,
     markdown_paths: list[str],
@@ -106,7 +84,6 @@ def run_checks(
     problems += find_bad_language_switchers(root, markdown_paths)
     if changed_paths is not None:
         problems += find_one_sided_changes(changed_paths)
-        problems += find_tests_without_guide(changed_paths)
     return problems
 
 
@@ -122,9 +99,7 @@ def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Check that the bilingual READMEs and the testing guide stay in sync."
-    )
+    parser = argparse.ArgumentParser(description="Check that the bilingual READMEs stay in sync.")
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
     parser.add_argument("--skip-sync", action="store_true", help="skip the checks on changes")
     args = parser.parse_args()
