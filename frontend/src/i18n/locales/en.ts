@@ -700,6 +700,16 @@ export const en: Translation = {
       needsTiles: 'Add at least one tile to make it public.',
       emailNotVerified: 'Confirm your email address to make a template public.',
     },
+    tags: {
+      legend: 'Tags',
+      count: '{{count}} / {{max}}',
+      listLabel: 'Template tags',
+      add: 'Add a tag',
+      remove: 'Remove the tag “{{label}}”',
+      hint: 'A word or a short phrase: people find your template by its tags.',
+      limitReached: '{{max}} tags at most: remove one to add another.',
+      duplicate: 'This tag is already there.',
+    },
     removedImage: {
       hidden: 'Image hidden by the moderation',
       deleted: 'Image deleted by the moderation',

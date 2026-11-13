@@ -1,6 +1,8 @@
 export const TEMPLATE_NAME_MAX_LENGTH: number = 100;
 export const TIER_NAME_MAX_LENGTH: number = 50;
 export const TILE_TEXT_MAX_LENGTH: number = 200;
+export const TAG_MAX_LENGTH: number = 30;
+export const TEMPLATE_MAX_TAGS: number = 5;
 
 export const TIER_COLOR_PRESETS: readonly string[] = [
   '#FF3B6B',
