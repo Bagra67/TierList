@@ -149,11 +149,9 @@ describe('ResultsPage', () => {
 
     const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
-    expect(tierS).toHaveStyle({ animationDelay: '520ms' });
-    expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
-    expect(screen.getByRole('group', { name: 'Non classés' })).toHaveStyle({
-      animationDelay: '0ms',
-    });
+    expect(tierS.style.animationDelay).toBe('520ms');
+    expect(screen.getByRole('group', { name: 'A' }).style.animationDelay).toBe('260ms');
+    expect(screen.getByRole('group', { name: 'Non classés' }).style.animationDelay).toBe('0ms');
   });
 
   it('does not reveal a view again when coming back to it, unless asked', async () => {
