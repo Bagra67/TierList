@@ -65,7 +65,7 @@ One section per PR, in this format:
 ```markdown
 ## #<N> — <paquet> <ancienne> → <nouvelle> (<patch | mineure | majeure>, <backend | frontend | CI | Docker>)
 
-**Changelog**
+**Notes de version**
 
 - <les changements qui comptent, en quelques puces ; les corrections de sécurité en premier>
 
@@ -76,7 +76,7 @@ One section per PR, in this format:
 
 **CI** : <verte | en échec : cause | bloquée : cause>
 
-**Recommandation** : <merger | merger après <vérification> | attendre | fermer>, <pourquoi>
+**Recommandation** : <fusionner | fusionner après <vérification> | attendre | fermer>, <pourquoi>
 ```
 
 End with a short table of every PR reviewed (`PR`, `paquet`, `risque`, `CI`, `recommandation`).
