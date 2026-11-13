@@ -147,6 +147,8 @@ def create_room(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Creates an open room on a template of the account, not hidden and with at least one tile. The
+    account becomes its admin and first participant."""
     template_id: uuid.UUID = payload.template_id
     try:
         room: Room = service.create(user, template_id)
@@ -169,6 +171,9 @@ def create_room(
 def get_room(
     code: str, viewer: RoomViewerDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
+    """The room, its settings, its participants and its current game, for a participant (an account,
+    or a guest recognized by the room cookie). 403 without a place in the room, so the page can
+    offer to join it; 404 for an unknown code or a closed room."""
     try:
         seat: Participant = service.seat_of(viewer, code)
     except RoomNotJoinedError as exc:
@@ -203,6 +208,8 @@ def join_as_guest(
     settings: SettingsDep,
     guest_token: Annotated[str | None, Cookie(alias=GUEST_COOKIE)] = None,
 ) -> GuestRoomResponse:
+    """Joins the room as a guest with a nickname. Sets the room cookie and returns the personal
+    link, given only once."""
     try:
         seat: GuestSeat = service.join_as_guest(code, payload.nickname, guest_token)
     except RoomNotFoundError as exc:
@@ -237,6 +244,8 @@ def restore_guest_session(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
+    """Gives a guest their place back from the token of their personal link, on any device, and sets
+    the room cookie."""
     try:
         seat: GuestSeat = service.restore_guest(code, payload.token)
     except GuestLinkInvalidError as exc:
@@ -258,6 +267,7 @@ def renew_guest_link(
     storage: ImageStorageDep,
     settings: SettingsDep,
 ) -> GuestRoomResponse:
+    """Gives the guest recognized by the cookie a new personal link; the old one stops working."""
     try:
         seat: GuestSeat = service.renew_guest_link(viewer, code)
     except RoomNotFoundError as exc:
@@ -277,6 +287,8 @@ def renew_guest_link(
 def join_room(
     code: str, user: CurrentUserDep, service: RoomServiceDep, storage: ImageStorageDep
 ) -> RoomResponse:
+    """Gives the account a player place in the room, with its display name; gives back the same
+    place if it already has one, even when the room is full or arrivals are blocked."""
     try:
         room: Room = service.join(user, code)
     except RoomNotFoundError as exc:
@@ -305,6 +317,9 @@ def update_room_settings(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Changes the room settings (admin only); only the fields sent change. Outside a game, they
+    apply to the next one; during a game, only `late_arrivals_allowed` can change, and it applies
+    right away."""
     changes: RoomSettingsChanges = RoomSettingsChanges(**payload.model_dump(exclude_none=True))
     try:
         room: Room = service.update_settings(user, code, changes)
@@ -327,6 +342,8 @@ def update_room_settings(
     responses={**ROOM_NOT_FOUND_RESPONSES, **ROOM_ADMIN_REQUIRED_RESPONSE},
 )
 def close_room(code: str, user: CurrentUserDep, games: GameServiceDep) -> None:
+    """Closes the room (admin only): a game in progress is first closed and kept, then the room, its
+    places and its bans are deleted. The code and the link stop working."""
     try:
         games.close_room(user, code)
     except RoomNotFoundError as exc:
@@ -356,6 +373,8 @@ def remove_participant(
     storage: ImageStorageDep,
     ban: bool = False,
 ) -> RoomResponse:
+    """Removes a participant (admin only, not their own place), at any time; their placements in the
+    current game go with them. With `ban=true`, the person can no longer come back to the room."""
     try:
         room: Room = games.remove_participant(user, code, participant_id, ban)
     except RoomNotFoundError as exc:
@@ -392,6 +411,7 @@ def unban(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Lifts a ban (admin only): the person can come back."""
     try:
         room: Room = service.unban(user, code, ban_id)
     except RoomNotFoundError as exc:
@@ -423,6 +443,8 @@ def start_game(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Starts a game (admin only) on the current version of the template, frozen for the whole game.
+    The room moves to `playing` and the first item is shown to everyone."""
     try:
         room: Room = games.start(user, code)
     except RoomNotFoundError as exc:
@@ -475,6 +497,9 @@ def place_item(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Places the item of the current round in a tier, at the requested position, on the reader's
+    private board; placing it again in the same round moves it. During the cooldown, places or moves
+    any item of the game, including a missed item."""
     try:
         seat: Participant = games.place(viewer, code, tile_id, payload.tier_id, payload.position)
     except RoomNotFoundError as exc:
@@ -533,6 +558,8 @@ def next_round(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Ends the current round (admin only) and shows the next item to everyone, or starts the final
+    cooldown after the last item. Participants who did not place the item get an absent vote."""
     try:
         room: Room = games.next_round(user, code)
     except RoomNotFoundError as exc:
@@ -563,6 +590,8 @@ def end_cooldown(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
+    """Ends the final cooldown (admin only): the game is closed and kept, the room goes back to
+    `open`."""
     try:
         room: Room = games.end_cooldown(user, code)
     except RoomNotFoundError as exc:

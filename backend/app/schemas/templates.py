@@ -25,14 +25,20 @@ TemplateName = Annotated[
 
 
 class CreateTemplateRequest(BaseModel):
+    """Name of the new template; surrounding spaces are removed."""
+
     name: TemplateName
 
 
 class RenameTemplateRequest(BaseModel):
+    """New name of the template; surrounding spaces are removed."""
+
     name: TemplateName
 
 
 class SetTemplateVisibilityRequest(BaseModel):
+    """Visibility chosen for the template."""
+
     visibility: TemplateVisibility
 
 
@@ -49,6 +55,8 @@ Position = Annotated[int, Field(ge=0)]
 
 
 class UpdateTierRequest(BaseModel):
+    """Changes to a tier: only the fields sent change. The color is in the #RRGGBB format."""
+
     name: TierName | None = None
     color: TierColor | None = None
     position: Position | None = None
@@ -61,17 +69,24 @@ TileText = Annotated[
 
 
 class CreateTileRequest(BaseModel):
+    """Content of the new tile: a text, an image or both, never neither."""
+
     text: TileText | None = None
     image_id: uuid.UUID | None = None
 
 
 class UpdateTileRequest(BaseModel):
+    """Changes to a tile: only the fields sent change. `null` removes the text or the image; the
+    tile must keep one of the two."""
+
     text: TileText | None = None
     image_id: uuid.UUID | None = None
     position: Position | None = None
 
 
 class TierResponse(BaseModel):
+    """A tier of the template; position 0 is the top tier."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -81,6 +96,10 @@ class TierResponse(BaseModel):
 
 
 class TileResponse(BaseModel):
+    """A tile of the template, in the template's order. `image_removed` is true when moderation hid
+    or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
+    only shown to the owner."""
+
     id: uuid.UUID
     text: str | None
     image_url: str | None
@@ -91,6 +110,9 @@ class TileResponse(BaseModel):
 
 
 class TemplateResponse(BaseModel):
+    """A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number
+    of tiles; `first_made_public_at` is kept when the template goes back to private."""
+
     id: uuid.UUID
     name: str
     created_at: datetime
@@ -105,6 +127,8 @@ class TemplateResponse(BaseModel):
 
 
 class RemovedImageResponse(BaseModel):
+    """A tile whose image was hidden or deleted by moderation, with the decision and the reason."""
+
     model_config = ConfigDict(from_attributes=True)
 
     tile_id: uuid.UUID
@@ -115,6 +139,9 @@ class RemovedImageResponse(BaseModel):
 
 
 class TemplateSummaryResponse(BaseModel):
+    """A template in the account's list: its number of tiles, its moderation decision and the images
+    removed from its tiles."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -129,10 +156,14 @@ class TemplateSummaryResponse(BaseModel):
 
 
 class TemplateListResponse(BaseModel):
+    """The account's templates, most recently modified first."""
+
     items: list[TemplateSummaryResponse]
 
 
 class RemovedTemplateResponse(BaseModel):
+    """A template deleted by moderation, not purged yet, with the date and the reason."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -142,4 +173,6 @@ class RemovedTemplateResponse(BaseModel):
 
 
 class RemovedTemplateListResponse(BaseModel):
+    """The account's templates deleted by moderation and not purged yet."""
+
     items: list[RemovedTemplateResponse]

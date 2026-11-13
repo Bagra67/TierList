@@ -12,8 +12,8 @@ ReportDetails = Annotated[
 
 
 class CreateReportRequest(BaseModel):
-    """Un signalement (US-1.2). target_id désigne, selon target_kind : un item d'une partie, un
-    participant d'une salle, un joueur des résultats ou une partie close."""
+    """A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a
+    participant of a room, a player of the results or a closed game."""
 
     target_kind: ReportTargetKind
     target_id: uuid.UUID
@@ -22,6 +22,6 @@ class CreateReportRequest(BaseModel):
 
 
 class ReportResponse(BaseModel):
-    """Le signalement enregistré. Il ne dit rien de son auteur."""
+    """The saved report. It tells nothing about its author."""
 
     id: uuid.UUID

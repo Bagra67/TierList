@@ -154,6 +154,9 @@ def list_reports(
     offset: Annotated[int, Query(ge=0)] = 0,
     owner_id: uuid.UUID | None = None,
 ) -> ReportQueueResponse:
+    """Queue of open reports, grouped by content: the most reported first, then the oldest. Never
+    the author of a report. Paginated by `limit` and `offset`; `owner_id` keeps the contents of one
+    account."""
     page: ReportQueuePage = service.page(limit, offset, owner_id)
     return ReportQueueResponse(
         contents=[reported_content_response(storage, content) for content in page.contents],
@@ -165,6 +168,8 @@ def list_reports(
 def count_reports(
     super_admin: SuperAdminDep, service: ReportQueueServiceDep
 ) -> OpenReportCountResponse:
+    """Number of reported contents waiting for a decision (contents, not reports), for the
+    moderation menu."""
     return OpenReportCountResponse(open_contents=service.count_open_contents())
 
 
@@ -179,6 +184,8 @@ def count_reports(
 def dismiss_reports(
     body: DismissReportsRequest, super_admin: SuperAdminDep, service: ReportQueueServiceDep
 ) -> None:
+    """Dismisses the open reports of a content: the content does not change. Written to the
+    moderation log with the reason."""
     try:
         service.dismiss(super_admin, body.target_type, body.target_id, body.reason)
     except ReportsNotOpenError as exc:
@@ -198,8 +205,8 @@ def dismiss_reports(
 def remove_nickname(
     body: RemoveNicknameRequest, super_admin: SuperAdminDep, service: ReportQueueServiceDep
 ) -> None:
-    """Remplace un pseudo signalé par un code neutre, dans les salles et les résultats. Sans
-    retour : l'ancien pseudo ne reste que dans le journal."""
+    """Replaces a reported nickname with a neutral code, in rooms and results. Cannot be undone: the
+    old nickname only stays in the log."""
     try:
         service.remove_nickname(super_admin, body.target_id, body.reason)
     except NicknameNotFoundError as exc:
@@ -217,6 +224,8 @@ def list_hidden_games(
     ] = REPORT_QUEUE_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> HiddenGamesResponse:
+    """The games hidden by moderation, so they can be made visible again. Paginated by `limit` and
+    `offset`."""
     page: HiddenGamesPage = service.hidden_games(limit, offset)
     return HiddenGamesResponse(
         games=[
@@ -256,7 +265,7 @@ def hide_game(
     super_admin: SuperAdminDep,
     service: ReportQueueServiceDep,
 ) -> None:
-    """Masque une partie close : son lien de résultats répond comme un lien inconnu."""
+    """Hides a closed game: its results link answers like an unknown link."""
     try:
         service.hide_game(super_admin, game_id, body.reason)
     except GameNotFoundError as exc:
@@ -272,6 +281,8 @@ def unhide_game(
     super_admin: SuperAdminDep,
     service: ReportQueueServiceDep,
 ) -> None:
+    """Makes a hidden game visible: its results link works again. Written to the log with the
+    reason."""
     try:
         service.unhide_game(super_admin, game_id, body.reason)
     except GameNotFoundError as exc:
@@ -292,6 +303,9 @@ def get_moderation_log(
     target: Annotated[str | None, Query(max_length=MODERATION_TARGET_LABEL_MAX_LENGTH)] = None,
     account_id: uuid.UUID | None = None,
 ) -> ModerationLogResponse:
+    """The moderation log, most recent first. Filters: `actor_id` (a super admin), `target` (text
+    searched in the target's name, case-insensitive), `account_id` (the decisions about an account,
+    its templates and its images). Paginated by `limit` and `offset`."""
     page: ModerationLogPage = service.page(limit, offset, actor_id, target, account_id)
     return ModerationLogResponse(
         entries=[ModerationActionResponse.model_validate(entry) for entry in page.entries],
@@ -303,6 +317,7 @@ def get_moderation_log(
 def list_super_admins(
     super_admin: SuperAdminDep, service: ModerationLogServiceDep
 ) -> list[SuperAdminResponse]:
+    """The super admins, by name: the choices of the log's "Super admin" filter."""
     return [SuperAdminResponse.model_validate(user) for user in service.super_admins()]
 
 
@@ -313,6 +328,8 @@ def hide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Hides a visible image: it is no longer served at its public address and shows as "removed"
+    everywhere. Written to the log with the reason."""
     try:
         service.hide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -328,6 +345,7 @@ def unhide_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Makes a hidden image visible. Written to the log with the reason."""
     try:
         service.unhide(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -343,6 +361,8 @@ def delete_image(
     super_admin: SuperAdminDep,
     service: ImageModerationServiceDep,
 ) -> None:
+    """Deletes an image, visible or hidden: its file is erased and it shows as "removed" everywhere.
+    Written to the log with the reason."""
     try:
         service.delete(super_admin, image_id, body.reason)
     except ImageNotFoundError as exc:
@@ -366,6 +386,9 @@ def list_recent_uploads(
     status: Literal["visible", "hidden"] | None = None,
     owner_id: uuid.UUID | None = None,
 ) -> RecentUploadsResponse:
+    """The latest uploaded images, most recent first, with their author and their use (templates,
+    games). Filters: `author` (name or email, case-insensitive), `created_after` and
+    `created_before`, `status`, `owner_id`. Paginated by `limit` and `offset`."""
     page: RecentUploadsPage = service.page(
         limit,
         offset,
@@ -394,7 +417,7 @@ def get_template_for_review(
     service: TemplateModerationServiceDep,
     storage: ImageStorageDep,
 ) -> ReviewedTemplateResponse:
-    """Lit le contenu d'un modèle non supprimé, même privé (US-1.8). Lecture seule."""
+    """Reads the content of a non-deleted template, even a private one (US-1.8). Read-only."""
     try:
         reviewed: ReviewedTemplate = service.review(template_id)
     except TemplateNotFoundError as exc:
@@ -411,6 +434,8 @@ def hide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Hides a template that is neither hidden nor deleted, public or private: it can no longer be
+    used for a new game, and its owner sees the reason. Written to the log."""
     try:
         service.hide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -428,6 +453,8 @@ def unhide_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Lifts the hiding of a template that is not deleted; its public or private visibility does not
+    change, and the reason is cleared from the template. Written to the log with the reason."""
     try:
         service.unhide(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -445,6 +472,8 @@ def delete_template(
     super_admin: SuperAdminDep,
     service: TemplateModerationServiceDep,
 ) -> None:
+    """Deletes a template, visible or hidden, like a deletion by its owner; the owner sees the
+    reason until the purge. Written to the log."""
     try:
         service.delete(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
@@ -463,6 +492,8 @@ def search_accounts(
     ] = ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> AccountSearchResponse:
+    """Searches accounts by name or email, sorted by name. Paginated by `limit` and `offset`;
+    `has_more` tells whether accounts are left."""
     page: AccountSearchPage = service.search(query, limit, offset)
     return AccountSearchResponse(
         accounts=[
@@ -486,6 +517,7 @@ def get_account(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
 ) -> AccountResponse:
+    """The page of an account: its details, its active ban, its past bans and its templates."""
     try:
         details: AccountDetails = service.details(user_id)
     except UserNotFoundError as exc:
@@ -520,6 +552,8 @@ def hide_account_images(
     super_admin: SuperAdminDep,
     service: AccountReviewServiceDep,
 ) -> HiddenImagesResponse:
+    """Hides the visible images of an account, in batches. Send the request again while `has_more`
+    is true."""
     try:
         batch: HiddenImagesBatch = service.hide_all_images(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:
@@ -541,6 +575,9 @@ def ban_account(
     service: AccountBanServiceDep,
     games: GameServiceDep,
 ) -> None:
+    """Bans an account, until `ends_at` or permanently (`ends_at` null); an active ban is lifted
+    first. The account is signed out everywhere and can no longer sign in; its contents stay online.
+    Written to the log."""
     try:
         service.ban(
             super_admin,
@@ -572,6 +609,8 @@ def lift_account_ban(
     super_admin: SuperAdminDep,
     service: AccountBanServiceDep,
 ) -> None:
+    """Lifts the active ban of an account: it can sign in again; its sessions stay closed. Written
+    to the log with the reason."""
     try:
         service.lift(super_admin, user_id, body.reason)
     except UserNotFoundError as exc:
