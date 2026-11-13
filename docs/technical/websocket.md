@@ -1,7 +1,5 @@
 # WebSocket: how the room channel works
 
-English | [Français](websocket.fr.md)
-
 A guide for whoever has to fix or extend the real-time channel of the rooms. Part 1 explains WebSocket in general, part 2 shows how TierList uses it, part 3 maps the code, part 4 helps to debug and to add an event. The design decisions and their reasons are in the [real-time guide](realtime.md); this page explains how the result works.
 
 ## 1. WebSocket in a few minutes

@@ -72,15 +72,14 @@ production.
 
 Read the diff (`git diff origin/develop...HEAD`) and answer each point with yes, no or not concerned:
 
-- Tests added or updated for the new behavior, and the testing guide updated in both languages
-  (§28).
+- Tests added or updated for the new behavior, and the testing guide updated (§28).
 - Every new user-facing text goes through `t()` and exists in `fr.ts` and `en.ts`; every new
   `ErrorCode` is translated under `errors.*` (§50).
 - Privacy policy: does the change touch personal data, retention, a provider, a cookie or a storage
   key, or what other users see (§51)?
 - Seed data: does `backend/app/seed/` need to cover the new data or cases (§28)?
 - Schema change: an Alembic migration exists and was reviewed (§36).
-- Docs changed in both `name.md` and `name.fr.md` (§31).
+- READMEs changed in both `README.md` and `README.fr.md` (§31).
 - No comment that only repeats the code (§31), no unrelated change (§5).
 
 ## Report

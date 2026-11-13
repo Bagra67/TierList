@@ -1,7 +1,5 @@
 # Legal pages
 
-English | [Français](legal-pages.fr.md)
-
 Pages that tell users how TierList handles their data, the rules of the service and who publishes it. They are readable without an account: the privacy policy (#200), the terms of use (#201) and the legal notice (#235), with a section to report illegal content (#236).
 
 ## 1. The pages

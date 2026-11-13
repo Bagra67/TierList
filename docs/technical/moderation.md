@@ -1,7 +1,5 @@
 # Moderation
 
-English | [Français](moderation.fr.md)
-
 How the moderation of public content is built: the **moderation log** (#267), the actions on **images** (#124) and on **templates** (#268), the **recent uploads** page that calls the image ones (#125), and the **accounts**: their search, their page and their **bans** (#127), and the **content reports** (#126). The super admin role and how it is checked are in the [authentication guide](authentication.md#super-admins); what moderation does for the user: [user stories](../product/milestone-2/user-stories.md) (epic E1), [lifecycles](../product/milestone-2/lifecycles.md).
 
 ## 1. Functional overview

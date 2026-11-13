@@ -1,7 +1,5 @@
 # Games
 
-English | [Français](games.fr.md)
-
 How a game is played in a room: its start, its rounds, its placements, the move to the next round, its final cooldown and its closing. **Built in #91** for the start, **#92** for the placements and **#93** for the round progression (next, timer, everyone placed, absent votes), **#94** for the game screen, **#95** for coming back to one's seat and joining during a game and **#96** for the final cooldown (final placements, catch-up, end); **#97** for its screen and **#98** for saving the closed game; its results (#99) and the history (#103) come next.
 
 ## 1. Functional overview

@@ -1,7 +1,5 @@
 # Roadmap
 
-English | [Français](roadmap.fr.md)
-
 In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**: it is in production since v1.0.0 ([deployment guide](../technical/deployment.md)). Public content comes next (milestones 2 and 3), then blind mode (milestone 4).
 
 Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.

@@ -1,7 +1,5 @@
 # Rooms
 
-English | [Français](rooms.fr.md)
-
 How rooms are created, read and configured through the API: data model, code and link, settings, endpoints, the lobby, and where it lives in the code. **Built in #83** (API), **#84** (screens) and **#86** (joining with an account) and **#87** (guests, §2.4). What a room is for the user: [user stories](../product/milestone-1/user-stories.md) US-2.1 and US-2.2, [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview

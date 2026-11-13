@@ -1,7 +1,5 @@
 # Milestone 2 — Domain model
 
-English | [Français](domain-model.fr.md)
-
 The business concepts that [milestone 2](README.md) adds or changes, their relations and the rules they must always respect. The concepts of [milestone 1](../milestone-1/domain-model.md) (rooms, games, placements…) do not change. This is a **conceptual** model: it names what the product manipulates, not how it is stored.
 
 ## Class diagram

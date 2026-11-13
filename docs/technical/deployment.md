@@ -1,7 +1,5 @@
 # Deployment
 
-English | [Français](deployment.fr.md)
-
 Where TierList runs and how it is deployed, with a **staging** and a **production** environment. TierList runs on **MineStrator** pods (a Pterodactyl-like panel) behind a **Cloudflare Tunnel**. Milestone Infrastructure: #158 to #163 and #192.
 
 ## 1. Architecture

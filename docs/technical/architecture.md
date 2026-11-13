@@ -1,7 +1,5 @@
 # Architecture
 
-English | [Français](architecture.fr.md)
-
 How the TierList code is organized, and where new code goes. The engineering rules themselves are in [AGENTS.md](../../AGENTS.md); this page describes how they apply to this repository today.
 
 ## Overview

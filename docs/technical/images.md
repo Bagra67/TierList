@@ -1,7 +1,5 @@
 # Images
 
-English | [Français](images.fr.md)
-
 How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, **built in #81** (§3): upload, compression, storage, image tiles in the template editor, upload limit per account and garbage collection. **Moderation actions built in #124** (§2.9): hide, unhide or delete an image, refusal of a deleted file uploaded again. **Recent uploads page built in #125** (§2.9): the first super admin page that lists images and calls those actions. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
