@@ -55,9 +55,9 @@ def _move[Positioned: (Tier, Tile)](
 
 
 def _refresh_search_text(template: Template) -> None:
-    template.search_text = normalize_search_text(
-        " ".join([template.name, *(tag.label for tag in template.tags)])
-    )
+    template.search_text = " ".join(
+        [normalize_search_text(template.name), *(tag.normalized_label for tag in template.tags)]
+    ).strip()
 
 
 @dataclass(frozen=True)
