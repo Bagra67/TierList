@@ -24,6 +24,7 @@ from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
+    InvalidTagError,
     LastTierError,
     TemplateHasNoTilesError,
     TemplateHiddenError,
@@ -40,6 +41,7 @@ from app.schemas.templates import (
     RemovedTemplateListResponse,
     RemovedTemplateResponse,
     RenameTemplateRequest,
+    SetTemplateTagsRequest,
     SetTemplateVisibilityRequest,
     TemplateListResponse,
     TemplateResponse,
@@ -71,6 +73,10 @@ SET_VISIBILITY_RESPONSES: dict[int | str, dict[str, Any]] = {
         "description": messages.TEMPLATE_CANNOT_BE_MADE_PUBLIC_DESCRIPTION,
     },
 }
+SET_TAGS_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **TEMPLATE_NOT_FOUND_RESPONSES,
+    422: {"model": ErrorResponse, "description": messages.INVALID_TAG_DESCRIPTION},
+}
 TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": messages.TILE_EMPTY_DESCRIPTION},
 }
@@ -89,6 +95,14 @@ def _tile_not_found() -> AppHTTPException:
         status_code=404,
         code=ErrorCode.TILE_NOT_FOUND,
         detail=messages.TILE_NOT_FOUND,
+    )
+
+
+def _invalid_tag() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=422,
+        code=ErrorCode.INVALID_TAG,
+        detail=messages.INVALID_TAG,
     )
 
 
@@ -189,6 +203,26 @@ def set_template_visibility(
         raise template_hidden() from exc
     except TemplateHasNoTilesError as exc:
         raise template_has_no_tiles() from exc
+    return template_response(template, storage)
+
+
+@router.put("/{template_id}/tags", responses=SET_TAGS_RESPONSES)
+def set_template_tags(
+    template_id: uuid.UUID,
+    payload: SetTemplateTagsRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at
+    least one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is
+    dropped; the first one is kept. Its last modification date is updated."""
+    try:
+        template: Template = service.set_tags(user, template_id, payload.tags)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except InvalidTagError as exc:
+        raise _invalid_tag() from exc
     return template_response(template, storage)
 
 

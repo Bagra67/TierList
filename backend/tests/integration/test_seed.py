@@ -43,7 +43,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 520
+SMALL_SEED_MAX_QUERIES = 560
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -99,6 +99,15 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         select(func.count()).select_from(User).where(User.email_verified_at.is_(None))
     ) == (SMALL_SIZE.unverified_accounts)
     assert count(db_session, Template) == summary.templates
+    pizzas: Template = db_session.scalars(select(Template).where(Template.name == "Pizzas")).one()
+    assert [tag.label for tag in pizzas.tags] == ["Cuisine", "italie", "soirée entre amis"]
+    assert pizzas.search_text == "pizzas cuisine italie soiree entre amis"
+    assert (
+        db_session.scalar(
+            select(func.count()).select_from(Template).where(Template.search_text == "")
+        )
+        == 0
+    )
     assert (
         db_session.scalar(
             select(func.count()).select_from(Template).where(Template.deleted_at.is_not(None))

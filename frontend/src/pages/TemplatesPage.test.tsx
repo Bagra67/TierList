@@ -17,6 +17,7 @@ import { TemplatesPage } from './TemplatesPage';
 const chips: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01',
   name: 'Chips',
+  tags: [],
   tile_count: 12,
   updated_at: '2026-10-05T12:00:00Z',
   moderation: 'none',
@@ -28,6 +29,7 @@ const chips: TemplateSummary = {
 const sodas: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02',
   name: 'Sodas',
+  tags: [],
   tile_count: 1,
   updated_at: '2026-10-04T12:00:00Z',
   moderation: 'none',
@@ -40,6 +42,7 @@ const sodas: TemplateSummary = {
 const createdTemplate: Template = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e03',
   name: 'Fromages',
+  tags: [],
   created_at: '2026-10-06T12:00:00Z',
   updated_at: '2026-10-06T12:00:00Z',
   tiers: [],

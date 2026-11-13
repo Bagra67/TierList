@@ -1350,6 +1350,95 @@
         }
       }
     },
+    "/templates/{template_id}/tags": {
+      "put": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "Set Template Tags",
+        "description": "Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at\nleast one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is\ndropped; the first one is kept. Its last modification date is updated.",
+        "operationId": "set_template_tags_templates__template_id__tags_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetTemplateTagsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Tag without a Latin letter or digit, or invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/templates/{template_id}/tiers": {
       "post": {
         "tags": [
@@ -8273,6 +8362,26 @@
         "title": "RoomTemplateResponse",
         "description": "Template of the room; `hidden` is true when moderation hid it: no new game can start then."
       },
+      "SetTemplateTagsRequest": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string",
+              "maxLength": 30,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tags"
+        ],
+        "title": "SetTemplateTagsRequest",
+        "description": "Every tag of the template, in the order to show them; they replace the current ones.\nSurrounding spaces are removed, and a tag equal to an earlier one ignoring case and accents is\ndropped."
+      },
       "SetTemplateVisibilityRequest": {
         "properties": {
           "visibility": {
@@ -8343,6 +8452,13 @@
             "type": "string",
             "title": "Name"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -8405,6 +8521,7 @@
         "required": [
           "id",
           "name",
+          "tags",
           "created_at",
           "updated_at",
           "tiers",
@@ -8416,7 +8533,7 @@
           "first_made_public_at"
         ],
         "title": "TemplateResponse",
-        "description": "A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number\nof tiles; `first_made_public_at` is kept when the template goes back to private."
+        "description": "A template with its tiers and its tiles sorted by position, and its tags in their order.\n`max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template\ngoes back to private."
       },
       "TemplateSummaryResponse": {
         "properties": {
@@ -8428,6 +8545,13 @@
           "name": {
             "type": "string",
             "title": "Name"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
           },
           "tile_count": {
             "type": "integer",
@@ -8479,6 +8603,7 @@
         "required": [
           "id",
           "name",
+          "tags",
           "tile_count",
           "updated_at",
           "moderation",
@@ -8488,7 +8613,7 @@
           "removed_images"
         ],
         "title": "TemplateSummaryResponse",
-        "description": "A template in the account's list: its number of tiles, its moderation decision and the images\nremoved from its tiles."
+        "description": "A template in the account's list: its tags, its number of tiles, its moderation decision and\nthe images removed from its tiles."
       },
       "TemplateVisibility": {
         "type": "string",

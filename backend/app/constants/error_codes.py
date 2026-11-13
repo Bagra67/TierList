@@ -34,6 +34,7 @@ class ErrorCode(StrEnum):
     TILE_NOT_FOUND = "tile_not_found"
     TILE_LIMIT_REACHED = "tile_limit_reached"
     TILE_EMPTY = "tile_empty"
+    INVALID_TAG = "invalid_tag"
 
     ROOM_NOT_FOUND = "room_not_found"
     ROOM_NOT_JOINED = "room_not_joined"
