@@ -1,6 +1,6 @@
 # Marketplace
 
-How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274, not built yet**: the tags come with #272, the likes with #276, the marketplace with #277 and the pagination of _My templates_ with #105. Each of those issues fills §3 and turns this page into the description of the code once it is built.
+How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**. The tags and the search text are **built in #272** ([templates guide](templates.md#29-tags)); the rest is not built yet: the likes with #276, the marketplace with #277 and the pagination of _My templates_ with #105. Each of those issues fills §3 and turns this page into the description of the code once it is built.
 
 ## 1. Functional overview
 
@@ -146,11 +146,11 @@ Proposed for #277 (the PR fixes the final names):
 
 ## 3. In the code
 
-Nothing yet. What each issue adds:
+Built so far: the #272 row. What each issue adds:
 
-| Issue | Adds                                                                                                                                                   |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| #272  | `normalize_search_text`, table `template_tags`, column `templates.search_text` and its GIN index, rewrite of `search_text` on rename and tag changes.  |
-| #276  | Table `template_likes` and its indexes; the privacy policy (likes are personal data).                                                                  |
-| #277  | `listed_templates_condition`, query builder of §2.5, cursor of §2.7, `invalid_cursor`, `MARKETPLACE_PAGE_SIZE`, index of the `newest` sort, the route. |
-| #105  | Cursor on `GET /templates` (`next_cursor` in `TemplateListResponse`).                                                                                  |
+| Issue | Adds                                                                                                                                                                                                                                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #272  | **Built**: `normalize_search_text` (`app/core/search_text.py`), table `template_tags` (`models/template_tag.py`), column `templates.search_text` and its GIN index (migration `33bd344cd746`), `_refresh_search_text` on create, rename and tag changes (`services/templates.py`). Details in the [templates guide](templates.md#29-tags). |
+| #276  | Table `template_likes` and its indexes; the privacy policy (likes are personal data).                                                                                                                                                                                                                                                      |
+| #277  | `listed_templates_condition`, query builder of §2.5, cursor of §2.7, `invalid_cursor`, `MARKETPLACE_PAGE_SIZE`, index of the `newest` sort, the route.                                                                                                                                                                                     |
+| #105  | Cursor on `GET /templates` (`next_cursor` in `TemplateListResponse`).                                                                                                                                                                                                                                                                      |

@@ -80,7 +80,7 @@ Changing numbers (timer, counters, results tables) use tabular figures.
 
 ## 5. Shapes, shadow and motion
 
-- **Radii**: 8 px for an item chip or a field (`rounded-md`), 10 px for a button or a tier row (`rounded-lg`, `--radius`), 16 px for a panel, the current item card and the final touches set (`rounded-panel`); pills for the timer, tabs and presence dots.
+- **Radii**: 8 px for an item chip or a field (`rounded-md`), 10 px for a button or a tier row (`rounded-lg`, `--radius`), 16 px for a panel, the current item card and the final touches set (`rounded-panel`); pills for the timer, tabs, presence dots and template tags (neutral `secondary`, never a tier color: a tag is not a tier).
 - **Panels** (`panelVariants`): solid (a section or form), dashed (an area to fill or empty), list (separated rows), muted (an information strip).
 - **No shadow except on what moves**: `shadow-lift` is reserved for the dragged item.
 - **The current item card** is tilted by −2° (under `motion-safe`), like a card just turned over.
