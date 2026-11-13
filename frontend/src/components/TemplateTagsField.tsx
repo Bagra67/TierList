@@ -14,6 +14,7 @@ import {
 } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { tagPillClassName } from './TemplateTagList';
+import { Button } from './ui/button';
 
 interface TemplateTagsFieldProps {
   template: Template;
@@ -60,11 +61,10 @@ export function TemplateTagsField({ template }: TemplateTagsFieldProps) {
   function addDraft() {
     const label: string = draft.trim();
     if (label === '' || isFull || tagsMutation.isPending) return;
-    const countBefore: number = tags.length;
     tagsMutation.mutate([...tags, label], {
       onSuccess: (saved: Template) => {
         setDraft('');
-        setIsDuplicate(saved.tags.length === countBefore);
+        setIsDuplicate(saved.tags.length === tags.length);
       },
     });
   }
@@ -118,15 +118,17 @@ export function TemplateTagsField({ template }: TemplateTagsFieldProps) {
                 className={cn(tagPillClassName, 'min-h-7 gap-0.5 py-0.5 pr-0.5 pl-2.5 text-sm')}
               >
                 <span className="min-w-0 break-words">{tag}</span>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   aria-label={t('templates.tags.remove', { label: tag })}
                   aria-disabled={tagsMutation.isPending}
                   onClick={() => remove(index)}
-                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:bg-destructive hover:text-background focus-visible:ring-3 focus-visible:ring-ring aria-disabled:cursor-not-allowed"
+                  className="cursor-pointer rounded-full text-muted-foreground hover:bg-destructive hover:text-background aria-disabled:cursor-not-allowed"
                 >
                   <X aria-hidden="true" className="size-3.5" />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

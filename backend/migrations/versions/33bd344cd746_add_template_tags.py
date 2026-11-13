@@ -6,12 +6,12 @@ Create Date: 2026-11-13 20:31:50.832947
 
 """
 
+import re
+import unicodedata
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
-
-from app.core.search_text import normalize_search_text
 
 # revision identifiers, used by Alembic.
 revision: str = "33bd344cd746"
@@ -20,6 +20,16 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 LISTED_TEMPLATES = "visibility = 'public' AND moderation = 'none' AND deleted_at IS NULL"
+LIGATURES: dict[int, str] = str.maketrans({"œ": "oe", "Œ": "oe", "æ": "ae", "Æ": "ae"})
+NOT_SEARCHABLE: re.Pattern[str] = re.compile(r"[^0-9a-z]+")
+
+
+def _normalize_search_text(text: str) -> str:
+    decomposed: str = unicodedata.normalize("NFKD", text.translate(LIGATURES))
+    without_marks: str = "".join(
+        character for character in decomposed if not unicodedata.combining(character)
+    )
+    return " ".join(NOT_SEARCHABLE.sub(" ", without_marks.casefold()).split())
 
 
 def upgrade() -> None:
@@ -64,12 +74,16 @@ def _fill_search_text() -> None:
     templates: sa.TableClause = sa.table(
         "templates", sa.column("id", sa.Uuid()), sa.column("name"), sa.column("search_text")
     )
-    rows: list[sa.Row] = list(connection.execute(sa.select(templates.c.id, templates.c.name)))
-    for row in rows:
+    search_texts: list[dict[str, object]] = [
+        {"template_id": row.id, "text": _normalize_search_text(row.name)}
+        for row in connection.execute(sa.select(templates.c.id, templates.c.name))
+    ]
+    if search_texts:
         connection.execute(
             templates.update()
-            .where(templates.c.id == row.id)
-            .values(search_text=normalize_search_text(row.name))
+            .where(templates.c.id == sa.bindparam("template_id"))
+            .values(search_text=sa.bindparam("text")),
+            search_texts,
         )
 
 
