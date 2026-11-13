@@ -187,7 +187,7 @@ The Claude Code setup in `.claude/settings.json` is shared with the whole team (
   - after Claude edits a file, it is fixed and formatted like on save: Ruff for `backend/**/*.py`, ESLint + Prettier for frontend scripts, Prettier for frontend and `docs/` JSON, CSS, Markdown and HTML. An error that cannot be fixed automatically is sent back to Claude;
   - Claude cannot edit `.env` files (only `.env.example`), `uv.lock`, `pnpm-lock.yaml` or the generated API files `backend/openapi.json` and `frontend/src/api/schema.d.ts`;
   - reminders to follow `AGENTS.md` at session start, on each prompt and before each edit.
-- **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results.
+- **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results; `/dependabot-review [PR...]` summarizes in French the changelog, the risks and the CI state of Dependabot PRs (all open ones by default).
 - **Subagents** (`.claude/agents/`, read-only): `security-reviewer` (authorization, sessions, uploads, rooms, moderation) and `i18n-docs-reviewer` (translations, bilingual docs, testing guide, privacy policy, seed data).
 - **Plugin**: `claude-code-setup` (Anthropic directory) recommends other automations for the project; ask Claude for "automation recommendations".
 - **MCP servers** (`.mcp.json`, approved once by each developer when Claude Code starts):
