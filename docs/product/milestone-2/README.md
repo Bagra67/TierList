@@ -52,7 +52,7 @@ Product decisions taken when designing this milestone (2026-10-31):
 
 Points not decided yet, taken as the simplest option for this milestone. Each one can be revisited before its story is implemented.
 
-- **Popularity** is the number of likes.
+- **Popularity** is the number of likes, every like counting, including those of an account banned since.
 - **Tags** are free words chosen by the owner, **5 at most** per template, **30 characters at most** each, compared without case or accents.
 - **Forks are not allowed** until the owner allows them. A fork is a new **private** template of the person who forks it; it keeps its lineage even if an ancestor becomes private or is deleted (the ancestor is then shown without a link).
 - **Likes and favorites** of a template that becomes private or is hidden are kept but not shown; they come back if it is public again.

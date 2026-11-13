@@ -104,7 +104,7 @@ A table `template_tags`, owned by the template (composition: no shared tag catal
 - The **cursor** is opaque to the client: base64url of a small JSON with the sort and the sort values of the last row (`like_count`, `first_made_public_at`, `id`). The backend decodes and validates it with a Pydantic model, then adds the keyset condition, e.g. `(like_count, first_made_public_at, id) < (:like_count, :first_made_public_at, :id)`.
 - A cursor that cannot be decoded, or was made for another sort, answers `400` with a new `ErrorCode` `invalid_cursor` (translated under `errors.api.*` in the PR that adds it). The keywords and the tag are sent again with each page, not stored in the cursor.
 - The query fetches 25 rows for a page of 24 (`MARKETPLACE_PAGE_SIZE = 24` in `app/constants/`): the 25th only tells that a next page exists.
-- _My templates_ (#105) uses the same envelope and cursor on `GET /templates`, with its own order `updated_at DESC, id DESC`; `next_cursor` is added next to `items` in `TemplateListResponse`, which does not break the current clients.
+- _My templates_ (#105) uses the same envelope and cursor on `GET /templates`, with its own order `updated_at DESC, id DESC` (today `id` ascending breaks ties: a row comparison `(updated_at, id) < (…)` needs both columns in the same direction); `next_cursor` is added next to `items` in `TemplateListResponse`, which does not break the current clients.
 
 ### 2.8 Indexes and measures
 
