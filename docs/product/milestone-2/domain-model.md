@@ -97,7 +97,7 @@ Rules the model always respects, whatever the screen or the action:
 1. Only a **super admin** can take a moderation action; the role is never granted by the app.
 2. A template is **listed** in the marketplace if and only if it is **public**, **not hidden** by moderation, **not deleted**, and its owner is **not banned**.
 3. A template can be made public only by its **owner**, whose email is **confirmed**, and only if it is not hidden by moderation.
-4. A template has **at most 5 tags**, without duplicates (ignoring case and accents).
+4. A template has **at most 5 tags** of **30 characters at most**, without duplicates (ignoring case and accents).
 5. A user has **at most one like** and **at most one favorite** per template, and never likes their own template.
 6. Likes and favorites are **shown** only while their template is listed; they are kept otherwise.
 7. A template can be forked only while it is **listed** and its owner **allows forks**. A fork starts **private**, owned by the person who forked it, and keeps the template it was forked from **forever**, even if that template becomes private, hidden or deleted.
