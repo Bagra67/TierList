@@ -5,10 +5,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-ENGLISH_ONLY = {"AGENTS.md"}
-EXCLUDED_DIRS = (".github/", ".claude/")
+BILINGUAL_NAMES = {"README.md", "CHANGELOG.md"}
+ENGLISH_ONLY_DIRS = ("docs/", ".github/", ".claude/")
 SWITCHER_MAX_LINE = 5
-TESTING_GUIDE = ("docs/technical/testing.md", "docs/technical/testing.fr.md")
 SKIP_LABEL = "skip-docs-sync"
 
 
@@ -18,12 +17,15 @@ class Problem:
     message: str
 
 
-def is_bilingual_doc(path: str) -> bool:
-    return path.endswith(".md") and path not in ENGLISH_ONLY and not path.startswith(EXCLUDED_DIRS)
-
-
 def is_french(path: str) -> bool:
     return path.endswith(".fr.md")
+
+
+def is_bilingual_doc(path: str) -> bool:
+    english_path = counterpart(path) if is_french(path) else path
+    return Path(english_path).name in BILINGUAL_NAMES and not english_path.startswith(
+        ENGLISH_ONLY_DIRS
+    )
 
 
 def counterpart(path: str) -> str:
@@ -73,31 +75,6 @@ def find_one_sided_changes(changed_paths: Iterable[str]) -> list[Problem]:
     ]
 
 
-def is_test_file(path: str) -> bool:
-    return (
-        path.startswith(
-            ("backend/tests/", "frontend/src/test/", "frontend/e2e/", ".github/scripts/test_")
-        )
-        or path == "frontend/playwright.config.ts"
-        or (path.startswith("frontend/src/") and path.endswith((".test.ts", ".test.tsx")))
-    )
-
-
-def find_tests_without_guide(changed_paths: Iterable[str]) -> list[Problem]:
-    changed = set(changed_paths)
-    if all(guide in changed for guide in TESTING_GUIDE):
-        return []
-    return [
-        Problem(
-            path,
-            "Test changed without the testing guide: update docs/technical/testing.md "
-            "and docs/technical/testing.fr.md.",
-        )
-        for path in sorted(changed)
-        if is_test_file(path)
-    ]
-
-
 def run_checks(
     root: Path,
     markdown_paths: list[str],
@@ -107,7 +84,6 @@ def run_checks(
     problems += find_bad_language_switchers(root, markdown_paths)
     if changed_paths is not None:
         problems += find_one_sided_changes(changed_paths)
-        problems += find_tests_without_guide(changed_paths)
     return problems
 
 
@@ -123,9 +99,7 @@ def changed_paths_with_renames_as_delete_and_add(root: Path, base: str) -> list[
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Check that bilingual docs and the testing guide stay in sync."
-    )
+    parser = argparse.ArgumentParser(description="Check that the bilingual READMEs stay in sync.")
     parser.add_argument("--base", help="commit the changes are compared with (the PR base)")
     parser.add_argument("--skip-sync", action="store_true", help="skip the checks on changes")
     args = parser.parse_args()

@@ -41,9 +41,9 @@ Installe les dépendances aux versions exactes de `pnpm-lock.yaml` et active le 
 | Tests avec couverture                 | `pnpm test:coverage`               |
 
 Pour que le message s'affiche, lancez aussi le backend dans un autre terminal (`cd backend` puis `uv run fastapi dev app/main.py`).
-Les appels vers `/api/...` sont transmis tels quels à `http://127.0.0.1:8000/api/...` par le proxy configuré dans `vite.config.ts` : le backend sert son API sous `/api`, comme en production, où FastAPI sert aussi le build ([guide du déploiement](../docs/technical/deployment.fr.md)).
+Les appels vers `/api/...` sont transmis tels quels à `http://127.0.0.1:8000/api/...` par le proxy configuré dans `vite.config.ts` : le backend sert son API sous `/api`, comme en production, où FastAPI sert aussi le build ([guide du déploiement](../docs/technical/deployment.md)).
 
-Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Détail de chaque test : [guide des tests](../docs/technical/testing.fr.md).
+Les tests utilisent **Vitest** (jsdom) et **Testing Library**, configurés dans le bloc `test` de `vite.config.ts`. Les fichiers de test sont à côté du code (`*.test.tsx`), et `fetch` est simulé (`vi.stubGlobal`) : les tests n'appellent jamais le backend. La CI lance `pnpm test:coverage`. Fonctionnement des tests : [guide des tests](../docs/technical/testing.md).
 
 ---
 
@@ -168,7 +168,7 @@ Composant → hook useX() (TanStack Query) → getX() → apiClient (openapi-fet
 
 - `src/api/client.ts` : `apiClient`, le seul client HTTP. Ses chemins, paramètres et réponses sont typés par `schema.d.ts` : un chemin ou un champ erroné est une erreur de `pnpm typecheck`. `ApiError` (`src/errors/apiError.ts` : `status`, `body`, le `code` et les `params` de l'API, et le `detail` du backend comme `message`) est levée pour toute réponse hors 2xx ; un `fetch` en échec (connexion perdue, hors annulation) devient une `NetworkError` (`src/errors/networkError.ts`). Les composants affichent `translateError(t, error)`, jamais `error.message`. Les valeurs fixes (routes, statuts HTTP, limites, toutes les clés de requête) viennent de `src/constants/` ; `nextOffset` (`src/api/pagination.ts`) donne la page suivante d'une requête infinie.
 - `src/api/queryClient.ts` : `createQueryClient()`, utilisé par `main.tsx`. Il refait une fois une requête en échec et journalise chaque échec autre qu'une 4xx dans la console, à un seul endroit ; seul un échec qui n'est ni une `ApiError` ni une `NetworkError` (une erreur du code) part aussi vers Sentry.
-- `src/monitoring/sentry.ts` : `initMonitoring()`, appelé par `main.tsx`, démarre Sentry avec la config que le backend écrit dans `index.html` (ou, sous Vite, `GET /api/client-config`), seulement si un DSN est défini ; `reportError()` sert à la limite d'erreur et au client de requêtes ([guide du suivi des erreurs](../docs/technical/monitoring.fr.md)).
+- `src/monitoring/sentry.ts` : `initMonitoring()`, appelé par `main.tsx`, démarre Sentry avec la config que le backend écrit dans `index.html` (ou, sous Vite, `GET /api/client-config`), seulement si un DSN est défini ; `reportError()` sert à la limite d'erreur et au client de requêtes ([guide du suivi des erreurs](../docs/technical/monitoring.md)).
 - TanStack Query gère les états de chargement et d'erreur, l'annulation au démontage, le cache (une même `queryKey` n'est récupérée qu'une fois) et le rafraîchissement.
 
 Pour ajouter un endpoint, créez `src/api/<ressource>.ts` sur le modèle de `auth.ts`, par exemple une lecture :
@@ -189,7 +189,7 @@ Dans les tests, affichez les composants avec `renderWithQueryClient` (`src/test/
 
 ### Requêtes authentifiées
 
-`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/technical/authentication.fr.md).
+`apiClient` ajoute l'access token (gardé en mémoire) à chaque requête. Quand une requête reçoit une `401`, il rafraîchit le token une fois via `POST /auth/refresh` (cookie de refresh) et renvoie la requête ; les requêtes simultanées partagent le même rafraîchissement. Rien à faire dans un nouveau `api/<ressource>.ts`. L'utilisateur courant se lit avec `useCurrentUser()`, et les pages privées se placent sous la route `RequireAuth` de `App.tsx`. Détails : [guide de l'authentification](../docs/technical/authentication.md).
 
 ---
 
@@ -205,7 +205,7 @@ return <h1>{t('auth.login.title')}</h1>;
 - Les textes sont dans `src/i18n/locales/fr.ts` (référence) et `en.ts` ; une clé absente ou en trop dans `en.ts` est une erreur de `pnpm typecheck`, et les clés de `t('…')` sont vérifiées au typage elles aussi.
 - Les erreurs de l'API sont traduites à partir de leur code : `translateError(t, error)` et `translateFieldError(t, fieldErrors.x)` (`src/errors/apiError.ts`).
 
-Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/technical/i18n.fr.md).
+Fonctionnement, et comment ajouter un texte, un code d'erreur ou une langue : [guide i18n](../docs/technical/i18n.md).
 
 ---
 

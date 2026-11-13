@@ -900,14 +900,15 @@ For new functionality:
 
 ## Testing guide
 
-`docs/technical/testing.md` (English) and `docs/technical/testing.fr.md` (French) describe
-every test: what it does, its purpose and the expected result.
+`docs/technical/testing.md` explains how the tests work: the tools, the
+shared setup (fixtures, helpers), how to run them and how to write one.
+It does not list the tests.
 
-Whenever a test, a test fixture or a test tool is added, changed,
-renamed or removed, BOTH files MUST be updated in the same PR, so that
-the guide always matches the actual tests. The `Docs` CI check enforces
-it; the `skip-docs-sync` PR label is reserved for justified exceptions,
-explained in the PR description.
+-   Give every test a name that says the expected behavior, as a
+    sentence (e.g. `test_expired_access_token_is_rejected`): the name is
+    its documentation. Do not add a docstring that repeats it (§31).
+-   When a shared fixture, a test helper, a test tool or a test command
+    is added, changed or removed, update the guide in the same PR.
 
 ## Seed data
 
@@ -1037,16 +1038,17 @@ Files under `docs/` are split by audience:
 
 ## Documentation language
 
-All human-facing documentation (READMEs, files under `docs/`, guides)
-MUST exist in **English and French**:
+The READMEs (`README.md`, `backend/README.md`, `frontend/README.md`) and
+`CHANGELOG.md` MUST exist in **English and French**:
 
--   `name.md` is the English version and the reference.
--   `name.fr.md` is the French version, in the same directory.
+-   `README.md` is the English version and the reference.
+-   `README.fr.md` is the French version, in the same directory.
 -   Each file starts with a language switcher:
-    `English | [Français](name.fr.md)` in the English file and
-    `[English](name.md) | Français` in the French one.
+    `English | [Français](README.fr.md)` in the English file and
+    `[English](README.md) | Français` in the French one.
 -   Relative links point to files in the same language
-    (e.g. `README.fr.md` links to `backend/README.fr.md`).
+    (e.g. `README.fr.md` links to `backend/README.fr.md`), and to the
+    English docs otherwise.
 -   Both versions MUST be updated in the same PR and stay equivalent in
     content.
 -   The `Docs` CI check enforces the pairs, the switchers and the
@@ -1054,12 +1056,10 @@ MUST exist in **English and French**:
     `skip-docs-sync` PR label is reserved for justified exceptions
     (e.g. a typo fixed in one language), explained in the PR description.
 
-Exceptions:
-
--   `AGENTS.md` and the Claude Code skills and agents (`.claude/`)
-    stay English-only (instructions for agents).
--   `LICENSE` is already bilingual in a single file.
--   Code comments are not concerned.
+Every other doc is **English-only**: files under `docs/`, `TODO.md`,
+`AGENTS.md` and the Claude Code skills and agents (`.claude/`). Do not
+add a `.fr.md` translation for them. `LICENSE` is already bilingual in a
+single file. Code comments are not concerned.
 
 ------------------------------------------------------------------------
 
@@ -1322,9 +1322,10 @@ so that each one can be reviewed on its own:
 -   The technical and product documentation goes into a **final PR that
     only contains documentation**, at the top of the stack. It carries
     `Closes #N`.
--   Exception: the testing guide (§28) stays in the PR that changes the
-    tests, since the `Docs` CI check requires both in the same PR. The
-    same goes for the translations of a new `ErrorCode` (§50).
+-   Exception: a testing guide change (§28: a shared fixture, helper,
+    tool or command) stays in the PR that makes that change, so the guide
+    matches the code at every PR. The same goes for the translations of a
+    new `ErrorCode` (§50).
 -   Each PR must pass the CI on its own (lint, types, tests, generated
     API types).
 

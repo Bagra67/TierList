@@ -91,7 +91,7 @@ Une fois lancé :
 - Documentation interactive (Swagger) : http://127.0.0.1:8000/api/docs
 - Documentation ReDoc : http://127.0.0.1:8000/api/redoc
 
-L'API est servie sous `/api` (`app.main:app` la monte ; [guide du déploiement](../docs/technical/deployment.fr.md)). Le frontend l'appelle via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est transmise telle quelle à `http://127.0.0.1:8000/api/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+L'API est servie sous `/api` (`app.main:app` la monte ; [guide du déploiement](../docs/technical/deployment.md)). Le frontend l'appelle via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est transmise telle quelle à `http://127.0.0.1:8000/api/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
 
 ---
 
@@ -129,7 +129,7 @@ uv run pytest
 
 Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
 
-Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/technical/testing.fr.md).
+Fonctionnement des tests (fixtures, tests d'intégration, écrire un nouveau test) : [guide des tests](../docs/technical/testing.md).
 
 ### Tests d'intégration (vrai PostgreSQL)
 
@@ -205,7 +205,7 @@ backend/
 ├── scripts/
 │   ├── export_openapi.py  # Écrit le contrat d'API dans openapi.json
 │   ├── set_super_admin.py # Donne ou retire le rôle super admin (développement local)
-│   └── seed.py            # Remplit la base locale ou de staging avec des données de test (docs/technical/seed-data.fr.md)
+│   └── seed.py            # Remplit la base locale ou de staging avec des données de test (docs/technical/seed-data.md)
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException, codes d'erreur)
@@ -282,7 +282,7 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `MAINTENANCE_ENABLED`                   | Purges de nuit (templates supprimés, images inutilisées) dans le processus                                                                                                                 | `true`                                           |
 | `MAINTENANCE_HOUR_UTC`                  | Heure des purges de nuit, en UTC (0 à 23)                                                                                                                                                  | `3`                                              |
 
-Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.fr.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.fr.md#3-dans-le-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
+Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.md#3-in-the-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.md#24-limits-and-settings). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
@@ -309,14 +309,14 @@ Les noms des contraintes et des index suivent la convention de `app/db/base.py` 
 
 ### Rôle super admin en local
 
-Les super admins modèrent l'application ([guide de l'authentification](../docs/technical/authentication.fr.md#super-admins)). Le rôle n'est jamais donné par l'API : en développement local, donnez-le à un compte existant avec
+Les super admins modèrent l'application ([guide de l'authentification](../docs/technical/authentication.md#super-admins)). Le rôle n'est jamais donné par l'API : en développement local, donnez-le à un compte existant avec
 
 ```bash
 uv run python scripts/set_super_admin.py alice@example.com            # donne le rôle
 uv run python scripts/set_super_admin.py alice@example.com --revoke   # le retire
 ```
 
-L'e-mail ignore la casse ; un e-mail inconnu sort avec le code `1`. Rechargez la page pour voir le lien « Modération ». En staging et en production, utilisez la requête SQL du [guide du déploiement](../docs/technical/deployment.fr.md#512-super-admins).
+L'e-mail ignore la casse ; un e-mail inconnu sort avec le code `1`. Rechargez la page pour voir le lien « Modération ». En staging et en production, utilisez la requête SQL du [guide du déploiement](../docs/technical/deployment.md#512-super-admins).
 
 ---
 
@@ -327,7 +327,7 @@ Les logs de l'application (loggers sous `app`, par ex. `logging.getLogger(__name
 - écrits sur stderr au **même format qu'uvicorn**, avec en plus le nom du logger : `ERROR:    app.main - Échec de la connexion à la base de données` ;
 - niveau réglé par `LOG_LEVEL` (dans `.env` ou l'environnement, `INFO` par défaut) ; une valeur invalide arrête l'application au démarrage avec une erreur claire ;
 - les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler ;
-- les logs `ERROR` partent aussi vers Sentry quand `SENTRY_DSN` est défini (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` ; `app/core/monitoring.py`) : voir le [guide du suivi des erreurs](../docs/technical/monitoring.fr.md).
+- les logs `ERROR` partent aussi vers Sentry quand `SENTRY_DSN` est défini (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` ; `app/core/monitoring.py`) : voir le [guide du suivi des erreurs](../docs/technical/monitoring.md).
 
 ---
 

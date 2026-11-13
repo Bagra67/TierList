@@ -1,5 +1,3 @@
-English | [Français](monitoring.fr.md)
-
 # Error monitoring (Sentry)
 
 Production errors, from the backend and from the browser, are sent to **Sentry**, which groups them, keeps their stack trace and emails a new error. Nothing is sent while `SENTRY_DSN` is empty (an empty value is read as no DSN, so `/client-config` sends `null`): local runs, tests and the CI never send anything.

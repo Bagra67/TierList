@@ -1,7 +1,5 @@
 # Games
 
-English | [Français](games.fr.md)
-
 How a game is played in a room: its start, its rounds, its placements, the move to the next round, its final cooldown and its closing. **Built in #91** for the start, **#92** for the placements and **#93** for the round progression (next, timer, everyone placed, absent votes), **#94** for the game screen, **#95** for coming back to one's seat and joining during a game and **#96** for the final cooldown (final placements, catch-up, end); **#97** for its screen and **#98** for saving the closed game; its results (#99) and the history (#103) come next.
 
 ## 1. Functional overview
@@ -220,7 +218,7 @@ The frontend does not store an answer older than the room it already has (`store
 
 ### Tests
 
-`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `test_game_cooldown.py`, `test_game_close.py`, `test_game_replay.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_game_start.py` and `test_game_placements.py`, `test_game_rounds.py`, `test_game_reconnection.py`, `test_game_cooldown.py`, `test_game_close.py`, `test_game_replay.py`, `backend/tests/test_round_timers.py`; `frontend/src/api/roomChannel.test.ts` (`participant.placed`); `frontend/src/components/GameScreen.test.tsx`, `StartGameButton.test.tsx` and the game in progress in `pages/RoomPage.test.tsx`.
 
 ## 4. Known limitations
 

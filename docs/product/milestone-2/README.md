@@ -1,7 +1,5 @@
 # Milestone 2 — Public templates
 
-English | [Français](README.fr.md)
-
 The design of the second milestone of TierList: **templates that everyone can see and play**, and the **moderation** that public content needs first. It details, for this milestone only, what [roadmap.md](../roadmap.md#milestone-2--public-templates) lists, using the vocabulary of [product.md](../product.md#glossary), the rules of [game-rules.md](../game-rules.md#8-templates-and-marketplace) and the roles of [permissions.md](../permissions.md).
 
 **Status: designed.** The stories are tracked in the [GitHub milestone](https://github.com/Bagra67/TierList/milestone/3).

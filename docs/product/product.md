@@ -1,7 +1,5 @@
 # Product
 
-English | [Français](product.fr.md)
-
 What TierList is, who it is for, and the vocabulary used everywhere else. The detailed rules are in [game-rules.md](game-rules.md), who can do what in [permissions.md](permissions.md), and the delivery order in [roadmap.md](roadmap.md).
 
 This page describes the **target product**. Most of it is not built yet: [roadmap.md](roadmap.md) says what comes first.

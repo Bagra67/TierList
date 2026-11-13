@@ -1,7 +1,5 @@
 # Authentication
 
-English | [Français](authentication.fr.md)
-
 How users create an account and sign in to TierList: what the user sees, how it works technically, and where it lives in the code.
 
 ## 1. Functional overview
@@ -323,4 +321,4 @@ Hiding pages in the frontend is only for comfort: the real protection is the bac
 
 ### Tests
 
-Described in the [testing guide](testing.md): `tests/test_security.py`, `tests/test_google_oauth.py`, `tests/integration/test_auth.py`, `tests/integration/test_google_auth.py`, `tests/integration/test_account_bans.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/errors/apiError.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` and `src/components/DeleteAccountDialog.test.tsx` (frontend).
+Tests: `tests/test_security.py`, `tests/test_google_oauth.py`, `tests/integration/test_auth.py`, `tests/integration/test_google_auth.py`, `tests/integration/test_account_bans.py` (backend), `src/api/client.test.ts`, `src/api/auth.test.ts`, `src/errors/apiError.test.ts`, `src/App.test.tsx`, `src/pages/*.test.tsx` and `src/components/DeleteAccountDialog.test.tsx` (frontend).

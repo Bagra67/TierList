@@ -1,7 +1,5 @@
 # Seed data
 
-English | [Français](seed-data.fr.md)
-
 A realistic set of test data — accounts, templates, images, closed games, open rooms, moderation log — to try the application for real, in local development and on staging. Never in production.
 
 ## 1. What is created

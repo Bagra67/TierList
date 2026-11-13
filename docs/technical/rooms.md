@@ -1,7 +1,5 @@
 # Rooms
 
-English | [Français](rooms.fr.md)
-
 How rooms are created, read and configured through the API: data model, code and link, settings, endpoints, the lobby, and where it lives in the code. **Built in #83** (API), **#84** (screens) and **#86** (joining with an account) and **#87** (guests, §2.4). What a room is for the user: [user stories](../product/milestone-1/user-stories.md) US-2.1 and US-2.2, [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview
@@ -229,4 +227,4 @@ Live updates: once the room is loaded, `useRoomEvents` follows its real-time cha
 
 ### Tests
 
-`backend/tests/integration/test_rooms.py`, `test_room_removal.py`, `test_room_close.py`, `test_room_inactivity.py` and `test_room_capacity.py` (endpoints and services, against a real PostgreSQL), `backend/tests/test_room_sweeper.py` (sweep) and `backend/tests/test_room_codes.py` (code generator); `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, `RemoveParticipantDialog.test.tsx`, `RoomBans.test.tsx`, and the room creation in `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx`. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_rooms.py`, `test_room_removal.py`, `test_room_close.py`, `test_room_inactivity.py` and `test_room_capacity.py` (endpoints and services, against a real PostgreSQL), `backend/tests/test_room_sweeper.py` (sweep) and `backend/tests/test_room_codes.py` (code generator); `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, `RemoveParticipantDialog.test.tsx`, `RoomBans.test.tsx`, and the room creation in `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx`.

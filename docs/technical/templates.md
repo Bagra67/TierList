@@ -1,7 +1,5 @@
 # Templates
 
-English | [Français](templates.fr.md)
-
 How templates are stored and exposed by the API: data model, endpoints, soft deletion and purge, snapshots taken when a game starts, moderation, visibility, and where it lives in the code. What a template is for the user: [product](../product/product.md).
 
 ## 1. Functional overview
@@ -259,4 +257,4 @@ The template caches have separate keys (`constants/templates.ts`): `['templates'
 
 ### Tests
 
-`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility), against a real PostgreSQL; `frontend/src/pages/TemplatesPage.test.tsx` and `TemplateEditorPage.test.tsx` for the screens. All are described in the [testing guide](testing.md).
+`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility), against a real PostgreSQL; `frontend/src/pages/TemplatesPage.test.tsx` and `TemplateEditorPage.test.tsx` for the screens.

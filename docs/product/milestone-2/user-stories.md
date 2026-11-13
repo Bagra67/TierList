@@ -1,7 +1,5 @@
 # Milestone 2 — User stories
 
-English | [Français](user-stories.fr.md)
-
 What each actor can do in [milestone 2](README.md), grouped by epic. Each story has an ID, a priority and acceptance criteria written as _Given / When / Then_. Vocabulary: [product.md](../product.md#glossary). Roles: [permissions.md](../permissions.md). Points marked as assumptions in the [README](README.md#assumptions) can still change.
 
 **Priority**: **Must** = required before templates can be public; **Should** = expected in the milestone, can slip to the next one if needed.

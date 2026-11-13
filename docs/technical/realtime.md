@@ -1,7 +1,5 @@
 # Real time
 
-English | [Français](realtime.fr.md)
-
 How rooms push rounds, placements, presence and timers to every participant: transport, message format, authentication of the socket, reconnection, server-side timers and scaling. Decided in spike #74, **built in #85** (§3) for the room channel and the presence; rounds, placements and timers come with the game issues. To understand, debug or extend the channel, start with the [WebSocket guide](websocket.md). What a room is for the user: [game flow](../product/milestone-1/game-flow.md) and [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview
@@ -222,4 +220,4 @@ Built in #85. What exists today:
 | Frontend     | `components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot (filled online, hollow offline) with an `online` / `offline` text for screen readers; the hook is active once the room is loaded.                                                                                                                                                                                                                                                                            |
 | Dev          | `frontend/vite.config.ts`                        | `ws: true` on the `/api` proxy.                                                                                                                                                                                                                                                                                                                                                                                           |
 
-Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`), described in the [testing guide](testing.md).
+Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`).

@@ -1,6 +1,6 @@
 ---
 name: i18n-docs-reviewer
-description: Checks a TierList diff against the project rules that no linter enforces: translated UI texts and error codes, bilingual docs, testing guide, privacy policy, seed data, comments. Use before marking a PR ready, or when asked to review translations or documentation. Read-only.
+description: Checks a TierList diff against the project rules that no linter enforces: translated UI texts and error codes, bilingual READMEs, testing guide, privacy policy, seed data, comments. Use before marking a PR ready, or when asked to review translations or documentation. Read-only.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -31,16 +31,18 @@ base you were given) and read every changed file in full.
 
 ### Documentation (§31)
 
-- Every changed doc `name.md` has its `name.fr.md` changed in the same diff, with the same content,
-  and both keep their language switcher.
+- Every changed `README.md` (and `CHANGELOG.md`) has its `.fr.md` version changed in the same diff,
+  with the same content, and both keep their language switcher. Every other doc is English-only:
+  no new `.fr.md` file.
 - Product docs (`docs/product/`) describe behavior, technical docs (`docs/technical/`) describe the
   implementation.
 
 ### Testing guide (§28)
 
-- Every added, renamed, changed or removed test, fixture or test tool appears in
-  `docs/technical/testing.md` and `testing.fr.md`, with what it does, its purpose and the expected
-  result. Compare test names in the diff with the guide rows.
+- Every new or renamed test has a name that says the expected behavior, as a sentence, and no
+  docstring that repeats it.
+- An added, changed or removed shared fixture, test helper, test tool or test command is reflected
+  in `docs/technical/testing.md`.
 
 ### Privacy policy (§51)
 

@@ -1,7 +1,5 @@
 # Architecture
 
-English | [Français](architecture.fr.md)
-
 How the TierList code is organized, and where new code goes. The engineering rules themselves are in [AGENTS.md](../../AGENTS.md); this page describes how they apply to this repository today.
 
 ## Overview
@@ -88,7 +86,7 @@ Each new model comes with an Alembic migration (`uv run alembic revision --autog
 - **Translations**: no user-facing text hard-coded in a component, and none sent by the backend: the API returns error codes, the frontend translates them. Every key exists in French and English. Rules: AGENTS.md §50; how-to: [i18n guide](i18n.md).
 - **Exceptions**: domain exceptions live in `app/exceptions/` (backend) and error classes in `src/errors/` (frontend), never inside services, routes or components.
 - **Logging**: `logging.getLogger(__name__)` in `app/...`, level from `LOG_LEVEL`. Errors (an `ERROR` log, a crash in the browser) also go to Sentry when `SENTRY_DSN` is set: see the [monitoring guide](monitoring.md).
-- **Tests**: backend in `backend/tests/` (unit, plus `integration/` against a real PostgreSQL), frontend next to the code (`*.test.tsx`). Every test is described in the [testing guide](testing.md).
+- **Tests**: backend in `backend/tests/` (unit, plus `integration/` against a real PostgreSQL), frontend next to the code (`*.test.tsx`). How the tests work: [testing guide](testing.md).
 - **Git**: Conventional Commits (checked by commitlint), one branch and one squash-merged PR per change into `develop`; see AGENTS.md §39–40.
 
 ## Open decisions

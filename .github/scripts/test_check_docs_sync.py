@@ -8,7 +8,6 @@ from pathlib import Path
 from check_docs_sync import (
     find_bad_language_switchers,
     find_one_sided_changes,
-    find_tests_without_guide,
     find_unpaired_docs,
     run_checks,
 )
@@ -23,14 +22,12 @@ def paths_of(problems):
 
 class UnpairedDocsTest(unittest.TestCase):
     def test_a_complete_pair_is_accepted(self):
-        self.assertEqual(
-            find_unpaired_docs(["docs/technical/i18n.md", "docs/technical/i18n.fr.md"]), []
-        )
+        self.assertEqual(find_unpaired_docs(["backend/README.md", "backend/README.fr.md"]), [])
 
-    def test_an_english_doc_without_french_is_reported(self):
-        problems = find_unpaired_docs(["docs/new.md"])
-        self.assertEqual(paths_of(problems), ["docs/new.md"])
-        self.assertIn("docs/new.fr.md", problems[0].message)
+    def test_an_english_readme_without_french_is_reported(self):
+        problems = find_unpaired_docs(["frontend/README.md"])
+        self.assertEqual(paths_of(problems), ["frontend/README.md"])
+        self.assertIn("frontend/README.fr.md", problems[0].message)
 
     def test_a_french_doc_without_english_is_reported(self):
         problems = find_unpaired_docs(["README.fr.md"])
@@ -42,6 +39,9 @@ class UnpairedDocsTest(unittest.TestCase):
             find_unpaired_docs(
                 [
                     "AGENTS.md",
+                    "TODO.md",
+                    "docs/technical/i18n.md",
+                    "docs/product/milestone-1/README.md",
                     ".github/pull_request_template.md",
                     ".claude/skills/api-sync/SKILL.md",
                 ]
@@ -62,21 +62,21 @@ class LanguageSwitcherTest(unittest.TestCase):
         (self.root / path).write_text(text, encoding="utf-8")
 
     def test_switchers_on_the_first_line_or_under_the_title_are_accepted(self):
-        self.write("guide.md", "English | [Français](guide.fr.md)\n\n# Guide\n")
-        self.write("guide.fr.md", "# Guide\n\n[English](guide.md) | Français\n")
-        self.assertEqual(find_bad_language_switchers(self.root, ["guide.md", "guide.fr.md"]), [])
+        self.write("README.md", "English | [Français](README.fr.md)\n\n# TierList\n")
+        self.write("README.fr.md", "# TierList\n\n[English](README.md) | Français\n")
+        self.assertEqual(find_bad_language_switchers(self.root, ["README.md", "README.fr.md"]), [])
 
     def test_a_missing_or_wrong_switcher_is_reported(self):
-        self.write("guide.md", "# Guide\n\nNo switcher here.\n")
-        self.write("guide.fr.md", "# Guide\n\n[English](other.md) | Français\n")
-        problems = find_bad_language_switchers(self.root, ["guide.md", "guide.fr.md"])
-        self.assertEqual(paths_of(problems), ["guide.fr.md", "guide.md"])
-        self.assertIn("English | [Français](guide.fr.md)", problems[1].message)
+        self.write("README.md", "# TierList\n\nNo switcher here.\n")
+        self.write("README.fr.md", "# TierList\n\n[English](other.md) | Français\n")
+        problems = find_bad_language_switchers(self.root, ["README.md", "README.fr.md"])
+        self.assertEqual(paths_of(problems), ["README.fr.md", "README.md"])
+        self.assertIn("English | [Français](README.fr.md)", problems[1].message)
 
     def test_a_switcher_too_far_down_is_reported(self):
-        self.write("guide.md", "# Guide\n" + "\n" * 10 + "English | [Français](guide.fr.md)\n")
+        self.write("README.md", "# TierList\n" + "\n" * 10 + "English | [Français](README.fr.md)\n")
         self.assertEqual(
-            paths_of(find_bad_language_switchers(self.root, ["guide.md"])), ["guide.md"]
+            paths_of(find_bad_language_switchers(self.root, ["README.md"])), ["README.md"]
         )
 
 
@@ -85,50 +85,22 @@ class OneSidedChangesTest(unittest.TestCase):
         self.assertEqual(find_one_sided_changes(["README.md", "README.fr.md", "app.py"]), [])
 
     def test_a_single_language_changed_is_reported(self):
-        problems = find_one_sided_changes(["docs/technical/i18n.fr.md", "app.py"])
-        self.assertEqual(paths_of(problems), ["docs/technical/i18n.fr.md"])
-        self.assertIn("docs/technical/i18n.md", problems[0].message)
+        problems = find_one_sided_changes(["CHANGELOG.fr.md", "app.py"])
+        self.assertEqual(paths_of(problems), ["CHANGELOG.fr.md"])
+        self.assertIn("CHANGELOG.md", problems[0].message)
 
     def test_english_only_files_are_ignored(self):
         self.assertEqual(
             find_one_sided_changes(
                 [
                     "AGENTS.md",
+                    "docs/technical/i18n.md",
                     ".github/pull_request_template.md",
                     ".claude/agents/security-reviewer.md",
                 ]
             ),
             [],
         )
-
-
-class TestsWithoutGuideTest(unittest.TestCase):
-    GUIDE = ["docs/technical/testing.md", "docs/technical/testing.fr.md"]
-
-    def test_every_kind_of_test_file_requires_the_guide(self):
-        tests = [
-            ".github/scripts/test_check_docs_sync.py",
-            "backend/tests/integration/conftest.py",
-            "backend/tests/test_main.py",
-            "frontend/e2e/account.spec.ts",
-            "frontend/e2e/support/mailpit.ts",
-            "frontend/playwright.config.ts",
-            "frontend/src/App.test.tsx",
-            "frontend/src/api/client.test.ts",
-            "frontend/src/test/setup.ts",
-        ]
-        self.assertEqual(paths_of(find_tests_without_guide(tests)), tests)
-
-    def test_tests_with_both_guides_are_accepted(self):
-        self.assertEqual(find_tests_without_guide(["backend/tests/test_main.py", *self.GUIDE]), [])
-
-    def test_tests_with_a_single_guide_are_reported(self):
-        changed = ["frontend/src/App.test.tsx", "docs/technical/testing.md"]
-        self.assertEqual(paths_of(find_tests_without_guide(changed)), ["frontend/src/App.test.tsx"])
-
-    def test_non_test_files_do_not_require_the_guide(self):
-        changed = ["backend/app/main.py", "frontend/src/App.tsx", "frontend/src/testing.ts"]
-        self.assertEqual(find_tests_without_guide(changed), [])
 
 
 class RunChecksTest(unittest.TestCase):
@@ -148,7 +120,7 @@ class RunChecksTest(unittest.TestCase):
 
     def test_sync_checks_run_on_changes(self):
         problems = run_checks(self.root, self.markdown, ["README.md", "backend/tests/test_main.py"])
-        self.assertEqual(paths_of(problems), ["README.md", "backend/tests/test_main.py"])
+        self.assertEqual(paths_of(problems), ["README.md"])
 
     def test_skipped_sync_checks_keep_the_pairing_checks(self):
         self.assertEqual(run_checks(self.root, self.markdown, None), [])
@@ -160,8 +132,8 @@ class CommandLineTest(unittest.TestCase):
     def run_in_a_repository_with_an_unpaired_doc(self):
         with tempfile.TemporaryDirectory() as directory:
             subprocess.run(["git", "init", "--quiet"], cwd=directory, check=True)
-            (Path(directory) / "new.md").write_text("English | [Français](new.fr.md)\n")
-            subprocess.run(["git", "add", "new.md"], cwd=directory, check=True)
+            (Path(directory) / "README.md").write_text("English | [Français](README.fr.md)\n")
+            subprocess.run(["git", "add", "README.md"], cwd=directory, check=True)
             return subprocess.run(
                 [sys.executable, str(SCRIPT)],
                 cwd=directory,
@@ -172,7 +144,7 @@ class CommandLineTest(unittest.TestCase):
     def test_a_problem_is_a_github_annotation_and_fails_the_run(self):
         completed = self.run_in_a_repository_with_an_unpaired_doc()
         self.assertEqual(completed.returncode, 1)
-        self.assertIn("::error file=new.md::", completed.stdout)
+        self.assertIn("::error file=README.md::", completed.stdout)
 
     def test_the_script_only_imports_the_standard_library(self):
         tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
