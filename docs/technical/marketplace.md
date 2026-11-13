@@ -64,10 +64,11 @@ A table `template_tags`, owned by the template (composition: no shared tag catal
 | `template_id`      | Foreign key to `templates.id`, `ON DELETE CASCADE`.                                     |
 | `label`            | The tag as typed by the owner (trimmed), shown everywhere; 30 characters at most.       |
 | `normalized_label` | `normalize_search_text(label)`: duplicates and the tag filter compare this column only. |
+| `position`         | The owner's order, from 0.                                                              |
 
 - Primary key `(template_id, normalized_label)`: a duplicate is refused by the database too. Adding a tag whose normalized form already exists keeps the first label (merge, US-2.2).
 - A tag whose normalized form is empty (only punctuation or a non-Latin script) is refused.
-- At most 5 tags: checked by the service, on the template row locked with `SELECT … FOR UPDATE` like every template change.
+- At most 5 tags: checked by the request schema (`SetTemplateTagsRequest`, `422` `validation_error`); the service changes the tags on the template row locked with `SELECT … FOR UPDATE`, like every template change.
 - Index on `normalized_label` for the tag filter (`EXISTS (… WHERE normalized_label = :tag)`).
 - A fork copies the tags (US-3.7).
 

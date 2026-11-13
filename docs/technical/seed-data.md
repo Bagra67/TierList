@@ -68,7 +68,7 @@ The script logs each of its 6 steps with its duration, and its progress inside t
   - log entries (except those of the images, templates and bans): the actor and target names copied.
 - The accounts are read once: after each commit, SQLAlchemy forgets the loaded rows and would read each account again.
 
-A full run now makes about 1,400 queries (about 5 minutes on staging). `test_seed.py` checks that the small set stays under 520 queries, so that a return to one-by-one writes does not go unnoticed.
+A full run now makes about 1,500 queries (about 5 minutes on staging). `test_seed.py` checks that the small set stays under 560 queries, so that a return to one-by-one writes does not go unnoticed.
 
 ### Keeping it up to date
 
