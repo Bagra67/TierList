@@ -107,16 +107,15 @@ def create_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Crée un modèle avec les six tiers par défaut (S à E) et aucune tuile."""
+    """Creates a template with the six default tiers (S to E) and no tile."""
     template: Template = service.create(user, payload.name)
     return template_response(template, storage)
 
 
 @router.get("", responses=UNAUTHORIZED_RESPONSE)
 def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
-    """Les modèles actifs du compte, avec leur nombre de tuiles, le plus récemment modifié en
-    premier. Chaque modèle indique sa décision de modération et les images retirées de ses tuiles.
-    """
+    """The account's active templates, with their number of tiles, most recently modified first.
+    Each template gives its moderation decision and the images removed from its tiles."""
     summaries: list[TemplateSummary] = service.list_for_owner(user)
 
     items: list[TemplateSummaryResponse] = []
@@ -129,8 +128,8 @@ def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> Templat
 def list_removed_templates(
     user: CurrentUserDep, service: TemplateServiceDep
 ) -> RemovedTemplateListResponse:
-    """Les modèles du compte supprimés par la modération et pas encore purgés, avec la date et le
-    motif."""
+    """The account's templates deleted by moderation and not purged yet, with the date and the
+    reason."""
     removed_templates: list[RemovedTemplate] = service.list_removed_by_moderation(user)
     return RemovedTemplateListResponse(
         items=[RemovedTemplateResponse.model_validate(template) for template in removed_templates]
@@ -144,8 +143,8 @@ def get_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Un modèle du compte, avec ses tiers et ses tuiles triés par position. 404 pour un modèle
-    supprimé ou d'un autre compte."""
+    """A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted
+    template or one of another account."""
     try:
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
@@ -161,7 +160,7 @@ def rename_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Renomme un modèle ; sa date de dernière modification est mise à jour."""
+    """Renames a template; its last modification date is updated."""
     try:
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
@@ -177,9 +176,9 @@ def set_template_visibility(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Rend un modèle public ou privé, par son propriétaire. Le rendre public demande une adresse
-    email confirmée, un modèle non masqué par la modération et au moins une tuile. La date de la
-    première publication est gardée quand le modèle repasse en privé."""
+    """Makes a template public or private, by its owner. Making it public requires a confirmed email
+    address, a template not hidden by moderation and at least one tile. The date of the first
+    publication is kept when the template goes back to private."""
     try:
         template: Template = service.set_visibility(user, template_id, payload.visibility)
     except TemplateNotFoundError as exc:
@@ -197,8 +196,8 @@ def set_template_visibility(
 def delete_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
 ) -> None:
-    """Supprime un modèle : il disparaît aussitôt pour son propriétaire, et il est effacé pour de
-    bon après la durée de rétention. Les parties déjà jouées gardent leur version figée."""
+    """Deletes a template: it disappears right away for its owner, and it is erased for good after
+    the retention period. Games already played keep their frozen version."""
     try:
         service.delete(user, template_id)
     except TemplateNotFoundError as exc:
@@ -212,7 +211,7 @@ def add_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Ajoute un tier en bas du modèle, nommé « ? », couleur #9AA0B4."""
+    """Adds a tier at the bottom of the template, named "?", color #9AA0B4."""
     try:
         template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
@@ -229,8 +228,8 @@ def update_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Change le nom, la couleur et/ou la position d'un tier ; les autres tiers sont décalés. Une
-    position au-delà de la fin met le tier en dernier."""
+    """Changes the name, the color and/or the position of a tier; the other tiers are shifted. A
+    position past the end puts the tier last."""
     changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
@@ -255,7 +254,7 @@ def delete_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Supprime un tier ; les suivants remontent. Refusé (409) pour le dernier tier du modèle."""
+    """Deletes a tier; the following ones move up. Refused (409) for the template's last tier."""
     try:
         template: Template = service.delete_tier(user, template_id, tier_id)
     except TemplateNotFoundError as exc:
@@ -291,8 +290,8 @@ def add_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Ajoute une tuile à la fin du modèle : un texte, une image déjà envoyée par le compte (POST
-    /images), ou les deux. Refusé (409) au-delà du nombre maximal de tuiles (`max_tiles`)."""
+    """Adds a tile at the end of the template: a text, an image already uploaded by the account
+    (POST /images), or both. Refused (409) past the maximum number of tiles (`max_tiles`)."""
     try:
         template: Template = service.add_tile(user, template_id, payload.text, payload.image_id)
     except TemplateNotFoundError as exc:
@@ -330,8 +329,8 @@ def update_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Change le texte, l'image et/ou la position d'une tuile. Un `null` explicite retire le texte
-    ou l'image, tant que la tuile garde l'autre ; `position: null` est ignoré."""
+    """Changes the text, the image and/or the position of a tile. An explicit `null` removes the
+    text or the image, as long as the tile keeps the other; `position: null` is ignored."""
     changes: TileChanges = TileChanges(**payload.model_dump(exclude_unset=True))
     if payload.position is None:
         changes.pop("position", None)
@@ -356,7 +355,7 @@ def delete_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Supprime une tuile ; les suivantes remontent."""
+    """Deletes a tile; the following ones move up."""
     try:
         template: Template = service.delete_tile(user, template_id, tile_id)
     except TemplateNotFoundError as exc:

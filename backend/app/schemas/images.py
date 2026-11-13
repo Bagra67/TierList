@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 
 class ImageUploadResponse(BaseModel):
-    """Image envoyée et compressée : son id, à mettre dans une tuile, son adresse publique et ses
-    dimensions en pixels."""
+    """Uploaded and compressed image: its id, to put in a tile, its public address and its
+    dimensions in pixels."""
 
     id: uuid.UUID
     url: str

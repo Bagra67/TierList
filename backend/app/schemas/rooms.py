@@ -15,7 +15,7 @@ from app.schemas.common import DisplayName
 
 
 class CreateRoomRequest(BaseModel):
-    """Modèle de la nouvelle salle."""
+    """Template of the new room."""
 
     template_id: uuid.UUID
 
@@ -25,8 +25,8 @@ CooldownSeconds = Annotated[int, Field(ge=COOLDOWN_SECONDS_MIN, le=COOLDOWN_SECO
 
 
 class UpdateRoomSettingsRequest(BaseModel):
-    """Changements des réglages de la salle : seuls les champs envoyés changent ; une requête sans
-    champ ne change rien."""
+    """Changes to the room settings: only the fields sent change; a request without a field changes
+    nothing."""
 
     item_order: ItemOrder | None = None
     auto_advance: AutoAdvance | None = None
@@ -37,8 +37,8 @@ class UpdateRoomSettingsRequest(BaseModel):
 
 
 class RoomSettingsResponse(BaseModel):
-    """Réglages de la salle : ceux de la partie en cours pendant une partie, sinon ceux de la
-    prochaine. `timer_seconds` est gardé même quand `auto_advance` n'est pas `timer`."""
+    """Room settings: those of the current game during a game, otherwise those of the next one.
+    `timer_seconds` is kept even when `auto_advance` is not `timer`."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -51,8 +51,7 @@ class RoomSettingsResponse(BaseModel):
 
 
 class RoomTemplateResponse(BaseModel):
-    """Modèle de la salle ; `hidden` est vrai quand la modération l'a masqué : aucune nouvelle
-    partie ne peut alors commencer."""
+    """Template of the room; `hidden` is true when moderation hid it: no new game can start then."""
 
     id: uuid.UUID
     name: str
@@ -60,8 +59,8 @@ class RoomTemplateResponse(BaseModel):
 
 
 class ParticipantResponse(BaseModel):
-    """Une place dans la salle : un compte avec son nom affiché, ou un invité avec son pseudo.
-    `is_you` désigne la place du lecteur."""
+    """A place in the room: an account with its display name, or a guest with their nickname.
+    `is_you` marks the reader's place."""
 
     id: uuid.UUID
     display_name: str
@@ -72,8 +71,8 @@ class ParticipantResponse(BaseModel):
 
 
 class CurrentItemResponse(BaseModel):
-    """Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
-    tous), un item placé par le lecteur, ou un item qu'il a manqué."""
+    """An item of the game, a tile of the frozen version: the item of the current round (shown to
+    everyone), an item placed by the reader, or an item they missed."""
 
     id: uuid.UUID
     text: str | None
@@ -82,7 +81,7 @@ class CurrentItemResponse(BaseModel):
 
 
 class GameTierResponse(BaseModel):
-    """Un tier de la version figée de la partie, où placer les items."""
+    """A tier of the frozen version of the game, where items are placed."""
 
     id: uuid.UUID
     name: str
@@ -90,8 +89,8 @@ class GameTierResponse(BaseModel):
 
 
 class OwnPlacementResponse(BaseModel):
-    """Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
-    pendant les tours, placement final pendant le cooldown."""
+    """An item placed by the reader: its tier and its position (0 = first). Round placement during
+    the rounds, final placement during the cooldown."""
 
     item: CurrentItemResponse
     tier_id: uuid.UUID
@@ -99,9 +98,9 @@ class OwnPlacementResponse(BaseModel):
 
 
 class CurrentGameResponse(BaseModel):
-    """La partie en cours, vue par le lecteur : seuls ses propres placements sont envoyés, avec la
-    liste de ceux qui ont placé l'item du tour. `ends_at` est la fin du tour quand il a un minuteur
-    ; `cooldown_ends_at` et `missed_items` servent pendant le cooldown final."""
+    """The current game, as the reader sees it: only their own placements are sent, with the list of
+    those who placed the item of the round. `ends_at` is the end of the round when it has a timer;
+    `cooldown_ends_at` and `missed_items` are used during the final cooldown."""
 
     status: GameStatus
     round_number: int
@@ -116,15 +115,15 @@ class CurrentGameResponse(BaseModel):
 
 
 class PlaceItemRequest(BaseModel):
-    """Tier choisi pour l'item, et position dans ce tier (0 = premier) ; une position au-delà de la
-    fin met l'item en dernier."""
+    """Tier chosen for the item, and position in that tier (0 = first); a position past the end puts
+    the item last."""
 
     tier_id: uuid.UUID
     position: Annotated[int, Field(ge=0)]
 
 
 class RoomBanResponse(BaseModel):
-    """Un bannissement de la salle, visible de l'admin seulement."""
+    """A ban from the room, visible to the admin only."""
 
     id: uuid.UUID
     display_name: str
@@ -132,8 +131,8 @@ class RoomBanResponse(BaseModel):
 
 
 class PastGameResponse(BaseModel):
-    """Une partie close (parties passées d'une salle, historique d'un compte) : son lien de
-    résultats (/results/<public_token>)."""
+    """A closed game (past games of a room, history of an account): its results link
+    (/results/<public_token>)."""
 
     public_token: str
     template_name: str
@@ -142,9 +141,9 @@ class PastGameResponse(BaseModel):
 
 
 class RoomResponse(BaseModel):
-    """Une salle vue par un participant. `version` augmente à chaque changement de la salle ; `bans`
-    n'est rempli que pour l'admin ; `template` est null quand le modèle a été purgé ; `game` est
-    null hors partie."""
+    """A room as a participant sees it. `version` increases with every change to the room; `bans` is
+    only filled for the admin; `template` is null when the template was purged; `game` is null
+    outside a game."""
 
     code: str
     version: int
@@ -158,26 +157,26 @@ class RoomResponse(BaseModel):
     game: CurrentGameResponse | None
     past_games: list[PastGameResponse]
     server_now: datetime = Field(
-        description="Heure du serveur au moment de la réponse : le client en déduit le décalage "
-        "de son horloge, pour que ses minuteurs suivent ceux du serveur."
+        description="Server time when the response was made: the client derives the offset of "
+        "its clock from it, so its timers follow the server ones."
     )
 
 
 class JoinAsGuestRequest(BaseModel):
-    """Pseudo de l'invité dans la salle."""
+    """Nickname of the guest in the room."""
 
     nickname: DisplayName
 
 
 class RestoreGuestRequest(BaseModel):
-    """Token du lien perso de l'invité."""
+    """Token of the guest's personal link."""
 
     token: str
 
 
 class GuestRoomResponse(RoomResponse):
-    """Salle rejointe en invité, avec le lien perso : donné une seule fois, la base n'en gardant
-    que l'empreinte."""
+    """Room joined as a guest, with the personal link: given only once, since the database only
+    keeps its hash."""
 
     guest_link: str
     guest_link_expires_at: datetime

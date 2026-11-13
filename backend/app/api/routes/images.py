@@ -41,7 +41,7 @@ def upload_image(
     service: ImageServiceDep,
     storage: ImageStorageDep,
 ) -> ImageUploadResponse:
-    """Envoie une image de tuile (JPEG, PNG ou WebP), compressée en WebP par le serveur."""
+    """Uploads a tile image (JPEG, PNG or WebP), compressed to WebP by the server."""
     try:
         image: Image = service.upload(user, file.file)
     except ImageUploadLimitReachedError as exc:

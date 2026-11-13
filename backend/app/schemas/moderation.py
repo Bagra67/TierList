@@ -22,7 +22,7 @@ ModerationReason = Annotated[
 
 
 class ModerationActionResponse(BaseModel):
-    """Une entrée du journal de modération (US-1.9)."""
+    """An entry of the moderation log (US-1.9)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,14 +38,14 @@ class ModerationActionResponse(BaseModel):
 
 
 class ModerationLogResponse(BaseModel):
-    """Une page du journal de modération."""
+    """A page of the moderation log."""
 
     entries: list[ModerationActionResponse]
     has_more: bool
 
 
 class SuperAdminResponse(BaseModel):
-    """Un super admin, pour filtrer le journal par auteur."""
+    """A super admin, to filter the log by author."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -54,27 +54,27 @@ class SuperAdminResponse(BaseModel):
 
 
 class ModerationReasonRequest(BaseModel):
-    """Le motif d'une action de modération, écrit au journal (US-1.9)."""
+    """The reason for a moderation action, written to the log (US-1.9)."""
 
     reason: ModerationReason
 
 
 class DismissReportsRequest(ModerationReasonRequest):
-    """Classer sans suite les signalements ouverts d'un contenu (US-1.3)."""
+    """Dismiss the open reports of a content (US-1.3)."""
 
     target_type: ModerationTargetType
     target_id: uuid.UUID
 
 
 class ReportReasonCountResponse(BaseModel):
-    """Un motif de signalement et le nombre de signalements qui le donnent."""
+    """A report reason and the number of reports that give it."""
 
     reason: ReportReason
     count: int
 
 
 class ReportedContentResponse(BaseModel):
-    """Un contenu signalé dans la file (US-1.3). Elle ne dit jamais qui l'a signalé."""
+    """A reported content in the queue (US-1.3). It never tells who reported it."""
 
     target_type: ModerationTargetType
     target_id: uuid.UUID
@@ -90,27 +90,27 @@ class ReportedContentResponse(BaseModel):
 
 
 class ReportQueueResponse(BaseModel):
-    """Une page de la file des signalements, les plus signalés d'abord."""
+    """A page of the report queue, most reported first."""
 
     contents: list[ReportedContentResponse]
     has_more: bool
 
 
 class OpenReportCountResponse(BaseModel):
-    """Le nombre de contenus qui ont au moins un signalement ouvert."""
+    """The number of contents that have at least one open report."""
 
     open_contents: int
 
 
 class RemoveNicknameRequest(ModerationReasonRequest):
-    """Retirer un pseudo signalé, définitivement. target_id est celui du signalement : un compte,
-    un participant ou un joueur."""
+    """Remove a reported nickname, permanently. target_id is the one of the report: an account, a
+    participant or a player."""
 
     target_id: uuid.UUID
 
 
 class HiddenGameResponse(BaseModel):
-    """Une partie masquée par la modération : son lien de résultats est introuvable."""
+    """A game hidden by moderation: its results link cannot be found."""
 
     id: uuid.UUID
     template_name: str
@@ -118,14 +118,14 @@ class HiddenGameResponse(BaseModel):
 
 
 class HiddenGamesResponse(BaseModel):
-    """Une page des parties masquées, les plus récentes d'abord."""
+    """A page of the hidden games, most recent first."""
 
     games: list[HiddenGameResponse]
     has_more: bool
 
 
 class ReviewedTileResponse(BaseModel):
-    """Une tuile lue par un super admin : une image masquée y reste visible, image_status le dit."""
+    """A tile read by a super admin: a hidden image stays visible in it, image_status says so."""
 
     id: uuid.UUID
     text: str | None
@@ -134,7 +134,7 @@ class ReviewedTileResponse(BaseModel):
 
 
 class ReviewedTemplateResponse(BaseModel):
-    """Le contenu d'un modèle pour les super admins, même privé (US-1.8)."""
+    """The content of a template for the super admins, even a private one (US-1.8)."""
 
     id: uuid.UUID
     name: str
@@ -148,7 +148,7 @@ class ReviewedTemplateResponse(BaseModel):
 
 
 class RecentUploadResponse(BaseModel):
-    """Une image des derniers envois (US-1.7)."""
+    """An image of the latest uploads (US-1.7)."""
 
     id: uuid.UUID
     url: str
@@ -161,14 +161,14 @@ class RecentUploadResponse(BaseModel):
 
 
 class RecentUploadsResponse(BaseModel):
-    """Une page des derniers envois."""
+    """A page of the latest uploads."""
 
     images: list[RecentUploadResponse]
     has_more: bool
 
 
 class AccountSummaryResponse(BaseModel):
-    """Un compte dans la recherche des super admins (US-1.8)."""
+    """An account in the super admins' search (US-1.8)."""
 
     id: uuid.UUID
     display_name: str
@@ -179,14 +179,14 @@ class AccountSummaryResponse(BaseModel):
 
 
 class AccountSearchResponse(BaseModel):
-    """Une page de la recherche de comptes, par nom."""
+    """A page of the account search, by name."""
 
     accounts: list[AccountSummaryResponse]
     has_more: bool
 
 
 class AccountBanResponse(BaseModel):
-    """Le bannissement actif d'un compte."""
+    """The active ban of an account."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -197,16 +197,15 @@ class AccountBanResponse(BaseModel):
 
 
 class AccountPastBanResponse(AccountBanResponse):
-    """Un bannissement levé, remplacé par un autre ou arrivé à sa fin : lifted_at est vide dans ce
-    dernier cas."""
+    """A ban that was lifted, replaced by another one or that reached its end: lifted_at is empty in
+    the last case."""
 
     lifted_at: datetime | None
 
 
 class AccountResponse(BaseModel):
-    """La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
-    envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
-    (account_id)."""
+    """The page of an account for the super admins (US-1.8). Its images are read through the latest
+    uploads filtered on it (owner_id), its history through the log filtered on it (account_id)."""
 
     id: uuid.UUID
     display_name: str
@@ -220,15 +219,15 @@ class AccountResponse(BaseModel):
 
 
 class HiddenImagesResponse(BaseModel):
-    """Résultat d'un lot de « masquer toutes ses images » : renvoyer la requête tant que
-    `has_more` est vrai."""
+    """Result of a batch of "hide all their images": send the request again while `has_more` is
+    true."""
 
     hidden_count: int
     has_more: bool
 
 
 class BanAccountRequest(BaseModel):
-    """Bannir un compte (US-1.8) : jusqu'à ends_at, ou définitivement sans date."""
+    """Ban an account (US-1.8): until ends_at, or permanently without a date."""
 
     reason: ModerationReason
     ends_at: AwareDatetime | None = None

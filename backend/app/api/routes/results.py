@@ -28,8 +28,8 @@ def get_game_results(
     storage: ImageStorageDep,
     include_absent_votes: bool = True,
 ) -> GameResultsResponse:
-    """Les résultats d'une partie close, par son lien public, sans compte. `include_absent_votes`
-    choisit si les votes absents comptent dans le classement (oui par défaut)."""
+    """The results of a closed game, by its public link, without an account. `include_absent_votes`
+    chooses whether absent votes count in the ranking (yes by default)."""
     try:
         closed: ClosedGameResults = service.results(public_token, include_absent_votes)
     except GameResultsNotFoundError as exc:

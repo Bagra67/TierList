@@ -25,19 +25,19 @@ TemplateName = Annotated[
 
 
 class CreateTemplateRequest(BaseModel):
-    """Nom du nouveau modèle ; les espaces autour sont retirés."""
+    """Name of the new template; surrounding spaces are removed."""
 
     name: TemplateName
 
 
 class RenameTemplateRequest(BaseModel):
-    """Nouveau nom du modèle ; les espaces autour sont retirés."""
+    """New name of the template; surrounding spaces are removed."""
 
     name: TemplateName
 
 
 class SetTemplateVisibilityRequest(BaseModel):
-    """Visibilité choisie pour le modèle."""
+    """Visibility chosen for the template."""
 
     visibility: TemplateVisibility
 
@@ -55,8 +55,7 @@ Position = Annotated[int, Field(ge=0)]
 
 
 class UpdateTierRequest(BaseModel):
-    """Changements d'un tier : seuls les champs envoyés changent. La couleur est au format
-    #RRGGBB."""
+    """Changes to a tier: only the fields sent change. The color is in the #RRGGBB format."""
 
     name: TierName | None = None
     color: TierColor | None = None
@@ -70,15 +69,15 @@ TileText = Annotated[
 
 
 class CreateTileRequest(BaseModel):
-    """Contenu de la nouvelle tuile : un texte, une image ou les deux, jamais aucun des deux."""
+    """Content of the new tile: a text, an image or both, never neither."""
 
     text: TileText | None = None
     image_id: uuid.UUID | None = None
 
 
 class UpdateTileRequest(BaseModel):
-    """Changements d'une tuile : seuls les champs envoyés changent. `null` retire le texte ou
-    l'image ; la tuile doit garder l'un des deux."""
+    """Changes to a tile: only the fields sent change. `null` removes the text or the image; the
+    tile must keep one of the two."""
 
     text: TileText | None = None
     image_id: uuid.UUID | None = None
@@ -86,7 +85,7 @@ class UpdateTileRequest(BaseModel):
 
 
 class TierResponse(BaseModel):
-    """Un tier du modèle ; la position 0 est le tier du haut."""
+    """A tier of the template; position 0 is the top tier."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -97,9 +96,9 @@ class TierResponse(BaseModel):
 
 
 class TileResponse(BaseModel):
-    """Une tuile du modèle, dans l'ordre du modèle. `image_removed` est vrai quand la modération a
-    masqué ou supprimé l'image : `image_url` est alors null. `image_status` et
-    `image_moderation_reason` ne sont montrés qu'au propriétaire."""
+    """A tile of the template, in the template's order. `image_removed` is true when moderation hid
+    or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
+    only shown to the owner."""
 
     id: uuid.UUID
     text: str | None
@@ -111,8 +110,8 @@ class TileResponse(BaseModel):
 
 
 class TemplateResponse(BaseModel):
-    """Un modèle avec ses tiers et ses tuiles triés par position. `max_tiles` est le nombre maximal
-    de tuiles ; `first_made_public_at` est gardée quand le modèle repasse en privé."""
+    """A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number
+    of tiles; `first_made_public_at` is kept when the template goes back to private."""
 
     id: uuid.UUID
     name: str
@@ -128,8 +127,7 @@ class TemplateResponse(BaseModel):
 
 
 class RemovedImageResponse(BaseModel):
-    """Une tuile dont l'image a été masquée ou supprimée par la modération, avec la décision et le
-    motif."""
+    """A tile whose image was hidden or deleted by moderation, with the decision and the reason."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -141,8 +139,8 @@ class RemovedImageResponse(BaseModel):
 
 
 class TemplateSummaryResponse(BaseModel):
-    """Un modèle dans la liste du compte : son nombre de tuiles, sa décision de modération et les
-    images retirées de ses tuiles."""
+    """A template in the account's list: its number of tiles, its moderation decision and the images
+    removed from its tiles."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -158,13 +156,13 @@ class TemplateSummaryResponse(BaseModel):
 
 
 class TemplateListResponse(BaseModel):
-    """Les modèles du compte, le plus récemment modifié en premier."""
+    """The account's templates, most recently modified first."""
 
     items: list[TemplateSummaryResponse]
 
 
 class RemovedTemplateResponse(BaseModel):
-    """Un modèle supprimé par la modération, pas encore purgé, avec la date et le motif."""
+    """A template deleted by moderation, not purged yet, with the date and the reason."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -175,6 +173,6 @@ class RemovedTemplateResponse(BaseModel):
 
 
 class RemovedTemplateListResponse(BaseModel):
-    """Les modèles du compte supprimés par la modération et pas encore purgés."""
+    """The account's templates deleted by moderation and not purged yet."""
 
     items: list[RemovedTemplateResponse]

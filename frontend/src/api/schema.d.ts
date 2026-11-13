@@ -15,8 +15,8 @@ export interface paths {
         put?: never;
         /**
          * Register
-         * @description Crée un compte avec e-mail et mot de passe, ouvre sa session et envoie l'e-mail de
-         *     vérification dans la langue demandée. Le refresh token est posé en cookie HttpOnly.
+         * @description Creates an account with an email and a password, opens its session and sends the verification
+         *     email in the requested language. The refresh token is set in an HttpOnly cookie.
          */
         post: operations["register_auth_register_post"];
         delete?: never;
@@ -36,9 +36,8 @@ export interface paths {
         put?: never;
         /**
          * Login
-         * @description Ouvre une session avec e-mail et mot de passe. Le refresh token est posé en cookie
-         *     HttpOnly ; un compte banni reçoit 403 avec le motif et, s'il y en a une, la fin du
-         *     bannissement.
+         * @description Opens a session with an email and a password. The refresh token is set in an HttpOnly cookie;
+         *     a banned account gets 403 with the reason and, when there is one, the end of the ban.
          */
         post: operations["login_auth_login_post"];
         delete?: never;
@@ -58,9 +57,9 @@ export interface paths {
         put?: never;
         /**
          * Refresh
-         * @description Donne un nouvel access token à partir du cookie de refresh, et renouvelle ce cookie.
-         *     204 sans cookie (aucune session sur ce navigateur) ; 401 si la session a expiré ou a été
-         *     fermée, ou si le compte est banni, avec le cookie effacé.
+         * @description Gives a new access token from the refresh cookie, and renews that cookie. 204 without a
+         *     cookie (no session in this browser); 401 if the session expired or was closed, or if the account
+         *     is banned, with the cookie cleared.
          */
         post: operations["refresh_auth_refresh_post"];
         delete?: never;
@@ -80,9 +79,9 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description Ferme la session de ce navigateur et efface le cookie de refresh. Les access tokens du
-         *     compte sur les autres appareils sont aussi invalidés : ils passent par /auth/refresh. 204
-         *     même sans session.
+         * @description Closes the session of this browser and clears the refresh cookie. The account's access tokens
+         *     on other devices are also invalidated: they go through /auth/refresh. 204 even without a
+         *     session.
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;
@@ -100,16 +99,16 @@ export interface paths {
         };
         /**
          * Me
-         * @description Le compte connecté.
+         * @description The signed-in account.
          */
         get: operations["me_auth_me_get"];
         put?: never;
         post?: never;
         /**
          * Delete Me
-         * @description Supprime le compte connecté, après avoir fermé les salles dont il est l'admin et l'avoir
-         *     retiré des autres. Un compte avec mot de passe doit le redonner ; un compte sans mot de passe
-         *     doit s'être connecté récemment. Le cookie de refresh est effacé.
+         * @description Deletes the signed-in account, after closing the rooms it is the admin of and removing it
+         *     from the others. An account with a password must give it again; an account without a password
+         *     must have signed in recently. The refresh cookie is cleared.
          */
         delete: operations["delete_me_auth_me_delete"];
         options?: never;
@@ -128,8 +127,8 @@ export interface paths {
         put?: never;
         /**
          * Request Email Verification
-         * @description Renvoie l'email de vérification ; sans effet si l'adresse est déjà confirmée, ou si le
-         *     précédent email est trop récent (EMAIL_COOLDOWN_SECONDS).
+         * @description Sends the verification email again; does nothing if the address is already confirmed, or if
+         *     the previous email is too recent (EMAIL_COOLDOWN_SECONDS).
          */
         post: operations["request_email_verification_auth_email_verification_post"];
         delete?: never;
@@ -149,8 +148,8 @@ export interface paths {
         put?: never;
         /**
          * Verify Email
-         * @description Confirme l'adresse email avec le token du lien reçu ; sans session : le lien peut être
-         *     ouvert dans un autre navigateur.
+         * @description Confirms the email address with the token of the received link; no session needed: the link
+         *     can be opened in another browser.
          */
         post: operations["verify_email_auth_email_verify_post"];
         delete?: never;
@@ -168,7 +167,7 @@ export interface paths {
         };
         /**
          * Google Login
-         * @description Envoie le navigateur sur la page de connexion de Google.
+         * @description Sends the browser to the Google sign-in page.
          */
         get: operations["google_login_auth_google_login_get"];
         put?: never;
@@ -188,7 +187,7 @@ export interface paths {
         };
         /**
          * Google Callback
-         * @description Retour de Google : vérifie la réponse, ouvre la session, puis renvoie vers le frontend.
+         * @description Return from Google: checks the response, opens the session, then returns to the frontend.
          */
         get: operations["google_callback_auth_google_callback_get"];
         put?: never;
@@ -208,9 +207,9 @@ export interface paths {
         };
         /**
          * Google Ban Notice
-         * @description Après un refus de Google : la même réponse 403 qu'une connexion par mot de passe, avec le
-         *     motif et la fin du bannissement. 204 s'il n'y a rien à montrer : pas de cookie ou cookie
-         *     invalide, bannissement levé ou fini.
+         * @description After a refusal from Google: the same 403 response as a password sign-in, with the reason and
+         *     the end of the ban. 204 when there is nothing to show: no cookie or an invalid cookie, ban
+         *     lifted or over.
          */
         get: operations["google_ban_notice_auth_google_ban_notice_get"];
         put?: never;
@@ -232,8 +231,8 @@ export interface paths {
         put?: never;
         /**
          * Forgot Password
-         * @description Envoie un lien de réinitialisation si un compte a cette adresse ; répond 204 dans tous les
-         *     cas, après avoir mis l'envoi en tâche de fond : rien ne révèle quelles adresses ont un compte.
+         * @description Sends a reset link if an account has this address; answers 204 in every case, after queueing
+         *     the email as a background task: nothing reveals which addresses have an account.
          */
         post: operations["forgot_password_auth_password_forgot_post"];
         delete?: never;
@@ -253,7 +252,7 @@ export interface paths {
         put?: never;
         /**
          * Reset Password
-         * @description Choisit un nouveau mot de passe avec le lien reçu ; toutes les sessions sont fermées.
+         * @description Sets a new password with the received link; every session is closed.
          */
         post: operations["reset_password_auth_password_reset_post"];
         delete?: never;
@@ -271,8 +270,8 @@ export interface paths {
         };
         /**
          * Get Client Config
-         * @description Configuration publique du navigateur (suivi des erreurs) ; le backend l'écrit aussi dans
-         *     index.html, cette route sert au serveur de développement Vite.
+         * @description Public browser configuration (error tracking); the backend also writes it into index.html,
+         *     this route serves the Vite development server.
          */
         get: operations["get_client_config_client_config_get"];
         put?: never;
@@ -292,14 +291,14 @@ export interface paths {
         };
         /**
          * List Templates
-         * @description Les modèles actifs du compte, avec leur nombre de tuiles, le plus récemment modifié en
-         *     premier. Chaque modèle indique sa décision de modération et les images retirées de ses tuiles.
+         * @description The account's active templates, with their number of tiles, most recently modified first.
+         *     Each template gives its moderation decision and the images removed from its tiles.
          */
         get: operations["list_templates_templates_get"];
         put?: never;
         /**
          * Create Template
-         * @description Crée un modèle avec les six tiers par défaut (S à E) et aucune tuile.
+         * @description Creates a template with the six default tiers (S to E) and no tile.
          */
         post: operations["create_template_templates_post"];
         delete?: never;
@@ -317,8 +316,8 @@ export interface paths {
         };
         /**
          * List Removed Templates
-         * @description Les modèles du compte supprimés par la modération et pas encore purgés, avec la date et le
-         *     motif.
+         * @description The account's templates deleted by moderation and not purged yet, with the date and the
+         *     reason.
          */
         get: operations["list_removed_templates_templates_removed_get"];
         put?: never;
@@ -338,23 +337,23 @@ export interface paths {
         };
         /**
          * Get Template
-         * @description Un modèle du compte, avec ses tiers et ses tuiles triés par position. 404 pour un modèle
-         *     supprimé ou d'un autre compte.
+         * @description A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted
+         *     template or one of another account.
          */
         get: operations["get_template_templates__template_id__get"];
         put?: never;
         post?: never;
         /**
          * Delete Template
-         * @description Supprime un modèle : il disparaît aussitôt pour son propriétaire, et il est effacé pour de
-         *     bon après la durée de rétention. Les parties déjà jouées gardent leur version figée.
+         * @description Deletes a template: it disappears right away for its owner, and it is erased for good after
+         *     the retention period. Games already played keep their frozen version.
          */
         delete: operations["delete_template_templates__template_id__delete"];
         options?: never;
         head?: never;
         /**
          * Rename Template
-         * @description Renomme un modèle ; sa date de dernière modification est mise à jour.
+         * @description Renames a template; its last modification date is updated.
          */
         patch: operations["rename_template_templates__template_id__patch"];
         trace?: never;
@@ -369,9 +368,9 @@ export interface paths {
         get?: never;
         /**
          * Set Template Visibility
-         * @description Rend un modèle public ou privé, par son propriétaire. Le rendre public demande une adresse
-         *     email confirmée, un modèle non masqué par la modération et au moins une tuile. La date de la
-         *     première publication est gardée quand le modèle repasse en privé.
+         * @description Makes a template public or private, by its owner. Making it public requires a confirmed email
+         *     address, a template not hidden by moderation and at least one tile. The date of the first
+         *     publication is kept when the template goes back to private.
          */
         put: operations["set_template_visibility_templates__template_id__visibility_put"];
         post?: never;
@@ -392,7 +391,7 @@ export interface paths {
         put?: never;
         /**
          * Add Tier
-         * @description Ajoute un tier en bas du modèle, nommé « ? », couleur #9AA0B4.
+         * @description Adds a tier at the bottom of the template, named "?", color #9AA0B4.
          */
         post: operations["add_tier_templates__template_id__tiers_post"];
         delete?: never;
@@ -413,15 +412,15 @@ export interface paths {
         post?: never;
         /**
          * Delete Tier
-         * @description Supprime un tier ; les suivants remontent. Refusé (409) pour le dernier tier du modèle.
+         * @description Deletes a tier; the following ones move up. Refused (409) for the template's last tier.
          */
         delete: operations["delete_tier_templates__template_id__tiers__tier_id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Tier
-         * @description Change le nom, la couleur et/ou la position d'un tier ; les autres tiers sont décalés. Une
-         *     position au-delà de la fin met le tier en dernier.
+         * @description Changes the name, the color and/or the position of a tier; the other tiers are shifted. A
+         *     position past the end puts the tier last.
          */
         patch: operations["update_tier_templates__template_id__tiers__tier_id__patch"];
         trace?: never;
@@ -437,8 +436,8 @@ export interface paths {
         put?: never;
         /**
          * Add Tile
-         * @description Ajoute une tuile à la fin du modèle : un texte, une image déjà envoyée par le compte (POST
-         *     /images), ou les deux. Refusé (409) au-delà du nombre maximal de tuiles (`max_tiles`).
+         * @description Adds a tile at the end of the template: a text, an image already uploaded by the account
+         *     (POST /images), or both. Refused (409) past the maximum number of tiles (`max_tiles`).
          */
         post: operations["add_tile_templates__template_id__tiles_post"];
         delete?: never;
@@ -459,15 +458,15 @@ export interface paths {
         post?: never;
         /**
          * Delete Tile
-         * @description Supprime une tuile ; les suivantes remontent.
+         * @description Deletes a tile; the following ones move up.
          */
         delete: operations["delete_tile_templates__template_id__tiles__tile_id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Tile
-         * @description Change le texte, l'image et/ou la position d'une tuile. Un `null` explicite retire le texte
-         *     ou l'image, tant que la tuile garde l'autre ; `position: null` est ignoré.
+         * @description Changes the text, the image and/or the position of a tile. An explicit `null` removes the
+         *     text or the image, as long as the tile keeps the other; `position: null` is ignored.
          */
         patch: operations["update_tile_templates__template_id__tiles__tile_id__patch"];
         trace?: never;
@@ -483,7 +482,7 @@ export interface paths {
         put?: never;
         /**
          * Upload Image
-         * @description Envoie une image de tuile (JPEG, PNG ou WebP), compressée en WebP par le serveur.
+         * @description Uploads a tile image (JPEG, PNG or WebP), compressed to WebP by the server.
          */
         post: operations["upload_image_images_post"];
         delete?: never;
@@ -503,8 +502,8 @@ export interface paths {
         put?: never;
         /**
          * Create Room
-         * @description Crée une salle ouverte sur un modèle du compte, non masqué et avec au moins une tuile. Le
-         *     compte en devient l'admin et le premier participant.
+         * @description Creates an open room on a template of the account, not hidden and with at least one tile. The
+         *     account becomes its admin and first participant.
          */
         post: operations["create_room_rooms_post"];
         delete?: never;
@@ -522,17 +521,17 @@ export interface paths {
         };
         /**
          * Get Room
-         * @description La salle, ses réglages, ses participants et sa partie en cours, pour un participant (compte,
-         *     ou invité reconnu par le cookie de la salle). 403 sans place dans la salle, pour que la page
-         *     propose de la rejoindre ; 404 pour un code inconnu ou une salle fermée.
+         * @description The room, its settings, its participants and its current game, for a participant (an account,
+         *     or a guest recognized by the room cookie). 403 without a place in the room, so the page can
+         *     offer to join it; 404 for an unknown code or a closed room.
          */
         get: operations["get_room_rooms__code__get"];
         put?: never;
         post?: never;
         /**
          * Close Room
-         * @description Ferme la salle (admin seulement) : une partie en cours est d'abord close et gardée, puis la
-         *     salle, ses places et ses bannissements sont supprimés. Le code et le lien ne marchent plus.
+         * @description Closes the room (admin only): a game in progress is first closed and kept, then the room, its
+         *     places and its bans are deleted. The code and the link stop working.
          */
         delete: operations["close_room_rooms__code__delete"];
         options?: never;
@@ -551,8 +550,8 @@ export interface paths {
         put?: never;
         /**
          * Join As Guest
-         * @description Rejoint la salle en invité avec un pseudo. Pose le cookie de la salle et renvoie le lien
-         *     perso, donné une seule fois.
+         * @description Joins the room as a guest with a nickname. Sets the room cookie and returns the personal
+         *     link, given only once.
          */
         post: operations["join_as_guest_rooms__code__guests_post"];
         delete?: never;
@@ -572,8 +571,8 @@ export interface paths {
         put?: never;
         /**
          * Restore Guest Session
-         * @description Rend sa place à un invité à partir du token de son lien perso, sur n'importe quel appareil,
-         *     et pose le cookie de la salle.
+         * @description Gives a guest their place back from the token of their personal link, on any device, and sets
+         *     the room cookie.
          */
         post: operations["restore_guest_session_rooms__code__guest_session_post"];
         delete?: never;
@@ -593,7 +592,7 @@ export interface paths {
         put?: never;
         /**
          * Renew Guest Link
-         * @description Donne un nouveau lien perso à l'invité reconnu par le cookie ; l'ancien ne marche plus.
+         * @description Gives the guest recognized by the cookie a new personal link; the old one stops working.
          */
         post: operations["renew_guest_link_rooms__code__guest_link_post"];
         delete?: never;
@@ -613,8 +612,8 @@ export interface paths {
         put?: never;
         /**
          * Join Room
-         * @description Donne au compte une place de joueur dans la salle, avec son nom affiché ; rend la même place
-         *     s'il en a déjà une, même salle pleine ou arrivées bloquées.
+         * @description Gives the account a player place in the room, with its display name; gives back the same
+         *     place if it already has one, even when the room is full or arrivals are blocked.
          */
         post: operations["join_room_rooms__code__join_post"];
         delete?: never;
@@ -638,9 +637,9 @@ export interface paths {
         head?: never;
         /**
          * Update Room Settings
-         * @description Change les réglages de la salle (admin seulement) ; seuls les champs envoyés changent. Hors
-         *     partie, ils valent pour la prochaine ; pendant une partie, seul `late_arrivals_allowed` peut
-         *     changer, et il s'applique tout de suite.
+         * @description Changes the room settings (admin only); only the fields sent change. Outside a game, they
+         *     apply to the next one; during a game, only `late_arrivals_allowed` can change, and it applies
+         *     right away.
          */
         patch: operations["update_room_settings_rooms__code__settings_patch"];
         trace?: never;
@@ -657,9 +656,8 @@ export interface paths {
         post?: never;
         /**
          * Remove Participant
-         * @description Retire un participant (admin seulement, pas sa propre place), à tout moment ; ses placements
-         *     de la partie en cours partent avec lui. Avec `ban=true`, la personne ne peut plus revenir dans
-         *     la salle.
+         * @description Removes a participant (admin only, not their own place), at any time; their placements in the
+         *     current game go with them. With `ban=true`, the person can no longer come back to the room.
          */
         delete: operations["remove_participant_rooms__code__participants__participant_id__delete"];
         options?: never;
@@ -679,7 +677,7 @@ export interface paths {
         post?: never;
         /**
          * Unban
-         * @description Lève un bannissement (admin seulement) : la personne peut revenir.
+         * @description Lifts a ban (admin only): the person can come back.
          */
         delete: operations["unban_rooms__code__bans__ban_id__delete"];
         options?: never;
@@ -698,8 +696,8 @@ export interface paths {
         put?: never;
         /**
          * Start Game
-         * @description Lance une partie (admin seulement) sur la version actuelle du modèle, figée pour toute la
-         *     partie. La salle passe en `playing` et le premier item est montré à tous.
+         * @description Starts a game (admin only) on the current version of the template, frozen for the whole game.
+         *     The room moves to `playing` and the first item is shown to everyone.
          */
         post: operations["start_game_rooms__code__game_post"];
         delete?: never;
@@ -718,9 +716,9 @@ export interface paths {
         get?: never;
         /**
          * Place Item
-         * @description Place l'item du tour en cours dans un tier, à la position voulue, sur le plateau privé du
-         *     lecteur ; le replacer dans le même tour le déplace. Pendant le cooldown, place ou déplace
-         *     n'importe quel item de la partie, y compris un item manqué.
+         * @description Places the item of the current round in a tier, at the requested position, on the reader's
+         *     private board; placing it again in the same round moves it. During the cooldown, places or moves
+         *     any item of the game, including a missed item.
          */
         put: operations["place_item_rooms__code__game_placements__tile_id__put"];
         post?: never;
@@ -741,9 +739,8 @@ export interface paths {
         put?: never;
         /**
          * Next Round
-         * @description Termine le tour en cours (admin seulement) et montre l'item suivant à tous, ou lance le
-         *     cooldown final après le dernier item. Les participants qui n'ont pas placé l'item ont un vote
-         *     absent.
+         * @description Ends the current round (admin only) and shows the next item to everyone, or starts the final
+         *     cooldown after the last item. Participants who did not place the item get an absent vote.
          */
         post: operations["next_round_rooms__code__game_next_post"];
         delete?: never;
@@ -763,8 +760,8 @@ export interface paths {
         put?: never;
         /**
          * End Cooldown
-         * @description Termine le cooldown final (admin seulement) : la partie est close et gardée, la salle repasse
-         *     en `open`.
+         * @description Ends the final cooldown (admin only): the game is closed and kept, the room goes back to
+         *     `open`.
          */
         post: operations["end_cooldown_rooms__code__game_end_post"];
         delete?: never;
@@ -782,8 +779,8 @@ export interface paths {
         };
         /**
          * Get Game Results
-         * @description Les résultats d'une partie close, par son lien public, sans compte. `include_absent_votes`
-         *     choisit si les votes absents comptent dans le classement (oui par défaut).
+         * @description The results of a closed game, by its public link, without an account. `include_absent_votes`
+         *     chooses whether absent votes count in the ranking (yes by default).
          */
         get: operations["get_game_results_results__public_token__get"];
         put?: never;
@@ -803,9 +800,8 @@ export interface paths {
         };
         /**
          * Get History
-         * @description Les parties closes du compte, la plus récente en premier : celles où il a joué et celles des
-         *     salles dont il était l'admin. Paginé par `limit` et `offset` ; `has_more` dit s'il reste des
-         *     parties.
+         * @description The account's closed games, most recent first: those it played and those of the rooms it was
+         *     the admin of. Paginated by `limit` and `offset`; `has_more` tells whether games are left.
          */
         get: operations["get_history_history_get"];
         put?: never;
@@ -825,9 +821,9 @@ export interface paths {
         };
         /**
          * List Reports
-         * @description File des signalements ouverts, regroupés par contenu : le plus signalé en premier, puis le
-         *     plus ancien. Jamais l'auteur d'un signalement. Paginé par `limit` et `offset` ; `owner_id` garde
-         *     les contenus d'un compte.
+         * @description Queue of open reports, grouped by content: the most reported first, then the oldest. Never
+         *     the author of a report. Paginated by `limit` and `offset`; `owner_id` keeps the contents of one
+         *     account.
          */
         get: operations["list_reports_moderation_reports_get"];
         put?: never;
@@ -847,8 +843,8 @@ export interface paths {
         };
         /**
          * Count Reports
-         * @description Nombre de contenus signalés en attente (des contenus, pas des signalements), pour le menu de
-         *     modération.
+         * @description Number of reported contents waiting for a decision (contents, not reports), for the
+         *     moderation menu.
          */
         get: operations["count_reports_moderation_reports_count_get"];
         put?: never;
@@ -870,8 +866,8 @@ export interface paths {
         put?: never;
         /**
          * Dismiss Reports
-         * @description Classe sans suite les signalements ouverts d'un contenu : le contenu ne change pas. Écrit au
-         *     journal de modération avec le motif.
+         * @description Dismisses the open reports of a content: the content does not change. Written to the
+         *     moderation log with the reason.
          */
         post: operations["dismiss_reports_moderation_reports_dismiss_post"];
         delete?: never;
@@ -891,8 +887,8 @@ export interface paths {
         put?: never;
         /**
          * Remove Nickname
-         * @description Remplace un pseudo signalé par un code neutre, dans les salles et les résultats. Sans
-         *     retour : l'ancien pseudo ne reste que dans le journal.
+         * @description Replaces a reported nickname with a neutral code, in rooms and results. Cannot be undone: the
+         *     old nickname only stays in the log.
          */
         post: operations["remove_nickname_moderation_nicknames_remove_post"];
         delete?: never;
@@ -910,8 +906,8 @@ export interface paths {
         };
         /**
          * List Hidden Games
-         * @description Les parties masquées par la modération, pour pouvoir les rendre visibles. Paginé par `limit`
-         *     et `offset`.
+         * @description The games hidden by moderation, so they can be made visible again. Paginated by `limit` and
+         *     `offset`.
          */
         get: operations["list_hidden_games_moderation_games_hidden_get"];
         put?: never;
@@ -933,7 +929,7 @@ export interface paths {
         put?: never;
         /**
          * Hide Game
-         * @description Masque une partie close : son lien de résultats répond comme un lien inconnu.
+         * @description Hides a closed game: its results link answers like an unknown link.
          */
         post: operations["hide_game_moderation_games__game_id__hide_post"];
         delete?: never;
@@ -953,8 +949,8 @@ export interface paths {
         put?: never;
         /**
          * Unhide Game
-         * @description Rend visible une partie masquée : son lien de résultats remarche. Écrit au journal avec le
-         *     motif.
+         * @description Makes a hidden game visible: its results link works again. Written to the log with the
+         *     reason.
          */
         post: operations["unhide_game_moderation_games__game_id__unhide_post"];
         delete?: never;
@@ -972,9 +968,9 @@ export interface paths {
         };
         /**
          * Get Moderation Log
-         * @description Le journal de modération, le plus récent en premier. Filtres : `actor_id` (un super admin),
-         *     `target` (texte cherché dans le nom de la cible, sans casse), `account_id` (les décisions sur un
-         *     compte, ses modèles et ses images). Paginé par `limit` et `offset`.
+         * @description The moderation log, most recent first. Filters: `actor_id` (a super admin), `target` (text
+         *     searched in the target's name, case-insensitive), `account_id` (the decisions about an account,
+         *     its templates and its images). Paginated by `limit` and `offset`.
          */
         get: operations["get_moderation_log_moderation_log_get"];
         put?: never;
@@ -994,7 +990,7 @@ export interface paths {
         };
         /**
          * List Super Admins
-         * @description Les super admins, par nom : les choix du filtre « Super admin » du journal.
+         * @description The super admins, by name: the choices of the log's "Super admin" filter.
          */
         get: operations["list_super_admins_moderation_super_admins_get"];
         put?: never;
@@ -1016,8 +1012,8 @@ export interface paths {
         put?: never;
         /**
          * Hide Image
-         * @description Masque une image visible : elle n'est plus servie à son adresse publique et apparaît «
-         *     retirée » partout. Écrit au journal avec le motif.
+         * @description Hides a visible image: it is no longer served at its public address and shows as "removed"
+         *     everywhere. Written to the log with the reason.
          */
         post: operations["hide_image_moderation_images__image_id__hide_post"];
         delete?: never;
@@ -1037,7 +1033,7 @@ export interface paths {
         put?: never;
         /**
          * Unhide Image
-         * @description Rend visible une image masquée. Écrit au journal avec le motif.
+         * @description Makes a hidden image visible. Written to the log with the reason.
          */
         post: operations["unhide_image_moderation_images__image_id__unhide_post"];
         delete?: never;
@@ -1057,8 +1053,8 @@ export interface paths {
         put?: never;
         /**
          * Delete Image
-         * @description Supprime une image, visible ou masquée : son fichier est effacé et elle apparaît « retirée »
-         *     partout. Écrit au journal avec le motif.
+         * @description Deletes an image, visible or hidden: its file is erased and it shows as "removed" everywhere.
+         *     Written to the log with the reason.
          */
         post: operations["delete_image_moderation_images__image_id__delete_post"];
         delete?: never;
@@ -1076,9 +1072,9 @@ export interface paths {
         };
         /**
          * List Recent Uploads
-         * @description Les dernières images envoyées, la plus récente en premier, avec leur auteur et leur
-         *     utilisation (modèles, parties). Filtres : `author` (nom ou e-mail, sans casse),
-         *     `created_after` et `created_before`, `status`, `owner_id`. Paginé par `limit` et `offset`.
+         * @description The latest uploaded images, most recent first, with their author and their use (templates,
+         *     games). Filters: `author` (name or email, case-insensitive), `created_after` and
+         *     `created_before`, `status`, `owner_id`. Paginated by `limit` and `offset`.
          */
         get: operations["list_recent_uploads_moderation_images_get"];
         put?: never;
@@ -1098,7 +1094,7 @@ export interface paths {
         };
         /**
          * Get Template For Review
-         * @description Lit le contenu d'un modèle non supprimé, même privé (US-1.8). Lecture seule.
+         * @description Reads the content of a non-deleted template, even a private one (US-1.8). Read-only.
          */
         get: operations["get_template_for_review_moderation_templates__template_id__get"];
         put?: never;
@@ -1120,8 +1116,8 @@ export interface paths {
         put?: never;
         /**
          * Hide Template
-         * @description Masque un modèle non masqué et non supprimé, public ou privé : il ne peut plus servir à une
-         *     nouvelle partie, et son propriétaire voit le motif. Écrit au journal.
+         * @description Hides a template that is neither hidden nor deleted, public or private: it can no longer be
+         *     used for a new game, and its owner sees the reason. Written to the log.
          */
         post: operations["hide_template_moderation_templates__template_id__hide_post"];
         delete?: never;
@@ -1141,8 +1137,8 @@ export interface paths {
         put?: never;
         /**
          * Unhide Template
-         * @description Lève le masquage d'un modèle non supprimé ; sa visibilité publique ou privée ne change pas,
-         *     et le motif est effacé du modèle. Écrit au journal avec le motif.
+         * @description Lifts the hiding of a template that is not deleted; its public or private visibility does not
+         *     change, and the reason is cleared from the template. Written to the log with the reason.
          */
         post: operations["unhide_template_moderation_templates__template_id__unhide_post"];
         delete?: never;
@@ -1162,8 +1158,8 @@ export interface paths {
         put?: never;
         /**
          * Delete Template
-         * @description Supprime un modèle, visible ou masqué, comme une suppression par son propriétaire ; il voit
-         *     le motif jusqu'à la purge. Écrit au journal.
+         * @description Deletes a template, visible or hidden, like a deletion by its owner; the owner sees the
+         *     reason until the purge. Written to the log.
          */
         post: operations["delete_template_moderation_templates__template_id__delete_post"];
         delete?: never;
@@ -1181,8 +1177,8 @@ export interface paths {
         };
         /**
          * Search Accounts
-         * @description Cherche des comptes par nom ou e-mail, triés par nom. Paginé par `limit` et `offset` ;
-         *     `has_more` dit s'il reste des comptes.
+         * @description Searches accounts by name or email, sorted by name. Paginated by `limit` and `offset`;
+         *     `has_more` tells whether accounts are left.
          */
         get: operations["search_accounts_moderation_accounts_get"];
         put?: never;
@@ -1202,8 +1198,7 @@ export interface paths {
         };
         /**
          * Get Account
-         * @description La page d'un compte : ses informations, son bannissement actif, ses bannissements passés et
-         *     ses modèles.
+         * @description The page of an account: its details, its active ban, its past bans and its templates.
          */
         get: operations["get_account_moderation_accounts__user_id__get"];
         put?: never;
@@ -1225,8 +1220,8 @@ export interface paths {
         put?: never;
         /**
          * Hide Account Images
-         * @description Masque les images visibles d'un compte, par lots. Renvoyer la requête tant que `has_more` est
-         *     vrai.
+         * @description Hides the visible images of an account, in batches. Send the request again while `has_more`
+         *     is true.
          */
         post: operations["hide_account_images_moderation_accounts__user_id__hide_images_post"];
         delete?: never;
@@ -1246,9 +1241,9 @@ export interface paths {
         put?: never;
         /**
          * Ban Account
-         * @description Bannit un compte, jusqu'à `ends_at` ou définitivement (`ends_at` null) ; un bannissement
-         *     actif est d'abord levé. Le compte est déconnecté partout et ne peut plus se connecter ; ses
-         *     contenus restent en ligne. Écrit au journal.
+         * @description Bans an account, until `ends_at` or permanently (`ends_at` null); an active ban is lifted
+         *     first. The account is signed out everywhere and can no longer sign in; its contents stay online.
+         *     Written to the log.
          */
         post: operations["ban_account_moderation_accounts__user_id__ban_post"];
         delete?: never;
@@ -1268,8 +1263,8 @@ export interface paths {
         put?: never;
         /**
          * Lift Account Ban
-         * @description Lève le bannissement actif d'un compte : il peut se reconnecter ; ses sessions restent
-         *     fermées. Écrit au journal avec le motif.
+         * @description Lifts the active ban of an account: it can sign in again; its sessions stay closed. Written
+         *     to the log with the reason.
          */
         post: operations["lift_account_ban_moderation_accounts__user_id__lift_ban_post"];
         delete?: never;
@@ -1289,7 +1284,7 @@ export interface paths {
         put?: never;
         /**
          * Create Report
-         * @description Signale un contenu, avec un compte ou sans : un cookie reconnaît alors le navigateur.
+         * @description Reports a content, with an account or without one: a cookie then recognizes the browser.
          */
         post: operations["create_report_reports_post"];
         delete?: never;
@@ -1338,7 +1333,7 @@ export interface components {
     schemas: {
         /**
          * AccountBanResponse
-         * @description Le bannissement actif d'un compte.
+         * @description The active ban of an account.
          */
         AccountBanResponse: {
             /**
@@ -1355,8 +1350,8 @@ export interface components {
         };
         /**
          * AccountPastBanResponse
-         * @description Un bannissement levé, remplacé par un autre ou arrivé à sa fin : lifted_at est vide dans ce
-         *     dernier cas.
+         * @description A ban that was lifted, replaced by another one or that reached its end: lifted_at is empty in
+         *     the last case.
          */
         AccountPastBanResponse: {
             /**
@@ -1375,9 +1370,8 @@ export interface components {
         };
         /**
          * AccountResponse
-         * @description La page d'un compte pour les super admins (US-1.8). Ses images se lisent par les derniers
-         *     envois filtrés sur lui (owner_id), son historique par le journal filtré sur lui
-         *     (account_id).
+         * @description The page of an account for the super admins (US-1.8). Its images are read through the latest
+         *     uploads filtered on it (owner_id), its history through the log filtered on it (account_id).
          */
         AccountResponse: {
             /**
@@ -1405,7 +1399,7 @@ export interface components {
         };
         /**
          * AccountSearchResponse
-         * @description Une page de la recherche de comptes, par nom.
+         * @description A page of the account search, by name.
          */
         AccountSearchResponse: {
             /** Accounts */
@@ -1415,7 +1409,7 @@ export interface components {
         };
         /**
          * AccountSummaryResponse
-         * @description Un compte dans la recherche des super admins (US-1.8).
+         * @description An account in the super admins' search (US-1.8).
          */
         AccountSummaryResponse: {
             /**
@@ -1444,7 +1438,7 @@ export interface components {
         AutoAdvance: "none" | "timer" | "everyone_placed";
         /**
          * BanAccountRequest
-         * @description Bannir un compte (US-1.8) : jusqu'à ends_at, ou définitivement sans date.
+         * @description Ban an account (US-1.8): until ends_at, or permanently without a date.
          */
         BanAccountRequest: {
             /** Reason */
@@ -1459,31 +1453,31 @@ export interface components {
         };
         /**
          * ClientConfigResponse
-         * @description Réglages publics lus par le frontend au démarrage.
+         * @description Public settings read by the frontend at startup.
          *
-         *     Le même build du frontend sert tous les environnements.
+         *     The same frontend build serves every environment.
          */
         ClientConfigResponse: {
             /**
              * Sentry Dsn
-             * @description DSN Sentry du navigateur ; null quand le suivi des erreurs est désactivé.
+             * @description Browser Sentry DSN; null when error tracking is disabled.
              */
             sentry_dsn: string | null;
             /**
              * Environment
-             * @description Environnement transmis à Sentry (staging, production…).
+             * @description Environment sent to Sentry (staging, production…).
              */
             environment: string;
             /**
              * Release
-             * @description Version qui tourne, la même que celle de /health.
+             * @description Running version, the same as the one of /health.
              */
             release: string;
         };
         /**
          * CreateReportRequest
-         * @description Un signalement (US-1.2). target_id désigne, selon target_kind : un item d'une partie, un
-         *     participant d'une salle, un joueur des résultats ou une partie close.
+         * @description A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a
+         *     participant of a room, a player of the results or a closed game.
          */
         CreateReportRequest: {
             target_kind: components["schemas"]["ReportTargetKind"];
@@ -1498,7 +1492,7 @@ export interface components {
         };
         /**
          * CreateRoomRequest
-         * @description Modèle de la nouvelle salle.
+         * @description Template of the new room.
          */
         CreateRoomRequest: {
             /**
@@ -1509,7 +1503,7 @@ export interface components {
         };
         /**
          * CreateTemplateRequest
-         * @description Nom du nouveau modèle ; les espaces autour sont retirés.
+         * @description Name of the new template; surrounding spaces are removed.
          */
         CreateTemplateRequest: {
             /** Name */
@@ -1517,7 +1511,7 @@ export interface components {
         };
         /**
          * CreateTileRequest
-         * @description Contenu de la nouvelle tuile : un texte, une image ou les deux, jamais aucun des deux.
+         * @description Content of the new tile: a text, an image or both, never neither.
          */
         CreateTileRequest: {
             /** Text */
@@ -1527,9 +1521,9 @@ export interface components {
         };
         /**
          * CurrentGameResponse
-         * @description La partie en cours, vue par le lecteur : seuls ses propres placements sont envoyés, avec la
-         *     liste de ceux qui ont placé l'item du tour. `ends_at` est la fin du tour quand il a un minuteur
-         *     ; `cooldown_ends_at` et `missed_items` servent pendant le cooldown final.
+         * @description The current game, as the reader sees it: only their own placements are sent, with the list of
+         *     those who placed the item of the round. `ends_at` is the end of the round when it has a timer;
+         *     `cooldown_ends_at` and `missed_items` are used during the final cooldown.
          */
         CurrentGameResponse: {
             status: components["schemas"]["GameStatus"];
@@ -1553,8 +1547,8 @@ export interface components {
         };
         /**
          * CurrentItemResponse
-         * @description Un item de la partie, une tuile de la version figée : l'item du tour en cours (montré à
-         *     tous), un item placé par le lecteur, ou un item qu'il a manqué.
+         * @description An item of the game, a tile of the frozen version: the item of the current round (shown to
+         *     everyone), an item placed by the reader, or an item they missed.
          */
         CurrentItemResponse: {
             /**
@@ -1571,8 +1565,8 @@ export interface components {
         };
         /**
          * DeleteAccountRequest
-         * @description Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
-         *     en a un, absent pour un compte sans mot de passe.
+         * @description Confirmation of the account deletion: the password, required for an account that has one,
+         *     absent for an account without a password.
          */
         DeleteAccountRequest: {
             /** Password */
@@ -1580,7 +1574,7 @@ export interface components {
         };
         /**
          * DismissReportsRequest
-         * @description Classer sans suite les signalements ouverts d'un contenu (US-1.3).
+         * @description Dismiss the open reports of a content (US-1.3).
          */
         DismissReportsRequest: {
             /** Reason */
@@ -1594,7 +1588,7 @@ export interface components {
         };
         /**
          * EmailVerificationRequest
-         * @description Langue du nouvel e-mail de vérification.
+         * @description Language of the new verification email.
          */
         EmailVerificationRequest: {
             /**
@@ -1632,7 +1626,7 @@ export interface components {
         };
         /**
          * ForgotPasswordRequest
-         * @description Adresse du compte, et langue de l'e-mail de réinitialisation.
+         * @description Address of the account, and language of the reset email.
          */
         ForgotPasswordRequest: {
             /**
@@ -1649,7 +1643,7 @@ export interface components {
         };
         /**
          * GameResultsResponse
-         * @description Résultats d'une partie close (US-5.2), lus par son lien (US-5.3).
+         * @description Results of a closed game (US-5.2), read through its link (US-5.3).
          */
         GameResultsResponse: {
             /**
@@ -1687,7 +1681,7 @@ export interface components {
         GameStatus: "in_round" | "cooldown" | "closed";
         /**
          * GameTierResponse
-         * @description Un tier de la version figée de la partie, où placer les items.
+         * @description A tier of the frozen version of the game, where items are placed.
          */
         GameTierResponse: {
             /**
@@ -1702,8 +1696,8 @@ export interface components {
         };
         /**
          * GuestRoomResponse
-         * @description Salle rejointe en invité, avec le lien perso : donné une seule fois, la base n'en gardant
-         *     que l'empreinte.
+         * @description Room joined as a guest, with the personal link: given only once, since the database only
+         *     keeps its hash.
          */
         GuestRoomResponse: {
             /** Code */
@@ -1727,7 +1721,7 @@ export interface components {
             /**
              * Server Now
              * Format: date-time
-             * @description Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur.
+             * @description Server time when the response was made: the client derives the offset of its clock from it, so its timers follow the server ones.
              */
             server_now: string;
             /** Guest Link */
@@ -1752,7 +1746,7 @@ export interface components {
         };
         /**
          * HiddenGameResponse
-         * @description Une partie masquée par la modération : son lien de résultats est introuvable.
+         * @description A game hidden by moderation: its results link cannot be found.
          */
         HiddenGameResponse: {
             /**
@@ -1770,7 +1764,7 @@ export interface components {
         };
         /**
          * HiddenGamesResponse
-         * @description Une page des parties masquées, les plus récentes d'abord.
+         * @description A page of the hidden games, most recent first.
          */
         HiddenGamesResponse: {
             /** Games */
@@ -1780,8 +1774,8 @@ export interface components {
         };
         /**
          * HiddenImagesResponse
-         * @description Résultat d'un lot de « masquer toutes ses images » : renvoyer la requête tant que
-         *     `has_more` est vrai.
+         * @description Result of a batch of "hide all their images": send the request again while `has_more` is
+         *     true.
          */
         HiddenImagesResponse: {
             /** Hidden Count */
@@ -1791,7 +1785,7 @@ export interface components {
         };
         /**
          * HistoryResponse
-         * @description Une page de l'historique d'un compte (US-5.5).
+         * @description A page of an account's history (US-5.5).
          */
         HistoryResponse: {
             /** Games */
@@ -1807,8 +1801,8 @@ export interface components {
         ImageStatus: "visible" | "hidden" | "deleted";
         /**
          * ImageUploadResponse
-         * @description Image envoyée et compressée : son id, à mettre dans une tuile, son adresse publique et ses
-         *     dimensions en pixels.
+         * @description Uploaded and compressed image: its id, to put in a tile, its public address and its
+         *     dimensions in pixels.
          */
         ImageUploadResponse: {
             /**
@@ -1825,7 +1819,7 @@ export interface components {
         };
         /**
          * ItemDistributionResponse
-         * @description Vue globale d'un item : combien de joueurs l'ont mis dans chaque tier, et d'absents.
+         * @description Overall view of an item: how many players put it in each tier, and how many were absent.
          */
         ItemDistributionResponse: {
             /**
@@ -1852,7 +1846,7 @@ export interface components {
         ItemOrder: "template" | "random";
         /**
          * JoinAsGuestRequest
-         * @description Pseudo de l'invité dans la salle.
+         * @description Nickname of the guest in the room.
          */
         JoinAsGuestRequest: {
             /** Nickname */
@@ -1860,7 +1854,7 @@ export interface components {
         };
         /**
          * LoginRequest
-         * @description Connexion par e-mail et mot de passe.
+         * @description Sign-in with an email and a password.
          */
         LoginRequest: {
             /**
@@ -1879,7 +1873,7 @@ export interface components {
         ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban";
         /**
          * ModerationActionResponse
-         * @description Une entrée du journal de modération (US-1.9).
+         * @description An entry of the moderation log (US-1.9).
          */
         ModerationActionResponse: {
             /**
@@ -1907,7 +1901,7 @@ export interface components {
         };
         /**
          * ModerationLogResponse
-         * @description Une page du journal de modération.
+         * @description A page of the moderation log.
          */
         ModerationLogResponse: {
             /** Entries */
@@ -1917,7 +1911,7 @@ export interface components {
         };
         /**
          * ModerationReasonRequest
-         * @description Le motif d'une action de modération, écrit au journal (US-1.9).
+         * @description The reason for a moderation action, written to the log (US-1.9).
          */
         ModerationReasonRequest: {
             /** Reason */
@@ -1932,7 +1926,7 @@ export interface components {
         ModerationTargetType: "template" | "image" | "account" | "nickname" | "game";
         /**
          * OpenReportCountResponse
-         * @description Le nombre de contenus qui ont au moins un signalement ouvert.
+         * @description The number of contents that have at least one open report.
          */
         OpenReportCountResponse: {
             /** Open Contents */
@@ -1940,8 +1934,8 @@ export interface components {
         };
         /**
          * OwnPlacementResponse
-         * @description Un item placé par le lecteur : son tier et sa position (0 = premier). Placement de tour
-         *     pendant les tours, placement final pendant le cooldown.
+         * @description An item placed by the reader: its tier and its position (0 = first). Round placement during
+         *     the rounds, final placement during the cooldown.
          */
         OwnPlacementResponse: {
             item: components["schemas"]["CurrentItemResponse"];
@@ -1955,8 +1949,8 @@ export interface components {
         };
         /**
          * ParticipantResponse
-         * @description Une place dans la salle : un compte avec son nom affiché, ou un invité avec son pseudo.
-         *     `is_you` désigne la place du lecteur.
+         * @description A place in the room: an account with its display name, or a guest with their nickname.
+         *     `is_you` marks the reader's place.
          */
         ParticipantResponse: {
             /**
@@ -1977,8 +1971,8 @@ export interface components {
         };
         /**
          * PastGameResponse
-         * @description Une partie close (parties passées d'une salle, historique d'un compte) : son lien de
-         *     résultats (/results/<public_token>).
+         * @description A closed game (past games of a room, history of an account): its results link
+         *     (/results/<public_token>).
          */
         PastGameResponse: {
             /** Public Token */
@@ -1995,8 +1989,8 @@ export interface components {
         };
         /**
          * PlaceItemRequest
-         * @description Tier choisi pour l'item, et position dans ce tier (0 = premier) ; une position au-delà de la
-         *     fin met l'item en dernier.
+         * @description Tier chosen for the item, and position in that tier (0 = first); a position past the end puts
+         *     the item last.
          */
         PlaceItemRequest: {
             /**
@@ -2009,7 +2003,7 @@ export interface components {
         };
         /**
          * PlayerResultsResponse
-         * @description Le classement final d'un joueur.
+         * @description The final ranking of a player.
          */
         PlayerResultsResponse: {
             /**
@@ -2026,7 +2020,7 @@ export interface components {
         };
         /**
          * RecentUploadResponse
-         * @description Une image des derniers envois (US-1.7).
+         * @description An image of the latest uploads (US-1.7).
          */
         RecentUploadResponse: {
             /**
@@ -2053,7 +2047,7 @@ export interface components {
         };
         /**
          * RecentUploadsResponse
-         * @description Une page des derniers envois.
+         * @description A page of the latest uploads.
          */
         RecentUploadsResponse: {
             /** Images */
@@ -2063,8 +2057,8 @@ export interface components {
         };
         /**
          * RegisterRequest
-         * @description Inscription par e-mail et mot de passe ; `language` choisit la langue de l'e-mail de
-         *     vérification.
+         * @description Sign-up with an email and a password; `language` chooses the language of the verification
+         *     email.
          */
         RegisterRequest: {
             /**
@@ -2085,8 +2079,8 @@ export interface components {
         };
         /**
          * RemoveNicknameRequest
-         * @description Retirer un pseudo signalé, définitivement. target_id est celui du signalement : un compte,
-         *     un participant ou un joueur.
+         * @description Remove a reported nickname, permanently. target_id is the one of the report: an account, a
+         *     participant or a player.
          */
         RemoveNicknameRequest: {
             /** Reason */
@@ -2099,8 +2093,7 @@ export interface components {
         };
         /**
          * RemovedImageResponse
-         * @description Une tuile dont l'image a été masquée ou supprimée par la modération, avec la décision et le
-         *     motif.
+         * @description A tile whose image was hidden or deleted by moderation, with the decision and the reason.
          */
         RemovedImageResponse: {
             /**
@@ -2118,7 +2111,7 @@ export interface components {
         };
         /**
          * RemovedTemplateListResponse
-         * @description Les modèles du compte supprimés par la modération et pas encore purgés.
+         * @description The account's templates deleted by moderation and not purged yet.
          */
         RemovedTemplateListResponse: {
             /** Items */
@@ -2126,7 +2119,7 @@ export interface components {
         };
         /**
          * RemovedTemplateResponse
-         * @description Un modèle supprimé par la modération, pas encore purgé, avec la date et le motif.
+         * @description A template deleted by moderation, not purged yet, with the date and the reason.
          */
         RemovedTemplateResponse: {
             /**
@@ -2146,7 +2139,7 @@ export interface components {
         };
         /**
          * RenameTemplateRequest
-         * @description Nouveau nom du modèle ; les espaces autour sont retirés.
+         * @description New name of the template; surrounding spaces are removed.
          */
         RenameTemplateRequest: {
             /** Name */
@@ -2154,7 +2147,7 @@ export interface components {
         };
         /**
          * ReportQueueResponse
-         * @description Une page de la file des signalements, les plus signalés d'abord.
+         * @description A page of the report queue, most reported first.
          */
         ReportQueueResponse: {
             /** Contents */
@@ -2170,7 +2163,7 @@ export interface components {
         ReportReason: "illegal" | "sexual" | "violence_or_hate" | "harassment" | "spam" | "other";
         /**
          * ReportReasonCountResponse
-         * @description Un motif de signalement et le nombre de signalements qui le donnent.
+         * @description A report reason and the number of reports that give it.
          */
         ReportReasonCountResponse: {
             reason: components["schemas"]["ReportReason"];
@@ -2179,7 +2172,7 @@ export interface components {
         };
         /**
          * ReportResponse
-         * @description Le signalement enregistré. Il ne dit rien de son auteur.
+         * @description The saved report. It tells nothing about its author.
          */
         ReportResponse: {
             /**
@@ -2196,7 +2189,7 @@ export interface components {
         ReportTargetKind: "item" | "participant" | "player" | "game";
         /**
          * ReportedContentResponse
-         * @description Un contenu signalé dans la file (US-1.3). Elle ne dit jamais qui l'a signalé.
+         * @description A reported content in the queue (US-1.3). It never tells who reported it.
          */
         ReportedContentResponse: {
             target_type: components["schemas"]["ModerationTargetType"];
@@ -2229,7 +2222,7 @@ export interface components {
         };
         /**
          * ResetPasswordRequest
-         * @description Token du lien de réinitialisation reçu par e-mail, et nouveau mot de passe.
+         * @description Token of the reset link received by email, and the new password.
          */
         ResetPasswordRequest: {
             /** Token */
@@ -2239,7 +2232,7 @@ export interface components {
         };
         /**
          * RestoreGuestRequest
-         * @description Token du lien perso de l'invité.
+         * @description Token of the guest's personal link.
          */
         RestoreGuestRequest: {
             /** Token */
@@ -2247,7 +2240,7 @@ export interface components {
         };
         /**
          * ReviewedTemplateResponse
-         * @description Le contenu d'un modèle pour les super admins, même privé (US-1.8).
+         * @description The content of a template for the super admins, even a private one (US-1.8).
          */
         ReviewedTemplateResponse: {
             /**
@@ -2279,7 +2272,7 @@ export interface components {
         };
         /**
          * ReviewedTileResponse
-         * @description Une tuile lue par un super admin : une image masquée y reste visible, image_status le dit.
+         * @description A tile read by a super admin: a hidden image stays visible in it, image_status says so.
          */
         ReviewedTileResponse: {
             /**
@@ -2295,7 +2288,7 @@ export interface components {
         };
         /**
          * RoomBanResponse
-         * @description Un bannissement de la salle, visible de l'admin seulement.
+         * @description A ban from the room, visible to the admin only.
          */
         RoomBanResponse: {
             /**
@@ -2310,9 +2303,9 @@ export interface components {
         };
         /**
          * RoomResponse
-         * @description Une salle vue par un participant. `version` augmente à chaque changement de la salle ; `bans`
-         *     n'est rempli que pour l'admin ; `template` est null quand le modèle a été purgé ; `game` est
-         *     null hors partie.
+         * @description A room as a participant sees it. `version` increases with every change to the room; `bans` is
+         *     only filled for the admin; `template` is null when the template was purged; `game` is null
+         *     outside a game.
          */
         RoomResponse: {
             /** Code */
@@ -2336,14 +2329,14 @@ export interface components {
             /**
              * Server Now
              * Format: date-time
-             * @description Heure du serveur au moment de la réponse : le client en déduit le décalage de son horloge, pour que ses minuteurs suivent ceux du serveur.
+             * @description Server time when the response was made: the client derives the offset of its clock from it, so its timers follow the server ones.
              */
             server_now: string;
         };
         /**
          * RoomSettingsResponse
-         * @description Réglages de la salle : ceux de la partie en cours pendant une partie, sinon ceux de la
-         *     prochaine. `timer_seconds` est gardé même quand `auto_advance` n'est pas `timer`.
+         * @description Room settings: those of the current game during a game, otherwise those of the next one.
+         *     `timer_seconds` is kept even when `auto_advance` is not `timer`.
          */
         RoomSettingsResponse: {
             item_order: components["schemas"]["ItemOrder"];
@@ -2366,8 +2359,7 @@ export interface components {
         RoomStatus: "open" | "playing";
         /**
          * RoomTemplateResponse
-         * @description Modèle de la salle ; `hidden` est vrai quand la modération l'a masqué : aucune nouvelle
-         *     partie ne peut alors commencer.
+         * @description Template of the room; `hidden` is true when moderation hid it: no new game can start then.
          */
         RoomTemplateResponse: {
             /**
@@ -2382,14 +2374,14 @@ export interface components {
         };
         /**
          * SetTemplateVisibilityRequest
-         * @description Visibilité choisie pour le modèle.
+         * @description Visibility chosen for the template.
          */
         SetTemplateVisibilityRequest: {
             visibility: components["schemas"]["TemplateVisibility"];
         };
         /**
          * SuperAdminResponse
-         * @description Un super admin, pour filtrer le journal par auteur.
+         * @description A super admin, to filter the log by author.
          */
         SuperAdminResponse: {
             /**
@@ -2402,7 +2394,7 @@ export interface components {
         };
         /**
          * TemplateListResponse
-         * @description Les modèles du compte, le plus récemment modifié en premier.
+         * @description The account's templates, most recently modified first.
          */
         TemplateListResponse: {
             /** Items */
@@ -2416,8 +2408,8 @@ export interface components {
         TemplateModeration: "none" | "hidden";
         /**
          * TemplateResponse
-         * @description Un modèle avec ses tiers et ses tuiles triés par position. `max_tiles` est le nombre maximal
-         *     de tuiles ; `first_made_public_at` est gardée quand le modèle repasse en privé.
+         * @description A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number
+         *     of tiles; `first_made_public_at` is kept when the template goes back to private.
          */
         TemplateResponse: {
             /**
@@ -2452,8 +2444,8 @@ export interface components {
         };
         /**
          * TemplateSummaryResponse
-         * @description Un modèle dans la liste du compte : son nombre de tuiles, sa décision de modération et les
-         *     images retirées de ses tuiles.
+         * @description A template in the account's list: its number of tiles, its moderation decision and the images
+         *     removed from its tiles.
          */
         TemplateSummaryResponse: {
             /**
@@ -2487,7 +2479,7 @@ export interface components {
         TemplateVisibility: "private" | "public";
         /**
          * TierItemsResponse
-         * @description Les items d'un tier, dans l'ordre.
+         * @description The items of a tier, in order.
          */
         TierItemsResponse: {
             /**
@@ -2500,7 +2492,7 @@ export interface components {
         };
         /**
          * TierResponse
-         * @description Un tier du modèle ; la position 0 est le tier du haut.
+         * @description A tier of the template; position 0 is the top tier.
          */
         TierResponse: {
             /**
@@ -2517,9 +2509,9 @@ export interface components {
         };
         /**
          * TileResponse
-         * @description Une tuile du modèle, dans l'ordre du modèle. `image_removed` est vrai quand la modération a
-         *     masqué ou supprimé l'image : `image_url` est alors null. `image_status` et
-         *     `image_moderation_reason` ne sont montrés qu'au propriétaire.
+         * @description A tile of the template, in the template's order. `image_removed` is true when moderation hid
+         *     or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
+         *     only shown to the owner.
          */
         TileResponse: {
             /**
@@ -2541,8 +2533,8 @@ export interface components {
         };
         /**
          * TokenResponse
-         * @description Access token à envoyer dans l'en-tête `Authorization: Bearer`, valable `expires_in`
-         *     secondes. Le refresh token n'est jamais dans le corps : il est dans un cookie HttpOnly.
+         * @description Access token to send in the `Authorization: Bearer` header, valid for `expires_in` seconds.
+         *     The refresh token is never in the body: it is in an HttpOnly cookie.
          */
         TokenResponse: {
             /** Access Token */
@@ -2558,8 +2550,8 @@ export interface components {
         };
         /**
          * UpdateRoomSettingsRequest
-         * @description Changements des réglages de la salle : seuls les champs envoyés changent ; une requête sans
-         *     champ ne change rien.
+         * @description Changes to the room settings: only the fields sent change; a request without a field changes
+         *     nothing.
          */
         UpdateRoomSettingsRequest: {
             item_order?: components["schemas"]["ItemOrder"] | null;
@@ -2575,8 +2567,7 @@ export interface components {
         };
         /**
          * UpdateTierRequest
-         * @description Changements d'un tier : seuls les champs envoyés changent. La couleur est au format
-         *     #RRGGBB.
+         * @description Changes to a tier: only the fields sent change. The color is in the #RRGGBB format.
          */
         UpdateTierRequest: {
             /** Name */
@@ -2588,8 +2579,8 @@ export interface components {
         };
         /**
          * UpdateTileRequest
-         * @description Changements d'une tuile : seuls les champs envoyés changent. `null` retire le texte ou
-         *     l'image ; la tuile doit garder l'un des deux.
+         * @description Changes to a tile: only the fields sent change. `null` removes the text or the image; the
+         *     tile must keep one of the two.
          */
         UpdateTileRequest: {
             /** Text */
@@ -2601,8 +2592,8 @@ export interface components {
         };
         /**
          * UserResponse
-         * @description Un compte, tel que son propriétaire le voit. `has_password` est faux tant que le compte n'a
-         *     pas de mot de passe (compte Google qui n'en a jamais défini).
+         * @description An account, as its owner sees it. `has_password` is false as long as the account has no
+         *     password (a Google account that never set one).
          */
         UserResponse: {
             /**
@@ -2648,7 +2639,7 @@ export interface components {
         };
         /**
          * VerifyEmailRequest
-         * @description Token du lien de vérification reçu par e-mail.
+         * @description Token of the verification link received by email.
          */
         VerifyEmailRequest: {
             /** Token */
@@ -2656,7 +2647,7 @@ export interface components {
         };
         /**
          * CooldownStartedData
-         * @description Fin du cooldown final.
+         * @description End of the final cooldown.
          */
         CooldownStartedData: {
             /**
@@ -2667,7 +2658,7 @@ export interface components {
         };
         /**
          * CooldownStartedEvent
-         * @description Le dernier tour est fini : le cooldown final commence (#96).
+         * @description The last round is over: the final cooldown starts (#96).
          */
         CooldownStartedEvent: {
             /**
@@ -2681,7 +2672,7 @@ export interface components {
         };
         /**
          * GameClosedData
-         * @description La partie qui vient d'être close.
+         * @description The game that was just closed.
          */
         GameClosedData: {
             /**
@@ -2692,8 +2683,8 @@ export interface components {
         };
         /**
          * GameClosedEvent
-         * @description Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la
-         *     salle redevient ouverte.
+         * @description The final cooldown is over (timer or "Finish now"): the game is closed and the room is open
+         *     again.
          */
         GameClosedEvent: {
             /**
@@ -2707,7 +2698,7 @@ export interface components {
         };
         /**
          * GameStartedData
-         * @description Premier tour de la partie ; `ends_at` est la fin du tour quand il a un minuteur.
+         * @description First round of the game; `ends_at` is the end of the round when it has a timer.
          */
         GameStartedData: {
             /** Round Number */
@@ -2719,7 +2710,7 @@ export interface components {
         };
         /**
          * GameStartedEvent
-         * @description Le room admin a lancé une partie : le premier item est montré à tous.
+         * @description The room admin started a game: the first item is shown to everyone.
          */
         GameStartedEvent: {
             /**
@@ -2741,7 +2732,7 @@ export interface components {
         };
         /**
          * ParticipantJoinedEvent
-         * @description Un compte ou un invité vient d'entrer : le client relit la salle.
+         * @description An account or a guest just came in: the client reads the room again.
          */
         ParticipantJoinedEvent: {
             /**
@@ -2755,7 +2746,7 @@ export interface components {
         };
         /**
          * ParticipantPlacedData
-         * @description Le participant qui a placé l'item, et le tour concerné.
+         * @description The participant who placed the item, and the round concerned.
          */
         ParticipantPlacedData: {
             /**
@@ -2768,7 +2759,7 @@ export interface components {
         };
         /**
          * ParticipantPlacedEvent
-         * @description Un participant a placé l'item en cours pour la première fois de ce tour.
+         * @description A participant placed the current item for the first time in this round.
          */
         ParticipantPlacedEvent: {
             /**
@@ -2792,7 +2783,7 @@ export interface components {
         };
         /**
          * ParticipantPresenceEvent
-         * @description Un participant vient de se connecter, ou de se déconnecter (délai de grâce écoulé).
+         * @description A participant just connected, or disconnected (grace period over).
          */
         ParticipantPresenceEvent: {
             /**
@@ -2814,7 +2805,7 @@ export interface components {
         };
         /**
          * ParticipantRemovedEvent
-         * @description Le room admin a retiré ou banni un participant : sa place n'existe plus.
+         * @description The room admin removed or banned a participant: their place no longer exists.
          */
         ParticipantRemovedEvent: {
             /**
@@ -2828,7 +2819,7 @@ export interface components {
         };
         /**
          * PingMessage
-         * @description Battement de cœur du serveur : le client répond pong.
+         * @description Server heartbeat: the client answers pong.
          */
         PingMessage: {
             /**
@@ -2841,7 +2832,7 @@ export interface components {
         RoomSettingsUpdatedData: Record<string, never>;
         /**
          * RoomSettingsUpdatedEvent
-         * @description Le room admin a changé les réglages : le client relit la salle.
+         * @description The room admin changed the settings: the client reads the room again.
          */
         RoomSettingsUpdatedEvent: {
             /**
@@ -2855,7 +2846,7 @@ export interface components {
         };
         /**
          * RoundStartedData
-         * @description Nouveau tour ; `ends_at` est la fin du tour quand il a un minuteur.
+         * @description New round; `ends_at` is the end of the round when it has a timer.
          */
         RoundStartedData: {
             /** Round Number */
@@ -2867,8 +2858,8 @@ export interface components {
         };
         /**
          * RoundStartedEvent
-         * @description Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item
-         *     suivant est montré à tous.
+         * @description The previous round is over ("next", timer or "everyone placed"): the next item is shown to
+         *     everyone.
          */
         RoundStartedEvent: {
             /**
@@ -2883,8 +2874,8 @@ export interface components {
         RoomServerMessage: components["schemas"]["ParticipantJoinedEvent"] | components["schemas"]["ParticipantPresenceEvent"] | components["schemas"]["ParticipantRemovedEvent"] | components["schemas"]["RoomSettingsUpdatedEvent"] | components["schemas"]["GameStartedEvent"] | components["schemas"]["ParticipantPlacedEvent"] | components["schemas"]["RoundStartedEvent"] | components["schemas"]["CooldownStartedEvent"] | components["schemas"]["GameClosedEvent"] | components["schemas"]["PingMessage"];
         /**
          * AuthMessage
-         * @description Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
-         *     son cookie). Le token ne passe jamais dans l'URL.
+         * @description First message of the client: the access token of an account, or None for a guest (recognized
+         *     by their cookie). The token never goes in the URL.
          */
         AuthMessage: {
             /**
@@ -2900,8 +2891,7 @@ export interface components {
         };
         /**
          * PongMessage
-         * @description Réponse du client au ping du serveur, dans le délai `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s
-         *     par défaut).
+         * @description Client reply to the server ping, within `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s by default).
          */
         PongMessage: {
             /**

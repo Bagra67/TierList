@@ -33,8 +33,8 @@ NewPassword = Annotated[
 
 
 class RegisterRequest(BaseModel):
-    """Inscription par e-mail et mot de passe ; `language` choisit la langue de l'e-mail de
-    vérification."""
+    """Sign-up with an email and a password; `language` chooses the language of the verification
+    email."""
 
     email: EmailStr
     password: NewPassword
@@ -43,15 +43,15 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Connexion par e-mail et mot de passe."""
+    """Sign-in with an email and a password."""
 
     email: EmailStr
     password: str = Field(min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
 class TokenResponse(BaseModel):
-    """Access token à envoyer dans l'en-tête `Authorization: Bearer`, valable `expires_in`
-    secondes. Le refresh token n'est jamais dans le corps : il est dans un cookie HttpOnly."""
+    """Access token to send in the `Authorization: Bearer` header, valid for `expires_in` seconds.
+    The refresh token is never in the body: it is in an HttpOnly cookie."""
 
     access_token: str
     token_type: Literal["bearer"] = "bearer"
@@ -59,8 +59,8 @@ class TokenResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """Un compte, tel que son propriétaire le voit. `has_password` est faux tant que le compte n'a
-    pas de mot de passe (compte Google qui n'en a jamais défini)."""
+    """An account, as its owner sees it. `has_password` is false as long as the account has no
+    password (a Google account that never set one)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -74,33 +74,33 @@ class UserResponse(BaseModel):
 
 
 class DeleteAccountRequest(BaseModel):
-    """Confirmation de la suppression du compte : le mot de passe, obligatoire pour un compte qui
-    en a un, absent pour un compte sans mot de passe."""
+    """Confirmation of the account deletion: the password, required for an account that has one,
+    absent for an account without a password."""
 
     password: str | None = Field(default=None, min_length=1, max_length=PASSWORD_MAX_LENGTH)
 
 
 class EmailVerificationRequest(BaseModel):
-    """Langue du nouvel e-mail de vérification."""
+    """Language of the new verification email."""
 
     language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class VerifyEmailRequest(BaseModel):
-    """Token du lien de vérification reçu par e-mail."""
+    """Token of the verification link received by email."""
 
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
 
 
 class ForgotPasswordRequest(BaseModel):
-    """Adresse du compte, et langue de l'e-mail de réinitialisation."""
+    """Address of the account, and language of the reset email."""
 
     email: EmailStr
     language: Language = DEFAULT_EMAIL_LANGUAGE
 
 
 class ResetPasswordRequest(BaseModel):
-    """Token du lien de réinitialisation reçu par e-mail, et nouveau mot de passe."""
+    """Token of the reset link received by email, and the new password."""
 
     token: str = Field(min_length=1, max_length=EMAIL_TOKEN_MAX_LENGTH)
     password: NewPassword

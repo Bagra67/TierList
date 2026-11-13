@@ -53,7 +53,7 @@ def create_report(
     settings: SettingsDep,
     report_token: Annotated[str | None, Cookie(alias=REPORT_COOKIE)] = None,
 ) -> ReportResponse:
-    """Signale un contenu, avec un compte ou sans : un cookie reconnaît alors le navigateur."""
+    """Reports a content, with an account or without one: a cookie then recognizes the browser."""
     browser_token: str = report_token or generate_guest_token()
     reporter: Reporter = reporter_of(user.id if user is not None else None, browser_token)
     try:
