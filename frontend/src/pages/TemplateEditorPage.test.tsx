@@ -45,6 +45,7 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
   return {
     id: templateId,
     name,
+    tags: [],
     created_at: '2026-10-05T12:00:00Z',
     updated_at: '2026-10-05T12:00:00Z',
     tiers: tiers.map((tier, position) => ({ ...tier, position })),

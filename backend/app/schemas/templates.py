@@ -11,6 +11,8 @@ from pydantic import (
 )
 
 from app.constants.templates import (
+    TAG_MAX_LENGTH,
+    TEMPLATE_MAX_TAGS,
     TEMPLATE_NAME_MAX_LENGTH,
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
@@ -40,6 +42,20 @@ class SetTemplateVisibilityRequest(BaseModel):
     """Visibility chosen for the template."""
 
     visibility: TemplateVisibility
+
+
+TagLabel = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=TAG_MAX_LENGTH),
+]
+
+
+class SetTemplateTagsRequest(BaseModel):
+    """Every tag of the template, in the order to show them; they replace the current ones.
+    Surrounding spaces are removed, and a tag equal to an earlier one ignoring case and accents is
+    dropped."""
+
+    tags: Annotated[list[TagLabel], Field(max_length=TEMPLATE_MAX_TAGS)]
 
 
 TierName = Annotated[
@@ -110,11 +126,13 @@ class TileResponse(BaseModel):
 
 
 class TemplateResponse(BaseModel):
-    """A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number
-    of tiles; `first_made_public_at` is kept when the template goes back to private."""
+    """A template with its tiers and its tiles sorted by position, and its tags in their order.
+    `max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template
+    goes back to private."""
 
     id: uuid.UUID
     name: str
+    tags: list[str]
     created_at: datetime
     updated_at: datetime
     tiers: list[TierResponse]
@@ -139,13 +157,14 @@ class RemovedImageResponse(BaseModel):
 
 
 class TemplateSummaryResponse(BaseModel):
-    """A template in the account's list: its number of tiles, its moderation decision and the images
-    removed from its tiles."""
+    """A template in the account's list: its tags, its number of tiles, its moderation decision and
+    the images removed from its tiles."""
 
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     name: str
+    tags: list[str]
     tile_count: int
     updated_at: datetime
     moderation: TemplateModeration

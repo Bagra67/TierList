@@ -9,9 +9,11 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
 from app.core.config import Settings
+from app.core.search_text import normalize_search_text
 from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
+    InvalidTagError,
     LastTierError,
     TemplateHasNoTilesError,
     TemplateHiddenError,
@@ -28,6 +30,7 @@ from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.template_tag import TemplateTag
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
@@ -51,6 +54,12 @@ def _move[Positioned: (Tier, Tile)](
     _renumber(items)
 
 
+def _refresh_search_text(template: Template) -> None:
+    template.search_text = " ".join(
+        [normalize_search_text(template.name), *(tag.normalized_label for tag in template.tags)]
+    ).strip()
+
+
 @dataclass(frozen=True)
 class RemovedImage:
     tile_id: uuid.UUID
@@ -72,6 +81,7 @@ class RemovedTemplate:
 class TemplateSummary:
     id: uuid.UUID
     name: str
+    tags: list[str]
     tile_count: int
     updated_at: datetime
     moderation: TemplateModeration
@@ -107,6 +117,7 @@ class TemplateService:
                 for position, (tier_name, color) in enumerate(DEFAULT_TIERS)
             ],
         )
+        _refresh_search_text(template)
         template_repository.add_template(self._session, template)
         self._session.commit()
         logger.info("Template créé : template_id=%s owner_id=%s", template.id, owner.id)
@@ -119,12 +130,14 @@ class TemplateService:
         removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
             owner
         )
+        tags: dict[uuid.UUID, list[str]] = self._tags_by_template(owner)
 
         summaries: list[TemplateSummary] = []
         for template, tile_count in templates_with_tile_count:
             summary: TemplateSummary = TemplateSummary(
                 id=template.id,
                 name=template.name,
+                tags=tags.get(template.id, []),
                 tile_count=tile_count,
                 updated_at=template.updated_at,
                 moderation=template.moderation,
@@ -135,6 +148,12 @@ class TemplateService:
             )
             summaries.append(summary)
         return summaries
+
+    def _tags_by_template(self, owner: User) -> dict[uuid.UUID, list[str]]:
+        tags: dict[uuid.UUID, list[str]] = {}
+        for tag in template_repository.list_tags_of_owner(self._session, owner.id):
+            tags.setdefault(tag.template_id, []).append(tag.label)
+        return tags
 
     def _removed_images_by_template(self, owner: User) -> dict[uuid.UUID, list[RemovedImage]]:
         tiles_with_image: list[tuple[Tile, Image]] = (
@@ -180,9 +199,36 @@ class TemplateService:
         return template
 
     def rename(self, owner: User, template_id: uuid.UUID, name: str) -> Template:
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_for_change(owner, template_id)
         template.name = name
+        _refresh_search_text(template)
         self._session.commit()
+        return template
+
+    def set_tags(self, owner: User, template_id: uuid.UUID, labels: list[str]) -> Template:
+        template: Template = self._get_for_change(owner, template_id)
+        current_tags: dict[str, TemplateTag] = {tag.normalized_label: tag for tag in template.tags}
+        new_tags: dict[str, TemplateTag] = {}
+        for label in labels:
+            normalized_label: str = normalize_search_text(label)
+            if not normalized_label:
+                raise InvalidTagError
+            if normalized_label in new_tags:
+                continue
+            tag: TemplateTag = current_tags.get(normalized_label) or TemplateTag(
+                normalized_label=normalized_label
+            )
+            tag.label = label
+            tag.position = len(new_tags)
+            new_tags[normalized_label] = tag
+        template.tags = list(new_tags.values())
+        _refresh_search_text(template)
+        self._save_change(template)
+        logger.info(
+            "Étiquettes du modèle changées : template_id=%s tag_count=%s",
+            template_id,
+            len(new_tags),
+        )
         return template
 
     def set_visibility(

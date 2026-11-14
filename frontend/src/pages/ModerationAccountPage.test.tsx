@@ -20,6 +20,7 @@ const maxAccount: Account = {
     {
       id: 'food-id',
       name: 'Food',
+      tags: [],
       tile_count: 12,
       updated_at: '2026-10-20T12:00:00Z',
       moderation: 'none',
@@ -31,6 +32,7 @@ const maxAccount: Account = {
     {
       id: 'teachers-id',
       name: 'Teachers',
+      tags: [],
       tile_count: 5,
       updated_at: '2026-10-21T12:00:00Z',
       moderation: 'hidden',

@@ -16,6 +16,7 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
     return TemplateResponse(
         id=template.id,
         name=template.name,
+        tags=[tag.label for tag in template.tags],
         created_at=template.created_at,
         updated_at=template.updated_at,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],

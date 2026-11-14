@@ -380,6 +380,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/templates/{template_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Template Tags
+         * @description Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at
+         *     least one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is
+         *     dropped; the first one is kept. Its last modification date is updated.
+         */
+        put: operations["set_template_tags_templates__template_id__tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates/{template_id}/tiers": {
         parameters: {
             query?: never;
@@ -2373,6 +2395,16 @@ export interface components {
             hidden: boolean;
         };
         /**
+         * SetTemplateTagsRequest
+         * @description Every tag of the template, in the order to show them; they replace the current ones.
+         *     Surrounding spaces are removed, and a tag equal to an earlier one ignoring case and accents is
+         *     dropped.
+         */
+        SetTemplateTagsRequest: {
+            /** Tags */
+            tags: string[];
+        };
+        /**
          * SetTemplateVisibilityRequest
          * @description Visibility chosen for the template.
          */
@@ -2408,8 +2440,9 @@ export interface components {
         TemplateModeration: "none" | "hidden";
         /**
          * TemplateResponse
-         * @description A template with its tiers and its tiles sorted by position. `max_tiles` is the maximum number
-         *     of tiles; `first_made_public_at` is kept when the template goes back to private.
+         * @description A template with its tiers and its tiles sorted by position, and its tags in their order.
+         *     `max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template
+         *     goes back to private.
          */
         TemplateResponse: {
             /**
@@ -2419,6 +2452,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Tags */
+            tags: string[];
             /**
              * Created At
              * Format: date-time
@@ -2444,8 +2479,8 @@ export interface components {
         };
         /**
          * TemplateSummaryResponse
-         * @description A template in the account's list: its number of tiles, its moderation decision and the images
-         *     removed from its tiles.
+         * @description A template in the account's list: its tags, its number of tiles, its moderation decision and
+         *     the images removed from its tiles.
          */
         TemplateSummaryResponse: {
             /**
@@ -2455,6 +2490,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Tags */
+            tags: string[];
             /** Tile Count */
             tile_count: number;
             /**
@@ -3924,6 +3961,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_template_tags_templates__template_id__tags_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTemplateTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Tag without a Latin letter or digit, or invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Internal server error */

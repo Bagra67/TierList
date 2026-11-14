@@ -9,6 +9,7 @@ from app.models.enums import TemplateModeration
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
 
 
@@ -30,7 +31,11 @@ def get_owned_template(
             Template.owner_id == owner_id,
             Template.deleted_at.is_(None),
         )
-        .options(selectinload(Template.tiers), selectinload(Template.tiles))
+        .options(
+            selectinload(Template.tiers),
+            selectinload(Template.tiles),
+            selectinload(Template.tags),
+        )
     )
     if for_update:
         statement = statement.with_for_update(of=Template)
@@ -86,6 +91,16 @@ def list_owned_templates_with_tile_count(
         .order_by(Template.updated_at.desc(), Template.id)
     )
     return [(template, tile_count) for template, tile_count in session.execute(statement)]
+
+
+def list_tags_of_owner(session: Session, owner_id: uuid.UUID) -> list[TemplateTag]:
+    statement: Select[TemplateTag] = (
+        select(TemplateTag)
+        .join(Template, TemplateTag.template_id == Template.id)
+        .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
+        .order_by(TemplateTag.position)
+    )
+    return list(session.scalars(statement).all())
 
 
 def list_tiles_with_removed_image_of_owner(

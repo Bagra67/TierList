@@ -149,6 +149,16 @@ TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+THEME_TAGS: dict[str, tuple[str, ...]] = {
+    "Fruits": ("cuisine", "fruits", "été"),
+    "Pizzas": ("Cuisine", "cuisine", "italie", "soirée entre amis"),
+    "Desserts": ("cuisine", "sucré"),
+    "Fromages": ("cuisine", "france", "apéro", "soirée entre amis", "fromage"),
+    "Sports": ("sport",),
+    "Jeux de société": ("jeux de société", "soirée entre amis"),
+    "Couleurs": ("images", "couleurs"),
+    "Le grand classement": ("mots",),
+}
 WORD_POOL: tuple[str, ...] = tuple(word for _, words in TEXT_THEMES for word in words) + (
     "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche", "Plage", "Montagne",
     "Forêt", "Désert", "Volcan", "Rivière", "Lac", "Glacier", "Île", "Ville", "Village",
@@ -209,6 +219,8 @@ def create_templates(
             for position, (text, image_id) in enumerate(tiles)
         )
         session.commit()
+        if name in THEME_TAGS:
+            templates.set_tags(owner, template.id, list(THEME_TAGS[name]))
         created[0] += 1
         logger.info("Modèle %d/%d : %s (%d tuiles)", created[0], total, name, len(tiles))
         return template
