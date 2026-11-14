@@ -9,6 +9,7 @@ import { CreateRoomButton } from '../components/CreateRoomButton';
 import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
+import { TemplateTagsField } from '../components/TemplateTagsField';
 import { TemplateVisibilityField } from '../components/TemplateVisibilityField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
@@ -76,7 +77,10 @@ export function TemplateEditorPage() {
             <TemplateHiddenNotice reason={template.moderation_reason} />
           )}
           <div className="grid w-full max-w-xl items-start gap-4 lg:max-w-none lg:grid-cols-2">
-            <TemplateNameField template={template} />
+            <div className="flex min-w-0 flex-col gap-4">
+              <TemplateNameField template={template} />
+              <TemplateTagsField template={template} />
+            </div>
             <TemplateVisibilityField template={template} />
           </div>
           <div

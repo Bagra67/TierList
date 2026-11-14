@@ -100,6 +100,23 @@ describe('TemplatesPage', () => {
     expect(items[1]).toHaveTextContent('1 tuile');
   });
 
+  it('shows the tags of a template, without links', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([{ ...chips, tags: ['snacks', 'soirée'] }, sodas]),
+    });
+
+    renderTemplatesPage();
+
+    const tagList: HTMLElement = await screen.findByRole('list', { name: 'Étiquettes du modèle' });
+    expect(
+      within(tagList)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['snacks', 'soirée']);
+    expect(within(tagList).queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('list', { name: 'Étiquettes du modèle' })).toHaveLength(1);
+  });
+
   it('shows the reason why a template was hidden', async () => {
     stubTemplatesBackend({
       'GET /templates': listOf([

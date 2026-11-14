@@ -9,7 +9,7 @@ const ONE_PIXEL_PNG: Buffer = Buffer.from(
   'base64',
 );
 
-test('builds a template with an image and reordered tiers, kept after a reload', async ({
+test('builds a template with an image, reordered tiers and tags, kept after a reload', async ({
   page,
 }) => {
   await signUp(page, 'Inès');
@@ -34,7 +34,18 @@ test('builds a template with an image and reordered tiers, kept after a reload',
   await expect(page.getByRole('textbox', { name: 'Nom du tier 3' })).toHaveValue('S');
   await expect(page.getByRole('button', { name: 'Monter S' })).toBeEnabled();
 
+  const tagInput = page.getByRole('textbox', { name: 'Ajouter une étiquette' });
+  await tagInput.fill('cuisine du monde');
+  await tagInput.press('Enter');
+  await expect(tagInput).toHaveValue('');
+  await tagInput.fill('Cuisine du Monde');
+  await tagInput.press('Enter');
+  await expect(page.getByText('Cette étiquette est déjà là.')).toBeVisible();
+
   await page.reload();
+  await expect(
+    page.getByRole('list', { name: 'Étiquettes du modèle' }).getByRole('listitem'),
+  ).toHaveText(['cuisine du monde']);
   await expect(page.getByRole('textbox', { name: 'Nom du tier 1' })).toHaveValue('A');
   await expect(page.getByRole('textbox', { name: 'Nom du tier 2' })).toHaveValue('B');
   await expect(page.getByRole('textbox', { name: 'Nom du tier 3' })).toHaveValue('S');

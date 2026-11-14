@@ -340,6 +340,128 @@ describe('TemplateEditorPage', () => {
     });
   });
 
+  describe('tags', () => {
+    const tagsUrl: string = `${templateUrl}/tags`;
+    const withTags = (tags: string[]): Template => ({ ...chips, tags });
+
+    function tagInput(): Promise<HTMLElement> {
+      return screen.findByRole('textbox', { name: 'Ajouter une étiquette' });
+    }
+
+    it('adds a tag with Enter and empties the field once it is saved', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['snacks'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['snacks', 'Soirée'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '  Soirée ' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      const tagList: HTMLElement = await screen.findByRole('list', {
+        name: 'Étiquettes du modèle',
+      });
+      await waitFor(() => expect(within(tagList).getAllByRole('listitem')).toHaveLength(2));
+      expect(input).toHaveValue('');
+      expect(screen.getByText('2 / 5')).toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['snacks', 'Soirée'] });
+    });
+
+    it('adds the tag being typed when the field loses focus', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['party'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: 'party' } });
+      fireEvent.blur(input);
+
+      expect(await screen.findByText('party')).toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['party'] });
+    });
+
+    it('sends nothing for a blank tag, and Escape empties the field', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '   ' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      fireEvent.change(input, { target: { value: 'draft' } });
+      fireEvent.keyDown(input, { key: 'Escape' });
+
+      expect(input).toHaveValue('');
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
+    });
+
+    it('removes a tag and moves the focus to the next remove button', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['snacks', 'party', 'food'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['snacks', 'food'])),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: "Retirer l'étiquette « party »" }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: "Retirer l'étiquette « food »" })).toHaveFocus(),
+      );
+      expect(screen.queryByText('party')).not.toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['snacks', 'food'] });
+    });
+
+    it('says when the added tag was already there', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['Soirée'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['Soirée'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: 'soiree' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(await screen.findByText('Cette étiquette est déjà là.')).toBeInTheDocument();
+    });
+
+    it('replaces the field by a sentence once the template has five tags', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['a', 'b', 'c', 'd', 'e'])),
+      });
+      renderEditor();
+
+      expect(
+        await screen.findByText('5 étiquettes au plus : retirez-en une pour en ajouter une autre.'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('textbox', { name: 'Ajouter une étiquette' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps the typed tag and shows the error when the backend refuses it', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${tagsUrl}`]: () => errorResponse(422, 'invalid_tag'),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '!!!' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
+      );
+      expect(input).toHaveValue('!!!');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+  });
+
   describe('template name', () => {
     it('renames the template when the field is validated', async () => {
       const fetchMock: BackendMock = stubBackend({

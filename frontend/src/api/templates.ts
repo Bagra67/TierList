@@ -66,6 +66,15 @@ async function renameTemplate(templateId: string, name: string): Promise<Templat
   );
 }
 
+async function setTemplateTags(templateId: string, tags: string[]): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PUT('/templates/{template_id}/tags', {
+      params: { path: { template_id: templateId } },
+      body: { tags },
+    }),
+  );
+}
+
 async function setTemplateVisibility(
   templateId: string,
   visibility: TemplateVisibility,
@@ -289,6 +298,10 @@ export function useSetTemplateVisibility(templateId: string): TemplateChange<Tem
     (visibility: TemplateVisibility) => setTemplateVisibility(templateId, visibility),
     (visibility: TemplateVisibility) => (template: Template) => ({ ...template, visibility }),
   );
+}
+
+export function useSetTemplateTags(templateId: string): TemplateChange<string[]> {
+  return useTemplateChange(templateId, (tags: string[]) => setTemplateTags(templateId, tags));
 }
 
 export function useAddTier(templateId: string): TemplateChange<void> {

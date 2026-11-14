@@ -10,6 +10,7 @@ import { RemovedImageDecision } from '../components/RemovedImageDecision';
 import { RemovedTemplates } from '../components/RemovedTemplates';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { TemplatePublicBadge } from '../components/TemplatePublicBadge';
+import { TemplateTagList } from '../components/TemplateTagList';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
@@ -48,6 +49,7 @@ export function TemplatesPage() {
                     <span>{t('templates.tileCount', { count: template.tile_count })}</span>
                     <span>{t('templates.updatedAt', { date: new Date(template.updated_at) })}</span>
                   </p>
+                  <TemplateTagList tags={template.tags} />
                   {template.moderation === 'hidden' && template.moderation_reason !== null && (
                     <p className="text-sm break-words">
                       {t('templates.hidden.reason', { reason: template.moderation_reason })}

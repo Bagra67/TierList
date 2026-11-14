@@ -712,6 +712,16 @@ export const fr = {
       needsTiles: 'Ajoutez au moins une tuile pour le rendre public.',
       emailNotVerified: 'Confirmez votre adresse e-mail pour rendre un modèle public.',
     },
+    tags: {
+      legend: 'Étiquettes',
+      count: '{{count}} / {{max}}',
+      listLabel: 'Étiquettes du modèle',
+      add: 'Ajouter une étiquette',
+      remove: "Retirer l'étiquette « {{label}} »",
+      hint: 'Un mot ou une courte expression : on trouve votre modèle grâce à ses étiquettes.',
+      limitReached: '{{max}} étiquettes au plus : retirez-en une pour en ajouter une autre.',
+      duplicate: 'Cette étiquette est déjà là.',
+    },
     removedImage: {
       hidden: 'Image masquée par la modération',
       deleted: 'Image supprimée par la modération',
