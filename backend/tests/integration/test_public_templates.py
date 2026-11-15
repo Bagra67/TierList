@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -10,11 +9,12 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.templates import DEFAULT_TIERS
 from app.models.account_ban import AccountBan
-from app.models.image import Image, ImageStatus
+from app.models.image import ImageStatus
 from app.models.user import User
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL
 from tests.integration.helpers import (
     JsonObject,
+    add_tile_with_image,
     create_public_template,
     create_template,
     register,
@@ -44,6 +44,10 @@ def alice_user(db_session: Session) -> User:
     return db_session.scalars(select(User).where(User.email == ALICE_EMAIL)).one()
 
 
+def days_ago(days: int | None) -> datetime | None:
+    return None if days is None else datetime.now(UTC) - timedelta(days=days)
+
+
 def ban_alice(db_session: Session, ends_at: datetime | None, lifted_at: datetime | None) -> None:
     db_session.add(
         AccountBan(
@@ -55,34 +59,6 @@ def ban_alice(db_session: Session, ends_at: datetime | None, lifted_at: datetime
         )
     )
     db_session.flush()
-
-
-def add_tile_with_image(
-    client: TestClient,
-    db_session: Session,
-    headers: dict[str, str],
-    template_id: str,
-    status: ImageStatus,
-) -> Image:
-    image: Image = Image(
-        owner_id=alice_user(db_session).id,
-        storage_key=f"{uuid.uuid4()}.webp",
-        width=512,
-        height=512,
-        size_bytes=4,
-        sha256="a" * 64,
-    )
-    db_session.add(image)
-    db_session.flush()
-    response: Response = client.post(
-        f"/templates/{template_id}/tiles",
-        json={"text": None, "image_id": str(image.id)},
-        headers=headers,
-    )
-    assert response.status_code == 201
-    image.status = status
-    db_session.flush()
-    return image
 
 
 def test_a_visitor_sees_a_public_template_with_its_owner_tags_tiers_and_tiles(
@@ -116,10 +92,10 @@ def test_a_public_template_shows_nothing_reserved_to_its_owner(
 def test_a_visible_image_has_its_url_and_a_removed_one_has_none(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], template_id: str
 ):
-    visible: Image = add_tile_with_image(
-        auth_client, db_session, alice, template_id, ImageStatus.VISIBLE
-    )
-    add_tile_with_image(auth_client, db_session, alice, template_id, ImageStatus.HIDDEN)
+    _, visible = add_tile_with_image(auth_client, db_session, alice, template_id, None)
+    _, hidden = add_tile_with_image(auth_client, db_session, alice, template_id, None)
+    hidden.status = ImageStatus.HIDDEN
+    db_session.flush()
 
     tiles: list[JsonObject] = public_template(auth_client, template_id).json()["tiles"]
 
@@ -185,15 +161,17 @@ def test_the_template_of_a_banned_owner_is_not_available(
     assert public_template(auth_client, template_id).status_code == 404
 
 
-@pytest.mark.parametrize("ban_state", ["ended", "lifted"])
+@pytest.mark.parametrize(
+    ("ends_days_ago", "lifted_days_ago"), [(1, None), (None, 1)], ids=["ended", "lifted"]
+)
 def test_the_template_is_available_again_once_the_ban_ends_or_is_lifted(
-    auth_client: TestClient, db_session: Session, template_id: str, ban_state: str
+    auth_client: TestClient,
+    db_session: Session,
+    template_id: str,
+    ends_days_ago: int | None,
+    lifted_days_ago: int | None,
 ):
-    yesterday: datetime = datetime.now(UTC) - timedelta(days=1)
-    if ban_state == "ended":
-        ban_alice(db_session, ends_at=yesterday, lifted_at=None)
-    else:
-        ban_alice(db_session, ends_at=None, lifted_at=yesterday)
+    ban_alice(db_session, days_ago(ends_days_ago), days_ago(lifted_days_ago))
 
     assert public_template(auth_client, template_id).status_code == 200
 

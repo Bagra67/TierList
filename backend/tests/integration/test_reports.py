@@ -10,11 +10,18 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.reports import REPORT_COOKIE
 from app.core.security import hash_guest_token
-from app.models.enums import ModerationTargetType, ReportReason, ReportStatus
+from app.models.enums import (
+    ModerationTargetType,
+    ReportReason,
+    ReportStatus,
+    TemplateModeration,
+    TemplateVisibility,
+)
 from app.models.game import Game
 from app.models.image import Image, ImageStatus
 from app.models.report import Report
 from app.models.snapshot_tile import SnapshotTile
+from app.models.template import Template
 from app.models.user import User
 from tests.integration.helpers import (
     JsonObject,
@@ -23,8 +30,9 @@ from tests.integration.helpers import (
     create_template,
     play_and_close,
     register,
-    set_hidden,
+    send_report,
     start_game,
+    stored_template,
 )
 
 pytestmark = pytest.mark.integration
@@ -88,26 +96,6 @@ def add_image(db_session: Session, storage_key: str) -> Image:
     db_session.add(image)
     db_session.flush()
     return image
-
-
-def send_report(
-    client: TestClient,
-    target_kind: str,
-    target_id: str,
-    headers: dict[str, str] | None = None,
-    reason: str = "spam",
-    details: str | None = None,
-) -> Response:
-    return client.post(
-        "/reports",
-        json={
-            "target_kind": target_kind,
-            "target_id": target_id,
-            "reason": reason,
-            "details": details,
-        },
-        headers=headers,
-    )
 
 
 def stored_reports(db_session: Session) -> list[Report]:
@@ -388,29 +376,35 @@ def test_a_visitor_reports_a_public_template(
 
     assert response.status_code == 201
     report: Report = stored_reports(db_session)[0]
-    alice_user: User = db_session.scalars(
-        select(User).where(User.email == "alice@example.com")
-    ).one()
     assert (report.target_type, str(report.target_id), report.target_label) == (
         ModerationTargetType.TEMPLATE,
         template_id,
         "Food",
     )
-    assert report.owner_id == alice_user.id
+    assert report.owner_id == stored_template(db_session, template_id).owner_id
     assert report.reporter_browser_hash is not None
 
 
-@pytest.mark.parametrize("state", ["private", "hidden"])
+@pytest.mark.parametrize(
+    ("visibility", "moderation"),
+    [
+        (TemplateVisibility.PRIVATE, TemplateModeration.NONE),
+        (TemplateVisibility.PUBLIC, TemplateModeration.HIDDEN),
+    ],
+    ids=["private", "hidden"],
+)
 def test_a_template_that_is_not_public_cannot_be_reported(
-    auth_client: TestClient, db_session: Session, alice: dict[str, str], state: str
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    visibility: TemplateVisibility,
+    moderation: TemplateModeration,
 ):
-    template_id: str = (
-        create_template(auth_client, db_session, alice)
-        if state == "private"
-        else create_public_template(auth_client, db_session, alice, "alice@example.com")
-    )
-    if state == "hidden":
-        set_hidden(db_session, template_id)
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    template: Template = stored_template(db_session, template_id)
+    template.visibility = visibility
+    template.moderation = moderation
+    db_session.flush()
 
     response: Response = send_report(auth_client, "template", template_id)
 

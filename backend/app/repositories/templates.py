@@ -12,6 +12,7 @@ from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
+from app.models.user import User
 from app.repositories.account_bans import is_active
 
 
@@ -56,9 +57,12 @@ def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
     )
 
 
-def get_listed_template(session: Session, template_id: uuid.UUID, now: datetime) -> Template | None:
-    statement: Select[Template] = (
-        select(Template)
+def get_listed_template_with_owner_name(
+    session: Session, template_id: uuid.UUID, now: datetime
+) -> tuple[Template, str] | None:
+    statement: Select[Template, str] = (
+        select(Template, User.display_name)
+        .join(User, User.id == Template.owner_id)
         .where(Template.id == template_id, listed_templates_condition(now))
         .options(
             selectinload(Template.tiers),
@@ -66,7 +70,18 @@ def get_listed_template(session: Session, template_id: uuid.UUID, now: datetime)
             selectinload(Template.tags),
         )
     )
-    return session.scalars(statement).one_or_none()
+    row = session.execute(statement).one_or_none()
+    return None if row is None else (row[0], row[1])
+
+
+def get_listed_template_name_and_owner(
+    session: Session, template_id: uuid.UUID, now: datetime
+) -> tuple[str, uuid.UUID] | None:
+    statement: Select[str, uuid.UUID] = select(Template.name, Template.owner_id).where(
+        Template.id == template_id, listed_templates_condition(now)
+    )
+    row = session.execute(statement).one_or_none()
+    return None if row is None else (row[0], row[1])
 
 
 def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
