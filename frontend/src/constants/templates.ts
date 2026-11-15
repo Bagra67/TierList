@@ -39,6 +39,10 @@ export function templateQueryKey(templateId: string): TemplateQueryKey {
   return ['templates', 'detail', templateId];
 }
 
+export function publicTemplateQueryKey(templateId: string): readonly string[] {
+  return ['marketplace', 'templates', templateId];
+}
+
 export function templateChangeMutationKey(templateId: string): readonly string[] {
   return [...templateQueryKey(templateId), 'change'];
 }

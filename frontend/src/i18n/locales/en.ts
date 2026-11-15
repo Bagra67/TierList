@@ -695,6 +695,7 @@ export const en: Translation = {
         description: 'Anyone can find it and play it. Your display name is shown.',
       },
       firstMadePublicAt: 'First made public on {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'See the public page',
       hiddenWhilePublic: 'Hidden by the moderation: it does not appear in the public templates.',
       hiddenCannotBePublic: 'Hidden by the moderation: it cannot be made public.',
       needsTiles: 'Add at least one tile to make it public.',
@@ -800,6 +801,18 @@ export const en: Translation = {
         dropped: '{{item}} dropped at position {{position}} of {{count}}.',
         cancelled: 'Moving {{item}} cancelled.',
       },
+    },
+  },
+  publicTemplate: {
+    byOwner: 'by {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Item ({{count}})',
+    items_other: 'Items ({{count}})',
+    noItems: 'This template has no items yet.',
+    itemImage: 'Image of item {{number}}',
+    unavailable: {
+      title: 'Template unavailable',
+      message: 'This template is not available.',
     },
   },
   report: {

@@ -707,6 +707,7 @@ export const fr = {
         description: 'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.',
       },
       firstMadePublicAt: 'Première publication le {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'Voir la page publique',
       hiddenWhilePublic: "Masqué par la modération : il n'apparaît pas dans les modèles publics.",
       hiddenCannotBePublic: 'Masqué par la modération : il ne peut pas être rendu public.',
       needsTiles: 'Ajoutez au moins une tuile pour le rendre public.',
@@ -813,6 +814,18 @@ export const fr = {
         dropped: '{{item}} déposé en position {{position}} sur {{count}}.',
         cancelled: 'Déplacement de {{item}} annulé.',
       },
+    },
+  },
+  publicTemplate: {
+    byOwner: 'par {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Élément ({{count}})',
+    items_other: 'Éléments ({{count}})',
+    noItems: "Ce modèle n'a aucun élément pour l'instant.",
+    itemImage: "Image de l'élément {{number}}",
+    unavailable: {
+      title: 'Modèle indisponible',
+      message: "Ce modèle n'est pas disponible.",
     },
   },
   report: {

@@ -9,6 +9,7 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
+  PUBLIC_TEMPLATE: '/marketplace/templates/:templateId',
   HISTORY: '/history',
   MODERATION: '/moderation',
   MODERATION_REPORTS: '/moderation/reports',
@@ -26,6 +27,10 @@ export const ROUTES = {
 
 export function templateEditorPath(templateId: string): string {
   return generatePath(ROUTES.TEMPLATE_EDITOR, { templateId });
+}
+
+export function publicTemplatePath(templateId: string): string {
+  return generatePath(ROUTES.PUBLIC_TEMPLATE, { templateId });
 }
 
 export function roomPath(code: string): string {
