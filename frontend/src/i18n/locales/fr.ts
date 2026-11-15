@@ -823,6 +823,7 @@ export const fr = {
       participant: 'Signaler ce pseudo',
       player: 'Signaler ce pseudo',
       game: 'Signaler cette partie',
+      template: 'Signaler ce modèle',
     },
     anonymous: "Votre signalement est anonyme : la personne signalée ne saura pas qui l'a envoyé.",
     reason: 'Motif',

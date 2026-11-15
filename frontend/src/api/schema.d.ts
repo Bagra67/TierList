@@ -493,6 +493,27 @@ export interface paths {
         patch: operations["update_tile_templates__template_id__tiles__tile_id__patch"];
         trace?: never;
     };
+    "/marketplace/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Template
+         * @description A public template, without an account. 404 when the template is not public, is hidden by
+         *     moderation, is deleted or its owner is banned, without saying which.
+         */
+        get: operations["get_public_template_marketplace_templates__template_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/images": {
         parameters: {
             query?: never;
@@ -1499,7 +1520,7 @@ export interface components {
         /**
          * CreateReportRequest
          * @description A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a
-         *     participant of a room, a player of the results or a closed game.
+         *     participant of a room, a player of the results, a closed game or a public template.
          */
         CreateReportRequest: {
             target_kind: components["schemas"]["ReportTargetKind"];
@@ -2041,6 +2062,46 @@ export interface components {
             unplaced_item_ids: string[];
         };
         /**
+         * PublicTemplateResponse
+         * @description A public template as everyone sees it: its name, its owner's display name, its tags, its
+         *     tiers and its tiles in their order.
+         */
+        PublicTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Tags */
+            tags: string[];
+            /** Tiers */
+            tiers: components["schemas"]["TierResponse"][];
+            /** Tiles */
+            tiles: components["schemas"]["PublicTileResponse"][];
+        };
+        /**
+         * PublicTileResponse
+         * @description A tile of a public template, in the template's order. `image_removed` is true when moderation
+         *     hid or deleted the image: `image_url` is then null.
+         */
+        PublicTileResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Text */
+            text: string | null;
+            /** Image Url */
+            image_url: string | null;
+            /** Image Removed */
+            image_removed: boolean;
+        };
+        /**
          * RecentUploadResponse
          * @description An image of the latest uploads (US-1.7).
          */
@@ -2208,7 +2269,7 @@ export interface components {
          * @description Ce que désigne target_id dans un signalement (US-1.2).
          * @enum {string}
          */
-        ReportTargetKind: "item" | "participant" | "player" | "game";
+        ReportTargetKind: "item" | "participant" | "player" | "game" | "template";
         /**
          * ReportedContentResponse
          * @description A reported content in the queue (US-1.3). It never tells who reported it.
@@ -4405,6 +4466,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_public_template_marketplace_templates__template_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTemplateResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */

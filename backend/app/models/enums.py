@@ -75,6 +75,7 @@ class ReportTargetKind(StrEnum):
     PARTICIPANT = "participant"
     PLAYER = "player"
     GAME = "game"
+    TEMPLATE = "template"
 
 
 class ReportReason(StrEnum):

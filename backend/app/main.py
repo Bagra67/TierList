@@ -25,6 +25,7 @@ from app.api.routes import (
     client_config,
     history,
     images,
+    marketplace,
     moderation,
     reports,
     results,
@@ -190,6 +191,7 @@ api_app.add_middleware(
 api_app.include_router(auth.router)
 api_app.include_router(client_config.router)
 api_app.include_router(templates.router)
+api_app.include_router(marketplace.router)
 api_app.include_router(images.router)
 api_app.include_router(rooms.router)
 api_app.include_router(room_channel.router)

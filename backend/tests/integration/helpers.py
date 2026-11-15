@@ -96,6 +96,22 @@ def create_template(
     return template_id
 
 
+def create_public_template(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    email: str,
+    tile_count: int = 3,
+) -> str:
+    confirm_email(db_session, email)
+    template_id: str = create_template(client, db_session, headers, tile_count)
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "public"}, headers=headers
+    )
+    assert response.status_code == 200
+    return template_id
+
+
 def create_room(client: TestClient, headers: dict[str, str], template_id: str) -> JsonObject:
     response: Response = client.post("/rooms", json={"template_id": template_id}, headers=headers)
     assert response.status_code == 201

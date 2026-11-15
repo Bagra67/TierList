@@ -18,10 +18,12 @@ from app.models.snapshot_tile import SnapshotTile
 from app.models.user import User
 from tests.integration.helpers import (
     JsonObject,
+    create_public_template,
     create_room,
     create_template,
     play_and_close,
     register,
+    set_hidden,
     start_game,
 )
 
@@ -326,7 +328,7 @@ def test_a_refused_report_gives_no_cookie_to_a_visitor(auth_client: TestClient):
     assert "set-cookie" not in response.headers
 
 
-@pytest.mark.parametrize("target_kind", ["item", "participant", "player", "game"])
+@pytest.mark.parametrize("target_kind", ["item", "participant", "player", "game", "template"])
 def test_an_unknown_target_is_not_found(
     auth_client: TestClient, bob: dict[str, str], target_kind: str
 ):
@@ -372,6 +374,45 @@ def test_an_image_already_removed_cannot_be_reported(
     db_session.flush()
 
     response: Response = send_report(auth_client, "item", image_item_id, bob)
+
+    assert response.status_code == 404
+    assert response.json()["code"] == ErrorCode.REPORT_TARGET_NOT_FOUND
+
+
+def test_a_visitor_reports_a_public_template(
+    auth_client: TestClient, db_session: Session, alice: dict[str, str]
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+
+    response: Response = send_report(auth_client, "template", template_id)
+
+    assert response.status_code == 201
+    report: Report = stored_reports(db_session)[0]
+    alice_user: User = db_session.scalars(
+        select(User).where(User.email == "alice@example.com")
+    ).one()
+    assert (report.target_type, str(report.target_id), report.target_label) == (
+        ModerationTargetType.TEMPLATE,
+        template_id,
+        "Food",
+    )
+    assert report.owner_id == alice_user.id
+    assert report.reporter_browser_hash is not None
+
+
+@pytest.mark.parametrize("state", ["private", "hidden"])
+def test_a_template_that_is_not_public_cannot_be_reported(
+    auth_client: TestClient, db_session: Session, alice: dict[str, str], state: str
+):
+    template_id: str = (
+        create_template(auth_client, db_session, alice)
+        if state == "private"
+        else create_public_template(auth_client, db_session, alice, "alice@example.com")
+    )
+    if state == "hidden":
+        set_hidden(db_session, template_id)
+
+    response: Response = send_report(auth_client, "template", template_id)
 
     assert response.status_code == 404
     assert response.json()["code"] == ErrorCode.REPORT_TARGET_NOT_FOUND

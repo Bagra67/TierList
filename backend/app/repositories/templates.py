@@ -1,16 +1,18 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Select, delete, func, select, update
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
-from app.models.enums import TemplateModeration
+from app.models.account_ban import AccountBan
+from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
+from app.repositories.account_bans import is_active
 
 
 def add_template(session: Session, template: Template) -> None:
@@ -39,6 +41,31 @@ def get_owned_template(
     )
     if for_update:
         statement = statement.with_for_update(of=Template)
+    return session.scalars(statement).one_or_none()
+
+
+def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
+    owner_is_banned: ColumnElement[bool] = exists().where(
+        AccountBan.user_id == Template.owner_id, is_active(now)
+    )
+    return and_(
+        Template.visibility == TemplateVisibility.PUBLIC,
+        Template.moderation == TemplateModeration.NONE,
+        Template.deleted_at.is_(None),
+        ~owner_is_banned,
+    )
+
+
+def get_listed_template(session: Session, template_id: uuid.UUID, now: datetime) -> Template | None:
+    statement: Select[Template] = (
+        select(Template)
+        .where(Template.id == template_id, listed_templates_condition(now))
+        .options(
+            selectinload(Template.tiers),
+            selectinload(Template.tiles),
+            selectinload(Template.tags),
+        )
+    )
     return session.scalars(statement).one_or_none()
 
 
