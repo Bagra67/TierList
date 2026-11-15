@@ -363,6 +363,7 @@ export const en: Translation = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'View the account',
       viewResults: 'View the results',
+      viewTemplate: 'View the template',
       decisions: {
         dismiss: {
           open: 'Dismiss',
@@ -408,6 +409,24 @@ export const en: Translation = {
             'Its results link can no longer be found, and its open reports are closed. It can be shown again.',
           submit: 'Hide',
           submitting: 'Hiding…',
+        },
+        hide_template: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this template?',
+          description:
+            'It leaves the public templates, and no room or game can start with it any more. Its owner will see it, with the reason. Its open reports are closed. It can be unhidden from its page.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+        delete_template: {
+          open: 'Delete',
+          openLabel: 'Delete: {{name}}',
+          title: 'Delete this template?',
+          description:
+            'It will be deleted as if its owner did it, except that they will see the decision and the reason. Its open reports are closed. This cannot be undone.',
+          submit: 'Delete',
+          submitting: 'Deleting…',
         },
       },
       hiddenGames: {

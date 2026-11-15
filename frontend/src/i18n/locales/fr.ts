@@ -371,6 +371,7 @@ export const fr = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'Voir le compte',
       viewResults: 'Voir les résultats',
+      viewTemplate: 'Voir le modèle',
       decisions: {
         dismiss: {
           open: 'Classer sans suite',
@@ -416,6 +417,24 @@ export const fr = {
             'Son lien de résultats devient introuvable, et ses signalements ouverts sont fermés. Elle peut être réaffichée.',
           submit: 'Masquer',
           submitting: 'Masquage…',
+        },
+        hide_template: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer ce modèle ?',
+          description:
+            'Il quitte les modèles publics, et plus aucune salle ni partie ne pourra être lancée avec. Son propriétaire le verra, avec le motif. Ses signalements ouverts sont fermés. Il peut être réaffiché depuis sa page.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+        delete_template: {
+          open: 'Supprimer',
+          openLabel: 'Supprimer : {{name}}',
+          title: 'Supprimer ce modèle ?',
+          description:
+            'Il sera supprimé comme si son propriétaire le faisait, mais celui-ci verra la décision et le motif. Ses signalements ouverts sont fermés. Cette action est définitive.',
+          submit: 'Supprimer',
+          submitting: 'Suppression…',
         },
       },
       hiddenGames: {

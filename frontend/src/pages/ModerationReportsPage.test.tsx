@@ -49,6 +49,20 @@ const reportedGame: ReportedContent = {
   public_token: 'results-token',
 };
 
+const reportedTemplate: ReportedContent = {
+  target_type: 'template',
+  target_id: 'template-id',
+  label: 'Chips',
+  owner_id: 'camille-id',
+  owner_name: 'Camille',
+  report_count: 1,
+  reasons: [{ reason: 'spam', count: 1 }],
+  details: [],
+  first_reported_at: '2026-10-24T12:00:00Z',
+  image_url: null,
+  public_token: null,
+};
+
 const hiddenGame: HiddenGame = {
   id: 'hidden-game-id',
   template_name: 'Fromages',
@@ -146,9 +160,23 @@ describe('ModerationReportsPage', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
 
+  it('links a reported template to its moderation page', async () => {
+    renderPage({ 'GET /moderation/reports': queueWith(reportedTemplate) });
+
+    expect(await screen.findByRole('link', { name: 'Voir le modèle' })).toHaveAttribute(
+      'href',
+      '/moderation/templates/template-id',
+    );
+  });
+
   it('offers the decisions that fit each content', async () => {
     renderPage({
-      'GET /moderation/reports': queueWith(reportedImage, reportedGuest, reportedGame),
+      'GET /moderation/reports': queueWith(
+        reportedImage,
+        reportedGuest,
+        reportedGame,
+        reportedTemplate,
+      ),
     });
 
     await screen.findByText('xX_spam_Xx');
@@ -163,6 +191,9 @@ describe('ModerationReportsPage', () => {
       'Retirer le pseudo : xX_spam_Xx',
       'Classer sans suite : Épices',
       'Masquer : Épices',
+      'Classer sans suite : Chips',
+      'Masquer : Chips',
+      'Supprimer : Chips',
     ]);
   });
 
@@ -215,6 +246,25 @@ describe('ModerationReportsPage', () => {
 
     await expect(sentBody(fetchMock, '/moderation/nicknames/remove')).resolves.toEqual({
       target_id: 'lou-id',
+      reason: 'Illicite',
+    });
+  });
+
+  it('hides and deletes a template through its routes', async () => {
+    const fetchMock: BackendMock = renderPage({
+      'GET /moderation/reports': queueWith(reportedTemplate),
+      'POST /moderation/templates/template-id/hide': () => new Response(null, { status: 204 }),
+      'POST /moderation/templates/template-id/delete': () => new Response(null, { status: 204 }),
+    });
+
+    await decide('Masquer : Chips', 'Masquer ce modèle ?', 'Masquer');
+    await expect(sentBody(fetchMock, '/moderation/templates/template-id/hide')).resolves.toEqual({
+      reason: 'Illicite',
+    });
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await decide('Supprimer : Chips', 'Supprimer ce modèle ?', 'Supprimer');
+    await expect(sentBody(fetchMock, '/moderation/templates/template-id/delete')).resolves.toEqual({
       reason: 'Illicite',
     });
   });
