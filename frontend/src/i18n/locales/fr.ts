@@ -143,7 +143,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -199,7 +199,7 @@ export const fr = {
     report: {
       title: 'Signaler un contenu',
       intro:
-        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo ou d'une partie, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo, d'une partie ou d'un modèle public, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
       include: 'Pour que le signalement puisse être traité, indiquez :',
       page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
       content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',

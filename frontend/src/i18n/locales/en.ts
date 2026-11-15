@@ -141,7 +141,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -194,7 +194,7 @@ export const en: Translation = {
     report: {
       title: 'Report content',
       intro:
-        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname or a game, with or without an account. For any other content, or to get an answer, write to:',
+        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname, a game or a public template, with or without an account. For any other content, or to get an answer, write to:',
       include: 'So that the report can be handled, give:',
       page: 'the link of the page where the content is (template, room or results);',
       content: 'the content concerned: a tile (its text or image), a template or a nickname;',
