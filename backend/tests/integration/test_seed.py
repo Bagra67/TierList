@@ -43,7 +43,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 560
+SMALL_SEED_MAX_QUERIES = 561
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -56,7 +56,11 @@ MODERATION_ACTIONS = (
     + 2
 )
 REPORTED_CONTENTS = (
-    SMALL_SIZE.reported_images + SMALL_SIZE.reported_nicknames + SMALL_SIZE.reported_games + 1
+    SMALL_SIZE.reported_images
+    + SMALL_SIZE.reported_nicknames
+    + SMALL_SIZE.reported_templates
+    + SMALL_SIZE.reported_games
+    + 1
 )
 REPORTS = REPORTED_CONTENTS - 1 + SMALL_SIZE.reports_on_most_reported_content
 
@@ -230,6 +234,7 @@ def test_the_seed_creates_reports_from_accounts_and_browsers(
     assert {report.target_type for report in reports} == {
         ModerationTargetType.IMAGE,
         ModerationTargetType.NICKNAME,
+        ModerationTargetType.TEMPLATE,
         ModerationTargetType.GAME,
     }
     assert any(report.reporter_id is None for report in reports)
