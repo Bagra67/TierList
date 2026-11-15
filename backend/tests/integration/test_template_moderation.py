@@ -11,14 +11,21 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.core.config import get_settings
-from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateModeration
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    ReportStatus,
+    TemplateModeration,
+)
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
+from app.models.report import Report
 from app.models.template import Template
 from app.services.maintenance import purge_moderation_log
 from tests.integration.helpers import (
     JsonObject,
     counted_queries,
+    create_public_template,
     create_room,
     create_template,
     next_item,
@@ -180,6 +187,50 @@ def test_deleting_a_template_is_a_soft_deletion_like_its_owner_would_do(
     assert auth_client.get(f"/templates/{template_id}", headers=alice).status_code == 404
     [entry] = logged_actions(db_session)
     assert entry.action == ModerationActionKind.DELETE
+
+
+def report_template(client: TestClient, template_id: str) -> None:
+    response: Response = client.post(
+        "/reports",
+        json={"target_kind": "template", "target_id": template_id, "reason": "spam"},
+    )
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize("action", ["hide", "delete"])
+def test_hiding_or_deleting_a_template_closes_its_open_reports(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    action: str,
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    report_template(auth_client, template_id)
+
+    assert moderate(auth_client, nina, action, template_id).status_code == 204
+
+    db_session.expire_all()
+    [report] = db_session.scalars(select(Report)).all()
+    [entry] = logged_actions(db_session)
+    assert (report.status, report.closed_by_action_id) == (ReportStatus.ACTIONED, entry.id)
+
+
+def test_unhiding_a_template_opens_none_of_its_closed_reports(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    report_template(auth_client, template_id)
+    moderate(auth_client, nina, "hide", template_id)
+
+    assert moderate(auth_client, nina, "unhide", template_id).status_code == 204
+
+    db_session.expire_all()
+    [report] = db_session.scalars(select(Report)).all()
+    assert report.status == ReportStatus.ACTIONED
 
 
 @pytest.mark.parametrize(
