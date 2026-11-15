@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import { type PublicTemplate, type PublicTile, usePublicTemplate } from '../api/marketplace';
-import { CenteredCardPage } from '../components/CenteredCardPage';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -11,10 +10,9 @@ import { ReportButton } from '../components/ReportButton';
 import { TemplateTagList } from '../components/TemplateTagList';
 import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
-import { Button } from '../components/ui/button';
-import { ROUTES } from '../constants/routes';
 import { isTemplateId } from '../constants/templates';
 import { ApiError, translateError } from '../errors/apiError';
+import { NotFoundPage } from './NotFoundPage';
 
 const TEMPLATE_NOT_FOUND_CODE: string = 'template_not_found';
 
@@ -28,7 +26,12 @@ export function PublicTemplatePage() {
   const { data: template, error } = usePublicTemplate(templateId);
 
   if (!isTemplateId(templateId) || (error !== null && isUnavailable(error))) {
-    return <UnavailableTemplate />;
+    return (
+      <NotFoundPage
+        title={t('publicTemplate.unavailable.title')}
+        message={t('publicTemplate.unavailable.message')}
+      />
+    );
   }
 
   return (
@@ -41,18 +44,6 @@ export function PublicTemplatePage() {
         <LoadingSkeleton shape="board" />
       )}
     </PageContainer>
-  );
-}
-
-function UnavailableTemplate() {
-  const { t } = useTranslation();
-  return (
-    <CenteredCardPage title={t('publicTemplate.unavailable.title')}>
-      <p>{t('publicTemplate.unavailable.message')}</p>
-      <Button asChild className="w-full">
-        <Link to={ROUTES.HOME}>{t('notFound.backHome')}</Link>
-      </Button>
-    </CenteredCardPage>
   );
 }
 
