@@ -118,7 +118,7 @@ The first page of the moderation area (US-1.7, #125): the latest uploaded images
 The page, `RecentUploadsPage` (`/moderation/uploads`):
 
 - **Filters**: **Auteur** is applied when the search is sent (button or Enter), like **Cible** in the log. **Du** and **Au** are days, in the super admin's time zone, sent as the start of the first day and the start of the day after the last one (ISO dates with time zone): the last day is included. **Statut**: all, visible or hidden. The filters are part of the query key of `useRecentUploads` (`useInfiniteQuery`), so changing them starts again from the first page; "Voir plus" reads the next page, from the number of images already shown.
-- **Cards** (`UploadCard`): the image (its alternative text gives the author and the date); a **Masquée** badge written in text on a hidden image, not only a color; the author, or "Compte supprimé"; the date; the number of templates and of games (i18next plurals); the template names (i18next `list` formatter). The author is a link to the page of their account (§2.8); the template names are plain text until a template page exists.
+- **Cards** (`UploadCard`): the image (its alternative text gives the author and the date); a **Masquée** badge written in text on a hidden image, not only a color; the author, or "Compte supprimé"; the date; the number of templates and of games (i18next plurals); the template names (i18next `list` formatter). The author is a link to the page of their account (§2.8); the template names are plain text.
 - **Actions**, according to the status: **Masquer** and **Supprimer** on a visible image, **Réafficher** and **Supprimer** on a hidden one. Their accessible names give the author and the date of the image.
 - Each action opens **`ModerationReasonDialog`**, a generic dialog (title, description, button labels, destructive or not) also used by the account page (§2.8) and meant for the reports queue (#269). The reason is required and cannot be only spaces, at most 500 characters (`MODERATION_REASON_MAX_LENGTH`, mirrored in `frontend/src/constants/moderation.ts`; the backend stays the authority). The button is red for a deletion and disabled while the action runs (no double submission); a failure shows its translated error in the dialog, which closes once the action succeeded.
 - `useModerateImage` calls the action route (§2.2), then invalidates the recent uploads and the log, which are read again.
@@ -206,24 +206,25 @@ The frontend:
 
 **Known limitations**:
 
-- The public templates of a banned account are not hidden from a marketplace yet: there is no marketplace (#277).
+- The public templates of a banned account leave their public page while the ban is active ([templates guide](templates.md#210-public-template-page)); the marketplace (#277) will use the same rule.
 
 ### 2.10 Content reports
 
-Anyone can report a tile image, a nickname or a closed game (US-1.2): `POST /reports`, without authentication. The queue that handles them is §2.11. A public template becomes reportable with its page (#275).
+Anyone can report a tile image, a nickname, a closed game or a public template (US-1.2): `POST /reports`, without authentication. The queue that handles them is §2.11.
 
-**The button.** `ReportButton` opens the dialog of the [mock-up](../product/milestone-2/screens.md#4-report), for everyone. It is on the results page (the game, the image of the chosen item, the chosen player) and in the room (the nickname of a participant, except one's own, and the image of the current item). In the results it stays on one's own nickname, since they do not say which player is the reader. An item without a visible image has no button.
+**The button.** `ReportButton` opens the dialog of the [mock-up](../product/milestone-2/screens.md#4-report), for everyone. It is on the results page (the game, the image of the chosen item, the chosen player) in the room (the nickname of a participant, except one's own, and the image of the current item), and on the page of a public template. In the results it stays on one's own nickname, since they do not say which player is the reader. An item without a visible image has no button.
 
 **The target.** `target_kind` says what `target_id` is, and `ReportService` turns it into the stored content:
 
-| `target_kind` | `target_id`             | Stored `target_type`, `target_id`               | `owner_id`             | Refused (404) when                 |
-| ------------- | ----------------------- | ----------------------------------------------- | ---------------------- | ---------------------------------- |
-| `item`        | A tile of a snapshot    | `image`, the image                              | Owner of the image     | No image, or image hidden, deleted |
-| `participant` | A participant of a room | `nickname`, the account or else the participant | The account, or nobody | Unknown                            |
-| `player`      | A player of the results | `nickname`, the account or else the player      | The account, or nobody | Unknown                            |
-| `game`        | A game                  | `game`, the game                                | The room admin         | Not closed                         |
+| `target_kind` | `target_id`             | Stored `target_type`, `target_id`               | `owner_id`             | Refused (404) when                                    |
+| ------------- | ----------------------- | ----------------------------------------------- | ---------------------- | ----------------------------------------------------- |
+| `item`        | A tile of a snapshot    | `image`, the image                              | Owner of the image     | No image, or image hidden, deleted                    |
+| `participant` | A participant of a room | `nickname`, the account or else the participant | The account, or nobody | Unknown                                               |
+| `player`      | A player of the results | `nickname`, the account or else the player      | The account, or nobody | Unknown                                               |
+| `game`        | A game                  | `game`, the game                                | The room admin         | Not closed                                            |
+| `template`    | A public template       | `template`, the template                        | Owner of the template  | Not listed: private, hidden, deleted, or owner banned |
 
-So the same image is one target from one game to another, and the nickname of an account is one target from the room to the results. A guest is one target per room or game: nothing links them. `target_label` keeps the nickname or the template name, and `target_id` has no foreign key: a report survives its content, as an entry of the log does.
+So the same image is one target from one game to another, and the nickname of an account is one target from the room to the results. A guest is one target per room or game: nothing links them. A template is one target, by its id. `target_label` keeps the nickname or the template name, and `target_id` has no foreign key: a report survives its content, as an entry of the log does.
 
 **The author.** An account is recognized by `reporter_id`. Without an account, the first report creates the `report_token` cookie (`HttpOnly`, `SameSite=Strict`, path `/api/reports`, 1 year); only its SHA-256 hash is stored, in `reporter_browser_hash`. A refused report creates no cookie, and an account never gets one. No IP is used: clearing the cookie gets around the two rules below, an accepted risk.
 
@@ -244,12 +245,13 @@ The super admins handle the reports on `/moderation/reports` (US-1.3, #269), fir
 
 **Deciding.** Each decision has a reason, goes to the log and closes all the open reports of the content (`closed_at`, `closed_by_action_id`):
 
-| Content  | Decision       | Route                                          | Effect                                       | Status      |
-| -------- | -------------- | ---------------------------------------------- | -------------------------------------------- | ----------- |
-| Any      | Dismiss        | `POST /moderation/reports/dismiss`             | Nothing changes                              | `dismissed` |
-| Image    | Hide or delete | `POST /moderation/images/{id}/hide`, `/delete` | §2.2                                         | `actioned`  |
-| Nickname | Remove         | `POST /moderation/nicknames/remove`            | A neutral code replaces it, for good         | `actioned`  |
-| Game     | Hide           | `POST /moderation/games/{id}/hide`             | Its results link answers `results_not_found` | `actioned`  |
+| Content  | Decision       | Route                                             | Effect                                                                   | Status      |
+| -------- | -------------- | ------------------------------------------------- | ------------------------------------------------------------------------ | ----------- |
+| Any      | Dismiss        | `POST /moderation/reports/dismiss`                | Nothing changes                                                          | `dismissed` |
+| Image    | Hide or delete | `POST /moderation/images/{id}/hide`, `/delete`    | §2.2                                                                     | `actioned`  |
+| Nickname | Remove         | `POST /moderation/nicknames/remove`               | A neutral code replaces it, for good                                     | `actioned`  |
+| Game     | Hide           | `POST /moderation/games/{id}/hide`                | Its results link answers `results_not_found`                             | `actioned`  |
+| Template | Hide or delete | `POST /moderation/templates/{id}/hide`, `/delete` | It leaves its public page; [templates guide](templates.md#27-moderation) | `actioned`  |
 
 - **Banning closes nothing**: the content stays online after a ban, so its reports stay in the queue until it is removed or dismissed.
 - **An image removed elsewhere** (recent uploads, account page) closes its reports too: `ImageModerationService` does it. Unhiding opens nothing again.
@@ -261,7 +263,7 @@ The super admins handle the reports on `/moderation/reports` (US-1.3, #269), fir
 
 **Purge.** `purge_closed_reports`, every night, deletes the reports closed for longer than `CLOSED_REPORT_RETENTION_DAYS`, never an open one.
 
-A template is not in the queue yet: its reports come with its public page (#275).
+**A template.** Hiding or deleting it closes its open reports, from the queue or from its page in the moderation area (`TemplateModerationService`, [templates guide](templates.md#27-moderation)); unhiding it opens none again. Its entry links to that page, not to its public page, which a hidden template no longer has.
 
 ## 3. In the code
 
