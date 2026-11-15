@@ -28,6 +28,7 @@ from tests.integration.helpers import (
     create_public_template,
     register,
     register_super_admin,
+    send_report,
 )
 
 pytestmark = pytest.mark.integration
@@ -180,11 +181,7 @@ def test_a_reported_public_template_is_in_the_queue_with_its_name_and_owner(
     alice: dict[str, str],
 ):
     template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
-    reported: Response = auth_client.post(
-        "/reports",
-        json={"target_kind": "template", "target_id": template_id, "reason": "spam"},
-    )
-    assert reported.status_code == 201
+    assert send_report(auth_client, "template", template_id).status_code == 201
 
     [content] = queue(auth_client, nina)["contents"]
 

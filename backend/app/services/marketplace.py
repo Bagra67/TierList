@@ -6,9 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.templates import TemplateNotFoundError
 from app.models.template import Template
-from app.models.user import User
 from app.repositories import templates as template_repository
-from app.repositories import users as user_repository
 
 
 @dataclass(frozen=True)
@@ -22,12 +20,12 @@ class MarketplaceService:
         self._session = session
 
     def get_template(self, template_id: uuid.UUID) -> PublicTemplate:
-        template: Template | None = template_repository.get_listed_template(
-            self._session, template_id, datetime.now(UTC)
+        listed: tuple[Template, str] | None = (
+            template_repository.get_listed_template_with_owner_name(
+                self._session, template_id, datetime.now(UTC)
+            )
         )
-        if template is None:
+        if listed is None:
             raise TemplateNotFoundError
-        owner: User | None = user_repository.get_user_by_id(self._session, template.owner_id)
-        if owner is None:
-            raise TemplateNotFoundError
-        return PublicTemplate(template, owner.display_name)
+        template, owner_name = listed
+        return PublicTemplate(template, owner_name)
