@@ -78,6 +78,7 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.visibility.room'),
             t('privacy.visibility.results'),
+            t('privacy.visibility.publicTemplates'),
             t('privacy.visibility.moderation'),
             t('privacy.visibility.deletedAccount'),
           ]}
