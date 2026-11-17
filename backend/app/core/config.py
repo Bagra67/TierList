@@ -88,6 +88,7 @@ class Settings(BaseSettings):
     smtp_timeout_seconds: int = Field(default=10, gt=0)
     email_from: str = "TierList <no-reply@localhost>"
     frontend_base_url: str = "http://localhost:5173"
+    search_indexing_enabled: bool = False
 
     frontend_dist: Path = BACKEND_DIR.parent / "frontend_dist"
     app_release: str = "dev"

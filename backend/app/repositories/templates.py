@@ -74,6 +74,18 @@ def get_listed_template_with_owner_name(
     return None if row is None else (row[0], row[1])
 
 
+def list_listed_template_updates(
+    session: Session, now: datetime, limit: int
+) -> list[tuple[uuid.UUID, datetime]]:
+    statement: Select[uuid.UUID, datetime] = (
+        select(Template.id, Template.updated_at)
+        .where(listed_templates_condition(now))
+        .order_by(Template.first_made_public_at.desc(), Template.id)
+        .limit(limit)
+    )
+    return [(template_id, updated_at) for template_id, updated_at in session.execute(statement)]
+
+
 def get_listed_template_name_and_owner(
     session: Session, template_id: uuid.UUID, now: datetime
 ) -> tuple[str, uuid.UUID] | None:

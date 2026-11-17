@@ -18,6 +18,7 @@ from app.api.dependencies import (
     SettingsDep,
     ShortLivedSessionFactory,
     build_game_service,
+    get_page_head,
     get_short_lived_session_factory,
 )
 from app.api.routes import (
@@ -31,6 +32,7 @@ from app.api.routes import (
     results,
     room_channel,
     rooms,
+    seo,
     templates,
 )
 from app.constants import messages
@@ -260,8 +262,11 @@ def health_db(
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
+app.include_router(seo.router)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
-    mount_frontend_after_api(app, _settings.frontend_dist, build_client_config(_settings))
+    mount_frontend_after_api(
+        app, _settings.frontend_dist, build_client_config(_settings), get_page_head
+    )
 if _settings.trusted_proxy_ips:
     app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)
