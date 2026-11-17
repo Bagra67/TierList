@@ -23,13 +23,15 @@ In the browser, the frontend then names the tab as the user navigates (`useDocum
 | any other path (rooms, results, sign-in…)      | no               | site title                               | `/og-image.png`                        |
 
 - **Indexable** means a canonical URL (`<link rel="canonical">`, `og:url`) and no `noindex`. The canonical URL is built from `FRONTEND_BASE_URL`, never from the host of the request, and a template's from its parsed id (one URL per template, whatever the case of the id).
-- **Template pages** go through `MarketplaceService.get_template`, so they follow the listing rule of the public page ([templates guide](templates.md#210-public-template-page)). A private, hidden or deleted template, a banned owner, an unknown id or an id that is not a UUID all get the same 404. React still shows its "unavailable template" page.
+- **Template pages** go through `MarketplaceService.get_template`, so they follow the listing rule of the public page ([templates guide](templates.md#210-public-template-page)). A private, hidden or deleted template, a banned owner, an unknown id or an id that is not a UUID in its usual form (`8-4-4-4-12` hex digits, any case, as the frontend checks) all get the same 404. React still shows its "unavailable template" page.
 - **Rooms and results** are shared by link and are never indexed, but their link previews still get the site title and image.
 - **Tags written**: `<title>`, `description`, `og:type`, `og:site_name`, `og:locale`, `og:title`, `og:description`, `og:image`, `twitter:card` (`summary_large_image`), plus `canonical` and `og:url` when indexable. Every value goes through `html.escape`: a template or owner name cannot inject HTML.
 
 ## 3. Language
 
 There is one URL per page, without the language: the page is written in the language the browser prefers among French and English (highest `q` in `Accept-Language`, then the first listed), in French otherwise. Crawlers often send no `Accept-Language`, so they mostly read the French version. There are no `hreflang` links.
+
+The browser picks its language differently (the choice saved in the settings first, then `navigator.languages`, [i18n guide](i18n.md)): someone who chose English on a French browser first gets the French title and description from the server, then the English tab title once the app runs.
 
 The texts are in `seo/texts.py`, in both languages. As for emails, this is a case where the backend writes text meant for the user ([i18n guide](i18n.md)): crawlers and link previews never run the frontend's translations. Keep them in line with the matching frontend keys (`home.visitor.*`, `privacy.title`, `terms.title`, `legalNotice.title`, `documentTitle.*`).
 
@@ -43,7 +45,7 @@ The texts are in `seo/texts.py`, in both languages. As for emails, this is a cas
 | `true`  | `Disallow: /api/`, then `Sitemap: <origin>/sitemap.xml` | XML            | as in §2                        |
 
 - Both files are routes of the root app (`api/routes/seo.py`), outside `/api` and outside the OpenAPI schema.
-- The sitemap lists `/`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`list_listed_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
+- The sitemap lists `/`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`MarketplaceService.list_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
 - Pages that are not indexable are not blocked in `robots.txt` on purpose: a crawler has to read a page to see its `noindex`.
 
 ## 5. Frontend

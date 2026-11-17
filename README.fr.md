@@ -71,14 +71,14 @@ cp backend/.env.example backend/.env   # puis changez le mot de passe dans backe
 
 Docker Desktop doit être lancé. Depuis la racine `TierList/` :
 
-| Action                                         | Commande                                                                                                                                       |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                                                                                                  |
-| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                                                                                                 |
+| Action                                         | Commande                                                                                                                                             |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Démarrer la base (attend qu'elle soit prête)   | `docker compose up -d --wait`                                                                                                                        |
+| Voir son état / ses logs                       | `docker compose ps` / `docker compose logs db`                                                                                                       |
 | Lire les emails envoyés par le backend         | Mailpit : http://localhost:8025 ([docs/technical/emails.md](docs/technical/emails.md))                                                         |
 | Parcourir les images envoyées                  | Filer SeaweedFS : http://localhost:8888/buckets/tierlist-images/ ([docs/technical/images.md](docs/technical/images.md#27-storage-and-serving)) |
-| Arrêter (les données sont conservées)          | `docker compose down`                                                                                                                          |
-| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                                                                                       |
+| Arrêter (les données sont conservées)          | `docker compose down`                                                                                                                                |
+| Tout réinitialiser (⚠️ **efface les données**) | `docker compose down -v`                                                                                                                             |
 
 La base reste lancée en arrière-plan entre deux sessions de dev : pas besoin de la redémarrer à chaque fois. Vérifier que le backend y accède : http://127.0.0.1:8000/api/health/db → `{"status":"ok"}`.
 
