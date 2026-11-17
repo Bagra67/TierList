@@ -29,3 +29,8 @@ class MarketplaceService:
             raise TemplateNotFoundError
         template, owner_name = listed
         return PublicTemplate(template, owner_name)
+
+    def list_template_updates(self, limit: int) -> list[tuple[uuid.UUID, datetime]]:
+        return template_repository.list_listed_template_updates(
+            self._session, datetime.now(UTC), limit
+        )

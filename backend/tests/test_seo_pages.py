@@ -10,7 +10,7 @@ from httpx2 import Response
 from app.api.dependencies import get_seo_service
 from app.api.routes import seo
 from app.constants.i18n import Language
-from app.exceptions.seo import SearchIndexingDisabledError
+from app.constants.seo import SITEMAP_NAMESPACE
 from app.seo.crawler_files import SitemapEntry, robots_txt, sitemap_xml
 from app.seo.head import PageHead, render_page
 from app.seo.language import language_from_accept_language
@@ -18,7 +18,7 @@ from app.seo.language import language_from_accept_language
 INDEX_HTML = (
     '<!doctype html><html lang="fr"><head><title>TierList</title></head><body></body></html>'
 )
-SITEMAP_NAMESPACES: dict[str, str] = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+SITEMAP_NAMESPACES: dict[str, str] = {"s": SITEMAP_NAMESPACE}
 HEAD: PageHead = PageHead(
     language="fr",
     title="Snacks · TierList",
@@ -131,10 +131,8 @@ class FakeSeoService:
     def robots_txt(self) -> str:
         return "User-agent: *\n"
 
-    def sitemap_xml(self) -> str:
-        if not self.indexing_enabled:
-            raise SearchIndexingDisabledError
-        return "<urlset/>"
+    def sitemap_xml(self) -> str | None:
+        return "<urlset/>" if self.indexing_enabled else None
 
 
 def crawler_client(indexing_enabled: bool) -> TestClient:

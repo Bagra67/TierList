@@ -3,10 +3,10 @@ from app.constants.i18n import Language
 SITE_NAME = "TierList"
 PAGE_TITLE_FORMAT = "{page} · " + SITE_NAME
 
-PRIVACY_PAGE_PATH = "/privacy"
-TERMS_PAGE_PATH = "/terms"
-LEGAL_NOTICE_PAGE_PATH = "/legal"
-PUBLIC_TEMPLATE_PAGE_PREFIX = "/marketplace/templates/"
+FRONTEND_PRIVACY = "/privacy"
+FRONTEND_TERMS = "/terms"
+FRONTEND_LEGAL_NOTICE = "/legal"
+FRONTEND_PUBLIC_TEMPLATE_PREFIX = "/marketplace/templates/"
 DEFAULT_SHARE_IMAGE_PATH = "/og-image.png"
 
 ROBOTS_PATH = "/robots.txt"
