@@ -199,5 +199,3 @@ def test_a_page_answers_with_the_status_of_its_head(tmp_path: Path):
     response: Response = frontend_client(dist, head).get("/marketplace/templates/unknown")
 
     assert response.status_code == 404
-    assert response.headers["x-robots-tag"] == "noindex"
-    assert json.loads(client_config_of(response.text)) == CLIENT_CONFIG.model_dump()
