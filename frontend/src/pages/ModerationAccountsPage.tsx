@@ -9,9 +9,11 @@ import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
 import { moderationAccountPath } from '../constants/routes';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationAccountsPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('moderation.accounts.title'));
   const [queryDraft, setQueryDraft] = useState<string>('');
   const [query, setQuery] = useState<string | undefined>(undefined);
   const accountSearch = useAccountSearch(query);

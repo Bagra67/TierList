@@ -20,11 +20,13 @@ import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
 import { moderationAccountPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationTemplatePage() {
   const { t } = useTranslation();
   const { templateId = '' } = useParams();
   const { data: template, isPending, isError, error } = useReviewedTemplate(templateId);
+  useDocumentTitle(template?.name);
 
   return (
     <div className="flex flex-col items-start gap-6">

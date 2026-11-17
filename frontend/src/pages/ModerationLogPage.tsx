@@ -9,9 +9,11 @@ import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
 import { translateError } from '../errors/apiError';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationLogPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('moderation.log.title'));
   const superAdminSelectId = useId();
   const [targetDraft, setTargetDraft] = useState('');
   const [filters, setFilters] = useState<ModerationLogFilters>({});

@@ -8,6 +8,10 @@ export const en: Translation = {
     theme: 'Theme',
     imageRemoved: 'Image removed',
   },
+  documentTitle: {
+    site: 'TierList · Rank together, live',
+    page: '{{page}} · TierList',
+  },
   home: {
     visitor: {
       title: 'Rank together, live.',

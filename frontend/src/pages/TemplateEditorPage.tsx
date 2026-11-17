@@ -24,6 +24,7 @@ import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { NotFoundPage } from './NotFoundPage';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function TemplateEditorPage() {
   const { templateId = '' }: Readonly<Params> = useParams();
@@ -34,6 +35,7 @@ export function TemplateEditorPage() {
     error,
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  useDocumentTitle(template?.name);
 
   useEffect(() => {
     function ignoreFileDropOutsideDropZones(event: DragEvent) {

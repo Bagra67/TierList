@@ -27,6 +27,7 @@ import { isResultsLinkState, type ResultsLinkState, resultsPath } from '../const
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ResultsPage() {
   const { token = '' }: Readonly<Params> = useParams();
@@ -47,6 +48,11 @@ function GameResults({ token }: { token: string }) {
   }, [view]);
   const state: GameResultsState = useGameResults(token, includeAbsentVotes);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  useDocumentTitle(
+    state.anyVariant === undefined
+      ? undefined
+      : t('results.title', { name: state.anyVariant.template_name }),
+  );
   const fromRoom: ResultsLinkState | null = isResultsLinkState(location.state)
     ? location.state
     : null;

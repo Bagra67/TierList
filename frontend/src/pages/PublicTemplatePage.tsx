@@ -13,6 +13,7 @@ import { TemplateTileCard } from '../components/TemplateTileCard';
 import { isTemplateId } from '../constants/templates';
 import { ApiError, translateError } from '../errors/apiError';
 import { NotFoundPage } from './NotFoundPage';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 const TEMPLATE_NOT_FOUND_CODE: string = 'template_not_found';
 
@@ -24,6 +25,7 @@ export function PublicTemplatePage() {
   const { t } = useTranslation();
   const { templateId = '' } = useParams();
   const { data: template, error } = usePublicTemplate(templateId);
+  useDocumentTitle(template?.name);
 
   if (!isTemplateId(templateId) || (error !== null && isUnavailable(error))) {
     return (

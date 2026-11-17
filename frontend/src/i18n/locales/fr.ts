@@ -6,6 +6,10 @@ export const fr = {
     theme: 'Thème',
     imageRemoved: 'Image retirée',
   },
+  documentTitle: {
+    site: 'TierList · Classez ensemble, en direct',
+    page: '{{page}} · TierList',
+  },
   home: {
     visitor: {
       title: 'Classez ensemble, en direct.',

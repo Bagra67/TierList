@@ -53,6 +53,7 @@ describe('PublicTemplatePage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Chips' })).toBeInTheDocument();
     expect(screen.getByText('par Camille')).toBeInTheDocument();
+    expect(document.title).toBe('Chips · TierList');
     const tags: HTMLElement = screen.getByRole('list', { name: 'Étiquettes du modèle' });
     expect(
       within(tags)
@@ -87,6 +88,7 @@ describe('PublicTemplatePage', () => {
 
     expect(await screen.findByText("Ce modèle n'est pas disponible.")).toBeInTheDocument();
     expect(screen.getByRole('link', { name: "Retour à l'accueil" })).toHaveAttribute('href', '/');
+    expect(document.title).toBe('Modèle indisponible · TierList');
   });
 
   it('says that a link that is not a template id is not available, without asking', () => {
