@@ -34,7 +34,7 @@ As **anyone** (user, participant or visitor), I want to report a template, an im
 - _Given_ I already reported the same content, _when_ I report it again, _then_ no second report is created, and I am told it is already reported.
 - _Given_ I send many reports in a short time, _then_ the next ones are refused for a while with a message (rate limit).
 - _Given_ a report, _then_ the reported person **never learns** who reported them.
-- Without an account, the browser is recognized by a cookie only: clearing it gets around the last two rules. A public template becomes reportable with its page (US-3.3).
+- Without an account, the browser is recognized by a cookie only: clearing it gets around the last two rules.
 
 ### US-1.3 Handle the reports — Must
 
@@ -42,7 +42,7 @@ As a **super admin**, I want a queue of the open reports, so that I handle each 
 
 - _Given_ open reports, _when_ I open the queue, _then_ I see them **grouped by content**, with the number of reports, the reasons, the content itself and its owner, the most reported first.
 - _Given_ a reported content, _when_ I **dismiss** the reports, _then_ they are closed and the content stays as it is.
-- _Given_ a reported content, _when_ I **remove** it (hide or delete an image, US-1.4; remove a nickname; hide a game), _then_ its open reports are closed with this decision.
+- _Given_ a reported content, _when_ I **remove** it (hide or delete an image, US-1.4; hide or delete a template; remove a nickname; hide a game), _then_ its open reports are closed with this decision.
 - _Given_ a reported content, _when_ I **sanction** its owner (US-1.8), _then_ its reports stay open: the content is still online until it is removed or dismissed.
 - _Given_ any decision, _then_ it is written to the **moderation log** (US-1.9).
 
