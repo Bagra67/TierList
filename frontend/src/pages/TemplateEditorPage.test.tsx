@@ -201,6 +201,10 @@ describe('TemplateEditorPage', () => {
         await screen.findByText('Première publication le 31 octobre 2026'),
       ).toBeInTheDocument();
       expect(visibilityOption('Public')).toBeChecked();
+      expect(screen.getByRole('link', { name: 'Voir la page publique' })).toHaveAttribute(
+        'href',
+        `/marketplace/templates/${templateId}`,
+      );
       await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ visibility: 'public' });
     });
 
@@ -337,6 +341,7 @@ describe('TemplateEditorPage', () => {
         screen.getByText("Masqué par la modération : il n'apparaît pas dans les modèles publics."),
       ).toBeInTheDocument();
       expect(screen.queryByText(/Première publication/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Voir la page publique' })).not.toBeInTheDocument();
     });
   });
 

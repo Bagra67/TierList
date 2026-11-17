@@ -140,8 +140,10 @@ export const en: Translation = {
       room: 'The participants of a room see the template used, the display names and the placements of the game.',
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
+      publicTemplates:
+        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images) and your display name.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -194,7 +196,7 @@ export const en: Translation = {
     report: {
       title: 'Report content',
       intro:
-        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname or a game, with or without an account. For any other content, or to get an answer, write to:',
+        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname, a game or a public template, with or without an account. For any other content, or to get an answer, write to:',
       include: 'So that the report can be handled, give:',
       page: 'the link of the page where the content is (template, room or results);',
       content: 'the content concerned: a tile (its text or image), a template or a nickname;',
@@ -363,6 +365,7 @@ export const en: Translation = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'View the account',
       viewResults: 'View the results',
+      viewTemplate: 'View the template',
       decisions: {
         dismiss: {
           open: 'Dismiss',
@@ -408,6 +411,24 @@ export const en: Translation = {
             'Its results link can no longer be found, and its open reports are closed. It can be shown again.',
           submit: 'Hide',
           submitting: 'Hiding…',
+        },
+        hide_template: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this template?',
+          description:
+            'It leaves the public templates, and no room or game can start with it any more. Its owner will see it, with the reason. Its open reports are closed. It can be unhidden from its page.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+        delete_template: {
+          open: 'Delete',
+          openLabel: 'Delete: {{name}}',
+          title: 'Delete this template?',
+          description:
+            'It will be deleted as if its owner did it, except that they will see the decision and the reason. Its open reports are closed. This cannot be undone.',
+          submit: 'Delete',
+          submitting: 'Deleting…',
         },
       },
       hiddenGames: {
@@ -695,6 +716,7 @@ export const en: Translation = {
         description: 'Anyone can find it and play it. Your display name is shown.',
       },
       firstMadePublicAt: 'First made public on {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'See the public page',
       hiddenWhilePublic: 'Hidden by the moderation: it does not appear in the public templates.',
       hiddenCannotBePublic: 'Hidden by the moderation: it cannot be made public.',
       needsTiles: 'Add at least one tile to make it public.',
@@ -800,6 +822,18 @@ export const en: Translation = {
         dropped: '{{item}} dropped at position {{position}} of {{count}}.',
         cancelled: 'Moving {{item}} cancelled.',
       },
+    },
+  },
+  publicTemplate: {
+    byOwner: 'by {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Item ({{count}})',
+    items_other: 'Items ({{count}})',
+    noItems: 'This template has no items yet.',
+    itemImage: 'Image of item {{number}}',
+    unavailable: {
+      title: 'Template unavailable',
+      message: 'This template is not available.',
     },
   },
   report: {

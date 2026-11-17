@@ -8,7 +8,7 @@ import {
   useDecideReport,
   useReportQueue,
 } from '../api/moderation';
-import { moderationAccountPath, resultsPath } from '../constants/routes';
+import { moderationAccountPath, moderationTemplatePath, resultsPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { PagedList } from './PagedList';
 import { EmptyState } from './EmptyState';
@@ -21,6 +21,7 @@ const DECISIONS_BY_TARGET: Partial<Record<ReportedContent['target_type'], Report
   image: ['dismiss', 'hide_image', 'delete_image'],
   nickname: ['dismiss', 'remove_nickname'],
   game: ['dismiss', 'hide_game'],
+  template: ['dismiss', 'hide_template', 'delete_template'],
 };
 
 interface ReportQueueProps {
@@ -170,6 +171,11 @@ function ReportedContentCard({ content, onDecide }: ReportedContentCardProps) {
         {content.owner_id !== null && (
           <Link to={moderationAccountPath(content.owner_id)} className={textLinkClassName}>
             {t('moderation.reports.viewAccount')}
+          </Link>
+        )}
+        {content.target_type === 'template' && (
+          <Link to={moderationTemplatePath(content.target_id)} className={textLinkClassName}>
+            {t('moderation.reports.viewTemplate')}
           </Link>
         )}
         {content.public_token !== null && (

@@ -19,6 +19,7 @@ import { ModerationTemplatePage } from './pages/ModerationTemplatePage';
 import { RecentUploadsPage } from './pages/RecentUploadsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { PublicTemplatePage } from './pages/PublicTemplatePage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ResultsPage } from './pages/ResultsPage';
@@ -59,6 +60,7 @@ export default function App() {
             </Route>
           </Route>
         </Route>
+        <Route path={ROUTES.PUBLIC_TEMPLATE} element={<PublicTemplatePage />} />
         <Route path={ROUTES.ROOM} element={<RoomPage />} />
         <Route path={ROUTES.RESULTS} element={<ResultsPage />} />
         <Route path={ROUTES.PRIVACY} element={<PrivacyPolicyPage />} />

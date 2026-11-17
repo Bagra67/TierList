@@ -142,8 +142,10 @@ export const fr = {
       room: "Les participants d'une salle voient le modèle utilisé, les pseudos et les placements de la partie.",
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
+      publicTemplates:
+        'Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images) et votre pseudo.',
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -199,7 +201,7 @@ export const fr = {
     report: {
       title: 'Signaler un contenu',
       intro:
-        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo ou d'une partie, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo, d'une partie ou d'un modèle public, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
       include: 'Pour que le signalement puisse être traité, indiquez :',
       page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
       content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',
@@ -371,6 +373,7 @@ export const fr = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'Voir le compte',
       viewResults: 'Voir les résultats',
+      viewTemplate: 'Voir le modèle',
       decisions: {
         dismiss: {
           open: 'Classer sans suite',
@@ -416,6 +419,24 @@ export const fr = {
             'Son lien de résultats devient introuvable, et ses signalements ouverts sont fermés. Elle peut être réaffichée.',
           submit: 'Masquer',
           submitting: 'Masquage…',
+        },
+        hide_template: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer ce modèle ?',
+          description:
+            'Il quitte les modèles publics, et plus aucune salle ni partie ne pourra être lancée avec. Son propriétaire le verra, avec le motif. Ses signalements ouverts sont fermés. Il peut être réaffiché depuis sa page.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+        delete_template: {
+          open: 'Supprimer',
+          openLabel: 'Supprimer : {{name}}',
+          title: 'Supprimer ce modèle ?',
+          description:
+            'Il sera supprimé comme si son propriétaire le faisait, mais celui-ci verra la décision et le motif. Ses signalements ouverts sont fermés. Cette action est définitive.',
+          submit: 'Supprimer',
+          submitting: 'Suppression…',
         },
       },
       hiddenGames: {
@@ -707,6 +728,7 @@ export const fr = {
         description: 'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.',
       },
       firstMadePublicAt: 'Première publication le {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'Voir la page publique',
       hiddenWhilePublic: "Masqué par la modération : il n'apparaît pas dans les modèles publics.",
       hiddenCannotBePublic: 'Masqué par la modération : il ne peut pas être rendu public.',
       needsTiles: 'Ajoutez au moins une tuile pour le rendre public.',
@@ -813,6 +835,18 @@ export const fr = {
         dropped: '{{item}} déposé en position {{position}} sur {{count}}.',
         cancelled: 'Déplacement de {{item}} annulé.',
       },
+    },
+  },
+  publicTemplate: {
+    byOwner: 'par {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Élément ({{count}})',
+    items_other: 'Éléments ({{count}})',
+    noItems: "Ce modèle n'a aucun élément pour l'instant.",
+    itemImage: "Image de l'élément {{number}}",
+    unavailable: {
+      title: 'Modèle indisponible',
+      message: "Ce modèle n'est pas disponible.",
     },
   },
   report: {

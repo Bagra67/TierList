@@ -1,6 +1,7 @@
 import { CircleAlert } from 'lucide-react';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { cn } from 'cn';
 
 import { useCurrentUser } from '../api/auth';
@@ -10,9 +11,11 @@ import {
   type TemplateVisibility,
   useSetTemplateVisibility,
 } from '../api/templates';
+import { publicTemplatePath } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
 import { ErrorMessage } from './ErrorMessage';
 import { ResendVerificationEmailButton } from './ResendVerificationEmailButton';
+import { textLinkClassName } from './ui/text-link';
 
 const EMAIL_NOT_VERIFIED_CODE: string = 'email_not_verified';
 const VISIBILITIES: readonly TemplateVisibility[] = ['private', 'public'];
@@ -121,6 +124,14 @@ export function TemplateVisibilityField({ template }: TemplateVisibilityFieldPro
                 date: new Date(template.first_made_public_at),
               })}
             </time>
+          </>
+        )}
+        {isPublic && !isHidden && (
+          <>
+            {' '}
+            <Link to={publicTemplatePath(template.id)} className={textLinkClassName}>
+              {t('templates.visibility.publicPageLink')}
+            </Link>
           </>
         )}
       </p>

@@ -47,7 +47,13 @@ export type ReportedContent = components['schemas']['ReportedContentResponse'];
 export type HiddenGamesPage = components['schemas']['HiddenGamesResponse'];
 export type HiddenGame = components['schemas']['HiddenGameResponse'];
 export type ReportDecisionKind =
-  'dismiss' | 'hide_image' | 'delete_image' | 'remove_nickname' | 'hide_game';
+  | 'dismiss'
+  | 'hide_image'
+  | 'delete_image'
+  | 'remove_nickname'
+  | 'hide_game'
+  | 'hide_template'
+  | 'delete_template';
 
 export interface ModerationLogFilters {
   actorId?: string;
@@ -264,6 +270,12 @@ async function decideReport({ content, kind, reason }: ReportDecision): Promise<
         }),
       );
       return;
+    case 'hide_template':
+      await moderateTemplate({ templateId: targetId, action: 'hide', reason });
+      return;
+    case 'delete_template':
+      await moderateTemplate({ templateId: targetId, action: 'delete', reason });
+      return;
   }
 }
 
@@ -276,6 +288,8 @@ export function useDecideReport(): UseMutationResult<void, Error, ReportDecision
         invalidateReports(queryClient),
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
       ]);
     },
   });
@@ -388,6 +402,7 @@ export function useModerateTemplate(): UseMutationResult<void, Error, TemplateMo
         queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        invalidateReports(queryClient),
       ]);
     },
   });
