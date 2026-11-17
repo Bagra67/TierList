@@ -167,19 +167,19 @@ def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> I
 
 
 def get_seo_service(
-    session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
     marketplace: Annotated[MarketplaceService, Depends(get_marketplace_service)],
     storage: Annotated[ImageStorage, Depends(get_image_storage)],
 ) -> SeoService:
-    return SeoService(session, settings, marketplace, storage)
+    return SeoService(settings, marketplace, storage)
 
 
 def get_page_head(
-    path: str, request: Request, service: Annotated[SeoService, Depends(get_seo_service)]
+    request: Request, service: Annotated[SeoService, Depends(get_seo_service)]
 ) -> PageHead:
     return service.page_head(
-        f"/{path}", language_from_accept_language(request.headers.get(ACCEPT_LANGUAGE_HEADER))
+        request.url.path,
+        language_from_accept_language(request.headers.get(ACCEPT_LANGUAGE_HEADER)),
     )
 
 

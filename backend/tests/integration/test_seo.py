@@ -1,4 +1,3 @@
-import uuid
 from xml.etree.ElementTree import fromstring
 
 import pytest
@@ -6,8 +5,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.constants.i18n import Language
+from app.constants.seo import FRONTEND_PUBLIC_TEMPLATE_PREFIX, SITEMAP_NAMESPACE
 from app.core.config import Settings, get_settings
-from app.exceptions.seo import SearchIndexingDisabledError
 from app.models.image import ImageStatus
 from app.seo.head import PageHead
 from app.services.marketplace import MarketplaceService
@@ -25,7 +24,8 @@ pytestmark = pytest.mark.integration
 
 ALICE_EMAIL = "alice@example.com"
 ORIGIN = "https://tierlist.example.com"
-SITEMAP_LOCATION = "{http://www.sitemaps.org/schemas/sitemap/0.9}loc"
+SITEMAP_LOCATION = f"{{{SITEMAP_NAMESPACE}}}loc"
+UNKNOWN_TEMPLATE_ID = "00000000-0000-4000-8000-000000000000"
 
 
 @pytest.fixture
@@ -42,13 +42,11 @@ def seo_service(db_session: Session, indexing_enabled: bool = True) -> SeoServic
     settings: Settings = get_settings().model_copy(
         update={"frontend_base_url": ORIGIN, "search_indexing_enabled": indexing_enabled}
     )
-    return SeoService(
-        db_session, settings, MarketplaceService(db_session), FakeImageStorage(stored={})
-    )
+    return SeoService(settings, MarketplaceService(db_session), FakeImageStorage(stored={}))
 
 
 def template_page(template_id: str) -> str:
-    return f"/marketplace/templates/{template_id}"
+    return f"{FRONTEND_PUBLIC_TEMPLATE_PREFIX}{template_id}"
 
 
 def assert_unavailable(head: PageHead) -> None:
@@ -57,7 +55,9 @@ def assert_unavailable(head: PageHead) -> None:
 
 
 def sitemap_locations(service: SeoService) -> list[str | None]:
-    return [location.text for location in fromstring(service.sitemap_xml()).iter(SITEMAP_LOCATION)]
+    sitemap_xml: str | None = service.sitemap_xml()
+    assert sitemap_xml is not None
+    return [location.text for location in fromstring(sitemap_xml).iter(SITEMAP_LOCATION)]
 
 
 @pytest.mark.parametrize(
@@ -123,10 +123,18 @@ def test_a_public_template_page_shows_its_first_visible_image(
     assert head.image_url == f"{FAKE_IMAGE_BASE_URL}/{visible.storage_key}"
 
 
-@pytest.mark.parametrize("raw_template_id", ["not-a-uuid", str(uuid.uuid4())])
+@pytest.mark.parametrize("raw_template_id", ["not-a-uuid", UNKNOWN_TEMPLATE_ID])
 def test_an_unknown_template_page_is_a_404_that_is_not_indexable(
     db_session: Session, raw_template_id: str
 ):
+    assert_unavailable(seo_service(db_session).page_head(template_page(raw_template_id), "fr"))
+
+
+def test_a_template_page_with_a_non_canonical_id_is_a_404_that_is_not_indexable(
+    db_session: Session, template_id: str
+):
+    raw_template_id: str = template_id.replace("-", "")
+
     assert_unavailable(seo_service(db_session).page_head(template_page(raw_template_id), "fr"))
 
 
@@ -173,5 +181,4 @@ def test_the_sitemap_lists_the_fixed_pages_and_only_the_listed_templates(
 
 
 def test_there_is_no_sitemap_when_indexing_is_disabled(db_session: Session):
-    with pytest.raises(SearchIndexingDisabledError):
-        seo_service(db_session, indexing_enabled=False).sitemap_xml()
+    assert seo_service(db_session, indexing_enabled=False).sitemap_xml() is None
