@@ -26,6 +26,7 @@ from app.models.snapshot_tile import SnapshotTile
 from app.repositories import games as game_repository
 from app.repositories import reports as report_repository
 from app.repositories import rooms as room_repository
+from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,8 @@ class ReportService:
                 return self._nickname_of_player(target_id)
             case ReportTargetKind.GAME:
                 return self._closed_game(target_id)
+            case ReportTargetKind.TEMPLATE:
+                return self._public_template(target_id)
 
     def _image_of_item(self, item_id: uuid.UUID) -> ReportedContent:
         tile: SnapshotTile | None = game_repository.get_snapshot_tile(self._session, item_id)
@@ -169,3 +172,14 @@ class ReportService:
         return ReportedContent(
             ModerationTargetType.GAME, game.id, game.snapshot.name, game.admin_id
         )
+
+    def _public_template(self, template_id: uuid.UUID) -> ReportedContent:
+        name_and_owner: tuple[str, uuid.UUID] | None = (
+            template_repository.get_listed_template_name_and_owner(
+                self._session, template_id, datetime.now(UTC)
+            )
+        )
+        if name_and_owner is None:
+            raise ReportTargetNotFoundError
+        name, owner_id = name_and_owner
+        return ReportedContent(ModerationTargetType.TEMPLATE, template_id, name, owner_id)

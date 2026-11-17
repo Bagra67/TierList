@@ -1,16 +1,19 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Select, delete, func, select, update
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
-from app.models.enums import TemplateModeration
+from app.models.account_ban import AccountBan
+from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
+from app.models.user import User
+from app.repositories.account_bans import is_active
 
 
 def add_template(session: Session, template: Template) -> None:
@@ -40,6 +43,45 @@ def get_owned_template(
     if for_update:
         statement = statement.with_for_update(of=Template)
     return session.scalars(statement).one_or_none()
+
+
+def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
+    owner_is_banned: ColumnElement[bool] = exists().where(
+        AccountBan.user_id == Template.owner_id, is_active(now)
+    )
+    return and_(
+        Template.visibility == TemplateVisibility.PUBLIC,
+        Template.moderation == TemplateModeration.NONE,
+        Template.deleted_at.is_(None),
+        ~owner_is_banned,
+    )
+
+
+def get_listed_template_with_owner_name(
+    session: Session, template_id: uuid.UUID, now: datetime
+) -> tuple[Template, str] | None:
+    statement: Select[Template, str] = (
+        select(Template, User.display_name)
+        .join(User, User.id == Template.owner_id)
+        .where(Template.id == template_id, listed_templates_condition(now))
+        .options(
+            selectinload(Template.tiers),
+            selectinload(Template.tiles),
+            selectinload(Template.tags),
+        )
+    )
+    row = session.execute(statement).one_or_none()
+    return None if row is None else (row[0], row[1])
+
+
+def get_listed_template_name_and_owner(
+    session: Session, template_id: uuid.UUID, now: datetime
+) -> tuple[str, uuid.UUID] | None:
+    statement: Select[str, uuid.UUID] = select(Template.name, Template.owner_id).where(
+        Template.id == template_id, listed_templates_condition(now)
+    )
+    row = session.execute(statement).one_or_none()
+    return None if row is None else (row[0], row[1])
 
 
 def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:

@@ -31,6 +31,7 @@ class SeedSize:
     reported_images: int
     reported_nicknames: int
     reported_games: int
+    reported_templates: int
     reports_on_most_reported_content: int
 
 
@@ -63,6 +64,7 @@ FULL_SIZE: SeedSize = SeedSize(
     reported_images=6,
     reported_nicknames=3,
     reported_games=4,
+    reported_templates=2,
     reports_on_most_reported_content=5,
 )
 
@@ -95,5 +97,6 @@ SMALL_SIZE: SeedSize = SeedSize(
     reported_images=1,
     reported_nicknames=1,
     reported_games=2,
+    reported_templates=1,
     reports_on_most_reported_content=3,
 )

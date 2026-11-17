@@ -26,6 +26,7 @@ from app.services.image_hiding_guard import ImageHidingGuard, image_hiding_guard
 from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
+from app.services.marketplace import MarketplaceService
 from app.services.moderation_log import ModerationLogService
 from app.services.recent_uploads import RecentUploadsService
 from app.services.report_queue import ReportQueueService
@@ -51,6 +52,12 @@ def get_template_service(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> TemplateService:
     return TemplateService(session, settings)
+
+
+def get_marketplace_service(
+    session: Annotated[Session, Depends(get_db_session)],
+) -> MarketplaceService:
+    return MarketplaceService(session)
 
 
 ShortLivedSessionFactory = Callable[[], AbstractContextManager[Session]]
@@ -268,6 +275,7 @@ SuperAdminDep = Annotated[User, Depends(get_current_super_admin)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
+MarketplaceServiceDep = Annotated[MarketplaceService, Depends(get_marketplace_service)]
 RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]

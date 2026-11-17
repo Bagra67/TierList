@@ -13,7 +13,7 @@ ReportDetails = Annotated[
 
 class CreateReportRequest(BaseModel):
     """A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a
-    participant of a room, a player of the results or a closed game."""
+    participant of a room, a player of the results, a closed game or a public template."""
 
     target_kind: ReportTargetKind
     target_id: uuid.UUID

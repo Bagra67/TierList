@@ -11,19 +11,28 @@ from sqlalchemy.orm import Session
 from app.constants.error_codes import ErrorCode
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
 from app.core.config import get_settings
-from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateModeration
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    ReportStatus,
+    TemplateModeration,
+)
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
+from app.models.report import Report
 from app.models.template import Template
 from app.services.maintenance import purge_moderation_log
 from tests.integration.helpers import (
     JsonObject,
+    add_tile_with_image,
     counted_queries,
+    create_public_template,
     create_room,
     create_template,
     next_item,
     register,
     register_super_admin,
+    send_report,
     set_hidden,
     start_game,
     stored_template,
@@ -182,6 +191,42 @@ def test_deleting_a_template_is_a_soft_deletion_like_its_owner_would_do(
     assert entry.action == ModerationActionKind.DELETE
 
 
+@pytest.mark.parametrize("action", ["hide", "delete"])
+def test_hiding_or_deleting_a_template_closes_its_open_reports(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+    action: str,
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    assert send_report(auth_client, "template", template_id).status_code == 201
+
+    assert moderate(auth_client, nina, action, template_id).status_code == 204
+
+    db_session.expire_all()
+    [report] = db_session.scalars(select(Report)).all()
+    [entry] = logged_actions(db_session)
+    assert (report.status, report.closed_by_action_id) == (ReportStatus.ACTIONED, entry.id)
+
+
+def test_unhiding_a_template_opens_none_of_its_closed_reports(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    assert send_report(auth_client, "template", template_id).status_code == 201
+    moderate(auth_client, nina, "hide", template_id)
+
+    assert moderate(auth_client, nina, "unhide", template_id).status_code == 204
+
+    db_session.expire_all()
+    [report] = db_session.scalars(select(Report)).all()
+    assert report.status == ReportStatus.ACTIONED
+
+
 @pytest.mark.parametrize(
     ("action", "state"),
     [
@@ -313,34 +358,6 @@ def test_a_game_in_progress_finishes_after_its_template_is_hidden(
 
     following: JsonObject = next_item(auth_client, room["code"], alice)
     assert following["game"]["round_number"] == 2
-
-
-def add_tile_with_image(
-    client: TestClient,
-    db_session: Session,
-    headers: dict[str, str],
-    template_id: str,
-    text: str | None,
-) -> tuple[str, Image]:
-    template: Template = stored_template(db_session, template_id)
-    image: Image = Image(
-        owner_id=template.owner_id,
-        storage_key=f"{uuid.uuid4()}.webp",
-        width=512,
-        height=512,
-        size_bytes=4,
-        sha256="a" * 64,
-    )
-    db_session.add(image)
-    db_session.flush()
-    response: Response = client.post(
-        f"/templates/{template_id}/tiles",
-        json={"text": text, "image_id": str(image.id)},
-        headers=headers,
-    )
-    assert response.status_code == 201
-    tile_id: str = response.json()["tiles"][-1]["id"]
-    return tile_id, image
 
 
 def moderate_image(

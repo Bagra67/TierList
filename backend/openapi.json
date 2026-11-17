@@ -1999,6 +1999,70 @@
         }
       }
     },
+    "/marketplace/templates/{template_id}": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Get Public Template",
+        "description": "A public template, without an account. 404 when the template is not public, is hidden by\nmoderation, is deleted or its owner is banned, without saying which.",
+        "operationId": "get_public_template_marketplace_templates__template_id__get",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/images": {
       "post": {
         "tags": [
@@ -6387,7 +6451,7 @@
           "reason"
         ],
         "title": "CreateReportRequest",
-        "description": "A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a\nparticipant of a room, a player of the results or a closed game."
+        "description": "A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a\nparticipant of a room, a player of the results, a closed game or a public template."
       },
       "CreateRoomRequest": {
         "properties": {
@@ -7567,6 +7631,99 @@
         "title": "PlayerResultsResponse",
         "description": "The final ranking of a player."
       },
+      "PublicTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner_name": {
+            "type": "string",
+            "title": "Owner Name"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/TierResponse"
+            },
+            "type": "array",
+            "title": "Tiers"
+          },
+          "tiles": {
+            "items": {
+              "$ref": "#/components/schemas/PublicTileResponse"
+            },
+            "type": "array",
+            "title": "Tiles"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner_name",
+          "tags",
+          "tiers",
+          "tiles"
+        ],
+        "title": "PublicTemplateResponse",
+        "description": "A public template as everyone sees it: its name, its owner's display name, its tags, its\ntiers and its tiles in their order."
+      },
+      "PublicTileResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "image_removed": {
+            "type": "boolean",
+            "title": "Image Removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "image_url",
+          "image_removed"
+        ],
+        "title": "PublicTileResponse",
+        "description": "A tile of a public template, in the template's order. `image_removed` is true when moderation\nhid or deleted the image: `image_url` is then null."
+      },
       "RecentUploadResponse": {
         "properties": {
           "id": {
@@ -7902,7 +8059,8 @@
           "item",
           "participant",
           "player",
-          "game"
+          "game",
+          "template"
         ],
         "title": "ReportTargetKind",
         "description": "Ce que désigne target_id dans un signalement (US-1.2)."

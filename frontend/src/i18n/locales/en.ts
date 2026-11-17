@@ -810,6 +810,7 @@ export const en: Translation = {
       participant: 'Report this nickname',
       player: 'Report this nickname',
       game: 'Report this game',
+      template: 'Report this template',
     },
     anonymous: 'Your report is anonymous: the reported person will not know who sent it.',
     reason: 'Reason',

@@ -6,9 +6,16 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.exceptions.templates import TemplateModerationConflictError, TemplateNotFoundError
-from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateModeration
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    ReportStatus,
+    TemplateModeration,
+)
+from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.user import User
+from app.repositories import reports as report_repository
 from app.repositories import templates as template_repository
 from app.repositories import users as user_repository
 from app.services.moderation_log import ModerationLogService
@@ -81,7 +88,15 @@ class TemplateModerationService:
     def _record_and_commit(
         self, super_admin: User, action: ModerationActionKind, template: Template, reason: str
     ) -> None:
-        self._moderation_log.record(
+        moderation_action: ModerationAction = self._moderation_log.record(
             super_admin, action, ModerationTargetType.TEMPLATE, template.id, template.name, reason
         )
+        if action is not ModerationActionKind.UNHIDE:
+            report_repository.close_open_reports(
+                self._session,
+                ModerationTargetType.TEMPLATE,
+                [template.id],
+                ReportStatus.ACTIONED,
+                moderation_action.id,
+            )
         self._session.commit()

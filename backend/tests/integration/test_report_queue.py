@@ -25,8 +25,10 @@ from app.services.maintenance import purge_closed_reports
 from tests.integration.helpers import (
     JsonObject,
     counted_queries,
+    create_public_template,
     register,
     register_super_admin,
+    send_report,
 )
 
 pytestmark = pytest.mark.integration
@@ -170,6 +172,22 @@ def test_the_reports_are_grouped_by_content_the_most_reported_first(
     ]
     assert first["details"] == ["Insultes"]
     assert (first["image_url"], first["public_token"]) == (None, None)
+
+
+def test_a_reported_public_template_is_in_the_queue_with_its_name_and_owner(
+    auth_client: TestClient,
+    db_session: Session,
+    nina: dict[str, str],
+    alice: dict[str, str],
+):
+    template_id: str = create_public_template(auth_client, db_session, alice, "alice@example.com")
+    assert send_report(auth_client, "template", template_id).status_code == 201
+
+    [content] = queue(auth_client, nina)["contents"]
+
+    assert (content["target_type"], content["target_id"]) == ("template", template_id)
+    assert (content["label"], content["owner_name"]) == ("Food", "alice")
+    assert (content["image_url"], content["public_token"]) == (None, None)
 
 
 def test_a_content_closed_by_another_super_admin_while_the_page_is_read_is_left_out(

@@ -15,6 +15,7 @@ from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
 from app.models.enums import RoomStatus, TemplateModeration, UserRole
+from app.models.image import Image
 from app.models.room import Room
 from app.models.template import Template
 from app.models.tile import Tile
@@ -94,6 +95,70 @@ def create_template(
         )
     db_session.flush()
     return template_id
+
+
+def create_public_template(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    email: str,
+    tile_count: int = 3,
+) -> str:
+    confirm_email(db_session, email)
+    template_id: str = create_template(client, db_session, headers, tile_count)
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "public"}, headers=headers
+    )
+    assert response.status_code == 200
+    return template_id
+
+
+def add_tile_with_image(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    template_id: str,
+    text: str | None,
+) -> tuple[str, Image]:
+    template: Template = stored_template(db_session, template_id)
+    image: Image = Image(
+        owner_id=template.owner_id,
+        storage_key=f"{uuid.uuid4()}.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="a" * 64,
+    )
+    db_session.add(image)
+    db_session.flush()
+    response: Response = client.post(
+        f"/templates/{template_id}/tiles",
+        json={"text": text, "image_id": str(image.id)},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    tile_id: str = response.json()["tiles"][-1]["id"]
+    return tile_id, image
+
+
+def send_report(
+    client: TestClient,
+    target_kind: str,
+    target_id: str,
+    headers: dict[str, str] | None = None,
+    reason: str = "spam",
+    details: str | None = None,
+) -> Response:
+    return client.post(
+        "/reports",
+        json={
+            "target_kind": target_kind,
+            "target_id": target_id,
+            "reason": reason,
+            "details": details,
+        },
+        headers=headers,
+    )
 
 
 def create_room(client: TestClient, headers: dict[str, str], template_id: str) -> JsonObject:
