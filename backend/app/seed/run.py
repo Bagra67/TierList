@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.models.room import Room
 from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
@@ -21,7 +22,11 @@ from app.seed.moderation import (
 )
 from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.reports import SeedReports, create_reports
-from app.seed.rooms import SeedRooms, create_open_rooms
+from app.seed.rooms import (
+    SeedRooms,
+    create_open_rooms,
+    create_rooms_on_public_templates_of_others,
+)
 from app.seed.sizes import SeedSize
 from app.seed.templates import SeedTemplates, create_templates, publish_templates
 from app.services.image_storage import ImageStorage
@@ -104,10 +109,19 @@ def run_seed(
         templates_to_hide: list[uuid.UUID] = _templates_to_hide(
             played, templates, size.hidden_templates
         )
-        publish_templates(
-            session,
-            settings,
-            _templates_to_publish(templates_to_hide, templates, size.public_templates),
+        published: list[uuid.UUID] = _templates_to_publish(
+            templates_to_hide, templates, size.public_templates
+        )
+        publish_templates(session, settings, published)
+        rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
+            rooms,
+            accounts.players,
+            [
+                template
+                for template in templates.playable
+                if template.id in published and template.id not in templates_to_hide
+            ],
+            size.rooms_on_public_templates_of_others,
         )
         moderated_templates: int = moderate_templates(
             session,
@@ -144,7 +158,8 @@ def run_seed(
         closed_games=len(played.closed),
         open_rooms=len(played.open_rooms_with_past_games)
         + len(open_rooms.full)
-        + len(open_rooms.with_bans),
+        + len(open_rooms.with_bans)
+        + len(rooms_on_public_templates),
         moderation_actions=size.moderation_actions
         + moderated_images
         + moderated_templates

@@ -19,6 +19,7 @@ class SeedSize:
     open_rooms_with_past_games: int
     full_rooms: int
     rooms_with_bans: int
+    rooms_on_public_templates_of_others: int
     moderation_actions: int
     hidden_images: int
     deleted_images: int
@@ -52,6 +53,7 @@ FULL_SIZE: SeedSize = SeedSize(
     open_rooms_with_past_games=3,
     full_rooms=3,
     rooms_with_bans=3,
+    rooms_on_public_templates_of_others=2,
     moderation_actions=180,
     hidden_images=3,
     deleted_images=1,
@@ -85,6 +87,7 @@ SMALL_SIZE: SeedSize = SeedSize(
     open_rooms_with_past_games=1,
     full_rooms=1,
     rooms_with_bans=1,
+    rooms_on_public_templates_of_others=1,
     moderation_actions=60,
     hidden_images=1,
     deleted_images=1,

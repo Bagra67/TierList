@@ -43,7 +43,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 561
+SMALL_SEED_MAX_QUERIES = 578
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -151,7 +151,10 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     )
     assert absent_votes
     open_rooms: int = (
-        SMALL_SIZE.open_rooms_with_past_games + SMALL_SIZE.full_rooms + SMALL_SIZE.rooms_with_bans
+        SMALL_SIZE.open_rooms_with_past_games
+        + SMALL_SIZE.full_rooms
+        + SMALL_SIZE.rooms_with_bans
+        + SMALL_SIZE.rooms_on_public_templates_of_others
     )
     assert (
         db_session.scalar(
@@ -182,6 +185,18 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Room)
+            .join(Template, Template.id == Room.template_id)
+            .where(
+                Template.visibility == TemplateVisibility.PUBLIC,
+                Room.admin_id != Template.owner_id,
+            )
+        )
+        == SMALL_SIZE.rooms_on_public_templates_of_others
+    )
     assert all(template.first_made_public_at is not None for template in public_templates)
     assert {template.moderation for template in public_templates} == {
         TemplateModeration.NONE,
