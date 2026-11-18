@@ -26,11 +26,13 @@ import { panelVariants } from '../components/ui/panel';
 import { textLinkClassName } from '../components/ui/text-link';
 import { moderationTemplatePath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationAccountPage() {
   const { t } = useTranslation();
   const { accountId = '' } = useParams();
   const { data: account, isPending, isError, error } = useAccount(accountId);
+  useDocumentTitle(account?.display_name);
 
   return (
     <div className="flex flex-col items-start gap-8">

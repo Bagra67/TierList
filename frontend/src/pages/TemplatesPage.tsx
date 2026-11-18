@@ -19,10 +19,12 @@ import { panelVariants } from '../components/ui/panel';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function TemplatesPage() {
   const { data: templates, isPending, isError, error } = useTemplates();
   const { t } = useTranslation();
+  useDocumentTitle(t('templates.title'));
 
   return (
     <PageContainer width="app">

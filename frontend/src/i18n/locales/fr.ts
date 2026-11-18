@@ -6,6 +6,10 @@ export const fr = {
     theme: 'Thème',
     imageRemoved: 'Image retirée',
   },
+  documentTitle: {
+    site: 'TierList · Classez ensemble, en direct',
+    page: '{{page}} · TierList',
+  },
   home: {
     visitor: {
       title: 'Classez ensemble, en direct.',
@@ -143,7 +147,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       publicTemplates:
-        'Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images) et votre pseudo.',
+        "Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images) et votre pseudo. Il peut aussi apparaître dans les moteurs de recherche et dans les aperçus de lien ; s'il redevient privé ou est supprimé, il peut y rester quelque temps, le temps que ces services mettent leur copie à jour.",
       moderation:
         "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:

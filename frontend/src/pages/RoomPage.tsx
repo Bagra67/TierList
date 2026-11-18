@@ -24,6 +24,7 @@ import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 function guestTokenFrom(hash: string): string | null {
   const token: string | null = new URLSearchParams(hash.replace(/^#/, '')).get(GUEST_LINK_FRAGMENT);
@@ -77,6 +78,7 @@ export function RoomPage() {
   const justIssuedGuestLink: GuestRoom | null =
     lastIssuedGuestLink?.code === canonicalRoomCode(code) ? lastIssuedGuestLink : null;
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  useDocumentTitle(t('rooms.lobby.title', { code: canonicalRoomCode(code) }));
 
   useEffect(() => {
     if (guestToken !== null && isSuccess) {

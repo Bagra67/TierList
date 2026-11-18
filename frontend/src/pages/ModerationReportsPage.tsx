@@ -8,9 +8,11 @@ import { ReportQueue } from '../components/ReportQueue';
 import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
 import { translateError } from '../errors/apiError';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationReportsPage() {
   const { t } = useTranslation();
+  useDocumentTitle(t('moderation.reports.title'));
 
   return (
     <div className="flex flex-col items-start gap-6">

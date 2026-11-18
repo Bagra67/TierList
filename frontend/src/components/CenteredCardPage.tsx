@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import { PageContainer } from './PageContainer';
+import { useDocumentTitle } from './useDocumentTitle';
 
 interface CenteredCardPageProps {
   title: string;
@@ -10,6 +11,8 @@ interface CenteredCardPageProps {
 }
 
 export function CenteredCardPage({ title, children, footer }: CenteredCardPageProps) {
+  useDocumentTitle(title);
+
   return (
     <PageContainer width="form">
       <Card>
