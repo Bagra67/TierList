@@ -17,7 +17,8 @@ The texts already in the interface come from its translations; the new ones, val
 - **Stories**: US-3.1, US-3.2, US-3.4.
 - The screen seen **by a visitor**: no account needed to browse. The header gets a "Public templates" link for everyone.
 - Search in the name and the tags, a tag filter, sort by **most liked** (default) or newest; "See more" loads the next page.
-- Each card: preview (the image of the first tile), name, owner, number of items, tags and likes.
+- Each card: preview (the image of the first tile), name, owner, number of items, tags and likes; a signed-in user likes it from the card, which shows whether they already do.
+- The home shows the 3 most liked public templates with "See all public templates", to visitors and signed-in users alike.
 
 ## 2. Public template page
 
