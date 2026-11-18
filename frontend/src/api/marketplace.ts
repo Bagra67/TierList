@@ -5,6 +5,7 @@ import {
   type UseInfiniteQueryResult,
   useMutation,
   type UseMutationResult,
+  useQueries,
   useQuery,
   useQueryClient,
   type UseQueryResult,
@@ -12,6 +13,7 @@ import {
 
 import {
   isTemplateId,
+  MARKETPLACE_LIKE_STATES_QUERY_KEY,
   MARKETPLACE_LIST_QUERY_KEY,
   MARKETPLACE_TAGS_QUERY_KEY,
   publicTemplateQueryKey,
@@ -87,6 +89,41 @@ export function useSetLiked(templateId: string): UseMutationResult<LikeState, Er
           template === undefined ? undefined : { ...template, like_count: state.like_count },
       );
     },
+  });
+}
+
+type TemplateLikeState = components['schemas']['TemplateLikeStateResponse'];
+
+async function listLikeStates(
+  templateIds: string[],
+  signal: AbortSignal,
+): Promise<TemplateLikeState[]> {
+  return dataOrThrow(
+    await apiClient.GET('/marketplace/likes', {
+      params: { query: { template_id: templateIds } },
+      signal,
+    }),
+  ).items;
+}
+
+export function useCardLikeStates(pages: MarketplaceTemplate[][], enabled: boolean): void {
+  const queryClient: QueryClient = useQueryClient();
+  useQueries({
+    queries: pages.map((templates: MarketplaceTemplate[]) => {
+      const templateIds: string[] = templates.map((template: MarketplaceTemplate) => template.id);
+      return {
+        queryKey: [...MARKETPLACE_LIKE_STATES_QUERY_KEY, templateIds],
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+          const states: TemplateLikeState[] = await listLikeStates(templateIds, signal);
+          for (const { template_id: templateId, ...state } of states) {
+            queryClient.setQueryData(likeStateQueryKey(templateId), state);
+          }
+          return states;
+        },
+        enabled: enabled && templateIds.length > 0,
+        retry: retryUnlessClientError,
+      };
+    }),
   });
 }
 

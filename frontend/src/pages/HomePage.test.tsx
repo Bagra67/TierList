@@ -172,6 +172,39 @@ describe('HomePage', () => {
     expect(screen.queryByRole('link', { name: 'Créer un compte' })).not.toBeInTheDocument();
   });
 
+  it('shows the signed-in player the most liked public templates too', async () => {
+    stubBackend({
+      ...signedInWith(fourTemplates, fourGames),
+      'GET /marketplace/templates': () =>
+        Response.json({
+          items: [
+            {
+              id: 'template-popular',
+              name: 'Fromages du monde',
+              owner_name: 'Camille',
+              tags: [],
+              tile_count: 6,
+              like_count: 12,
+              preview_image_url: null,
+              preview_image_removed: false,
+              tier_colors: ['#FF3B6B'],
+            },
+          ],
+          next_cursor: null,
+        }),
+    });
+
+    renderHomePage();
+
+    const section: HTMLElement = await screen.findByRole('region', {
+      name: 'Modèles publics populaires',
+    });
+    expect(within(section).getByRole('link', { name: 'Fromages du monde' })).toBeInTheDocument();
+    expect(
+      within(section).getByRole('link', { name: 'Voir tous les modèles publics' }),
+    ).toHaveAttribute('href', '/marketplace');
+  });
+
   it('leads a new player to prepare a template, with no game yet', async () => {
     stubBackend(signedInWith([], []));
 

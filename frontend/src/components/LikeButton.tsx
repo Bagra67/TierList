@@ -15,6 +15,47 @@ interface LikeButtonProps {
   likeCount: number;
 }
 
+interface CardLikeButtonProps extends LikeButtonProps {
+  templateName: string;
+}
+
+export function CardLikeButton({ templateId, templateName, likeCount }: CardLikeButtonProps) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const { data: state } = useLikeState(templateId, false);
+  const setLiked = useSetLiked(templateId);
+
+  if (state === undefined || !state.can_like) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm font-medium text-primary tabular-nums">
+        <Heart aria-hidden="true" className="size-4" />
+        {t('publicTemplate.like.count', { count: state?.like_count ?? likeCount })}
+      </p>
+    );
+  }
+  return (
+    <div className="relative z-10 flex flex-col items-end gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-pressed={state.liked}
+        aria-label={t('marketplace.card.like', { name: templateName, count: state.like_count })}
+        disabled={setLiked.isPending}
+        onClick={() => setLiked.mutate(!state.liked)}
+        className="font-medium text-primary tabular-nums"
+      >
+        <Heart aria-hidden="true" className={state.liked ? 'fill-primary' : undefined} />
+        {t('publicTemplate.like.count', { count: state.like_count })}
+      </Button>
+      {setLiked.isError && (
+        <ErrorMessage className="text-right text-xs">
+          {translateError(t, setLiked.error)}
+        </ErrorMessage>
+      )}
+    </div>
+  );
+}
+
 export function LikeButton({ templateId, likeCount }: LikeButtonProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const location: Location = useLocation();

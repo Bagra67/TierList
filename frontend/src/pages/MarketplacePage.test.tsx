@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MarketplaceTemplate } from '../api/marketplace';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { stubBackend } from '../test/stubBackend';
+import { calledRoutes, type StubbedRoute, signedInSession, stubBackend } from '../test/stubBackend';
 import { MarketplacePage } from './MarketplacePage';
 
 function card(id: string, name: string, overrides: Partial<MarketplaceTemplate> = {}) {
@@ -35,9 +35,11 @@ function stubMarketplace(
     next_cursor: string | null;
   },
   tags: string[] = ['Apéro', 'Films'],
+  otherRoutes: Record<string, StubbedRoute> = {},
 ): StubbedList {
   const searches: URLSearchParams[] = [];
   stubBackend({
+    ...otherRoutes,
     'GET /marketplace/templates': (request: Request) => {
       const params: URLSearchParams = new URL(request.url).searchParams;
       searches.push(params);
@@ -165,5 +167,58 @@ describe('MarketplacePage', () => {
       'src',
       'https://images.example.com/a.webp',
     );
+  });
+
+  it('shows on the cards which templates the signed-in reader likes, and likes from a card', async () => {
+    const liked: string[] = [];
+    stubMarketplace(() => ({ items: [chips, sodas], next_cursor: null }), [], {
+      ...signedInSession,
+      'GET /marketplace/likes': () =>
+        Response.json({
+          items: [
+            { template_id: chips.id, liked: true, like_count: 3, can_like: true },
+            { template_id: sodas.id, liked: false, like_count: 1, can_like: true },
+          ],
+        }),
+      [`PUT /marketplace/templates/${sodas.id}/like`]: () => {
+        liked.push(sodas.id);
+        return Response.json({ liked: true, like_count: 2, can_like: true });
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: "J'aime « Chips » · 3", pressed: true }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: "J'aime « Sodas » · 1", pressed: false }));
+
+    expect(
+      await screen.findByRole('button', { name: "J'aime « Sodas » · 2", pressed: true }),
+    ).toBeInTheDocument();
+    expect(liked).toEqual([sodas.id]);
+  });
+
+  it('shows only the count on the cards of templates the reader may not like', async () => {
+    stubMarketplace(() => ({ items: [chips], next_cursor: null }), [], {
+      ...signedInSession,
+      'GET /marketplace/likes': () =>
+        Response.json({
+          items: [{ template_id: chips.id, liked: false, like_count: 3, can_like: false }],
+        }),
+    });
+    renderPage();
+
+    expect(await screen.findByText("3 j'aime")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /J'aime/ })).not.toBeInTheDocument();
+  });
+
+  it('asks no like state for a visitor, who sees the counts only', async () => {
+    stubMarketplace(() => ({ items: [chips], next_cursor: null }));
+    const backend = vi.mocked(fetch);
+    renderPage();
+
+    expect(await screen.findByText("3 j'aime")).toBeInTheDocument();
+    expect(calledRoutes(backend)).not.toContain('GET /marketplace/likes');
+    expect(screen.queryByRole('button', { name: /J'aime/ })).not.toBeInTheDocument();
   });
 });

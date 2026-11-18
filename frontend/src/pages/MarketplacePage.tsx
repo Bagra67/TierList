@@ -2,10 +2,12 @@ import { type FormEvent, useId, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { type SetURLSearchParams, useSearchParams } from 'react-router';
 
+import { useCurrentUser } from '../api/auth';
 import {
   type MarketplaceFilters,
   type MarketplaceSort,
   type MarketplaceTemplate,
+  useCardLikeStates,
   useMarketplaceTags,
   useMarketplaceTemplates,
 } from '../api/marketplace';
@@ -65,6 +67,8 @@ export function MarketplacePage() {
   const [searchParams, setSearchParams]: [URLSearchParams, SetURLSearchParams] = useSearchParams();
   const filters: MarketplaceFilters = filtersOf(searchParams);
   const query = useMarketplaceTemplates(filters);
+  const { data: user } = useCurrentUser();
+  useCardLikeStates(query.data?.pages.map((page) => page.items) ?? [], Boolean(user));
   const templates: MarketplaceTemplate[] = uniqueById(
     query.data?.pages.flatMap((page) => page.items) ?? [],
   );

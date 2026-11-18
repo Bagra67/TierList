@@ -866,6 +866,7 @@ export const fr = {
       label: 'Étiquettes populaires',
     },
     card: {
+      like: "J'aime « {{name}} » · {{count}}",
       byline_one: 'par {{owner}} · {{count}} élément',
       byline_other: 'par {{owner}} · {{count}} éléments',
     },

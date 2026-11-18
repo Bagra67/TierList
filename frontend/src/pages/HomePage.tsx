@@ -68,10 +68,13 @@ export function HomePage() {
           <PopularTemplates />
         </>
       ) : (
-        <div className="grid gap-10 md:grid-cols-2">
-          <RecentTemplates />
-          <RecentGames />
-        </div>
+        <>
+          <div className="grid gap-10 md:grid-cols-2">
+            <RecentTemplates />
+            <RecentGames />
+          </div>
+          <PopularTemplates />
+        </>
       )}
     </PageContainer>
   );
