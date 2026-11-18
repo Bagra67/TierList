@@ -29,9 +29,9 @@ test('builds a template with an image, reordered tiers and tags, kept after a re
   await dragWithMouse(
     page,
     page.getByRole('button', { name: 'Déplacer S' }),
-    page.getByRole('button', { name: 'Déplacer B' }),
+    page.getByRole('button', { name: 'Déplacer A' }),
   );
-  await expect(page.getByRole('textbox', { name: 'Nom du tier 3' })).toHaveValue('S');
+  await expect(page.getByRole('textbox', { name: 'Nom du tier 2' })).toHaveValue('S');
   await expect(page.getByRole('button', { name: 'Monter S' })).toBeEnabled();
 
   const tagInput = page.getByRole('textbox', { name: 'Ajouter une étiquette' });
@@ -47,8 +47,8 @@ test('builds a template with an image, reordered tiers and tags, kept after a re
     page.getByRole('list', { name: 'Étiquettes du modèle' }).getByRole('listitem'),
   ).toHaveText(['cuisine du monde']);
   await expect(page.getByRole('textbox', { name: 'Nom du tier 1' })).toHaveValue('A');
-  await expect(page.getByRole('textbox', { name: 'Nom du tier 2' })).toHaveValue('B');
-  await expect(page.getByRole('textbox', { name: 'Nom du tier 3' })).toHaveValue('S');
+  await expect(page.getByRole('textbox', { name: 'Nom du tier 2' })).toHaveValue('S');
+  await expect(page.getByRole('textbox', { name: 'Nom du tier 3' })).toHaveValue('B');
   await expect(page.getByRole('textbox', { name: 'Texte de la tuile 1' })).toHaveValue('Paprika');
   await expect(page.getByRole('textbox', { name: 'Texte de la tuile 2' })).toHaveValue('Cumin');
   await expect(page.getByRole('button', { name: "Remplacer l'image de Paprika" })).toBeVisible();
