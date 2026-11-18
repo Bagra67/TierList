@@ -13,8 +13,10 @@ from app.models.enums import GameStatus, ModerationTargetType, ReportReason
 from app.models.game import Game
 from app.models.image import Image, ImageStatus
 from app.models.report import Report
+from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
+from app.repositories.templates import listed_templates_condition
 from app.seed.sizes import SeedSize
 from app.services.moderation_log import ModerationLogService
 from app.services.report_queue import ReportQueueService
@@ -59,6 +61,7 @@ def create_reports(
     contents: list[_Content] = [
         *_visible_images(session, player_ids, size.reported_images),
         *_nicknames(players, size.reported_nicknames, rng),
+        *_listed_templates(session, player_ids, size.reported_templates),
         *other_games,
         game_to_hide,
     ]
@@ -132,6 +135,19 @@ def _nicknames(players: list[User], count: int, rng: random.Random) -> list[_Con
     return [
         _Content(ModerationTargetType.NICKNAME, player.id, player.display_name, player.id)
         for player in rng.sample(players, count)
+    ]
+
+
+def _listed_templates(session: Session, player_ids: list[uuid.UUID], count: int) -> list[_Content]:
+    statement: Select[uuid.UUID, str, uuid.UUID] = (
+        select(Template.id, Template.name, Template.owner_id)
+        .where(listed_templates_condition(datetime.now(UTC)), Template.owner_id.in_(player_ids))
+        .order_by(Template.id)
+        .limit(count)
+    )
+    return [
+        _Content(ModerationTargetType.TEMPLATE, template_id, name, owner_id)
+        for template_id, name, owner_id in session.execute(statement).all()
     ]
 
 

@@ -45,14 +45,16 @@ class GoogleLoginAttempt:
     nonce: str
     code_verifier: str
     next_step: str | None
+    return_to: str | None = None
 
     @classmethod
-    def start(cls, next_step: str | None) -> GoogleLoginAttempt:
+    def start(cls, next_step: str | None, return_to: str | None = None) -> GoogleLoginAttempt:
         return cls(
             state=secrets.token_urlsafe(GOOGLE_STATE_BYTES),
             nonce=secrets.token_urlsafe(GOOGLE_NONCE_BYTES),
             code_verifier=secrets.token_urlsafe(PKCE_VERIFIER_BYTES),
             next_step=next_step,
+            return_to=return_to,
         )
 
     @property
@@ -68,6 +70,7 @@ class GoogleLoginAttempt:
             "nonce": self.nonce,
             "code_verifier": self.code_verifier,
             "next": self.next_step,
+            "return_to": self.return_to,
             "iat": now,
             "exp": now + ttl,
         }
@@ -91,6 +94,7 @@ class GoogleLoginAttempt:
             nonce=claims["nonce"],
             code_verifier=claims["code_verifier"],
             next_step=claims.get("next"),
+            return_to=claims.get("return_to"),
         )
 
     def matches_state(self, state: str) -> bool:

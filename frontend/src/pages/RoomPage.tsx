@@ -24,6 +24,7 @@ import { ROUTES } from '../constants/routes';
 import { ApiError, translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 function guestTokenFrom(hash: string): string | null {
   const token: string | null = new URLSearchParams(hash.replace(/^#/, '')).get(GUEST_LINK_FRAGMENT);
@@ -51,9 +52,9 @@ export function RoomPage() {
   const removal: Removal | null =
     lastRemoval?.roomCode === canonicalRoomCode(code) ? lastRemoval : null;
   const viewer: RoomViewer | undefined =
-    isUserPending || removal !== null
+    isUserPending || user === undefined || removal !== null
       ? undefined
-      : user !== null && user !== undefined
+      : user !== null
         ? 'account'
         : 'guest';
   const guestToken: string | null = viewer === 'guest' ? guestTokenFrom(location.hash) : null;
@@ -73,8 +74,11 @@ export function RoomPage() {
   );
   const viewerHasSeat: boolean = room !== undefined;
   const roomEvents: RoomEventsState = useRoomEvents(code, viewer, viewerHasSeat, handleRemoved);
-  const [justIssuedGuestLink, setJustIssuedGuestLink] = useState<GuestRoom | null>(null);
+  const [lastIssuedGuestLink, setJustIssuedGuestLink] = useState<GuestRoom | null>(null);
+  const justIssuedGuestLink: GuestRoom | null =
+    lastIssuedGuestLink?.code === canonicalRoomCode(code) ? lastIssuedGuestLink : null;
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  useDocumentTitle(t('rooms.lobby.title', { code: canonicalRoomCode(code) }));
 
   useEffect(() => {
     if (guestToken !== null && isSuccess) {
@@ -83,7 +87,7 @@ export function RoomPage() {
   }, [guestToken, isSuccess, location.pathname, navigate]);
 
   const errorCode: string | undefined = error instanceof ApiError ? error.code : undefined;
-  const visitorHasNoSeatYet: boolean = viewer === 'guest' && errorCode === 'room_not_found';
+  const visitorHasNoSeatYet: boolean = viewer === 'guest' && errorCode === 'room_not_joined';
   const canJoinAsGuest: boolean =
     visitorHasNoSeatYet || (viewer === 'guest' && errorCode === 'guest_link_invalid');
   const showError: boolean = error !== null && !visitorHasNoSeatYet;
@@ -103,6 +107,14 @@ export function RoomPage() {
             <Link to={ROUTES.HOME}>{t('rooms.lobby.backHome')}</Link>
           </Button>
         )}
+      </PageContainer>
+    );
+  }
+
+  if (!isUserPending && user === undefined) {
+    return (
+      <PageContainer width="app">
+        <ErrorMessage>{t('common.backendUnreachable')}</ErrorMessage>
       </PageContainer>
     );
   }

@@ -19,6 +19,7 @@ export function CopyLinkField({ label, link }: CopyLinkFieldProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
 
   async function copyLink() {
+    setCopyStatus('idle');
     try {
       await navigator.clipboard.writeText(link);
       setCopyStatus('copied');

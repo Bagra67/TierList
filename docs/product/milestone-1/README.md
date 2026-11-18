@@ -1,7 +1,5 @@
 # Milestone 1 — MVP
 
-English | [Français](README.fr.md)
-
 The design of the first playable version of TierList: **a live private room with friends**. It details, for this milestone only, what [roadmap.md](../roadmap.md#milestone-1--mvp) lists, using the vocabulary of [product.md](../product.md#glossary) and the rules of [game-rules.md](../game-rules.md).
 
 **Status: done.** Every user story is delivered ([GitHub milestone](https://github.com/Bagra67/TierList/milestone/1?closed=1)).

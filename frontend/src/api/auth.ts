@@ -9,6 +9,8 @@ import { useEffect } from 'react';
 
 import {
   CURRENT_USER_QUERY_KEY,
+  GOOGLE_BAN_NOTICE_QUERY_KEY,
+  UNVERIFIED_ACCOUNT_STALE_MS,
   GOOGLE_ACCOUNT_BANNED,
   GOOGLE_SIGN_IN_PATH,
   type GoogleNextStep,
@@ -35,14 +37,22 @@ export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
 type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
-export function googleSignInUrl(next?: GoogleNextStep): string {
-  const query = next === undefined ? '' : `?${new URLSearchParams({ next }).toString()}`;
+interface GoogleSignInReturn {
+  next?: GoogleNextStep;
+  returnTo?: string;
+}
+
+export function googleSignInUrl({ next, returnTo }: GoogleSignInReturn = {}): string {
+  const params: URLSearchParams = new URLSearchParams();
+  if (next !== undefined) params.set('next', next);
+  if (returnTo !== undefined) params.set('return_to', returnTo);
+  const query: string = params.size === 0 ? '' : `?${params.toString()}`;
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 
 export function useGoogleBanNotice(googleError: string | null) {
   return useQuery({
-    queryKey: ['auth', 'google-ban-notice'],
+    queryKey: GOOGLE_BAN_NOTICE_QUERY_KEY,
     queryFn: async ({ signal }): Promise<null> => {
       throwIfError(await apiClient.GET('/auth/google/ban-notice', { signal }));
       return null;
@@ -116,11 +126,19 @@ export async function getCurrentUser(signal?: AbortSignal): Promise<User | null>
   }
 }
 
-export function useCurrentUser() {
+function staleUntilEmailVerified(query: { state: { data: User | null | undefined } }): number {
+  return query.state.data?.email_verified === false ? UNVERIFIED_ACCOUNT_STALE_MS : Infinity;
+}
+
+interface CurrentUserOptions {
+  refreshUntilEmailVerified?: boolean;
+}
+
+export function useCurrentUser({ refreshUntilEmailVerified = false }: CurrentUserOptions = {}) {
   return useQuery({
     queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: ({ signal }) => getCurrentUser(signal),
-    staleTime: Infinity,
+    staleTime: refreshUntilEmailVerified ? staleUntilEmailVerified : Infinity,
   });
 }
 

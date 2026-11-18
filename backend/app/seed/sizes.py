@@ -13,14 +13,18 @@ class SeedSize:
     full_templates: int
     deleted_templates: int
     image_tiles_per_template: int
+    bulk_uploader_image_templates: int
     closed_games: int
     history_games: int
     open_rooms_with_past_games: int
     full_rooms: int
     rooms_with_bans: int
+    rooms_on_public_templates_of_others: int
+    max_likes_per_public_template: int
     moderation_actions: int
     hidden_images: int
     deleted_images: int
+    public_templates: int
     hidden_templates: int
     templates_deleted_by_moderation: int
     temporarily_banned_accounts: int
@@ -29,6 +33,7 @@ class SeedSize:
     reported_images: int
     reported_nicknames: int
     reported_games: int
+    reported_templates: int
     reports_on_most_reported_content: int
 
 
@@ -43,14 +48,18 @@ FULL_SIZE: SeedSize = SeedSize(
     full_templates=6,
     deleted_templates=6,
     image_tiles_per_template=12,
+    bulk_uploader_image_templates=3,
     closed_games=75,
     history_games=62,
     open_rooms_with_past_games=3,
     full_rooms=3,
     rooms_with_bans=3,
+    rooms_on_public_templates_of_others=2,
+    max_likes_per_public_template=12,
     moderation_actions=180,
     hidden_images=3,
     deleted_images=1,
+    public_templates=6,
     hidden_templates=2,
     templates_deleted_by_moderation=2,
     temporarily_banned_accounts=1,
@@ -59,6 +68,7 @@ FULL_SIZE: SeedSize = SeedSize(
     reported_images=6,
     reported_nicknames=3,
     reported_games=4,
+    reported_templates=2,
     reports_on_most_reported_content=5,
 )
 
@@ -73,14 +83,18 @@ SMALL_SIZE: SeedSize = SeedSize(
     full_templates=1,
     deleted_templates=1,
     image_tiles_per_template=3,
+    bulk_uploader_image_templates=1,
     closed_games=23,
     history_games=22,
     open_rooms_with_past_games=1,
     full_rooms=1,
     rooms_with_bans=1,
+    rooms_on_public_templates_of_others=1,
+    max_likes_per_public_template=5,
     moderation_actions=60,
     hidden_images=1,
     deleted_images=1,
+    public_templates=2,
     hidden_templates=1,
     templates_deleted_by_moderation=1,
     temporarily_banned_accounts=1,
@@ -89,5 +103,6 @@ SMALL_SIZE: SeedSize = SeedSize(
     reported_images=1,
     reported_nicknames=1,
     reported_games=2,
+    reported_templates=1,
     reports_on_most_reported_content=3,
 )

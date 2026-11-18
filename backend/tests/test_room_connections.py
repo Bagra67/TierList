@@ -135,6 +135,27 @@ def test_a_participant_back_during_the_departure_write_is_set_connected_again():
     run(scenario)
 
 
+def test_coming_back_while_the_departure_is_written_does_not_cancel_its_check():
+    async def scenario() -> None:
+        registry: ConnectionRegistry = ConnectionRegistry()
+        calls: list[bool] = []
+
+        async def set_presence(connected: bool) -> None:
+            calls.append(connected)
+            if not connected:
+                await asyncio.sleep(0.02)
+
+        registry.schedule_disconnect(ROOM, ALICE, 0, set_presence)
+        await asyncio.sleep(0.01)
+        registry.add(ROOM, ALICE, as_websocket(FakeSocket()))
+        registry.cancel_pending_disconnect(ALICE)
+        await asyncio.sleep(0.05)
+
+        assert calls == [False, True]
+
+    run(scenario)
+
+
 def test_a_replaced_pending_disconnection_does_not_remove_its_replacement():
     async def scenario() -> None:
         registry: ConnectionRegistry = ConnectionRegistry()

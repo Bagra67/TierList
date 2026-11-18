@@ -29,8 +29,9 @@ export function ResultsPlayerView({
 }: ResultsPlayerViewProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const selectId: string = useId();
-  const [playerIndex, setPlayerIndex] = useState<number>(0);
-  const player: PlayerResults | undefined = players[playerIndex];
+  const [chosenPlayerId, setChosenPlayerId] = useState<string | null>(null);
+  const player: PlayerResults | undefined =
+    players.find((candidate: PlayerResults) => candidate.id === chosenPlayerId) ?? players[0];
 
   if (player === undefined) {
     return <p className="text-muted-foreground">{t('results.players.none')}</p>;
@@ -44,13 +45,13 @@ export function ResultsPlayerView({
         </label>
         <NativeSelect
           id={selectId}
-          value={playerIndex}
+          value={player.id}
           onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-            setPlayerIndex(Number(event.target.value))
+            setChosenPlayerId(event.target.value)
           }
         >
-          {players.map((candidate: PlayerResults, index: number) => (
-            <option key={index} value={index}>
+          {players.map((candidate: PlayerResults) => (
+            <option key={candidate.id} value={candidate.id}>
               {candidate.display_name}
             </option>
           ))}

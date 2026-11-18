@@ -48,8 +48,19 @@ export function TierEditor({ template }: TierEditorProps) {
   const lastError: Error | null = addMutation.error ?? updateMutation.error ?? deleteMutation.error;
   const showLastError: boolean = lastError !== null && hasNoFieldError(lastError);
 
+  function clearTierErrors() {
+    addMutation.reset();
+    updateMutation.reset();
+    deleteMutation.reset();
+  }
+
+  function updateTier(update: TierUpdate) {
+    clearTierErrors();
+    updateMutation.mutate(update);
+  }
+
   function moveTier(tier: Tier, position: number) {
-    updateMutation.mutate({ tierId: tier.id, changes: { position } });
+    updateTier({ tierId: tier.id, changes: { position } });
   }
 
   return (
@@ -88,9 +99,10 @@ export function TierEditor({ template }: TierEditorProps) {
                   key={tier.color}
                   label={t('templates.editor.tierColor', { name: tier.name })}
                   savedColor={tier.color}
-                  onSave={(color) =>
-                    updateMutation.mutateAsync({ tierId: tier.id, changes: { color } })
-                  }
+                  onSave={(color) => {
+                    clearTierErrors();
+                    return updateMutation.mutateAsync({ tierId: tier.id, changes: { color } });
+                  }}
                 />
                 <div className="ml-auto flex items-center">
                   <Button
@@ -119,7 +131,10 @@ export function TierEditor({ template }: TierEditorProps) {
                     size="icon"
                     aria-label={t('templates.editor.deleteTier', { name: tier.name })}
                     disabled={isWaitingForOrderResponse || tiers.length === 1}
-                    onClick={() => deleteMutation.mutate(tier.id)}
+                    onClick={() => {
+                      clearTierErrors();
+                      deleteMutation.mutate(tier.id);
+                    }}
                   >
                     <Trash2 />
                   </Button>
@@ -133,7 +148,7 @@ export function TierEditor({ template }: TierEditorProps) {
                 maxLength={TIER_NAME_MAX_LENGTH}
                 wrapsLongValue
                 error={failedTierId === tier.id ? nameError : undefined}
-                onSave={(name) => updateMutation.mutate({ tierId: tier.id, changes: { name } })}
+                onSave={(name) => updateTier({ tierId: tier.id, changes: { name } })}
               />
             </li>
           )}
@@ -144,7 +159,10 @@ export function TierEditor({ template }: TierEditorProps) {
         type="button"
         variant="outline"
         disabled={isWaitingForOrderResponse}
-        onClick={() => addMutation.mutate()}
+        onClick={() => {
+          clearTierErrors();
+          addMutation.mutate();
+        }}
       >
         {t('templates.editor.addTier')}
       </Button>

@@ -9,6 +9,8 @@ import { CreateRoomButton } from '../components/CreateRoomButton';
 import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
+import { TemplateTagsField } from '../components/TemplateTagsField';
+import { TemplateVisibilityField } from '../components/TemplateVisibilityField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
 import { textLinkClassName } from '../components/ui/text-link';
@@ -17,9 +19,12 @@ import {
   FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
 } from '../constants/layout';
 import { ROUTES } from '../constants/routes';
+import { isTemplateId } from '../constants/templates';
 import { translateError } from '../errors/apiError';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
+import { NotFoundPage } from './NotFoundPage';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function TemplateEditorPage() {
   const { templateId = '' }: Readonly<Params> = useParams();
@@ -30,6 +35,7 @@ export function TemplateEditorPage() {
     error,
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  useDocumentTitle(template?.name);
 
   useEffect(() => {
     function ignoreFileDropOutsideDropZones(event: DragEvent) {
@@ -45,6 +51,8 @@ export function TemplateEditorPage() {
       window.removeEventListener('drop', ignoreFileDropOutsideDropZones);
     };
   }, []);
+
+  if (!isTemplateId(templateId)) return <NotFoundPage />;
 
   return (
     <PageContainer
@@ -70,8 +78,12 @@ export function TemplateEditorPage() {
           {template.moderation === 'hidden' && (
             <TemplateHiddenNotice reason={template.moderation_reason} />
           )}
-          <div className="w-full max-w-xl">
-            <TemplateNameField template={template} />
+          <div className="grid w-full max-w-xl items-start gap-4 lg:max-w-none lg:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-4">
+              <TemplateNameField template={template} />
+              <TemplateTagsField template={template} />
+            </div>
+            <TemplateVisibilityField template={template} />
           </div>
           <div
             className={cn(

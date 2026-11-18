@@ -16,7 +16,7 @@ export function MainNav() {
 
   function linkClassName({ isActive }: { isActive: boolean }) {
     return cn(
-      'text-sm underline-offset-4 hover:underline',
+      'text-sm whitespace-nowrap underline-offset-4 hover:underline',
       isActive ? 'font-semibold' : 'text-muted-foreground',
     );
   }
@@ -35,6 +35,11 @@ export function MainNav() {
           </NavLink>
         </li>
         <li>
+          <NavLink to={ROUTES.MARKETPLACE} className={linkClassName}>
+            {t('nav.marketplace')}
+          </NavLink>
+        </li>
+        <li>
           <NavLink to={ROUTES.HISTORY} className={linkClassName}>
             {t('nav.history')}
           </NavLink>
@@ -44,11 +49,9 @@ export function MainNav() {
             <NavLink to={ROUTES.MODERATION} className={linkClassName}>
               {t('nav.moderation')}
               {openReports !== undefined && openReports > 0 && (
-                <span
-                  aria-label={t('nav.openReports', { count: openReports })}
-                  className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground"
-                >
-                  {openReports}
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground">
+                  <span aria-hidden="true">{openReports}</span>
+                  <span className="sr-only">{t('nav.openReports', { count: openReports })}</span>
                 </span>
               )}
             </NavLink>

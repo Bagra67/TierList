@@ -1,5 +1,6 @@
+import base64
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,6 +15,7 @@ from app.constants.templates import (
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
     TEMPLATE_NAME_MAX_LENGTH,
+    TEMPLATES_PAGE_SIZE,
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
 )
@@ -110,7 +112,7 @@ def test_list_is_empty_when_the_user_has_no_template(
     response: Response = auth_client.get("/templates", headers=alice)
 
     assert response.status_code == 200
-    assert response.json() == {"items": []}
+    assert response.json() == {"items": [], "next_cursor": None}
 
 
 def test_list_shows_only_my_templates_with_their_tile_count(
@@ -141,7 +143,7 @@ def test_list_shows_the_last_modified_template_first(
     assert [item["name"] for item in response.json()["items"]] == ["First, renamed", "Second"]
 
 
-def test_list_orders_the_templates_of_the_same_instant_by_their_id(
+def test_list_orders_the_templates_of_the_same_instant_by_their_id_from_the_highest(
     auth_client: TestClient, alice: dict[str, str], db_session: Session
 ):
     owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
@@ -156,8 +158,65 @@ def test_list_orders_the_templates_of_the_same_instant_by_their_id(
     response: Response = auth_client.get("/templates", headers=alice)
 
     assert [item["id"] for item in response.json()["items"]] == [
-        str(template_id) for template_id in reversed(ids_in_insertion_order)
+        str(template_id) for template_id in ids_in_insertion_order
     ]
+
+
+def add_templates_at_distinct_instants(db_session: Session, count: int) -> list[str]:
+    owner: User = db_session.scalars(select(User).where(User.email == "alice@example.com")).one()
+    newest_first: list[str] = []
+    for minutes_ago in range(count):
+        template: Template = Template(
+            owner_id=owner.id,
+            name=f"Template {minutes_ago}",
+            updated_at=datetime(2026, 1, 1, tzinfo=UTC) - timedelta(minutes=minutes_ago),
+        )
+        db_session.add(template)
+        db_session.flush()
+        newest_first.append(str(template.id))
+    return newest_first
+
+
+def test_list_reads_the_templates_page_after_page(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    newest_first: list[str] = add_templates_at_distinct_instants(
+        db_session, TEMPLATES_PAGE_SIZE + 1
+    )
+
+    first_page: JsonObject = auth_client.get("/templates", headers=alice).json()
+    second_page: JsonObject = auth_client.get(
+        "/templates", params={"cursor": first_page["next_cursor"]}, headers=alice
+    ).json()
+
+    assert len(first_page["items"]) == TEMPLATES_PAGE_SIZE
+    assert first_page["next_cursor"] is not None
+    assert second_page["next_cursor"] is None
+    read: list[str] = [item["id"] for item in first_page["items"] + second_page["items"]]
+    assert read == newest_first
+
+
+def test_a_full_last_page_has_no_next_cursor(
+    auth_client: TestClient, alice: dict[str, str], db_session: Session
+):
+    add_templates_at_distinct_instants(db_session, TEMPLATES_PAGE_SIZE)
+
+    page: JsonObject = auth_client.get("/templates", headers=alice).json()
+
+    assert len(page["items"]) == TEMPLATES_PAGE_SIZE
+    assert page["next_cursor"] is None
+
+
+@pytest.mark.parametrize(
+    "cursor",
+    ["not a cursor", base64.urlsafe_b64encode(b'{"sort": "popular"}').decode()],
+    ids=["unreadable", "another-list"],
+)
+def test_an_invalid_cursor_is_refused(auth_client: TestClient, alice: dict[str, str], cursor: str):
+    response: Response = auth_client.get("/templates", params={"cursor": cursor}, headers=alice)
+
+    assert response.status_code == 400
+    assert response.json()["code"] == ErrorCode.INVALID_CURSOR
 
 
 def test_get_template_returns_its_tiers_and_tiles(
@@ -196,7 +255,7 @@ def test_delete_template_is_a_soft_delete(
     response: Response = auth_client.delete(f"/templates/{template['id']}", headers=alice)
 
     assert response.status_code == 204
-    assert auth_client.get("/templates", headers=alice).json() == {"items": []}
+    assert auth_client.get("/templates", headers=alice).json()["items"] == []
     assert auth_client.get(f"/templates/{template['id']}", headers=alice).status_code == 404
     stored: Template = db_session.scalars(select(Template)).one()
     assert stored.deleted_at is not None

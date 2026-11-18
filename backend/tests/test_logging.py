@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlalchemy.exc import OperationalError
 
 from app.core.logging import LoggingSettings, configure_logging
 from app.db.session import get_db_session
 from app.main import api_app
+from tests.database_doubles import UnreachableDatabaseSession
 
 
 @pytest.fixture
@@ -59,11 +59,6 @@ def test_app_logs_use_uvicorn_format_and_respect_level(capsys: pytest.CaptureFix
     assert "hidden message" not in stderr
     assert "WARNING:" in stderr
     assert "app.example - visible message" in stderr
-
-
-class UnreachableDatabaseSession:
-    def execute(self, *args: object, **kwargs: object) -> None:
-        raise OperationalError("SELECT 1", {}, Exception("connection refused"))
 
 
 def test_database_failure_is_logged_with_traceback(capsys: pytest.CaptureFixture[str]):

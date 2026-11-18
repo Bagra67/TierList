@@ -43,9 +43,14 @@ pnpm typecheck
 pnpm knip
 pnpm test
 pnpm build
+pnpm test:e2e
 ```
 
 If `gen:api` changes `schema.d.ts`, the API types were out of date: use `/api-sync`.
+
+`pnpm test:e2e` runs the Playwright tests on the build, on Chromium, Firefox and WebKit. It needs
+`docker compose up -d --wait` and the browsers (`pnpm exec playwright install chromium firefox
+webkit`); without them, report it as NOT RUN with the reason.
 
 ## 4. Docs (from the repo root)
 
@@ -54,19 +59,28 @@ python -m unittest discover -s .github/scripts
 python .github/scripts/check_docs_sync.py --base origin/develop
 ```
 
-## 5. Review checklist
+## 5. Browser check (frontend changes only)
+
+If `frontend/src/` changed and the app runs locally (`dev.*`, with `docker compose up -d --wait`),
+use the `playwright` MCP server to walk through the screens the PR touches on
+`http://127.0.0.1:5173`: the main flow, the loading, error and empty states, the page in French and
+in English, and `browser_console_messages` for errors. Report it as one line of the table. If the
+app is not running, report it as NOT RUN with the reason: never start it against staging or
+production.
+
+## 6. Review checklist
 
 Read the diff (`git diff origin/develop...HEAD`) and answer each point with yes, no or not concerned:
 
-- Tests added or updated for the new behavior, and the testing guide updated in both languages
-  (§28).
+- Tests added or updated for the new behavior, with names that say the expected behavior, and the
+  testing guide updated if a shared fixture, helper, tool or command changed (§28).
 - Every new user-facing text goes through `t()` and exists in `fr.ts` and `en.ts`; every new
   `ErrorCode` is translated under `errors.*` (§50).
 - Privacy policy: does the change touch personal data, retention, a provider, a cookie or a storage
   key, or what other users see (§51)?
 - Seed data: does `backend/app/seed/` need to cover the new data or cases (§28)?
 - Schema change: an Alembic migration exists and was reviewed (§36).
-- Docs changed in both `name.md` and `name.fr.md` (§31).
+- READMEs changed in both `README.md` and `README.fr.md` (§31).
 - No comment that only repeats the code (§31), no unrelated change (§5).
 
 ## Report

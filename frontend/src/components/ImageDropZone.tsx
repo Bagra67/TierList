@@ -31,7 +31,8 @@ interface ImageDropZoneProps {
 const SIZE_CLASSES = {
   addFormThumbnail: {
     zone: 'size-24',
-    icon: 'size-7',
+    icon: 'size-5',
+    hintGap: 'gap-0.5',
     hint: 'text-[0.7rem]',
     remove: '-top-1.5 -right-1.5 size-5',
     removeIcon: 'size-3',
@@ -39,6 +40,7 @@ const SIZE_CLASSES = {
   fullWidthSquare: {
     zone: 'aspect-square w-full',
     icon: 'size-10',
+    hintGap: 'gap-1',
     hint: 'text-xs',
     remove: 'top-1.5 right-1.5 size-7',
     removeIcon: 'size-4',
@@ -171,7 +173,10 @@ export function ImageDropZone({
         ) : showRemovedImage ? (
           <RemovedImage className="size-full" showLabel />
         ) : (
-          <span className="flex flex-col items-center gap-1 px-1 text-center" aria-hidden="true">
+          <span
+            className={cn('flex flex-col items-center px-1 text-center', sizeClasses.hintGap)}
+            aria-hidden="true"
+          >
             <ImageIcon className={sizeClasses.icon} />
             <span className={cn('leading-tight', sizeClasses.hint)}>
               {onSelectMany === undefined

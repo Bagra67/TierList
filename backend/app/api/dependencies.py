@@ -2,18 +2,21 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from typing import Annotated
 
-from fastapi import Cookie, Depends
+from fastapi import Cookie, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
+from app.constants.seo import ACCEPT_LANGUAGE_HEADER
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
+from app.seo.head import PageHead
+from app.seo.language import language_from_accept_language
 from app.services.account_bans import AccountBanService
 from app.services.account_review import AccountReviewService
 from app.services.auth import AuthenticatedSession, AuthService
@@ -22,9 +25,11 @@ from app.services.game_results import GameResultsService
 from app.services.games import GameService
 from app.services.google_oauth import GoogleOAuthClient
 from app.services.history import HistoryService
+from app.services.image_hiding_guard import ImageHidingGuard, image_hiding_guard
 from app.services.image_moderation import ImageModerationService
 from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
+from app.services.marketplace import MarketplaceService
 from app.services.moderation_log import ModerationLogService
 from app.services.recent_uploads import RecentUploadsService
 from app.services.report_queue import ReportQueueService
@@ -32,6 +37,7 @@ from app.services.reports import ReportService
 from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
+from app.services.seo import SeoService
 from app.services.template_moderation import TemplateModerationService
 from app.services.templates import TemplateService
 
@@ -52,6 +58,12 @@ def get_template_service(
     return TemplateService(session, settings)
 
 
+def get_marketplace_service(
+    session: Annotated[Session, Depends(get_db_session)],
+) -> MarketplaceService:
+    return MarketplaceService(session)
+
+
 ShortLivedSessionFactory = Callable[[], AbstractContextManager[Session]]
 
 
@@ -61,6 +73,10 @@ def get_short_lived_session_factory() -> ShortLivedSessionFactory:
 
 def get_connection_registry() -> ConnectionRegistry:
     return room_connections
+
+
+def get_image_hiding_guard() -> ImageHidingGuard:
+    return image_hiding_guard
 
 
 def get_room_event_publisher(
@@ -150,6 +166,23 @@ def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> I
     return create_image_storage(settings)
 
 
+def get_seo_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+    marketplace: Annotated[MarketplaceService, Depends(get_marketplace_service)],
+    storage: Annotated[ImageStorage, Depends(get_image_storage)],
+) -> SeoService:
+    return SeoService(settings, marketplace, storage)
+
+
+def get_page_head(
+    request: Request, service: Annotated[SeoService, Depends(get_seo_service)]
+) -> PageHead:
+    return service.page_head(
+        request.url.path,
+        language_from_accept_language(request.headers.get(ACCEPT_LANGUAGE_HEADER)),
+    )
+
+
 def get_image_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -177,8 +210,10 @@ def get_account_review_service(
     session: Annotated[Session, Depends(get_db_session)],
     templates: Annotated[TemplateService, Depends(get_template_service)],
     image_moderation: Annotated[ImageModerationService, Depends(get_image_moderation_service)],
+    hiding_guard: Annotated[ImageHidingGuard, Depends(get_image_hiding_guard)],
+    bans: Annotated[AccountBanService, Depends(get_account_ban_service)],
 ) -> AccountReviewService:
-    return AccountReviewService(session, templates, image_moderation)
+    return AccountReviewService(session, templates, image_moderation, hiding_guard, bans)
 
 
 def get_email_sender(settings: Annotated[Settings, Depends(get_settings)]) -> EmailSender:
@@ -261,6 +296,8 @@ SuperAdminDep = Annotated[User, Depends(get_current_super_admin)]
 RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
+MarketplaceServiceDep = Annotated[MarketplaceService, Depends(get_marketplace_service)]
+SeoServiceDep = Annotated[SeoService, Depends(get_seo_service)]
 RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]

@@ -20,7 +20,9 @@ from app.services.rooms import RoomService
 from app.services.templates import TemplateService
 from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRoundScheduler
 from tests.integration.helpers import (
+    PASSWORD,
     JsonObject,
+    counted_queries,
     create_room,
     create_template,
     register,
@@ -307,6 +309,32 @@ def test_the_deadlines_of_a_game_without_room_are_not_scheduled_again(
     assert recorded.deadlines == []
 
 
+def test_a_placement_reads_the_closed_games_of_the_room_only_for_its_answer(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    start_game(auth_client, code, alice)
+    game: Game = stored_game(db_session)
+    tile_id: uuid.UUID = game.current_round.snapshot_tile_id
+    tier_id: uuid.UUID = game.snapshot.tiers[0].id
+
+    with counted_queries(db_session) as statements:
+        response: Response = auth_client.put(
+            f"/rooms/{code}/game/placements/{tile_id}",
+            json={"tier_id": str(tier_id), "position": 0},
+            headers=alice,
+        )
+
+    assert response.status_code == 200
+    closed_game_reads: list[str] = [
+        statement for statement in statements if "count(game_players.id)" in statement
+    ]
+    assert len(closed_game_reads) == 1
+
+
 def test_everyone_placed_ends_the_round(
     auth_client: TestClient,
     db_session: Session,
@@ -368,6 +396,28 @@ def test_a_departure_can_end_the_round(
         seat_id_of(db_session, "bob"), False
     )
 
+    assert stored_game(db_session).current_round_number == 2
+
+
+def test_deleting_the_account_of_the_only_player_still_awaited_ends_the_round(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+):
+    code: str = alice_room["code"]
+    settings(auth_client, code, alice, auto_advance="everyone_placed")
+    join(auth_client, code, bob)
+    start_game(auth_client, code, alice)
+    set_connected(db_session, {"alice", "bob"})
+    place_current(auth_client, db_session, code, alice)
+
+    deleted: Response = auth_client.request(
+        "DELETE", "/auth/me", json={"password": PASSWORD}, headers=bob
+    )
+
+    assert deleted.status_code == 204
     assert stored_game(db_session).current_round_number == 2
 
 

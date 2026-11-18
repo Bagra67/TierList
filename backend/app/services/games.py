@@ -6,6 +6,8 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.constants.error_codes import ErrorCode
+from app.constants.rooms import CHANNEL_CLOSE_NOT_AUTHENTICATED, RoomCloseReason
 from app.core.security import generate_public_results_token
 from app.exceptions.games import (
     CooldownNotInProgressError,
@@ -97,11 +99,13 @@ def _freeze_players(game: Game) -> None:
         placement.participant = None
 
 
+def places_in_game(room: Room, participant: Participant) -> bool:
+    return room.admin_plays or participant.user_id != room.admin_id
+
+
 def _is_inactive(room: Room, cutoff: datetime) -> bool:
-    return (
-        room.status == RoomStatus.OPEN
-        and room.updated_at < cutoff
-        and not any(participant.connected for participant in room.participants)
+    return room.updated_at < cutoff and not any(
+        participant.connected for participant in room.participants
     )
 
 
@@ -211,7 +215,7 @@ class GameService:
         return [
             participant
             for participant in self._rooms.seated_participants(room)
-            if room.admin_plays or participant.user_id != room.admin_id
+            if places_in_game(room, participant)
         ]
 
     def place(
@@ -350,9 +354,30 @@ class GameService:
     def close_room(self, user: User, code: str) -> None:
         room: Room = self._rooms.get_for_admin_change(user, code)
         room_id: uuid.UUID = room.id
-        self._close_room_locked(room, reason="admin")
+        self._close_room_locked(room, reason=RoomCloseReason.ADMIN)
         self._session.commit()
         self._publisher.close_room(room_id)
+
+    def leave_rooms_of_deleted_account(self, user: User) -> None:
+        self.close_rooms_of_admin(user)
+        seat_ids: list[uuid.UUID] = [
+            seat.id for seat in room_repository.list_seats_of_user(self._session, user.id)
+        ]
+        for seat_id in seat_ids:
+            room: Room | None = self._rooms.remove_seat_of_deleted_account(seat_id)
+            if room is not None and room.status == RoomStatus.PLAYING:
+                self.advance_if_everyone_placed(room.id)
+
+    def disconnect_banned_account(self, user_id: uuid.UUID) -> None:
+        seats: list[tuple[uuid.UUID, uuid.UUID]] = [
+            (seat.room_id, seat.id)
+            for seat in room_repository.list_seats_of_user(self._session, user_id)
+        ]
+        for room_id, seat_id in seats:
+            self._publisher.disconnect_participant(
+                room_id, seat_id, CHANNEL_CLOSE_NOT_AUTHENTICATED, ErrorCode.NOT_AUTHENTICATED
+            )
+            self.set_presence(seat_id, False)
 
     def close_rooms_of_admin(self, user: User) -> None:
         room_ids: list[uuid.UUID] = room_repository.list_room_ids_of_admin(self._session, user.id)
@@ -363,7 +388,7 @@ class GameService:
             if room is None:
                 self._session.commit()
                 continue
-            self._close_room_locked(room, reason="account_deleted")
+            self._close_room_locked(room, reason=RoomCloseReason.ACCOUNT_DELETED)
             self._session.commit()
             self._publisher.close_room(room_id)
 
@@ -378,7 +403,7 @@ class GameService:
             if room is None or not _is_inactive(room, cutoff):
                 self._release_room_lock()
                 continue
-            self._close_room_locked(room, reason="inactive")
+            self._close_room_locked(room, reason=RoomCloseReason.INACTIVE)
             self._session.commit()
             self._publisher.close_room(room_id)
             closed_count += 1
@@ -517,7 +542,7 @@ class GameService:
         logger.info("Partie close : room_id=%s game_id=%s", room.id, game.id)
         return GameClosedEvent(room_version=room.version, data=GameClosedData(game_id=game.id))
 
-    def _close_room_locked(self, room: Room, reason: str) -> None:
+    def _close_room_locked(self, room: Room, reason: RoomCloseReason) -> None:
         game: Game | None = room.current_game
         if game is not None:
             if game.status == GameStatus.IN_ROUND:

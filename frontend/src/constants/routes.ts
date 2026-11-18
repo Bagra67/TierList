@@ -9,6 +9,8 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   TEMPLATES: '/templates',
   TEMPLATE_EDITOR: '/templates/:templateId',
+  MARKETPLACE: '/marketplace',
+  PUBLIC_TEMPLATE: '/marketplace/templates/:templateId',
   HISTORY: '/history',
   MODERATION: '/moderation',
   MODERATION_REPORTS: '/moderation/reports',
@@ -26,6 +28,18 @@ export const ROUTES = {
 
 export function templateEditorPath(templateId: string): string {
   return generatePath(ROUTES.TEMPLATE_EDITOR, { templateId });
+}
+
+export function publicTemplatePath(templateId: string): string {
+  return generatePath(ROUTES.PUBLIC_TEMPLATE, { templateId });
+}
+
+export const MARKETPLACE_SEARCH_PARAM = 'q';
+export const MARKETPLACE_TAG_PARAM = 'tag';
+export const MARKETPLACE_SORT_PARAM = 'sort';
+
+export function marketplaceTagPath(tag: string): string {
+  return `${ROUTES.MARKETPLACE}?${new URLSearchParams({ [MARKETPLACE_TAG_PARAM]: tag }).toString()}`;
 }
 
 export function roomPath(code: string): string {

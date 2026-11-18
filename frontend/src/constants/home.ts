@@ -1,11 +1,13 @@
 import { TIER_COLOR_PRESETS } from './templates';
 
+export type HomeBoardVoter = 'A' | 'B' | 'C';
+
 type HomeBoardItemKey =
   'pizza' | 'crepes' | 'sushi' | 'tacos' | 'ramen' | 'croissant' | 'burger' | 'salad';
 
 export interface HomeBoardItem {
   key: HomeBoardItemKey;
-  voterInitials: readonly string[];
+  voterInitials: readonly HomeBoardVoter[];
 }
 
 export interface HomeBoardRow {
@@ -43,7 +45,7 @@ export const HOME_BOARD: readonly HomeBoardRow[] = [
   { tier: 'C', color: TIER_COLOR_PRESETS[3], items: [{ key: 'salad', voterInitials: [] }] },
 ];
 
-export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<string, string>> = {
+export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<HomeBoardVoter, string>> = {
   A: TIER_COLOR_PRESETS[4],
   B: TIER_COLOR_PRESETS[5],
   C: TIER_COLOR_PRESETS[2],
@@ -52,4 +54,5 @@ export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<string, string>> = {
 export const HOME_BOARD_ITEM_STAGGER_MS: number = 240;
 export const HOME_BOARD_ITEM_APPEAR_MS: number = 630;
 
+export const HOME_POPULAR_COUNT: number = 3;
 export const HOME_RECENT_COUNT: number = 3;

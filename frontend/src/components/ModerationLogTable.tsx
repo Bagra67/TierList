@@ -7,11 +7,8 @@ import {
   useModerationLog,
 } from '../api/moderation';
 import { moderationAccountPath } from '../constants/routes';
-import { translateError } from '../errors/apiError';
+import { PagedList } from './PagedList';
 import { EmptyState } from './EmptyState';
-import { ErrorMessage } from './ErrorMessage';
-import { LoadingSkeleton } from './LoadingSkeleton';
-import { Button } from './ui/button';
 
 interface ModerationLogTableProps {
   filters: ModerationLogFilters;
@@ -20,16 +17,17 @@ interface ModerationLogTableProps {
 
 export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTableProps) {
   const { t } = useTranslation();
-  const { data, isPending, isError, error, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useModerationLog(filters);
-  const entries: ModerationLogEntry[] = data?.pages.flatMap((page) => page.entries) ?? [];
+  const query = useModerationLog(filters);
+  const entries: ModerationLogEntry[] = query.data?.pages.flatMap((page) => page.entries) ?? [];
 
   return (
     <>
-      {isPending && <LoadingSkeleton shape="list" />}
-      {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {data !== undefined && entries.length === 0 && <EmptyState message={emptyMessage} />}
-      {entries.length > 0 && (
+      <PagedList
+        query={query}
+        itemCount={entries.length}
+        empty={<EmptyState message={emptyMessage} />}
+        moreLabel={t('moderation.log.more')}
+      >
         <div className="w-full overflow-x-auto rounded-panel border bg-card">
           <table className="w-full text-sm">
             <caption className="sr-only">{t('moderation.log.title')}</caption>
@@ -69,17 +67,7 @@ export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTable
             </tbody>
           </table>
         </div>
-      )}
-      {hasNextPage && (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isFetchingNextPage}
-          onClick={() => void fetchNextPage()}
-        >
-          {isFetchingNextPage ? t('common.loading') : t('moderation.log.more')}
-        </Button>
-      )}
+      </PagedList>
     </>
   );
 }

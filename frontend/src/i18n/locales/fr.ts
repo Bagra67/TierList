@@ -6,6 +6,10 @@ export const fr = {
     theme: 'Thème',
     imageRemoved: 'Image retirée',
   },
+  documentTitle: {
+    site: 'TierList · Classez ensemble, en direct',
+    page: '{{page}} · TierList',
+  },
   home: {
     visitor: {
       title: 'Classez ensemble, en direct.',
@@ -48,6 +52,11 @@ export const fr = {
       title: 'Vos modèles',
       all: 'Tous mes modèles',
       empty: "Aucun modèle pour l'instant : préparez le premier pour ouvrir une salle.",
+      fromPublic: 'Ou partez d’un modèle public',
+    },
+    popular: {
+      title: 'Modèles publics populaires',
+      all: 'Voir tous les modèles publics',
     },
     recentGames: {
       title: 'Vos dernières parties',
@@ -60,6 +69,7 @@ export const fr = {
     label: 'Navigation principale',
     home: 'Accueil',
     templates: 'Mes modèles',
+    marketplace: 'Modèles publics',
     history: 'Historique',
     moderation: 'Modération',
     openReports_one: '{{count}} contenu signalé',
@@ -98,20 +108,22 @@ export const fr = {
         "Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS). L'empreinte de chaque fichier envoyé est gardée, pour refuser le renvoi d'une image supprimée par la modération.",
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
+      likes:
+        "J'aime : les modèles publics que vous aimez. Seul le nombre de j'aime d'un modèle est affiché : personne ne voit qui l'a aimé. Ils sont supprimés avec votre compte.",
       reports:
         "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
       moderation:
         "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
       technical:
-        'Données techniques : les cookies et le stockage local décrits plus bas, et des journaux techniques (identifiants internes, jamais vos mots de passe).',
+        "Données techniques : les cookies et le stockage local décrits plus bas, des journaux techniques (identifiants internes, jamais vos mots de passe) et, quand une erreur survient, un rapport d'erreur (la page, le navigateur, la version de TierList et le détail technique de l'erreur, sans votre adresse IP, vos cookies ni ce que vous avez saisi).",
     },
     purposes: {
       title: 'Pourquoi ces données',
       service:
         "Fournir le service que vous demandez en utilisant TierList (exécution du contrat) : créer votre compte, vous connecter, faire jouer les parties, envoyer les e-mails de vérification de l'adresse et de réinitialisation du mot de passe.",
       security:
-        'Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, sauvegardes, suppression automatique des données expirées.',
+        "Assurer la sécurité et le bon fonctionnement du service (intérêt légitime) : journaux techniques, rapports d'erreur pour corriger les pannes, sauvegardes, suppression automatique des données expirées.",
       reports: 'Traiter les signalements de contenus illicites (obligation légale).',
       moderation:
         "Garder la trace des décisions de modération (intérêt légitime) : savoir qui a décidé quoi et pourquoi, retrouver les sanctions passées d'un compte, et refuser qu'une image supprimée par la modération soit envoyée à nouveau.",
@@ -131,6 +143,7 @@ export const fr = {
       moderatedImages:
         "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée. Le motif de la décision est gardé avec l'image pour que son propriétaire puisse le lire, jusqu'à la suppression de son compte.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
+      errorReports: "Rapports d'erreur : 30 jours.",
       reports:
         'Signalements : le temps de les traiter, puis un an au plus pour garder la trace des décisions.',
       bans: "Bannissements : jusqu'à la suppression du compte, pour repérer une récidive.",
@@ -141,8 +154,10 @@ export const fr = {
       room: "Les participants d'une salle voient le modèle utilisé, les pseudos et les placements de la partie.",
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
+      publicTemplates:
+        "Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images), votre pseudo et son nombre de j'aime. Toute personne connectée peut aussi créer une salle avec : les parties jouées en gardent une copie (nom, tiers, éléments), visible dans l'historique de leurs joueurs et sur leur lien de résultats, même si le modèle redevient privé ou est supprimé. Il peut aussi apparaître dans les moteurs de recherche et dans les aperçus de lien ; s'il redevient privé ou est supprimé, il peut y rester quelque temps, le temps que ces services mettent leur copie à jour.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -157,6 +172,8 @@ export const fr = {
         'Cloudflare : nom de domaine, chiffrement HTTPS et acheminement du trafic (États-Unis).',
       google: 'Google : connexion avec un compte Google, si vous la choisissez (États-Unis).',
       github: "GitHub : déploiement de l'application et transfert des sauvegardes (États-Unis).",
+      sentry:
+        "Sentry (Functional Software) : suivi des erreurs de l'application (données stockées dans l'Union européenne, société établie aux États-Unis).",
       transfers:
         'Les transferts vers les États-Unis reposent sur les garanties prévues par le RGPD, comme les clauses contractuelles types de la Commission européenne.',
     },
@@ -196,7 +213,7 @@ export const fr = {
     report: {
       title: 'Signaler un contenu',
       intro:
-        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo ou d'une partie, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
+        "Si un contenu publié sur TierList vous semble illicite (haineux, à caractère sexuel, portant atteinte aux droits d'une personne ou contraire à la loi), utilisez le bouton « Signaler » à côté d'une image, d'un pseudo, d'une partie ou d'un modèle public, avec ou sans compte. Pour tout autre contenu, ou pour recevoir une réponse, écrivez à :",
       include: 'Pour que le signalement puisse être traité, indiquez :',
       page: 'le lien de la page où se trouve le contenu (modèle, salle ou résultats) ;',
       content: 'le contenu visé : une tuile (son texte ou son image), un modèle ou un pseudo ;',
@@ -368,6 +385,7 @@ export const fr = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'Voir le compte',
       viewResults: 'Voir les résultats',
+      viewTemplate: 'Voir le modèle',
       decisions: {
         dismiss: {
           open: 'Classer sans suite',
@@ -413,6 +431,24 @@ export const fr = {
             'Son lien de résultats devient introuvable, et ses signalements ouverts sont fermés. Elle peut être réaffichée.',
           submit: 'Masquer',
           submitting: 'Masquage…',
+        },
+        hide_template: {
+          open: 'Masquer',
+          openLabel: 'Masquer : {{name}}',
+          title: 'Masquer ce modèle ?',
+          description:
+            'Il quitte les modèles publics, et plus aucune salle ni partie ne pourra être lancée avec. Son propriétaire le verra, avec le motif. Ses signalements ouverts sont fermés. Il peut être réaffiché depuis sa page.',
+          submit: 'Masquer',
+          submitting: 'Masquage…',
+        },
+        delete_template: {
+          open: 'Supprimer',
+          openLabel: 'Supprimer : {{name}}',
+          title: 'Supprimer ce modèle ?',
+          description:
+            'Il sera supprimé comme si son propriétaire le faisait, mais celui-ci verra la décision et le motif. Ses signalements ouverts sont fermés. Cette action est définitive.',
+          submit: 'Supprimer',
+          submitting: 'Suppression…',
         },
       },
       hiddenGames: {
@@ -686,11 +722,40 @@ export const fr = {
   },
   templates: {
     title: 'Mes modèles',
+    more: 'Voir plus',
     hidden: {
       badge: 'Masqué',
       title: 'Masqué par la modération',
       reason: 'Motif : {{reason}}',
-      hint: 'Vous pouvez encore le modifier, mais plus lancer de partie avec.',
+      hint: 'Vous pouvez encore le modifier, mais ni lancer de partie avec, ni le rendre public.',
+    },
+    visibility: {
+      legend: 'Visibilité',
+      badge: 'Public',
+      private: {
+        label: 'Privé',
+        description: 'Vous seul pouvez créer une salle avec ce modèle.',
+      },
+      public: {
+        label: 'Public',
+        description: 'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.',
+      },
+      firstMadePublicAt: 'Première publication le {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'Voir la page publique',
+      hiddenWhilePublic: "Masqué par la modération : il n'apparaît pas dans les modèles publics.",
+      hiddenCannotBePublic: 'Masqué par la modération : il ne peut pas être rendu public.',
+      needsTiles: 'Ajoutez au moins une tuile pour le rendre public.',
+      emailNotVerified: 'Confirmez votre adresse e-mail pour rendre un modèle public.',
+    },
+    tags: {
+      legend: 'Étiquettes',
+      count: '{{count}} / {{max}}',
+      listLabel: 'Étiquettes du modèle',
+      add: 'Ajouter une étiquette',
+      remove: "Retirer l'étiquette « {{label}} »",
+      hint: 'Un mot ou une courte expression : on trouve votre modèle grâce à ses étiquettes.',
+      limitReached: '{{max}} étiquettes au plus : retirez-en une pour en ajouter une autre.',
+      duplicate: 'Cette étiquette est déjà là.',
     },
     removedImage: {
       hidden: 'Image masquée par la modération',
@@ -728,6 +793,7 @@ export const fr = {
       addTier: 'Ajouter un tier',
       tierName: 'Nom du tier {{position}}',
       tierColor: 'Couleur du tier {{name}}',
+      colorTrigger: '{{label}}, actuellement {{color}}',
       color: {
         area: 'Saturation et luminosité',
         areaValue: 'Saturation {{saturation}} %, luminosité {{brightness}} %',
@@ -784,6 +850,52 @@ export const fr = {
       },
     },
   },
+  marketplace: {
+    title: 'Modèles publics',
+    intro: 'Trouvez une tier list à jouer entre amis, ou une idée pour créer la vôtre.',
+    search: {
+      label: 'Rechercher un modèle',
+      submit: 'Rechercher',
+    },
+    sort: {
+      label: 'Trier par',
+      popular: 'Les plus aimés',
+      newest: 'Les plus récents',
+    },
+    tags: {
+      label: 'Étiquettes populaires',
+    },
+    card: {
+      byline_one: 'par {{owner}} · {{count}} élément',
+      byline_other: 'par {{owner}} · {{count}} éléments',
+    },
+    empty: "Aucun modèle public pour l'instant.",
+    noMatch: 'Aucun modèle public ne correspond à votre recherche.',
+    clear: 'Effacer la recherche',
+    more: 'Voir plus',
+  },
+  publicTemplate: {
+    byOwner: 'par {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Élément ({{count}})',
+    items_other: 'Éléments ({{count}})',
+    noItems: "Ce modèle n'a aucun élément pour l'instant.",
+    itemImage: "Image de l'élément {{number}}",
+    unavailable: {
+      title: 'Modèle indisponible',
+      message: "Ce modèle n'est pas disponible.",
+    },
+    play: {
+      signIn: 'Se connecter pour jouer',
+      signInHint: 'Créez une salle avec ce modèle. Vous revenez ici après la connexion.',
+    },
+    like: {
+      button: "J'aime · {{count}}",
+      count_one: "{{count}} j'aime",
+      count_other: "{{count}} j'aime",
+      signIn: 'Se connecter pour aimer',
+    },
+  },
   report: {
     open: 'Signaler',
     openLabel: 'Signaler : {{name}}',
@@ -792,6 +904,7 @@ export const fr = {
       participant: 'Signaler ce pseudo',
       player: 'Signaler ce pseudo',
       game: 'Signaler cette partie',
+      template: 'Signaler ce modèle',
     },
     anonymous: "Votre signalement est anonyme : la personne signalée ne saura pas qui l'a envoyé.",
     reason: 'Motif',
@@ -1080,6 +1193,7 @@ export const fr = {
       incorrect_password: 'Mot de passe incorrect',
       reauthentication_required: 'Reconnectez-vous avec Google pour confirmer la suppression',
       invalid_token: 'Ce lien est invalide ou a expiré.',
+      email_not_verified: "Confirmez d'abord votre adresse e-mail.",
       template_not_found: 'Ce modèle est introuvable.',
       template_has_no_tiles: 'Ajoutez au moins une tuile à ce modèle pour jouer avec.',
       template_hidden:
@@ -1087,6 +1201,7 @@ export const fr = {
       template_moderation_conflict:
         "Cette action ne s'applique pas au modèle dans son état actuel : il est peut-être déjà masqué, visible ou supprimé.",
       room_not_found: 'Cette salle est introuvable ou a été fermée.',
+      room_not_joined: "Vous n'avez pas encore de place dans cette salle : rejoignez-la d'abord.",
       room_admin_required: "Seul l'hôte peut faire cela.",
       room_settings_locked: 'Pendant une partie, seules les arrivées peuvent être modifiées.',
       game_in_progress: 'Une partie est déjà en cours dans cette salle.',
@@ -1117,6 +1232,9 @@ export const fr = {
       tile_not_found: 'Cette tuile est introuvable.',
       tile_limit_reached: 'Un modèle a au plus {{max_tiles}} tuiles.',
       tile_empty: "Une tuile a besoin d'un texte ou d'une image.",
+      invalid_tag: 'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
+      cannot_like_own_template: 'Vous ne pouvez pas aimer votre propre modèle.',
+      invalid_cursor: 'Cette page de la liste n’est plus valide. Rechargez la liste.',
       image_unsupported_format: "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
       image_too_large: "L'image est trop lourde : {{max_bytes, megabytes}} au maximum.",
       image_too_many_pixels: "L'image est trop grande : réduisez sa définition puis réessayez.",
@@ -1134,6 +1252,8 @@ export const fr = {
       game_not_found: 'Cette partie est introuvable.',
       game_moderation_conflict:
         "Cette action ne s'applique pas à la partie dans son état actuel : elle est peut-être déjà masquée ou visible.",
+      images_hiding_in_progress:
+        "Les images de ce compte sont déjà en train d'être masquées. Attendez la fin, puis réessayez.",
       report_limit_reached:
         "Vous avez envoyé {{max_reports}} signalements dans l'heure : réessayez un peu plus tard.",
       image_moderation_conflict:
@@ -1143,6 +1263,7 @@ export const fr = {
       invalid: 'Valeur invalide.',
       missing: 'Ce champ est obligatoire.',
       string_too_short: 'Au moins {{min_length}} caractères.',
+      string_too_short_one: 'Au moins {{min_length}} caractère.',
       string_too_long: 'Au plus {{max_length}} caractères.',
       value_error: 'Valeur invalide.',
       string_pattern_mismatch: 'Format invalide.',

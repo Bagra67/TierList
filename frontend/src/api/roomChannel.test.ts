@@ -236,6 +236,28 @@ describe('useRoomEvents', () => {
     expect(FakeWebSocket.instances).toHaveLength(1);
   });
 
+  it('reconnects later when the token cannot be read after the opening', async () => {
+    stubBackend({ 'POST /auth/refresh': () => Response.json({}, { status: 503 }) });
+    followRoom('account');
+    const socket: FakeWebSocket = latestSocket();
+
+    socket.acceptConnection();
+
+    await waitFor(() => expect(socket.readyState).toBe(FakeWebSocket.CLOSED));
+    expect(socket.sentMessages()).toEqual([]);
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2), { timeout: 2_000 });
+  });
+
+  it('reconnects later when the expired token cannot be refreshed for now', async () => {
+    setAccessToken('expired-token');
+    stubBackend({ 'POST /auth/refresh': () => Response.json({}, { status: 503 }) });
+    followRoom('account');
+
+    latestSocket().closeFromServer(4401);
+
+    await waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2), { timeout: 2_000 });
+  });
+
   it('gives up and says so after several failed openings', () => {
     vi.useFakeTimers();
     const { result } = followRoom();

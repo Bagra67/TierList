@@ -2,6 +2,7 @@ import re
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -13,8 +14,11 @@ from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import RoomStatus, UserRole
+from app.models.account_ban import AccountBan
+from app.models.enums import RoomStatus, TemplateModeration, UserRole
+from app.models.image import Image
 from app.models.room import Room
+from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
@@ -60,6 +64,32 @@ def register_super_admin(client: TestClient, db_session: Session, email: str) ->
     return headers
 
 
+def confirm_email(db_session: Session, email: str) -> None:
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    user.email_verified_at = datetime.now(UTC)
+    db_session.flush()
+
+
+def ban_account(db_session: Session, email: str) -> None:
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    db_session.add(AccountBan(user_id=user.id, actor_name="Nina", reason="Spam"))
+    db_session.flush()
+
+
+def stored_template(db_session: Session, template_id: str) -> Template:
+    db_session.expire_all()
+    template: Template | None = db_session.get(Template, uuid.UUID(template_id))
+    assert template is not None
+    return template
+
+
+def set_hidden(db_session: Session, template_id: str) -> None:
+    template: Template = stored_template(db_session, template_id)
+    template.moderation = TemplateModeration.HIDDEN
+    template.moderation_reason = "Harassment"
+    db_session.flush()
+
+
 def create_template(
     client: TestClient, db_session: Session, headers: dict[str, str], tile_count: int = 3
 ) -> str:
@@ -72,6 +102,81 @@ def create_template(
         )
     db_session.flush()
     return template_id
+
+
+def create_public_template(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    email: str,
+    tile_count: int = 3,
+) -> str:
+    confirm_email(db_session, email)
+    template_id: str = create_template(client, db_session, headers, tile_count)
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "public"}, headers=headers
+    )
+    assert response.status_code == 200
+    return template_id
+
+
+def make_private(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "private"}, headers=owner
+    )
+    assert response.status_code == 200
+
+
+def delete_template(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    assert client.delete(f"/templates/{template_id}", headers=owner).status_code == 204
+
+
+def add_tile_with_image(
+    client: TestClient,
+    db_session: Session,
+    headers: dict[str, str],
+    template_id: str,
+    text: str | None,
+) -> tuple[str, Image]:
+    template: Template = stored_template(db_session, template_id)
+    image: Image = Image(
+        owner_id=template.owner_id,
+        storage_key=f"{uuid.uuid4()}.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="a" * 64,
+    )
+    db_session.add(image)
+    db_session.flush()
+    response: Response = client.post(
+        f"/templates/{template_id}/tiles",
+        json={"text": text, "image_id": str(image.id)},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    tile_id: str = response.json()["tiles"][-1]["id"]
+    return tile_id, image
+
+
+def send_report(
+    client: TestClient,
+    target_kind: str,
+    target_id: str,
+    headers: dict[str, str] | None = None,
+    reason: str = "spam",
+    details: str | None = None,
+) -> Response:
+    return client.post(
+        "/reports",
+        json={
+            "target_kind": target_kind,
+            "target_id": target_id,
+            "reason": reason,
+            "details": details,
+        },
+        headers=headers,
+    )
 
 
 def create_room(client: TestClient, headers: dict[str, str], template_id: str) -> JsonObject:

@@ -9,7 +9,7 @@ TierList application made of two projects in a single git repository:
 | [`backend/`](backend/README.md)   | **FastAPI** API (Python 3.15+) + **PostgreSQL** (Docker) | uv, Ruff, pytest, SQLAlchemy, Alembic |
 | [`frontend/`](frontend/README.md) | **React + TypeScript** with Vite                         | pnpm, ESLint, Prettier                |
 
-What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Tile images (formats, compression, S3 storage, SeaweedFS, moderation): [docs/technical/images.md](docs/technical/images.md). Results computation (median ranking, absent votes, worked examples): [docs/technical/results.md](docs/technical/results.md). Moderation (moderation log): [docs/technical/moderation.md](docs/technical/moderation.md). Test data for local development and staging: [docs/technical/seed-data.md](docs/technical/seed-data.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Visual identity (colors, type, shapes): [docs/technical/visual-identity.md](docs/technical/visual-identity.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Legal pages (privacy policy): [docs/technical/legal-pages.md](docs/technical/legal-pages.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
+The docs under `docs/` and `TODO.md` are in English only. What the product is and how it is played: [docs/product/product.md](docs/product/product.md), with its [game rules](docs/product/game-rules.md), [permissions](docs/product/permissions.md) and [roadmap](docs/product/roadmap.md). How the code is organized and where new code goes: [docs/technical/architecture.md](docs/technical/architecture.md). Accounts and sign-in: [docs/technical/authentication.md](docs/technical/authentication.md). Templates (model, API, purge): [docs/technical/templates.md](docs/technical/templates.md). Marketplace (search, sorts, likes, cursor pagination): [docs/technical/marketplace.md](docs/technical/marketplace.md). Real time in rooms (decision: WebSocket, reconnection, timers, scaling): [docs/technical/realtime.md](docs/technical/realtime.md). Tile images (formats, compression, S3 storage, SeaweedFS, moderation): [docs/technical/images.md](docs/technical/images.md). Results computation (median ranking, absent votes, worked examples): [docs/technical/results.md](docs/technical/results.md). Moderation (moderation log): [docs/technical/moderation.md](docs/technical/moderation.md). Test data for local development and staging: [docs/technical/seed-data.md](docs/technical/seed-data.md). Translations (French / English): [docs/technical/i18n.md](docs/technical/i18n.md). Visual identity (colors, type, shapes): [docs/technical/visual-identity.md](docs/technical/visual-identity.md). Emails (SMTP, Mailpit): [docs/technical/emails.md](docs/technical/emails.md). Error monitoring (Sentry): [docs/technical/monitoring.md](docs/technical/monitoring.md). Legal pages (privacy policy): [docs/technical/legal-pages.md](docs/technical/legal-pages.md). Search engines and link previews (tags, robots.txt, sitemap): [docs/technical/seo.md](docs/technical/seo.md). Versions and releases (`develop` → `main`): [docs/technical/releasing.md](docs/technical/releasing.md), changes in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 TierList/
@@ -20,6 +20,7 @@ TierList/
 ├── seaweedfs/          # SeaweedFS configuration (S3 identities), development and CI only
 ├── .github/            # CI workflow, Dependabot, pull request template
 ├── .claude/            # Shared Claude Code setup: hooks, skills, subagents, plugin
+├── .mcp.json           # MCP servers for Claude Code: context7, playwright
 ├── .vscode/            # Shared VS Code settings (format on save, debug configurations…)
 ├── .editorconfig       # Encoding, line endings, indentation for every editor
 ├── .nvmrc              # Node.js version (24)
@@ -28,7 +29,7 @@ TierList/
 ├── docs/
 │   ├── product/        # Business docs: product, game rules, permissions, roadmap
 │   └── technical/      # Technical docs: architecture, authentication, templates, images, real time, games, results, testing guide, i18n, emails, legal pages, releasing, deployment
-├── TODO.md / TODO.fr.md       # Manual steps left to do (deployment, decisions)
+├── TODO.md                    # Manual steps left to do (deployment, decisions)
 └── README.md / README.fr.md   # This file (English / French)
 ```
 
@@ -155,8 +156,9 @@ Manual commands:
 | Unused code      | —                           | `pnpm knip`              |
 | Tests            | `uv run pytest`             | `pnpm test`              |
 | Tests + coverage | `uv run pytest --cov=app`   | `pnpm test:coverage`     |
+| End-to-end tests | —                           | `pnpm test:e2e`          |
 
-Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). How each test works and what it checks: [docs/technical/testing.md](docs/technical/testing.md).
+Backend integration tests need the database, and SeaweedFS for the image storage tests: `docker compose up -d --wait` (otherwise they are skipped locally). The end-to-end tests (Playwright) run the real app in Chromium, Firefox and WebKit: they need the same services, the browsers (`pnpm exec playwright install chromium firefox webkit`, once) and the frontend build (`pnpm build`). How the tests work (tools, shared setup, commands): [docs/technical/testing.md](docs/technical/testing.md).
 
 ### Continuous integration (GitHub Actions)
 
@@ -167,12 +169,13 @@ Backend integration tests need the database, and SeaweedFS for the image storage
 | **Backend**  | `uv sync --locked`, Ruff (lint + format), Pyright, pytest with coverage against a PostgreSQL 18 service and the SeaweedFS of `compose.yaml`, on Python 3.15 (that of the production pods) |
 | **Frontend** | `pnpm install --frozen-lockfile`, ESLint, Prettier, `tsc`, knip, Vitest with coverage, production build                                                                                   |
 | **Secrets**  | gitleaks on every commit of the PR (or of the push)                                                                                                                                       |
+| **E2E**      | one job per browser (Chromium, Firefox, WebKit): PostgreSQL, Mailpit and SeaweedFS, frontend build, Playwright tests `pnpm test:e2e --project=<browser>`                                  |
 
-`.github/workflows/docs.yml` runs the **Docs** job on the same events: every doc has its English and French versions with their language switcher and, on a PR, both versions change together and a changed test comes with both testing guides (`docs/technical/testing.md` + `docs/technical/testing.fr.md`). For a justified exception (e.g. a typo fixed in one language), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
+`.github/workflows/docs.yml` runs the **Docs** job on the same events: every README (and the CHANGELOG) has its English and French versions with their language switcher and, on a PR, both versions change together. The other docs are English-only. For a justified exception (e.g. a typo fixed in one language of a README), add the `skip-docs-sync` label to the PR and explain why. See [docs/technical/testing.md](docs/technical/testing.md#5-ci-script-tests-githubscripts).
 
 - The run summary shows a **test report** for each job (result and duration of every test, failure details, skip reasons, slowest tests) and the coverage (no blocking threshold). Raw reports are kept as artifacts for 14 days. See [docs/technical/testing.md](docs/technical/testing.md#31-test-report-on-ci).
-- The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails.
-- On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
+- The four jobs (`Backend`, `Frontend`, `Secrets`, `Docs`) are **required checks** on `develop` and `main`: a PR cannot be merged while CI fails. The `E2E` jobs are not required yet (see the TODO).
+- On a PR, `Backend` and `Frontend` run only when the PR touches their part (job `Changed parts`): `frontend/` and `docs/` (checked by Prettier) for Frontend, `backend/` for Backend, both for `backend/openapi.json` and for any other file except Markdown. `E2E` runs as soon as one of them runs. A skipped job counts as passed. A push to `develop` or `main` always runs everything, since it deploys or releases.
 - **Dependabot** (`.github/dependabot.yml`) opens weekly update PRs against `develop` for uv, pnpm, GitHub Actions and the Docker image.
 - New PRs are pre-filled by `.github/pull_request_template.md`.
 
@@ -184,9 +187,12 @@ The Claude Code setup in `.claude/settings.json` is shared with the whole team (
   - after Claude edits a file, it is fixed and formatted like on save: Ruff for `backend/**/*.py`, ESLint + Prettier for frontend scripts, Prettier for frontend and `docs/` JSON, CSS, Markdown and HTML. An error that cannot be fixed automatically is sent back to Claude;
   - Claude cannot edit `.env` files (only `.env.example`), `uv.lock`, `pnpm-lock.yaml` or the generated API files `backend/openapi.json` and `frontend/src/api/schema.d.ts`;
   - reminders to follow `AGENTS.md` at session start, on each prompt and before each edit.
-- **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results.
+- **Skills** (`.claude/skills/`): `/api-sync` regenerates `openapi.json` and the frontend API types after a contract change; `/ship-check` runs the CI checks locally and the `AGENTS.md` review checklist, and reports the results; `/dependabot-review [PR...]` summarizes in French the changelog, the risks and the CI state of Dependabot PRs (all open ones by default).
 - **Subagents** (`.claude/agents/`, read-only): `security-reviewer` (authorization, sessions, uploads, rooms, moderation) and `i18n-docs-reviewer` (translations, bilingual docs, testing guide, privacy policy, seed data).
 - **Plugin**: `claude-code-setup` (Anthropic directory) recommends other automations for the project; ask Claude for "automation recommendations".
+- **MCP servers** (`.mcp.json`, approved once by each developer when Claude Code starts):
+  - `context7`: documentation of the library versions the project uses, read before using an API the code does not use yet;
+  - `playwright`: drives Chrome (in-memory profile) on the local app only (`127.0.0.1:5173`, SeaweedFS, Mailpit), to check a frontend change in a real browser, also from `/ship-check`. It needs the frontend dependencies and Chrome (otherwise `npx playwright install chrome`).
 
 ---
 

@@ -75,6 +75,15 @@ describe('auth API', () => {
     expect(calledRoutes(fetchMock)).toEqual(['POST /auth/refresh']);
   });
 
+  it('returns no user when the visitor never signed in', async () => {
+    const fetchMock = stubBackend({
+      'POST /auth/refresh': () => new Response(null, { status: 204 }),
+    });
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+    expect(calledRoutes(fetchMock)).toEqual(['POST /auth/refresh']);
+  });
+
   it('reports an unreachable backend instead of an anonymous user', async () => {
     stubBackend({ 'POST /auth/refresh': () => new Response('Bad Gateway', { status: 502 }) });
 

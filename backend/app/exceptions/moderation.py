@@ -8,3 +8,7 @@ class BanEndInPastError(Exception):
 
 class AccountNotBannedError(Exception):
     pass
+
+
+class ImagesHidingInProgressError(Exception):
+    pass

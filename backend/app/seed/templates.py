@@ -9,11 +9,12 @@ from itertools import cycle
 
 from PIL import Image as PillowImage
 from PIL import ImageDraw
-from sqlalchemy import update
+from sqlalchemy import Select, select, update
 from sqlalchemy.orm import Session
 
 from app.constants.templates import FREE_PLAN_MAX_TILES
 from app.core.config import Settings
+from app.models.enums import TemplateVisibility
 from app.models.image import Image
 from app.models.template import Template
 from app.models.tile import Tile
@@ -148,6 +149,16 @@ TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+THEME_TAGS: dict[str, tuple[str, ...]] = {
+    "Fruits": ("cuisine", "fruits", "été"),
+    "Pizzas": ("Cuisine", "cuisine", "italie", "soirée entre amis"),
+    "Desserts": ("cuisine", "sucré"),
+    "Fromages": ("cuisine", "france", "apéro", "soirée entre amis", "fromage"),
+    "Sports": ("sport",),
+    "Jeux de société": ("jeux de société", "soirée entre amis"),
+    "Couleurs": ("images", "couleurs"),
+    "Le grand classement": ("mots",),
+}
 WORD_POOL: tuple[str, ...] = tuple(word for _, words in TEXT_THEMES for word in words) + (
     "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche", "Plage", "Montagne",
     "Forêt", "Désert", "Volcan", "Rivière", "Lac", "Glacier", "Île", "Ville", "Village",
@@ -208,6 +219,8 @@ def create_templates(
             for position, (text, image_id) in enumerate(tiles)
         )
         session.commit()
+        if name in THEME_TAGS:
+            templates.set_tags(owner, template.id, list(THEME_TAGS[name]))
         created[0] += 1
         logger.info("Modèle %d/%d : %s (%d tuiles)", created[0], total, name, len(tiles))
         return template
@@ -218,7 +231,7 @@ def create_templates(
         theme, words = TEXT_THEMES[index % len(TEXT_THEMES)]
         playable.append(with_tiles(next_owner(), theme, [(word, None) for word in words]))
     for index in range(size.image_templates):
-        owner: User = _distinct_image_owner(owners, index)
+        owner: User = _image_owner(owners, index, size.bulk_uploader_image_templates)
         name: str = IMAGE_THEMES[index % len(IMAGE_THEMES)]
         image_tiles: list[tuple[str | None, uuid.UUID | None]] = []
         for tile_number in range(1, size.image_tiles_per_template + 1):
@@ -255,8 +268,22 @@ def create_templates(
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
 
 
-def _distinct_image_owner(owners: list[User], index: int) -> User:
-    return owners[index % len(owners)]
+def publish_templates(session: Session, settings: Settings, template_ids: list[uuid.UUID]) -> None:
+    templates: TemplateService = TemplateService(session, settings)
+    owners_query: Select[uuid.UUID, str, User] = (
+        select(Template.id, Template.name, User)
+        .join(User, User.id == Template.owner_id)
+        .where(Template.id.in_(template_ids))
+    )
+    for template_id, name, owner in session.execute(owners_query).all():
+        templates.set_visibility(owner, template_id, TemplateVisibility.PUBLIC)
+        logger.info("Modèle public : %s", name)
+
+
+def _image_owner(owners: list[User], index: int, bulk_uploader_templates: int) -> User:
+    if index < bulk_uploader_templates:
+        return owners[0]
+    return owners[(index - bulk_uploader_templates + 1) % len(owners)]
 
 
 def _generated_image(number: int, rng: random.Random) -> bytes:

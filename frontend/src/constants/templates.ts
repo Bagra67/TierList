@@ -1,6 +1,8 @@
 export const TEMPLATE_NAME_MAX_LENGTH: number = 100;
 export const TIER_NAME_MAX_LENGTH: number = 50;
 export const TILE_TEXT_MAX_LENGTH: number = 200;
+export const TAG_MAX_LENGTH: number = 30;
+export const TEMPLATE_MAX_TAGS: number = 5;
 
 export const TIER_COLOR_PRESETS: readonly string[] = [
   '#FF3B6B',
@@ -17,15 +19,33 @@ export const TIER_COLOR_PRESETS: readonly string[] = [
   '#9AA0B4',
 ];
 
-export const TEMPLATES_QUERY_KEY: readonly ['templates'] = ['templates'];
+const TEMPLATE_ID_PATTERN: RegExp =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isTemplateId(value: string): boolean {
+  return TEMPLATE_ID_PATTERN.test(value);
+}
+
+export const TEMPLATE_LIST_QUERY_KEY: readonly ['templates', 'list'] = ['templates', 'list'];
 
 export const REMOVED_TEMPLATES_QUERY_KEY: readonly ['templates', 'removed'] = [
-  ...TEMPLATES_QUERY_KEY,
+  'templates',
   'removed',
 ];
 
-export type TemplateQueryKey = readonly ['templates', string];
+export type TemplateQueryKey = readonly ['templates', 'detail', string];
 
 export function templateQueryKey(templateId: string): TemplateQueryKey {
-  return [...TEMPLATES_QUERY_KEY, templateId];
+  return ['templates', 'detail', templateId];
+}
+
+export const MARKETPLACE_LIST_QUERY_KEY: readonly ['marketplace', 'list'] = ['marketplace', 'list'];
+export const MARKETPLACE_TAGS_QUERY_KEY: readonly ['marketplace', 'tags'] = ['marketplace', 'tags'];
+
+export function publicTemplateQueryKey(templateId: string): readonly string[] {
+  return ['marketplace', 'templates', templateId];
+}
+
+export function templateChangeMutationKey(templateId: string): readonly string[] {
+  return [...templateQueryKey(templateId), 'change'];
 }

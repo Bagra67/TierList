@@ -42,7 +42,7 @@ interface SortableListProps<Item extends SortableItem> {
   renderItem: (item: Item, sortable: SortableRender) => ReactNode;
 }
 
-interface SortableRender {
+export interface SortableRender {
   setNodeRef: (element: HTMLElement | null) => void;
   style: CSSProperties;
   handleProps: DragHandleProps;

@@ -23,6 +23,7 @@ class ErrorCode(StrEnum):
     REAUTHENTICATION_REQUIRED = "reauthentication_required"
     INVALID_TOKEN = "invalid_token"
     PASSWORD_TOO_SHORT = "password_too_short"
+    EMAIL_NOT_VERIFIED = "email_not_verified"
 
     TEMPLATE_NOT_FOUND = "template_not_found"
     TEMPLATE_HAS_NO_TILES = "template_has_no_tiles"
@@ -33,8 +34,12 @@ class ErrorCode(StrEnum):
     TILE_NOT_FOUND = "tile_not_found"
     TILE_LIMIT_REACHED = "tile_limit_reached"
     TILE_EMPTY = "tile_empty"
+    INVALID_TAG = "invalid_tag"
+    CANNOT_LIKE_OWN_TEMPLATE = "cannot_like_own_template"
+    INVALID_CURSOR = "invalid_cursor"
 
     ROOM_NOT_FOUND = "room_not_found"
+    ROOM_NOT_JOINED = "room_not_joined"
     ROOM_ADMIN_REQUIRED = "room_admin_required"
     ROOM_SETTINGS_LOCKED = "room_settings_locked"
     ROOM_FULL = "room_full"
@@ -75,3 +80,4 @@ class ErrorCode(StrEnum):
     NICKNAME_NOT_FOUND = "nickname_not_found"
     GAME_NOT_FOUND = "game_not_found"
     GAME_MODERATION_CONFLICT = "game_moderation_conflict"
+    IMAGES_HIDING_IN_PROGRESS = "images_hiding_in_progress"

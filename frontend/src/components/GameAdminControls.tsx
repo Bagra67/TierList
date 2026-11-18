@@ -19,20 +19,8 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
   const arrivalsId: string = useId();
   const headingId: string = useId();
 
-  async function handleNext() {
-    try {
-      await nextMutation.mutateAsync();
-    } catch {
-      return;
-    }
-  }
-
-  async function handleArrivals(event: ChangeEvent<HTMLInputElement>) {
-    try {
-      await settingsMutation.mutateAsync({ late_arrivals_allowed: event.target.checked });
-    } catch {
-      return;
-    }
+  function handleArrivals(event: ChangeEvent<HTMLInputElement>) {
+    settingsMutation.mutate({ late_arrivals_allowed: event.target.checked });
   }
 
   return (
@@ -41,7 +29,11 @@ export function GameAdminControls({ room }: GameAdminControlsProps) {
         {t('rooms.game.hostControls')}
       </h2>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={handleNext} disabled={nextMutation.isPending}>
+        <Button
+          type="button"
+          onClick={() => nextMutation.mutate()}
+          disabled={nextMutation.isPending}
+        >
           {nextMutation.isPending ? t('rooms.game.nexting') : t('rooms.game.next')}
         </Button>
         <p className="text-sm text-muted-foreground">

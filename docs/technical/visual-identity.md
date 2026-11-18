@@ -1,7 +1,5 @@
 # Visual identity — "Le Plateau"
 
-English | [Français](visual-identity.fr.md)
-
 The visual identity of TierList, decided on real screens on 2026-10-28 (#213 to #222): the set of a TV game or quiz show, with its light **stage**, its deep **ink**, its **buzzer** and its **spotlight**. This page lists the values and the rules, and where they live in the code. The styled version, with live component previews, is the [design system "TierList — Le Plateau"](https://claude.ai/artifact/1HiN88pvwgBbSjy2p1QysC) (claude.ai, private to its owner, shared on request). When the two differ, **the code is the reference**.
 
 ## 1. Where it lives
@@ -82,7 +80,7 @@ Changing numbers (timer, counters, results tables) use tabular figures.
 
 ## 5. Shapes, shadow and motion
 
-- **Radii**: 8 px for an item chip or a field (`rounded-md`), 10 px for a button or a tier row (`rounded-lg`, `--radius`), 16 px for a panel, the current item card and the final touches set (`rounded-panel`); pills for the timer, tabs and presence dots.
+- **Radii**: 8 px for an item chip or a field (`rounded-md`), 10 px for a button or a tier row (`rounded-lg`, `--radius`), 16 px for a panel, the current item card and the final touches set (`rounded-panel`); pills for the timer, tabs, presence dots and template tags (neutral `secondary`, never a tier color: a tag is not a tier).
 - **Panels** (`panelVariants`): solid (a section or form), dashed (an area to fill or empty), list (separated rows), muted (an information strip).
 - **No shadow except on what moves**: `shadow-lift` is reserved for the dragged item.
 - **The current item card** is tilted by −2° (under `motion-safe`), like a card just turned over.

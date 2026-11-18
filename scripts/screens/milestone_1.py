@@ -61,22 +61,8 @@ ITEMS: dict[str, list[str]] = {
         "Mustard",
         "Barbecue",
     ],
-    "fr": [
-        "Nature",
-        "Paprika",
-        "Poulet",
-        "Oignon",
-        "Vinaigre",
-        "Fromage",
-        "Piment",
-        "Tomate",
-        "Curry",
-        "Bacon",
-        "Moutarde",
-        "Barbecue",
-    ],
 }
-TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list", "fr": "Tier list des chips"}
+TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list"}
 PLACEHOLDER_IMAGE_COLOR_BY_ITEM: dict[str, str] = {
     "Barbecue": "#C2492E",
     "Paprika": "#FF8A2A",
@@ -119,7 +105,7 @@ def status_list(svg: Svg, x, y, w, t: Translator, people: list[PersonStatus]) ->
 
 def template_editor(t: Translator) -> Svg:
     items = ITEMS[t.lang]
-    svg = Svg({"en": "Template editor", "fr": "Éditeur de modèle"}[t.lang], 960, 660)
+    svg = Svg("Template editor", 960, 660)
     header(svg, t, "Alex")
     svg.text(32, 92, "← " + t("templates.editor.back"), 14, 500, MUTED_FG)
     field(svg, 32, 124, 520, t("templates.editor.name"), TEMPLATE_NAME[t.lang])
@@ -217,7 +203,7 @@ def join(t: Translator) -> Svg:
 
 
 def lobby(t: Translator) -> Svg:
-    svg = Svg({"en": "Lobby", "fr": "Salle d'attente"}[t.lang], 960, 600)
+    svg = Svg("Lobby", 960, 600)
     header(svg, t, "Alex")
     svg.text(32, 108, t("rooms.lobby.title", code="K7P2QX"), 32, 900, INK, HEAD, stretch=125)
     svg.text(32, 134, t("rooms.lobby.template", name=TEMPLATE_NAME[t.lang]), 14, 500, MUTED_FG)
@@ -284,9 +270,7 @@ def lobby(t: Translator) -> Svg:
 
 def round_player(t: Translator) -> Svg:
     items = ITEMS[t.lang]
-    svg = Svg(
-        {"en": "Round, participant view", "fr": "Manche, vue du participant"}[t.lang], 960, 560
-    )
+    svg = Svg("Round, participant view", 960, 560)
     header(svg, t, "Sam")
     progress(svg, 32, 78, t)
     timer_pill(svg, 848, 74, "0:18")
@@ -326,7 +310,7 @@ def round_player(t: Translator) -> Svg:
 
 def round_admin(t: Translator) -> Svg:
     items = ITEMS[t.lang]
-    svg = Svg({"en": "Round, host view", "fr": "Manche, vue de l'hôte"}[t.lang], 960, 500)
+    svg = Svg("Round, host view", 960, 500)
     header(svg, t, "Alex")
     progress(svg, 32, 78, t)
     timer_pill(svg, 848, 74, "0:18")
@@ -358,10 +342,7 @@ def round_admin(t: Translator) -> Svg:
     svg.text(
         276,
         415,
-        {
-            "en": "A host who plays also has their own tier list (screen 5).",
-            "fr": "Un hôte qui joue a aussi sa propre tier list (écran 5).",
-        }[t.lang],
+        "A host who plays also has their own tier list (screen 5).",
         13,
         400,
         MUTED_FG,

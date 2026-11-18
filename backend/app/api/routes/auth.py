@@ -30,6 +30,8 @@ from app.constants.auth import (
     GOOGLE_ERROR_FAILED,
     GOOGLE_ERROR_UNAVAILABLE,
     GOOGLE_LOGIN_COOKIE,
+    GOOGLE_RETURN_TO_MAX_LENGTH,
+    GOOGLE_RETURN_TO_PATTERN,
     LOGIN_ERROR_PARAM,
     REFRESH_TOKEN_COOKIE,
     GoogleNextStep,
@@ -144,6 +146,8 @@ def register(
     email_sender: EmailSenderDep,
     settings: SettingsDep,
 ) -> TokenResponse:
+    """Creates an account with an email and a password, opens its session and sends the verification
+    email in the requested language. The refresh token is set in an HttpOnly cookie."""
     try:
         registration = service.register(
             payload.email, payload.password, payload.display_name, payload.language
@@ -168,6 +172,8 @@ def register(
 def login(
     payload: LoginRequest, response: Response, service: AuthServiceDep, settings: SettingsDep
 ) -> TokenResponse:
+    """Opens a session with an email and a password. The refresh token is set in an HttpOnly cookie;
+    a banned account gets 403 with the reason and, when there is one, the end of the ban."""
     try:
         tokens = service.login(payload.email, payload.password)
     except InvalidCredentialsError as exc:
@@ -181,15 +187,25 @@ def login(
     return _token_response(response, tokens, settings)
 
 
-@router.post("/refresh", responses=UNAUTHORIZED_RESPONSE)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        204: {"description": messages.NO_SESSION_COOKIE_DESCRIPTION},
+    },
+)
 def refresh(
     response: Response,
     service: AuthServiceDep,
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
-) -> TokenResponse:
+) -> TokenResponse | Response:
+    """Gives a new access token from the refresh cookie, and renews that cookie. 204 without a
+    cookie (no session in this browser); 401 if the session expired or was closed, or if the account
+    is banned, with the cookie cleared."""
     if refresh_token is None:
-        raise _session_expired(settings)
+        return Response(status_code=204)
     try:
         tokens = service.refresh(refresh_token)
     except InvalidRefreshTokenError as exc:
@@ -204,6 +220,9 @@ def logout(
     settings: SettingsDep,
     refresh_token: RefreshTokenCookie = None,
 ) -> None:
+    """Closes the session of this browser and clears the refresh cookie. The account's access tokens
+    on other devices are also invalidated: they go through /auth/refresh. 204 even without a
+    session."""
     if refresh_token is not None:
         service.logout(refresh_token)
     _clear_refresh_cookie(response, settings)
@@ -211,6 +230,7 @@ def logout(
 
 @router.get("/me", responses=UNAUTHORIZED_RESPONSE)
 def me(user: CurrentUserDep) -> UserResponse:
+    """The signed-in account."""
     return UserResponse.model_validate(user)
 
 
@@ -222,8 +242,8 @@ def request_email_verification(
     service: AuthServiceDep,
     email_sender: EmailSenderDep,
 ) -> None:
-    """Renvoie l'email de vérification ; sans effet si l'adresse est déjà confirmée, ou si le
-    précédent email est trop récent (EMAIL_COOLDOWN_SECONDS)."""
+    """Sends the verification email again; does nothing if the address is already confirmed, or if
+    the previous email is too recent (EMAIL_COOLDOWN_SECONDS)."""
     email_to_send = service.request_email_verification(user, payload.language)
     if email_to_send is not None:
         background_tasks.add_task(email_sender.send, email_to_send)
@@ -235,8 +255,8 @@ def request_email_verification(
     responses={400: {"model": ErrorResponse, "description": messages.INVALID_TOKEN_DESCRIPTION}},
 )
 def verify_email(payload: VerifyEmailRequest, service: AuthServiceDep) -> None:
-    """Confirme l'adresse email avec le token du lien reçu ; sans session : le lien peut être
-    ouvert dans un autre navigateur."""
+    """Confirms the email address with the token of the received link; no session needed: the link
+    can be opened in another browser."""
     try:
         service.verify_email(payload.token)
     except InvalidEmailTokenError as exc:
@@ -261,8 +281,13 @@ def delete_me(
     games: GameServiceDep,
     settings: SettingsDep,
 ) -> None:
+    """Deletes the signed-in account, after closing the rooms it is the admin of and removing it
+    from the others. An account with a password must give it again; an account without a password
+    must have signed in recently. The refresh cookie is cleared."""
     try:
-        service.delete_account(session, payload.password, before_delete=games.close_rooms_of_admin)
+        service.delete_account(
+            session, payload.password, before_delete=games.leave_rooms_of_deleted_account
+        )
     except IncorrectPasswordError as exc:
         raise AppHTTPException(
             status_code=403,
@@ -322,11 +347,16 @@ def google_login(
     settings: SettingsDep,
     google: GoogleClientDep,
     next_step: Annotated[GoogleNextStep | None, Query(alias="next")] = None,
+    return_to: Annotated[
+        str | None,
+        Query(max_length=GOOGLE_RETURN_TO_MAX_LENGTH, pattern=GOOGLE_RETURN_TO_PATTERN),
+    ] = None,
 ) -> RedirectResponse:
-    """Envoie le navigateur sur la page de connexion de Google."""
+    """Sends the browser to the Google sign-in page. After signing in, the browser comes back to
+    `return_to`, a path of the site (never another site), unless `next` asks for another step."""
     if google is None:
         return _google_failure(GOOGLE_ERROR_UNAVAILABLE, settings)
-    attempt = GoogleLoginAttempt.start(next_step)
+    attempt = GoogleLoginAttempt.start(next_step, return_to)
     attempt_ttl = timedelta(minutes=settings.google_login_attempt_ttl_minutes)
     response = RedirectResponse(google.authorization_url(attempt), status_code=302)
     response.set_cookie(
@@ -351,7 +381,7 @@ def google_callback(
     error: str | None = None,
     login_cookie: Annotated[str | None, Cookie(alias=GOOGLE_LOGIN_COOKIE)] = None,
 ) -> RedirectResponse:
-    """Retour de Google : vérifie la réponse, ouvre la session, puis renvoie vers le frontend."""
+    """Return from Google: checks the response, opens the session, then returns to the frontend."""
     if google is None:
         return _google_failure(GOOGLE_ERROR_UNAVAILABLE, settings)
     if error is not None:
@@ -391,6 +421,8 @@ def google_callback(
     location = FRONTEND_HOME
     if attempt.next_step == DELETE_ACCOUNT_STEP:
         location = f"{FRONTEND_HOME}?{CONFIRM_PARAM}={DELETE_ACCOUNT_STEP}"
+    elif attempt.return_to is not None:
+        location = attempt.return_to
     response = _google_redirect(location, settings)
     _set_refresh_cookie(response, tokens.refresh_token, settings)
     return response
@@ -405,9 +437,9 @@ def google_ban_notice(
     service: AuthServiceDep,
     ban_notice_cookie: Annotated[str | None, Cookie(alias=GOOGLE_BAN_NOTICE_COOKIE)] = None,
 ) -> None:
-    """Après un refus de Google : la même réponse 403 qu'une connexion par mot de passe, avec le
-    motif et la fin du bannissement. 204 s'il n'y a rien à montrer : pas de cookie ou cookie
-    invalide, bannissement levé ou fini."""
+    """After a refusal from Google: the same 403 response as a password sign-in, with the reason and
+    the end of the ban. 204 when there is nothing to show: no cookie or an invalid cookie, ban
+    lifted or over."""
     if ban_notice_cookie is None:
         return
     try:
@@ -425,9 +457,8 @@ def forgot_password(
     service: AuthServiceDep,
     email_sender: EmailSenderDep,
 ) -> None:
-    """Envoie un lien de réinitialisation si un compte a cette adresse ; répond 204 dans tous les
-    cas, après avoir mis l'envoi en tâche de fond : rien ne révèle quelles adresses ont un compte.
-    """
+    """Sends a reset link if an account has this address; answers 204 in every case, after queueing
+    the email as a background task: nothing reveals which addresses have an account."""
     email_to_send = service.request_password_reset(payload.email, payload.language)
     if email_to_send is not None:
         background_tasks.add_task(email_sender.send, email_to_send)
@@ -439,7 +470,7 @@ def forgot_password(
     responses={400: {"model": ErrorResponse, "description": messages.INVALID_TOKEN_DESCRIPTION}},
 )
 def reset_password(payload: ResetPasswordRequest, service: AuthServiceDep) -> None:
-    """Choisit un nouveau mot de passe avec le lien reçu ; toutes les sessions sont fermées."""
+    """Sets a new password with the received link; every session is closed."""
     try:
         service.reset_password(payload.token, payload.password)
     except InvalidEmailTokenError as exc:

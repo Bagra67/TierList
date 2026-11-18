@@ -6,6 +6,7 @@ import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { HomeBoard } from '../components/home/HomeBoard';
 import { HomeSteps } from '../components/home/HomeSteps';
+import { PopularTemplates } from '../components/home/PopularTemplates';
 import { RecentGames } from '../components/home/RecentGames';
 import { RecentTemplates } from '../components/home/RecentTemplates';
 import { JoinRoomForm } from '../components/JoinRoomForm';
@@ -16,7 +17,7 @@ import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 
 export function HomePage() {
-  const { data: user, isPending, isError } = useCurrentUser();
+  const { data: user, isPending } = useCurrentUser();
   const { t } = useTranslation();
 
   if (isPending) {
@@ -26,7 +27,7 @@ export function HomePage() {
       </PageContainer>
     );
   }
-  if (isError) {
+  if (user === undefined) {
     return (
       <PageContainer width="app">
         <ErrorMessage>{t('common.backendUnreachable')}</ErrorMessage>
@@ -36,7 +37,7 @@ export function HomePage() {
 
   return (
     <PageContainer width="app" className="flex flex-col gap-14">
-      {user !== null && <EmailVerificationBanner user={user} />}
+      <EmailVerificationBanner />
       <section className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
         <div className="flex flex-col items-start gap-6">
           <h1 className="text-5xl leading-[0.95] font-black tracking-tight text-balance font-stretch-125% sm:text-6xl">
@@ -62,7 +63,10 @@ export function HomePage() {
         <HomeBoard />
       </section>
       {user === null ? (
-        <HomeSteps />
+        <>
+          <HomeSteps />
+          <PopularTemplates />
+        </>
       ) : (
         <div className="grid gap-10 md:grid-cols-2">
           <RecentTemplates />

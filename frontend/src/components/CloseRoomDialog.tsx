@@ -1,15 +1,11 @@
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type NavigateFunction, useNavigate } from 'react-router';
 
 import { useCloseRoom } from '../api/rooms';
 import { canonicalRoomCode, roomQueryKey } from '../constants/rooms';
 import { ROUTES } from '../constants/routes';
-import { translateError } from '../errors/apiError';
-import { ErrorMessage } from './ErrorMessage';
-import { DialogActions, ModalDialog } from './ModalDialog';
-import { Button } from './ui/button';
+import { ConfirmMutationDialog } from './ConfirmMutationDialog';
 
 interface CloseRoomDialogProps {
   code: string;
@@ -17,7 +13,6 @@ interface CloseRoomDialogProps {
 }
 
 export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const closeMutation = useCloseRoom(code);
   const navigate: NavigateFunction = useNavigate();
   const queryClient: QueryClient = useQueryClient();
@@ -28,46 +23,20 @@ export function CloseRoomDialog({ code, gameInProgress }: CloseRoomDialogProps) 
     queryClient.removeQueries({ queryKey: roomQueryKey(canonicalRoomCode(code)) });
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    try {
-      await closeMutation.mutateAsync();
-    } catch {
-      return;
-    }
-    leaveClosedRoom();
-  }
-
   return (
-    <>
-      <Button type="button" variant="destructive" onClick={() => dialogRef.current?.showModal()}>
-        {t('rooms.lobby.close.open')}
-      </Button>
-      <ModalDialog
-        dialogRef={dialogRef}
-        title={t('rooms.lobby.close.title')}
-        description={
-          gameInProgress ? t('rooms.lobby.close.gameWarning') : t('rooms.lobby.close.warning')
-        }
-        onClose={() => closeMutation.reset()}
-      >
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
-          {closeMutation.isError && (
-            <ErrorMessage>{translateError(t, closeMutation.error)}</ErrorMessage>
-          )}
-          <DialogActions
-            cancelLabel={t('rooms.lobby.close.cancel')}
-            onCancel={() => dialogRef.current?.close()}
-            submitLabel={
-              closeMutation.isPending
-                ? t('rooms.lobby.close.submitting')
-                : t('rooms.lobby.close.submit')
-            }
-            submitVariant="destructive"
-            submitDisabled={closeMutation.isPending}
-          />
-        </form>
-      </ModalDialog>
-    </>
+    <ConfirmMutationDialog
+      openLabel={t('rooms.lobby.close.open')}
+      openVariant="destructive"
+      title={t('rooms.lobby.close.title')}
+      description={
+        gameInProgress ? t('rooms.lobby.close.gameWarning') : t('rooms.lobby.close.warning')
+      }
+      cancelLabel={t('rooms.lobby.close.cancel')}
+      submitLabel={t('rooms.lobby.close.submit')}
+      submittingLabel={t('rooms.lobby.close.submitting')}
+      mutation={closeMutation}
+      confirm={() => closeMutation.mutateAsync()}
+      onConfirmed={leaveClosedRoom}
+    />
   );
 }

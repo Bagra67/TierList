@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
@@ -17,25 +17,32 @@ import { TemplatesPage } from './TemplatesPage';
 const chips: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01',
   name: 'Chips',
+  tags: [],
   tile_count: 12,
   updated_at: '2026-10-05T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
   removed_images: [],
 };
 const sodas: TemplateSummary = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02',
   name: 'Sodas',
+  tags: [],
   tile_count: 1,
   updated_at: '2026-10-04T12:00:00Z',
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
   removed_images: [],
 };
 
 const createdTemplate: Template = {
   id: '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e03',
   name: 'Fromages',
+  tags: [],
   created_at: '2026-10-06T12:00:00Z',
   updated_at: '2026-10-06T12:00:00Z',
   tiers: [],
@@ -43,6 +50,8 @@ const createdTemplate: Template = {
   max_tiles: 32,
   moderation: 'none',
   moderation_reason: null,
+  visibility: 'private',
+  first_made_public_at: null,
 };
 
 function renderTemplatesPage() {
@@ -74,6 +83,29 @@ describe('TemplatesPage', () => {
     vi.unstubAllGlobals();
   });
 
+  it('reads the next page of templates after those already shown', async () => {
+    const cursors: (string | null)[] = [];
+    stubTemplatesBackend({
+      'GET /templates': (request: Request) => {
+        const cursor: string | null = new URL(request.url).searchParams.get('cursor');
+        cursors.push(cursor);
+        return Response.json(
+          cursor === null
+            ? { items: [chips], next_cursor: 'second-page' }
+            : { items: [sodas], next_cursor: null },
+        );
+      },
+    });
+    renderTemplatesPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Voir plus' }));
+
+    expect(await screen.findByRole('link', { name: 'Sodas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Chips' })).toBeInTheDocument();
+    expect(cursors).toEqual([null, 'second-page']);
+    expect(screen.queryByRole('button', { name: 'Voir plus' })).not.toBeInTheDocument();
+  });
+
   it('lists the templates with their tile count and last change date', async () => {
     stubTemplatesBackend({ 'GET /templates': listOf([chips, sodas]) });
 
@@ -89,6 +121,23 @@ describe('TemplatesPage', () => {
     expect(items[0]).toHaveTextContent('12 tuiles');
     expect(items[0]).toHaveTextContent('Modifié le 5 octobre 2026');
     expect(items[1]).toHaveTextContent('1 tuile');
+  });
+
+  it('shows the tags of a template, without links', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([{ ...chips, tags: ['snacks', 'soirée'] }, sodas]),
+    });
+
+    renderTemplatesPage();
+
+    const tagList: HTMLElement = await screen.findByRole('list', { name: 'Étiquettes du modèle' });
+    expect(
+      within(tagList)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['snacks', 'soirée']);
+    expect(within(tagList).queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('list', { name: 'Étiquettes du modèle' })).toHaveLength(1);
   });
 
   it('shows the reason why a template was hidden', async () => {
@@ -214,6 +263,24 @@ describe('TemplatesPage', () => {
     ).toBeVisible();
   });
 
+  it('marks the public templates', async () => {
+    stubTemplatesBackend({
+      'GET /templates': listOf([
+        { ...chips, visibility: 'public', first_made_public_at: '2026-10-31T10:00:00Z' },
+        sodas,
+      ]),
+    });
+
+    renderTemplatesPage();
+
+    const [publicTemplate, privateTemplate] = await screen.findAllByRole('listitem');
+    expect(within(publicTemplate).getByText('Public')).toBeInTheDocument();
+    expect(
+      within(publicTemplate).getByRole('button', { name: 'Créer une salle avec Chips' }),
+    ).toBeVisible();
+    expect(within(privateTemplate).queryByText('Public')).not.toBeInTheDocument();
+  });
+
   it('invites to create a template when there is none', async () => {
     stubTemplatesBackend({ 'GET /templates': listOf([]) });
 
@@ -255,6 +322,32 @@ describe('TemplatesPage', () => {
     await expect(createCall?.[0].json()).resolves.toEqual({ name: 'Fromages' });
   });
 
+  it('stays on the list when the creation is cancelled before its answer', async () => {
+    let answerCreation: ((response: Response) => void) | undefined;
+    stubTemplatesBackend({
+      'GET /templates': listOf([]),
+      'POST /templates': () =>
+        new Promise<Response>((resolve) => {
+          answerCreation = resolve;
+        }),
+    });
+    renderTemplatesPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Nouveau modèle' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Nouveau modèle' });
+    fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: 'Fromages' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
+    await waitFor(() => expect(answerCreation).toBeDefined());
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    await act(async () => {
+      answerCreation?.(Response.json(createdTemplate, { status: 201 }));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+
+    expect(screen.queryByRole('heading', { name: 'Éditeur' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mes modèles' })).toBeInTheDocument();
+  });
+
   it('shows the field error when the name is blank', async () => {
     stubTemplatesBackend({
       'GET /templates': listOf([]),
@@ -277,7 +370,7 @@ describe('TemplatesPage', () => {
     fireEvent.change(within(dialog).getByLabelText('Nom'), { target: { value: '   ' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Créer' }));
 
-    expect(await within(dialog).findByText('Au moins 1 caractères.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Au moins 1 caractère.')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Nom')).toHaveAttribute('aria-invalid', 'true');
     expect(dialog).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Éditeur' })).not.toBeInTheDocument();

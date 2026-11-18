@@ -5,14 +5,19 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import cast
 
+from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.models.room import Room
+from app.models.template import Template
 from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
 from app.seed.games import SeedGames, create_closed_games
+from app.seed.likes import like_public_templates
 from app.seed.moderation import (
     ban_accounts,
     create_moderation_log,
@@ -21,15 +26,20 @@ from app.seed.moderation import (
 )
 from app.seed.no_op import NoOpRoomEventPublisher
 from app.seed.reports import SeedReports, create_reports
-from app.seed.rooms import SeedRooms, create_open_rooms
+from app.seed.rooms import (
+    SeedRooms,
+    create_open_rooms,
+    create_rooms_on_public_templates_of_others,
+)
 from app.seed.sizes import SeedSize
-from app.seed.templates import SeedTemplates, create_templates
+from app.seed.templates import SeedTemplates, create_templates, publish_templates
 from app.services.image_storage import ImageStorage
 from app.services.rooms import RoomService
 
 logger = logging.getLogger(__name__)
 
 SEED_RANDOM_SEED = 2026
+LIKES_RANDOM_SEED = 276
 
 
 @contextmanager
@@ -60,6 +70,7 @@ def run_seed(
         removed: SeedCleanup = delete_seed_data(session, storage)
     with _step("2/7 Comptes"):
         accounts: SeedAccounts = create_accounts(session, settings, size, password)
+        player_ids: list[uuid.UUID] = [_loaded_id(player) for player in accounts.players]
     with _step("3/7 Modèles et images"):
         templates: SeedTemplates = create_templates(
             session, settings, storage, size, accounts.players, rng
@@ -101,11 +112,31 @@ def run_seed(
             size.deleted_images,
             rng,
         )
+        templates_to_hide: list[uuid.UUID] = _templates_to_hide(
+            played, templates, size.hidden_templates
+        )
+        published: list[uuid.UUID] = _templates_to_publish(
+            templates_to_hide, templates, size.public_templates
+        )
+        publish_templates(session, settings, published)
+        like_public_templates(
+            session,
+            player_ids,
+            published,
+            size.max_likes_per_public_template,
+            random.Random(LIKES_RANDOM_SEED),
+        )
+        rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
+            rooms,
+            accounts.players,
+            _public_templates_not_hidden(templates, published, templates_to_hide),
+            size.rooms_on_public_templates_of_others,
+        )
         moderated_templates: int = moderate_templates(
             session,
             settings,
             accounts.super_admins,
-            _templates_to_hide(played, templates, size.hidden_templates),
+            templates_to_hide,
             [template.id for template in templates.empty[: size.templates_deleted_by_moderation]],
             rng,
         )
@@ -136,7 +167,8 @@ def run_seed(
         closed_games=len(played.closed),
         open_rooms=len(played.open_rooms_with_past_games)
         + len(open_rooms.full)
-        + len(open_rooms.with_bans),
+        + len(open_rooms.with_bans)
+        + len(rooms_on_public_templates),
         moderation_actions=size.moderation_actions
         + moderated_images
         + moderated_templates
@@ -144,6 +176,21 @@ def run_seed(
         + reports.moderation_actions,
         reports=reports.reports,
     )
+
+
+def _templates_to_publish(
+    templates_to_hide: list[uuid.UUID], templates: SeedTemplates, count: int
+) -> list[uuid.UUID]:
+    candidates: list[uuid.UUID] = templates_to_hide[:1]
+    candidates.extend(template.id for template in templates.playable)
+    return list(dict.fromkeys(candidates))[:count]
+
+
+def _public_templates_not_hidden(
+    templates: SeedTemplates, published: list[uuid.UUID], templates_to_hide: list[uuid.UUID]
+) -> list[Template]:
+    public_ids: set[uuid.UUID] = set(published) - set(templates_to_hide)
+    return [template for template in templates.playable if template.id in public_ids]
 
 
 def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:
@@ -154,3 +201,10 @@ def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) 
     ]
     candidates.extend(template.id for template in templates.playable)
     return list(dict.fromkeys(candidates))[:count]
+
+
+def _loaded_id(user: User) -> uuid.UUID:
+    identity: tuple[object, ...] | None = inspect(user).identity
+    if identity is None:
+        raise RuntimeError("A seed account is saved")
+    return cast(uuid.UUID, identity[0])

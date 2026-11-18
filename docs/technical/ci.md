@@ -1,15 +1,13 @@
 # Continuous integration
 
-English | [Français](ci.fr.md)
-
-How the GitHub Actions workflows fit together, why the CI is built the way it is, and how to keep it fast. The jobs and their steps are listed in the [README](../../README.md#continuous-integration-github-actions); every test is described in the [testing guide](testing.md).
+How the GitHub Actions workflows fit together, why the CI is built the way it is, and how to keep it fast. The jobs and their steps are listed in the [README](../../README.md#continuous-integration-github-actions); how the tests work is in the [testing guide](testing.md).
 
 ## 1. Workflows and how they chain
 
 | Workflow           | Starts on                                                         | Does                                                                                                 |
 | ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `ci.yml`           | every PR; a push to `develop` or `main`                           | `Changed parts`, `Backend`, `Frontend`, `Secrets`                                                    |
-| `docs.yml`         | every PR (also when a label changes); a push to `develop`/`main`  | `Docs`: bilingual docs and testing guide in sync                                                     |
+| `ci.yml`           | every PR; a push to `develop` or `main`                           | `Changed parts`, `Backend`, `Frontend`, `E2E` (×3 browsers), `Secrets`                               |
+| `docs.yml`         | every PR (also when a label changes); a push to `develop`/`main`  | `Docs`: bilingual READMEs (and CHANGELOG) in sync, language switchers                                |
 | `deploy.yml`       | a completed `CI` or `Release` run of `develop` or `main`; by hand | staging after a CI push to `develop`, production after `Release` ([deployment guide](deployment.md)) |
 | `release.yml`      | a completed CI push to `main`                                     | tags `vX.Y.Z` and publishes the GitHub Release ([releasing guide](releasing.md))                     |
 | `bundle.yml`       | called by `deploy.yml`                                            | builds the archive deployed to the pods                                                              |
@@ -35,6 +33,7 @@ The `Changed parts` job (a few seconds) lists the files of the PR through the Gi
 | other Markdown files (README, `AGENTS.md`…)              |         |          |
 | any other file (`.github/`, `compose.yaml`…)             |    ✓    |    ✓     |
 
+- The `E2E` jobs (one per browser, [testing guide §6](testing.md#6-end-to-end-tests-playwright)) run as soon as `Backend` or `Frontend` runs, since they test both.
 - A **skipped job counts as passed** for the required checks: the rulesets need no change.
 - A **push to `develop` or `main` always runs everything**: it deploys staging or creates the release.
 - **When in doubt, everything runs**: an unknown file, an API error or a failed `Changed parts` job.
@@ -60,6 +59,6 @@ Kept as they are, on purpose:
 
 ## 4. Keeping it fast and reliable
 
-- Backend tests must work in parallel: no fixed name shared between tests in the database or the S3 bucket, and no random value in a `parametrize` list (every worker must collect the same test names). See the [testing guide](testing.md#15-integration-tests-testsintegration-real-postgresql-and-s3).
+- Backend tests must work in parallel: no fixed name shared between tests in the database or the S3 bucket, and no random value in a `parametrize` list (every worker must collect the same test names). See the [testing guide](testing.md#13-integration-tests-testsintegration-real-postgresql-and-s3).
 - Frontend test files share their modules and jsdom: a file restores what it changes, and the global setup resets the rest. Waits use the common 3 s timeout. See the [testing guide](testing.md).
 - The run summary lists the slowest tests of each job: a test that climbs there is worth a look.

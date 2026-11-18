@@ -1,7 +1,5 @@
 # Results
 
-English | [Français](results.fr.md)
-
 How the results of a closed game are computed: distribution of the votes, absent votes, median ranking. Decided in spike #76; the computation is a pure function, served by the results API (#99, §2.6) and shown by the results page (#100, §2.7). What the results show to the user: [user stories](../product/milestone-1/user-stories.md) US-5.2.
 
 **In short**: for each item, the placements of all the players are turned into **fine scores** (tier + position in the tier), and the item keeps the **median score**. Then the median tier list of all the items is built: each item goes into the tier of its median score, and inside a tier the items are sorted by median score.
@@ -210,5 +208,5 @@ If Alice ranks S: X, Y and Bob S: Y, X, both items have median 3/4 and mean 1/2:
 | Frontend | `i18n/locales/fr.ts`, `en.ts`                                                                                                                    | `results.*`, `rooms.lobby.pastGames.*`, `errors.api.results_not_found`.                                   |
 | Tests    | `frontend/src/pages/ResultsPage.test.tsx`, `RoomPage.test.tsx`                                                                                   | The page and the past games ([testing guide](testing.md)).                                                |
 | Backend  | `backend/app/services/history.py`, `api/routes/history.py`, `schemas/history.py`, `presenters/games.py`                                          | `GET /history` and its answer.                                                                            |
-| Frontend | `frontend/src/pages/HistoryPage.tsx`, `api/history.ts`                                                                                           | The history page, `useHistory`.                                                                           |
+| Frontend | `frontend/src/pages/HistoryPage.tsx`, `api/history.ts`                                                                                           | The history page, `useHistory`. Its loading, error, empty and "Voir plus" states come from `PagedList`.   |
 | Tests    | `backend/tests/integration/test_history.py`, `frontend/src/pages/HistoryPage.test.tsx`                                                           | The history ([testing guide](testing.md)).                                                                |

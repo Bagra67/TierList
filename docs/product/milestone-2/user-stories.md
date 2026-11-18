@@ -1,7 +1,5 @@
 # Milestone 2 — User stories
 
-English | [Français](user-stories.fr.md)
-
 What each actor can do in [milestone 2](README.md), grouped by epic. Each story has an ID, a priority and acceptance criteria written as _Given / When / Then_. Vocabulary: [product.md](../product.md#glossary). Roles: [permissions.md](../permissions.md). Points marked as assumptions in the [README](README.md#assumptions) can still change.
 
 **Priority**: **Must** = required before templates can be public; **Should** = expected in the milestone, can slip to the next one if needed.
@@ -36,7 +34,7 @@ As **anyone** (user, participant or visitor), I want to report a template, an im
 - _Given_ I already reported the same content, _when_ I report it again, _then_ no second report is created, and I am told it is already reported.
 - _Given_ I send many reports in a short time, _then_ the next ones are refused for a while with a message (rate limit).
 - _Given_ a report, _then_ the reported person **never learns** who reported them.
-- Without an account, the browser is recognized by a cookie only: clearing it gets around the last two rules. A public template becomes reportable with its page (US-3.3).
+- Without an account, the browser is recognized by a cookie only: clearing it gets around the last two rules.
 
 ### US-1.3 Handle the reports — Must
 
@@ -44,7 +42,7 @@ As a **super admin**, I want a queue of the open reports, so that I handle each 
 
 - _Given_ open reports, _when_ I open the queue, _then_ I see them **grouped by content**, with the number of reports, the reasons, the content itself and its owner, the most reported first.
 - _Given_ a reported content, _when_ I **dismiss** the reports, _then_ they are closed and the content stays as it is.
-- _Given_ a reported content, _when_ I **remove** it (hide or delete an image, US-1.4; remove a nickname; hide a game), _then_ its open reports are closed with this decision.
+- _Given_ a reported content, _when_ I **remove** it (hide or delete an image, US-1.4; hide or delete a template; remove a nickname; hide a game), _then_ its open reports are closed with this decision.
 - _Given_ a reported content, _when_ I **sanction** its owner (US-1.8), _then_ its reports stay open: the content is still online until it is removed or dismissed.
 - _Given_ any decision, _then_ it is written to the **moderation log** (US-1.9).
 
@@ -122,7 +120,7 @@ As a **template owner**, I want to make my template public, so that everyone can
 
 As a **template owner**, I want to add tags to my template, so that people find it by subject.
 
-- _Given_ my template, _when_ I add tags, _then_ they are saved, **5 at most**, each one a short word or expression; duplicates (ignoring case and accents) are merged.
+- _Given_ my template, _when_ I add tags, _then_ they are saved, **5 at most**, each one a short word or expression of **30 characters at most**; duplicates (ignoring case and accents) are merged.
 - _Given_ my template, _when_ I remove a tag, _then_ it is no longer used to find the template.
 
 ### US-2.3 Make a public template private again — Must
@@ -160,7 +158,7 @@ As **anyone**, signed in or not, I want to browse the public templates, so that 
 
 As **anyone**, I want to search and sort the marketplace, so that I find a template on a subject.
 
-- _Given_ the marketplace, _when_ I type **keywords**, _then_ I see the templates whose name or tags match, ignoring case and accents.
+- _Given_ the marketplace, _when_ I type **keywords**, _then_ I see the templates whose name or tags match, ignoring case and accents. A keyword matches the **start of a word** (`poke` finds _Pokémon_); every keyword must match, and `|` separates alternatives (`mario film | zelda`: both `mario` and `film`, or `zelda`).
 - _Given_ the marketplace, _when_ I choose a **tag**, _then_ only the templates with that tag are shown.
 - _Given_ the results, _when_ I sort by **popularity** (likes) or **newest** (date it was made public), _then_ the order changes; popularity is the default.
 

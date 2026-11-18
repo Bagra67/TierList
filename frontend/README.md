@@ -43,7 +43,7 @@ Installs the dependencies at the exact versions of `pnpm-lock.yaml` and enables 
 For the message to show up, also run the backend in another terminal (`cd backend` then `uv run fastapi dev app/main.py`).
 Calls to `/api/...` are forwarded unchanged to `http://127.0.0.1:8000/api/...` by the proxy configured in `vite.config.ts`: the backend serves its API under `/api`, as in production, where FastAPI also serves the build ([deployment guide](../docs/technical/deployment.md)).
 
-Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. Details of each test: [testing guide](../docs/technical/testing.md).
+Tests use **Vitest** (jsdom) and **Testing Library**, configured in the `test` block of `vite.config.ts`. Test files sit next to the code (`*.test.tsx`), and `fetch` is stubbed (`vi.stubGlobal`) so tests never call the backend. CI runs `pnpm test:coverage`. How the tests work: [testing guide](../docs/technical/testing.md).
 
 ---
 
@@ -166,8 +166,9 @@ Server data goes through **TanStack Query** on top of a shared **openapi-fetch**
 Component → useX() hook (TanStack Query) → getX() → apiClient (openapi-fetch) → /api → FastAPI
 ```
 
-- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, the API `code` and `params`, and the backend `detail` as `message`) is thrown for any non-2xx response. Components display `translateError(t, error)`, never `error.message`. Fixed values (routes, HTTP statuses, limits) come from `src/constants/`.
-- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure to the console, in one place.
+- `src/api/client.ts`: `apiClient`, the only HTTP client. Its paths, parameters and responses are typed by `schema.d.ts`, so a wrong path or field is a `pnpm typecheck` error. `ApiError` (`src/errors/apiError.ts`: `status`, `body`, the API `code` and `params`, and the backend `detail` as `message`) is thrown for any non-2xx response; a failed `fetch` (lost connection, other than an abort) becomes a `NetworkError` (`src/errors/networkError.ts`). Components display `translateError(t, error)`, never `error.message`. Fixed values (routes, HTTP statuses, limits, every query key) come from `src/constants/`; `nextOffset` (`src/api/pagination.ts`) gives the next page of an infinite query.
+- `src/api/queryClient.ts`: `createQueryClient()`, used by `main.tsx`. It retries a failed query once and logs every failure other than a 4xx to the console, in one place; only a failure that is neither an `ApiError` nor a `NetworkError` (an error of the code) is also sent to Sentry.
+- `src/monitoring/sentry.ts`: `initMonitoring()`, called by `main.tsx`, starts Sentry with the config the backend writes into `index.html` (or, under Vite, `GET /api/client-config`), only when a DSN is set; `reportError()` is used by the error boundary and the query client ([monitoring guide](../docs/technical/monitoring.md)).
 - TanStack Query handles loading and error states, cancellation on unmount, caching (the same `queryKey` is fetched once) and refetching.
 
 To add an endpoint, create `src/api/<resource>.ts` following `auth.ts`, e.g. a read:

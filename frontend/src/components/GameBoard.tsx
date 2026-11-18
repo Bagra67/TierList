@@ -7,7 +7,7 @@ import {
 } from '@dnd-kit/core';
 import { cn } from 'cn';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 
 import {
@@ -19,7 +19,13 @@ import {
   usePlaceItem,
 } from '../api/rooms';
 import { translateError } from '../errors/apiError';
-import { type BoardDropTarget, type DropSide, dropPosition, dropSide } from './boardPositions';
+import {
+  type BoardDropTarget,
+  type DropSide,
+  dropPosition,
+  dropSide,
+  tierNameIn,
+} from './boardPositions';
 import { ErrorMessage } from './ErrorMessage';
 import { useBoardSensors, useFocusAfterUpdate } from './boardHooks';
 import {
@@ -30,11 +36,10 @@ import {
 } from './boardStyles';
 import { CurrentItemCard } from './CurrentItemCard';
 import {
-  type DragPreviewContent,
+  BoardTierRow,
   DragPreview,
+  type DragPreviewContent,
   DraggableItem,
-  EndSlot,
-  TierLabel,
 } from './gameBoardParts';
 import { GameItemView } from './GameItemView';
 import { Button } from './ui/button';
@@ -52,6 +57,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   const sensors = useBoardSensors();
   const sectionRef = useRef<HTMLElement>(null);
   const focus = useFocusAfterUpdate(sectionRef, game.own_placements);
+  const placing = useRef<boolean>(false);
   const currentItem: GameItem = game.current_item;
   const currentRoundDraggableId: string = `current:${currentItem.id}`;
   const currentPlacement: OwnPlacement | undefined = game.own_placements.find(
@@ -59,6 +65,7 @@ export function GameBoard({ room, game }: GameBoardProps) {
   );
   const itemLabel: string = currentItem.text ?? t('rooms.game.currentItemImage');
   const pending: boolean = placeMutation.isPending;
+  const [buttonPlacementAnnouncement, setButtonPlacementAnnouncement] = useState<string>('');
 
   function itemIdsInServerOrder(tierId: string): string[] {
     return game.own_placements
@@ -73,17 +80,34 @@ export function GameBoard({ room, game }: GameBoardProps) {
   }
 
   function tierName(tierId: string): string {
-    return game.tiers.find((tier) => tier.id === tierId)?.name ?? '';
+    return tierNameIn(game, tierId);
   }
 
   async function placeAt(tierId: string, position: number, focusKeysByPriority: string[]) {
-    if (pending) return;
+    if (placing.current) return false;
+    placing.current = true;
     focus.focusFirstEnabledAfterUpdate(focusKeysByPriority);
     try {
       await placeMutation.mutateAsync({ tileId: currentItem.id, tierId, position });
     } catch {
       focus.cancel();
-      return;
+      return false;
+    } finally {
+      placing.current = false;
+    }
+    return true;
+  }
+
+  async function placeWithButton(tierId: string, position: number, focusKeysByPriority: string[]) {
+    if (itemIdsInServerOrder(tierId).indexOf(currentItem.id) === position) return;
+    if (await placeAt(tierId, position, focusKeysByPriority)) {
+      setButtonPlacementAnnouncement(
+        t('rooms.game.dnd.dropped', {
+          item: itemLabel,
+          tier: tierName(tierId),
+          position: position + 1,
+        }),
+      );
     }
   }
 
@@ -205,13 +229,16 @@ export function GameBoard({ room, game }: GameBoardProps) {
               itemLabel={itemLabel}
               pending={pending}
               onPlace={(position, focusKeysByPriority) =>
-                void placeAt(tier.id, position, focusKeysByPriority)
+                void placeWithButton(tier.id, position, focusKeysByPriority)
               }
             />
           ))}
         </ol>
         <DragPreview previewOf={previewOf} />
       </DndContext>
+      <p role="status" className="sr-only">
+        {buttonPlacementAnnouncement}
+      </p>
       {placeMutation.isError && (
         <div className="lg:col-start-2">
           <ErrorMessage>{translateError(t, placeMutation.error)}</ErrorMessage>
@@ -289,10 +316,10 @@ function TierRow({
   );
 
   return (
-    <li className="flex w-full rounded-[10px] border bg-card">
-      <TierLabel tier={tier} className="rounded-l-[9px]" />
-      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
-        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+    <BoardTierRow
+      tier={tier}
+      items={
+        <>
           {others.map((placement, index) => (
             <PlacedItemSlot
               key={placement.item.id}
@@ -302,8 +329,9 @@ function TierRow({
             />
           ))}
           {currentRank !== undefined && currentRank >= others.length && currentChip}
-          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
-        </ol>
+        </>
+      }
+      action={
         <Button
           type="button"
           variant="outline"
@@ -315,8 +343,8 @@ function TierRow({
         >
           {t('rooms.game.placeIn', { tier: tier.name })}
         </Button>
-      </div>
-    </li>
+      }
+    />
   );
 }
 

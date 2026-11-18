@@ -132,11 +132,14 @@ def game_counts_by_image(session: Session, image_ids: list[uuid.UUID]) -> dict[u
     return {image_id: count for image_id, count in session.execute(statement).all()}
 
 
-def list_visible_image_ids_of_owner(session: Session, owner_id: uuid.UUID) -> list[uuid.UUID]:
+def list_visible_image_ids_of_owner(
+    session: Session, owner_id: uuid.UUID, limit: int
+) -> list[uuid.UUID]:
     statement: Select[uuid.UUID] = (
         select(Image.id)
         .where(Image.owner_id == owner_id, Image.status == ImageStatus.VISIBLE)
         .order_by(Image.created_at, Image.id)
+        .limit(limit)
     )
     return list(session.scalars(statement).all())
 

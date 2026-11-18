@@ -1,7 +1,10 @@
+import logging
+from collections.abc import Callable
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse
 from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
@@ -10,9 +13,16 @@ from app.constants.api import (
     API_PREFIX,
     FRONTEND_ASSETS_CACHE_CONTROL,
     FRONTEND_ASSETS_PATH,
+    FRONTEND_CLIENT_CONFIG_ELEMENT_ID,
+    FRONTEND_HEAD_END,
     FRONTEND_INDEX_FILE,
     FRONTEND_NO_CACHE,
 )
+from app.constants.seo import ACCEPT_LANGUAGE_HEADER, NOINDEX, VARY_HEADER, X_ROBOTS_TAG_HEADER
+from app.schemas.client_config import ClientConfigResponse
+from app.seo.head import PageHead, render_page
+
+logger = logging.getLogger(__name__)
 
 
 class _ImmutableStaticFiles(StaticFiles):
@@ -32,9 +42,42 @@ def _root_file(dist: Path, path: str) -> Path | None:
     return candidate
 
 
-def mount_frontend_after_api(app: FastAPI, existing_dist: Path) -> None:
+def _index_with_client_config(index_html: str, client_config: ClientConfigResponse) -> str:
+    config_json: str = client_config.model_dump_json().replace("<", "\\u003c")
+    config_element: str = (
+        f'<script type="application/json" id="{FRONTEND_CLIENT_CONFIG_ELEMENT_ID}">'
+        f"{config_json}</script>"
+    )
+    if FRONTEND_HEAD_END not in index_html:
+        logger.error("Config client non écrite : pas de %s dans index.html", FRONTEND_HEAD_END)
+        return index_html
+    return index_html.replace(FRONTEND_HEAD_END, config_element + FRONTEND_HEAD_END, 1)
+
+
+def _page_headers(head: PageHead) -> dict[str, str]:
+    headers: dict[str, str] = {
+        "Cache-Control": FRONTEND_NO_CACHE,
+        VARY_HEADER: ACCEPT_LANGUAGE_HEADER,
+    }
+    if not head.indexable:
+        headers[X_ROBOTS_TAG_HEADER] = NOINDEX
+    return headers
+
+
+def mount_frontend_after_api(
+    app: FastAPI,
+    existing_dist: Path,
+    client_config: ClientConfigResponse,
+    page_head: Callable[..., PageHead],
+) -> None:
     resolved_dist: Path = existing_dist.resolve()
     index_file: Path = resolved_dist / FRONTEND_INDEX_FILE
+    if not index_file.is_file():
+        logger.error("Frontend non servi : %s introuvable", index_file)
+        return
+    index_html: str = _index_with_client_config(
+        index_file.read_text(encoding="utf-8"), client_config
+    )
     app.mount(
         FRONTEND_ASSETS_PATH,
         _ImmutableStaticFiles(directory=resolved_dist / FRONTEND_ASSETS_PATH.lstrip("/")),
@@ -42,11 +85,14 @@ def mount_frontend_after_api(app: FastAPI, existing_dist: Path) -> None:
     )
 
     @app.api_route("/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
-    def frontend(path: str) -> FileResponse:
+    def frontend(path: str, head: Annotated[PageHead, Depends(page_head)]) -> Response:
         if f"/{path}" == API_PREFIX:
             raise HTTPException(status_code=404)
         root_file: Path | None = _root_file(resolved_dist, path)
-        return FileResponse(
-            root_file if root_file is not None else index_file,
-            headers={"Cache-Control": FRONTEND_NO_CACHE},
-        )
+        if root_file is None or root_file == index_file:
+            return HTMLResponse(
+                render_page(index_html, head),
+                status_code=head.status_code,
+                headers=_page_headers(head),
+            )
+        return FileResponse(root_file, headers={"Cache-Control": FRONTEND_NO_CACHE})

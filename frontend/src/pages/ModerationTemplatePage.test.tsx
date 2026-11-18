@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ReviewedTemplate } from '../api/moderation';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
+import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
 import { ModerationTemplatePage } from './ModerationTemplatePage';
 
 const template: ReviewedTemplate = {
@@ -133,8 +133,8 @@ describe('ModerationTemplatePage', () => {
     expect(await screen.findByRole('heading', { name: 'Food', level: 1 })).toBeInTheDocument();
   });
 
-  it('goes back to the account after deleting the template', async () => {
-    renderPage({
+  it('goes back to the account after deleting the template, without reading it again', async () => {
+    const fetchMock: BackendMock = renderPage({
       ...readsTemplate,
       'POST /moderation/templates/food-id/delete': () => new Response(null, { status: 204 }),
     });
@@ -147,5 +147,8 @@ describe('ModerationTemplatePage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /^Supprimer/ }));
 
     expect(await screen.findByRole('heading', { name: 'Page du compte' })).toBeInTheDocument();
+    expect(
+      calledRoutes(fetchMock).filter((route) => route === 'GET /moderation/templates/food-id'),
+    ).toHaveLength(1);
   });
 });

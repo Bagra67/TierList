@@ -1,11 +1,27 @@
 import { fileURLToPath } from 'node:url';
 
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
+const sentryAuthToken: string | undefined = process.env.SENTRY_AUTH_TOKEN;
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    sentryVitePlugin({
+      disable: !sentryAuthToken,
+      authToken: sentryAuthToken,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      release: { name: process.env.SENTRY_RELEASE, inject: false },
+      sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+      telemetry: false,
+    }),
+  ],
+  build: { sourcemap: sentryAuthToken ? 'hidden' : false },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
@@ -29,6 +45,7 @@ export default defineConfig({
     // au lieu de les recréer (près de la moitié du temps des tests). src/test/setup.ts remet
     // l'état partagé à zéro après chaque test.
     isolate: false,
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',

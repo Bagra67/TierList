@@ -1,7 +1,5 @@
 # Images
 
-English | [Français](images.fr.md)
-
 How tile images are received, compressed, stored, served, cleaned up and moderated. Decided in spike #75, **built in #81** (§3): upload, compression, storage, image tiles in the template editor, upload limit per account and garbage collection. **Moderation actions built in #124** (§2.9): hide, unhide or delete an image, refusal of a deleted file uploaded again. **Recent uploads page built in #125** (§2.9): the first super admin page that lists images and calls those actions. What a tile is for the user: [user stories](../product/milestone-1/user-stories.md) US-1.2 and US-1.3.
 
 ## 1. Functional overview
@@ -65,7 +63,7 @@ Fixed values are constants in `app/constants/images.py` (`IMAGE_OUTPUT_MAX_SIDE_
 
 10 MiB accepts a phone photo; 40 Mpx accepts the largest phone and camera sensors.
 
-Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: the backend refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory), but only the **proxy limit** stops a huge body before it is received: Cloudflare refuses bodies over 100 MB ([deployment guide](deployment.md)).
+Starlette receives the whole multipart body, and writes it to a temporary file, **before** the route runs: so a body that **announces** a size over `IMAGE_UPLOAD_MAX_BYTES` plus 64 KiB of multipart envelope (`Content-Length`) is refused first, with the same `413` `image_too_large`, by a pure ASGI middleware on the API (`ImageUploadSizeMiddleware`, `app/core/upload_size.py`). A body sent without `Content-Length` (in chunks) is counted as it comes and refused the same way once over that size. The route then refuses a file over `IMAGE_UPLOAD_MAX_BYTES` (it reads at most one byte more, so the file never goes into memory). Cloudflare also refuses bodies over 100 MB ([deployment guide](deployment.md)).
 
 Storage settings:
 

@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.constants.moderation import REMOVED_NICKNAME_PREFIX, REMOVED_NICKNAME_RANDOM_LENGTH
 from app.core.config import Settings
 from app.exceptions.reports import (
     GameModerationConflictError,
@@ -36,9 +37,6 @@ from app.repositories.reports import OpenReportGroup
 from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
-
-REMOVED_NICKNAME_PREFIX = "#"
-REMOVED_NICKNAME_RANDOM_LENGTH = 8
 
 
 @dataclass(frozen=True)
@@ -102,7 +100,9 @@ class ReportQueueService:
         )
         contents: list[ReportedContent] = []
         for group in shown_groups:
-            reports: list[Report] = reports_per_target[(group.target_type, group.target_id)]
+            reports: list[Report] = reports_per_target.get((group.target_type, group.target_id), [])
+            if not reports:
+                continue
             owner: uuid.UUID | None = reports[0].owner_id
             reasons: Counter[ReportReason] = Counter(report.reason for report in reports)
             contents.append(

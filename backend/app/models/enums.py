@@ -75,6 +75,7 @@ class ReportTargetKind(StrEnum):
     PARTICIPANT = "participant"
     PLAYER = "player"
     GAME = "game"
+    TEMPLATE = "template"
 
 
 class ReportReason(StrEnum):
@@ -99,3 +100,10 @@ class TemplateModeration(StrEnum):
 
     NONE = "none"
     HIDDEN = "hidden"
+
+
+class TemplateVisibility(StrEnum):
+    """Visibilité choisie par le propriétaire d'un modèle (US-2.1, US-2.3)."""
+
+    PRIVATE = "private"
+    PUBLIC = "public"

@@ -126,7 +126,7 @@ def render(title: str, results: list[TestResult]) -> str:
         lines += [f"| `{cell(r.name)}` | {r.seconds:.3f}s |" for r in slowest]
         lines.append("")
 
-    lines += [f"What each test checks: [testing guide]({guide_link()}).", ""]
+    lines += [f"How the tests work: [testing guide]({guide_link()}).", ""]
     return "\n".join(lines)
 
 

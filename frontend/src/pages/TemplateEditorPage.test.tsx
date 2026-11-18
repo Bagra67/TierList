@@ -2,13 +2,23 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
+import type { User } from '../api/auth';
 import type { UploadedImage } from '../api/images';
 import type { Template, Tier, Tile } from '../api/templates';
 import { BULK_IMAGE_UPLOAD_CONCURRENCY } from '../constants/images';
 import { type FileDataTransfer, fileDataTransfer } from '../test/fileDataTransfer';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { aliceRoom } from '../test/fixtures/rooms';
-import { calledRoutes, errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  signedInSession,
+  stubBackend,
+  unverifiedAlice,
+  unverifiedSession,
+  type BackendMock,
+} from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
@@ -35,6 +45,7 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
   return {
     id: templateId,
     name,
+    tags: [],
     created_at: '2026-10-05T12:00:00Z',
     updated_at: '2026-10-05T12:00:00Z',
     tiers: tiers.map((tier, position) => ({ ...tier, position })),
@@ -42,20 +53,23 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
     max_tiles: 32,
     moderation: 'none',
     moderation_reason: null,
+    visibility: 'private',
+    first_made_public_at: null,
   };
 }
 
 const [tierS, tierA, tierB]: Tier[] = [makeTier('S', 0), makeTier('A', 1), makeTier('B', 2)];
 const chips: Template = makeTemplate([tierS, tierA, tierB]);
 
-function renderEditor() {
+function renderEditor(url: string = templateUrl, currentUser: User = alice) {
   return renderWithQueryClient(
-    <MemoryRouter initialEntries={[templateUrl]}>
+    <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/templates/:templateId" element={<TemplateEditorPage />} />
         <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
+    { currentUser },
   );
 }
 
@@ -103,15 +117,20 @@ describe('TemplateEditorPage', () => {
   });
 
   it('shows an error when the template does not exist', async () => {
-    const consoleError: MockInstance<typeof console.error> = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
     stubBackend({ [`GET ${templateUrl}`]: () => errorResponse(404, 'template_not_found') });
 
     renderEditor();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
-    consoleError.mockRestore();
+  });
+
+  it('shows the not found page for an address that is not a template, without a request', async () => {
+    const fetchMock: BackendMock = stubBackend({});
+
+    renderEditor('/templates/removed');
+
+    expect(await screen.findByRole('heading', { name: 'Page introuvable' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toEqual([]);
   });
 
   it('says why a template hidden by the moderation can no longer start a room', async () => {
@@ -146,6 +165,306 @@ describe('TemplateEditorPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
     expect(await requestBody(fetchMock, 'POST')).toEqual({ template_id: templateId });
+  });
+
+  describe('visibility', () => {
+    const visibilityUrl: string = `${templateUrl}/visibility`;
+    const playable: Template = withTiles([pizza]);
+    const madePublic: Template = {
+      ...playable,
+      visibility: 'public',
+      first_made_public_at: '2026-10-31T10:00:00Z',
+    };
+    const emailNotice: string = 'Confirmez votre adresse e-mail pour rendre un modèle public.';
+    const publicDescription: string =
+      'Tout le monde peut le trouver et y jouer. Votre pseudo est visible.';
+
+    function visibilityOption(name: 'Privé' | 'Public'): HTMLElement {
+      return screen.getByRole('radio', { name });
+    }
+
+    it('makes the template public and shows the date of its first publication', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => Response.json(madePublic),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+      expect(visibilityOption('Privé')).toBeChecked();
+      expect(visibilityOption('Privé')).toHaveAccessibleDescription(
+        'Vous seul pouvez créer une salle avec ce modèle.',
+      );
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(
+        await screen.findByText('Première publication le 31 octobre 2026'),
+      ).toBeInTheDocument();
+      expect(visibilityOption('Public')).toBeChecked();
+      expect(screen.getByRole('link', { name: 'Voir la page publique' })).toHaveAttribute(
+        'href',
+        `/marketplace/templates/${templateId}`,
+      );
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ visibility: 'public' });
+    });
+
+    it('shows the choice at once, and takes it back when the backend refuses it', async () => {
+      let answerRefusal: (response: Response) => void = () => {};
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () =>
+          new Promise<Response>((resolve) => {
+            answerRefusal = resolve;
+          }),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      await waitFor(() => expect(visibilityOption('Public')).toBeChecked());
+      answerRefusal(errorResponse(409, 'template_hidden'));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Ce modèle est masqué par la modération',
+      );
+      await waitFor(() => expect(visibilityOption('Privé')).toBeChecked());
+    });
+
+    it('asks to confirm the email first, and sends the email again', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        'POST /auth/email/verification': () => new Response(null, { status: 204 }),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeEnabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} ${emailNotice}`,
+      );
+      fireEvent.click(screen.getByRole('button', { name: "Renvoyer l'e-mail" }));
+
+      expect(await screen.findByText(/^E-mail envoyé\./)).toHaveAttribute('role', 'status');
+      expect(calledRoutes(fetchMock)).toContain('POST /auth/email/verification');
+      expect(calledRoutes(fetchMock)).not.toContain(`PUT ${visibilityUrl}`);
+    });
+
+    it('hides the email notice once the account read again has a confirmed email', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...signedInSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      await waitFor(() => expect(screen.queryByText(emailNotice)).not.toBeInTheDocument());
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(publicDescription);
+    });
+
+    it('reads the account again when an email cached as unconfirmed was confirmed meanwhile', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...signedInSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => Response.json(madePublic),
+      });
+      renderEditor(templateUrl, unverifiedAlice);
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(
+        await screen.findByText('Première publication le 31 octobre 2026'),
+      ).toBeInTheDocument();
+      await waitFor(() => expect(calledRoutes(fetchMock)).toContain('GET /auth/me'));
+      expect(screen.queryByText(emailNotice)).not.toBeInTheDocument();
+    });
+
+    it('shows the email notice when the backend refuses an unconfirmed email', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        ...unverifiedSession,
+        [`GET ${templateUrl}`]: () => Response.json(playable),
+        [`PUT ${visibilityUrl}`]: () => errorResponse(403, 'email_not_verified'),
+      });
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      fireEvent.click(visibilityOption('Public'));
+
+      expect(await screen.findByText(emailNotice)).toBeInTheDocument();
+      await waitFor(() => expect(visibilityOption('Privé')).toBeChecked());
+      expect(screen.getByRole('button', { name: "Renvoyer l'e-mail" })).toBeVisible();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(calledRoutes(fetchMock)).toContain('GET /auth/me');
+    });
+
+    it('cannot make a template without tiles public, and says why', async () => {
+      stubBackend({ [`GET ${templateUrl}`]: () => Response.json(chips) });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeDisabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} Ajoutez au moins une tuile pour le rendre public.`,
+      );
+    });
+
+    it('cannot make a hidden template public, and says why', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () =>
+          Response.json({ ...playable, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+      });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeDisabled();
+      expect(visibilityOption('Public')).toHaveAccessibleDescription(
+        `${publicDescription} Masqué par la modération : il ne peut pas être rendu public.`,
+      );
+    });
+
+    it('says that a hidden public template does not appear among the public templates', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () =>
+          Response.json({ ...madePublic, moderation: 'hidden', moderation_reason: 'Harcèlement' }),
+      });
+
+      renderEditor();
+      await screen.findByRole('heading', { name: 'Chips' });
+
+      expect(visibilityOption('Public')).toBeChecked();
+      expect(visibilityOption('Privé')).toBeEnabled();
+      expect(
+        screen.getByText("Masqué par la modération : il n'apparaît pas dans les modèles publics."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Première publication/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Voir la page publique' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('tags', () => {
+    const tagsUrl: string = `${templateUrl}/tags`;
+    const withTags = (tags: string[]): Template => ({ ...chips, tags });
+
+    function tagInput(): Promise<HTMLElement> {
+      return screen.findByRole('textbox', { name: 'Ajouter une étiquette' });
+    }
+
+    it('adds a tag with Enter and empties the field once it is saved', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['snacks'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['snacks', 'Soirée'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '  Soirée ' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      const tagList: HTMLElement = await screen.findByRole('list', {
+        name: 'Étiquettes du modèle',
+      });
+      await waitFor(() => expect(within(tagList).getAllByRole('listitem')).toHaveLength(2));
+      expect(input).toHaveValue('');
+      expect(screen.getByText('2 / 5')).toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['snacks', 'Soirée'] });
+    });
+
+    it('adds the tag being typed when the field loses focus', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['party'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: 'party' } });
+      fireEvent.blur(input);
+
+      expect(await screen.findByText('party')).toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['party'] });
+    });
+
+    it('sends nothing for a blank tag, and Escape empties the field', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '   ' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      fireEvent.change(input, { target: { value: 'draft' } });
+      fireEvent.keyDown(input, { key: 'Escape' });
+
+      expect(input).toHaveValue('');
+      expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
+    });
+
+    it('removes a tag and moves the focus to the next remove button', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['snacks', 'party', 'food'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['snacks', 'food'])),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: "Retirer l'étiquette « party »" }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: "Retirer l'étiquette « food »" })).toHaveFocus(),
+      );
+      expect(screen.queryByText('party')).not.toBeInTheDocument();
+      await expect(requestBody(fetchMock, 'PUT')).resolves.toEqual({ tags: ['snacks', 'food'] });
+    });
+
+    it('says when the added tag was already there', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['Soirée'])),
+        [`PUT ${tagsUrl}`]: () => Response.json(withTags(['Soirée'])),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: 'soiree' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(await screen.findByText('Cette étiquette est déjà là.')).toBeInTheDocument();
+    });
+
+    it('replaces the field by a sentence once the template has five tags', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTags(['a', 'b', 'c', 'd', 'e'])),
+      });
+      renderEditor();
+
+      expect(
+        await screen.findByText('5 étiquettes au plus : retirez-en une pour en ajouter une autre.'),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('textbox', { name: 'Ajouter une étiquette' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('keeps the typed tag and shows the error when the backend refuses it', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${tagsUrl}`]: () => errorResponse(422, 'invalid_tag'),
+      });
+      renderEditor();
+      const input: HTMLElement = await tagInput();
+
+      fireEvent.change(input, { target: { value: '!!!' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
+      );
+      expect(input).toHaveValue('!!!');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
   });
 
   describe('template name', () => {
@@ -243,7 +562,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(nameField, { target: { value: '   ' } });
       fireEvent.blur(nameField);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(nameField).toHaveAttribute('aria-invalid', 'true');
     });
   });
@@ -373,6 +692,23 @@ describe('TemplateEditorPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier A' }));
 
       await waitFor(() => expect(displayedTierNames()).toEqual(['S', 'B']));
+    });
+
+    it('clears the error of a failed deletion once another change succeeds', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`DELETE ${templateUrl}/tiers/${tierB.id}`]: () => errorResponse(500, 'internal_error'),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: () =>
+          Response.json(makeTemplate([tierA, tierS, tierB])),
+      });
+      renderEditor();
+      fireEvent.click(await screen.findByRole('button', { name: 'Supprimer le tier B' }));
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Descendre S' }));
+
+      await waitFor(() => expect(displayedTierNames()).toEqual(['A', 'S', 'B']));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('cannot delete the only tier left', async () => {
@@ -580,6 +916,41 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByRole('alert')).toBeInTheDocument();
       expect(displayedTileTexts()).toEqual(['Pizza', 'Sushi']);
+    });
+
+    it('keeps a tile move on screen when a tier move started earlier is answered first', async () => {
+      const answers: Map<string, (response: Response) => void> = new Map();
+      const answerLater = (name: string) => (): Promise<Response> =>
+        new Promise<Response>((resolve) => answers.set(name, resolve));
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(withTiles([pizza, sushi])),
+        [`PATCH ${templateUrl}/tiers/${tierS.id}`]: answerLater('tier'),
+        [`PATCH ${templateUrl}/tiles/${pizza.id}`]: answerLater('tile'),
+      });
+      renderEditor();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Descendre S' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Déplacer Pizza après' }));
+      await waitFor(() => expect(answers.size).toBe(2));
+      await act(async () => {
+        answers.get('tier')?.(
+          Response.json(makeTemplate([tierA, tierS, tierB], 'Chips', [pizza, sushi])),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+
+      expect(displayedTierNames()).toEqual(['A', 'S', 'B']);
+      expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']);
+
+      await act(async () => {
+        answers.get('tile')?.(
+          Response.json(makeTemplate([tierA, tierS, tierB], 'Chips', [sushi, pizza])),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+
+      expect(displayedTierNames()).toEqual(['A', 'S', 'B']);
+      expect(displayedTileTexts()).toEqual(['Sushi', 'Pizza']);
     });
 
     it('moves a tile with the move after button', async () => {
@@ -1130,7 +1501,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(tileText, { target: { value: '   ' } });
       fireEvent.blur(tileText);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       await expect(requestBody(fetchMock, 'PATCH')).resolves.toEqual({ text: '   ' });
     });
@@ -1223,7 +1594,7 @@ describe('TemplateEditorPage', () => {
       fireEvent.change(firstTierName, { target: { value: '   ' } });
       fireEvent.blur(firstTierName);
 
-      expect(await screen.findByText('Au moins 1 caractères.')).toBeInTheDocument();
+      expect(await screen.findByText('Au moins 1 caractère.')).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
@@ -1263,7 +1634,9 @@ describe('TemplateEditorPage', () => {
 
   describe('tier color', () => {
     async function openColorPicker(): Promise<HTMLElement> {
-      fireEvent.click(await screen.findByRole('button', { name: 'Couleur du tier A' }));
+      fireEvent.click(
+        await screen.findByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+      );
       return screen.findByRole('dialog');
     }
 
@@ -1317,7 +1690,9 @@ describe('TemplateEditorPage', () => {
       fireEvent.keyDown(picker, { key: 'Escape' });
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-      expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+      expect(
+        screen.getByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+      ).toHaveStyle({
         backgroundColor: tierA.color,
       });
       expect(calledRoutes(fetchMock)).toEqual([`GET ${templateUrl}`]);
@@ -1352,7 +1727,9 @@ describe('TemplateEditorPage', () => {
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Erreur interne du serveur');
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Couleur du tier A' })).toHaveStyle({
+        expect(
+          screen.getByRole('button', { name: /^Couleur du tier A, actuellement #/ }),
+        ).toHaveStyle({
           backgroundColor: tierA.color,
         }),
       );

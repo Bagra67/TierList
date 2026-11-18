@@ -4,13 +4,23 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
+from app.constants.templates import (
+    DEFAULT_TIERS,
+    NEW_TIER_COLOR,
+    NEW_TIER_NAME,
+    TEMPLATES_PAGE_SIZE,
+)
 from app.core.config import Settings
+from app.core.cursor import decode_cursor, encode_cursor, split_page
+from app.core.search_text import normalize_search_text
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
+    InvalidTagError,
     LastTierError,
     TemplateHasNoTilesError,
     TemplateHiddenError,
@@ -20,13 +30,14 @@ from app.exceptions.templates import (
     TileLimitReachedError,
     TileNotFoundError,
 )
-from app.models.enums import TemplateModeration
+from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.template_tag import TemplateTag
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
@@ -50,6 +61,12 @@ def _move[Positioned: (Tier, Tile)](
     _renumber(items)
 
 
+def _refresh_search_text(template: Template) -> None:
+    template.search_text = " ".join(
+        [normalize_search_text(template.name), *(tag.normalized_label for tag in template.tags)]
+    ).strip()
+
+
 @dataclass(frozen=True)
 class RemovedImage:
     tile_id: uuid.UUID
@@ -71,11 +88,27 @@ class RemovedTemplate:
 class TemplateSummary:
     id: uuid.UUID
     name: str
+    tags: list[str]
     tile_count: int
     updated_at: datetime
     moderation: TemplateModeration
     moderation_reason: str | None
+    visibility: TemplateVisibility
+    first_made_public_at: datetime | None
     removed_images: list[RemovedImage]
+
+
+class TemplatePagePosition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    updated_at: datetime
+    id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class TemplatePage:
+    items: list[TemplateSummary]
+    next_cursor: str | None
 
 
 class TierChanges(TypedDict, total=False):
@@ -104,36 +137,74 @@ class TemplateService:
                 for position, (tier_name, color) in enumerate(DEFAULT_TIERS)
             ],
         )
+        _refresh_search_text(template)
         template_repository.add_template(self._session, template)
         self._session.commit()
         logger.info("Template créé : template_id=%s owner_id=%s", template.id, owner.id)
         return template
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
-        templates_with_tile_count: list[tuple[Template, int]] = (
+        return self._summaries(
             template_repository.list_owned_templates_with_tile_count(self._session, owner.id)
         )
-        removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
-            owner
+
+    def page_for_owner(self, owner: User, cursor: str | None) -> TemplatePage:
+        after: TemplatePagePosition | None = (
+            None if cursor is None else decode_cursor(cursor, TemplatePagePosition)
         )
+        rows: list[tuple[Template, int]] = template_repository.list_owned_templates_with_tile_count(
+            self._session,
+            owner.id,
+            after=None if after is None else (after.updated_at, after.id),
+            limit=TEMPLATES_PAGE_SIZE + 1,
+        )
+        page_rows, last_row = split_page(rows, TEMPLATES_PAGE_SIZE)
+        next_cursor: str | None = (
+            None
+            if last_row is None
+            else encode_cursor(
+                TemplatePagePosition(updated_at=last_row[0].updated_at, id=last_row[0].id)
+            )
+        )
+        return TemplatePage(items=self._summaries(page_rows), next_cursor=next_cursor)
+
+    def _summaries(self, rows: list[tuple[Template, int]]) -> list[TemplateSummary]:
+        template_ids: list[uuid.UUID] = [template.id for template, _ in rows]
+        removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
+            template_ids
+        )
+        tags: dict[uuid.UUID, list[str]] = self._tags_by_template(template_ids)
 
         summaries: list[TemplateSummary] = []
-        for template, tile_count in templates_with_tile_count:
+        for template, tile_count in rows:
             summary: TemplateSummary = TemplateSummary(
                 id=template.id,
                 name=template.name,
+                tags=tags.get(template.id, []),
                 tile_count=tile_count,
                 updated_at=template.updated_at,
                 moderation=template.moderation,
                 moderation_reason=template.moderation_reason,
+                visibility=template.visibility,
+                first_made_public_at=template.first_made_public_at,
                 removed_images=removed_images.get(template.id, []),
             )
             summaries.append(summary)
         return summaries
 
-    def _removed_images_by_template(self, owner: User) -> dict[uuid.UUID, list[RemovedImage]]:
+    def _tags_by_template(self, template_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[str]]:
+        tags: dict[uuid.UUID, list[str]] = {}
+        for tag in template_repository.list_tags_of_templates(self._session, template_ids):
+            tags.setdefault(tag.template_id, []).append(tag.label)
+        return tags
+
+    def _removed_images_by_template(
+        self, template_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[RemovedImage]]:
         tiles_with_image: list[tuple[Tile, Image]] = (
-            template_repository.list_tiles_with_removed_image_of_owner(self._session, owner.id)
+            template_repository.list_tiles_with_removed_image_of_templates(
+                self._session, template_ids
+            )
         )
 
         removed_images: dict[uuid.UUID, list[RemovedImage]] = {}
@@ -175,10 +246,63 @@ class TemplateService:
         return template
 
     def rename(self, owner: User, template_id: uuid.UUID, name: str) -> Template:
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_for_change(owner, template_id)
         template.name = name
+        _refresh_search_text(template)
         self._session.commit()
         return template
+
+    def set_tags(self, owner: User, template_id: uuid.UUID, labels: list[str]) -> Template:
+        template: Template = self._get_for_change(owner, template_id)
+        current_tags: dict[str, TemplateTag] = {tag.normalized_label: tag for tag in template.tags}
+        new_tags: dict[str, TemplateTag] = {}
+        for label in labels:
+            normalized_label: str = normalize_search_text(label)
+            if not normalized_label:
+                raise InvalidTagError
+            if normalized_label in new_tags:
+                continue
+            tag: TemplateTag = current_tags.get(normalized_label) or TemplateTag(
+                normalized_label=normalized_label
+            )
+            tag.label = label
+            tag.position = len(new_tags)
+            new_tags[normalized_label] = tag
+        template.tags = list(new_tags.values())
+        _refresh_search_text(template)
+        self._save_change(template)
+        logger.info(
+            "Étiquettes du modèle changées : template_id=%s tag_count=%s",
+            template_id,
+            len(new_tags),
+        )
+        return template
+
+    def set_visibility(
+        self, owner: User, template_id: uuid.UUID, visibility: TemplateVisibility
+    ) -> Template:
+        template: Template = self._get_for_change(owner, template_id)
+        if template.visibility == visibility:
+            return template
+        if visibility == TemplateVisibility.PUBLIC:
+            self._check_can_be_made_public(owner, template)
+            if template.first_made_public_at is None:
+                template.first_made_public_at = func.clock_timestamp()
+        template.visibility = visibility
+        self._session.commit()
+        logger.info(
+            "Visibilité du modèle changée : template_id=%s visibility=%s", template.id, visibility
+        )
+        return template
+
+    @staticmethod
+    def _check_can_be_made_public(owner: User, template: Template) -> None:
+        if not owner.email_verified:
+            raise EmailNotVerifiedError
+        if template.moderation == TemplateModeration.HIDDEN:
+            raise TemplateHiddenError
+        if not template.tiles:
+            raise TemplateHasNoTilesError
 
     def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
         template: Template = self._get_for_change(owner, template_id)
@@ -272,8 +396,12 @@ class TemplateService:
         self._save_change(template)
         return template
 
-    def take_snapshot(self, owner: User, template_id: uuid.UUID) -> TemplateSnapshot:
-        template: Template = self._get_for_change(owner, template_id)
+    def take_snapshot(self, user: User, template_id: uuid.UUID) -> TemplateSnapshot:
+        template: Template | None = template_repository.get_playable_template(
+            self._session, template_id, user.id, datetime.now(UTC), for_share=True
+        )
+        if template is None:
+            raise TemplateNotFoundError
         if template.moderation == TemplateModeration.HIDDEN:
             raise TemplateHiddenError
         if not template.tiles:

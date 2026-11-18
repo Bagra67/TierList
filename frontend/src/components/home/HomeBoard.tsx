@@ -6,6 +6,7 @@ import {
   HOME_BOARD,
   HOME_BOARD_ITEM_APPEAR_MS,
   HOME_BOARD_PLAYER_COLORS,
+  type HomeBoardVoter,
   HOME_BOARD_ITEM_STAGGER_MS,
   type HomeBoardItem,
   type HomeBoardRow,
@@ -56,13 +57,13 @@ export function HomeBoard({ className }: { className?: string }) {
   );
 }
 
-function Voters({ voterInitials }: { voterInitials: readonly string[] }) {
+function Voters({ voterInitials }: { voterInitials: readonly HomeBoardVoter[] }) {
   return (
     <span className="absolute -top-2.5 -right-2 flex gap-0.5">
-      {voterInitials.map((initial: string) => (
+      {voterInitials.map((initial: HomeBoardVoter) => (
         <span
           key={initial}
-          style={tierColorStyle(HOME_BOARD_PLAYER_COLORS[initial] ?? '')}
+          style={tierColorStyle(HOME_BOARD_PLAYER_COLORS[initial])}
           className="flex size-5 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-card"
         >
           {initial}

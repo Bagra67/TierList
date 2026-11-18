@@ -20,6 +20,7 @@ from app.models.enums import (
     ReportStatus,
     RoomStatus,
     TemplateModeration,
+    TemplateVisibility,
     UserRole,
 )
 from app.models.game import Game
@@ -30,6 +31,7 @@ from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import seed_email
@@ -42,7 +44,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 500
+SMALL_SEED_MAX_QUERIES = 580
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -55,7 +57,11 @@ MODERATION_ACTIONS = (
     + 2
 )
 REPORTED_CONTENTS = (
-    SMALL_SIZE.reported_images + SMALL_SIZE.reported_nicknames + SMALL_SIZE.reported_games + 1
+    SMALL_SIZE.reported_images
+    + SMALL_SIZE.reported_nicknames
+    + SMALL_SIZE.reported_templates
+    + SMALL_SIZE.reported_games
+    + 1
 )
 REPORTS = REPORTED_CONTENTS - 1 + SMALL_SIZE.reports_on_most_reported_content
 
@@ -98,6 +104,15 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         select(func.count()).select_from(User).where(User.email_verified_at.is_(None))
     ) == (SMALL_SIZE.unverified_accounts)
     assert count(db_session, Template) == summary.templates
+    pizzas: Template = db_session.scalars(select(Template).where(Template.name == "Pizzas")).one()
+    assert [tag.label for tag in pizzas.tags] == ["Cuisine", "italie", "soirée entre amis"]
+    assert pizzas.search_text == "pizzas cuisine italie soiree entre amis"
+    assert (
+        db_session.scalar(
+            select(func.count()).select_from(Template).where(Template.search_text == "")
+        )
+        == 0
+    )
     assert (
         db_session.scalar(
             select(func.count()).select_from(Template).where(Template.deleted_at.is_not(None))
@@ -137,7 +152,10 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     )
     assert absent_votes
     open_rooms: int = (
-        SMALL_SIZE.open_rooms_with_past_games + SMALL_SIZE.full_rooms + SMALL_SIZE.rooms_with_bans
+        SMALL_SIZE.open_rooms_with_past_games
+        + SMALL_SIZE.full_rooms
+        + SMALL_SIZE.rooms_with_bans
+        + SMALL_SIZE.rooms_on_public_templates_of_others
     )
     assert (
         db_session.scalar(
@@ -162,6 +180,39 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(hidden_template_ids) == SMALL_SIZE.hidden_templates
+    public_templates: list[Template] = list(
+        db_session.scalars(
+            select(Template).where(Template.visibility == TemplateVisibility.PUBLIC)
+        ).all()
+    )
+    assert len(public_templates) == SMALL_SIZE.public_templates
+    likes: list[tuple[uuid.UUID, uuid.UUID]] = [
+        (like_owner_id, user_id)
+        for like_owner_id, user_id in db_session.execute(
+            select(Template.owner_id, TemplateLike.user_id).join(
+                Template, Template.id == TemplateLike.template_id
+            )
+        ).all()
+    ]
+    assert likes
+    assert all(owner_id != user_id for owner_id, user_id in likes)
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Room)
+            .join(Template, Template.id == Room.template_id)
+            .where(
+                Template.visibility == TemplateVisibility.PUBLIC,
+                Room.admin_id != Template.owner_id,
+            )
+        )
+        == SMALL_SIZE.rooms_on_public_templates_of_others
+    )
+    assert all(template.first_made_public_at is not None for template in public_templates)
+    assert {template.moderation for template in public_templates} == {
+        TemplateModeration.NONE,
+        TemplateModeration.HIDDEN,
+    }
     assert (
         db_session.scalar(
             select(func.count())
@@ -209,6 +260,7 @@ def test_the_seed_creates_reports_from_accounts_and_browsers(
     assert {report.target_type for report in reports} == {
         ModerationTargetType.IMAGE,
         ModerationTargetType.NICKNAME,
+        ModerationTargetType.TEMPLATE,
         ModerationTargetType.GAME,
     }
     assert any(report.reporter_id is None for report in reports)

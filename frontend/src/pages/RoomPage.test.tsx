@@ -1,12 +1,12 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
-import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Room } from '../api/rooms';
 import { setAccessToken } from '../api/client';
 import { latestSocket } from '../test/fakeWebSocket';
 import { closedGameResults, RESULTS_TOKEN } from '../test/fixtures/results';
-import { aliceRoom, aliceRoomInGame } from '../test/fixtures/rooms';
+import { aliceRoom, aliceRoomInGame, lousRoom } from '../test/fixtures/rooms';
 import { renderRoomPage, settingsSummary } from '../test/renderRoomPage';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
@@ -172,7 +172,7 @@ describe('RoomPage', () => {
   it('says a banned account cannot join the room again', async () => {
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => errorResponse(403, 'room_banned'),
     });
 
@@ -205,6 +205,46 @@ describe('RoomPage', () => {
     expect(screen.queryByText("L'hôte vous a retiré de cette salle.")).not.toBeInTheDocument();
   });
 
+  it('says the server does not answer, instead of treating an account it cannot read as a guest', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchMock: BackendMock = stubBackend({
+      'POST /auth/refresh': () => new Response(null, { status: 502 }),
+    });
+
+    renderRoomPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le serveur ne répond pas');
+    expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).not.toContain('GET /rooms/K7P2QX');
+    consoleError.mockRestore();
+  });
+
+  it('shows the personal link just issued only in its own room', async () => {
+    stubBackend({
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
+      'POST /rooms/K7P2QX/guests': () => Response.json(lousRoom, { status: 201 }),
+      'GET /rooms/AAAAAA': () => Response.json({ ...lousRoom, code: 'AAAAAA' }),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={['/r/K7P2QX']}>
+        <Link to="/r/AAAAAA">Autre salle</Link>
+        <Routes>
+          <Route path="/r/:code" element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.change(await screen.findByLabelText('Pseudo'), { target: { value: 'Lou' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Rejoindre en invité' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Votre lien personnel' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autre salle' }));
+
+    expect(await screen.findByRole('heading', { name: 'Salle AAAAAA' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Votre lien personnel' })).not.toBeInTheDocument();
+  });
+
   it('opens the same room from a code typed in lowercase or with spaces', async () => {
     const fetchMock: BackendMock = stubBackend({
       'GET /rooms/K7P2QX': () => Response.json(aliceRoom),
@@ -226,6 +266,29 @@ describe('RoomPage', () => {
 
     expect(await screen.findByText('Lien copié')).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith(aliceRoom.link);
+  });
+
+  it('clears the copy message when the link is copied again, so it is announced again', async () => {
+    let finishSecondCopy: (() => void) | undefined;
+    let copies: number = 0;
+    stubClipboard(
+      () =>
+        new Promise<void>((resolve) => {
+          copies += 1;
+          if (copies === 1) resolve();
+          else finishSecondCopy = resolve;
+        }),
+    );
+    stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoom) });
+    renderRoomPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Copier le lien' }));
+    expect(await screen.findByText('Lien copié')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copier le lien' }));
+
+    await waitFor(() => expect(screen.queryByText('Lien copié')).not.toBeInTheDocument());
+    await act(async () => finishSecondCopy?.());
+    expect(await screen.findByText('Lien copié')).toBeInTheDocument();
   });
 
   it('asks to copy the link by hand when the clipboard refuses', async () => {
@@ -254,7 +317,7 @@ describe('RoomPage', () => {
     const bobRoom: Room = { ...aliceRoom, is_admin: false };
     const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () => Response.json(bobRoom),
     });
 
@@ -269,13 +332,9 @@ describe('RoomPage', () => {
   });
 
   it('says the room cannot be found', async () => {
-    const silencedQueryCacheErrorLog: MockInstance = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
-    stubBackend({
+    const fetchMock: BackendMock = stubBackend({
       ...signedInSession,
       'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found'),
-      'POST /rooms/ZZZZZZ/join': () => errorResponse(404, 'room_not_found'),
     });
 
     renderRoomPage('ZZZZZZ');
@@ -283,16 +342,25 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est introuvable ou a été fermée.',
     );
-    silencedQueryCacheErrorLog.mockRestore();
+    expect(calledRoutes(fetchMock)).not.toContain('POST /rooms/ZZZZZZ/join');
+  });
+
+  it('tells a visitor at once that the room cannot be found, without the join form', async () => {
+    stubBackend({ 'GET /rooms/ZZZZZZ': () => errorResponse(404, 'room_not_found') });
+
+    renderRoomPage('ZZZZZZ');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cette salle est introuvable ou a été fermée.',
+    );
+    expect(screen.queryByRole('heading', { name: 'Rejoindre la salle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Pseudo' })).not.toBeInTheDocument();
   });
 
   it('says the room is full, with the limit sent by the backend', async () => {
-    const silencedQueryCacheErrorLog: MockInstance = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
     stubBackend({
       ...signedInSession,
-      'GET /rooms/K7P2QX': () => errorResponse(404, 'room_not_found'),
+      'GET /rooms/K7P2QX': () => errorResponse(403, 'room_not_joined'),
       'POST /rooms/K7P2QX/join': () =>
         errorResponse(409, 'room_full', { params: { max_participants: 10 } }),
     });
@@ -302,7 +370,6 @@ describe('RoomPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette salle est pleine : 10 participants au plus.',
     );
-    silencedQueryCacheErrorLog.mockRestore();
   });
 
   it('warns when the template of the room was deleted', async () => {

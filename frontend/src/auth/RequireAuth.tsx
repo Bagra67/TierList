@@ -8,7 +8,7 @@ import { signInRedirectState } from './signInRedirect';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 
 export function RequireAuth() {
-  const { data: user, isPending, isError } = useCurrentUser();
+  const { data: user, isPending } = useCurrentUser();
   const location = useLocation();
   const { t } = useTranslation();
 
@@ -18,7 +18,8 @@ export function RequireAuth() {
         <LoadingSkeleton shape="list" />
       </div>
     );
-  if (isError) return <ErrorMessage className="m-4">{t('common.backendUnreachable')}</ErrorMessage>;
+  if (user === undefined)
+    return <ErrorMessage className="m-4">{t('common.backendUnreachable')}</ErrorMessage>;
   if (user === null)
     return <Navigate to={ROUTES.LOGIN} replace state={signInRedirectState(location)} />;
   return <Outlet />;

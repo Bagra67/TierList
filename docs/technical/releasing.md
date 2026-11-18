@@ -1,7 +1,5 @@
 # Releasing
 
-English | [Français](releasing.fr.md)
-
 Every merge of `develop` into `main` is a **release** with a version number `X.Y.Z` ([Semantic Versioning](https://semver.org/)), a `vX.Y.Z` tag and a GitHub Release. The version is **computed from the commit messages** of `develop` (Conventional Commits, checked by commitlint), not chosen by hand.
 
 ## Version rules

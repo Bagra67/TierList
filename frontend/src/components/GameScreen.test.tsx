@@ -75,6 +75,24 @@ describe('GameScreen', () => {
     );
   });
 
+  it('counts down on the server clock when the device clock is ahead', async () => {
+    const deviceAheadMs: number = 40_000;
+    const serverNow: number = Date.now() - deviceAheadMs;
+    const endsAt: string = new Date(serverNow + 75_000).toISOString();
+    stubBackend({
+      'GET /rooms/K7P2QX': () =>
+        Response.json({
+          ...inGame({ ends_at: endsAt }),
+          server_now: new Date(serverNow).toISOString(),
+        }),
+    });
+    renderRoomPage();
+
+    expect(await screen.findByRole('timer', { name: 'Temps restant' })).toHaveTextContent(
+      /^1:1[45]$/,
+    );
+  });
+
   it('shows the progress of the game', async () => {
     stubBackend({ 'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame) });
     renderRoomPage();
@@ -120,6 +138,48 @@ describe('GameScreen', () => {
     );
     expect(screen.getByRole('button', { name: 'Avancer Paprika dans son tier' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reculer Paprika dans son tier' })).toBeDisabled();
+    expect(await screen.findByText('Paprika déposé dans S, position 1.')).toHaveAttribute(
+      'role',
+      'status',
+    );
+  });
+
+  it('sends nothing when the current item is already last of the tier', async () => {
+    const fetchMock = stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(inGame({ own_placements: [paprikaInS] })),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(calledRoutes(fetchMock)).not.toContain(
+      `PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`,
+    );
+  });
+
+  it('sends one placement for two quick clicks on a place button', async () => {
+    let placements: number = 0;
+    stubBackend({
+      'GET /rooms/K7P2QX': () => Response.json(aliceRoomInGame),
+      [`PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`]: async () => {
+        placements += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return Response.json(inGame({ own_placements: [paprikaInS] }));
+      },
+    });
+    renderRoomPage();
+    const placeInS: HTMLElement = await screen.findByRole('button', {
+      name: "Placer dans S : l'élément en cours, à la fin",
+    });
+
+    fireEvent.click(placeInS);
+    fireEvent.click(placeInS);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(placements).toBe(1);
   });
 
   it('shows a preview of the item while it is dragged', async () => {
@@ -290,6 +350,33 @@ describe('GameScreen', () => {
     await vi.waitFor(() => expect(placeInS).toHaveAttribute('aria-disabled', 'false'));
     expect(screen.getByText('Élément 2 sur 3')).toBeInTheDocument();
     expect(screen.queryByText('Élément 1 sur 3')).not.toBeInTheDocument();
+  });
+
+  it('reads the room again when its own placement comes back after a newer event, so it is not lost', async () => {
+    let roomReads: number = 0;
+    const fetchMock: BackendMock = stubBackend({
+      'GET /rooms/K7P2QX': () => {
+        roomReads += 1;
+        return Response.json(
+          roomReads === 1
+            ? inGame({}, { version: 10 })
+            : inGame({ own_placements: [paprikaInS] }, { version: 11 }),
+        );
+      },
+      [`PUT /rooms/K7P2QX/game/placements/${game.current_item.id}`]: () =>
+        Response.json(inGame({ own_placements: [paprikaInS] }, { version: 9 })),
+    });
+    renderRoomPage();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: "Placer dans S : l'élément en cours, à la fin" }),
+    );
+
+    const tierRow: HTMLElement = await screen.findByRole('list', { name: 'S' });
+    expect(await within(tierRow).findByText('Paprika')).toBeInTheDocument();
+    expect(calledRoutes(fetchMock).filter((route) => route === 'GET /rooms/K7P2QX')).toHaveLength(
+      2,
+    );
   });
 
   it('shows the current item at its rank among the other items of the tier', async () => {
@@ -479,6 +566,10 @@ describe('GameScreen', () => {
 
       await vi.waitFor(() => expect(bodies).toEqual([{ tier_id: tierA.id, position: 0 }]));
       expect(screen.queryByText('Tuile choisie : Paprika')).not.toBeInTheDocument();
+      expect(await screen.findByText('Paprika déposé dans A, position 1.')).toHaveAttribute(
+        'role',
+        'status',
+      );
     });
 
     it('keeps the choice and its buttons when the move fails, so that the focus stays and a retry is possible', async () => {
@@ -591,6 +682,24 @@ describe('GameScreen', () => {
       );
       expect(calledRoutes(fetchMock)).toContain('POST /rooms/K7P2QX/game/end');
       expect(screen.getByRole('heading', { name: 'Salle K7P2QX' })).toHaveFocus();
+    });
+
+    it('closes the confirmation once the end is sent, even if the answer is older than the room shown', async () => {
+      stubBackend({
+        'GET /rooms/K7P2QX': () => Response.json(inCooldown()),
+        'POST /rooms/K7P2QX/game/end': () => Response.json(inCooldown()),
+      });
+      renderRoomPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Terminer maintenant' }));
+      const dialog: HTMLElement = screen.getByRole('dialog', { name: 'Terminer les retouches ?' });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Terminer' }));
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Terminer les retouches ?' }),
+        ).not.toBeInTheDocument(),
+      );
     });
 
     it('sends nothing when the end is cancelled, and says why it failed', async () => {

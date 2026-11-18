@@ -8,7 +8,7 @@ from typing import NamedTuple
 from xml.sax.saxutils import escape
 
 REPO_ROOT: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LANGUAGES: tuple[str, ...] = ("en", "fr")
+LANGUAGES: tuple[str, ...] = ("en",)
 FONTTOOLS: str = "fonttools[woff]==4.68.0"
 FONTSOURCE: str = "frontend/node_modules/@fontsource-variable"
 FONT_FILES: dict[str, str] = {
@@ -36,9 +36,8 @@ SANS: str = "Geist"
 
 def load_translations() -> dict[str, dict]:
     script: str = (
-        "Promise.all([import('./frontend/src/i18n/locales/fr.ts'),"
-        "import('./frontend/src/i18n/locales/en.ts')])"
-        ".then(([f, e]) => process.stdout.write(JSON.stringify({fr: f.fr, en: e.en})))"
+        "import('./frontend/src/i18n/locales/en.ts')"
+        ".then((e) => process.stdout.write(JSON.stringify({en: e.en})))"
     )
     completed: subprocess.CompletedProcess[str] = subprocess.run(
         ["node", "--experimental-strip-types", "--no-warnings", "-e", script],

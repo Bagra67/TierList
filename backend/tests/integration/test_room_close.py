@@ -7,11 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.constants.rooms import CHANNEL_CLOSE_REMOVED
 from app.models.enums import GameStatus, PlacementPhase
 from app.models.game import Game
 from app.models.game_player import GamePlayer
 from app.models.participant import Participant
 from app.models.room import Room
+from app.schemas.room_events import ParticipantRemovedEvent
 from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRoundScheduler
 from tests.integration.helpers import (
     PASSWORD,
@@ -227,6 +229,37 @@ def test_deleting_the_admin_account_closes_their_room_and_its_game(
     assert game.status == GameStatus.CLOSED
     assert [player.display_name for player in game.players] == ["bob"]
     assert room_events.closed_rooms == [closed_id]
+
+
+def bob_seat_id(client: TestClient, code: str, alice: dict[str, str]) -> uuid.UUID:
+    room: JsonObject = client.get(f"/rooms/{code}", headers=alice).json()
+    return uuid.UUID(next(p["id"] for p in room["participants"] if p["display_name"] == "bob"))
+
+
+def delete_account(client: TestClient, headers: dict[str, str]) -> Response:
+    return client.request("DELETE", "/auth/me", json={"password": PASSWORD}, headers=headers)
+
+
+def test_deleting_a_player_account_removes_their_seat_and_tells_the_room(
+    auth_client: TestClient,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    alice_room: JsonObject,
+    room_events: RecordingRoomEventPublisher,
+):
+    code: str = alice_room["code"]
+    bob_id: uuid.UUID = bob_seat_id(auth_client, code, alice)
+
+    assert delete_account(auth_client, bob).status_code == 204
+
+    room: JsonObject = auth_client.get(f"/rooms/{code}", headers=alice).json()
+    assert [p["display_name"] for p in room["participants"]] == ["alice"]
+    removed: object = room_events.events[-1][1]
+    assert isinstance(removed, ParticipantRemovedEvent)
+    assert removed.data.participant_id == bob_id
+    assert removed.room_version == room["version"]
+    assert room_events.disconnections == [(bob_id, CHANNEL_CLOSE_REMOVED)]
+    assert room_events.closed_rooms == []
 
 
 def test_a_wrong_password_keeps_the_admin_rooms(

@@ -16,6 +16,7 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
     return TemplateResponse(
         id=template.id,
         name=template.name,
+        tags=[tag.label for tag in template.tags],
         created_at=template.created_at,
         updated_at=template.updated_at,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
@@ -23,6 +24,8 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         max_tiles=template.max_tiles,
         moderation=template.moderation,
         moderation_reason=template.moderation_reason,
+        visibility=template.visibility,
+        first_made_public_at=template.first_made_public_at,
     )
 
 

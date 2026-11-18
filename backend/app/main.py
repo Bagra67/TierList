@@ -18,17 +18,21 @@ from app.api.dependencies import (
     SettingsDep,
     ShortLivedSessionFactory,
     build_game_service,
+    get_page_head,
     get_short_lived_session_factory,
 )
 from app.api.routes import (
     auth,
+    client_config,
     history,
     images,
+    marketplace,
     moderation,
     reports,
     results,
     room_channel,
     rooms,
+    seo,
     templates,
 )
 from app.constants import messages
@@ -38,10 +42,13 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ErrorResponse, handle_http_exception, register_error_handlers
 from app.core.frontend import mount_frontend_after_api
 from app.core.logging import configure_logging, get_logging_settings
+from app.core.monitoring import configure_sentry
 from app.core.proxy import TrustedProxyMiddleware
+from app.core.upload_size import ImageUploadSizeMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
+from app.services.client_config import build_client_config
 from app.services.games import GameService
 from app.services.image_storage import create_image_storage
 from app.services.maintenance import (
@@ -57,6 +64,7 @@ from app.services.rooms import RoomService
 from app.services.round_timers import round_timers
 
 configure_logging(get_logging_settings().log_level)
+configure_sentry(get_settings())
 
 logger = logging.getLogger(__name__)
 
@@ -174,13 +182,18 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 api_app = FastAPI(
     title="TierList API",
-    description="Backend FastAPI de l'application TierList",
-    version="1.1.0",
+    description="FastAPI backend of the TierList application",
+    version="1.2.0",
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(api_app)
+api_app.add_middleware(
+    ImageUploadSizeMiddleware, max_image_bytes=get_settings().image_upload_max_bytes
+)
 api_app.include_router(auth.router)
+api_app.include_router(client_config.router)
 api_app.include_router(templates.router)
+api_app.include_router(marketplace.router)
 api_app.include_router(images.router)
 api_app.include_router(rooms.router)
 api_app.include_router(room_channel.router)
@@ -249,8 +262,11 @@ def health_db(
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_exception_handler(StarletteHTTPException, handle_http_exception)
 app.mount(API_PREFIX, api_app)
+app.include_router(seo.router)
 _settings: Settings = get_settings()
 if _settings.frontend_dist.is_dir():
-    mount_frontend_after_api(app, _settings.frontend_dist)
+    mount_frontend_after_api(
+        app, _settings.frontend_dist, build_client_config(_settings), get_page_head
+    )
 if _settings.trusted_proxy_ips:
     app.add_middleware(TrustedProxyMiddleware, trusted_networks=_settings.trusted_proxy_ips)

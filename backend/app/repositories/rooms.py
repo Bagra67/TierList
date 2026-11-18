@@ -2,18 +2,16 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Exists, Select, select, update
-from sqlalchemy.orm import Session, selectinload, with_expression
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql.dml import ReturningUpdate
 
-from app.models.enums import RoomStatus
 from app.models.game import Game
 from app.models.participant import Participant
 from app.models.placement import Placement
 from app.models.room import Room
 from app.models.round import Round
 from app.models.template_snapshot import TemplateSnapshot
-from app.repositories import games as game_repository
 
 
 def add_room(session: Session, room: Room) -> None:
@@ -30,10 +28,6 @@ def _room_with_details(statement: Select[Room], for_update: bool) -> Select[Room
         .selectinload(Game.snapshot)
         .selectinload(TemplateSnapshot.tiers),
         selectinload(Room.current_game).selectinload(Game.placements).selectinload(Placement.tile),
-        selectinload(Room.closed_games).options(
-            selectinload(Game.snapshot),
-            with_expression(Game.player_count, game_repository.player_count_expression()),
-        ),
     )
     if for_update:
         statement = statement.with_for_update(of=Room)
@@ -82,6 +76,11 @@ def get_room_of_participant(
     return session.scalars(statement).one_or_none()
 
 
+def list_seats_of_user(session: Session, user_id: uuid.UUID) -> list[Participant]:
+    statement: Select[Participant] = select(Participant).where(Participant.user_id == user_id)
+    return list(session.scalars(statement).all())
+
+
 def list_room_ids_of_admin(session: Session, admin_id: uuid.UUID) -> list[uuid.UUID]:
     return list(session.scalars(select(Room.id).where(Room.admin_id == admin_id)).all())
 
@@ -93,7 +92,7 @@ def list_inactive_room_ids(session: Session, cutoff: datetime) -> list[uuid.UUID
         .exists()
     )
     statement: Select[uuid.UUID] = select(Room.id).where(
-        Room.status == RoomStatus.OPEN, Room.updated_at < cutoff, ~someone_connected
+        Room.updated_at < cutoff, ~someone_connected
     )
     return list(session.scalars(statement).all())
 

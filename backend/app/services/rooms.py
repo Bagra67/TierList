@@ -20,6 +20,7 @@ from app.constants.rooms import (
     ROOM_CODE_CONSTRAINT,
     ROOM_CODE_LENGTH,
     ROOM_CODE_MAX_ATTEMPTS,
+    SETTINGS_CHANGEABLE_DURING_A_GAME,
 )
 from app.core.config import Settings
 from app.core.security import generate_guest_token, hash_guest_token
@@ -35,6 +36,7 @@ from app.exceptions.rooms import (
     RoomFullError,
     RoomLockedError,
     RoomNotFoundError,
+    RoomNotJoinedError,
     RoomSettingsLockedError,
 )
 from app.exceptions.templates import (
@@ -56,6 +58,7 @@ from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
 from app.models.user import User
+from app.repositories import games as game_repository
 from app.repositories import rooms as room_repository
 from app.repositories import templates as template_repository
 from app.schemas.room_events import (
@@ -83,9 +86,6 @@ class RoomSettingsChanges(TypedDict, total=False):
     cooldown_seconds: int
     admin_plays: bool
     late_arrivals_allowed: bool
-
-
-SETTINGS_CHANGEABLE_DURING_A_GAME: frozenset[str] = frozenset({"late_arrivals_allowed"})
 
 
 @dataclass(frozen=True)
@@ -117,8 +117,8 @@ class RoomService:
         self._publisher = publisher
 
     def create(self, owner: User, template_id: uuid.UUID) -> Room:
-        template: Template | None = template_repository.get_owned_template(
-            self._session, template_id, owner.id
+        template: Template | None = template_repository.get_playable_template(
+            self._session, template_id, owner.id, datetime.now(UTC)
         )
         if template is None:
             raise TemplateNotFoundError
@@ -139,9 +139,8 @@ class RoomService:
             if self._insert_unless_code_taken(room):
                 self._session.commit()
                 logger.info(
-                    "Salle créée : room_id=%s code=%s admin_id=%s template_id=%s",
+                    "Salle créée : room_id=%s admin_id=%s template_id=%s",
                     room.id,
-                    room.code,
                     owner.id,
                     template.id,
                 )
@@ -237,6 +236,9 @@ class RoomService:
         logger.info("Lien perso renouvelé : room_id=%s participant_id=%s", room.id, guest.id)
         return GuestSeat(room=room, participant=guest, token=token)
 
+    def closed_games(self, room: Room) -> list[Game]:
+        return game_repository.list_closed_games_of_room(self._session, room.id)
+
     def seated_participants(self, room: Room) -> list[Participant]:
         now: datetime = datetime.now(UTC)
         return [
@@ -287,17 +289,37 @@ class RoomService:
                 display_name=target.display_name,
             )
             room.bans.append(room_ban)
+        close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
+        reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
+        self._remove_seat(room, target, close_code, reason)
+        return room
+
+    def remove_seat_of_deleted_account(self, participant_id: uuid.UUID) -> Room | None:
+        room: Room | None = room_repository.get_room_of_participant(
+            self._session, participant_id, for_update=True
+        )
+        target: Participant | None = None
+        if room is not None:
+            target = next((p for p in room.participants if p.id == participant_id), None)
+        if room is None or target is None:
+            self._release_room_lock()
+            return None
+        self._remove_seat(room, target, CHANNEL_CLOSE_REMOVED, ErrorCode.REMOVED_FROM_ROOM)
+        return room
+
+    def _remove_seat(
+        self, room: Room, target: Participant, close_code: int, reason: ErrorCode
+    ) -> None:
+        participant_id: uuid.UUID = target.id
         room.participants.remove(target)
         room.version += 1
         self._session.commit()
         logger.info(
-            "Participant retiré : room_id=%s participant_id=%s banned=%s",
+            "Participant retiré : room_id=%s participant_id=%s close_code=%s",
             room.id,
             participant_id,
-            ban,
+            close_code,
         )
-        close_code: int = CHANNEL_CLOSE_BANNED if ban else CHANNEL_CLOSE_REMOVED
-        reason: ErrorCode = ErrorCode.ROOM_BANNED if ban else ErrorCode.REMOVED_FROM_ROOM
         self._publisher.disconnect_participant(room.id, participant_id, close_code, reason)
         self._publisher.publish(
             room.id,
@@ -306,7 +328,6 @@ class RoomService:
                 data=ParticipantRemovedData(participant_id=participant_id),
             ),
         )
-        return room
 
     def unban(self, user: User, code: str, ban_id: uuid.UUID) -> Room:
         room: Room = self.get_for_admin_change(user, code)
@@ -332,14 +353,14 @@ class RoomService:
             guest: Participant | None = self._find_guest(room, viewer.guest_token)
             if guest is not None:
                 return guest
-        raise RoomNotFoundError
+        raise RoomNotJoinedError
 
     @staticmethod
     def seat_in(room: Room, user: User) -> Participant:
         for participant in room.participants:
             if participant.user_id == user.id:
                 return participant
-        raise RoomNotFoundError
+        raise RoomNotJoinedError
 
     def set_presence(self, participant_id: uuid.UUID, connected: bool) -> Room | None:
         room: Room | None = room_repository.get_room_of_participant(
@@ -438,7 +459,7 @@ class RoomService:
                 room_repository.add_room(self._session, room)
         except IntegrityError as exc:
             if violates_unique(exc, ROOM_CODE_CONSTRAINT):
-                logger.info("Code de salle déjà pris, nouveau tirage : code=%s", room.code)
+                logger.info("Code de salle déjà pris, nouveau tirage")
                 return False
             raise
         return True

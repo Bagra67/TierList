@@ -32,7 +32,14 @@ export function SettingsPanel() {
     if (!resumeDeletion || !user || panel === null) return;
     if (!panel.open) panel.showModal();
     setDeletionResumed(true);
-    setSearchParams({}, { replace: true });
+    setSearchParams(
+      (current: URLSearchParams) => {
+        const next: URLSearchParams = new URLSearchParams(current);
+        next.delete(CONFIRM_PARAM);
+        return next;
+      },
+      { replace: true },
+    );
   }, [resumeDeletion, user, setSearchParams]);
 
   return (

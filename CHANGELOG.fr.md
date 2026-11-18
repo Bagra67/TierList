@@ -3,7 +3,109 @@
 [English](CHANGELOG.md) | Français
 
 Tous les changements notables du projet sont consignés dans ce fichier.
-Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.fr.md](docs/technical/releasing.fr.md).
+Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.md](docs/technical/releasing.md).
+
+## [1.2.0] - 2026-11-18
+
+### Fonctionnalités
+
+- backend : envoi des erreurs à Sentry (#402)
+- frontend : envoi des erreurs à Sentry (#404)
+- backend : chargement des salles allégé, images masquées par lots et heure du serveur (#417)
+- backend : le propriétaire rend un modèle public ou privé (#429)
+- seed : quelques modèles publics dans le jeu de données (#430)
+- frontend : choix de la visibilité d'un modèle dans l'éditeur (#431)
+- backend : ajout des étiquettes de modèle (#450)
+- frontend : modification des étiquettes d'un modèle (#451)
+- backend : ouverture des pages de modèles publics (#454)
+- frontend : page d'un modèle public (#455)
+- backend : balises pour les moteurs de recherche, robots.txt et sitemap.xml (#459)
+- frontend : un titre pour chaque page et des images d'aperçu des liens (#460)
+- backend : créer une salle avec un modèle public (#463)
+- seed : salles créées sur les modèles publics d'autres comptes (#464)
+- frontend : créer une salle depuis la page d'un modèle public (#465)
+- backend : « J'aime » sur les modèles publics (#468)
+- backend : pagination de « Mes modèles » (#469)
+- backend : liste, recherche et tri du marketplace (#470)
+- seed : « J'aime » sur les modèles publics du jeu de données (#471)
+- frontend : aimer un modèle public (#472)
+- frontend : « Voir plus » sur « Mes modèles » (#473)
+- frontend : parcourir les modèles publics (#474)
+
+### Corrections
+
+- frontend : retouches trouvées en testant l'app dans un navigateur (#384)
+- salles : distinguer un spectateur sans place d'une salle inconnue (#385)
+- frontend : dire tout de suite qu'une salle n'existe pas (#386)
+- auth : réponse 204 à un rafraîchissement sans cookie de session (#389)
+- frontend : console silencieuse pour les réponses attendues (#390)
+- frontend : garder son propre placement quand un événement plus récent de la salle arrive avant (#396)
+- backend : présence dans les salles, parties abandonnées et comptes qui partent (#407)
+- frontend : canal de la salle maintenu ouvert et deux bugs des fenêtres de jeu corrigés (#408)
+- frontend : caches des modèles, cas limites de session et erreurs périmées (#411)
+- backend : taille des images envoyées, concurrence de la file des signalements et restes de Sentry (#414)
+- frontend : minuteur sur l'horloge du serveur, images masquées par lots, retouches finales allégées (#418)
+- frontend : petits bugs d'état et trois manques d'accessibilité (#424)
+- frontend : bandeau de l'e-mail masqué quand l'e-mail est confirmé ailleurs (#434)
+- frontend : décalage de l'horloge du serveur remis exactement à zéro entre les tests (#448)
+
+### Refactorisation
+
+- backend : nettoyage des fabriques d'erreurs, des constantes et des frontières des services (#421)
+- frontend : nettoyage de la couche API et de petits composants (#425)
+- frontend : fenêtre de confirmation, listes paginées et lignes de plateau partagées (#426)
+
+### Build & CI
+
+- docs-sync : les tests de bout en bout comptent comme des fichiers de test (#394)
+- tests de bout en bout sur Chromium, Firefox et WebKit (#398)
+- réglages Sentry transmis aux pods et au build du bundle (#403)
+
+### Documentation
+
+- description des serveurs MCP de la configuration Claude Code (#380)
+- seed : bons noms pour les comptes bannis du jeu de données (#383)
+- salles : description de room_not_joined à la lecture d'une salle (#387)
+- auth : description du 204 d'un rafraîchissement sans cookie de session (#391)
+- todo : étapes manuelles mises à jour (#393)
+- description des tests de bout en bout (#399)
+- description du suivi des erreurs avec Sentry (#405)
+- description de la clôture des parties abandonnées, des comptes qui partent et des sockets des bannis (#409)
+- description des caches des modèles, des erreurs sans code et des cas limites de session (#412)
+- description du contrôle de taille des images et des restes de Sentry (#415)
+- description de l'horloge du serveur, des lots de masquage et du chargement allégé des salles (#419)
+- liste de tous les codes d'erreur dans le README du backend (#422)
+- description des composants partagés du frontend et des petites corrections du lot 6 (#427)
+- description de la visibilité des modèles (#432)
+- seuls les README restent bilingues (#437)
+- le guide des tests ne liste plus chaque test (#438)
+- api : description des routes et des schémas dans le schéma OpenAPI (#439)
+- décision sur la recherche, le tri et la pagination du marketplace (#449)
+- documentation des étiquettes de modèle (#452)
+- documentation de la page d'un modèle public (#456)
+- documentation de l'indexation par les moteurs de recherche et des aperçus de liens (#461)
+- documentation de la création d'une salle avec un modèle public (#466)
+- documentation des « J'aime », de la pagination de « Mes modèles » et du marketplace (#475)
+
+### Tests
+
+- frontend : mise en place de Playwright pour les tests de bout en bout et parcours d'un compte (#395)
+- frontend : éditeur, partie en direct et petits écrans couverts de bout en bout (#397)
+- e2e : le tier glissé est lâché loin du bord de la liste des tiers (#477)
+
+### Maintenance
+
+- claude : ajout des serveurs MCP context7 et playwright (#379)
+- deps : astral-sh/setup-uv passe de 10.3.2 à 10.3.3 dans le groupe actions-minor-patch (#371)
+- deps : 3 mises à jour du groupe backend-minor-patch (#372)
+- deps : 18 mises à jour du groupe frontend-minor-patch (#382)
+- deps : 3 mises à jour du groupe backend-minor-patch (#441)
+- deps : react-i18next passe de 17.1.12 à 17.1.13 (#444)
+- deps : 10 mises à jour du groupe frontend-minor-patch (#442)
+- deps : i18next passe de 26.7.1 à 27.1.0 (#445)
+- deps : chrislusf/seaweedfs passe de 4.50 à 4.53 (#440)
+- claude : ajout d'un skill dependabot-review (#447)
+- deps-dev : jsdom passe de 30.1.3 à 31.0.0 (#443)
 
 ## [1.1.0] - 2026-11-03
 

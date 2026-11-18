@@ -16,7 +16,8 @@ import { panelVariants } from '../ui/panel';
 import { textLinkClassName } from '../ui/text-link';
 
 export function RecentTemplates() {
-  const { data: templatesLastModifiedFirst, isPending, isError, error } = useTemplates();
+  const { data, isPending, isError, error } = useTemplates();
+  const templatesLastModifiedFirst: TemplateSummary[] | undefined = data?.pages[0]?.items;
   const { t } = useTranslation();
   const headingId: string = useId();
 
@@ -38,9 +39,14 @@ export function RecentTemplates() {
         <EmptyState
           message={t('home.recentTemplates.empty')}
           action={
-            <Button asChild>
-              <Link to={ROUTES.TEMPLATES}>{t('home.prepareTemplate')}</Link>
-            </Button>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Button asChild>
+                <Link to={ROUTES.TEMPLATES}>{t('home.prepareTemplate')}</Link>
+              </Button>
+              <Link to={ROUTES.MARKETPLACE} className={textLinkClassName}>
+                {t('home.recentTemplates.fromPublic')}
+              </Link>
+            </div>
           }
         />
       )}

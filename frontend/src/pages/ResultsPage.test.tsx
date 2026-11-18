@@ -1,5 +1,5 @@
-import { fireEvent, screen, within } from '@testing-library/react';
-import { type InitialEntry, MemoryRouter, Route, Routes } from 'react-router';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { type InitialEntry, Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -120,17 +120,38 @@ describe('ResultsPage', () => {
     expect(includeAbsentVotes).toEqual(['true', 'false']);
   });
 
+  it('starts again from the default choices when another results link is opened', async () => {
+    stubBackend({
+      [resultsRoute]: () => Response.json(closedGameResults),
+      'GET /results/other-token': () => Response.json(closedGameResults),
+    });
+    renderWithQueryClient(
+      <MemoryRouter initialEntries={[`/results/${RESULTS_TOKEN}`]}>
+        <Link to="/results/other-token">Autres résultats</Link>
+        <Routes>
+          <Route path="/results/:token" element={<ResultsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Inclure les votes absents' }));
+    expect(screen.getByRole('checkbox', { name: 'Inclure les votes absents' })).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Autres résultats' }));
+
+    expect(
+      await screen.findByRole('checkbox', { name: 'Inclure les votes absents' }),
+    ).toBeChecked();
+  });
+
   it('reveals the tiers one by one, from the bottom, when the results open', async () => {
     stubResults();
     renderResultsPage();
 
     const tierS: HTMLElement = await screen.findByRole('group', { name: 'S' });
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
-    expect(tierS).toHaveStyle({ animationDelay: '520ms' });
-    expect(screen.getByRole('group', { name: 'A' })).toHaveStyle({ animationDelay: '260ms' });
-    expect(screen.getByRole('group', { name: 'Non classés' })).toHaveStyle({
-      animationDelay: '0ms',
-    });
+    expect(tierS.style.animationDelay).toBe('520ms');
+    expect(screen.getByRole('group', { name: 'A' }).style.animationDelay).toBe('260ms');
+    expect(screen.getByRole('group', { name: 'Non classés' }).style.animationDelay).toBe('0ms');
   });
 
   it('does not reveal a view again when coming back to it, unless asked', async () => {
@@ -147,15 +168,49 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
+  it('keeps the chosen player when the results come back in another order', async () => {
+    stubBackend({
+      [resultsRoute]: (request: Request) => {
+        const included: string | null = new URL(request.url).searchParams.get(
+          'include_absent_votes',
+        );
+        return Response.json(
+          included === 'false'
+            ? { ...closedGameResults, players: [...closedGameResults.players].reverse() }
+            : closedGameResults,
+        );
+      },
+    });
+    renderResultsPage();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
+    const chosen: string = closedGameResults.players[1].id;
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: chosen },
+    });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Inclure les votes absents' }));
+
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('combobox', { name: 'Joueur' })).getAllByRole('option')[0],
+      ).toHaveValue(closedGameResults.players.at(-1)?.id),
+    );
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue(chosen);
+  });
+
   it('keeps the chosen player when the reveal is replayed', async () => {
     stubResults();
     renderResultsPage();
     fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     fireEvent.click(screen.getByRole('button', { name: 'Rejouer la révélation' }));
 
-    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue('1');
+    expect(screen.getByRole('combobox', { name: 'Joueur' })).toHaveValue(
+      closedGameResults.players[1].id,
+    );
     expect(screen.getByRole('group', { name: 'S' })).toHaveClass('motion-safe:animate-reveal');
   });
 
@@ -169,7 +224,9 @@ describe('ResultsPage', () => {
     expect(tierS).toHaveClass('motion-safe:animate-reveal');
 
     fireAnimationEnd(tierS);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     expect(screen.getByRole('group', { name: 'Jamais placés' })).not.toHaveClass(
       'motion-safe:animate-reveal',
@@ -229,7 +286,9 @@ describe('ResultsPage', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Par joueur' }));
     expect(rowItems('S')).toEqual(['Paprika']);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Joueur' }), {
+      target: { value: closedGameResults.players[1].id },
+    });
 
     expect(rowItems('A')).toEqual(['Paprika']);
     expect(rowItems('Jamais placés')).toEqual(['Chorizo', 'Curry']);
@@ -372,7 +431,6 @@ describe('ResultsPage', () => {
   });
 
   it('says why playing again failed, and stays on the results', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({
       [resultsRoute]: () => Response.json(closedGameResults),
       'POST /rooms/K7P2QX/game': () => errorResponse(409, 'game_in_progress'),
@@ -420,7 +478,6 @@ describe('ResultsPage', () => {
   });
 
   it('says when the results link is unknown', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     stubBackend({ [resultsRoute]: () => errorResponse(404, 'results_not_found') });
 
     renderResultsPage();

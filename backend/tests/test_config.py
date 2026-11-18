@@ -6,14 +6,7 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 from app.db import session as session_module
-
-REQUIRED_SETTINGS: dict[str, object] = {
-    "postgres_user": "tierlist",
-    "postgres_password": "unit-test-password",
-    "postgres_db": "tierlist",
-    "jwt_secret_key": "unit-test-secret-key-of-at-least-32-chars",
-}
-
+from tests.settings_factory import make_settings
 
 IMAGE_SETTINGS_ENV_VARS: tuple[str, ...] = (
     "IMAGE_UPLOAD_MAX_BYTES",
@@ -35,10 +28,6 @@ def isolate_from_local_configuration(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     monkeypatch.chdir(tmp_path)
     for env_var in IMAGE_SETTINGS_ENV_VARS:
         monkeypatch.delenv(env_var, raising=False)
-
-
-def make_settings(**overrides: object) -> Settings:
-    return Settings.model_validate({**REQUIRED_SETTINGS, **overrides})
 
 
 def test_image_settings_default_to_the_decided_limits() -> None:
@@ -127,7 +116,9 @@ def test_the_moderation_log_retention_must_be_positive(invalid_value: int) -> No
         make_settings(moderation_log_retention_days=invalid_value)
 
 
-def test_the_engine_uses_the_connect_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_engine_uses_the_connect_timeout_and_hides_the_query_parameters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     settings: Settings = make_settings(database_connect_timeout_seconds=7)
     engine_arguments: dict[str, object] = {}
 
@@ -143,3 +134,4 @@ def test_the_engine_uses_the_connect_timeout(monkeypatch: pytest.MonkeyPatch) ->
     session_module.get_engine.__wrapped__()
 
     assert engine_arguments["connect_args"] == {"connect_timeout": 7}
+    assert engine_arguments["hide_parameters"] is True

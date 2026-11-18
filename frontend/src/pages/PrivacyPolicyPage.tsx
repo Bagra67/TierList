@@ -35,6 +35,7 @@ export function PrivacyPolicyPage() {
             t('privacy.data.guest'),
             t('privacy.data.content'),
             t('privacy.data.games'),
+            t('privacy.data.likes'),
             t('privacy.data.reports'),
             t('privacy.data.bans'),
             t('privacy.data.moderation'),
@@ -65,6 +66,7 @@ export function PrivacyPolicyPage() {
             t('privacy.retention.deleted'),
             t('privacy.retention.moderatedImages'),
             t('privacy.retention.backups'),
+            t('privacy.retention.errorReports'),
             t('privacy.retention.reports'),
             t('privacy.retention.bans'),
             t('privacy.retention.moderation'),
@@ -77,6 +79,7 @@ export function PrivacyPolicyPage() {
           items={[
             t('privacy.visibility.room'),
             t('privacy.visibility.results'),
+            t('privacy.visibility.publicTemplates'),
             t('privacy.visibility.moderation'),
             t('privacy.visibility.deletedAccount'),
           ]}
@@ -92,6 +95,7 @@ export function PrivacyPolicyPage() {
             t('privacy.processors.cloudflare'),
             t('privacy.processors.google'),
             t('privacy.processors.github'),
+            t('privacy.processors.sentry'),
           ]}
         />
         <p>{t('privacy.processors.transfers')}</p>

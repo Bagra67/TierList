@@ -91,7 +91,7 @@ Une fois lancé :
 - Documentation interactive (Swagger) : http://127.0.0.1:8000/api/docs
 - Documentation ReDoc : http://127.0.0.1:8000/api/redoc
 
-L'API est servie sous `/api` (`app.main:app` la monte ; [guide du déploiement](../docs/technical/deployment.fr.md)). Le frontend l'appelle via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est transmise telle quelle à `http://127.0.0.1:8000/api/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
+L'API est servie sous `/api` (`app.main:app` la monte ; [guide du déploiement](../docs/technical/deployment.md)). Le frontend l'appelle via le proxy Vite : une requête vers `http://localhost:5173/api/auth/me` est transmise telle quelle à `http://127.0.0.1:8000/api/auth/me`. Le backend doit donc tourner sur le port **8000** pendant le développement du frontend.
 
 ---
 
@@ -129,7 +129,7 @@ uv run pytest
 
 Mode verbeux : `uv run pytest -v` — avec la couverture : `uv run pytest --cov=app`
 
-Ce que fait chaque test, son but et le résultat attendu : [guide des tests](../docs/technical/testing.fr.md).
+Fonctionnement des tests (fixtures, tests d'intégration, écrire un nouveau test) : [guide des tests](../docs/technical/testing.md).
 
 ### Tests d'intégration (vrai PostgreSQL)
 
@@ -192,6 +192,7 @@ backend/
 │   │   ├── config.py      # Configuration lue depuis .env (pydantic-settings)
 │   │   ├── errors.py      # Format d'erreur unique (ErrorResponse, HTTPException, handlers 422 et 500)
 │   │   ├── logging.py     # Logs de l'application (LOG_LEVEL, format uvicorn)
+│   │   ├── monitoring.py  # Suivi des erreurs avec Sentry (SENTRY_DSN)
 │   │   └── security.py    # Hachage des mots de passe (Argon2id), access tokens JWT, refresh tokens
 │   ├── models/            # Modèles SQLAlchemy, un par fichier : user.py, refresh_token.py, oauth_account.py…
 │   ├── repositories/      # Requêtes en base (users, refresh_tokens, oauth_accounts)
@@ -204,7 +205,7 @@ backend/
 ├── scripts/
 │   ├── export_openapi.py  # Écrit le contrat d'API dans openapi.json
 │   ├── set_super_admin.py # Donne ou retire le rôle super admin (développement local)
-│   └── seed.py            # Remplit la base locale ou de staging avec des données de test (docs/technical/seed-data.fr.md)
+│   └── seed.py            # Remplit la base locale ou de staging avec des données de test (docs/technical/seed-data.md)
 ├── tests/
 │   ├── test_main.py       # Tests unitaires avec TestClient (sans base réelle)
 │   ├── test_errors.py     # Tests du format d'erreur (500, 422, HTTPException, codes d'erreur)
@@ -281,7 +282,7 @@ Copiez `.env.example` en `.env` (dans `backend/`) et adaptez les valeurs :
 | `MAINTENANCE_ENABLED`                   | Purges de nuit (templates supprimés, images inutilisées) dans le processus                                                                                                                 | `true`                                           |
 | `MAINTENANCE_HOUR_UTC`                  | Heure des purges de nuit, en UTC (0 à 23)                                                                                                                                                  | `3`                                              |
 
-Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.fr.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.fr.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.fr.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.fr.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.fr.md#3-dans-le-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.fr.md#24-limites-et-réglages). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
+Les emails (`SMTP_*`, `EMAIL_FROM`, `FRONTEND_BASE_URL`, tous facultatifs) sont décrits dans le [guide des emails](../docs/technical/emails.md). L'authentification est décrite dans le [guide de l'authentification](../docs/technical/authentication.md), les templates et leur purge dans le [guide des templates](../docs/technical/templates.md), les salles, leurs durées par défaut (`ROOM_DEFAULT_*`) et les invités (`GUEST_LINK_TTL_DAYS`, `ROOM_COOKIE_PATH`) dans le [guide des salles](../docs/technical/rooms.md), le canal temps réel (`ROOM_HEARTBEAT_*`, `ROOM_PRESENCE_GRACE_SECONDS`, `ROOM_AUTH_TIMEOUT_SECONDS`) dans le [guide du temps réel](../docs/technical/realtime.md#3-in-the-code), les images des tuiles, leur stockage S3 (`IMAGE_S3_*`, `IMAGE_PUBLIC_BASE_URL` ; valeurs de SeaweedFS dans `.env.example`), la limite d'envois (`IMAGE_UPLOADS_PER_HOUR_MAX`) et le ramasse-miettes (`UNUSED_IMAGE_RETENTION_DAYS`) dans le [guide des images](../docs/technical/images.md#24-limits-and-settings). Comme le conteneur PostgreSQL lit aussi `.env`, les variables d'authentification lui sont transmises : sans conséquence, il les ignore.
 
 Ce même fichier est lu par le conteneur PostgreSQL : changer le mot de passe **après** la création du volume n'a pas d'effet sur une base existante (il faut alors `docker compose down -v`, qui efface les données).
 
@@ -308,14 +309,14 @@ Les noms des contraintes et des index suivent la convention de `app/db/base.py` 
 
 ### Rôle super admin en local
 
-Les super admins modèrent l'application ([guide de l'authentification](../docs/technical/authentication.fr.md#super-admins)). Le rôle n'est jamais donné par l'API : en développement local, donnez-le à un compte existant avec
+Les super admins modèrent l'application ([guide de l'authentification](../docs/technical/authentication.md#super-admins)). Le rôle n'est jamais donné par l'API : en développement local, donnez-le à un compte existant avec
 
 ```bash
 uv run python scripts/set_super_admin.py alice@example.com            # donne le rôle
 uv run python scripts/set_super_admin.py alice@example.com --revoke   # le retire
 ```
 
-L'e-mail ignore la casse ; un e-mail inconnu sort avec le code `1`. Rechargez la page pour voir le lien « Modération ». En staging et en production, utilisez la requête SQL du [guide du déploiement](../docs/technical/deployment.fr.md#512-super-admins).
+L'e-mail ignore la casse ; un e-mail inconnu sort avec le code `1`. Rechargez la page pour voir le lien « Modération ». En staging et en production, utilisez la requête SQL du [guide du déploiement](../docs/technical/deployment.md#512-super-admins).
 
 ---
 
@@ -325,7 +326,8 @@ Les logs de l'application (loggers sous `app`, par ex. `logging.getLogger(__name
 
 - écrits sur stderr au **même format qu'uvicorn**, avec en plus le nom du logger : `ERROR:    app.main - Échec de la connexion à la base de données` ;
 - niveau réglé par `LOG_LEVEL` (dans `.env` ou l'environnement, `INFO` par défaut) ; une valeur invalide arrête l'application au démarrage avec une erreur claire ;
-- les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler.
+- les logs d'uvicorn gardent leur propre configuration : utilisez `--log-level` sur `fastapi dev` / `fastapi run` pour les régler ;
+- les logs `ERROR` partent aussi vers Sentry quand `SENTRY_DSN` est défini (`SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` ; `app/core/monitoring.py`) : voir le [guide du suivi des erreurs](../docs/technical/monitoring.md).
 
 ---
 
@@ -376,26 +378,76 @@ Toute réponse d'erreur de l'API a la même forme JSON, `ErrorResponse` (`app/co
 
 Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 
-| Code                         | Statut      | Signification                                                                            |
-| ---------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
-| `internal_error`             | 500         | Erreur imprévue                                                                          |
-| `validation_error`           | 422         | Requête invalide (voir `errors`)                                                         |
-| `http_error`                 | tous        | `HTTPException` sans code dédié                                                          |
-| `database_unavailable`       | 503         | `GET /health/db` : la base ne répond pas                                                 |
-| `not_authenticated`          | 401         | Access token absent ou invalide                                                          |
-| `email_already_registered`   | 409         | Inscription avec un email déjà utilisé                                                   |
-| `invalid_credentials`        | 401         | Email ou mot de passe incorrect                                                          |
-| `session_expired`            | 401         | Refresh token absent, expiré ou révoqué                                                  |
-| `incorrect_password`         | 403         | Mot de passe faux à la suppression du compte                                             |
-| `reauthentication_required`  | 403         | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression |
-| `invalid_token`              | 400         | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                 |
-| `password_too_short`         | 422 (champ) | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                  |
-| `template_not_found`         | 404         | Template inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables)        |
-| `image_unsupported_format`   | 415         | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                           |
-| `image_too_large`            | 413         | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`        |
-| `image_too_many_pixels`      | 422         | `POST /images` : image décodée au-delà de `IMAGE_MAX_SOURCE_PIXELS`                      |
-| `image_upload_limit_reached` | 429         | `POST /images` : `IMAGE_UPLOADS_PER_HOUR_MAX` atteint ; `params.max_uploads`             |
-| `image_not_found`            | 404         | `image_id` d'une tuile inconnue ou d'un autre utilisateur                                |
-| `tile_empty`                 | 422         | Tuile sans texte ni image                                                                |
+| Code                           | Statut          | Signification                                                                                                                                        |
+| ------------------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `internal_error`               | 500             | Erreur imprévue                                                                                                                                      |
+| `validation_error`             | 422             | Requête invalide (voir `errors`)                                                                                                                     |
+| `http_error`                   | tous            | `HTTPException` sans code dédié                                                                                                                      |
+| `database_unavailable`         | 503             | `GET /health/db` : la base ne répond pas                                                                                                             |
+| `not_authenticated`            | 401 / WS `4401` | Access token absent ou invalide (canal temps réel : pas d'`auth` à temps, ou compte banni)                                                           |
+| `email_already_registered`     | 409             | Inscription avec un email déjà utilisé                                                                                                               |
+| `invalid_credentials`          | 401             | Email ou mot de passe incorrect                                                                                                                      |
+| `session_expired`              | 401             | Refresh token expiré ou révoqué (aucun cookie : `204`)                                                                                               |
+| `incorrect_password`           | 403             | Mot de passe faux à la suppression du compte                                                                                                         |
+| `reauthentication_required`    | 403             | Compte Google dont la dernière connexion est trop ancienne pour confirmer la suppression                                                             |
+| `invalid_token`                | 400             | Lien reçu par email invalide, expiré ou qui ne correspond plus au compte                                                                             |
+| `password_too_short`           | 422 (champ)     | Mot de passe plus court que `PASSWORD_MIN_LENGTH` ; `params.min_length`                                                                              |
+| `email_not_verified`           | 403             | Modèle rendu public par un compte dont l'email n'est pas confirmé                                                                                    |
+| `template_not_found`           | 404 / 409       | Modèle inconnu, supprimé ou appartenant à un autre utilisateur (indiscernables) ; `409` quand une partie démarre avec un modèle supprimé entre-temps |
+| `image_unsupported_format`     | 415             | `POST /images` : pas une image JPEG, PNG ou WebP, ou illisible                                                                                       |
+| `image_too_large`              | 413             | `POST /images` : fichier au-delà de `IMAGE_UPLOAD_MAX_BYTES` ; `params.max_bytes`                                                                    |
+| `image_too_many_pixels`        | 422             | `POST /images` : image décodée au-delà de `IMAGE_MAX_SOURCE_PIXELS`                                                                                  |
+| `image_upload_limit_reached`   | 429             | `POST /images` : `IMAGE_UPLOADS_PER_HOUR_MAX` atteint ; `params.max_uploads`                                                                         |
+| `image_not_found`              | 404             | `image_id` d'une tuile inconnue ou d'un autre utilisateur                                                                                            |
+| `tile_empty`                   | 422             | Tuile sans texte ni image                                                                                                                            |
+| `super_admin_required`         | 403             | Route réservée à un super admin                                                                                                                      |
+| `account_not_found`            | 404             | Modération : compte inconnu                                                                                                                          |
+| `account_banned`               | 403             | Connexion d'un compte banni définitivement ; `params.reason`                                                                                         |
+| `account_banned_until`         | 403             | Connexion d'un compte banni jusqu'à une date ; `params.reason`, `params.ends_at`                                                                     |
+| `cannot_ban_super_admin`       | 409             | Un super admin ne peut pas être banni                                                                                                                |
+| `account_not_banned`           | 409             | Lever le bannissement d'un compte qui n'en a pas                                                                                                     |
+| `ban_end_in_past`              | 422             | Fin d'un bannissement qui n'est pas dans le futur                                                                                                    |
+| `template_has_no_tiles`        | 409             | Salle créée, partie lancée ou modèle rendu public, avec un modèle sans tuile                                                                         |
+| `template_hidden`              | 409             | Salle créée, partie lancée ou modèle rendu public, avec un modèle masqué par la modération                                                           |
+| `template_moderation_conflict` | 409             | Action de modération qui ne correspond pas à l'état du modèle                                                                                        |
+| `tier_not_found`               | 404             | Tier inconnu du modèle (ou de la partie au placement)                                                                                                |
+| `last_tier`                    | 409             | Supprimer le dernier tier d'un modèle                                                                                                                |
+| `tile_not_found`               | 404             | Tuile inconnue du modèle                                                                                                                             |
+| `tile_limit_reached`           | 409             | Modèle déjà à sa limite de tuiles ; `params.max_tiles`                                                                                               |
+| `room_not_found`               | 404 / WS `4404` | Code de salle inconnu ou salle fermée                                                                                                                |
+| `room_not_joined`              | 403             | Lire une salle sans y avoir de place                                                                                                                 |
+| `room_admin_required`          | 403             | Action réservée au room admin                                                                                                                        |
+| `room_settings_locked`         | 409             | Réglage modifié pendant une partie (seules les arrivées tardives le peuvent)                                                                         |
+| `room_full`                    | 409             | Salle déjà pleine ; `params.max_participants`                                                                                                        |
+| `room_locked`                  | 409             | Rejoindre pendant une partie dont la salle est verrouillée                                                                                           |
+| `nickname_taken`               | 409             | Pseudo d'invité déjà utilisé dans la salle                                                                                                           |
+| `guest_link_invalid`           | 404             | Lien personnel d'invité expiré, ou sa salle fermée                                                                                                   |
+| `participant_not_found`        | 404             | Participant inconnu de la salle                                                                                                                      |
+| `cannot_remove_room_admin`     | 409             | Retirer le room admin de sa salle                                                                                                                    |
+| `room_banned`                  | 403 / WS `4411` | Compte ou navigateur banni de la salle                                                                                                               |
+| `ban_not_found`                | 404             | Bannissement inconnu de la salle                                                                                                                     |
+| `invalid_message`              | WS `4400`       | Canal temps réel : message inattendu                                                                                                                 |
+| `heartbeat_timeout`            | WS `4408`       | Canal temps réel : pas de réponse au heartbeat                                                                                                       |
+| `removed_from_room`            | WS `4410`       | Canal temps réel : retiré par le room admin (ou compte supprimé)                                                                                     |
+| `room_closed`                  | WS `4412`       | Canal temps réel : la salle a été fermée                                                                                                             |
+| `game_in_progress`             | 409             | Lancer une partie alors qu'une autre est en cours                                                                                                    |
+| `no_placing_participant`       | 409             | Lancer une partie où personne ne place les éléments                                                                                                  |
+| `round_not_in_progress`        | 409             | Placer, ou passer à la suite, sans tour en cours                                                                                                     |
+| `not_a_placing_participant`    | 403             | Le room admin qui ne joue pas place un élément                                                                                                       |
+| `item_not_current`             | 409             | Placer un élément qui n'est pas celui du tour en cours                                                                                               |
+| `item_not_in_game`             | 404             | Placer, pendant les retouches finales, un élément hors de la partie                                                                                  |
+| `cooldown_not_in_progress`     | 409             | Terminer les retouches finales quand elles ne sont pas en cours                                                                                      |
+| `cooldown_over`                | 409             | Placer après la fin des retouches finales                                                                                                            |
+| `results_not_found`            | 404             | Lien de résultats inconnu (ou partie masquée par la modération)                                                                                      |
+| `image_moderation_conflict`    | 409             | Action de modération qui ne correspond pas à l'état de l'image                                                                                       |
+| `report_target_not_found`      | 404             | Signaler un contenu inconnu ou déjà retiré                                                                                                           |
+| `report_already_open`          | 409             | Contenu déjà signalé par la même personne                                                                                                            |
+| `report_details_required`      | 422             | Motif `other` sans précisions                                                                                                                        |
+| `report_limit_reached`         | 429             | Limite de signalements par heure atteinte ; `params.max_reports`                                                                                     |
+| `reports_not_open`             | 404             | Classer un contenu sans signalement ouvert                                                                                                           |
+| `nickname_not_found`           | 404             | Retirer le pseudo d'aucun compte ni invité                                                                                                           |
+| `game_not_found`               | 404             | Modération : partie close inconnue                                                                                                                   |
+| `game_moderation_conflict`     | 409             | Action de modération qui ne correspond pas à l'état de la partie                                                                                     |
+| `images_hiding_in_progress`    | 409             | `POST /moderation/accounts/{id}/hide-images` pendant qu'un lot du même compte tourne                                                                 |
 
 Pour les erreurs prévues (introuvable, conflit…), levez une `AppHTTPException` avec un `ErrorCode` et un `detail` en anglais (`app/constants/messages.py`), et laissez les erreurs imprévues remonter jusqu'au handler générique : n'attrapez jamais `Exception` dans une route juste pour renvoyer une 500. **Tout nouveau code d'erreur doit être traduit dans chaque langue du frontend.** Côté frontend, `ApiError` expose `status`, `body`, et le `detail` comme `message`.

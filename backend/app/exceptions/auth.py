@@ -30,6 +30,10 @@ class InvalidEmailTokenError(Exception):
     pass
 
 
+class EmailNotVerifiedError(Exception):
+    pass
+
+
 class ReauthenticationRequiredError(Exception):
     pass
 

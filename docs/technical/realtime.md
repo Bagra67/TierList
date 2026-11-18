@@ -1,7 +1,5 @@
 # Real time
 
-English | [Français](realtime.fr.md)
-
 How rooms push rounds, placements, presence and timers to every participant: transport, message format, authentication of the socket, reconnection, server-side timers and scaling. Decided in spike #74, **built in #85** (§3) for the room channel and the presence; rounds, placements and timers come with the game issues. To understand, debug or extend the channel, start with the [WebSocket guide](websocket.md). What a room is for the user: [game flow](../product/milestone-1/game-flow.md) and [lifecycles](../product/milestone-1/lifecycles.md).
 
 ## 1. Functional overview
@@ -208,7 +206,8 @@ Built in #85. What exists today:
   - an account whose channel is refused with `4401` retries **once** with a refreshed access token (the token lasts 15 minutes; a lobby left open longer would otherwise freeze at its next reconnection); a second `4401` in a row stops it;
   - after 5 openings in a row that never opened (server unreachable, origin refused, which the browser reports as `1006`), the hook stops and the lobby says live updates are unavailable;
   - a binary frame from the client closes the channel with `4400` `invalid_message`;
-  - a participant who comes back while their departure is being written is set connected again (`schedule_disconnect`: the cancellation cannot stop the thread that writes).
+  - a participant who comes back while their departure is being written is set connected again (`schedule_disconnect`: once the grace delay is over, the departure can no longer be cancelled, so its last check always runs);
+  - the tasks of the registry are kept by reference until they end, and a broadcast sends to every socket of the room at once, so a slow socket does not hold the others back.
 - **Event order**: each publication is broadcast by its own task, so two events published at the same time may reach a socket in the wrong order. The client then sees a version gap and reads the room again: the result stays right, at the cost of one request.
 
 | Layer        | File                                             | Content                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -221,4 +220,4 @@ Built in #85. What exists today:
 | Frontend     | `components/RoomLobby.tsx`, `pages/RoomPage.tsx` | Presence dot (filled online, hollow offline) with an `online` / `offline` text for screen readers; the hook is active once the room is loaded.                                                                                                                                                                                                                                                                            |
 | Dev          | `frontend/vite.config.ts`                        | `ws: true` on the `/api` proxy.                                                                                                                                                                                                                                                                                                                                                                                           |
 
-Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`), described in the [testing guide](testing.md).
+Tests: `backend/tests/integration/test_room_channel.py`, the publication tests of `test_rooms.py` / `test_room_guests.py` / `test_room_removal.py`, `backend/tests/test_room_connections.py` (registry), `frontend/src/api/roomChannel.test.ts` (fake `WebSocket`, `src/test/fakeWebSocket.ts`).

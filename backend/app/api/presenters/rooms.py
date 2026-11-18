@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from app.api.presenters.games import past_games_response
 from app.api.presenters.items import item_response, tier_response
@@ -20,6 +21,7 @@ from app.schemas.rooms import (
     RoomSettingsResponse,
     RoomTemplateResponse,
 )
+from app.services.games import places_in_game
 from app.services.image_storage import ImageStorage
 from app.services.rooms import GuestSeat, RoomService
 
@@ -42,7 +44,8 @@ def room_response(
         RoomTemplateResponse(
             id=room.template.id,
             name=room.template.name,
-            hidden=room.template.moderation == TemplateModeration.HIDDEN,
+            hidden=room.template.moderation == TemplateModeration.HIDDEN
+            and room.template.owner_id == room.admin_id,
         )
         if room.template is not None
         else None
@@ -68,7 +71,8 @@ def room_response(
         is_admin=is_admin,
         bans=bans,
         game=current_game_response(room.current_game, seat, storage),
-        past_games=past_games_response(room.closed_games),
+        past_games=past_games_response(service.closed_games(room)),
+        server_now=datetime.now(UTC),
     )
 
 
@@ -90,7 +94,7 @@ def current_game_response(
         if placement.snapshot_tile_id == current_round.snapshot_tile_id
         and placement.participant_id is not None
     ]
-    seat_places: bool = game.admin_plays or seat.user_id != seat.room.admin_id
+    seat_places: bool = places_in_game(seat.room, seat)
     board_phase: PlacementPhase = (
         PlacementPhase.FINAL if game.status == GameStatus.COOLDOWN else PlacementPhase.ROUND
     )

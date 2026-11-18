@@ -51,14 +51,7 @@ export function InlineEditField({
   const id: string = useId();
   const errorId: string = `${id}-error`;
 
-  // La zone de texte prend la hauteur de son contenu (en JS : la propriété CSS field-sizing
-  // n'est pas encore gérée par tous les navigateurs)
-  useLayoutEffect(() => {
-    const textArea: HTMLTextAreaElement | null = textAreaRef.current;
-    if (textArea === null) return;
-    textArea.style.height = 'auto';
-    textArea.style.height = `${textArea.scrollHeight}px`;
-  }, [draft]);
+  useTextAreaHeightFollowingItsText(textAreaRef, draft);
 
   function save() {
     const trimmedDraft: string = draft.trim();
@@ -132,4 +125,16 @@ export function InlineEditField({
       )}
     </form>
   );
+}
+
+function useTextAreaHeightFollowingItsText(
+  textAreaRef: RefObject<HTMLTextAreaElement | null>,
+  text: string,
+): void {
+  useLayoutEffect(() => {
+    const textArea: HTMLTextAreaElement | null = textAreaRef.current;
+    if (textArea === null) return;
+    textArea.style.height = 'auto';
+    textArea.style.height = `${textArea.scrollHeight}px`;
+  }, [textAreaRef, text]);
 }

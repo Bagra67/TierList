@@ -33,9 +33,9 @@ jobs:
       - name: Test the check script
         run: python3 -m unittest discover -s .github/scripts
 
-      # On a PR: also checks that both languages and the testing guide changed together,
+      # On a PR: also checks that both languages of a README changed together,
       # unless the skip-docs-sync label is set. On a push: pairs and language switchers only.
-      - name: Check bilingual docs and testing guide
+      - name: Check bilingual READMEs
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           SKIP_SYNC: ${{ contains(github.event.pull_request.labels.*.name, 'skip-docs-sync') }}

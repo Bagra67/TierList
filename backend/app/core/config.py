@@ -88,12 +88,22 @@ class Settings(BaseSettings):
     smtp_timeout_seconds: int = Field(default=10, gt=0)
     email_from: str = "TierList <no-reply@localhost>"
     frontend_base_url: str = "http://localhost:5173"
+    search_indexing_enabled: bool = False
 
     frontend_dist: Path = BACKEND_DIR.parent / "frontend_dist"
     app_release: str = "dev"
     maintenance_enabled: bool = True
     maintenance_hour_utc: int = Field(default=3, ge=0, le=23)
     trusted_proxy_ips: Annotated[list[IPvAnyNetwork], NoDecode] = []
+
+    sentry_dsn: str | None = None
+    sentry_environment: str = "local"
+    sentry_traces_sample_rate: float = Field(default=0, ge=0, le=1)
+
+    @field_validator("sentry_dsn", mode="before")
+    @classmethod
+    def _no_dsn_when_empty(cls, value: object) -> object:
+        return None if value == "" else value
 
     @field_validator("trusted_proxy_ips", mode="before")
     @classmethod

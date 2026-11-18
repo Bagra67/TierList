@@ -149,130 +149,13 @@ COPY: dict[str, dict[str, str]] = {
         "up_5": "yesterday|4 games",
         "up_6": "yesterday|hidden",
     },
-    "fr": {
-        "public": "Modèles publics",
-        "public_intro": "Trouvez une tier list à jouer avec vos amis, ou une idée à reprendre.",
-        "search": "Rechercher un modèle",
-        "sort": "Trier par",
-        "most_liked": "Les plus aimés",
-        "by": "par {owner} · {count} éléments",
-        "lineage": "par Camille · copié de « Chips de l'apéro » par Noé",
-        "items": "Éléments (12)",
-        "start_room": "Créer une salle avec ce modèle",
-        "like": "J'aime · 128",
-        "favorite": "Favori",
-        "copy": "Copier dans mes modèles",
-        "copy_hint": "Votre copie est privée ; elle indique de quel modèle elle vient.",
-        "report_link": "Signaler ce modèle",
-        "visibility": "Visibilité",
-        "private": "Privé : vous seul pouvez lancer une salle avec",
-        "public_choice": "Public : tout le monde le trouve et peut le jouer",
-        "allow_copies": "Autoriser les copies de ce modèle",
-        "tags_field": "Tags (5 au plus)",
-        "add_tag": "Ajouter un tag",
-        "tags_hint": "Un mot ou une courte expression : on trouve votre modèle par ses tags.",
-        "public_since": "Public depuis le 31 octobre 2026 · 128 j'aime",
-        "other_states": "Autres états",
-        "unconfirmed": "Confirmez votre adresse e-mail pour rendre un modèle public.",
-        "hidden": "Masqué par la modération : images d'une autre personne publiées sans accord.",
-        "hidden_hint": "Vous pouvez encore le modifier, mais plus le rendre public.",
-        "report_title": "Signaler ce modèle",
-        "report_intro": "Votre signalement est anonyme : la personne signalée ne saura pas "
-        "qui l'a envoyé.",
-        "reason": "Motif",
-        "reasons": "Contenu illégal|Contenu sexuel|Violence ou haine|Harcèlement|Spam|Autre",
-        "details": "Précisions (facultatif)",
-        "send": "Envoyer le signalement",
-        "moderation": "Modération",
-        "reports": "Signalements",
-        "uploads": "Derniers envois",
-        "log": "Journal",
-        "reports_intro": "Les signalements ouverts, regroupés par contenu, les plus signalés "
-        "d'abord. Chaque décision est écrite au journal.",
-        "kind_template": "Modèle",
-        "kind_image": "Image",
-        "kind_nickname": "Pseudo",
-        "report_1": "Top 10 des pires profs",
-        "report_2": "image de la tuile « Barbecue »",
-        "report_3": "« xX_spam_Xx » dans la salle K7P2QX",
-        "from": "de {owner} · {count} signalements",
-        "from_one": "de {owner} · 1 signalement",
-        "guest": "invité",
-        "harassment": "Harcèlement ×4",
-        "other": "Autre ×1",
-        "sexual": "Contenu sexuel ×2",
-        "spam": "Spam ×1",
-        "dismiss": "Classer sans suite",
-        "hide": "Masquer",
-        "delete": "Supprimer",
-        "see_account": "Voir le compte",
-        "open_reports": "3 signalements ouverts",
-        "no_sanction": "aucune sanction",
-        "display_name": "Nom affiché",
-        "email": "E-mail",
-        "created": "Compte créé le",
-        "created_value": "2 septembre 2026",
-        "confirmed": "E-mail confirmé",
-        "yes": "Oui",
-        "templates": "Modèles (3)",
-        "tpl_1": "Top 10 des pires profs",
-        "tpl_1_state": "public · 5 signalements",
-        "tpl_2": "Mes jeux préférés",
-        "tpl_2_state": "privé",
-        "tpl_3": "Séries 2025",
-        "tpl_3_state": "public",
-        "open": "Ouvrir",
-        "images": "Images envoyées (14)",
-        "hide_all": "Masquer toutes ses images",
-        "history": "Historique de modération",
-        "history_1": "28 oct. · Nina a masqué l'image « prof.jpg » : harcèlement",
-        "ban_title": "Bannir ce compte",
-        "ban_until": "Temporairement, jusqu'au",
-        "ban_forever": "Définitivement",
-        "ban_end": "Fin du bannissement",
-        "ban_reason": "Motif (visible par la personne)",
-        "ban_reason_value": "Harcèlement répété",
-        "ban_hint": "Le compte est déconnecté partout ; ses modèles publics quittent les "
-        "modèles publics le temps du bannissement.",
-        "ban": "Bannir",
-        "log_title": "Journal de modération",
-        "log_intro": "Chaque action : qui, quand, quoi et pourquoi. Aucune entrée ne se modifie "
-        "ni ne se supprime.",
-        "target": "Cible",
-        "target_hint": "Modèle, image, compte…",
-        "super_admin": "Super admin",
-        "all": "Tous",
-        "when": "Quand",
-        "who": "Qui",
-        "action": "Action",
-        "why": "Motif",
-        "log_1": "31 oct. 18:42|Nina|Masquer|Modèle « Top 10 des pires profs »|Harcèlement",
-        "log_2": "31 oct. 18:40|Nina|Bannir jusqu'au 15 nov.|Compte Max|Harcèlement répété",
-        "log_3": "30 oct. 21:05|Samuel|Classer sans suite|Pseudo « Lou »|Pas d'infraction",
-        "log_4": "29 oct. 09:12|Samuel|Supprimer|Image « capture.png »|Contenu sexuel",
-        "uploads_intro": "Les images envoyées, des plus récentes aux plus anciennes, pour "
-        "repérer un problème avant qu'on le signale.",
-        "author": "Auteur",
-        "author_hint": "Nom ou e-mail",
-        "since": "Depuis le",
-        "status": "Statut",
-        "visible": "Visibles",
-        "up_1": "il y a 5 min|1 modèle",
-        "up_2": "il y a 12 min|2 modèles",
-        "up_3": "il y a 1 h|1 modèle · 3 parties",
-        "up_4": "il y a 2 h|1 modèle",
-        "up_5": "hier|4 parties",
-        "up_6": "hier|masquée",
-    },
 }
 
 ITEMS: dict[str, list[str]] = {
     "en": ["Plain", "Paprika", "Chicken", "Onion", "Vinegar", "Cheese", "Chili", "Tomato",
            "Curry", "Bacon", "Mustard", "Barbecue"],
-    "fr": ["Nature", "Paprika", "Poulet", "Oignon", "Vinaigre", "Fromage", "Piment", "Tomate",
-           "Curry", "Bacon", "Moutarde", "Barbecue"],
 }  # fmt: skip
-TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list", "fr": "Tier list des chips"}
+TEMPLATE_NAME: dict[str, str] = {"en": "Chips tier list"}
 PLACEHOLDER_IMAGE_COLOR_BY_ITEM: dict[str, str] = {
     "Barbecue": "#C2492E",
     "Paprika": "#FF8A2A",
@@ -302,26 +185,11 @@ PUBLIC: dict[str, list[PublicTemplateSample]] = {
         PublicTemplateSample("Anime openings", "Sam", ["anime", "music"], 30, 51, "#A78BFA"),
         PublicTemplateSample("Grandma's desserts", "Alex", ["food"], 16, 33, "#F06BD0"),
     ],
-    "fr": [
-        PublicTemplateSample(
-            "Tier list des chips", "Camille", ["apéro", "snacks"], 12, 128, "#C2492E"
-        ),
-        PublicTemplateSample(
-            "Meilleurs films de Noël", "Noé", ["films", "fêtes"], 24, 96, "#5B7CFA"
-        ),
-        PublicTemplateSample(
-            "Pokémon de la 1re génération", "Inès", ["jeux vidéo"], 32, 87, "#FFC22E"
-        ),
-        PublicTemplateSample("Fromages français", "Lou", ["cuisine", "fromage"], 20, 64, "#D4B483"),
-        PublicTemplateSample("Openings d'anime", "Sam", ["anime", "musique"], 30, 51, "#A78BFA"),
-        PublicTemplateSample("Desserts de grand-mère", "Alex", ["cuisine"], 16, 33, "#F06BD0"),
-    ],
 }
 FILTER_TAGS: dict[str, list[str]] = {
     "en": ["food", "movies", "video games", "music", "party", "anime"],
-    "fr": ["cuisine", "films", "jeux vidéo", "musique", "apéro", "anime"],
 }
-TEMPLATE_TAGS: dict[str, list[str]] = {"en": ["snacks", "party"], "fr": ["apéro", "snacks"]}
+TEMPLATE_TAGS: dict[str, list[str]] = {"en": ["snacks", "party"]}
 
 
 def c(t: Translator, key: str, **values: object) -> str:
@@ -398,7 +266,7 @@ def marketplace(t: Translator) -> Svg:
     svg.text(68, 209, FILTER_TAGS[t.lang][0], 14, 400)
     select(svg, 616, 176, 312, c(t, "sort"), c(t, "most_liked"))
     x: float = 32 + estimated_text_width("Tags :", 13, 600) + 10
-    svg.text(32, 262, "Tags :" if t.lang == "fr" else "Tags:", 13, 600)
+    svg.text(32, 262, "Tags:", 13, 600)
     for index, label in enumerate(FILTER_TAGS[t.lang]):
         selected: bool = index == 0
         x += (
@@ -462,7 +330,7 @@ def template_page(t: Translator) -> Svg:
 
 
 def publish(t: Translator) -> Svg:
-    svg = Svg({"en": "Publish a template", "fr": "Publier un modèle"}[t.lang], 960, 580)
+    svg = Svg("Publish a template", 960, 580)
     header(svg, t, "Alex", (NavLink(c(t, "public"), None),))
     svg.text(32, 92, "← " + t("templates.editor.back"), 14, 500, MUTED_FG)
     field(svg, 32, 124, 520, t("templates.editor.name"), TEMPLATE_NAME[t.lang])
@@ -553,7 +421,7 @@ def reports(t: Translator) -> Svg:
 
 
 def account(t: Translator) -> Svg:
-    svg = Svg({"en": "Account: Max", "fr": "Compte : Max"}[t.lang], 960, 760)
+    svg = Svg("Account: Max", 960, 760)
     moderation_header(svg, t)
     moderation_nav(svg, t, "reports")
     h1(svg, 240, 108, "Max", 30)

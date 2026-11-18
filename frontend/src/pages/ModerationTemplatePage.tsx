@@ -9,23 +9,24 @@ import {
   useModerateTemplate,
   useReviewedTemplate,
 } from '../api/moderation';
-import { tierColorStyle } from '../components/boardStyles';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
-import { RemovedImage } from '../components/RemovedImage';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
+import { TemplateTierChips } from '../components/TemplateTierChips';
+import { TemplateTileCard } from '../components/TemplateTileCard';
 import { Button } from '../components/ui/button';
-import { panelVariants } from '../components/ui/panel';
 import { textLinkClassName } from '../components/ui/text-link';
 import { moderationAccountPath } from '../constants/routes';
 import { translateError } from '../errors/apiError';
+import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function ModerationTemplatePage() {
   const { t } = useTranslation();
   const { templateId = '' } = useParams();
   const { data: template, isPending, isError, error } = useReviewedTemplate(templateId);
+  useDocumentTitle(template?.name);
 
   return (
     <div className="flex flex-col items-start gap-6">
@@ -96,17 +97,7 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
 
       <section className="flex w-full flex-col items-start gap-3">
         <h2 className="text-lg font-semibold">{t('moderation.template.tiers')}</h2>
-        <ol className="flex flex-wrap gap-2">
-          {template.tiers.map((tier) => (
-            <li
-              key={tier.id}
-              style={tierColorStyle(tier.color)}
-              className="rounded-md px-2 py-1 font-semibold break-words"
-            >
-              {tier.name}
-            </li>
-          ))}
-        </ol>
+        <TemplateTierChips tiers={template.tiers} />
       </section>
 
       <section className="flex w-full flex-col items-start gap-3">
@@ -145,23 +136,17 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
 function TileCard({ tile, number }: { tile: ReviewedTile; number: number }) {
   const { t } = useTranslation();
   return (
-    <li className={panelVariants({ className: 'gap-2 p-3' })}>
-      {tile.image_status === 'deleted' && (
-        <RemovedImage className="aspect-square w-full rounded-sm" showLabel={true} />
-      )}
-      {tile.image_url !== null && (
-        <img
-          src={tile.image_url}
-          alt={t('moderation.template.tileImage', { number })}
-          className="aspect-square w-full rounded-sm object-cover"
-        />
-      )}
+    <TemplateTileCard
+      imageUrl={tile.image_url}
+      imageRemoved={tile.image_status === 'deleted'}
+      imageAlt={t('moderation.template.tileImage', { number })}
+      text={tile.text}
+    >
       {tile.image_status === 'hidden' && (
         <p className="text-sm font-medium text-destructive">
           {t('moderation.template.imageHidden')}
         </p>
       )}
-      {tile.text !== null && <p className="text-sm font-medium break-words">{tile.text}</p>}
-    </li>
+    </TemplateTileCard>
   );
 }

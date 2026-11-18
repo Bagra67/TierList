@@ -10,6 +10,18 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import {
+  ACCOUNT_QUERY_KEY,
+  ACCOUNT_SEARCH_QUERY_KEY,
+  HIDDEN_GAMES_QUERY_KEY,
+  MODERATION_LOG_QUERY_KEY,
+  OPEN_REPORT_COUNT_QUERY_KEY,
+  RECENT_UPLOADS_QUERY_KEY,
+  REPORT_QUEUE_QUERY_KEY,
+  REVIEWED_TEMPLATE_QUERY_KEY,
+  SUPER_ADMINS_QUERY_KEY,
+} from '../constants/moderation';
+import { nextOffset } from './pagination';
 import { apiClient, dataOrThrow, throwIfError } from './client';
 import { retryUnlessClientError } from './queryClient';
 import type { components, paths } from './schema';
@@ -35,23 +47,19 @@ export type ReportedContent = components['schemas']['ReportedContentResponse'];
 export type HiddenGamesPage = components['schemas']['HiddenGamesResponse'];
 export type HiddenGame = components['schemas']['HiddenGameResponse'];
 export type ReportDecisionKind =
-  'dismiss' | 'hide_image' | 'delete_image' | 'remove_nickname' | 'hide_game';
+  | 'dismiss'
+  | 'hide_image'
+  | 'delete_image'
+  | 'remove_nickname'
+  | 'hide_game'
+  | 'hide_template'
+  | 'delete_template';
 
 export interface ModerationLogFilters {
   actorId?: string;
   target?: string;
   accountId?: string;
 }
-
-const MODERATION_LOG_QUERY_KEY = ['moderation', 'log'] as const;
-const SUPER_ADMINS_QUERY_KEY = ['moderation', 'super-admins'] as const;
-const RECENT_UPLOADS_QUERY_KEY = ['moderation', 'images'] as const;
-const REPORT_QUEUE_QUERY_KEY = ['moderation', 'reports'] as const;
-const OPEN_REPORT_COUNT_QUERY_KEY = ['moderation', 'reports-count'] as const;
-const HIDDEN_GAMES_QUERY_KEY = ['moderation', 'hidden-games'] as const;
-const REVIEWED_TEMPLATE_QUERY_KEY = ['moderation', 'templates'] as const;
-const ACCOUNT_SEARCH_QUERY_KEY = ['moderation', 'accounts', 'search'] as const;
-const ACCOUNT_QUERY_KEY = ['moderation', 'accounts', 'detail'] as const;
 
 export interface RecentUploadsFilters {
   author?: string;
@@ -88,10 +96,7 @@ export function useModerationLog(
     queryKey: [...MODERATION_LOG_QUERY_KEY, filters],
     queryFn: ({ pageParam, signal }) => getModerationLog(filters, pageParam, signal),
     initialPageParam: 0,
-    getNextPageParam: (lastPage: ModerationLogPage, pages: ModerationLogPage[]) =>
-      lastPage.has_more
-        ? pages.reduce((count: number, page: ModerationLogPage) => count + page.entries.length, 0)
-        : undefined,
+    getNextPageParam: nextOffset((page: ModerationLogPage) => page.entries),
     retry: retryUnlessClientError,
   });
 }
@@ -134,10 +139,7 @@ export function useRecentUploads(
     queryKey: [...RECENT_UPLOADS_QUERY_KEY, filters],
     queryFn: ({ pageParam, signal }) => getRecentUploads(filters, pageParam, signal),
     initialPageParam: 0,
-    getNextPageParam: (lastPage: RecentUploadsPage, pages: RecentUploadsPage[]) =>
-      lastPage.has_more
-        ? pages.reduce((count: number, page: RecentUploadsPage) => count + page.images.length, 0)
-        : undefined,
+    getNextPageParam: nextOffset((page: RecentUploadsPage) => page.images),
     retry: retryUnlessClientError,
   });
 }
@@ -198,10 +200,7 @@ export function useReportQueue(
         }),
       ),
     initialPageParam: 0,
-    getNextPageParam: (lastPage: ReportQueuePage, pages: ReportQueuePage[]) =>
-      lastPage.has_more
-        ? pages.reduce((count: number, page: ReportQueuePage) => count + page.contents.length, 0)
-        : undefined,
+    getNextPageParam: nextOffset((page: ReportQueuePage) => page.contents),
     retry: retryUnlessClientError,
   });
 }
@@ -229,10 +228,7 @@ export function useHiddenGames(): UseInfiniteQueryResult<InfiniteData<HiddenGame
         }),
       ),
     initialPageParam: 0,
-    getNextPageParam: (lastPage: HiddenGamesPage, pages: HiddenGamesPage[]) =>
-      lastPage.has_more
-        ? pages.reduce((count: number, page: HiddenGamesPage) => count + page.games.length, 0)
-        : undefined,
+    getNextPageParam: nextOffset((page: HiddenGamesPage) => page.games),
     retry: retryUnlessClientError,
   });
 }
@@ -274,6 +270,12 @@ async function decideReport({ content, kind, reason }: ReportDecision): Promise<
         }),
       );
       return;
+    case 'hide_template':
+      await moderateTemplate({ templateId: targetId, action: 'hide', reason });
+      return;
+    case 'delete_template':
+      await moderateTemplate({ templateId: targetId, action: 'delete', reason });
+      return;
   }
 }
 
@@ -286,6 +288,8 @@ export function useDecideReport(): UseMutationResult<void, Error, ReportDecision
         invalidateReports(queryClient),
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
       ]);
     },
   });
@@ -332,10 +336,7 @@ export function useAccountSearch(
     queryKey: [...ACCOUNT_SEARCH_QUERY_KEY, query],
     queryFn: ({ pageParam, signal }) => searchAccounts(query, pageParam, signal),
     initialPageParam: 0,
-    getNextPageParam: (lastPage: AccountSearchPage, pages: AccountSearchPage[]) =>
-      lastPage.has_more
-        ? pages.reduce((count: number, page: AccountSearchPage) => count + page.accounts.length, 0)
-        : undefined,
+    getNextPageParam: nextOffset((page: AccountSearchPage) => page.accounts),
     retry: retryUnlessClientError,
   });
 }
@@ -393,11 +394,15 @@ export function useModerateTemplate(): UseMutationResult<void, Error, TemplateMo
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: moderateTemplate,
-    onSuccess: async () => {
+    onSuccess: async (_nothing: void, { templateId, action }: TemplateModeration) => {
+      if (action === 'delete') {
+        queryClient.removeQueries({ queryKey: [...REVIEWED_TEMPLATE_QUERY_KEY, templateId] });
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        invalidateReports(queryClient),
       ]);
     },
   });
@@ -412,18 +417,25 @@ export function useHideAllImages(): UseMutationResult<number, Error, HideAllImag
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ accountId, reason }: HideAllImages): Promise<number> => {
-      const result = dataOrThrow(
-        await apiClient.POST('/moderation/accounts/{user_id}/hide-images', {
-          params: { path: { user_id: accountId } },
-          body: { reason },
-        }),
-      );
-      return result.hidden_count;
+      let hiddenCount: number = 0;
+      let hasMore: boolean = true;
+      while (hasMore) {
+        const batch = dataOrThrow(
+          await apiClient.POST('/moderation/accounts/{user_id}/hide-images', {
+            params: { path: { user_id: accountId } },
+            body: { reason },
+          }),
+        );
+        hiddenCount += batch.hidden_count;
+        hasMore = batch.has_more && batch.hidden_count > 0;
+      }
+      return hiddenCount;
     },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: RECENT_UPLOADS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
+        invalidateReports(queryClient),
       ]);
     },
   });

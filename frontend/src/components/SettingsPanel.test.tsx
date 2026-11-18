@@ -1,5 +1,5 @@
-import { fireEvent, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
@@ -9,10 +9,16 @@ import { DARK_CLASS } from '../constants/theme';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { signedInSession, stubBackend, unauthorized } from '../test/stubBackend';
 
+function CurrentSearch() {
+  const { search } = useLocation();
+  return <output aria-label="Paramètres de l'adresse">{search}</output>;
+}
+
 function renderAppAt(path: string) {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>
       <App />
+      <CurrentSearch />
     </MemoryRouter>,
   );
 }
@@ -103,7 +109,9 @@ describe('SettingsPanel', () => {
     fireEvent.click(within(deletion).getByRole('button', { name: 'Supprimer définitivement' }));
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Paramètres' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Paramètres' })).not.toBeInTheDocument(),
+    );
   });
 
   it('reopens the account deletion in the panel after a Google sign-in', async () => {
@@ -113,5 +121,16 @@ describe('SettingsPanel', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
     expect(screen.getByRole('dialog', { name: 'Paramètres' })).toBeVisible();
+  });
+
+  it('removes only its own step from the address when it reopens the deletion', async () => {
+    stubBackend(signedInSession);
+
+    renderAppAt('/?confirm=delete-account&from=mail');
+
+    expect(await screen.findByRole('dialog', { name: 'Supprimer mon compte' })).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Paramètres de l'adresse")).toHaveTextContent('?from=mail'),
+    );
   });
 });

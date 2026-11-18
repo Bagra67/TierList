@@ -1,7 +1,5 @@
 # Permissions
 
-English | [Français](permissions.fr.md)
-
 Who can do what in TierList: on templates, in rooms, and in moderation. Vocabulary: [product.md](product.md#glossary). Game rules: [game-rules.md](game-rules.md). These permissions are not implemented yet, see [roadmap.md](roadmap.md). As for authentication, they are checked by the **backend**: hiding a button in the interface is never the security boundary.
 
 ## Roles

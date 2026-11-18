@@ -1,22 +1,36 @@
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.api.dependencies import (
     CurrentUserDep,
     ImageStorageDep,
     TemplateServiceDep,
 )
+from app.api.errors import (
+    email_not_verified,
+    image_not_found,
+    invalid_cursor,
+    template_has_no_tiles,
+    template_hidden,
+    template_not_found,
+)
 from app.api.presenters.templates import template_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.constants.templates import CURSOR_MAX_LENGTH
 from app.core.errors import ErrorResponse
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageNotFoundError
+from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import (
+    InvalidTagError,
     LastTierError,
+    TemplateHasNoTilesError,
+    TemplateHiddenError,
     TemplateNotFoundError,
     TierNotFoundError,
     TileEmptyError,
@@ -30,13 +44,15 @@ from app.schemas.templates import (
     RemovedTemplateListResponse,
     RemovedTemplateResponse,
     RenameTemplateRequest,
+    SetTemplateTagsRequest,
+    SetTemplateVisibilityRequest,
     TemplateListResponse,
     TemplateResponse,
     TemplateSummaryResponse,
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.templates import RemovedTemplate, TemplateSummary, TierChanges, TileChanges
+from app.services.templates import RemovedTemplate, TemplatePage, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -52,17 +68,21 @@ TILE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION},
 }
+SET_VISIBILITY_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **TEMPLATE_NOT_FOUND_RESPONSES,
+    403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
+    409: {
+        "model": ErrorResponse,
+        "description": messages.TEMPLATE_CANNOT_BE_MADE_PUBLIC_DESCRIPTION,
+    },
+}
+SET_TAGS_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **TEMPLATE_NOT_FOUND_RESPONSES,
+    422: {"model": ErrorResponse, "description": messages.INVALID_TAG_DESCRIPTION},
+}
 TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": messages.TILE_EMPTY_DESCRIPTION},
 }
-
-
-def _template_not_found() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.TEMPLATE_NOT_FOUND,
-        detail=messages.TEMPLATE_NOT_FOUND,
-    )
 
 
 def _tier_not_found() -> AppHTTPException:
@@ -81,11 +101,11 @@ def _tile_not_found() -> AppHTTPException:
     )
 
 
-def _image_not_found() -> AppHTTPException:
+def _invalid_tag() -> AppHTTPException:
     return AppHTTPException(
-        status_code=404,
-        code=ErrorCode.IMAGE_NOT_FOUND,
-        detail=messages.IMAGE_NOT_FOUND,
+        status_code=422,
+        code=ErrorCode.INVALID_TAG,
+        detail=messages.INVALID_TAG,
     )
 
 
@@ -104,24 +124,43 @@ def create_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Creates a template with the six default tiers (S to E) and no tile."""
     template: Template = service.create(user, payload.name)
     return template_response(template, storage)
 
 
-@router.get("", responses=UNAUTHORIZED_RESPONSE)
-def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
-    summaries: list[TemplateSummary] = service.list_for_owner(user)
+@router.get(
+    "",
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        400: {"model": ErrorResponse, "description": messages.INVALID_CURSOR_DESCRIPTION},
+    },
+)
+def list_templates(
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    cursor: Annotated[str | None, Query(max_length=CURSOR_MAX_LENGTH)] = None,
+) -> TemplateListResponse:
+    """The account's active templates, with their number of tiles, most recently modified first,
+    by pages. `next_cursor` reads the next page, and is null on the last one. Each template gives
+    its moderation decision and the images removed from its tiles."""
+    try:
+        page: TemplatePage = service.page_for_owner(user, cursor)
+    except InvalidCursorError as exc:
+        raise invalid_cursor() from exc
 
     items: list[TemplateSummaryResponse] = []
-    for summary in summaries:
+    for summary in page.items:
         items.append(TemplateSummaryResponse.model_validate(summary))
-    return TemplateListResponse(items=items)
+    return TemplateListResponse(items=items, next_cursor=page.next_cursor)
 
 
 @router.get("/removed", responses=UNAUTHORIZED_RESPONSE)
 def list_removed_templates(
     user: CurrentUserDep, service: TemplateServiceDep
 ) -> RemovedTemplateListResponse:
+    """The account's templates deleted by moderation and not purged yet, with the date and the
+    reason."""
     removed_templates: list[RemovedTemplate] = service.list_removed_by_moderation(user)
     return RemovedTemplateListResponse(
         items=[RemovedTemplateResponse.model_validate(template) for template in removed_templates]
@@ -135,10 +174,12 @@ def get_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted
+    template or one of another account."""
     try:
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return template_response(template, storage)
 
 
@@ -150,10 +191,55 @@ def rename_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Renames a template; its last modification date is updated."""
     try:
         template: Template = service.rename(user, template_id, payload.name)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
+    return template_response(template, storage)
+
+
+@router.put("/{template_id}/visibility", responses=SET_VISIBILITY_RESPONSES)
+def set_template_visibility(
+    template_id: uuid.UUID,
+    payload: SetTemplateVisibilityRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Makes a template public or private, by its owner. Making it public requires a confirmed email
+    address, a template not hidden by moderation and at least one tile. The date of the first
+    publication is kept when the template goes back to private."""
+    try:
+        template: Template = service.set_visibility(user, template_id, payload.visibility)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except EmailNotVerifiedError as exc:
+        raise email_not_verified() from exc
+    except TemplateHiddenError as exc:
+        raise template_hidden() from exc
+    except TemplateHasNoTilesError as exc:
+        raise template_has_no_tiles() from exc
+    return template_response(template, storage)
+
+
+@router.put("/{template_id}/tags", responses=SET_TAGS_RESPONSES)
+def set_template_tags(
+    template_id: uuid.UUID,
+    payload: SetTemplateTagsRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at
+    least one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is
+    dropped; the first one is kept. Its last modification date is updated."""
+    try:
+        template: Template = service.set_tags(user, template_id, payload.tags)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except InvalidTagError as exc:
+        raise _invalid_tag() from exc
     return template_response(template, storage)
 
 
@@ -161,10 +247,12 @@ def rename_template(
 def delete_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
 ) -> None:
+    """Deletes a template: it disappears right away for its owner, and it is erased for good after
+    the retention period. Games already played keep their frozen version."""
     try:
         service.delete(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
 
 
 @router.post("/{template_id}/tiers", status_code=201, responses=TEMPLATE_NOT_FOUND_RESPONSES)
@@ -174,10 +262,11 @@ def add_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Adds a tier at the bottom of the template, named "?", color #9AA0B4."""
     try:
         template: Template = service.add_tier(user, template_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     return template_response(template, storage)
 
 
@@ -190,11 +279,13 @@ def update_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Changes the name, the color and/or the position of a tier; the other tiers are shifted. A
+    position past the end puts the tier last."""
     changes: TierChanges = TierChanges(**payload.model_dump(exclude_none=True))
     try:
         template: Template = service.update_tier(user, template_id, tier_id, changes)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TierNotFoundError as exc:
         raise _tier_not_found() from exc
     return template_response(template, storage)
@@ -214,10 +305,11 @@ def delete_tier(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Deletes a tier; the following ones move up. Refused (409) for the template's last tier."""
     try:
         template: Template = service.delete_tier(user, template_id, tier_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TierNotFoundError as exc:
         raise _tier_not_found() from exc
     except LastTierError as exc:
@@ -249,12 +341,14 @@ def add_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Adds a tile at the end of the template: a text, an image already uploaded by the account
+    (POST /images), or both. Refused (409) past the maximum number of tiles (`max_tiles`)."""
     try:
         template: Template = service.add_tile(user, template_id, payload.text, payload.image_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     except TileLimitReachedError as exc:
@@ -286,17 +380,19 @@ def update_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Changes the text, the image and/or the position of a tile. An explicit `null` removes the
+    text or the image, as long as the tile keeps the other; `position: null` is ignored."""
     changes: TileChanges = TileChanges(**payload.model_dump(exclude_unset=True))
     if payload.position is None:
         changes.pop("position", None)
     try:
         template: Template = service.update_tile(user, template_id, tile_id, changes)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TileNotFoundError as exc:
         raise _tile_not_found() from exc
     except ImageNotFoundError as exc:
-        raise _image_not_found() from exc
+        raise image_not_found() from exc
     except TileEmptyError as exc:
         raise _tile_empty() from exc
     return template_response(template, storage)
@@ -310,10 +406,11 @@ def delete_tile(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
+    """Deletes a tile; the following ones move up."""
     try:
         template: Template = service.delete_tile(user, template_id, tile_id)
     except TemplateNotFoundError as exc:
-        raise _template_not_found() from exc
+        raise template_not_found() from exc
     except TileNotFoundError as exc:
         raise _tile_not_found() from exc
     return template_response(template, storage)

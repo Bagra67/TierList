@@ -52,7 +52,7 @@ interface EndSlotProps {
   data: DropData;
 }
 
-export function EndSlot({ id, data }: EndSlotProps) {
+function EndSlot({ id, data }: EndSlotProps) {
   const { setNodeRef, isOver }: ReturnType<typeof useDroppable> = useDroppable({ id, data });
   return (
     <li
@@ -172,5 +172,26 @@ export function ChoosableTile({ item, label, chosen, pending, onChoose }: Choosa
     >
       <GameItemView item={item} imageLabel={label} size="small" />
     </DraggableItem>
+  );
+}
+
+interface BoardTierRowProps {
+  tier: GameTier;
+  items: ReactNode;
+  action: ReactNode;
+}
+
+export function BoardTierRow({ tier, items, action }: BoardTierRowProps) {
+  return (
+    <li className="flex w-full rounded-[10px] border bg-card">
+      <TierLabel tier={tier} className="rounded-l-[9px]" />
+      <div className="flex flex-1 flex-wrap items-center gap-2 p-2">
+        <ol className="flex flex-1 flex-wrap items-center gap-2" aria-label={tier.name}>
+          {items}
+          <EndSlot id={`${tier.id}:end`} data={{ tierId: tier.id, itemId: null }} />
+        </ol>
+        {action}
+      </div>
+    </li>
   );
 }

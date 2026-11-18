@@ -14,6 +14,7 @@ desktop.ini
 
 # Claude Code : settings.json est partagé, settings.local.json reste personnel
 .claude/settings.local.json
+.playwright-mcp/
 
 # Cache Python des scripts de CI (.github/scripts/)
 __pycache__/

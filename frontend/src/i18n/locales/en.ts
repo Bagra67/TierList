@@ -8,6 +8,10 @@ export const en: Translation = {
     theme: 'Theme',
     imageRemoved: 'Image removed',
   },
+  documentTitle: {
+    site: 'TierList · Rank together, live',
+    page: '{{page}} · TierList',
+  },
   home: {
     visitor: {
       title: 'Rank together, live.',
@@ -50,6 +54,11 @@ export const en: Translation = {
       title: 'Your templates',
       all: 'All my templates',
       empty: 'No template yet: prepare the first one to open a room.',
+      fromPublic: 'Or start from a public template',
+    },
+    popular: {
+      title: 'Popular public templates',
+      all: 'See all public templates',
     },
     recentGames: {
       title: 'Your latest games',
@@ -61,6 +70,7 @@ export const en: Translation = {
     label: 'Main navigation',
     home: 'Home',
     templates: 'My templates',
+    marketplace: 'Public templates',
     history: 'History',
     moderation: 'Moderation',
     openReports_one: '{{count}} reported content',
@@ -98,20 +108,22 @@ export const en: Translation = {
       content:
         'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position). The fingerprint of each uploaded file is kept, to refuse an image deleted by the moderation if it is uploaded again.',
       games: 'Games: the rooms you join, your placements and the results of the games.',
+      likes:
+        'Likes: the public templates you like. Only the number of likes of a template is shown: nobody sees who liked it. They are deleted with your account.',
       reports:
         'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
       bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
       moderation:
         'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
       technical:
-        'Technical data: the cookies and local storage described below, and technical logs (internal identifiers, never your passwords).',
+        'Technical data: the cookies and local storage described below, technical logs (internal identifiers, never your passwords) and, when an error occurs, an error report (the page, the browser, the TierList version and the technical details of the error, without your IP address, your cookies or what you typed).',
     },
     purposes: {
       title: 'Why this data',
       service:
         'Providing the service you ask for by using TierList (performance of a contract): creating your account, signing you in, running the games, sending the email address verification and password reset emails.',
       security:
-        'Keeping the service secure and working (legitimate interest): technical logs, backups, automatic deletion of expired data.',
+        'Keeping the service secure and working (legitimate interest): technical logs, error reports to fix failures, backups, automatic deletion of expired data.',
       reports: 'Handling the reports of illegal content (legal obligation).',
       moderation:
         "Keeping a record of the moderation decisions (legitimate interest): knowing who decided what and why, finding an account's past sanctions, and refusing an image deleted by the moderation if it is uploaded again.",
@@ -129,6 +141,7 @@ export const en: Translation = {
       moderatedImages:
         'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again. The reason for the decision is kept with the image so that its owner can read it, until their account is deleted.',
       backups: 'Database backups: 14 days.',
+      errorReports: 'Error reports: 30 days.',
       reports:
         'Reports: as long as needed to handle them, then one year at most to keep a record of the decisions.',
       bans: 'Bans: until the account is deleted, to spot repeated abuse.',
@@ -139,8 +152,10 @@ export const en: Translation = {
       room: 'The participants of a room see the template used, the display names and the placements of the game.',
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
+      publicTemplates:
+        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images), your display name and its number of likes. Anyone signed in can also create a room with it: the games played keep a copy of it (name, tiers, items), shown in the history of their players and on their results link, even if the template becomes private again or is deleted. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },
@@ -152,6 +167,8 @@ export const en: Translation = {
       cloudflare: 'Cloudflare: domain name, HTTPS encryption and traffic routing (United States).',
       google: 'Google: sign-in with a Google account, if you choose it (United States).',
       github: 'GitHub: deployment of the application and transfer of the backups (United States).',
+      sentry:
+        'Sentry (Functional Software): error monitoring of the application (data stored in the European Union, company based in the United States).',
       transfers:
         'Transfers to the United States rely on the safeguards provided by the GDPR, such as the standard contractual clauses of the European Commission.',
     },
@@ -191,7 +208,7 @@ export const en: Translation = {
     report: {
       title: 'Report content',
       intro:
-        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname or a game, with or without an account. For any other content, or to get an answer, write to:',
+        'If content published on TierList seems illegal to you (hateful, sexual, infringing someone\'s rights or against the law), use the "Report" button next to an image, a nickname, a game or a public template, with or without an account. For any other content, or to get an answer, write to:',
       include: 'So that the report can be handled, give:',
       page: 'the link of the page where the content is (template, room or results);',
       content: 'the content concerned: a tile (its text or image), a template or a nickname;',
@@ -360,6 +377,7 @@ export const en: Translation = {
       reason: '{{reason}} ×{{count}}',
       viewAccount: 'View the account',
       viewResults: 'View the results',
+      viewTemplate: 'View the template',
       decisions: {
         dismiss: {
           open: 'Dismiss',
@@ -405,6 +423,24 @@ export const en: Translation = {
             'Its results link can no longer be found, and its open reports are closed. It can be shown again.',
           submit: 'Hide',
           submitting: 'Hiding…',
+        },
+        hide_template: {
+          open: 'Hide',
+          openLabel: 'Hide: {{name}}',
+          title: 'Hide this template?',
+          description:
+            'It leaves the public templates, and no room or game can start with it any more. Its owner will see it, with the reason. Its open reports are closed. It can be unhidden from its page.',
+          submit: 'Hide',
+          submitting: 'Hiding…',
+        },
+        delete_template: {
+          open: 'Delete',
+          openLabel: 'Delete: {{name}}',
+          title: 'Delete this template?',
+          description:
+            'It will be deleted as if its owner did it, except that they will see the decision and the reason. Its open reports are closed. This cannot be undone.',
+          submit: 'Delete',
+          submitting: 'Deleting…',
         },
       },
       hiddenGames: {
@@ -674,11 +710,40 @@ export const en: Translation = {
   },
   templates: {
     title: 'My templates',
+    more: 'See more',
     hidden: {
       badge: 'Hidden',
       title: 'Hidden by the moderation',
       reason: 'Reason: {{reason}}',
-      hint: 'You can still edit it, but no game can start with it any more.',
+      hint: 'You can still edit it, but no game can start with it any more, and it cannot be made public.',
+    },
+    visibility: {
+      legend: 'Visibility',
+      badge: 'Public',
+      private: {
+        label: 'Private',
+        description: 'Only you can create a room with this template.',
+      },
+      public: {
+        label: 'Public',
+        description: 'Anyone can find it and play it. Your display name is shown.',
+      },
+      firstMadePublicAt: 'First made public on {{date, datetime(dateStyle: long)}}',
+      publicPageLink: 'See the public page',
+      hiddenWhilePublic: 'Hidden by the moderation: it does not appear in the public templates.',
+      hiddenCannotBePublic: 'Hidden by the moderation: it cannot be made public.',
+      needsTiles: 'Add at least one tile to make it public.',
+      emailNotVerified: 'Confirm your email address to make a template public.',
+    },
+    tags: {
+      legend: 'Tags',
+      count: '{{count}} / {{max}}',
+      listLabel: 'Template tags',
+      add: 'Add a tag',
+      remove: 'Remove the tag “{{label}}”',
+      hint: 'A word or a short phrase: people find your template by its tags.',
+      limitReached: '{{max}} tags at most: remove one to add another.',
+      duplicate: 'This tag is already there.',
     },
     removedImage: {
       hidden: 'Image hidden by the moderation',
@@ -716,6 +781,7 @@ export const en: Translation = {
       addTier: 'Add a tier',
       tierName: 'Name of tier {{position}}',
       tierColor: 'Color of tier {{name}}',
+      colorTrigger: '{{label}}, currently {{color}}',
       color: {
         area: 'Saturation and brightness',
         areaValue: 'Saturation {{saturation}}%, brightness {{brightness}}%',
@@ -771,6 +837,52 @@ export const en: Translation = {
       },
     },
   },
+  marketplace: {
+    title: 'Public templates',
+    intro: 'Find a tier list to play with your friends, or an idea to make your own.',
+    search: {
+      label: 'Search for a template',
+      submit: 'Search',
+    },
+    sort: {
+      label: 'Sort by',
+      popular: 'Most liked',
+      newest: 'Newest',
+    },
+    tags: {
+      label: 'Popular tags',
+    },
+    card: {
+      byline_one: 'by {{owner}} · {{count}} item',
+      byline_other: 'by {{owner}} · {{count}} items',
+    },
+    empty: 'No public template yet.',
+    noMatch: 'No public template matches your search.',
+    clear: 'Clear the search',
+    more: 'See more',
+  },
+  publicTemplate: {
+    byOwner: 'by {{owner}}',
+    tiers: 'Tiers',
+    items_one: 'Item ({{count}})',
+    items_other: 'Items ({{count}})',
+    noItems: 'This template has no items yet.',
+    itemImage: 'Image of item {{number}}',
+    unavailable: {
+      title: 'Template unavailable',
+      message: 'This template is not available.',
+    },
+    play: {
+      signIn: 'Sign in to play',
+      signInHint: 'Create a room with this template. You come back here after signing in.',
+    },
+    like: {
+      button: 'Like · {{count}}',
+      count_one: '{{count}} like',
+      count_other: '{{count}} likes',
+      signIn: 'Sign in to like',
+    },
+  },
   report: {
     open: 'Report',
     openLabel: 'Report: {{name}}',
@@ -779,6 +891,7 @@ export const en: Translation = {
       participant: 'Report this nickname',
       player: 'Report this nickname',
       game: 'Report this game',
+      template: 'Report this template',
     },
     anonymous: 'Your report is anonymous: the reported person will not know who sent it.',
     reason: 'Reason',
@@ -1063,12 +1176,14 @@ export const en: Translation = {
       incorrect_password: 'Incorrect password',
       reauthentication_required: 'Sign in again with Google to confirm the deletion',
       invalid_token: 'This link is invalid or has expired.',
+      email_not_verified: 'Confirm your email address first.',
       template_not_found: 'This template could not be found.',
       template_has_no_tiles: 'Add at least one tile to this template to play with it.',
       template_hidden: 'This template is hidden by the moderation: no game can start with it.',
       template_moderation_conflict:
         'This action does not apply to the template as it is now: it may already be hidden, visible or deleted.',
       room_not_found: 'This room could not be found or has been closed.',
+      room_not_joined: 'You have no seat in this room yet: join it first.',
       room_admin_required: 'Only the host can do this.',
       room_settings_locked: 'During a game, only late arrivals can be changed.',
       game_in_progress: 'A game is already in progress in this room.',
@@ -1098,6 +1213,9 @@ export const en: Translation = {
       tile_not_found: 'This tile could not be found.',
       tile_limit_reached: 'A template has at most {{max_tiles}} tiles.',
       tile_empty: 'A tile needs a text or an image.',
+      invalid_tag: 'A tag needs at least one letter or digit (Latin alphabet).',
+      cannot_like_own_template: 'You cannot like your own template.',
+      invalid_cursor: 'This page of the list is no longer valid. Reload the list.',
       image_unsupported_format: 'This file is not a JPEG, PNG or WebP image.',
       image_too_large: 'The image is too heavy: {{max_bytes, megabytes}} at most.',
       image_too_many_pixels: 'The image is too large: reduce its resolution and try again.',
@@ -1114,6 +1232,8 @@ export const en: Translation = {
       game_not_found: 'This game could not be found.',
       game_moderation_conflict:
         'This action does not apply to the game as it is now: it may already be hidden or visible.',
+      images_hiding_in_progress:
+        'The images of this account are already being hidden. Wait for it to finish, then try again.',
       report_limit_reached:
         'You sent {{max_reports}} reports in the last hour: try again a little later.',
       image_moderation_conflict:
@@ -1123,6 +1243,7 @@ export const en: Translation = {
       invalid: 'Invalid value.',
       missing: 'This field is required.',
       string_too_short: 'At least {{min_length}} characters.',
+      string_too_short_one: 'At least {{min_length}} character.',
       string_too_long: 'At most {{max_length}} characters.',
       value_error: 'Invalid value.',
       string_pattern_mismatch: 'Invalid format.',

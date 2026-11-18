@@ -1,7 +1,5 @@
 # Roadmap
 
-English | [Français](roadmap.fr.md)
-
 In which order the [product](product.md) is built, and the technical questions to settle along the way. Milestone 1 (MVP) is **done**: it is in production since v1.0.0 ([deployment guide](../technical/deployment.md)). Public content comes next (milestones 2 and 3), then blind mode (milestone 4).
 
 Milestones are not version numbers: releases keep following [releasing.md](../technical/releasing.md). A feature gets its technical documentation (in [architecture.md](../technical/architecture.md) or its own page under `docs/technical/`) once it is **implemented**, not before.
@@ -82,5 +80,6 @@ To settle when the related feature is designed; the decision then goes into the 
 | **Template versions**     | How a game stays frozen on the template version it was played on. **Decided**: see the [templates guide](../technical/templates.md#24-snapshots-template-versions).                                                                           |
 | **Guest links**           | Token for the guest personal link: validity (30 days max), revoked when the room closes. **Decided**: see the [rooms guide](../technical/rooms.md#24-guests).                                                                                 |
 | **Room closing**          | Inactivity delay before a room closes automatically. **Decided**: 24 hours without change and nobody connected, see the [rooms guide](../technical/rooms.md#26-closing-a-room).                                                               |
+| **Marketplace search**    | Search ignoring case and accents, sorts and pagination of the public templates, without a new service. **Decided**: see the [marketplace guide](../technical/marketplace.md).                                                                 |
 | **Blind mode scoring**    | Speed bonus formula, number of attempts per item.                                                                                                                                                                                             |
 | **Payment**               | Payment provider; on mobile, app stores take a 15 to 30% fee.                                                                                                                                                                                 |

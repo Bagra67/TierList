@@ -1,7 +1,5 @@
 # Milestone 2 — Lifecycles
 
-English | [Français](lifecycles.fr.md)
-
 The states of the concepts of [milestone 2](README.md) and what moves them from one state to another. Concepts: [domain-model.md](domain-model.md). Stories: [user-stories.md](user-stories.md).
 
 ## Template

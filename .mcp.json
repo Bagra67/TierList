@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "frontend/node_modules/@playwright/mcp/cli.js",
+        "--browser",
+        "chrome",
+        "--isolated",
+        "--allowed-origins",
+        "http://127.0.0.1:5173;http://localhost:5173;http://127.0.0.1:8333;http://localhost:8025"
+      ]
+    }
+  }
+}

@@ -10,7 +10,7 @@ class ParticipantJoinedData(BaseModel):
 
 
 class ParticipantJoinedEvent(BaseModel):
-    """Un compte ou un invité vient d'entrer : le client relit la salle."""
+    """An account or a guest just came in: the client reads the room again."""
 
     type: Literal["participant.joined"] = "participant.joined"
     room_version: int
@@ -23,7 +23,7 @@ class ParticipantPresenceData(BaseModel):
 
 
 class ParticipantPresenceEvent(BaseModel):
-    """Un participant vient de se connecter, ou de se déconnecter (délai de grâce écoulé)."""
+    """A participant just connected, or disconnected (grace period over)."""
 
     type: Literal["participant.presence"] = "participant.presence"
     room_version: int
@@ -35,7 +35,7 @@ class ParticipantRemovedData(BaseModel):
 
 
 class ParticipantRemovedEvent(BaseModel):
-    """Le room admin a retiré ou banni un participant : sa place n'existe plus."""
+    """The room admin removed or banned a participant: their place no longer exists."""
 
     type: Literal["participant.removed"] = "participant.removed"
     room_version: int
@@ -43,13 +43,15 @@ class ParticipantRemovedEvent(BaseModel):
 
 
 class GameStartedData(BaseModel):
+    """First round of the game; `ends_at` is the end of the round when it has a timer."""
+
     round_number: int
     round_count: int
     ends_at: datetime | None
 
 
 class GameStartedEvent(BaseModel):
-    """Le room admin a lancé une partie : le premier item est montré à tous."""
+    """The room admin started a game: the first item is shown to everyone."""
 
     type: Literal["game.started"] = "game.started"
     room_version: int
@@ -57,12 +59,14 @@ class GameStartedEvent(BaseModel):
 
 
 class ParticipantPlacedData(BaseModel):
+    """The participant who placed the item, and the round concerned."""
+
     participant_id: uuid.UUID
     round_number: int
 
 
 class ParticipantPlacedEvent(BaseModel):
-    """Un participant a placé l'item en cours pour la première fois de ce tour."""
+    """A participant placed the current item for the first time in this round."""
 
     type: Literal["participant.placed"] = "participant.placed"
     room_version: int
@@ -70,14 +74,16 @@ class ParticipantPlacedEvent(BaseModel):
 
 
 class RoundStartedData(BaseModel):
+    """New round; `ends_at` is the end of the round when it has a timer."""
+
     round_number: int
     round_count: int
     ends_at: datetime | None
 
 
 class RoundStartedEvent(BaseModel):
-    """Le tour précédent est fini (« suivant », timer ou « tout le monde a placé ») : l'item
-    suivant est montré à tous."""
+    """The previous round is over ("next", timer or "everyone placed"): the next item is shown to
+    everyone."""
 
     type: Literal["round.started"] = "round.started"
     room_version: int
@@ -85,11 +91,13 @@ class RoundStartedEvent(BaseModel):
 
 
 class CooldownStartedData(BaseModel):
+    """End of the final cooldown."""
+
     ends_at: datetime
 
 
 class CooldownStartedEvent(BaseModel):
-    """Le dernier tour est fini : le cooldown final commence (#96)."""
+    """The last round is over: the final cooldown starts (#96)."""
 
     type: Literal["cooldown.started"] = "cooldown.started"
     room_version: int
@@ -97,12 +105,14 @@ class CooldownStartedEvent(BaseModel):
 
 
 class GameClosedData(BaseModel):
+    """The game that was just closed."""
+
     game_id: uuid.UUID
 
 
 class GameClosedEvent(BaseModel):
-    """Le cooldown final est fini (timer ou « Terminer maintenant ») : la partie est close et la
-    salle redevient ouverte."""
+    """The final cooldown is over (timer or "Finish now"): the game is closed and the room is open
+    again."""
 
     type: Literal["game.closed"] = "game.closed"
     room_version: int
@@ -114,7 +124,7 @@ class RoomSettingsUpdatedData(BaseModel):
 
 
 class RoomSettingsUpdatedEvent(BaseModel):
-    """Le room admin a changé les réglages : le client relit la salle."""
+    """The room admin changed the settings: the client reads the room again."""
 
     type: Literal["room.settings_updated"] = "room.settings_updated"
     room_version: int
@@ -136,18 +146,20 @@ RoomEvent = Annotated[
 
 
 class PingMessage(BaseModel):
-    """Battement de cœur du serveur : le client répond pong."""
+    """Server heartbeat: the client answers pong."""
 
     type: Literal["ping"] = "ping"
 
 
 class PongMessage(BaseModel):
+    """Client reply to the server ping, within `ROOM_HEARTBEAT_TIMEOUT_SECONDS` (5 s by default)."""
+
     type: Literal["pong"] = "pong"
 
 
 class AuthMessage(BaseModel):
-    """Premier message du client : l'access token d'un compte, ou None pour un invité (reconnu par
-    son cookie). Le token ne passe jamais dans l'URL."""
+    """First message of the client: the access token of an account, or None for a guest (recognized
+    by their cookie). The token never goes in the URL."""
 
     type: Literal["auth"] = "auth"
     access_token: str | None = None

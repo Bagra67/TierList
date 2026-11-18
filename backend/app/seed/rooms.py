@@ -83,3 +83,17 @@ def create_open_rooms(
             places: int = ROOM_ADMIN_SEATS + ACCOUNTS_STILL_SEATED_AFTER_BANS + SEATED_GUESTS
             logger.info("Salle avec bannis %s : %d places, 2 bannis", code, places)
     return SeedRooms(full=full, with_bans=with_bans)
+
+
+def create_rooms_on_public_templates_of_others(
+    rooms: RoomService, players: list[User], public_templates: list[Template], count: int
+) -> list[Room]:
+    created: list[Room] = []
+    for template in public_templates[:count]:
+        admin: User = next(player for player in players if player.id != template.owner_id)
+        room: Room = rooms.create(admin, template.id)
+        logger.info(
+            "Salle %s sur le modèle public d'un autre compte : %s", room.code, template.name
+        )
+        created.append(room)
+    return created

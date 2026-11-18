@@ -14,7 +14,9 @@ from app.models.round import Round
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
+from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.template_tag import TemplateTag
 from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
@@ -36,7 +38,9 @@ __all__ = [
     "SnapshotTier",
     "SnapshotTile",
     "Template",
+    "TemplateLike",
     "TemplateSnapshot",
+    "TemplateTag",
     "Tier",
     "Tile",
     "User",

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageContainer } from './PageContainer';
+import { useDocumentTitle } from './useDocumentTitle';
 
 interface LegalPageProps {
   title: string;
@@ -11,6 +12,7 @@ interface LegalPageProps {
 
 export function LegalPage({ title, updatedAt, intro, children }: LegalPageProps) {
   const { t } = useTranslation();
+  useDocumentTitle(title);
 
   return (
     <PageContainer width="reading" className="flex flex-col gap-8 text-sm leading-relaxed">

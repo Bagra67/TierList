@@ -1,19 +1,26 @@
 import {
+  type InfiniteData,
   type QueryClient,
+  type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 
 import {
+  isTemplateId,
   REMOVED_TEMPLATES_QUERY_KEY,
-  TEMPLATES_QUERY_KEY,
+  TEMPLATE_LIST_QUERY_KEY,
+  templateChangeMutationKey,
   type TemplateQueryKey,
   templateQueryKey,
 } from '../constants/templates';
 import { apiClient, dataOrThrow, throwIfError } from './client';
+import { nextCursor } from './pagination';
+import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
 export type TemplateSummary = components['schemas']['TemplateSummaryResponse'];
@@ -27,10 +34,13 @@ type TierChanges = components['schemas']['UpdateTierRequest'];
 export type Tile = Template['tiles'][number];
 export type NewTile = components['schemas']['CreateTileRequest'];
 type TileChanges = components['schemas']['UpdateTileRequest'];
+export type TemplateVisibility = components['schemas']['TemplateVisibility'];
 
-async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
-  const data: TemplateList = dataOrThrow(await apiClient.GET('/templates', { signal }));
-  return data.items;
+async function listTemplates(
+  cursor: string | undefined,
+  signal: AbortSignal,
+): Promise<TemplateList> {
+  return dataOrThrow(await apiClient.GET('/templates', { params: { query: { cursor } }, signal }));
 }
 
 async function listRemovedTemplates(signal?: AbortSignal): Promise<RemovedTemplate[]> {
@@ -58,6 +68,27 @@ async function renameTemplate(templateId: string, name: string): Promise<Templat
     await apiClient.PATCH('/templates/{template_id}', {
       params: { path: { template_id: templateId } },
       body: { name },
+    }),
+  );
+}
+
+async function setTemplateTags(templateId: string, tags: string[]): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PUT('/templates/{template_id}/tags', {
+      params: { path: { template_id: templateId } },
+      body: { tags },
+    }),
+  );
+}
+
+async function setTemplateVisibility(
+  templateId: string,
+  visibility: TemplateVisibility,
+): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PUT('/templates/{template_id}/visibility', {
+      params: { path: { template_id: templateId } },
+      body: { visibility },
     }),
   );
 }
@@ -129,10 +160,15 @@ async function deleteTemplate(templateId: string): Promise<void> {
   );
 }
 
-export function useTemplates(): UseQueryResult<TemplateSummary[]> {
-  return useQuery({
-    queryKey: TEMPLATES_QUERY_KEY,
-    queryFn: ({ signal }) => listTemplates(signal),
+export function useTemplates(): UseInfiniteQueryResult<
+  InfiniteData<TemplateList, string | undefined>
+> {
+  return useInfiniteQuery({
+    queryKey: TEMPLATE_LIST_QUERY_KEY,
+    queryFn: ({ pageParam, signal }) => listTemplates(pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursor,
+    retry: retryUnlessClientError,
   });
 }
 
@@ -140,6 +176,7 @@ export function useRemovedTemplates(): UseQueryResult<RemovedTemplate[]> {
   return useQuery({
     queryKey: REMOVED_TEMPLATES_QUERY_KEY,
     queryFn: ({ signal }) => listRemovedTemplates(signal),
+    retry: retryUnlessClientError,
   });
 }
 
@@ -147,6 +184,8 @@ export function useTemplate(templateId: string): UseQueryResult<Template> {
   return useQuery({
     queryKey: templateQueryKey(templateId),
     queryFn: ({ signal }) => getTemplate(templateId, signal),
+    enabled: isTemplateId(templateId),
+    retry: retryUnlessClientError,
   });
 }
 
@@ -154,7 +193,7 @@ export function useCreateTemplate(): UseMutationResult<Template, Error, CreateTe
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: createTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY }),
+    onSuccess: (template: Template) => storeTemplate(queryClient, template),
   });
 }
 
@@ -162,13 +201,19 @@ export function useDeleteTemplate(): UseMutationResult<void, Error, string> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY }),
+    onSuccess: async (_nothing: void, templateId: string) => {
+      queryClient.removeQueries({ queryKey: templateQueryKey(templateId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: TEMPLATE_LIST_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: REMOVED_TEMPLATES_QUERY_KEY }),
+      ]);
+    },
   });
 }
 
 function storeTemplate(queryClient: QueryClient, template: Template): Promise<void> {
   queryClient.setQueryData(templateQueryKey(template.id), template);
-  return queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY, exact: true });
+  return queryClient.invalidateQueries({ queryKey: TEMPLATE_LIST_QUERY_KEY });
 }
 
 export type TemplateChange<Variables> = UseMutationResult<
@@ -208,34 +253,65 @@ function applyMove(template: Template, move: PendingMove): Template {
   return { ...template, tiles: moveItem(template.tiles, move.itemId, move.position) };
 }
 
+type OptimisticUpdate = (template: Template) => Template;
+
+function positionUpdate(
+  list: PendingMove['list'],
+  itemId: string,
+  position: number | null | undefined,
+): OptimisticUpdate | undefined {
+  if (position === undefined || position === null) return undefined;
+  return (template: Template) => applyMove(template, { list, itemId, position });
+}
+
 function useTemplateChange<Variables = void>(
   templateId: string,
   mutationFn: (variables: Variables) => Promise<Template>,
-  getMove?: (variables: Variables) => PendingMove | undefined,
+  getOptimisticUpdate?: (variables: Variables) => OptimisticUpdate | undefined,
 ): TemplateChange<Variables> {
   const queryClient: QueryClient = useQueryClient();
   const queryKey: TemplateQueryKey = templateQueryKey(templateId);
   return useMutation({
+    mutationKey: templateChangeMutationKey(templateId),
     mutationFn,
     onMutate: async (variables: Variables): Promise<Template | undefined> => {
-      const move: PendingMove | undefined = getMove?.(variables);
-      if (move === undefined) return undefined;
+      const optimisticUpdate: OptimisticUpdate | undefined = getOptimisticUpdate?.(variables);
+      if (optimisticUpdate === undefined) return undefined;
       await queryClient.cancelQueries({ queryKey });
       const previous: Template | undefined = queryClient.getQueryData<Template>(queryKey);
       if (previous !== undefined) {
-        queryClient.setQueryData<Template>(queryKey, applyMove(previous, move));
+        queryClient.setQueryData<Template>(queryKey, optimisticUpdate(previous));
       }
       return previous;
     },
-    onError: (_error, _variables, previous) => {
+    onSettled: async (template, _error, _variables, previous) => {
+      const otherChangesPending: boolean =
+        queryClient.isMutating({ mutationKey: templateChangeMutationKey(templateId) }) > 1;
+      if (otherChangesPending) return;
+      if (template !== undefined) {
+        await storeTemplate(queryClient, template);
+        return;
+      }
       if (previous !== undefined) queryClient.setQueryData(queryKey, previous);
+      await queryClient.invalidateQueries({ queryKey });
     },
-    onSuccess: (template) => storeTemplate(queryClient, template),
   });
 }
 
 export function useRenameTemplate(templateId: string): TemplateChange<string> {
   return useTemplateChange(templateId, (name: string) => renameTemplate(templateId, name));
+}
+
+export function useSetTemplateVisibility(templateId: string): TemplateChange<TemplateVisibility> {
+  return useTemplateChange(
+    templateId,
+    (visibility: TemplateVisibility) => setTemplateVisibility(templateId, visibility),
+    (visibility: TemplateVisibility) => (template: Template) => ({ ...template, visibility }),
+  );
+}
+
+export function useSetTemplateTags(templateId: string): TemplateChange<string[]> {
+  return useTemplateChange(templateId, (tags: string[]) => setTemplateTags(templateId, tags));
 }
 
 export function useAddTier(templateId: string): TemplateChange<void> {
@@ -251,10 +327,7 @@ export function useUpdateTier(templateId: string): TemplateChange<TierUpdate> {
   return useTemplateChange(
     templateId,
     ({ tierId, changes }: TierUpdate) => updateTier(templateId, tierId, changes),
-    ({ tierId, changes }: TierUpdate) =>
-      changes.position === undefined || changes.position === null
-        ? undefined
-        : { list: 'tiers', itemId: tierId, position: changes.position },
+    ({ tierId, changes }: TierUpdate) => positionUpdate('tiers', tierId, changes.position),
   );
 }
 
@@ -275,10 +348,7 @@ export function useUpdateTile(templateId: string): TemplateChange<TileUpdate> {
   return useTemplateChange(
     templateId,
     ({ tileId, changes }: TileUpdate) => updateTile(templateId, tileId, changes),
-    ({ tileId, changes }: TileUpdate) =>
-      changes.position === undefined || changes.position === null
-        ? undefined
-        : { list: 'tiles', itemId: tileId, position: changes.position },
+    ({ tileId, changes }: TileUpdate) => positionUpdate('tiles', tileId, changes.position),
   );
 }
 
