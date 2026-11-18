@@ -69,6 +69,60 @@ describe('HomePage', () => {
     expect(calledRoutes(backend)).not.toContain('GET /history');
   });
 
+  it('shows the visitor the most liked public templates and a way to all of them', async () => {
+    const backend = stubBackend({
+      'POST /auth/refresh': unauthorized,
+      'GET /marketplace/templates': () =>
+        Response.json({
+          items: [
+            {
+              id: 'template-popular',
+              name: 'Fromages',
+              owner_name: 'Camille',
+              tags: [],
+              tile_count: 6,
+              like_count: 12,
+              preview_image_url: null,
+              preview_image_removed: false,
+              tier_colors: ['#FF3B6B'],
+            },
+          ],
+          next_cursor: null,
+        }),
+    });
+
+    renderHomePage();
+
+    const section: HTMLElement = await screen.findByRole('region', {
+      name: 'Modèles publics populaires',
+    });
+    expect(within(section).getByRole('link', { name: 'Fromages' })).toHaveAttribute(
+      'href',
+      '/marketplace/templates/template-popular',
+    );
+    expect(
+      within(section).getByRole('link', { name: 'Voir tous les modèles publics' }),
+    ).toHaveAttribute('href', '/marketplace');
+    const request: Request | undefined = backend.mock.calls
+      .map(([sent]) => sent)
+      .find((sent) => sent.url.includes('/marketplace/templates'));
+    expect(new URL(request?.url ?? '').searchParams.get('limit')).toBe('3');
+  });
+
+  it('shows no public template section to a visitor when there is none', async () => {
+    stubBackend({
+      'POST /auth/refresh': unauthorized,
+      'GET /marketplace/templates': () => Response.json({ items: [], next_cursor: null }),
+    });
+
+    renderHomePage();
+
+    await screen.findByRole('region', { name: 'Comment ça marche' });
+    expect(
+      screen.queryByRole('region', { name: 'Modèles publics populaires' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('explains a game in three steps to the visitor', async () => {
     stubBackend({ 'POST /auth/refresh': unauthorized });
 

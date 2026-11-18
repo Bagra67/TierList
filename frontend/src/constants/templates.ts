@@ -39,6 +39,9 @@ export function templateQueryKey(templateId: string): TemplateQueryKey {
   return ['templates', 'detail', templateId];
 }
 
+export const MARKETPLACE_LIST_QUERY_KEY: readonly ['marketplace', 'list'] = ['marketplace', 'list'];
+export const MARKETPLACE_TAGS_QUERY_KEY: readonly ['marketplace', 'tags'] = ['marketplace', 'tags'];
+
 export function publicTemplateQueryKey(templateId: string): readonly string[] {
   return ['marketplace', 'templates', templateId];
 }

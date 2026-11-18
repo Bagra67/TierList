@@ -1,5 +1,7 @@
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 
+import { marketplaceTagPath } from '../constants/routes';
 import { cn } from 'cn';
 
 export const tagPillClassName: string =
@@ -7,9 +9,10 @@ export const tagPillClassName: string =
 
 interface TemplateTagListProps {
   tags: string[];
+  linkToMarketplace?: boolean;
 }
 
-export function TemplateTagList({ tags }: TemplateTagListProps) {
+export function TemplateTagList({ tags, linkToMarketplace = false }: TemplateTagListProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   if (tags.length === 0) return null;
   return (
@@ -22,7 +25,13 @@ export function TemplateTagList({ tags }: TemplateTagListProps) {
             'px-2 py-0.5 text-xs font-medium break-words text-muted-foreground',
           )}
         >
-          {tag}
+          {linkToMarketplace ? (
+            <Link to={marketplaceTagPath(tag)} className="underline-offset-4 hover:underline">
+              {tag}
+            </Link>
+          ) : (
+            tag
+          )}
         </li>
       ))}
     </ul>

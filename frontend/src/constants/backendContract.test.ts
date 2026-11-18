@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { readRepositoryFile } from '../test/repositoryFile';
 import { DISPLAY_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH } from './auth';
+import { MARKETPLACE_SEARCH_MAX_LENGTH } from './marketplace';
 import { MODERATION_REASON_MAX_LENGTH, REPORT_DETAILS_MAX_LENGTH } from './moderation';
 import { CONFIRM_PARAM, LOGIN_ERROR_PARAM, ROUTES, TOKEN_PARAM } from './routes';
 import {
@@ -17,13 +18,20 @@ interface OpenApiProperty {
   anyOf?: OpenApiProperty[];
 }
 
-interface OpenApiSchemas {
-  components: { schemas: Record<string, { properties: Record<string, OpenApiProperty> }> };
+interface OpenApiParameter {
+  name: string;
+  schema: OpenApiProperty;
 }
 
-const openApiSchemas: OpenApiSchemas['components']['schemas'] = (
-  JSON.parse(readRepositoryFile('backend/openapi.json')) as OpenApiSchemas
-).components.schemas;
+interface OpenApiSchemas {
+  components: { schemas: Record<string, { properties: Record<string, OpenApiProperty> }> };
+  paths: Record<string, Record<string, { parameters?: OpenApiParameter[] }>>;
+}
+
+const openApi: OpenApiSchemas = JSON.parse(
+  readRepositoryFile('backend/openapi.json'),
+) as OpenApiSchemas;
+const openApiSchemas: OpenApiSchemas['components']['schemas'] = openApi.components.schemas;
 const backendAuthConstants: string = readRepositoryFile('backend/app/constants/auth.py');
 const backendRoomConstants: string = readRepositoryFile('backend/app/constants/rooms.py');
 const backendTemplateConstants: string = readRepositoryFile('backend/app/constants/templates.py');
@@ -31,6 +39,16 @@ const backendTemplateConstants: string = readRepositoryFile('backend/app/constan
 function maxLengthOf(schemaName: string, propertyName: string): number | undefined {
   const property: OpenApiProperty = openApiSchemas[schemaName].properties[propertyName];
   const options: OpenApiProperty[] = [property, ...(property.anyOf ?? [])];
+  return options.find((option: OpenApiProperty) => option.maxLength !== undefined)?.maxLength;
+}
+
+function queryMaxLengthOf(path: string, parameterName: string): number | undefined {
+  const parameter: OpenApiParameter | undefined = openApi.paths[path].get.parameters?.find(
+    (candidate: OpenApiParameter) => candidate.name === parameterName,
+  );
+  const options: OpenApiProperty[] = parameter
+    ? [parameter.schema, ...(parameter.schema.anyOf ?? [])]
+    : [];
   return options.find((option: OpenApiProperty) => option.maxLength !== undefined)?.maxLength;
 }
 
@@ -83,6 +101,12 @@ describe('template limits shared with the backend', () => {
     for (const schemaName of ['CreateTileRequest', 'UpdateTileRequest']) {
       expect(TILE_TEXT_MAX_LENGTH).toBe(maxLengthOf(schemaName, 'text'));
     }
+  });
+});
+
+describe('marketplace limits shared with the backend', () => {
+  it('limits the search as the backend does', () => {
+    expect(MARKETPLACE_SEARCH_MAX_LENGTH).toBe(queryMaxLengthOf('/marketplace/templates', 'q'));
   });
 });
 

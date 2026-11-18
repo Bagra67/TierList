@@ -35,6 +35,11 @@ export function MainNav() {
           </NavLink>
         </li>
         <li>
+          <NavLink to={ROUTES.MARKETPLACE} className={linkClassName}>
+            {t('nav.marketplace')}
+          </NavLink>
+        </li>
+        <li>
           <NavLink to={ROUTES.HISTORY} className={linkClassName}>
             {t('nav.history')}
           </NavLink>
