@@ -1,7 +1,10 @@
 import {
+  type InfiniteData,
   type QueryClient,
+  type UseInfiniteQueryResult,
   type UseMutationResult,
   type UseQueryResult,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -16,6 +19,7 @@ import {
   templateQueryKey,
 } from '../constants/templates';
 import { apiClient, dataOrThrow, throwIfError } from './client';
+import { nextCursor } from './pagination';
 import { retryUnlessClientError } from './queryClient';
 import type { components } from './schema';
 
@@ -32,9 +36,11 @@ export type NewTile = components['schemas']['CreateTileRequest'];
 type TileChanges = components['schemas']['UpdateTileRequest'];
 export type TemplateVisibility = components['schemas']['TemplateVisibility'];
 
-async function listTemplates(signal?: AbortSignal): Promise<TemplateSummary[]> {
-  const data: TemplateList = dataOrThrow(await apiClient.GET('/templates', { signal }));
-  return data.items;
+async function listTemplates(
+  cursor: string | undefined,
+  signal: AbortSignal,
+): Promise<TemplateList> {
+  return dataOrThrow(await apiClient.GET('/templates', { params: { query: { cursor } }, signal }));
 }
 
 async function listRemovedTemplates(signal?: AbortSignal): Promise<RemovedTemplate[]> {
@@ -154,10 +160,14 @@ async function deleteTemplate(templateId: string): Promise<void> {
   );
 }
 
-export function useTemplates(): UseQueryResult<TemplateSummary[]> {
-  return useQuery({
+export function useTemplates(): UseInfiniteQueryResult<
+  InfiniteData<TemplateList, string | undefined>
+> {
+  return useInfiniteQuery({
     queryKey: TEMPLATE_LIST_QUERY_KEY,
-    queryFn: ({ signal }) => listTemplates(signal),
+    queryFn: ({ pageParam, signal }) => listTemplates(pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursor,
     retry: retryUnlessClientError,
   });
 }

@@ -16,7 +16,8 @@ import { panelVariants } from '../ui/panel';
 import { textLinkClassName } from '../ui/text-link';
 
 export function RecentTemplates() {
-  const { data: templatesLastModifiedFirst, isPending, isError, error } = useTemplates();
+  const { data, isPending, isError, error } = useTemplates();
+  const templatesLastModifiedFirst: TemplateSummary[] | undefined = data?.pages[0]?.items;
   const { t } = useTranslation();
   const headingId: string = useId();
 

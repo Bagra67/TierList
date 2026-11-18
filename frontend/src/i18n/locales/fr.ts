@@ -716,6 +716,7 @@ export const fr = {
   },
   templates: {
     title: 'Mes modèles',
+    more: 'Voir plus',
     hidden: {
       badge: 'Masqué',
       title: 'Masqué par la modération',
