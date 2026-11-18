@@ -54,6 +54,11 @@ export const en: Translation = {
       title: 'Your templates',
       all: 'All my templates',
       empty: 'No template yet: prepare the first one to open a room.',
+      fromPublic: 'Or start from a public template',
+    },
+    popular: {
+      title: 'Popular public templates',
+      all: 'See all public templates',
     },
     recentGames: {
       title: 'Your latest games',
@@ -65,6 +70,7 @@ export const en: Translation = {
     label: 'Main navigation',
     home: 'Home',
     templates: 'My templates',
+    marketplace: 'Public templates',
     history: 'History',
     moderation: 'Moderation',
     openReports_one: '{{count}} reported content',
@@ -830,6 +836,30 @@ export const en: Translation = {
         cancelled: 'Moving {{item}} cancelled.',
       },
     },
+  },
+  marketplace: {
+    title: 'Public templates',
+    intro: 'Find a tier list to play with your friends, or an idea to make your own.',
+    search: {
+      label: 'Search for a template',
+      submit: 'Search',
+    },
+    sort: {
+      label: 'Sort by',
+      popular: 'Most liked',
+      newest: 'Newest',
+    },
+    tags: {
+      label: 'Popular tags',
+    },
+    card: {
+      byline_one: 'by {{owner}} · {{count}} item',
+      byline_other: 'by {{owner}} · {{count}} items',
+    },
+    empty: 'No public template yet.',
+    noMatch: 'No public template matches your search.',
+    clear: 'Clear the search',
+    more: 'See more',
   },
   publicTemplate: {
     byOwner: 'by {{owner}}',

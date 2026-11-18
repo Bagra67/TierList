@@ -126,6 +126,10 @@ describe('App', () => {
     const nav = await screen.findByRole('navigation', { name: 'Navigation principale' });
     sessionOpen = false;
 
+    expect(within(nav).getByRole('link', { name: 'Modèles publics' })).toHaveAttribute(
+      'href',
+      '/marketplace',
+    );
     fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();

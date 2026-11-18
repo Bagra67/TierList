@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link, type Location, useLocation, useParams } from 'react-router';
 
@@ -15,6 +16,7 @@ import { TemplateTagList } from '../components/TemplateTagList';
 import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
 import { Button } from '../components/ui/button';
+import { textLinkClassName } from '../components/ui/text-link';
 import { ROUTES } from '../constants/routes';
 import { isTemplateId } from '../constants/templates';
 import { ApiError, translateError } from '../errors/apiError';
@@ -44,6 +46,10 @@ export function PublicTemplatePage() {
 
   return (
     <PageContainer width="app" className="flex flex-col items-start gap-6">
+      <Link to={ROUTES.MARKETPLACE} className={textLinkClassName}>
+        <ArrowLeft aria-hidden="true" className="mr-1 inline size-4 align-[-2px]" />
+        {t('marketplace.title')}
+      </Link>
       {template !== undefined ? (
         <TemplateContent template={template} />
       ) : error !== null ? (
@@ -65,7 +71,7 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
           <p className="text-muted-foreground">
             {t('publicTemplate.byOwner', { owner: template.owner_name })}
           </p>
-          <TemplateTagList tags={template.tags} />
+          <TemplateTagList tags={template.tags} linkToMarketplace />
         </div>
         <div className="flex flex-wrap items-start gap-2">
           <PlayAction template={template} />

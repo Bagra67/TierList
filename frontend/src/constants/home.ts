@@ -54,4 +54,5 @@ export const HOME_BOARD_PLAYER_COLORS: Readonly<Record<HomeBoardVoter, string>> 
 export const HOME_BOARD_ITEM_STAGGER_MS: number = 240;
 export const HOME_BOARD_ITEM_APPEAR_MS: number = 630;
 
+export const HOME_POPULAR_COUNT = 3;
 export const HOME_RECENT_COUNT: number = 3;

@@ -6,6 +6,7 @@ import { EmailVerificationBanner } from '../components/EmailVerificationBanner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { HomeBoard } from '../components/home/HomeBoard';
 import { HomeSteps } from '../components/home/HomeSteps';
+import { PopularTemplates } from '../components/home/PopularTemplates';
 import { RecentGames } from '../components/home/RecentGames';
 import { RecentTemplates } from '../components/home/RecentTemplates';
 import { JoinRoomForm } from '../components/JoinRoomForm';
@@ -62,7 +63,10 @@ export function HomePage() {
         <HomeBoard />
       </section>
       {user === null ? (
-        <HomeSteps />
+        <>
+          <HomeSteps />
+          <PopularTemplates />
+        </>
       ) : (
         <div className="grid gap-10 md:grid-cols-2">
           <RecentTemplates />

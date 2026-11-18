@@ -86,6 +86,21 @@ describe('PublicTemplatePage', () => {
     expect(screen.getByText('Nature')).toBeInTheDocument();
   });
 
+  it('links back to the public templates and from each tag to its search', async () => {
+    stubBackend({ [templateRoute]: () => Response.json(chips) });
+
+    renderPage();
+
+    expect(await screen.findByRole('link', { name: 'Modèles publics' })).toHaveAttribute(
+      'href',
+      '/marketplace',
+    );
+    expect(await screen.findByRole('link', { name: 'apéro' })).toHaveAttribute(
+      'href',
+      '/marketplace?tag=ap%C3%A9ro',
+    );
+  });
+
   it('says that a template without items has none', async () => {
     stubBackend({ [templateRoute]: () => Response.json({ ...chips, tiles: [] }) });
 

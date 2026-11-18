@@ -52,6 +52,11 @@ export const fr = {
       title: 'Vos modèles',
       all: 'Tous mes modèles',
       empty: "Aucun modèle pour l'instant : préparez le premier pour ouvrir une salle.",
+      fromPublic: 'Ou partez d’un modèle public',
+    },
+    popular: {
+      title: 'Modèles publics populaires',
+      all: 'Voir tous les modèles publics',
     },
     recentGames: {
       title: 'Vos dernières parties',
@@ -64,6 +69,7 @@ export const fr = {
     label: 'Navigation principale',
     home: 'Accueil',
     templates: 'Mes modèles',
+    marketplace: 'Modèles publics',
     history: 'Historique',
     moderation: 'Modération',
     openReports_one: '{{count}} contenu signalé',
@@ -843,6 +849,30 @@ export const fr = {
         cancelled: 'Déplacement de {{item}} annulé.',
       },
     },
+  },
+  marketplace: {
+    title: 'Modèles publics',
+    intro: 'Trouvez une tier list à jouer entre amis, ou une idée pour créer la vôtre.',
+    search: {
+      label: 'Rechercher un modèle',
+      submit: 'Rechercher',
+    },
+    sort: {
+      label: 'Trier par',
+      popular: 'Les plus aimés',
+      newest: 'Les plus récents',
+    },
+    tags: {
+      label: 'Étiquettes populaires',
+    },
+    card: {
+      byline_one: 'par {{owner}} · {{count}} élément',
+      byline_other: 'par {{owner}} · {{count}} éléments',
+    },
+    empty: "Aucun modèle public pour l'instant.",
+    noMatch: 'Aucun modèle public ne correspond à votre recherche.',
+    clear: 'Effacer la recherche',
+    more: 'Voir plus',
   },
   publicTemplate: {
     byOwner: 'par {{owner}}',
