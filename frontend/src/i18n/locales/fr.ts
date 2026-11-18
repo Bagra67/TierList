@@ -852,6 +852,10 @@ export const fr = {
       title: 'Modèle indisponible',
       message: "Ce modèle n'est pas disponible.",
     },
+    play: {
+      signIn: 'Se connecter pour jouer',
+      signInHint: 'Créez une salle avec ce modèle. Vous revenez ici après la connexion.',
+    },
   },
   report: {
     open: 'Signaler',

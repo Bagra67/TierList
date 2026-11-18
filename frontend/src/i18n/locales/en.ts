@@ -839,6 +839,10 @@ export const en: Translation = {
       title: 'Template unavailable',
       message: 'This template is not available.',
     },
+    play: {
+      signIn: 'Sign in to play',
+      signInHint: 'Create a room with this template. You come back here after signing in.',
+    },
   },
   report: {
     open: 'Report',
