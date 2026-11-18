@@ -41,6 +41,7 @@ export function templateQueryKey(templateId: string): TemplateQueryKey {
 
 export const MARKETPLACE_LIST_QUERY_KEY: readonly ['marketplace', 'list'] = ['marketplace', 'list'];
 export const MARKETPLACE_TAGS_QUERY_KEY: readonly ['marketplace', 'tags'] = ['marketplace', 'tags'];
+export const CARD_LIKE_STATES_STALE_MS: number = 60_000;
 export const MARKETPLACE_LIKE_STATES_QUERY_KEY: readonly ['marketplace', 'likes'] = [
   'marketplace',
   'likes',
