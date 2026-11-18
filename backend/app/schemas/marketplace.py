@@ -29,7 +29,9 @@ class PublicTemplateResponse(BaseModel):
 
 
 class LikeStateResponse(BaseModel):
-    """Whether the account likes the public template, and its number of likes."""
+    """Whether the account likes the public template, its number of likes, and whether the account
+    may like it (false for its owner)."""
 
     liked: bool
     like_count: int
+    can_like: bool

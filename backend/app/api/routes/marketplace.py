@@ -50,7 +50,9 @@ def get_like(
         state: LikeState = service.like_state(user, template_id)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
-    return LikeStateResponse(liked=state.liked, like_count=state.like_count)
+    return LikeStateResponse(
+        liked=state.liked, like_count=state.like_count, can_like=state.can_like
+    )
 
 
 @router.put(
@@ -74,7 +76,9 @@ def like_template(
             code=ErrorCode.CANNOT_LIKE_OWN_TEMPLATE,
             detail=messages.CANNOT_LIKE_OWN_TEMPLATE,
         ) from exc
-    return LikeStateResponse(liked=state.liked, like_count=state.like_count)
+    return LikeStateResponse(
+        liked=state.liked, like_count=state.like_count, can_like=state.can_like
+    )
 
 
 @router.delete("/templates/{template_id}/like", responses=LIKE_RESPONSES)
@@ -86,4 +90,6 @@ def unlike_template(
         state: LikeState = service.unlike(user, template_id)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
-    return LikeStateResponse(liked=state.liked, like_count=state.like_count)
+    return LikeStateResponse(
+        liked=state.liked, like_count=state.like_count, can_like=state.can_like
+    )
