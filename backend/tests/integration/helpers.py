@@ -120,6 +120,17 @@ def create_public_template(
     return template_id
 
 
+def make_private(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "private"}, headers=owner
+    )
+    assert response.status_code == 200
+
+
+def delete_template(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    assert client.delete(f"/templates/{template_id}", headers=owner).status_code == 204
+
+
 def add_tile_with_image(
     client: TestClient,
     db_session: Session,

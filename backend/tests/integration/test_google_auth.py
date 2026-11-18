@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import pytest
 from fastapi.testclient import TestClient
@@ -392,21 +392,28 @@ def test_sign_in_can_resume_the_account_deletion(google_client: TestClient):
     assert response.headers["location"] == "/?confirm=delete-account"
 
 
-def test_sign_in_comes_back_to_the_public_template(google_client: TestClient):
-    response = sign_in_with_google(google_client, f"?template={TEMPLATE_ID}")
+@pytest.mark.parametrize(
+    "return_to", [f"/marketplace/templates/{TEMPLATE_ID}", "/r/K7P2QX", "/history?page=2"]
+)
+def test_sign_in_comes_back_to_the_requested_page(google_client: TestClient, return_to: str):
+    response = sign_in_with_google(google_client, f"?{urlencode({'return_to': return_to})}")
 
-    assert response.headers["location"] == f"/marketplace/templates/{TEMPLATE_ID}"
+    assert response.headers["location"] == return_to
 
 
-def test_resuming_the_account_deletion_wins_over_the_template(google_client: TestClient):
-    response = sign_in_with_google(google_client, f"?next=delete-account&template={TEMPLATE_ID}")
+def test_resuming_the_account_deletion_wins_over_the_requested_page(google_client: TestClient):
+    response = sign_in_with_google(google_client, "?next=delete-account&return_to=/r/K7P2QX")
 
     assert response.headers["location"] == "/?confirm=delete-account"
 
 
-def test_a_template_that_is_not_an_id_is_rejected(google_client: TestClient):
+@pytest.mark.parametrize(
+    "return_to",
+    ["https://evil.example.com", "//evil.example.com", r"/\evil.example.com", "evil", "/r/a b"],
+)
+def test_a_return_path_outside_the_site_is_rejected(google_client: TestClient, return_to: str):
     response = google_client.get(
-        "/auth/google/login?template=https://evil.example.com", follow_redirects=False
+        f"/auth/google/login?{urlencode({'return_to': return_to})}", follow_redirects=False
     )
 
     assert response.status_code == 422

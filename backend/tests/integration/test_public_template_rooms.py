@@ -11,6 +11,8 @@ from tests.integration.helpers import (
     ban_account,
     create_public_template,
     create_room,
+    delete_template,
+    make_private,
     play_and_close,
     register,
     set_hidden,
@@ -38,17 +40,6 @@ def public_template_id(auth_client: TestClient, db_session: Session, alice: dict
     return create_public_template(auth_client, db_session, alice, ALICE_EMAIL)
 
 
-def make_private(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
-    response: Response = client.put(
-        f"/templates/{template_id}/visibility", json={"visibility": "private"}, headers=owner
-    )
-    assert response.status_code == 200
-
-
-def delete_template(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
-    assert client.delete(f"/templates/{template_id}", headers=owner).status_code == 204
-
-
 def test_a_user_starts_a_room_with_the_public_template_of_another_and_is_its_admin(
     auth_client: TestClient, bob: dict[str, str], public_template_id: str
 ):
@@ -71,25 +62,35 @@ def test_the_template_stays_read_only_for_the_admin_of_the_room(
     assert response.status_code == 404
 
 
-Unavailable = Callable[[TestClient, Session, str, dict[str, str]], None]
-UNAVAILABLE_CASES: dict[str, Unavailable] = {
-    "private": lambda client, _, template_id, owner: make_private(client, template_id, owner),
-    "hidden": lambda _, db_session, template_id, __: set_hidden(db_session, template_id),
-    "deleted": lambda client, _, template_id, owner: delete_template(client, template_id, owner),
-    "owner-banned": lambda _, db_session, __, ___: ban_account(db_session, ALICE_EMAIL),
-}
-
-
-@pytest.mark.parametrize("make_unavailable", UNAVAILABLE_CASES.values(), ids=UNAVAILABLE_CASES)
-def test_a_room_cannot_start_with_a_template_of_another_that_is_no_longer_public(
+@pytest.fixture(params=["private", "hidden", "deleted", "owner-banned"])
+def make_unavailable(
+    request: pytest.FixtureRequest,
     auth_client: TestClient,
     db_session: Session,
     alice: dict[str, str],
+    public_template_id: str,
+) -> Callable[[], None]:
+    def make_it_unavailable() -> None:
+        match request.param:
+            case "private":
+                make_private(auth_client, public_template_id, alice)
+            case "hidden":
+                set_hidden(db_session, public_template_id)
+            case "deleted":
+                delete_template(auth_client, public_template_id, alice)
+            case _:
+                ban_account(db_session, ALICE_EMAIL)
+
+    return make_it_unavailable
+
+
+def test_a_room_cannot_start_with_a_template_of_another_that_is_no_longer_public(
+    auth_client: TestClient,
     bob: dict[str, str],
     public_template_id: str,
-    make_unavailable: Unavailable,
+    make_unavailable: Callable[[], None],
 ):
-    make_unavailable(auth_client, db_session, public_template_id, alice)
+    make_unavailable()
 
     response: Response = auth_client.post(
         "/rooms", json={"template_id": public_template_id}, headers=bob
@@ -111,17 +112,14 @@ def test_the_admin_plays_the_public_template_of_another_again_and_again(
     assert room["status"] == "playing"
 
 
-@pytest.mark.parametrize("make_unavailable", UNAVAILABLE_CASES.values(), ids=UNAVAILABLE_CASES)
 def test_no_new_game_starts_once_the_template_of_another_is_no_longer_public(
     auth_client: TestClient,
-    db_session: Session,
-    alice: dict[str, str],
     bob: dict[str, str],
     public_template_id: str,
-    make_unavailable: Unavailable,
+    make_unavailable: Callable[[], None],
 ):
     code: str = create_room(auth_client, bob, public_template_id)["code"]
-    make_unavailable(auth_client, db_session, public_template_id, alice)
+    make_unavailable()
 
     response: Response = auth_client.post(f"/rooms/{code}/game", headers=bob)
 
@@ -150,3 +148,25 @@ def test_the_owner_still_plays_a_template_that_became_private(
     room: JsonObject = start_game(auth_client, code, alice)
 
     assert room["status"] == "playing"
+
+
+def test_the_room_does_not_say_that_the_template_of_another_was_hidden(
+    auth_client: TestClient, db_session: Session, bob: dict[str, str], public_template_id: str
+):
+    code: str = create_room(auth_client, bob, public_template_id)["code"]
+    set_hidden(db_session, public_template_id)
+
+    room: JsonObject = auth_client.get(f"/rooms/{code}", headers=bob).json()
+
+    assert room["template"]["hidden"] is False
+
+
+def test_the_room_of_the_owner_says_that_its_template_was_hidden(
+    auth_client: TestClient, db_session: Session, alice: dict[str, str], public_template_id: str
+):
+    code: str = create_room(auth_client, alice, public_template_id)["code"]
+    set_hidden(db_session, public_template_id)
+
+    room: JsonObject = auth_client.get(f"/rooms/{code}", headers=alice).json()
+
+    assert room["template"]["hidden"] is True
