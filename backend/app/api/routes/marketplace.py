@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from pydantic import AfterValidator
 
 from app.api.dependencies import CurrentUserDep, ImageStorageDep, MarketplaceServiceDep
-from app.api.errors import invalid_cursor, template_not_found
+from app.api.errors import email_not_verified, invalid_cursor, template_not_found
 from app.api.presenters.marketplace import (
     marketplace_template_response,
     public_template_response,
@@ -22,6 +22,7 @@ from app.constants.marketplace import (
 from app.constants.templates import CURSOR_MAX_LENGTH, TAG_MAX_LENGTH
 from app.core.errors import ErrorResponse
 from app.core.search_query import search_words
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import CannotLikeOwnTemplateError, TemplateNotFoundError
@@ -123,17 +124,21 @@ def get_like(
     "/templates/{template_id}/like",
     responses={
         **LIKE_RESPONSES,
+        403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
         409: {"model": ErrorResponse, "description": messages.CANNOT_LIKE_OWN_TEMPLATE_DESCRIPTION},
     },
 )
 def like_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: MarketplaceServiceDep
 ) -> LikeStateResponse:
-    """Likes a public template of another account. Liking it again changes nothing."""
+    """Likes a public template of another account, with a confirmed email address. Liking it
+    again changes nothing."""
     try:
         state: LikeState = service.like(user, template_id)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
+    except EmailNotVerifiedError as exc:
+        raise email_not_verified() from exc
     except CannotLikeOwnTemplateError as exc:
         raise AppHTTPException(
             status_code=409,
