@@ -529,7 +529,8 @@ export interface paths {
         get: operations["get_like_marketplace_templates__template_id__like_get"];
         /**
          * Like Template
-         * @description Likes a public template of another account. Liking it again changes nothing.
+         * @description Likes a public template of another account, with a confirmed email address. Liking it
+         *     again changes nothing.
          */
         put: operations["like_template_marketplace_templates__template_id__like_put"];
         post?: never;
@@ -4656,6 +4657,15 @@ export interface operations {
             };
             /** @description Not authenticated */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Email address not confirmed */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
