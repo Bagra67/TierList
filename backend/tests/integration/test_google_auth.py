@@ -29,6 +29,7 @@ from tests.integration.helpers import link_token, miss_first_lookup
 pytestmark = pytest.mark.integration
 
 PASSWORD = "correct horse battery staple"
+TEMPLATE_ID = "00000000-0000-4000-8000-000000000001"
 ALICE_GOOGLE = GoogleIdentity(
     subject="google-subject-123",
     email="Alice@Gmail.com",
@@ -389,6 +390,26 @@ def test_sign_in_can_resume_the_account_deletion(google_client: TestClient):
     response = sign_in_with_google(google_client, "?next=delete-account")
 
     assert response.headers["location"] == "/?confirm=delete-account"
+
+
+def test_sign_in_comes_back_to_the_public_template(google_client: TestClient):
+    response = sign_in_with_google(google_client, f"?template={TEMPLATE_ID}")
+
+    assert response.headers["location"] == f"/marketplace/templates/{TEMPLATE_ID}"
+
+
+def test_resuming_the_account_deletion_wins_over_the_template(google_client: TestClient):
+    response = sign_in_with_google(google_client, f"?next=delete-account&template={TEMPLATE_ID}")
+
+    assert response.headers["location"] == "/?confirm=delete-account"
+
+
+def test_a_template_that_is_not_an_id_is_rejected(google_client: TestClient):
+    response = google_client.get(
+        "/auth/google/login?template=https://evil.example.com", follow_redirects=False
+    )
+
+    assert response.status_code == 422
 
 
 def test_unknown_next_step_is_rejected(google_client: TestClient):

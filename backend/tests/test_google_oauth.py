@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
 
@@ -15,6 +16,7 @@ from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt, Google
 CLIENT_ID = "test-client-id.apps.googleusercontent.com"
 REDIRECT_URI = "http://localhost:5173/api/auth/google/callback"
 SECRET_KEY = "unit-test-secret-key-of-at-least-32-chars"
+TEMPLATE_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 ATTEMPT_TTL = timedelta(minutes=10)
 
 GOOGLE_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -72,6 +74,16 @@ def test_login_attempt_round_trips_through_its_signed_cookie():
     assert restored == attempt
     assert restored.matches_state(attempt.state)
     assert not restored.matches_state("another-state")
+
+
+def test_login_attempt_round_trips_its_template_through_its_signed_cookie():
+    attempt = GoogleLoginAttempt.start(None, TEMPLATE_ID)
+
+    restored = GoogleLoginAttempt.from_cookie(
+        attempt.to_cookie(SECRET_KEY, ATTEMPT_TTL), SECRET_KEY
+    )
+
+    assert restored.template_id == TEMPLATE_ID
 
 
 def test_login_attempt_cookie_signed_with_another_key_is_rejected():

@@ -502,7 +502,7 @@
           "auth"
         ],
         "summary": "Google Login",
-        "description": "Sends the browser to the Google sign-in page.",
+        "description": "Sends the browser to the Google sign-in page. After signing in, the browser comes back to\nthe public page of `template` when it is given, unless `next` asks for another step.",
         "operationId": "google_login_auth_google_login_get",
         "parameters": [
           {
@@ -520,6 +520,23 @@
                 }
               ],
               "title": "Next"
+            }
+          },
+          {
+            "name": "template",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Template"
             }
           }
         ],
@@ -2166,7 +2183,7 @@
           "rooms"
         ],
         "summary": "Create Room",
-        "description": "Creates an open room on a template of the account, not hidden and with at least one tile. The\naccount becomes its admin and first participant.",
+        "description": "Creates an open room on a template of the account, or on a public template of another\naccount, not hidden and with at least one tile. The account becomes its admin and first\nparticipant; the template stays read only for it.",
         "operationId": "create_room_rooms_post",
         "requestBody": {
           "content": {
@@ -2210,7 +2227,7 @@
             }
           },
           "404": {
-            "description": "Template not found",
+            "description": "Template not found, or neither owned by the account nor public",
             "content": {
               "application/json": {
                 "schema": {
@@ -3134,7 +3151,7 @@
           "rooms"
         ],
         "summary": "Start Game",
-        "description": "Starts a game (admin only) on the current version of the template, frozen for the whole game.\nThe room moves to `playing` and the first item is shown to everyone.",
+        "description": "Starts a game (admin only) on the current version of the template, frozen for the whole game.\nThe template must still be the admin's or public. The room moves to `playing` and the first\nitem is shown to everyone.",
         "operationId": "start_game_rooms__code__game_post",
         "security": [
           {
@@ -3204,7 +3221,7 @@
             }
           },
           "409": {
-            "description": "Game already in progress, no participant who places, or template deleted, without tiles or hidden by the moderation",
+            "description": "Game already in progress, no participant who places, or template deleted, no longer public, without tiles or hidden by the moderation",
             "content": {
               "application/json": {
                 "schema": {

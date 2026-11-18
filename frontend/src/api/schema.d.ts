@@ -167,7 +167,8 @@ export interface paths {
         };
         /**
          * Google Login
-         * @description Sends the browser to the Google sign-in page.
+         * @description Sends the browser to the Google sign-in page. After signing in, the browser comes back to
+         *     the public page of `template` when it is given, unless `next` asks for another step.
          */
         get: operations["google_login_auth_google_login_get"];
         put?: never;
@@ -545,8 +546,9 @@ export interface paths {
         put?: never;
         /**
          * Create Room
-         * @description Creates an open room on a template of the account, not hidden and with at least one tile. The
-         *     account becomes its admin and first participant.
+         * @description Creates an open room on a template of the account, or on a public template of another
+         *     account, not hidden and with at least one tile. The account becomes its admin and first
+         *     participant; the template stays read only for it.
          */
         post: operations["create_room_rooms_post"];
         delete?: never;
@@ -740,7 +742,8 @@ export interface paths {
         /**
          * Start Game
          * @description Starts a game (admin only) on the current version of the template, frozen for the whole game.
-         *     The room moves to `playing` and the first item is shown to everyone.
+         *     The template must still be the admin's or public. The room moves to `playing` and the first
+         *     item is shown to everyone.
          */
         post: operations["start_game_rooms__code__game_post"];
         delete?: never;
@@ -3411,6 +3414,7 @@ export interface operations {
         parameters: {
             query?: {
                 next?: "delete-account" | null;
+                template?: string | null;
             };
             header?: never;
             path?: never;
@@ -4637,7 +4641,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Template not found */
+            /** @description Template not found, or neither owned by the account nor public */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -5345,7 +5349,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Game already in progress, no participant who places, or template deleted, without tiles or hidden by the moderation */
+            /** @description Game already in progress, no participant who places, or template deleted, no longer public, without tiles or hidden by the moderation */
             409: {
                 headers: {
                     [name: string]: unknown;
