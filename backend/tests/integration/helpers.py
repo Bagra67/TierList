@@ -14,6 +14,7 @@ from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
+from app.models.account_ban import AccountBan
 from app.models.enums import RoomStatus, TemplateModeration, UserRole
 from app.models.image import Image
 from app.models.room import Room
@@ -66,6 +67,12 @@ def register_super_admin(client: TestClient, db_session: Session, email: str) ->
 def confirm_email(db_session: Session, email: str) -> None:
     user: User = db_session.scalars(select(User).where(User.email == email)).one()
     user.email_verified_at = datetime.now(UTC)
+    db_session.flush()
+
+
+def ban_account(db_session: Session, email: str) -> None:
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    db_session.add(AccountBan(user_id=user.id, actor_name="Nina", reason="Spam"))
     db_session.flush()
 
 

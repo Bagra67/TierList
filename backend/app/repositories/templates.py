@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, select, update
+from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
@@ -27,13 +27,41 @@ def add_snapshot(session: Session, snapshot: TemplateSnapshot) -> None:
 def get_owned_template(
     session: Session, template_id: uuid.UUID, owner_id: uuid.UUID, for_update: bool = False
 ) -> Template | None:
-    statement: Select[Template] = (
-        select(Template)
-        .where(
+    return _get_template_with_content(
+        session,
+        and_(
             Template.id == template_id,
             Template.owner_id == owner_id,
             Template.deleted_at.is_(None),
-        )
+        ),
+        for_update,
+    )
+
+
+def get_playable_template(
+    session: Session,
+    template_id: uuid.UUID,
+    user_id: uuid.UUID,
+    now: datetime,
+    for_update: bool = False,
+) -> Template | None:
+    return _get_template_with_content(
+        session,
+        and_(
+            Template.id == template_id,
+            Template.deleted_at.is_(None),
+            or_(Template.owner_id == user_id, listed_templates_condition(now)),
+        ),
+        for_update,
+    )
+
+
+def _get_template_with_content(
+    session: Session, condition: ColumnElement[bool], for_update: bool
+) -> Template | None:
+    statement: Select[Template] = (
+        select(Template)
+        .where(condition)
         .options(
             selectinload(Template.tiers),
             selectinload(Template.tiles),

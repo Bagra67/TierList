@@ -349,8 +349,12 @@ class TemplateService:
         self._save_change(template)
         return template
 
-    def take_snapshot(self, owner: User, template_id: uuid.UUID) -> TemplateSnapshot:
-        template: Template = self._get_for_change(owner, template_id)
+    def take_snapshot(self, user: User, template_id: uuid.UUID) -> TemplateSnapshot:
+        template: Template | None = template_repository.get_playable_template(
+            self._session, template_id, user.id, datetime.now(UTC), for_update=True
+        )
+        if template is None:
+            raise TemplateNotFoundError
         if template.moderation == TemplateModeration.HIDDEN:
             raise TemplateHiddenError
         if not template.tiles:
