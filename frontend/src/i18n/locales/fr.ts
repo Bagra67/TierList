@@ -102,6 +102,8 @@ export const fr = {
         "Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS). L'empreinte de chaque fichier envoyé est gardée, pour refuser le renvoi d'une image supprimée par la modération.",
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
+      likes:
+        "J'aime : les modèles publics que vous aimez. Seul le nombre de j'aime d'un modèle est affiché : personne ne voit qui l'a aimé. Ils sont supprimés avec votre compte.",
       reports:
         "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
@@ -147,7 +149,7 @@ export const fr = {
       results:
         "Le lien des résultats d'une partie terminée peut être ouvert par toute personne qui le possède, sans compte.",
       publicTemplates:
-        "Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images) et votre pseudo. Toute personne connectée peut aussi créer une salle avec : les parties jouées en gardent une copie (nom, tiers, éléments), visible dans l'historique de leurs joueurs et sur leur lien de résultats, même si le modèle redevient privé ou est supprimé. Il peut aussi apparaître dans les moteurs de recherche et dans les aperçus de lien ; s'il redevient privé ou est supprimé, il peut y rester quelque temps, le temps que ces services mettent leur copie à jour.",
+        "Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images), votre pseudo et son nombre de j'aime. Toute personne connectée peut aussi créer une salle avec : les parties jouées en gardent une copie (nom, tiers, éléments), visible dans l'historique de leurs joueurs et sur leur lien de résultats, même si le modèle redevient privé ou est supprimé. Il peut aussi apparaître dans les moteurs de recherche et dans les aperçus de lien ; s'il redevient privé ou est supprimé, il peut y rester quelque temps, le temps que ces services mettent leur copie à jour.",
       moderation:
         "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
@@ -855,6 +857,12 @@ export const fr = {
     play: {
       signIn: 'Se connecter pour jouer',
       signInHint: 'Créez une salle avec ce modèle. Vous revenez ici après la connexion.',
+    },
+    like: {
+      button: "J'aime · {{count}}",
+      count_one: "{{count}} j'aime",
+      count_other: "{{count}} j'aime",
+      signIn: 'Se connecter pour aimer',
     },
   },
   report: {

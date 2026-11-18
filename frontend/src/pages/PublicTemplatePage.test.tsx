@@ -198,4 +198,70 @@ describe('PublicTemplatePage', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Chips' })).toBeInTheDocument();
   });
+
+  describe('likes', () => {
+    const likeRoute: string = `/marketplace/templates/${templateId}/like`;
+
+    function likeState(liked: boolean, likeCount: number, canLike: boolean = true): Response {
+      return Response.json({ liked, like_count: likeCount, can_like: canLike });
+    }
+
+    it('lets a signed-in user like the template, then remove their like', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${likeRoute}`]: () => likeState(false, 12),
+        [`PUT ${likeRoute}`]: () => likeState(true, 13),
+        [`DELETE ${likeRoute}`]: () => likeState(false, 12),
+      });
+      renderPage(undefined, alice);
+
+      const button: HTMLElement = await screen.findByRole('button', { name: "J'aime · 12" });
+      expect(button).toHaveAttribute('aria-pressed', 'false');
+      fireEvent.click(button);
+
+      const liked: HTMLElement = await screen.findByRole('button', { name: "J'aime · 13" });
+      expect(liked).toHaveAttribute('aria-pressed', 'true');
+      fireEvent.click(liked);
+
+      expect(await screen.findByRole('button', { name: "J'aime · 12" })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    });
+
+    it('says why an account without a confirmed email cannot like', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${likeRoute}`]: () => likeState(false, 12),
+        [`PUT ${likeRoute}`]: () => errorResponse(403, 'email_not_verified'),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: "J'aime · 12" }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/e-mail/i);
+    });
+
+    it('shows the owner the number of likes without a button', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${likeRoute}`]: () => likeState(false, 12, false),
+      });
+      renderPage(undefined, alice);
+
+      expect(await screen.findByText("12 j'aime")).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /J'aime/ })).not.toBeInTheDocument();
+    });
+
+    it('asks a visitor to sign in to like', async () => {
+      stubBackend({ [templateRoute]: () => Response.json(chips) });
+      renderPage();
+
+      expect(await screen.findByRole('link', { name: 'Se connecter pour aimer' })).toHaveAttribute(
+        'href',
+        '/login',
+      );
+      expect(screen.getByText("12 j'aime")).toBeInTheDocument();
+    });
+  });
 });
