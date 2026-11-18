@@ -12,6 +12,7 @@ from tests.integration.helpers import (
     PASSWORD,
     JsonObject,
     ban_account,
+    confirm_email,
     create_public_template,
     create_template,
     delete_template,
@@ -30,14 +31,20 @@ def alice(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, ALICE_EMAIL)
 
 
-@pytest.fixture
-def bob(auth_client: TestClient) -> dict[str, str]:
-    return register(auth_client, "bob@example.com")
+def confirmed_account(client: TestClient, db_session: Session, email: str) -> dict[str, str]:
+    headers: dict[str, str] = register(client, email)
+    confirm_email(db_session, email)
+    return headers
 
 
 @pytest.fixture
-def carol(auth_client: TestClient) -> dict[str, str]:
-    return register(auth_client, "carol@example.com")
+def bob(auth_client: TestClient, db_session: Session) -> dict[str, str]:
+    return confirmed_account(auth_client, db_session, "bob@example.com")
+
+
+@pytest.fixture
+def carol(auth_client: TestClient, db_session: Session) -> dict[str, str]:
+    return confirmed_account(auth_client, db_session, "carol@example.com")
 
 
 @pytest.fixture
@@ -131,6 +138,18 @@ def test_the_owner_reads_that_they_cannot_like_their_template(
     response: Response = like_state(auth_client, template_id, alice)
 
     assert response.json() == {"liked": False, "like_count": 0, "can_like": False}
+
+
+def test_liking_requires_a_confirmed_email(
+    auth_client: TestClient, db_session: Session, template_id: str
+):
+    unconfirmed: dict[str, str] = register(auth_client, "dave@example.com")
+
+    response: Response = like(auth_client, template_id, unconfirmed)
+
+    assert response.status_code == 403
+    assert response.json()["code"] == ErrorCode.EMAIL_NOT_VERIFIED
+    assert stored_like_count(db_session) == 0
 
 
 def test_liking_requires_an_account(auth_client: TestClient, template_id: str):

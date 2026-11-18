@@ -7,11 +7,13 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.constants.marketplace import MARKETPLACE_POPULAR_TAG_COUNT, MarketplaceSort
-from app.core.cursor import decode_cursor, encode_cursor
+from app.core.cursor import decode_cursor, encode_cursor, split_page
 from app.core.search_query import build_search_query
 from app.core.search_text import normalize_search_text
+from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.templates import CannotLikeOwnTemplateError, TemplateNotFoundError
 from app.models.template import Template
+from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import template_likes as like_repository
 from app.repositories import templates as template_repository
@@ -29,6 +31,8 @@ class MarketplaceTemplate:
     template: Template
     owner_name: str
     like_count: int
+    tile_count: int
+    first_tile: Tile | None
 
 
 @dataclass(frozen=True)
@@ -79,21 +83,24 @@ class MarketplaceService:
 
     def like_state(self, user: User, template_id: uuid.UUID) -> LikeState:
         owner_id: uuid.UUID = self._listed_owner_id(template_id)
-        return self._like_state(user, template_id, owner_id)
+        liked: bool = like_repository.has_liked(self._session, template_id, user.id)
+        return self._like_state(user, template_id, owner_id, liked)
 
     def like(self, user: User, template_id: uuid.UUID) -> LikeState:
         owner_id: uuid.UUID = self._listed_owner_id(template_id)
         if owner_id == user.id:
             raise CannotLikeOwnTemplateError
+        if not user.email_verified:
+            raise EmailNotVerifiedError
         like_repository.add_like(self._session, template_id, user.id)
         self._session.commit()
-        return self._like_state(user, template_id, owner_id)
+        return self._like_state(user, template_id, owner_id, liked=True)
 
     def unlike(self, user: User, template_id: uuid.UUID) -> LikeState:
         owner_id: uuid.UUID = self._listed_owner_id(template_id)
         like_repository.remove_like(self._session, template_id, user.id)
         self._session.commit()
-        return self._like_state(user, template_id, owner_id)
+        return self._like_state(user, template_id, owner_id, liked=False)
 
     def list_templates(
         self,
@@ -112,11 +119,27 @@ class MarketplaceService:
             after=None if cursor is None else _after(cursor, sort),
             limit=limit + 1,
         )
+        page_rows, last_row = split_page(rows, limit)
+        template_ids: list[uuid.UUID] = [template.id for template, _, _ in page_rows]
+        tile_counts: dict[uuid.UUID, int] = template_repository.count_tiles_of_templates(
+            self._session, template_ids
+        )
+        first_tiles: dict[uuid.UUID, Tile] = template_repository.list_first_tiles_of_templates(
+            self._session, template_ids
+        )
         items: list[MarketplaceTemplate] = [
-            MarketplaceTemplate(template, owner_name, like_count)
-            for template, owner_name, like_count in rows[:limit]
+            MarketplaceTemplate(
+                template,
+                owner_name,
+                like_count,
+                tile_counts.get(template.id, 0),
+                first_tiles.get(template.id),
+            )
+            for template, owner_name, like_count in page_rows
         ]
-        next_cursor: str | None = _cursor_after(items[-1], sort) if len(rows) > limit else None
+        next_cursor: str | None = (
+            None if last_row is None else _cursor_after(last_row[0], last_row[2], sort)
+        )
         return MarketplacePage(items=items, next_cursor=next_cursor)
 
     def list_popular_tags(self) -> list[str]:
@@ -139,9 +162,11 @@ class MarketplaceService:
             raise TemplateNotFoundError
         return listed[1]
 
-    def _like_state(self, user: User, template_id: uuid.UUID, owner_id: uuid.UUID) -> LikeState:
+    def _like_state(
+        self, user: User, template_id: uuid.UUID, owner_id: uuid.UUID, liked: bool
+    ) -> LikeState:
         return LikeState(
-            liked=like_repository.has_liked(self._session, template_id, user.id),
+            liked=liked,
             like_count=like_repository.count_likes(self._session, template_id),
             can_like=owner_id != user.id,
         )
@@ -157,23 +182,23 @@ def _after(cursor: str, sort: MarketplaceSort) -> template_repository.Marketplac
     return template_repository.MarketplaceAfter(None, newest.first_made_public_at, newest.id)
 
 
-def _cursor_after(last: MarketplaceTemplate, sort: MarketplaceSort) -> str:
-    first_made_public_at: datetime | None = last.template.first_made_public_at
+def _cursor_after(last: Template, like_count: int, sort: MarketplaceSort) -> str:
+    first_made_public_at: datetime | None = last.first_made_public_at
     if first_made_public_at is None:
         raise RuntimeError("A listed template has a first publication date")
     if sort == MarketplaceSort.POPULAR:
         return encode_cursor(
             PopularPosition(
                 sort=MarketplaceSort.POPULAR,
-                like_count=last.like_count,
+                like_count=like_count,
                 first_made_public_at=first_made_public_at,
-                id=last.template.id,
+                id=last.id,
             )
         )
     return encode_cursor(
         NewestPosition(
             sort=MarketplaceSort.NEWEST,
             first_made_public_at=first_made_public_at,
-            id=last.template.id,
+            id=last.id,
         )
     )

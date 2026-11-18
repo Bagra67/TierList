@@ -17,3 +17,9 @@ def decode_cursor[Position: BaseModel](raw: str, position_type: type[Position]) 
         return position_type.model_validate_json(base64.urlsafe_b64decode(padded))
     except ValueError as exc:
         raise InvalidCursorError(raw) from exc
+
+
+def split_page[Row](rows: list[Row], page_size: int) -> tuple[list[Row], Row | None]:
+    if len(rows) > page_size:
+        return rows[:page_size], rows[page_size - 1]
+    return rows, None

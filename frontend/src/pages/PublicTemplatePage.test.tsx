@@ -244,6 +244,19 @@ describe('PublicTemplatePage', () => {
       );
     });
 
+    it('says why an account without a confirmed email cannot like', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${likeRoute}`]: () => likeState(false, 12),
+        [`PUT ${likeRoute}`]: () => errorResponse(403, 'email_not_verified'),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: "J'aime · 12" }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/e-mail/i);
+    });
+
     it('shows the owner the number of likes without a button', async () => {
       stubBackend({
         [templateRoute]: () => Response.json(chips),
