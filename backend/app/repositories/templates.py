@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
@@ -11,16 +12,19 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
     tuple_,
     update,
 )
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
+from app.constants.marketplace import MarketplaceSort
 from app.models.account_ban import AccountBan
 from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
+from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
@@ -224,3 +228,83 @@ def delete_templates_deleted_before(session: Session, limit: datetime) -> int:
         delete(Template).where(Template.deleted_at < limit).returning(Template.id)
     )
     return len(session.scalars(statement).all())
+
+
+@dataclass(frozen=True)
+class MarketplaceAfter:
+    like_count: int | None
+    first_made_public_at: datetime
+    id: uuid.UUID
+
+
+def list_marketplace_templates(
+    session: Session,
+    now: datetime,
+    search_query: str | None,
+    normalized_tag: str | None,
+    sort: MarketplaceSort,
+    after: MarketplaceAfter | None,
+    limit: int,
+) -> list[tuple[Template, str, int]]:
+    like_counts = (
+        select(TemplateLike.template_id, func.count().label("like_count"))
+        .group_by(TemplateLike.template_id)
+        .subquery()
+    )
+    like_count: ColumnElement[int] = func.coalesce(like_counts.c.like_count, 0)
+    statement: Select[Template, str, int] = (
+        select(Template, User.display_name, like_count)
+        .join(User, User.id == Template.owner_id)
+        .outerjoin(like_counts, like_counts.c.template_id == Template.id)
+        .where(listed_templates_condition(now))
+        .options(
+            selectinload(Template.tiers),
+            selectinload(Template.tiles),
+            selectinload(Template.tags),
+        )
+        .limit(limit)
+    )
+    if search_query is not None:
+        statement = statement.where(
+            func.to_tsvector(text("'simple'"), Template.search_text).op("@@")(
+                func.to_tsquery(text("'simple'"), search_query)
+            )
+        )
+    if normalized_tag is not None:
+        statement = statement.where(
+            exists().where(
+                TemplateTag.template_id == Template.id,
+                TemplateTag.normalized_label == normalized_tag,
+            )
+        )
+    if sort == MarketplaceSort.POPULAR:
+        statement = statement.order_by(
+            like_count.desc(), Template.first_made_public_at.desc(), Template.id.desc()
+        )
+        if after is not None:
+            statement = statement.where(
+                tuple_(like_count, Template.first_made_public_at, Template.id)
+                < tuple_(after.like_count, after.first_made_public_at, after.id)
+            )
+    else:
+        statement = statement.order_by(Template.first_made_public_at.desc(), Template.id.desc())
+        if after is not None:
+            statement = statement.where(
+                tuple_(Template.first_made_public_at, Template.id)
+                < tuple_(after.first_made_public_at, after.id)
+            )
+    return [
+        (template, owner_name, count) for template, owner_name, count in session.execute(statement)
+    ]
+
+
+def list_popular_listed_tags(session: Session, now: datetime, limit: int) -> list[str]:
+    statement: Select[str] = (
+        select(func.min(TemplateTag.label))
+        .join(Template, Template.id == TemplateTag.template_id)
+        .where(listed_templates_condition(now))
+        .group_by(TemplateTag.normalized_label)
+        .order_by(func.count().desc(), TemplateTag.normalized_label)
+        .limit(limit)
+    )
+    return list(session.scalars(statement).all())

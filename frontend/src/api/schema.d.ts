@@ -495,6 +495,50 @@ export interface paths {
         patch: operations["update_tile_templates__template_id__tiles__tile_id__patch"];
         trace?: never;
     };
+    "/marketplace/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Marketplace Templates
+         * @description The public templates, without an account, by pages. `q` keeps the templates whose name or
+         *     tags have words starting with every keyword (`|` separates alternatives), ignoring case and
+         *     accents; `tag` keeps those with that tag. Sorted by number of likes (`popular`) or by date
+         *     made public (`newest`). `cursor` is the `next_cursor` of the previous page, with the same
+         *     `q`, `tag` and `sort`.
+         */
+        get: operations["list_marketplace_templates_marketplace_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marketplace/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Marketplace Tags
+         * @description The tags used by the most public templates, without an account, most used first.
+         */
+        get: operations["list_marketplace_tags_marketplace_tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/marketplace/templates/{template_id}": {
         parameters: {
             query?: never;
@@ -1949,6 +1993,59 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /**
+         * MarketplaceSort
+         * @enum {string}
+         */
+        MarketplaceSort: "popular" | "newest";
+        /**
+         * MarketplaceTagsResponse
+         * @description The tags used by the most public templates, most used first.
+         */
+        MarketplaceTagsResponse: {
+            /** Tags */
+            tags: string[];
+        };
+        /**
+         * MarketplaceTemplateListResponse
+         * @description A page of the marketplace. `next_cursor` reads the next page with the same search, tag and
+         *     sort; it is null on the last one.
+         */
+        MarketplaceTemplateListResponse: {
+            /** Items */
+            items: components["schemas"]["MarketplaceTemplateResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /**
+         * MarketplaceTemplateResponse
+         * @description A card of the marketplace. The preview is the image of the first tile:
+         *     `preview_image_removed` is true when moderation removed it, and both are empty when the first
+         *     tile has no image. `tier_colors` are the colors of the tiers, top to bottom.
+         */
+        MarketplaceTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Tags */
+            tags: string[];
+            /** Tile Count */
+            tile_count: number;
+            /** Like Count */
+            like_count: number;
+            /** Preview Image Url */
+            preview_image_url: string | null;
+            /** Preview Image Removed */
+            preview_image_removed: boolean;
+            /** Tier Colors */
+            tier_colors: string[];
         };
         /**
          * ModerationActionKind
@@ -4535,6 +4632,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_marketplace_templates_marketplace_templates_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                tag?: string | null;
+                sort?: components["schemas"]["MarketplaceSort"];
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceTemplateListResponse"];
+                };
+            };
+            /** @description Cursor that cannot be read, or made for another list */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_marketplace_tags_marketplace_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceTagsResponse"];
                 };
             };
             /** @description Internal server error */
