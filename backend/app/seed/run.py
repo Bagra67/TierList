@@ -5,7 +5,9 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import cast
 
+from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -15,6 +17,7 @@ from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
 from app.seed.games import SeedGames, create_closed_games
+from app.seed.likes import like_public_templates
 from app.seed.moderation import (
     ban_accounts,
     create_moderation_log,
@@ -36,6 +39,7 @@ from app.services.rooms import RoomService
 logger = logging.getLogger(__name__)
 
 SEED_RANDOM_SEED = 2026
+LIKES_RANDOM_SEED = 276
 
 
 @contextmanager
@@ -66,6 +70,7 @@ def run_seed(
         removed: SeedCleanup = delete_seed_data(session, storage)
     with _step("2/7 Comptes"):
         accounts: SeedAccounts = create_accounts(session, settings, size, password)
+        player_ids: list[uuid.UUID] = [_loaded_id(player) for player in accounts.players]
     with _step("3/7 Modèles et images"):
         templates: SeedTemplates = create_templates(
             session, settings, storage, size, accounts.players, rng
@@ -114,6 +119,13 @@ def run_seed(
             templates_to_hide, templates, size.public_templates
         )
         publish_templates(session, settings, published)
+        like_public_templates(
+            session,
+            player_ids,
+            published,
+            size.max_likes_per_public_template,
+            random.Random(LIKES_RANDOM_SEED),
+        )
         rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
             rooms,
             accounts.players,
@@ -189,3 +201,10 @@ def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) 
     ]
     candidates.extend(template.id for template in templates.playable)
     return list(dict.fromkeys(candidates))[:count]
+
+
+def _loaded_id(user: User) -> uuid.UUID:
+    identity: tuple[object, ...] | None = inspect(user).identity
+    if identity is None:
+        raise RuntimeError("A seed account is saved")
+    return cast(uuid.UUID, identity[0])
