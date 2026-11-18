@@ -2,7 +2,6 @@ import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { useCurrentUser } from '../../api/auth';
 import {
   type MarketplaceTemplate,
   useCardLikeStates,
@@ -17,8 +16,7 @@ export function PopularTemplates() {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
   const { data: templates } = usePopularTemplates(HOME_POPULAR_COUNT);
-  const { data: user } = useCurrentUser();
-  useCardLikeStates(templates === undefined ? [] : [templates], Boolean(user));
+  useCardLikeStates(templates === undefined ? [] : [templates]);
 
   if (templates === undefined || templates.length === 0) return null;
   return (

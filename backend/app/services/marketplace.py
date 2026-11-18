@@ -125,7 +125,7 @@ class MarketplaceService:
             TemplateLikeState(
                 liked=template_id in liked_ids,
                 like_count=like_counts.get(template_id, 0),
-                can_like=owner_ids[template_id] != user.id,
+                can_like=_can_like(user, owner_ids[template_id]),
                 template_id=template_id,
             )
             for template_id in listed_ids
@@ -197,8 +197,12 @@ class MarketplaceService:
         return LikeState(
             liked=liked,
             like_count=like_repository.count_likes(self._session, template_id),
-            can_like=owner_id != user.id,
+            can_like=_can_like(user, owner_id),
         )
+
+
+def _can_like(user: User, owner_id: uuid.UUID) -> bool:
+    return owner_id != user.id
 
 
 def _after(cursor: str, sort: MarketplaceSort) -> template_repository.MarketplaceAfter:

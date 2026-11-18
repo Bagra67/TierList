@@ -63,19 +63,14 @@ export function HomePage() {
         <HomeBoard />
       </section>
       {user === null ? (
-        <>
-          <HomeSteps />
-          <PopularTemplates />
-        </>
+        <HomeSteps />
       ) : (
-        <>
-          <div className="grid gap-10 md:grid-cols-2">
-            <RecentTemplates />
-            <RecentGames />
-          </div>
-          <PopularTemplates />
-        </>
+        <div className="grid gap-10 md:grid-cols-2">
+          <RecentTemplates />
+          <RecentGames />
+        </div>
       )}
+      <PopularTemplates />
     </PageContainer>
   );
 }

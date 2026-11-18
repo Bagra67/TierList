@@ -12,12 +12,14 @@ import {
 } from '@tanstack/react-query';
 
 import {
+  CARD_LIKE_STATES_STALE_MS,
   isTemplateId,
   MARKETPLACE_LIKE_STATES_QUERY_KEY,
   MARKETPLACE_LIST_QUERY_KEY,
   MARKETPLACE_TAGS_QUERY_KEY,
   publicTemplateQueryKey,
 } from '../constants/templates';
+import { useCurrentUser } from './auth';
 import { apiClient, dataOrThrow } from './client';
 import { nextCursor } from './pagination';
 import { retryUnlessClientError } from './queryClient';
@@ -106,8 +108,9 @@ async function listLikeStates(
   ).items;
 }
 
-export function useCardLikeStates(pages: MarketplaceTemplate[][], enabled: boolean): void {
+export function useCardLikeStates(pages: MarketplaceTemplate[][]): void {
   const queryClient: QueryClient = useQueryClient();
+  const { data: user } = useCurrentUser();
   useQueries({
     queries: pages.map((templates: MarketplaceTemplate[]) => {
       const templateIds: string[] = templates.map((template: MarketplaceTemplate) => template.id);
@@ -118,9 +121,11 @@ export function useCardLikeStates(pages: MarketplaceTemplate[][], enabled: boole
           for (const { template_id: templateId, ...state } of states) {
             queryClient.setQueryData(likeStateQueryKey(templateId), state);
           }
-          return states;
+          return templateIds;
         },
-        enabled: enabled && templateIds.length > 0,
+        enabled: Boolean(user) && templateIds.length > 0,
+        staleTime: CARD_LIKE_STATES_STALE_MS,
+        refetchOnWindowFocus: false,
         retry: retryUnlessClientError,
       };
     }),

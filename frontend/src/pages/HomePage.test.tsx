@@ -42,6 +42,26 @@ function signedInWith(templates: object[], games: object[]): Record<string, Stub
   };
 }
 
+function popularTemplatesRoute(name: string): StubbedRoute {
+  return () =>
+    Response.json({
+      items: [
+        {
+          id: 'template-popular',
+          name,
+          owner_name: 'Camille',
+          tags: [],
+          tile_count: 6,
+          like_count: 12,
+          preview_image_url: null,
+          preview_image_removed: false,
+          tier_colors: ['#FF3B6B'],
+        },
+      ],
+      next_cursor: null,
+    });
+}
+
 describe('HomePage', () => {
   afterEach(() => {
     setAccessToken(null);
@@ -72,23 +92,7 @@ describe('HomePage', () => {
   it('shows the visitor the most liked public templates and a way to all of them', async () => {
     const backend = stubBackend({
       'POST /auth/refresh': unauthorized,
-      'GET /marketplace/templates': () =>
-        Response.json({
-          items: [
-            {
-              id: 'template-popular',
-              name: 'Fromages',
-              owner_name: 'Camille',
-              tags: [],
-              tile_count: 6,
-              like_count: 12,
-              preview_image_url: null,
-              preview_image_removed: false,
-              tier_colors: ['#FF3B6B'],
-            },
-          ],
-          next_cursor: null,
-        }),
+      'GET /marketplace/templates': popularTemplatesRoute('Fromages'),
     });
 
     renderHomePage();
@@ -175,23 +179,7 @@ describe('HomePage', () => {
   it('shows the signed-in player the most liked public templates too', async () => {
     stubBackend({
       ...signedInWith(fourTemplates, fourGames),
-      'GET /marketplace/templates': () =>
-        Response.json({
-          items: [
-            {
-              id: 'template-popular',
-              name: 'Fromages du monde',
-              owner_name: 'Camille',
-              tags: [],
-              tile_count: 6,
-              like_count: 12,
-              preview_image_url: null,
-              preview_image_removed: false,
-              tier_colors: ['#FF3B6B'],
-            },
-          ],
-          next_cursor: null,
-        }),
+      'GET /marketplace/templates': popularTemplatesRoute('Fromages du monde'),
     });
 
     renderHomePage();
