@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.models.room import Room
+from app.models.template import Template
 from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
@@ -116,11 +117,7 @@ def run_seed(
         rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
             rooms,
             accounts.players,
-            [
-                template
-                for template in templates.playable
-                if template.id in published and template.id not in templates_to_hide
-            ],
+            _public_templates_not_hidden(templates, published, templates_to_hide),
             size.rooms_on_public_templates_of_others,
         )
         moderated_templates: int = moderate_templates(
@@ -175,6 +172,13 @@ def _templates_to_publish(
     candidates: list[uuid.UUID] = templates_to_hide[:1]
     candidates.extend(template.id for template in templates.playable)
     return list(dict.fromkeys(candidates))[:count]
+
+
+def _public_templates_not_hidden(
+    templates: SeedTemplates, published: list[uuid.UUID], templates_to_hide: list[uuid.UUID]
+) -> list[Template]:
+    public_ids: set[uuid.UUID] = set(published) - set(templates_to_hide)
+    return [template for template in templates.playable if template.id in public_ids]
 
 
 def _templates_to_hide(played: SeedGames, templates: SeedTemplates, count: int) -> list[uuid.UUID]:

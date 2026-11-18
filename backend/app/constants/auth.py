@@ -41,6 +41,8 @@ CONFIRM_PARAM = "confirm"
 
 DELETE_ACCOUNT_STEP = "delete-account"
 GoogleNextStep = Literal["delete-account"]
+GOOGLE_RETURN_TO_MAX_LENGTH = 2000
+GOOGLE_RETURN_TO_PATTERN = r"^/([A-Za-z0-9._~!$&'()*+,;=:@%?#-][A-Za-z0-9._~!$&'()*+,;=:@%/?#-]*)?$"
 
 GOOGLE_ERROR_CANCELLED = "google_cancelled"
 GOOGLE_ERROR_EMAIL_NOT_VERIFIED = "google_email_not_verified"

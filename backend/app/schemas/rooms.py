@@ -51,7 +51,8 @@ class RoomSettingsResponse(BaseModel):
 
 
 class RoomTemplateResponse(BaseModel):
-    """Template of the room; `hidden` is true when moderation hid it: no new game can start then."""
+    """Template of the room; `hidden` is true when moderation hid it and the room admin owns it: no
+    new game can start then. For a template of another account, the reason is never given."""
 
     id: uuid.UUID
     name: str

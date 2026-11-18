@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import secrets
-import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
@@ -46,18 +45,16 @@ class GoogleLoginAttempt:
     nonce: str
     code_verifier: str
     next_step: str | None
-    template_id: uuid.UUID | None = None
+    return_to: str | None = None
 
     @classmethod
-    def start(
-        cls, next_step: str | None, template_id: uuid.UUID | None = None
-    ) -> GoogleLoginAttempt:
+    def start(cls, next_step: str | None, return_to: str | None = None) -> GoogleLoginAttempt:
         return cls(
             state=secrets.token_urlsafe(GOOGLE_STATE_BYTES),
             nonce=secrets.token_urlsafe(GOOGLE_NONCE_BYTES),
             code_verifier=secrets.token_urlsafe(PKCE_VERIFIER_BYTES),
             next_step=next_step,
-            template_id=template_id,
+            return_to=return_to,
         )
 
     @property
@@ -73,7 +70,7 @@ class GoogleLoginAttempt:
             "nonce": self.nonce,
             "code_verifier": self.code_verifier,
             "next": self.next_step,
-            "template": None if self.template_id is None else str(self.template_id),
+            "return_to": self.return_to,
             "iat": now,
             "exp": now + ttl,
         }
@@ -92,19 +89,12 @@ class GoogleLoginAttempt:
             raise GoogleAuthError("Tentative de connexion invalide ou expirée") from exc
         if claims["type"] != GOOGLE_LOGIN_TOKEN_TYPE:
             raise GoogleAuthError("Tentative de connexion invalide")
-        raw_template_id: str | None = claims.get("template")
-        try:
-            template_id: uuid.UUID | None = (
-                None if raw_template_id is None else uuid.UUID(raw_template_id)
-            )
-        except ValueError as exc:
-            raise GoogleAuthError("Tentative de connexion invalide") from exc
         return cls(
             state=claims["state"],
             nonce=claims["nonce"],
             code_verifier=claims["code_verifier"],
             next_step=claims.get("next"),
-            template_id=template_id,
+            return_to=claims.get("return_to"),
         )
 
     def matches_state(self, state: str) -> bool:
