@@ -72,7 +72,7 @@ def test_a_user_likes_the_public_template_of_another(
     response: Response = like(auth_client, template_id, bob)
 
     assert response.status_code == 200
-    assert response.json() == {"liked": True, "like_count": 1}
+    assert response.json() == {"liked": True, "like_count": 1, "can_like": True}
     assert public_like_count(auth_client, template_id) == 1
 
 
@@ -83,7 +83,7 @@ def test_liking_again_keeps_a_single_like(
 
     response: Response = like(auth_client, template_id, bob)
 
-    assert response.json() == {"liked": True, "like_count": 1}
+    assert response.json() == {"liked": True, "like_count": 1, "can_like": True}
 
 
 def test_every_account_counts_once(
@@ -92,7 +92,11 @@ def test_every_account_counts_once(
     like(auth_client, template_id, bob)
     like(auth_client, template_id, carol)
 
-    assert like_state(auth_client, template_id, bob).json() == {"liked": True, "like_count": 2}
+    assert like_state(auth_client, template_id, bob).json() == {
+        "liked": True,
+        "like_count": 2,
+        "can_like": True,
+    }
 
 
 def test_a_user_removes_their_like(
@@ -103,8 +107,12 @@ def test_a_user_removes_their_like(
 
     response: Response = unlike(auth_client, template_id, bob)
 
-    assert response.json() == {"liked": False, "like_count": 1}
-    assert unlike(auth_client, template_id, bob).json() == {"liked": False, "like_count": 1}
+    assert response.json() == {"liked": False, "like_count": 1, "can_like": True}
+    assert unlike(auth_client, template_id, bob).json() == {
+        "liked": False,
+        "like_count": 1,
+        "can_like": True,
+    }
 
 
 def test_a_user_cannot_like_their_own_template(
@@ -115,6 +123,14 @@ def test_a_user_cannot_like_their_own_template(
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.CANNOT_LIKE_OWN_TEMPLATE
     assert stored_like_count(db_session) == 0
+
+
+def test_the_owner_reads_that_they_cannot_like_their_template(
+    auth_client: TestClient, alice: dict[str, str], template_id: str
+):
+    response: Response = like_state(auth_client, template_id, alice)
+
+    assert response.json() == {"liked": False, "like_count": 0, "can_like": False}
 
 
 def test_liking_requires_an_account(auth_client: TestClient, template_id: str):

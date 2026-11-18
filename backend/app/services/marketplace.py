@@ -58,6 +58,7 @@ class NewestPosition(BaseModel):
 class LikeState:
     liked: bool
     like_count: int
+    can_like: bool
 
 
 class MarketplaceService:
@@ -77,21 +78,22 @@ class MarketplaceService:
         return PublicTemplate(template, owner_name, like_count)
 
     def like_state(self, user: User, template_id: uuid.UUID) -> LikeState:
-        self._listed_owner_id(template_id)
-        return self._like_state(user, template_id)
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
+        return self._like_state(user, template_id, owner_id)
 
     def like(self, user: User, template_id: uuid.UUID) -> LikeState:
-        if self._listed_owner_id(template_id) == user.id:
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
+        if owner_id == user.id:
             raise CannotLikeOwnTemplateError
         like_repository.add_like(self._session, template_id, user.id)
         self._session.commit()
-        return self._like_state(user, template_id)
+        return self._like_state(user, template_id, owner_id)
 
     def unlike(self, user: User, template_id: uuid.UUID) -> LikeState:
-        self._listed_owner_id(template_id)
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
         like_repository.remove_like(self._session, template_id, user.id)
         self._session.commit()
-        return self._like_state(user, template_id)
+        return self._like_state(user, template_id, owner_id)
 
     def list_templates(
         self,
@@ -137,10 +139,11 @@ class MarketplaceService:
             raise TemplateNotFoundError
         return listed[1]
 
-    def _like_state(self, user: User, template_id: uuid.UUID) -> LikeState:
+    def _like_state(self, user: User, template_id: uuid.UUID, owner_id: uuid.UUID) -> LikeState:
         return LikeState(
             liked=like_repository.has_liked(self._session, template_id, user.id),
             like_count=like_repository.count_likes(self._session, template_id),
+            can_like=owner_id != user.id,
         )
 
 
