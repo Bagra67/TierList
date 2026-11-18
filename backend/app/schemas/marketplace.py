@@ -39,6 +39,19 @@ class LikeStateResponse(BaseModel):
     can_like: bool
 
 
+class TemplateLikeStateResponse(LikeStateResponse):
+    """The like state of one public template, for the marketplace cards."""
+
+    template_id: uuid.UUID
+
+
+class LikeStatesResponse(BaseModel):
+    """The like states of the requested templates that are listed, in the requested order; the
+    others are left out."""
+
+    items: list[TemplateLikeStateResponse]
+
+
 class MarketplaceTemplateResponse(BaseModel):
     """A card of the marketplace. The preview is the image of the first tile:
     `preview_image_removed` is true when moderation removed it, and both are empty when the first

@@ -560,6 +560,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/marketplace/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Like States
+         * @description The account's like state of several public templates at once (one page of cards). The
+         *     templates that are not listed are left out.
+         */
+        get: operations["list_like_states_marketplace_likes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/marketplace/templates/{template_id}/like": {
         parameters: {
             query?: never;
@@ -1986,6 +2007,15 @@ export interface components {
             can_like: boolean;
         };
         /**
+         * LikeStatesResponse
+         * @description The like states of the requested templates that are listed, in the requested order; the
+         *     others are left out.
+         */
+        LikeStatesResponse: {
+            /** Items */
+            items: components["schemas"]["TemplateLikeStateResponse"][];
+        };
+        /**
          * LoginRequest
          * @description Sign-in with an email and a password.
          */
@@ -2630,6 +2660,23 @@ export interface components {
             id: string;
             /** Display Name */
             display_name: string;
+        };
+        /**
+         * TemplateLikeStateResponse
+         * @description The like state of one public template, for the marketplace cards.
+         */
+        TemplateLikeStateResponse: {
+            /** Liked */
+            liked: boolean;
+            /** Like Count */
+            like_count: number;
+            /** Can Like */
+            can_like: boolean;
+            /**
+             * Template Id
+             * Format: uuid
+             */
+            template_id: string;
         };
         /**
          * TemplateListResponse
@@ -4753,6 +4800,55 @@ export interface operations {
             };
             /** @description Template not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_like_states_marketplace_likes_get: {
+        parameters: {
+            query: {
+                template_id: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikeStatesResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
