@@ -36,6 +36,7 @@ class ErrorCode(StrEnum):
     TILE_EMPTY = "tile_empty"
     INVALID_TAG = "invalid_tag"
     CANNOT_LIKE_OWN_TEMPLATE = "cannot_like_own_template"
+    INVALID_CURSOR = "invalid_cursor"
 
     ROOM_NOT_FOUND = "room_not_found"
     ROOM_NOT_JOINED = "room_not_joined"

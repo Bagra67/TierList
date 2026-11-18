@@ -2,7 +2,18 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select, update
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    and_,
+    delete,
+    exists,
+    func,
+    or_,
+    select,
+    tuple_,
+    update,
+)
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
@@ -169,40 +180,40 @@ def mark_template_deleted(session: Session, template_id: uuid.UUID, deleted_at: 
 
 
 def list_owned_templates_with_tile_count(
-    session: Session, owner_id: uuid.UUID
+    session: Session,
+    owner_id: uuid.UUID,
+    after: tuple[datetime, uuid.UUID] | None = None,
+    limit: int | None = None,
 ) -> list[tuple[Template, int]]:
     statement: Select[Template, int] = (
         select(Template, func.count(Tile.id))
         .outerjoin(Tile, Tile.template_id == Template.id)
         .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
         .group_by(Template.id)
-        .order_by(Template.updated_at.desc(), Template.id)
+        .order_by(Template.updated_at.desc(), Template.id.desc())
+        .limit(limit)
     )
+    if after is not None:
+        statement = statement.where(tuple_(Template.updated_at, Template.id) < tuple_(*after))
     return [(template, tile_count) for template, tile_count in session.execute(statement)]
 
 
-def list_tags_of_owner(session: Session, owner_id: uuid.UUID) -> list[TemplateTag]:
+def list_tags_of_templates(session: Session, template_ids: list[uuid.UUID]) -> list[TemplateTag]:
     statement: Select[TemplateTag] = (
         select(TemplateTag)
-        .join(Template, TemplateTag.template_id == Template.id)
-        .where(Template.owner_id == owner_id, Template.deleted_at.is_(None))
+        .where(TemplateTag.template_id.in_(template_ids))
         .order_by(TemplateTag.position)
     )
     return list(session.scalars(statement).all())
 
 
-def list_tiles_with_removed_image_of_owner(
-    session: Session, owner_id: uuid.UUID
+def list_tiles_with_removed_image_of_templates(
+    session: Session, template_ids: list[uuid.UUID]
 ) -> list[tuple[Tile, Image]]:
     statement: Select[Tile, Image] = (
         select(Tile, Image)
         .join(Image, Tile.image_id == Image.id)
-        .join(Template, Tile.template_id == Template.id)
-        .where(
-            Template.owner_id == owner_id,
-            Template.deleted_at.is_(None),
-            Image.status != ImageStatus.VISIBLE,
-        )
+        .where(Tile.template_id.in_(template_ids), Image.status != ImageStatus.VISIBLE)
         .order_by(Tile.position, Tile.id)
     )
     return [(tile, image) for tile, image in session.execute(statement)]

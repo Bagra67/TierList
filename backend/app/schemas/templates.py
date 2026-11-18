@@ -175,9 +175,11 @@ class TemplateSummaryResponse(BaseModel):
 
 
 class TemplateListResponse(BaseModel):
-    """The account's templates, most recently modified first."""
+    """A page of the account's templates, most recently modified first. `next_cursor` reads the
+    next page; it is null on the last one."""
 
     items: list[TemplateSummaryResponse]
+    next_cursor: str | None
 
 
 class RemovedTemplateResponse(BaseModel):

@@ -1,7 +1,7 @@
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.api.dependencies import (
     CurrentUserDep,
@@ -11,6 +11,7 @@ from app.api.dependencies import (
 from app.api.errors import (
     email_not_verified,
     image_not_found,
+    invalid_cursor,
     template_has_no_tiles,
     template_hidden,
     template_not_found,
@@ -19,10 +20,12 @@ from app.api.presenters.templates import template_response
 from app.api.responses import UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.constants.templates import CURSOR_MAX_LENGTH
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.images import ImageNotFoundError
+from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import (
     InvalidTagError,
     LastTierError,
@@ -49,7 +52,7 @@ from app.schemas.templates import (
     UpdateTierRequest,
     UpdateTileRequest,
 )
-from app.services.templates import RemovedTemplate, TemplateSummary, TierChanges, TileChanges
+from app.services.templates import RemovedTemplate, TemplatePage, TierChanges, TileChanges
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -126,16 +129,30 @@ def create_template(
     return template_response(template, storage)
 
 
-@router.get("", responses=UNAUTHORIZED_RESPONSE)
-def list_templates(user: CurrentUserDep, service: TemplateServiceDep) -> TemplateListResponse:
-    """The account's active templates, with their number of tiles, most recently modified first.
-    Each template gives its moderation decision and the images removed from its tiles."""
-    summaries: list[TemplateSummary] = service.list_for_owner(user)
+@router.get(
+    "",
+    responses={
+        **UNAUTHORIZED_RESPONSE,
+        400: {"model": ErrorResponse, "description": messages.INVALID_CURSOR_DESCRIPTION},
+    },
+)
+def list_templates(
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    cursor: Annotated[str | None, Query(max_length=CURSOR_MAX_LENGTH)] = None,
+) -> TemplateListResponse:
+    """The account's active templates, with their number of tiles, most recently modified first,
+    by pages. `next_cursor` reads the next page, and is null on the last one. Each template gives
+    its moderation decision and the images removed from its tiles."""
+    try:
+        page: TemplatePage = service.page_for_owner(user, cursor)
+    except InvalidCursorError as exc:
+        raise invalid_cursor() from exc
 
     items: list[TemplateSummaryResponse] = []
-    for summary in summaries:
+    for summary in page.items:
         items.append(TemplateSummaryResponse.model_validate(summary))
-    return TemplateListResponse(items=items)
+    return TemplateListResponse(items=items, next_cursor=page.next_cursor)
 
 
 @router.get("/removed", responses=UNAUTHORIZED_RESPONSE)

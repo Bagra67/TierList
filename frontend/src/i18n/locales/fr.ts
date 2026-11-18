@@ -1195,6 +1195,7 @@ export const fr = {
       tile_empty: "Une tuile a besoin d'un texte ou d'une image.",
       invalid_tag: 'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
       cannot_like_own_template: 'Vous ne pouvez pas aimer votre propre modèle.',
+      invalid_cursor: 'Cette page de la liste n’est plus valide. Rechargez la liste.',
       image_unsupported_format: "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
       image_too_large: "L'image est trop lourde : {{max_bytes, megabytes}} au maximum.",
       image_too_many_pixels: "L'image est trop grande : réduisez sa définition puis réessayez.",
