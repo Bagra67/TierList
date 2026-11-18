@@ -83,6 +83,29 @@ describe('TemplatesPage', () => {
     vi.unstubAllGlobals();
   });
 
+  it('reads the next page of templates after those already shown', async () => {
+    const cursors: (string | null)[] = [];
+    stubTemplatesBackend({
+      'GET /templates': (request: Request) => {
+        const cursor: string | null = new URL(request.url).searchParams.get('cursor');
+        cursors.push(cursor);
+        return Response.json(
+          cursor === null
+            ? { items: [chips], next_cursor: 'second-page' }
+            : { items: [sodas], next_cursor: null },
+        );
+      },
+    });
+    renderTemplatesPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Voir plus' }));
+
+    expect(await screen.findByRole('link', { name: 'Sodas' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Chips' })).toBeInTheDocument();
+    expect(cursors).toEqual([null, 'second-page']);
+    expect(screen.queryByRole('button', { name: 'Voir plus' })).not.toBeInTheDocument();
+  });
+
   it('lists the templates with their tile count and last change date', async () => {
     stubTemplatesBackend({ 'GET /templates': listOf([chips, sodas]) });
 

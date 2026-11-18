@@ -10,3 +10,11 @@ export function nextOffset<Page extends PageWithMore>(
       ? pages.reduce((count: number, page: Page) => count + itemsOf(page).length, 0)
       : undefined;
 }
+
+interface PageWithCursor {
+  next_cursor?: string | null;
+}
+
+export function nextCursor(lastPage: PageWithCursor): string | undefined {
+  return lastPage.next_cursor ?? undefined;
+}

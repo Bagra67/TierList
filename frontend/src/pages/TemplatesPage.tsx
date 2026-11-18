@@ -2,7 +2,7 @@ import { cn } from 'cn';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { useTemplates } from '../api/templates';
+import { type TemplateSummary, useTemplates } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
 import { DeleteTemplateDialog } from '../components/DeleteTemplateDialog';
@@ -12,17 +12,16 @@ import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
 import { TemplatePublicBadge } from '../components/TemplatePublicBadge';
 import { TemplateTagList } from '../components/TemplateTagList';
 import { EmptyState } from '../components/EmptyState';
-import { ErrorMessage } from '../components/ErrorMessage';
 import { templateEditorPath } from '../constants/routes';
-import { translateError } from '../errors/apiError';
 import { panelVariants } from '../components/ui/panel';
-import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { PagedList } from '../components/PagedList';
 import { PageContainer } from '../components/PageContainer';
 import { CONTENT_COLUMN_CLASS } from '../constants/layout';
 import { useDocumentTitle } from '../components/useDocumentTitle';
 
 export function TemplatesPage() {
-  const { data: templates, isPending, isError, error } = useTemplates();
+  const query = useTemplates();
+  const templates: TemplateSummary[] = query.data?.pages.flatMap((page) => page.items) ?? [];
   const { t } = useTranslation();
   useDocumentTitle(t('templates.title'));
 
@@ -33,10 +32,12 @@ export function TemplatesPage() {
           <h1 className="text-2xl font-semibold">{t('templates.title')}</h1>
           <CreateTemplateDialog />
         </div>
-        {isPending && <LoadingSkeleton shape="list" />}
-        {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-        {templates?.length === 0 && <EmptyState message={t('templates.empty')} />}
-        {templates !== undefined && templates.length > 0 && (
+        <PagedList
+          query={query}
+          itemCount={templates.length}
+          empty={<EmptyState message={t('templates.empty')} />}
+          moreLabel={t('templates.more')}
+        >
           <ul className={panelVariants({ variant: 'list' })}>
             {templates.map((template) => (
               <li key={template.id} className="flex items-center justify-between gap-4 px-4 py-3">
@@ -90,7 +91,7 @@ export function TemplatesPage() {
               </li>
             ))}
           </ul>
-        )}
+        </PagedList>
         <RemovedTemplates />
       </div>
     </PageContainer>

@@ -704,6 +704,7 @@ export const en: Translation = {
   },
   templates: {
     title: 'My templates',
+    more: 'See more',
     hidden: {
       badge: 'Hidden',
       title: 'Hidden by the moderation',
