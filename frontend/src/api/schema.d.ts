@@ -1973,13 +1973,16 @@ export interface components {
         };
         /**
          * LikeStateResponse
-         * @description Whether the account likes the public template, and its number of likes.
+         * @description Whether the account likes the public template, its number of likes, and whether the account
+         *     may like it (false for its owner).
          */
         LikeStateResponse: {
             /** Liked */
             liked: boolean;
             /** Like Count */
             like_count: number;
+            /** Can Like */
+            can_like: boolean;
         };
         /**
          * LoginRequest
