@@ -1,5 +1,4 @@
 import logging
-import uuid
 from datetime import timedelta
 from typing import Annotated
 
@@ -31,12 +30,13 @@ from app.constants.auth import (
     GOOGLE_ERROR_FAILED,
     GOOGLE_ERROR_UNAVAILABLE,
     GOOGLE_LOGIN_COOKIE,
+    GOOGLE_RETURN_TO_MAX_LENGTH,
+    GOOGLE_RETURN_TO_PATTERN,
     LOGIN_ERROR_PARAM,
     REFRESH_TOKEN_COOKIE,
     GoogleNextStep,
 )
 from app.constants.error_codes import ErrorCode
-from app.constants.seo import FRONTEND_PUBLIC_TEMPLATE_PREFIX
 from app.core.config import Settings
 from app.core.errors import ErrorResponse
 from app.core.security import create_ban_notice_token
@@ -347,13 +347,16 @@ def google_login(
     settings: SettingsDep,
     google: GoogleClientDep,
     next_step: Annotated[GoogleNextStep | None, Query(alias="next")] = None,
-    template_id: Annotated[uuid.UUID | None, Query(alias="template")] = None,
+    return_to: Annotated[
+        str | None,
+        Query(max_length=GOOGLE_RETURN_TO_MAX_LENGTH, pattern=GOOGLE_RETURN_TO_PATTERN),
+    ] = None,
 ) -> RedirectResponse:
     """Sends the browser to the Google sign-in page. After signing in, the browser comes back to
-    the public page of `template` when it is given, unless `next` asks for another step."""
+    `return_to`, a path of the site (never another site), unless `next` asks for another step."""
     if google is None:
         return _google_failure(GOOGLE_ERROR_UNAVAILABLE, settings)
-    attempt = GoogleLoginAttempt.start(next_step, template_id)
+    attempt = GoogleLoginAttempt.start(next_step, return_to)
     attempt_ttl = timedelta(minutes=settings.google_login_attempt_ttl_minutes)
     response = RedirectResponse(google.authorization_url(attempt), status_code=302)
     response.set_cookie(
@@ -418,8 +421,8 @@ def google_callback(
     location = FRONTEND_HOME
     if attempt.next_step == DELETE_ACCOUNT_STEP:
         location = f"{FRONTEND_HOME}?{CONFIRM_PARAM}={DELETE_ACCOUNT_STEP}"
-    elif attempt.template_id is not None:
-        location = f"{FRONTEND_PUBLIC_TEMPLATE_PREFIX}{attempt.template_id}"
+    elif attempt.return_to is not None:
+        location = attempt.return_to
     response = _google_redirect(location, settings)
     _set_refresh_cookie(response, tokens.refresh_token, settings)
     return response
