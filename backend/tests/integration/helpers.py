@@ -14,6 +14,7 @@ from httpx2 import Response
 from sqlalchemy import URL, Connection, event, select
 from sqlalchemy.orm import Session
 
+from app.models.account_ban import AccountBan
 from app.models.enums import RoomStatus, TemplateModeration, UserRole
 from app.models.image import Image
 from app.models.room import Room
@@ -69,6 +70,12 @@ def confirm_email(db_session: Session, email: str) -> None:
     db_session.flush()
 
 
+def ban_account(db_session: Session, email: str) -> None:
+    user: User = db_session.scalars(select(User).where(User.email == email)).one()
+    db_session.add(AccountBan(user_id=user.id, actor_name="Nina", reason="Spam"))
+    db_session.flush()
+
+
 def stored_template(db_session: Session, template_id: str) -> Template:
     db_session.expire_all()
     template: Template | None = db_session.get(Template, uuid.UUID(template_id))
@@ -111,6 +118,17 @@ def create_public_template(
     )
     assert response.status_code == 200
     return template_id
+
+
+def make_private(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    response: Response = client.put(
+        f"/templates/{template_id}/visibility", json={"visibility": "private"}, headers=owner
+    )
+    assert response.status_code == 200
+
+
+def delete_template(client: TestClient, template_id: str, owner: dict[str, str]) -> None:
+    assert client.delete(f"/templates/{template_id}", headers=owner).status_code == 204
 
 
 def add_tile_with_image(

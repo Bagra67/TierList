@@ -117,8 +117,8 @@ class RoomService:
         self._publisher = publisher
 
     def create(self, owner: User, template_id: uuid.UUID) -> Room:
-        template: Template | None = template_repository.get_owned_template(
-            self._session, template_id, owner.id
+        template: Template | None = template_repository.get_playable_template(
+            self._session, template_id, owner.id, datetime.now(UTC)
         )
         if template is None:
             raise TemplateNotFoundError

@@ -137,7 +137,10 @@ def _room_locked() -> AppHTTPException:
     status_code=201,
     responses={
         **UNAUTHORIZED_RESPONSE,
-        404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
+        404: {
+            "model": ErrorResponse,
+            "description": messages.PLAYABLE_TEMPLATE_NOT_FOUND_DESCRIPTION,
+        },
         409: {"model": ErrorResponse, "description": messages.TEMPLATE_CANNOT_START_DESCRIPTION},
     },
 )
@@ -147,8 +150,9 @@ def create_room(
     service: RoomServiceDep,
     storage: ImageStorageDep,
 ) -> RoomResponse:
-    """Creates an open room on a template of the account, not hidden and with at least one tile. The
-    account becomes its admin and first participant."""
+    """Creates an open room on a template of the account, or on a public template of another
+    account, not hidden and with at least one tile. The account becomes its admin and first
+    participant; the template stays read only for it."""
     template_id: uuid.UUID = payload.template_id
     try:
         room: Room = service.create(user, template_id)
@@ -444,7 +448,8 @@ def start_game(
     storage: ImageStorageDep,
 ) -> RoomResponse:
     """Starts a game (admin only) on the current version of the template, frozen for the whole game.
-    The room moves to `playing` and the first item is shown to everyone."""
+    The template must still be the admin's or public. The room moves to `playing` and the first
+    item is shown to everyone."""
     try:
         room: Room = games.start(user, code)
     except RoomNotFoundError as exc:

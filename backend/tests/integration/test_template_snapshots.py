@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.exceptions.templates import TemplateHasNoTilesError, TemplateNotFoundError
+from app.models.enums import TemplateVisibility
 from app.models.image import Image
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
@@ -123,16 +124,33 @@ def test_a_deleted_template_cannot_be_snapshotted(
         service.take_snapshot(alice, template.id)
 
 
-def test_the_template_of_another_user_cannot_be_snapshotted(
-    db_session: Session, service: TemplateService, alice: User
-):
-    template: Template = create_template(db_session, service, alice)
+def add_bob(db_session: Session) -> User:
     bob: User = User(email="bob@example.com", display_name="Bob")
     db_session.add(bob)
     db_session.flush()
+    return bob
+
+
+def test_the_private_template_of_another_user_cannot_be_snapshotted(
+    db_session: Session, service: TemplateService, alice: User
+):
+    template: Template = create_template(db_session, service, alice)
+    bob: User = add_bob(db_session)
 
     with pytest.raises(TemplateNotFoundError):
         service.take_snapshot(bob, template.id)
+
+
+def test_the_public_template_of_another_user_can_be_snapshotted(
+    db_session: Session, service: TemplateService, alice: User
+):
+    template: Template = create_template(db_session, service, alice)
+    template.visibility = TemplateVisibility.PUBLIC
+    bob: User = add_bob(db_session)
+
+    snapshot: TemplateSnapshot = service.take_snapshot(bob, template.id)
+
+    assert snapshot.template_id == template.id
 
 
 def test_a_template_without_tiles_cannot_be_snapshotted(

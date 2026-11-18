@@ -74,6 +74,16 @@ def test_login_attempt_round_trips_through_its_signed_cookie():
     assert not restored.matches_state("another-state")
 
 
+def test_login_attempt_round_trips_its_return_path_through_its_signed_cookie():
+    attempt = GoogleLoginAttempt.start(None, "/r/K7P2QX")
+
+    restored = GoogleLoginAttempt.from_cookie(
+        attempt.to_cookie(SECRET_KEY, ATTEMPT_TTL), SECRET_KEY
+    )
+
+    assert restored.return_to == "/r/K7P2QX"
+
+
 def test_login_attempt_cookie_signed_with_another_key_is_rejected():
     cookie = GoogleLoginAttempt.start(None).to_cookie(
         "another-secret-key-of-at-least-32-chars", ATTEMPT_TTL

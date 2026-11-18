@@ -44,7 +44,8 @@ def room_response(
         RoomTemplateResponse(
             id=room.template.id,
             name=room.template.name,
-            hidden=room.template.moderation == TemplateModeration.HIDDEN,
+            hidden=room.template.moderation == TemplateModeration.HIDDEN
+            and room.template.owner_id == room.admin_id,
         )
         if room.template is not None
         else None

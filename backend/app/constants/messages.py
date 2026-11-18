@@ -86,6 +86,9 @@ INVALID_TOKEN_DESCRIPTION = "Invalid or expired link"
 TEMPLATE_NOT_FOUND_DESCRIPTION = "Template not found"
 TEMPLATE_MODERATION_CONFLICT_DESCRIPTION = "Template already hidden, not hidden, or deleted"
 TEMPLATE_CANNOT_START_DESCRIPTION = "Template without tiles, or hidden by the moderation"
+PLAYABLE_TEMPLATE_NOT_FOUND_DESCRIPTION = (
+    "Template not found, or neither owned by the account nor public"
+)
 TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION = "Template or tier not found"
 LAST_TIER_DESCRIPTION = "The last tier of a template cannot be deleted"
 TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION = "Template or tile not found"
@@ -128,8 +131,8 @@ CANNOT_PLACE_DESCRIPTION = (
 COOLDOWN_NOT_IN_PROGRESS_DESCRIPTION = "No final cooldown in progress"
 RESULTS_NOT_FOUND_DESCRIPTION = "Unknown results link"
 GAME_CANNOT_START_DESCRIPTION = (
-    "Game already in progress, no participant who places, or template deleted, without tiles "
-    "or hidden by the moderation"
+    "Game already in progress, no participant who places, or template deleted, no longer "
+    "public, without tiles or hidden by the moderation"
 )
 NICKNAME_TAKEN_OR_ROOM_FULL_OR_LOCKED_DESCRIPTION = (
     "Nickname already used, room full, or room locked during a game"
