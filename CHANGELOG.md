@@ -5,6 +5,108 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.2.0] - 2026-11-18
+
+### Features
+
+- backend: report errors to sentry (#402)
+- frontend: report errors to sentry (#404)
+- backend: lighter room loads, image hiding by batches and server time (#417)
+- backend: let the owner make a template public or private (#429)
+- seed: make some seed templates public (#430)
+- frontend: choose the visibility of a template in the editor (#431)
+- backend: add template tags (#450)
+- frontend: edit template tags (#451)
+- backend: open public template pages (#454)
+- frontend: public template page (#455)
+- backend: write search engine tags, robots.txt and sitemap.xml (#459)
+- frontend: name every page and add link preview images (#460)
+- backend: start a room with a public template (#463)
+- seed: start rooms on public templates of other accounts (#464)
+- frontend: start a room from a public template page (#465)
+- backend: like public templates (#468)
+- backend: paginate my templates (#469)
+- backend: list, search and sort the marketplace (#470)
+- seed: like public templates (#471)
+- frontend: like a public template (#472)
+- frontend: load more of my templates (#473)
+- frontend: browse public templates (#474)
+
+### Bug fixes
+
+- frontend: polish found while testing the app in a browser (#384)
+- rooms: tell a viewer without a seat apart from an unknown room (#385)
+- frontend: say at once that a room does not exist (#386)
+- auth: answer 204 to a refresh without any session cookie (#389)
+- frontend: keep the console quiet for expected answers (#390)
+- frontend: keep one's own placement when a newer room event arrives first (#396)
+- backend: fix room presence, abandoned games and departing accounts (#407)
+- frontend: keep the room channel alive and fix two game dialog bugs (#408)
+- frontend: fix template caches, session edge cases and stale errors (#411)
+- backend: guard image upload size, report queue race and sentry leftovers (#414)
+- frontend: count down on the server clock, hide images by batches, lighter cooldown (#418)
+- frontend: fix small state bugs and three accessibility gaps (#424)
+- frontend: hide the email banner once the email is confirmed elsewhere (#434)
+- frontend: reset the server clock offset to exactly zero between tests (#448)
+
+### Refactoring
+
+- backend: clean up error factories, constants and service boundaries (#421)
+- frontend: clean up the api layer and small components (#425)
+- frontend: share the confirmation dialog, paged lists and board rows (#426)
+
+### Build & CI
+
+- docs-sync: treat the end-to-end tests as test files (#394)
+- run the e2e tests on chromium, firefox and webkit (#398)
+- pass the sentry settings to the pods and the bundle build (#403)
+
+### Documentation
+
+- describe the mcp servers of the claude code setup (#380)
+- seed: name the banned seed accounts correctly (#383)
+- rooms: describe room_not_joined on reading a room (#387)
+- auth: describe the 204 of a refresh without session cookie (#391)
+- todo: bring the manual steps up to date (#393)
+- describe the end-to-end tests (#399)
+- describe error monitoring with sentry (#405)
+- describe abandoned game closing, departing accounts and ban sockets (#409)
+- describe the template caches, codeless errors and session edge cases (#412)
+- describe the image size guard and the sentry leftovers (#415)
+- describe the server clock, hiding batches and lighter room loads (#419)
+- list every error code in the backend readme (#422)
+- describe the shared frontend components and the small fixes of batch 6 (#427)
+- describe the template visibility (#432)
+- keep only the readmes bilingual (#437)
+- stop listing every test in the testing guide (#438)
+- api: describe the routes and schemas in the openapi schema (#439)
+- decide marketplace search, sort and pagination (#449)
+- document template tags (#452)
+- document the public template page (#456)
+- document search engine indexing and link previews (#461)
+- document starting a room with a public template (#466)
+- document likes, my templates pages and the marketplace (#475)
+
+### Tests
+
+- frontend: add the playwright e2e setup and the account journey (#395)
+- frontend: cover the editor, the live game and small screens end to end (#397)
+- e2e: drop the dragged tier away from the edge of the tier list (#477)
+
+### Chores
+
+- claude: add the context7 and playwright mcp servers (#379)
+- deps: bump astral-sh/setup-uv from 10.3.2 to 10.3.3 in the actions-minor-patch group (#371)
+- deps: bump the backend-minor-patch group in /backend with 3 updates (#372)
+- deps: bump the frontend-minor-patch group across 1 directory with 18 updates (#382)
+- deps: bump the backend-minor-patch group in /backend with 3 updates (#441)
+- deps: bump react-i18next from 17.1.12 to 17.1.13 in /frontend (#444)
+- deps: bump the frontend-minor-patch group in /frontend with 10 updates (#442)
+- deps: bump i18next from 26.7.1 to 27.1.0 in /frontend (#445)
+- deps: bump chrislusf/seaweedfs from 4.50 to 4.53 (#440)
+- claude: add a dependabot-review skill (#447)
+- deps-dev: bump jsdom from 30.1.3 to 31.0.0 in /frontend (#443)
+
 ## [1.1.0] - 2026-11-03
 
 ### Features
