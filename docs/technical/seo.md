@@ -33,7 +33,7 @@ There is one URL per page, without the language: the page is written in the lang
 
 The browser picks its language differently (the choice saved in the settings first, then `navigator.languages`, [i18n guide](i18n.md)): someone who chose English on a French browser first gets the French title and description from the server, then the English tab title once the app runs.
 
-The texts are in `seo/texts.py`, in both languages. As for emails, this is a case where the backend writes text meant for the user ([i18n guide](i18n.md)): crawlers and link previews never run the frontend's translations. Keep them in line with the matching frontend keys (`home.visitor.*`, `privacy.title`, `terms.title`, `legalNotice.title`, `documentTitle.*`).
+The texts are in `seo/texts.py`, in both languages. As for emails, this is a case where the backend writes text meant for the user ([i18n guide](i18n.md)): crawlers and link previews never run the frontend's translations. Keep them in line with the matching frontend keys (`home.visitor.*`, `marketplace.title`, `privacy.title`, `terms.title`, `legalNotice.title`, `documentTitle.*`).
 
 ## 4. robots.txt, sitemap and the setting
 
