@@ -102,6 +102,8 @@ export const en: Translation = {
       content:
         'Content: your templates, the texts of their tiles and the images you upload. Images are re-encoded without their metadata (EXIF data, GPS position). The fingerprint of each uploaded file is kept, to refuse an image deleted by the moderation if it is uploaded again.',
       games: 'Games: the rooms you join, your placements and the results of the games.',
+      likes:
+        'Likes: the public templates you like. Only the number of likes of a template is shown: nobody sees who liked it. They are deleted with your account.',
       reports:
         'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
       bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
@@ -842,6 +844,12 @@ export const en: Translation = {
     play: {
       signIn: 'Sign in to play',
       signInHint: 'Create a room with this template. You come back here after signing in.',
+    },
+    like: {
+      button: 'Like · {{count}}',
+      count_one: '{{count}} like',
+      count_other: '{{count}} likes',
+      signIn: 'Sign in to like',
     },
   },
   report: {

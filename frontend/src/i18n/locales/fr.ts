@@ -102,6 +102,8 @@ export const fr = {
         "Contenus : vos modèles, les textes de leurs tuiles et les images que vous envoyez. Les images sont réencodées sans leurs métadonnées (données EXIF, position GPS). L'empreinte de chaque fichier envoyé est gardée, pour refuser le renvoi d'une image supprimée par la modération.",
       games:
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
+      likes:
+        "J'aime : les modèles publics que vous aimez. Seul le nombre de j'aime d'un modèle est affiché : personne ne voit qui l'a aimé. Ils sont supprimés avec votre compte.",
       reports:
         "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
@@ -855,6 +857,12 @@ export const fr = {
     play: {
       signIn: 'Se connecter pour jouer',
       signInHint: 'Créez une salle avec ce modèle. Vous revenez ici après la connexion.',
+    },
+    like: {
+      button: "J'aime · {{count}}",
+      count_one: "{{count}} j'aime",
+      count_other: "{{count}} j'aime",
+      signIn: 'Se connecter pour aimer',
     },
   },
   report: {

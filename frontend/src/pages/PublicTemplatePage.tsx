@@ -6,6 +6,7 @@ import { type PublicTemplate, type PublicTile, usePublicTemplate } from '../api/
 import { signInRedirectState } from '../auth/signInRedirect';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { EmptyState } from '../components/EmptyState';
+import { LikeButton } from '../components/LikeButton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
@@ -68,6 +69,7 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
         </div>
         <div className="flex flex-wrap items-start gap-2">
           <PlayAction template={template} />
+          <LikeButton templateId={template.id} likeCount={template.like_count} />
           <ReportButton targetKind="template" targetId={template.id} contentName={template.name} />
         </div>
       </div>
