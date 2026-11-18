@@ -25,6 +25,7 @@ const chips: PublicTemplate = {
   name: 'Chips',
   owner_name: 'Camille',
   tags: ['apéro', 'snacks'],
+  like_count: 12,
   tiers: [
     { id: 'tier-s', name: 'S', color: '#FF3B6B', position: 0 },
     { id: 'tier-a', name: 'A', color: '#FF8A2A', position: 1 },

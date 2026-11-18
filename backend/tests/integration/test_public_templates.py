@@ -85,7 +85,7 @@ def test_a_public_template_shows_nothing_reserved_to_its_owner(
 ):
     template: JsonObject = public_template(auth_client, template_id).json()
 
-    assert set(template) == {"id", "name", "owner_name", "tags", "tiers", "tiles"}
+    assert set(template) == {"id", "name", "owner_name", "tags", "like_count", "tiers", "tiles"}
     assert set(template["tiles"][0]) == {"id", "text", "image_url", "image_removed"}
 
 
