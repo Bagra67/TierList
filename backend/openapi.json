@@ -7619,15 +7619,20 @@
           "like_count": {
             "type": "integer",
             "title": "Like Count"
+          },
+          "can_like": {
+            "type": "boolean",
+            "title": "Can Like"
           }
         },
         "type": "object",
         "required": [
           "liked",
-          "like_count"
+          "like_count",
+          "can_like"
         ],
         "title": "LikeStateResponse",
-        "description": "Whether the account likes the public template, and its number of likes."
+        "description": "Whether the account likes the public template, its number of likes, and whether the account\nmay like it (false for its owner)."
       },
       "LoginRequest": {
         "properties": {
