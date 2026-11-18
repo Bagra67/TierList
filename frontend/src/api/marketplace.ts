@@ -92,7 +92,7 @@ export function useSetLiked(templateId: string): UseMutationResult<LikeState, Er
 
 export type MarketplaceTemplate = components['schemas']['MarketplaceTemplateResponse'];
 type MarketplaceTemplateList = components['schemas']['MarketplaceTemplateListResponse'];
-export type MarketplaceSort = 'popular' | 'newest';
+export type MarketplaceSort = components['schemas']['MarketplaceSort'];
 
 export interface MarketplaceFilters {
   search?: string;
@@ -142,14 +142,5 @@ export function useMarketplaceTags(): UseQueryResult<string[]> {
     queryFn: async ({ signal }) =>
       dataOrThrow(await apiClient.GET('/marketplace/tags', { signal })).tags,
     retry: retryUnlessClientError,
-  });
-}
-
-export function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
-  const seen: Set<string> = new Set();
-  return items.filter((item: Item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
   });
 }

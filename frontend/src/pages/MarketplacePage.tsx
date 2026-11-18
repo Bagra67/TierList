@@ -6,7 +6,6 @@ import {
   type MarketplaceFilters,
   type MarketplaceSort,
   type MarketplaceTemplate,
-  uniqueById,
   useMarketplaceTags,
   useMarketplaceTemplates,
 } from '../api/marketplace';
@@ -20,6 +19,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
 import { useDocumentTitle } from '../components/useDocumentTitle';
+import { MARKETPLACE_SEARCH_MAX_LENGTH } from '../constants/marketplace';
 import {
   MARKETPLACE_SEARCH_PARAM,
   MARKETPLACE_SORT_PARAM,
@@ -29,7 +29,15 @@ import { cn } from 'cn';
 
 const DEFAULT_SORT: MarketplaceSort = 'popular';
 const SORTS: readonly MarketplaceSort[] = ['popular', 'newest'];
-const SEARCH_MAX_LENGTH = 100;
+
+function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
+  const seen: Set<string> = new Set();
+  return items.filter((item: Item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
 
 function filtersOf(searchParams: URLSearchParams): MarketplaceFilters {
   const sort: string | null = searchParams.get(MARKETPLACE_SORT_PARAM);
@@ -133,7 +141,7 @@ function MarketplaceControls({ filters, onChange }: MarketplaceControlsProps) {
               id={searchId}
               type="search"
               value={searchDraft}
-              maxLength={SEARCH_MAX_LENGTH}
+              maxLength={MARKETPLACE_SEARCH_MAX_LENGTH}
               onChange={(event) => setSearchDraft(event.target.value)}
             />
             <Button type="submit">{t('marketplace.search.submit')}</Button>
