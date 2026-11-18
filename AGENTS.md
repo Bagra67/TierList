@@ -1696,6 +1696,8 @@ French is the reference language. How it works and step-by-step recipes:
     `AppHTTPException`. `detail` stays English, for developers.
 -   Exception: emails are written by the backend, in every supported
     language, in the language sent by the frontend (`docs/technical/emails.md`).
+-   Exception: the title, description and link preview tags of the pages
+    served by the backend (`app/seo/texts.py`, `docs/technical/seo.md`).
 -   When adding an `ErrorCode`, a validation error type or a code passed
     to the frontend (e.g. `?error=` after Google sign-in), add its
     translation under `errors.*` in every locale, in the same PR.

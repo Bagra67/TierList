@@ -246,6 +246,7 @@ Anyone, signed in or not, opens the page of a public template before playing it 
 - **Route**: `GET /marketplace/templates/{template_id}` (`api/routes/marketplace.py`), without authentication and without any user dependency, like the results page: an expired or invalid access token never prevents reading it (`get_optional_user` would answer `401`). `MarketplaceService.get_template` (`services/marketplace.py`) calls it.
 - **Response** `PublicTemplateResponse` (`schemas/marketplace.py`, built by `api/presenters/marketplace.py`): `{id, name, owner_name, tags, tiers: [{id, name, color, position}], tiles: [{id, text, image_url, image_removed}]}`, in the owner's order. Nothing that only the owner sees: no visibility, moderation, reason, `max_tiles` or image status. `image_url` and `image_removed` come from `optional_image_url` and `is_image_removed`, like every image of the API.
 - **Not available**: a template that is private, hidden, deleted, whose owner is banned, or unknown answers the same `404` `template_not_found`, so the page never says why (US-3.3), like `results_not_found` for the results.
+- **Served page**: the backend writes the template's name, owner and first visible image into the page's title and link preview tags, and answers a real `404` when the template is not available ([search engines guide](seo.md#2-pages)). The listed templates are in `/sitemap.xml`.
 - **Report**: `POST /reports` with `target_kind: "template"`, for a listed template only ([moderation guide](moderation.md#210-content-reports)).
 - **Not shown yet**: the number of likes (#276), the lineage of a fork (#279), and the actions other than reporting (create a room #273, like #276, favorite #278, copy #279) come with their issues, on this page.
 - **Frontend**: `PublicTemplatePage`, at `/marketplace/templates/:templateId` (`ROUTES.PUBLIC_TEMPLATE`, `publicTemplatePath`), outside `RequireAuth`.
@@ -253,6 +254,7 @@ Anyone, signed in or not, opens the page of a public template before playing it 
   - `TemplateTierChips` and `TemplateTileCard` are shared with the moderation template page, which adds its "image hidden" note to the card.
   - A `404` `template_not_found`, or an address that is not a template id (no request is sent), shows `NotFoundPage` with the "Modèle indisponible" title and message, and its button back home; any other error shows the translated error.
   - `usePublicTemplate` (`api/marketplace.ts`), key `['marketplace', 'templates', id]`, not retried on a `4xx`.
+  - The tab is named after the template (`useDocumentTitle`).
 
 ### 2.11 Known limitations
 
