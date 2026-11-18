@@ -2203,7 +2203,7 @@
           "marketplace"
         ],
         "summary": "Like Template",
-        "description": "Likes a public template of another account. Liking it again changes nothing.",
+        "description": "Likes a public template of another account, with a confirmed email address. Liking it\nagain changes nothing.",
         "operationId": "like_template_marketplace_templates__template_id__like_put",
         "security": [
           {
@@ -2255,6 +2255,16 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Email address not confirmed",
             "content": {
               "application/json": {
                 "schema": {
