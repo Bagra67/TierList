@@ -16,6 +16,7 @@ from sqlalchemy import (
     tuple_,
     update,
 )
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
@@ -106,18 +107,22 @@ def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
     )
 
 
+def _listed_templates_with_owner_name(now: datetime) -> Select[Template, str]:
+    return (
+        select(Template, User.display_name)
+        .join(User, User.id == Template.owner_id)
+        .where(listed_templates_condition(now))
+        .options(selectinload(Template.tiers), selectinload(Template.tags))
+    )
+
+
 def get_listed_template_with_owner_name(
     session: Session, template_id: uuid.UUID, now: datetime
 ) -> tuple[Template, str] | None:
     statement: Select[Template, str] = (
-        select(Template, User.display_name)
-        .join(User, User.id == Template.owner_id)
-        .where(Template.id == template_id, listed_templates_condition(now))
-        .options(
-            selectinload(Template.tiers),
-            selectinload(Template.tiles),
-            selectinload(Template.tags),
-        )
+        _listed_templates_with_owner_name(now)
+        .where(Template.id == template_id)
+        .options(selectinload(Template.tiles))
     )
     row = session.execute(statement).one_or_none()
     return None if row is None else (row[0], row[1])
@@ -253,15 +258,9 @@ def list_marketplace_templates(
     )
     like_count: ColumnElement[int] = func.coalesce(like_counts.c.like_count, 0)
     statement: Select[Template, str, int] = (
-        select(Template, User.display_name, like_count)
-        .join(User, User.id == Template.owner_id)
+        _listed_templates_with_owner_name(now)
+        .add_columns(like_count)
         .outerjoin(like_counts, like_counts.c.template_id == Template.id)
-        .where(listed_templates_condition(now))
-        .options(
-            selectinload(Template.tiers),
-            selectinload(Template.tiles),
-            selectinload(Template.tags),
-        )
         .limit(limit)
     )
     if search_query is not None:
@@ -308,3 +307,26 @@ def list_popular_listed_tags(session: Session, now: datetime, limit: int) -> lis
         .limit(limit)
     )
     return list(session.scalars(statement).all())
+
+
+def count_tiles_of_templates(
+    session: Session, template_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, int]:
+    statement: Select[uuid.UUID, int] = (
+        select(Tile.template_id, func.count())
+        .where(Tile.template_id.in_(template_ids))
+        .group_by(Tile.template_id)
+    )
+    return {template_id: count for template_id, count in session.execute(statement)}
+
+
+def list_first_tiles_of_templates(
+    session: Session, template_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, Tile]:
+    statement: Select[Tile] = (
+        select(Tile)
+        .where(Tile.template_id.in_(template_ids))
+        .ext(distinct_on(Tile.template_id))
+        .order_by(Tile.template_id, Tile.position)
+    )
+    return {tile.template_id: tile for tile in session.scalars(statement)}

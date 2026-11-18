@@ -15,7 +15,7 @@ from app.constants.templates import (
     TEMPLATES_PAGE_SIZE,
 )
 from app.core.config import Settings
-from app.core.cursor import decode_cursor, encode_cursor
+from app.core.cursor import decode_cursor, encode_cursor, split_page
 from app.core.search_text import normalize_search_text
 from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
@@ -158,13 +158,14 @@ class TemplateService:
             after=None if after is None else (after.updated_at, after.id),
             limit=TEMPLATES_PAGE_SIZE + 1,
         )
-        page_rows: list[tuple[Template, int]] = rows[:TEMPLATES_PAGE_SIZE]
-        next_cursor: str | None = None
-        if len(rows) > TEMPLATES_PAGE_SIZE:
-            last: Template = page_rows[-1][0]
-            next_cursor = encode_cursor(
-                TemplatePagePosition(updated_at=last.updated_at, id=last.id)
+        page_rows, last_row = split_page(rows, TEMPLATES_PAGE_SIZE)
+        next_cursor: str | None = (
+            None
+            if last_row is None
+            else encode_cursor(
+                TemplatePagePosition(updated_at=last_row[0].updated_at, id=last_row[0].id)
             )
+        )
         return TemplatePage(items=self._summaries(page_rows), next_cursor=next_cursor)
 
     def _summaries(self, rows: list[tuple[Template, int]]) -> list[TemplateSummary]:
