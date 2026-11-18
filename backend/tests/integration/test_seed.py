@@ -31,6 +31,7 @@ from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import seed_email
@@ -43,7 +44,7 @@ from tests.integration.helpers import JsonObject, counted_queries
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 578
+SMALL_SEED_MAX_QUERIES = 580
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -185,6 +186,16 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
+    likes: list[tuple[uuid.UUID, uuid.UUID]] = [
+        (like_owner_id, user_id)
+        for like_owner_id, user_id in db_session.execute(
+            select(Template.owner_id, TemplateLike.user_id).join(
+                Template, Template.id == TemplateLike.template_id
+            )
+        ).all()
+    ]
+    assert likes
+    assert all(owner_id != user_id for owner_id, user_id in likes)
     assert (
         db_session.scalar(
             select(func.count())

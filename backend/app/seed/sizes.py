@@ -20,6 +20,7 @@ class SeedSize:
     full_rooms: int
     rooms_with_bans: int
     rooms_on_public_templates_of_others: int
+    max_likes_per_public_template: int
     moderation_actions: int
     hidden_images: int
     deleted_images: int
@@ -54,6 +55,7 @@ FULL_SIZE: SeedSize = SeedSize(
     full_rooms=3,
     rooms_with_bans=3,
     rooms_on_public_templates_of_others=2,
+    max_likes_per_public_template=12,
     moderation_actions=180,
     hidden_images=3,
     deleted_images=1,
@@ -88,6 +90,7 @@ SMALL_SIZE: SeedSize = SeedSize(
     full_rooms=1,
     rooms_with_bans=1,
     rooms_on_public_templates_of_others=1,
+    max_likes_per_public_template=5,
     moderation_actions=60,
     hidden_images=1,
     deleted_images=1,
