@@ -2056,6 +2056,164 @@
         }
       }
     },
+    "/marketplace/templates": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "List Marketplace Templates",
+        "description": "The public templates, without an account, by pages. `q` keeps the templates whose name or\ntags have words starting with every keyword (`|` separates alternatives), ignoring case and\naccents; `tag` keeps those with that tag. Sorted by number of likes (`popular`) or by date\nmade public (`newest`). `cursor` is the `next_cursor` of the previous page, with the same\n`q`, `tag` and `sort`.",
+        "operationId": "list_marketplace_templates_marketplace_templates_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 30
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MarketplaceSort",
+              "default": "popular"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 24,
+              "minimum": 1,
+              "default": 24,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceTemplateListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cursor that cannot be read, or made for another list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/tags": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "List Marketplace Tags",
+        "description": "The tags used by the most public templates, without an account, most used first.",
+        "operationId": "list_marketplace_tags_marketplace_tags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceTagsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/marketplace/templates/{template_id}": {
       "get": {
         "tags": [
@@ -7665,6 +7823,128 @@
         ],
         "title": "LoginRequest",
         "description": "Sign-in with an email and a password."
+      },
+      "MarketplaceSort": {
+        "type": "string",
+        "enum": [
+          "popular",
+          "newest"
+        ],
+        "title": "MarketplaceSort"
+      },
+      "MarketplaceTagsResponse": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tags"
+        ],
+        "title": "MarketplaceTagsResponse",
+        "description": "The tags used by the most public templates, most used first."
+      },
+      "MarketplaceTemplateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceTemplateResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "MarketplaceTemplateListResponse",
+        "description": "A page of the marketplace. `next_cursor` reads the next page with the same search, tag and\nsort; it is null on the last one."
+      },
+      "MarketplaceTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner_name": {
+            "type": "string",
+            "title": "Owner Name"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "tile_count": {
+            "type": "integer",
+            "title": "Tile Count"
+          },
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count"
+          },
+          "preview_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview Image Url"
+          },
+          "preview_image_removed": {
+            "type": "boolean",
+            "title": "Preview Image Removed"
+          },
+          "tier_colors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tier Colors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner_name",
+          "tags",
+          "tile_count",
+          "like_count",
+          "preview_image_url",
+          "preview_image_removed",
+          "tier_colors"
+        ],
+        "title": "MarketplaceTemplateResponse",
+        "description": "A card of the marketplace. The preview is the image of the first tile:\n`preview_image_removed` is true when moderation removed it, and both are empty when the first\ntile has no image. `tier_colors` are the colors of the tiers, top to bottom."
       },
       "ModerationActionKind": {
         "type": "string",

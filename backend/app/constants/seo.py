@@ -4,6 +4,7 @@ SITE_NAME = "TierList"
 PAGE_TITLE_FORMAT = "{page} · " + SITE_NAME
 
 FRONTEND_PRIVACY = "/privacy"
+FRONTEND_MARKETPLACE = "/marketplace"
 FRONTEND_TERMS = "/terms"
 FRONTEND_LEGAL_NOTICE = "/legal"
 FRONTEND_PUBLIC_TEMPLATE_PREFIX = "/marketplace/templates/"

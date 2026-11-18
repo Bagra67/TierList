@@ -18,6 +18,12 @@ if TYPE_CHECKING:
     from app.models.tile import Tile
 
 
+LISTED_CANDIDATES = text(
+    f"visibility = '{TemplateVisibility.PUBLIC}' "
+    f"AND moderation = '{TemplateModeration.NONE}' AND deleted_at IS NULL"
+)
+
+
 class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "templates"
     __table_args__ = (
@@ -25,10 +31,13 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
             "ix_templates_listed_search",
             func.to_tsvector(text("'simple'"), text("search_text")),
             postgresql_using="gin",
-            postgresql_where=text(
-                f"visibility = '{TemplateVisibility.PUBLIC}' "
-                f"AND moderation = '{TemplateModeration.NONE}' AND deleted_at IS NULL"
-            ),
+            postgresql_where=LISTED_CANDIDATES,
+        ),
+        Index(
+            "ix_templates_listed_newest",
+            text("first_made_public_at DESC"),
+            text("id DESC"),
+            postgresql_where=LISTED_CANDIDATES,
         ),
     )
 

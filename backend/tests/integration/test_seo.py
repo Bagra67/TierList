@@ -68,6 +68,8 @@ def sitemap_locations(service: SeoService) -> list[str | None]:
         ("/privacy", "fr", "Politique de confidentialité · TierList"),
         ("/terms", "en", "Terms of use · TierList"),
         ("/legal", "fr", "Mentions légales · TierList"),
+        ("/marketplace", "fr", "Modèles publics · TierList"),
+        ("/marketplace", "en", "Public templates · TierList"),
     ],
 )
 def test_a_fixed_public_page_is_indexable_with_its_title_and_canonical_url(
@@ -172,6 +174,7 @@ def test_the_sitemap_lists_the_fixed_pages_and_only_the_listed_templates(
 
     assert locations == [
         f"{ORIGIN}/",
+        f"{ORIGIN}/marketplace",
         f"{ORIGIN}/privacy",
         f"{ORIGIN}/terms",
         f"{ORIGIN}/legal",

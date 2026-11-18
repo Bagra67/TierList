@@ -5,6 +5,7 @@ from app.constants.i18n import DEFAULT_PAGE_LANGUAGE, Language
 from app.constants.seo import (
     DEFAULT_SHARE_IMAGE_PATH,
     FRONTEND_LEGAL_NOTICE,
+    FRONTEND_MARKETPLACE,
     FRONTEND_PRIVACY,
     FRONTEND_PUBLIC_TEMPLATE_PREFIX,
     FRONTEND_TERMS,
@@ -25,6 +26,7 @@ from app.services.marketplace import MarketplaceService, PublicTemplate
 STATIC_PAGE_TITLES: dict[Language, dict[str, str]] = {
     language: {
         FRONTEND_HOME: texts.site_title,
+        FRONTEND_MARKETPLACE: PAGE_TITLE_FORMAT.format(page=texts.marketplace_title),
         FRONTEND_PRIVACY: PAGE_TITLE_FORMAT.format(page=texts.privacy_title),
         FRONTEND_TERMS: PAGE_TITLE_FORMAT.format(page=texts.terms_title),
         FRONTEND_LEGAL_NOTICE: PAGE_TITLE_FORMAT.format(page=texts.legal_notice_title),
