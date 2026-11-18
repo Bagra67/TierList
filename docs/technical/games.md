@@ -80,7 +80,7 @@ All the rounds are created at the start; only round 1 has `started_at`. `ends_at
 `GameService.start` (`app/services/games.py`) runs in **one transaction**:
 
 1. Locks the room and checks the room admin (`RoomService.get_for_admin_change`), then the status, the template and the placing participants.
-2. `TemplateService.take_snapshot` locks the template and only flushes.
+2. `TemplateService.take_snapshot` reads the template as the room admin (one of theirs, or a listed public template of another account), locks it and only flushes ([templates guide](templates.md#24-snapshots-template-versions)).
 3. Orders the snapshot tiles (`shuffle_items`, `random.SystemRandom`, for `random`), creates the game and its rounds, starts round 1.
 4. Sets the room `playing`, increments `rooms.version`, commits.
 5. **After the commit**, publishes `game.started` (`{round_number, round_count, ends_at}`) to the room ([real-time guide](realtime.md)).

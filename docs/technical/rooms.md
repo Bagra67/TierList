@@ -6,22 +6,23 @@ How rooms are created, read and configured through the API: data model, code and
 
 A room is where a group plays, reached by its **code** or its **link**. It is created from one of the user's templates, who becomes its **room admin**. Its **settings** apply to the next game.
 
-| Action               | Endpoint                                          | Result                                                                                                     |
-| -------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Create a room        | `POST /rooms`                                     | An open room on one of my templates with at least one tile; I am its room admin and its first participant. |
-| Open a room          | `GET /rooms/{code}`                               | The room, its settings and its participants, for a participant.                                            |
-| Join a room          | `POST /rooms/{code}/join`                         | A player seat for me, with my display name; my seat back if I already have one.                            |
-| Join as a guest      | `POST /rooms/{code}/guests`                       | A guest seat with a nickname, a browser cookie and my personal link.                                       |
-| Come back as a guest | `POST /rooms/{code}/guest-session`                | My guest seat back from the personal link, on any device.                                                  |
-| New personal link    | `POST /rooms/{code}/guest-link`                   | A new personal link for the guest recognised by the cookie; the old one stops working.                     |
-| Change the settings  | `PATCH /rooms/{code}/settings`                    | The new settings (room admin only); during a game, only late arrivals.                                     |
-| Remove a participant | `DELETE /rooms/{code}/participants/{id}`          | Their seat deleted (room admin only, not their own seat), at any time; they can join again.                |
-| Ban a participant    | `DELETE /rooms/{code}/participants/{id}?ban=true` | Removed, and their account (or, for a guest, their browser) can no longer join.                            |
-| Unban                | `DELETE /rooms/{code}/bans/{id}`                  | The person can join again (room admin only).                                                               |
+| Action               | Endpoint                                          | Result                                                                                                                                              |
+| -------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create a room        | `POST /rooms`                                     | An open room on one of my templates or a public template of another account, with at least one tile; I am its room admin and its first participant. |
+| Open a room          | `GET /rooms/{code}`                               | The room, its settings and its participants, for a participant.                                                                                     |
+| Join a room          | `POST /rooms/{code}/join`                         | A player seat for me, with my display name; my seat back if I already have one.                                                                     |
+| Join as a guest      | `POST /rooms/{code}/guests`                       | A guest seat with a nickname, a browser cookie and my personal link.                                                                                |
+| Come back as a guest | `POST /rooms/{code}/guest-session`                | My guest seat back from the personal link, on any device.                                                                                           |
+| New personal link    | `POST /rooms/{code}/guest-link`                   | A new personal link for the guest recognised by the cookie; the old one stops working.                                                              |
+| Change the settings  | `PATCH /rooms/{code}/settings`                    | The new settings (room admin only); during a game, only late arrivals.                                                                              |
+| Remove a participant | `DELETE /rooms/{code}/participants/{id}`          | Their seat deleted (room admin only, not their own seat), at any time; they can join again.                                                         |
+| Ban a participant    | `DELETE /rooms/{code}/participants/{id}?ban=true` | Removed, and their account (or, for a guest, their browser) can no longer join.                                                                     |
+| Unban                | `DELETE /rooms/{code}/bans/{id}`                  | The person can join again (room admin only).                                                                                                        |
 
 ### Rules
 
-- **Template**: one of mine, not deleted, not hidden by the moderation, with **at least one tile** (US-2.1). Otherwise `404` `template_not_found`, `409` `template_hidden` ([templates guide](templates.md#27-moderation)) or `409` `template_has_no_tiles`. Several rooms can use the same template.
+- **Template**: one of mine, not deleted, not hidden by the moderation, with **at least one tile** (US-2.1); or a **public template of another account** (US-2.4, #273), listed as on its public page ([templates guide](templates.md#210-public-template-page)): `get_playable_template` reads both in one query. Otherwise `404` `template_not_found`, `409` `template_hidden` ([templates guide](templates.md#27-moderation)) or `409` `template_has_no_tiles`; a template of another account that is not listed (private, hidden, deleted, owner banned) is `404` `template_not_found`, without saying why. Several rooms can use the same template.
+- **Someone else's template**: the room admin plays it but never edits it (the template routes stay owner-only). When it stops being listed, the game in progress finishes on its snapshot, and the next game answers `409` `template_not_found` ([games guide](games.md#22-start)); the owner keeps playing their own template, private or not.
 - **Code**: 6 characters among `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no `0`, `O`, `1`, `I`, easily confused when read or dictated), random (`secrets`), unique. It is read case-insensitively: `k7p2qx` opens `K7P2QX`.
 - **Link**: `FRONTEND_BASE_URL` + `/r/` + the code, e.g. `http://localhost:5173/r/K7P2QX`. The page itself comes with #84.
 - **Room admin**: the creator. They get a **participant** row at once: they count in the participant limit even when they do not play (US-2.6).
@@ -227,4 +228,4 @@ Live updates: once the room is loaded, `useRoomEvents` follows its real-time cha
 
 ### Tests
 
-`backend/tests/integration/test_rooms.py`, `test_room_removal.py`, `test_room_close.py`, `test_room_inactivity.py` and `test_room_capacity.py` (endpoints and services, against a real PostgreSQL), `backend/tests/test_room_sweeper.py` (sweep) and `backend/tests/test_room_codes.py` (code generator); `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, `RemoveParticipantDialog.test.tsx`, `RoomBans.test.tsx`, and the room creation in `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx`.
+`backend/tests/integration/test_rooms.py`, `test_room_removal.py`, `test_room_close.py`, `test_room_inactivity.py`, `test_room_capacity.py` and `test_public_template_rooms.py` (endpoints and services, against a real PostgreSQL), `backend/tests/test_room_sweeper.py` (sweep) and `backend/tests/test_room_codes.py` (code generator); `frontend/src/pages/RoomPage.test.tsx`, `components/RoomSettingsDialog.test.tsx`, `RemoveParticipantDialog.test.tsx`, `RoomBans.test.tsx`, and the room creation in `TemplatesPage.test.tsx` / `TemplateEditorPage.test.tsx` / `PublicTemplatePage.test.tsx`.
