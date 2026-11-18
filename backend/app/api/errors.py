@@ -41,3 +41,11 @@ def image_not_found() -> AppHTTPException:
         code=ErrorCode.IMAGE_NOT_FOUND,
         detail=messages.IMAGE_NOT_FOUND,
     )
+
+
+def invalid_cursor() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=400,
+        code=ErrorCode.INVALID_CURSOR,
+        detail=messages.INVALID_CURSOR,
+    )

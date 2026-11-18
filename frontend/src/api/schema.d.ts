@@ -292,8 +292,9 @@ export interface paths {
         };
         /**
          * List Templates
-         * @description The account's active templates, with their number of tiles, most recently modified first.
-         *     Each template gives its moderation decision and the images removed from its tiles.
+         * @description The account's active templates, with their number of tiles, most recently modified first,
+         *     by pages. `next_cursor` reads the next page, and is null on the last one. Each template gives
+         *     its moderation decision and the images removed from its tiles.
          */
         get: operations["list_templates_templates_get"];
         put?: never;
@@ -2531,11 +2532,14 @@ export interface components {
         };
         /**
          * TemplateListResponse
-         * @description The account's templates, most recently modified first.
+         * @description A page of the account's templates, most recently modified first. `next_cursor` reads the
+         *     next page; it is null on the last one.
          */
         TemplateListResponse: {
             /** Items */
             items: components["schemas"]["TemplateSummaryResponse"][];
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /**
          * TemplateModeration
@@ -3699,7 +3703,9 @@ export interface operations {
     };
     list_templates_templates_get: {
         parameters: {
-            query?: never;
+            query?: {
+                cursor?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3715,6 +3721,15 @@ export interface operations {
                     "application/json": components["schemas"]["TemplateListResponse"];
                 };
             };
+            /** @description Cursor that cannot be read, or made for another list */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Not authenticated */
             401: {
                 headers: {
@@ -3722,6 +3737,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */

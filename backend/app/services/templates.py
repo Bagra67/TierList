@@ -4,11 +4,18 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TypedDict
 
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.constants.templates import DEFAULT_TIERS, NEW_TIER_COLOR, NEW_TIER_NAME
+from app.constants.templates import (
+    DEFAULT_TIERS,
+    NEW_TIER_COLOR,
+    NEW_TIER_NAME,
+    TEMPLATES_PAGE_SIZE,
+)
 from app.core.config import Settings
+from app.core.cursor import decode_cursor, encode_cursor
 from app.core.search_text import normalize_search_text
 from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
@@ -91,6 +98,19 @@ class TemplateSummary:
     removed_images: list[RemovedImage]
 
 
+class TemplatePagePosition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    updated_at: datetime
+    id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class TemplatePage:
+    items: list[TemplateSummary]
+    next_cursor: str | None
+
+
 class TierChanges(TypedDict, total=False):
     name: str
     color: str
@@ -124,16 +144,38 @@ class TemplateService:
         return template
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
-        templates_with_tile_count: list[tuple[Template, int]] = (
+        return self._summaries(
             template_repository.list_owned_templates_with_tile_count(self._session, owner.id)
         )
-        removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
-            owner
+
+    def page_for_owner(self, owner: User, cursor: str | None) -> TemplatePage:
+        after: TemplatePagePosition | None = (
+            None if cursor is None else decode_cursor(cursor, TemplatePagePosition)
         )
-        tags: dict[uuid.UUID, list[str]] = self._tags_by_template(owner)
+        rows: list[tuple[Template, int]] = template_repository.list_owned_templates_with_tile_count(
+            self._session,
+            owner.id,
+            after=None if after is None else (after.updated_at, after.id),
+            limit=TEMPLATES_PAGE_SIZE + 1,
+        )
+        page_rows: list[tuple[Template, int]] = rows[:TEMPLATES_PAGE_SIZE]
+        next_cursor: str | None = None
+        if len(rows) > TEMPLATES_PAGE_SIZE:
+            last: Template = page_rows[-1][0]
+            next_cursor = encode_cursor(
+                TemplatePagePosition(updated_at=last.updated_at, id=last.id)
+            )
+        return TemplatePage(items=self._summaries(page_rows), next_cursor=next_cursor)
+
+    def _summaries(self, rows: list[tuple[Template, int]]) -> list[TemplateSummary]:
+        template_ids: list[uuid.UUID] = [template.id for template, _ in rows]
+        removed_images: dict[uuid.UUID, list[RemovedImage]] = self._removed_images_by_template(
+            template_ids
+        )
+        tags: dict[uuid.UUID, list[str]] = self._tags_by_template(template_ids)
 
         summaries: list[TemplateSummary] = []
-        for template, tile_count in templates_with_tile_count:
+        for template, tile_count in rows:
             summary: TemplateSummary = TemplateSummary(
                 id=template.id,
                 name=template.name,
@@ -149,15 +191,19 @@ class TemplateService:
             summaries.append(summary)
         return summaries
 
-    def _tags_by_template(self, owner: User) -> dict[uuid.UUID, list[str]]:
+    def _tags_by_template(self, template_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[str]]:
         tags: dict[uuid.UUID, list[str]] = {}
-        for tag in template_repository.list_tags_of_owner(self._session, owner.id):
+        for tag in template_repository.list_tags_of_templates(self._session, template_ids):
             tags.setdefault(tag.template_id, []).append(tag.label)
         return tags
 
-    def _removed_images_by_template(self, owner: User) -> dict[uuid.UUID, list[RemovedImage]]:
+    def _removed_images_by_template(
+        self, template_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[RemovedImage]]:
         tiles_with_image: list[tuple[Tile, Image]] = (
-            template_repository.list_tiles_with_removed_image_of_owner(self._session, owner.id)
+            template_repository.list_tiles_with_removed_image_of_templates(
+                self._session, template_ids
+            )
         )
 
         removed_images: dict[uuid.UUID, list[RemovedImage]] = {}
