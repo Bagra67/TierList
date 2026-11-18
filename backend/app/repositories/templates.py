@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import ColumnElement, Select, and_, delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session, selectinload
@@ -14,6 +15,11 @@ from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories.account_bans import is_active
+
+
+class RowLock(StrEnum):
+    UPDATE = "update"
+    SHARE = "share"
 
 
 def add_template(session: Session, template: Template) -> None:
@@ -34,7 +40,7 @@ def get_owned_template(
             Template.owner_id == owner_id,
             Template.deleted_at.is_(None),
         ),
-        for_update,
+        RowLock.UPDATE if for_update else None,
     )
 
 
@@ -43,7 +49,7 @@ def get_playable_template(
     template_id: uuid.UUID,
     user_id: uuid.UUID,
     now: datetime,
-    for_update: bool = False,
+    for_share: bool = False,
 ) -> Template | None:
     return _get_template_with_content(
         session,
@@ -52,12 +58,12 @@ def get_playable_template(
             Template.deleted_at.is_(None),
             or_(Template.owner_id == user_id, listed_templates_condition(now)),
         ),
-        for_update,
+        RowLock.SHARE if for_share else None,
     )
 
 
 def _get_template_with_content(
-    session: Session, condition: ColumnElement[bool], for_update: bool
+    session: Session, condition: ColumnElement[bool], lock: RowLock | None
 ) -> Template | None:
     statement: Select[Template] = (
         select(Template)
@@ -68,8 +74,8 @@ def _get_template_with_content(
             selectinload(Template.tags),
         )
     )
-    if for_update:
-        statement = statement.with_for_update(of=Template)
+    if lock is not None:
+        statement = statement.with_for_update(read=lock == RowLock.SHARE, of=Template)
     return session.scalars(statement).one_or_none()
 
 

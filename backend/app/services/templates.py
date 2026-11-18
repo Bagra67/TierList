@@ -351,7 +351,7 @@ class TemplateService:
 
     def take_snapshot(self, user: User, template_id: uuid.UUID) -> TemplateSnapshot:
         template: Template | None = template_repository.get_playable_template(
-            self._session, template_id, user.id, datetime.now(UTC), for_update=True
+            self._session, template_id, user.id, datetime.now(UTC), for_share=True
         )
         if template is None:
             raise TemplateNotFoundError
