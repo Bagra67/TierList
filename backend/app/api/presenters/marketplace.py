@@ -16,6 +16,7 @@ def public_template_response(
         name=template.name,
         owner_name=public_template.owner_name,
         tags=[tag.label for tag in template.tags],
+        like_count=public_template.like_count,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_public_tile_response(tile, storage) for tile in template.tiles],
     )

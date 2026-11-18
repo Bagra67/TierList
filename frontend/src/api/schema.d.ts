@@ -515,6 +515,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/marketplace/templates/{template_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Like
+         * @description Whether the account likes this public template, and its number of likes.
+         */
+        get: operations["get_like_marketplace_templates__template_id__like_get"];
+        /**
+         * Like Template
+         * @description Likes a public template of another account. Liking it again changes nothing.
+         */
+        put: operations["like_template_marketplace_templates__template_id__like_put"];
+        post?: never;
+        /**
+         * Unlike Template
+         * @description Removes the account's like of a public template. Without a like, changes nothing.
+         */
+        delete: operations["unlike_template_marketplace_templates__template_id__like_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/images": {
         parameters: {
             query?: never;
@@ -1899,6 +1927,16 @@ export interface components {
             nickname: string;
         };
         /**
+         * LikeStateResponse
+         * @description Whether the account likes the public template, and its number of likes.
+         */
+        LikeStateResponse: {
+            /** Liked */
+            liked: boolean;
+            /** Like Count */
+            like_count: number;
+        };
+        /**
          * LoginRequest
          * @description Sign-in with an email and a password.
          */
@@ -2067,7 +2105,7 @@ export interface components {
         /**
          * PublicTemplateResponse
          * @description A public template as everyone sees it: its name, its owner's display name, its tags, its
-         *     tiers and its tiles in their order.
+         *     number of likes, its tiers and its tiles in their order.
          */
         PublicTemplateResponse: {
             /**
@@ -2081,6 +2119,8 @@ export interface components {
             owner_name: string;
             /** Tags */
             tags: string[];
+            /** Like Count */
+            like_count: number;
             /** Tiers */
             tiers: components["schemas"]["TierResponse"][];
             /** Tiles */
@@ -4502,6 +4542,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicTemplateResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_like_marketplace_templates__template_id__like_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikeStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    like_template_marketplace_templates__template_id__like_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikeStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The account owns the template */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlike_template_marketplace_templates__template_id__like_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikeStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Template not found */

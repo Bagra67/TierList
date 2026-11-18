@@ -1175,6 +1175,7 @@ export const en: Translation = {
       tile_limit_reached: 'A template has at most {{max_tiles}} tiles.',
       tile_empty: 'A tile needs a text or an image.',
       invalid_tag: 'A tag needs at least one letter or digit (Latin alphabet).',
+      cannot_like_own_template: 'You cannot like your own template.',
       image_unsupported_format: 'This file is not a JPEG, PNG or WebP image.',
       image_too_large: 'The image is too heavy: {{max_bytes, megabytes}} at most.',
       image_too_many_pixels: 'The image is too large: reduce its resolution and try again.',

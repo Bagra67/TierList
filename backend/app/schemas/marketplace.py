@@ -17,11 +17,19 @@ class PublicTileResponse(BaseModel):
 
 class PublicTemplateResponse(BaseModel):
     """A public template as everyone sees it: its name, its owner's display name, its tags, its
-    tiers and its tiles in their order."""
+    number of likes, its tiers and its tiles in their order."""
 
     id: uuid.UUID
     name: str
     owner_name: str
     tags: list[str]
+    like_count: int
     tiers: list[TierResponse]
     tiles: list[PublicTileResponse]
+
+
+class LikeStateResponse(BaseModel):
+    """Whether the account likes the public template, and its number of likes."""
+
+    liked: bool
+    like_count: int
