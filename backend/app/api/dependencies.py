@@ -2,18 +2,21 @@ from collections.abc import Callable
 from contextlib import AbstractContextManager
 from typing import Annotated
 
-from fastapi import Cookie, Depends
+from fastapi import Cookie, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.rooms import GUEST_COOKIE
+from app.constants.seo import ACCEPT_LANGUAGE_HEADER
 from app.core.config import Settings, get_settings
 from app.db.session import get_db_session, get_engine
 from app.exceptions.auth import InvalidAccessTokenError
 from app.exceptions.http import AppHTTPException
 from app.models.user import User
+from app.seo.head import PageHead
+from app.seo.language import language_from_accept_language
 from app.services.account_bans import AccountBanService
 from app.services.account_review import AccountReviewService
 from app.services.auth import AuthenticatedSession, AuthService
@@ -34,6 +37,7 @@ from app.services.reports import ReportService
 from app.services.room_channel import ConnectionRegistry, PostCommitRoomPublisher, room_connections
 from app.services.rooms import RoomService, RoomViewer
 from app.services.round_timers import RoundScheduler, round_timers
+from app.services.seo import SeoService
 from app.services.template_moderation import TemplateModerationService
 from app.services.templates import TemplateService
 
@@ -162,6 +166,23 @@ def get_image_storage(settings: Annotated[Settings, Depends(get_settings)]) -> I
     return create_image_storage(settings)
 
 
+def get_seo_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+    marketplace: Annotated[MarketplaceService, Depends(get_marketplace_service)],
+    storage: Annotated[ImageStorage, Depends(get_image_storage)],
+) -> SeoService:
+    return SeoService(settings, marketplace, storage)
+
+
+def get_page_head(
+    request: Request, service: Annotated[SeoService, Depends(get_seo_service)]
+) -> PageHead:
+    return service.page_head(
+        request.url.path,
+        language_from_accept_language(request.headers.get(ACCEPT_LANGUAGE_HEADER)),
+    )
+
+
 def get_image_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -276,6 +297,7 @@ RoomViewerDep = Annotated[RoomViewer, Depends(get_room_viewer)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 TemplateServiceDep = Annotated[TemplateService, Depends(get_template_service)]
 MarketplaceServiceDep = Annotated[MarketplaceService, Depends(get_marketplace_service)]
+SeoServiceDep = Annotated[SeoService, Depends(get_seo_service)]
 RoomServiceDep = Annotated[RoomService, Depends(get_room_service)]
 GameServiceDep = Annotated[GameService, Depends(get_game_service)]
 GameResultsServiceDep = Annotated[GameResultsService, Depends(get_game_results_service)]
