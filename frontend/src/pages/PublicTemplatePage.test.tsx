@@ -157,10 +157,8 @@ describe('PublicTemplatePage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
 
     expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
-    const request: Request | undefined = fetchMock.mock.calls
-      .map(([sent]) => sent)
-      .find((sent) => sent.method === 'POST' && sent.url.endsWith('/rooms'));
-    await expect(request?.clone().json()).resolves.toEqual({ template_id: templateId });
+    const call = fetchMock.mock.calls.find(([sent]) => sent.url.endsWith('/rooms'));
+    await expect(call?.[0].clone().json()).resolves.toEqual({ template_id: templateId });
   });
 
   it('says why the room cannot be created', async () => {
@@ -186,7 +184,7 @@ describe('PublicTemplatePage', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Se connecter pour jouer' }));
     expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toHaveAttribute(
       'href',
-      `/api/auth/google/login?template=${templateId}`,
+      `/api/auth/google/login?return_to=%2Fmarketplace%2Ftemplates%2F${templateId}`,
     );
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
     fireEvent.change(screen.getByLabelText('Mot de passe'), {

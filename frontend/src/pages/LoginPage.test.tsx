@@ -150,6 +150,16 @@ describe('LoginPage', () => {
     );
   });
 
+  it('brings the Google sign-in back to the requested page', () => {
+    stubBackend({});
+    renderLoginPage({ pathname: '/login', state: { from: '/r/K7P2QX' } });
+
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toHaveAttribute(
+      'href',
+      '/api/auth/google/login?return_to=%2Fr%2FK7P2QX',
+    );
+  });
+
   it('says that creating an account accepts the terms and the privacy policy', () => {
     stubBackend({});
     renderLoginPage();

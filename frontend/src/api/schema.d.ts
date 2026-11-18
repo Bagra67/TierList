@@ -168,7 +168,7 @@ export interface paths {
         /**
          * Google Login
          * @description Sends the browser to the Google sign-in page. After signing in, the browser comes back to
-         *     the public page of `template` when it is given, unless `next` asks for another step.
+         *     `return_to`, a path of the site (never another site), unless `next` asks for another step.
          */
         get: operations["google_login_auth_google_login_get"];
         put?: never;
@@ -2445,7 +2445,8 @@ export interface components {
         RoomStatus: "open" | "playing";
         /**
          * RoomTemplateResponse
-         * @description Template of the room; `hidden` is true when moderation hid it: no new game can start then.
+         * @description Template of the room; `hidden` is true when moderation hid it and the room admin owns it: no
+         *     new game can start then. For a template of another account, the reason is never given.
          */
         RoomTemplateResponse: {
             /**
@@ -3414,7 +3415,7 @@ export interface operations {
         parameters: {
             query?: {
                 next?: "delete-account" | null;
-                template?: string | null;
+                return_to?: string | null;
             };
             header?: never;
             path?: never;

@@ -39,13 +39,13 @@ type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 interface GoogleSignInReturn {
   next?: GoogleNextStep;
-  templateId?: string;
+  returnTo?: string;
 }
 
-export function googleSignInUrl({ next, templateId }: GoogleSignInReturn = {}): string {
+export function googleSignInUrl({ next, returnTo }: GoogleSignInReturn = {}): string {
   const params: URLSearchParams = new URLSearchParams();
   if (next !== undefined) params.set('next', next);
-  if (templateId !== undefined) params.set('template', templateId);
+  if (returnTo !== undefined) params.set('return_to', returnTo);
   const query: string = params.size === 0 ? '' : `?${params.toString()}`;
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
