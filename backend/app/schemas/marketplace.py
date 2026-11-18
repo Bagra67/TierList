@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.templates import TierResponse
 
@@ -31,6 +31,8 @@ class PublicTemplateResponse(BaseModel):
 class LikeStateResponse(BaseModel):
     """Whether the account likes the public template, its number of likes, and whether the account
     may like it (false for its owner)."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     liked: bool
     like_count: int

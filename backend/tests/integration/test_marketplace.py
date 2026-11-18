@@ -38,8 +38,12 @@ def alice(auth_client: TestClient, db_session: Session) -> dict[str, str]:
 
 
 @pytest.fixture
-def fans(auth_client: TestClient) -> list[dict[str, str]]:
-    return [register(auth_client, f"fan-{number}@example.com") for number in range(3)]
+def fans(auth_client: TestClient, db_session: Session) -> list[dict[str, str]]:
+    emails: list[str] = [f"fan-{number}@example.com" for number in range(3)]
+    headers: list[dict[str, str]] = [register(auth_client, email) for email in emails]
+    for email in emails:
+        confirm_email(db_session, email)
+    return headers
 
 
 def publish(
