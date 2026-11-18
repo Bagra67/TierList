@@ -17,7 +17,7 @@ In the browser, the frontend then names the tab as the user navigates (`useDocum
 | Page                                           | Indexable        | Title                                    | Image                                  |
 | ---------------------------------------------- | ---------------- | ---------------------------------------- | -------------------------------------- |
 | `/`                                            | yes              | `TierList · Classez ensemble, en direct` | `/og-image.png`                        |
-| `/privacy`, `/terms`, `/legal`                 | yes              | `<page title> · TierList`                | `/og-image.png`                        |
+| `/marketplace`, `/privacy`, `/terms`, `/legal` | yes              | `<page title> · TierList`                | `/og-image.png`                        |
 | `/marketplace/templates/{id}`, listed template | yes              | `<template name> · TierList`             | first visible tile image, else default |
 | `/marketplace/templates/{id}`, otherwise       | no, **HTTP 404** | site title                               | `/og-image.png`                        |
 | any other path (rooms, results, sign-in…)      | no               | site title                               | `/og-image.png`                        |
@@ -45,7 +45,7 @@ The texts are in `seo/texts.py`, in both languages. As for emails, this is a cas
 | `true`  | `Disallow: /api/`, then `Sitemap: <origin>/sitemap.xml` | XML            | as in §2                        |
 
 - Both files are routes of the root app (`api/routes/seo.py`), outside `/api` and outside the OpenAPI schema.
-- The sitemap lists `/`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`MarketplaceService.list_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
+- The sitemap lists `/`, `/marketplace`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`MarketplaceService.list_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
 - Pages that are not indexable are not blocked in `robots.txt` on purpose: a crawler has to read a page to see its `noindex`.
 
 ## 5. Frontend

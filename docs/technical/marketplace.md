@@ -1,6 +1,6 @@
 # Marketplace
 
-How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**. The tags and the search text are **built in #272** ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)); the rest is not built yet: the likes with #276, the marketplace with #277 and the pagination of _My templates_ with #105. Each of those issues fills §3 and turns this page into the description of the code once it is built.
+How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**, and **built**: the tags and the search text in #272 ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)), the likes in #276, the marketplace in #277 and the pages of _My templates_ in #105 ([templates guide](templates.md#26-endpoints)). §3 lists where each piece lives.
 
 ## 1. Functional overview
 
@@ -134,11 +134,34 @@ The `popular` sort without keyword is the only one that grows with the data: its
 
 ### 2.9 API
 
-Proposed for #277 (the PR fixes the final names):
+Open to visitors (no user dependency, like the public template page):
 
-`GET /marketplace/templates?q=&tag=&sort=popular|newest&cursor=`, open to visitors, answers `{"items": [...], "next_cursor": …}`. Each item carries what a card shows (US-3.1): id, name, owner's display name, tags (labels), number of tiles, number of likes, preview image of the first tile (or the "image removed" visual, [images guide](images.md#29-moderation)).
+| Method and path                                                          | Success                                 | Errors                        |
+| ------------------------------------------------------------------------ | --------------------------------------- | ----------------------------- |
+| `GET /marketplace/templates?q=&tag=&sort=popular\|newest&cursor=&limit=` | `200` `MarketplaceTemplateListResponse` | `400` `invalid_cursor`, `422` |
+| `GET /marketplace/tags`                                                  | `200` `MarketplaceTagsResponse`         | —                             |
 
-### 2.10 Known limitations
+- `MarketplaceTemplateListResponse` is `{items, next_cursor}`. Each item (`MarketplaceTemplateResponse`) carries what a card shows (US-3.1):
+  - `id`, `name`, `owner_name`, `tags` (labels), `tile_count`, `like_count`;
+  - `preview_image_url` / `preview_image_removed`: the first tile's image, with `optional_image_url` and `is_image_removed`, so a removed image is never served ([images guide](images.md#29-moderation)); both are empty when the first tile has no image;
+  - `tier_colors`: the colors of the tiers, top to bottom, for the preview of a template without a first image.
+- `q` takes at most 100 characters (`SEARCH_QUERY_MAX_LENGTH`) and 8 words (`SEARCH_QUERY_MAX_WORDS`, counted after normalization by an `AfterValidator`); `tag` at most 30 characters, normalized like the stored tags; `limit` from 1 to 24 (the visitor home asks for 3).
+- `GET /marketplace/tags` gives the 12 tags (`MARKETPLACE_POPULAR_TAG_COUNT`) used by the most listed templates, one per `normalized_label`, the alphabetically first label standing for its spellings.
+
+### 2.10 Likes
+
+| Method and path                           | Success                   | Errors                                         |
+| ----------------------------------------- | ------------------------- | ---------------------------------------------- |
+| `GET /marketplace/templates/{id}/like`    | `200` `LikeStateResponse` | `401`, `404`                                   |
+| `PUT /marketplace/templates/{id}/like`    | `200` `LikeStateResponse` | `401`, `404`, `409` `cannot_like_own_template` |
+| `DELETE /marketplace/templates/{id}/like` | `200` `LikeStateResponse` | `401`, `404`                                   |
+
+- Table `template_likes` (`models/template_like.py`): primary key `(template_id, user_id)`, index on `user_id`, `created_at`. Both foreign keys are `ON DELETE CASCADE`: deleting an account or purging a template removes its likes, so the count never needs a cleanup.
+- `LikeStateResponse` is `{liked, like_count, can_like}`; `can_like` is false for the owner, so the public page knows whether to show the button without exposing the owner.
+- The routes need an account. They act on a **listed** template only (`get_listed_template_name_and_owner`), otherwise `404` `template_not_found`. `PUT` is idempotent (`INSERT … ON CONFLICT DO NOTHING`), `DELETE` too.
+- The likes of a template that stops being listed are kept, and come back with it (invariant 6). `PublicTemplateResponse` carries `like_count`.
+
+### 2.11 Known limitations
 
 - **Likes moving between pages**: with the `popular` sort, a like given while someone pages can move a template across the cursor, so it is shown twice or skipped. The frontend drops a template already shown (same `id`) when it appends a page; a skipped one comes back on the next search.
 - **No relevance, no typo tolerance**: the next step would be `pg_trgm` (similarity), which needs the extension in production.
@@ -147,12 +170,23 @@ Proposed for #277 (the PR fixes the final names):
 
 ## 3. In the code
 
-Built so far: the #272 and #275 rows. What each issue adds:
+What each issue built:
 
-| Issue | Adds                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #272  | **Built**: `normalize_search_text` (`app/core/search_text.py`), table `template_tags` (`models/template_tag.py`), column `templates.search_text` and its GIN index (migration `33bd344cd746`), `_refresh_search_text` on create, rename and tag changes (`services/templates.py`). Details in the [templates guide](templates.md#29-tags).                                                  |
-| #275  | **Built**: `listed_templates_condition(now)`, `get_listed_template_with_owner_name` and `get_listed_template_name_and_owner` (`repositories/templates.py`), used by the public template page, the template reports, and the rooms and snapshots on someone else's public template (`get_playable_template`, #273). Details in the [templates guide](templates.md#210-public-template-page). |
-| #276  | Table `template_likes` and its indexes; the privacy policy (likes are personal data).                                                                                                                                                                                                                                                                                                       |
-| #277  | Query builder of §2.5, cursor of §2.7, `invalid_cursor`, `MARKETPLACE_PAGE_SIZE`, index of the `newest` sort, the route.                                                                                                                                                                                                                                                                    |
-| #105  | Cursor on `GET /templates` (`next_cursor` in `TemplateListResponse`).                                                                                                                                                                                                                                                                                                                       |
+| Issue | Adds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #272  | **Built**: `normalize_search_text` (`app/core/search_text.py`), table `template_tags` (`models/template_tag.py`), column `templates.search_text` and its GIN index (migration `33bd344cd746`), `_refresh_search_text` on create, rename and tag changes (`services/templates.py`). Details in the [templates guide](templates.md#29-tags).                                                                                                                                                                                                                                              |
+| #275  | **Built**: `listed_templates_condition(now)`, `get_listed_template_with_owner_name` and `get_listed_template_name_and_owner` (`repositories/templates.py`), used by the public template page, the template reports, and the rooms and snapshots on someone else's public template (`get_playable_template`, #273). Details in the [templates guide](templates.md#210-public-template-page).                                                                                                                                                                                             |
+| #276  | **Built**: table `template_likes` (`models/template_like.py`, migration `a9b8f14a856a`), `repositories/template_likes.py`, `MarketplaceService.like` / `unlike` / `like_state`, the like routes (§2.10), `like_count` on the public page, the like button (`components/LikeButton.tsx`) and the privacy policy (`privacy.data.likes`).                                                                                                                                                                                                                                                  |
+| #277  | **Built**: `build_search_query` (`app/core/search_query.py`), `list_marketplace_templates` and `list_popular_listed_tags` (`repositories/templates.py`), `MarketplaceService.list_templates` with one cursor position per sort (`PopularPosition`, `NewestPosition`), constants in `app/constants/marketplace.py`, index `ix_templates_listed_newest` (migration `3cc4d74966c1`), the routes (§2.9), `/marketplace` in the sitemap ([search engines guide](seo.md#2-pages)). Frontend: `MarketplacePage`, `MarketplaceCard`, `PopularTemplates` on the visitor home, the nav link (§4). |
+| #105  | **Built**: `encode_cursor` / `decode_cursor` (`app/core/cursor.py`, `InvalidCursorError`), `TemplateService.page_for_owner`, `next_cursor` in `TemplateListResponse`; frontend `useTemplates` as an infinite query ([templates guide](templates.md#26-endpoints)).                                                                                                                                                                                                                                                                                                                      |
+
+## 4. Frontend
+
+- **Page** `MarketplacePage`, at `/marketplace` (`ROUTES.MARKETPLACE`), open to visitors:
+  - a search form (`role="search"`, sent on submit, as the other search fields of the app), a "Trier par" select, the popular tags as toggle pills (`aria-pressed`, one at a time);
+  - the filters live in the address (`?q=&tag=&sort=`, `sort` left out for the default), so a search can be shared and goes back with the browser; they are part of the query key (`['marketplace', 'list', filters]`);
+  - the cards in the shared `PagedList` with "Voir plus"; a template already shown is dropped when a page is appended (`uniqueById`, §2.11);
+  - empty state, or "nothing matches" with "Effacer la recherche".
+- **Card** `MarketplaceCard`: the preview is the first tile's image, the "image removed" visual, or the template's tier colors as bars of decreasing width, like the logo; then the name (a link that covers the card), "par … · n éléments", the tags and the number of likes.
+- **Visitor home**: `PopularTemplates` shows the 3 most liked templates after the three steps, with "Voir tous les modèles publics"; hidden when there is none. The signed-in nav has a "Modèles publics" link (`MainNav`); the empty state of _Vos modèles_ offers "Ou partez d'un modèle public".
+- **Public template page**: a "← Modèles publics" link (a visitor who comes from a search engine has no nav), tags linking to `/marketplace?tag=…` (`TemplateTagList linkToMarketplace`), and the like button ([templates guide](templates.md#210-public-template-page)).
