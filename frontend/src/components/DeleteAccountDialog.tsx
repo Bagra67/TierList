@@ -84,7 +84,10 @@ export function DeleteAccountDialog({ user, openOnMount = false }: DeleteAccount
           )}
           {needsGoogleSignIn && (
             <p>
-              <a href={googleSignInUrl(DELETE_ACCOUNT_STEP)} className={textLinkClassName}>
+              <a
+                href={googleSignInUrl({ next: DELETE_ACCOUNT_STEP })}
+                className={textLinkClassName}
+              >
                 {t('account.delete.signInAgainWithGoogle')}
               </a>
             </p>

@@ -1,7 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
+import { Link, type Location, useLocation, useParams } from 'react-router';
 
+import { useCurrentUser } from '../api/auth';
 import { type PublicTemplate, type PublicTile, usePublicTemplate } from '../api/marketplace';
+import { signInRedirectState } from '../auth/signInRedirect';
+import { CreateRoomButton } from '../components/CreateRoomButton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -10,6 +13,8 @@ import { ReportButton } from '../components/ReportButton';
 import { TemplateTagList } from '../components/TemplateTagList';
 import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
+import { Button } from '../components/ui/button';
+import { ROUTES } from '../constants/routes';
 import { isTemplateId } from '../constants/templates';
 import { ApiError, translateError } from '../errors/apiError';
 import { NotFoundPage } from './NotFoundPage';
@@ -61,7 +66,10 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
           </p>
           <TemplateTagList tags={template.tags} />
         </div>
-        <ReportButton targetKind="template" targetId={template.id} contentName={template.name} />
+        <div className="flex flex-wrap items-start gap-2">
+          <PlayAction template={template} />
+          <ReportButton targetKind="template" targetId={template.id} contentName={template.name} />
+        </div>
       </div>
 
       <section className="flex w-full flex-col items-start gap-3">
@@ -90,5 +98,28 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
         )}
       </section>
     </>
+  );
+}
+
+function PlayAction({ template }: { template: PublicTemplate }) {
+  const { t } = useTranslation();
+  const location: Location = useLocation();
+  const { data: user } = useCurrentUser();
+
+  if (user === undefined) return null;
+  if (user !== null) {
+    return <CreateRoomButton templateId={template.id} templateName={template.name} />;
+  }
+  return (
+    <div className="flex max-w-xs flex-col items-end gap-1">
+      <Button asChild>
+        <Link to={ROUTES.LOGIN} state={signInRedirectState(location)}>
+          {t('publicTemplate.play.signIn')}
+        </Link>
+      </Button>
+      <p className="text-right text-sm text-muted-foreground">
+        {t('publicTemplate.play.signInHint')}
+      </p>
+    </div>
   );
 }

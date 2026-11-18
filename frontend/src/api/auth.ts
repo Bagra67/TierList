@@ -37,8 +37,16 @@ export type User = components['schemas']['UserResponse'];
 export type DeleteAccountRequest = components['schemas']['DeleteAccountRequest'];
 type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
-export function googleSignInUrl(next?: GoogleNextStep): string {
-  const query = next === undefined ? '' : `?${new URLSearchParams({ next }).toString()}`;
+interface GoogleSignInReturn {
+  next?: GoogleNextStep;
+  returnTo?: string;
+}
+
+export function googleSignInUrl({ next, returnTo }: GoogleSignInReturn = {}): string {
+  const params: URLSearchParams = new URLSearchParams();
+  if (next !== undefined) params.set('next', next);
+  if (returnTo !== undefined) params.set('return_to', returnTo);
+  const query: string = params.size === 0 ? '' : `?${params.toString()}`;
   return `${GOOGLE_SIGN_IN_PATH}${query}`;
 }
 

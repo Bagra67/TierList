@@ -2,9 +2,19 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { setAccessToken } from '../api/client';
+import type { User } from '../api/auth';
 import type { PublicTemplate } from '../api/marketplace';
+import { aliceRoom } from '../test/fixtures/rooms';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { errorResponse, stubBackend, type BackendMock } from '../test/stubBackend';
+import {
+  alice,
+  type BackendMock,
+  errorResponse,
+  stubBackend,
+  tokenResponse,
+} from '../test/stubBackend';
+import { LoginPage } from './LoginPage';
 import { PublicTemplatePage } from './PublicTemplatePage';
 
 const templateId: string = '5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01';
@@ -31,18 +41,22 @@ const chips: PublicTemplate = {
   ],
 };
 
-function renderPage(path: string = `/marketplace/templates/${templateId}`) {
+function renderPage(path: string = `/marketplace/templates/${templateId}`, currentUser?: User) {
   renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/marketplace/templates/:templateId" element={<PublicTemplatePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/r/:code" element={<h1>Lobby</h1>} />
       </Routes>
     </MemoryRouter>,
+    { currentUser },
   );
 }
 
 describe('PublicTemplatePage', () => {
   afterEach(() => {
+    setAccessToken(null);
     vi.unstubAllGlobals();
   });
 
@@ -122,7 +136,7 @@ describe('PublicTemplatePage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Envoyer le signalement' }));
 
     const request: Request = await waitFor(() => {
-      const call = fetchMock.mock.calls.find(([sent]) => sent.method === 'POST');
+      const call = fetchMock.mock.calls.find(([sent]) => sent.url.endsWith('/reports'));
       if (call === undefined) throw new Error('No report sent yet');
       return call[0];
     });
@@ -131,5 +145,56 @@ describe('PublicTemplatePage', () => {
       target_id: templateId,
       reason: 'spam',
     });
+  });
+
+  it('lets a signed-in user create a room with the template', async () => {
+    const fetchMock: BackendMock = stubBackend({
+      [templateRoute]: () => Response.json(chips),
+      'POST /rooms': () => Response.json(aliceRoom, { status: 201 }),
+    });
+    renderPage(undefined, alice);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lobby' })).toBeInTheDocument();
+    const call = fetchMock.mock.calls.find(([sent]) => sent.url.endsWith('/rooms'));
+    await expect(call?.[0].clone().json()).resolves.toEqual({ template_id: templateId });
+  });
+
+  it('says why the room cannot be created', async () => {
+    stubBackend({
+      [templateRoute]: () => Response.json(chips),
+      'POST /rooms': () => errorResponse(404, 'template_not_found'),
+    });
+    renderPage(undefined, alice);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Créer une salle avec Chips' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ce modèle est introuvable.');
+  });
+
+  it('asks a visitor to sign in to play, then brings them back to the template', async () => {
+    stubBackend({
+      [templateRoute]: () => Response.json(chips),
+      'POST /auth/login': tokenResponse('login-token'),
+      'GET /auth/me': () => Response.json(alice),
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Se connecter pour jouer' }));
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toHaveAttribute(
+      'href',
+      `/api/auth/google/login?return_to=%2Fmarketplace%2Ftemplates%2F${templateId}`,
+    );
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mot de passe'), {
+      target: { value: 'correct horse battery staple' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Créer une salle avec Chips' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Chips' })).toBeInTheDocument();
   });
 });

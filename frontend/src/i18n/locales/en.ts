@@ -145,7 +145,7 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       publicTemplates:
-        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images) and your display name. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy.',
+        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images) and your display name. Anyone signed in can also create a room with it: the games played keep a copy of it (name, tiers, items), shown in the history of their players and on their results link, even if the template becomes private again or is deleted. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy.',
       moderation:
         'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
@@ -838,6 +838,10 @@ export const en: Translation = {
     unavailable: {
       title: 'Template unavailable',
       message: 'This template is not available.',
+    },
+    play: {
+      signIn: 'Sign in to play',
+      signInHint: 'Create a room with this template. You come back here after signing in.',
     },
   },
   report: {
