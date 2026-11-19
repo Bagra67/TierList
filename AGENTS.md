@@ -117,6 +117,14 @@ A non-trivial plan MUST also contain:
     rollout, manual steps (e.g. a SQL command run by hand), new
     environment variables or secrets, or "nothing to do".
 
+When the change touches the interface, the plan MUST also contain a
+**mockup** of it: an image or a Claude artifact, with realistic content,
+its actions mocked (clicks, dialogs, filters, empty and error states),
+both themes and the phone width, in the "Le Plateau" identity
+(`docs/technical/visual-identity.md`). With Claude Code, challenge it
+with the `frontend-design` skill, fix what the review finds, and show
+the result before implementing.
+
 For significant tasks, present the plan before implementation when
 practical.
 
@@ -613,6 +621,8 @@ explicitly uses them.
     to the backend.
 -   Preserve accessibility.
 -   Translate every user-facing text (see §50).
+-   Mock up any change to the interface and challenge it before
+    implementing (see Step 2 in §3).
 -   Keep state as local as possible.
 -   Lift state only when multiple components genuinely need it.
 
