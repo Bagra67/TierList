@@ -1,4 +1,4 @@
-export function startOfDay(day: string): string {
+function startOfDay(day: string): string {
   return new Date(`${day}T00:00:00`).toISOString();
 }
 
