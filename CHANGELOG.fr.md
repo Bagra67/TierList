@@ -5,6 +5,16 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.2.1] - 2026-11-19
+
+### Corrections
+
+- backend : les robots d'indexation lisent l'API dont les pages ont besoin pour s'afficher (#486)
+
+### Documentation
+
+- pourquoi robots.txt ne bloque plus l'API (#487)
+
 ## [1.2.0] - 2026-11-18
 
 ### Fonctionnalités
