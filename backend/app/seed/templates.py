@@ -27,6 +27,7 @@ from app.services.templates import TemplateService
 logger = logging.getLogger(__name__)
 
 UPLOAD_SPAN_DAYS = 30
+SEED_DELETED_TEMPLATE_ERASED_IN = timedelta(days=1)
 
 TEXT_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -264,6 +265,12 @@ def create_templates(
             owner, f"Ancien modèle {number}", [(word, None) for word in rng.sample(WORD_POOL, 4)]
         )
         templates.delete(owner, template.id)
+        if number == 1:
+            template.deleted_at = (
+                datetime.now(UTC)
+                - settings.deleted_template_retention
+                + SEED_DELETED_TEMPLATE_ERASED_IN
+            )
         deleted.append(template)
     return SeedTemplates(playable=playable, empty=empty, deleted=deleted, images=uploaded)
 
