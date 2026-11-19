@@ -157,7 +157,9 @@ def test_a_hidden_template_page_is_a_404_that_is_not_indexable(
 
 
 def test_robots_txt_points_to_the_sitemap_only_when_indexing_is_enabled(db_session: Session):
-    assert f"Sitemap: {ORIGIN}/sitemap.xml" in seo_service(db_session).robots_txt()
+    assert seo_service(db_session).robots_txt() == (
+        f"User-agent: *\nAllow: /\n\nSitemap: {ORIGIN}/sitemap.xml\n"
+    )
     assert seo_service(db_session, indexing_enabled=False).robots_txt() == (
         "User-agent: *\nDisallow: /\n"
     )

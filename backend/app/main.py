@@ -43,6 +43,7 @@ from app.core.errors import ErrorResponse, handle_http_exception, register_error
 from app.core.frontend import mount_frontend_after_api
 from app.core.logging import configure_logging, get_logging_settings
 from app.core.monitoring import configure_sentry
+from app.core.noindex import NoindexMiddleware
 from app.core.proxy import TrustedProxyMiddleware
 from app.core.upload_size import ImageUploadSizeMiddleware
 from app.db.session import get_db_session, ping_database
@@ -183,13 +184,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 api_app = FastAPI(
     title="TierList API",
     description="FastAPI backend of the TierList application",
-    version="1.2.0",
+    version="1.2.1",
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(api_app)
 api_app.add_middleware(
     ImageUploadSizeMiddleware, max_image_bytes=get_settings().image_upload_max_bytes
 )
+api_app.add_middleware(NoindexMiddleware)
 api_app.include_router(auth.router)
 api_app.include_router(client_config.router)
 api_app.include_router(templates.router)

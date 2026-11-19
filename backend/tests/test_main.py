@@ -22,6 +22,7 @@ from app.api.routes import (
     rooms,
     templates,
 )
+from app.constants.seo import NOINDEX, X_ROBOTS_TAG_HEADER
 from app.db.session import get_db_session
 from app.main import api_app, app
 from app.services.round_timers import round_timers
@@ -70,6 +71,11 @@ def test_health_db_unavailable():
     response = client.get("/api/health/db")
     assert response.status_code == 503
     assert response.json() == {"detail": "Database unavailable", "code": "database_unavailable"}
+
+
+def test_api_answers_are_kept_out_of_search_results():
+    assert client.get("/api/health").headers[X_ROBOTS_TAG_HEADER] == NOINDEX
+    assert client.get("/api/unknown").headers[X_ROBOTS_TAG_HEADER] == NOINDEX
 
 
 def test_unknown_api_route_is_a_json_404():
