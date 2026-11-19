@@ -39,14 +39,15 @@ The texts are in `seo/texts.py`, in both languages. As for emails, this is a cas
 
 `SEARCH_INDEXING_ENABLED` (default `false`) decides whether the site may be indexed. It is `true` in production only ([deployment guide](deployment.md#3-environment-variables-pod-env)).
 
-| Setting | `/robots.txt`                                           | `/sitemap.xml` | Pages                           |
-| ------- | ------------------------------------------------------- | -------------- | ------------------------------- |
-| `false` | `Disallow: /`                                           | 404            | all `noindex`, no canonical URL |
-| `true`  | `Disallow: /api/`, then `Sitemap: <origin>/sitemap.xml` | XML            | as in §2                        |
+| Setting | `/robots.txt`                                    | `/sitemap.xml` | Pages                           |
+| ------- | ------------------------------------------------ | -------------- | ------------------------------- |
+| `false` | `Disallow: /`                                    | 404            | all `noindex`, no canonical URL |
+| `true`  | `Allow: /`, then `Sitemap: <origin>/sitemap.xml` | XML            | as in §2                        |
 
 - Both files are routes of the root app (`api/routes/seo.py`), outside `/api` and outside the OpenAPI schema.
 - The sitemap lists `/`, `/marketplace`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`MarketplaceService.list_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
 - Pages that are not indexable are not blocked in `robots.txt` on purpose: a crawler has to read a page to see its `noindex`.
+- `/api/` is not blocked either: the pages are rendered by JavaScript from it, and Googlebot respects `robots.txt` for the calls a page makes while rendering. Blocked, every page rendered as an error, which Search Console reported as a soft 404 (#485). Every `/api/` answer carries `X-Robots-Tag: noindex` instead (`NoindexMiddleware`, `app/core/noindex.py`), so the JSON answers stay out of the results.
 
 ## 5. Frontend
 
