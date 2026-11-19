@@ -55,6 +55,8 @@ class ModerationActionKind(StrEnum):
     DELETE = "delete"
     BAN = "ban"
     LIFT_BAN = "lift_ban"
+    RESTORE = "restore"
+    PURGE = "purge"
 
 
 class ModerationTargetType(StrEnum):

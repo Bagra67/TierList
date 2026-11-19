@@ -15,7 +15,11 @@ from tests.integration.helpers import JsonObject, register, register_super_admin
 
 pytestmark = pytest.mark.integration
 
-MODERATION_ROUTES: tuple[str, ...] = ("/moderation/log", "/moderation/super-admins")
+MODERATION_ROUTES: tuple[str, ...] = (
+    "/moderation/log",
+    "/moderation/super-admins",
+    "/moderation/templates/deleted",
+)
 
 
 def account(db_session: Session, email: str) -> User:

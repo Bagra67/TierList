@@ -357,6 +357,8 @@ export const fr = {
       delete: 'Supprimer',
       ban: 'Bannir',
       lift_ban: 'Lever le bannissement',
+      restore: 'Restaurer',
+      purge: 'Supprimer définitivement',
     },
     targets: {
       template: 'Modèle',

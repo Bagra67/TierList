@@ -39,6 +39,12 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
             text("id DESC"),
             postgresql_where=LISTED_CANDIDATES,
         ),
+        Index(
+            "ix_templates_deleted",
+            "deleted_at",
+            "id",
+            postgresql_where=text("deleted_at IS NOT NULL"),
+        ),
     )
 
     owner_id: Mapped[uuid.UUID] = mapped_column(

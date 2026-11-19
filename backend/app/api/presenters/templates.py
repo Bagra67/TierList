@@ -6,10 +6,14 @@ from app.api.presenters.images import (
 from app.models.image import ImageStatus
 from app.models.template import Template
 from app.models.tile import Tile
-from app.schemas.moderation import ReviewedTemplateResponse, ReviewedTileResponse
+from app.schemas.moderation import (
+    DeletedTemplateResponse,
+    ReviewedTemplateResponse,
+    ReviewedTileResponse,
+)
 from app.schemas.templates import TemplateResponse, TierResponse, TileResponse
 from app.services.image_storage import ImageStorage
-from app.services.template_moderation import ReviewedTemplate
+from app.services.template_moderation import DeletedTemplate, ReviewedTemplate
 
 
 def template_response(template: Template, storage: ImageStorage) -> TemplateResponse:
@@ -53,6 +57,9 @@ def reviewed_template_response(
         owner_name=reviewed.owner_name,
         moderation=template.moderation,
         moderation_reason=template.moderation_reason,
+        deleted_at=template.deleted_at,
+        erase_at=reviewed.deletion.erase_at if reviewed.deletion is not None else None,
+        deletion_reason=reviewed.deletion.reason if reviewed.deletion is not None else None,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_reviewed_tile_response(tile, storage) for tile in template.tiles],
     )
@@ -67,4 +74,21 @@ def _reviewed_tile_response(tile: Tile, storage: ImageStorage) -> ReviewedTileRe
         if has_file and tile.image is not None
         else None,
         image_status=tile.image.status if tile.image is not None else None,
+    )
+
+
+def deleted_template_response(deleted: DeletedTemplate) -> DeletedTemplateResponse:
+    template: Template = deleted.template
+    if template.deleted_at is None:
+        raise RuntimeError("A deleted template has a deletion date")
+    return DeletedTemplateResponse(
+        id=template.id,
+        name=template.name,
+        owner_id=template.owner_id,
+        owner_name=deleted.owner_name,
+        tile_count=deleted.tile_count,
+        moderation=template.moderation,
+        deleted_at=template.deleted_at,
+        erase_at=deleted.deletion.erase_at,
+        deletion_reason=deleted.deletion.reason,
     )

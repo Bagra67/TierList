@@ -162,7 +162,7 @@ def list_listed_template_owner_ids(
 def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
     statement: Select[Template] = (
         select(Template)
-        .where(Template.id == template_id, Template.deleted_at.is_(None))
+        .where(Template.id == template_id)
         .options(selectinload(Template.tiers), selectinload(Template.tiles))
     )
     return session.scalars(statement).one_or_none()
@@ -195,6 +195,18 @@ def mark_template_deleted(session: Session, template_id: uuid.UUID, deleted_at: 
         .where(Template.id == template_id)
         .values(deleted_at=deleted_at, updated_at=Template.updated_at)
     )
+
+
+def mark_template_restored(session: Session, template_id: uuid.UUID) -> None:
+    session.execute(
+        update(Template)
+        .where(Template.id == template_id)
+        .values(deleted_at=None, updated_at=Template.updated_at)
+    )
+
+
+def delete_template_permanently(session: Session, template_id: uuid.UUID) -> None:
+    session.execute(delete(Template).where(Template.id == template_id))
 
 
 def list_owned_templates_with_tile_count(
