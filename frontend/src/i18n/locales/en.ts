@@ -137,7 +137,7 @@ export const en: Translation = {
         'Links sent by email: 24 hours to verify the email address, 30 minutes for a new password.',
       guests: "A guest's personal link: 30 days. An inactive room is closed after 24 hours.",
       deleted:
-        'Deleted templates: erased permanently after 30 days. Images no longer used: erased after 7 days.',
+        'Deleted templates: erased permanently after 30 days at most. Images no longer used: erased after 7 days.',
       moderatedImages:
         'Images removed by the moderation: a hidden image is kept offline as long as it is hidden; a deleted image is erased at once, and only its fingerprint is kept, without time limit, to refuse it if it is uploaded again. The reason for the decision is kept with the image so that its owner can read it, until their account is deleted.',
       backups: 'Database backups: 14 days.',
@@ -155,7 +155,7 @@ export const en: Translation = {
       publicTemplates:
         'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images), your display name and its number of likes. Anyone signed in can also create a room with it: the games played keep a copy of it (name, tiers, items), shown in the history of their players and on their results link, even if the template becomes private again or is deleted. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy.',
       moderation:
-        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
+        'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. They also see the deleted templates until they are erased, and can restore one or erase it earlier. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
         "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
     },

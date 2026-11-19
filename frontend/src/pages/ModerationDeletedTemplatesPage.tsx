@@ -1,37 +1,36 @@
 import { cn } from 'cn';
-import { type FormEvent, type RefObject, useId, useRef, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import {
   type DeletedTemplate,
+  type DeletedTemplateAction,
   type DeletedTemplatesFilters,
-  type TemplateModerationAction,
   useDeletedTemplates,
-  useModerateTemplate,
 } from '../api/moderation';
+import { DayRangeFields } from '../components/DayRangeFields';
 import { DeletionDetails } from '../components/DeletionDetails';
 import { EmptyState } from '../components/EmptyState';
 import { eraseCountdown, isEraseUrgent } from '../components/eraseCountdown';
-import { exclusiveEndOfDay, startOfDay } from '../components/localDays';
-import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
+import {
+  type DayRange,
+  type DayRangeBounds,
+  dayRangeBounds,
+  EMPTY_DAY_RANGE,
+  isDayRangeSet,
+} from '../components/localDays';
 import { PagedList } from '../components/PagedList';
+import {
+  type TemplateModerationDialog,
+  useTemplateModerationDialog,
+} from '../components/TemplateModerationDialog';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
 import { panelVariants } from '../components/ui/panel';
 import { textLinkClassName } from '../components/ui/text-link';
 import { useDocumentTitle } from '../components/useDocumentTitle';
 import { moderationAccountPath, moderationTemplatePath } from '../constants/routes';
-import { translateError } from '../errors/apiError';
-
-type DeletedTemplateAction = Extract<TemplateModerationAction, 'restore' | 'purge'>;
-
-interface PendingAction {
-  template: DeletedTemplate;
-  action: DeletedTemplateAction;
-}
 
 function optionalText(value: string): string | undefined {
   const trimmed: string = value.trim();
@@ -41,22 +40,19 @@ function optionalText(value: string): string | undefined {
 export function ModerationDeletedTemplatesPage() {
   const { t } = useTranslation();
   useDocumentTitle(t('moderation.deletedTemplates.title'));
-  const fromId: string = useId();
-  const toId: string = useId();
   const [ownerDraft, setOwnerDraft] = useState<string>('');
   const [nameDraft, setNameDraft] = useState<string>('');
   const [owner, setOwner] = useState<string | undefined>(undefined);
   const [name, setName] = useState<string | undefined>(undefined);
-  const [fromDay, setFromDay] = useState<string>('');
-  const [toDay, setToDay] = useState<string>('');
+  const [days, setDays] = useState<DayRange>(EMPTY_DAY_RANGE);
+  const bounds: DayRangeBounds = dayRangeBounds(days);
   const filters: DeletedTemplatesFilters = {
     owner,
     name,
-    deletedAfter: fromDay === '' ? undefined : startOfDay(fromDay),
-    deletedBefore: toDay === '' ? undefined : exclusiveEndOfDay(toDay),
+    deletedAfter: bounds.after,
+    deletedBefore: bounds.before,
   };
-  const isFiltered: boolean =
-    owner !== undefined || name !== undefined || fromDay !== '' || toDay !== '';
+  const isFiltered: boolean = owner !== undefined || name !== undefined || isDayRangeSet(days);
 
   function applyText(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,26 +89,12 @@ export function ModerationDeletedTemplatesPage() {
             {t('moderation.deletedTemplates.search')}
           </Button>
         </form>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={fromId}>{t('moderation.deletedTemplates.from')}</Label>
-          <Input
-            id={fromId}
-            type="date"
-            value={fromDay}
-            max={toDay === '' ? undefined : toDay}
-            onChange={(event) => setFromDay(event.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={toId}>{t('moderation.deletedTemplates.to')}</Label>
-          <Input
-            id={toId}
-            type="date"
-            value={toDay}
-            min={fromDay === '' ? undefined : fromDay}
-            onChange={(event) => setToDay(event.target.value)}
-          />
-        </div>
+        <DayRangeFields
+          range={days}
+          onChange={setDays}
+          fromLabel={t('moderation.deletedTemplates.from')}
+          toLabel={t('moderation.deletedTemplates.to')}
+        />
       </div>
 
       <DeletedTemplateList
@@ -136,29 +118,7 @@ function DeletedTemplateList({ filters, emptyMessage }: DeletedTemplateListProps
   const { t } = useTranslation();
   const query = useDeletedTemplates(filters);
   const templates: DeletedTemplate[] = query.data?.pages.flatMap((page) => page.templates) ?? [];
-  const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
-  const [pending, setPending] = useState<PendingAction | null>(null);
-  const moderateMutation = useModerateTemplate();
-  const action: DeletedTemplateAction = pending?.action ?? 'restore';
-
-  function openDialog(template: DeletedTemplate, chosenAction: DeletedTemplateAction) {
-    setPending({ template, action: chosenAction });
-    dialogRef.current?.showModal();
-  }
-
-  async function moderate(reason: string): Promise<boolean> {
-    if (pending === null) return false;
-    try {
-      await moderateMutation.mutateAsync({
-        templateId: pending.template.id,
-        action: pending.action,
-        reason,
-      });
-    } catch {
-      return false;
-    }
-    return true;
-  }
+  const moderation: TemplateModerationDialog = useTemplateModerationDialog();
 
   return (
     <>
@@ -170,34 +130,25 @@ function DeletedTemplateList({ filters, emptyMessage }: DeletedTemplateListProps
       >
         <ul className={panelVariants({ variant: 'list', className: 'w-full' })}>
           {templates.map((template: DeletedTemplate) => (
-            <DeletedTemplateRow key={template.id} template={template} onAction={openDialog} />
+            <DeletedTemplateRow
+              key={template.id}
+              template={template}
+              onAction={(action: DeletedTemplateAction) =>
+                moderation.open(template.id, template.name, action)
+              }
+            />
           ))}
         </ul>
       </PagedList>
 
-      <ModerationReasonDialog
-        dialogRef={dialogRef}
-        title={t(`moderation.templateDialog.${action}.title`, {
-          name: pending?.template.name ?? '',
-        })}
-        description={t(`moderation.templateDialog.${action}.description`)}
-        submitLabel={t(`moderation.templateDialog.${action}.submit`)}
-        submittingLabel={t(`moderation.templateDialog.${action}.submitting`)}
-        destructive={action === 'purge'}
-        isPending={moderateMutation.isPending}
-        translatedFailureMessage={
-          moderateMutation.isError ? translateError(t, moderateMutation.error) : null
-        }
-        onSubmit={moderate}
-        onClose={() => moderateMutation.reset()}
-      />
+      {moderation.dialog}
     </>
   );
 }
 
 interface DeletedTemplateRowProps {
   template: DeletedTemplate;
-  onAction: (template: DeletedTemplate, action: DeletedTemplateAction) => void;
+  onAction: (action: DeletedTemplateAction) => void;
 }
 
 function DeletedTemplateRow({ template, onAction }: DeletedTemplateRowProps) {
@@ -238,20 +189,10 @@ function DeletedTemplateRow({ template, onAction }: DeletedTemplateRowProps) {
           {eraseCountdown(t, template.erase_at)}
         </time>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => onAction(template, 'restore')}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => onAction('restore')}>
             {t('moderation.actions.restore')}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="destructive"
-            onClick={() => onAction(template, 'purge')}
-          >
+          <Button type="button" size="sm" variant="destructive" onClick={() => onAction('purge')}>
             {t('moderation.actions.purge')}
           </Button>
         </div>

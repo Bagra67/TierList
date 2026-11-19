@@ -82,7 +82,7 @@ describe('ModerationDeletedTemplatesPage', () => {
     expect(within(rows[0]).getByText('Par la modération')).toBeInTheDocument();
     expect(within(rows[0]).getByText('« Contenu haineux »')).toBeInTheDocument();
     expect(within(rows[0]).getByText('Effacé dans 1 jour')).toBeInTheDocument();
-    expect(within(rows[1]).getByText(/Supprimé par son auteur le/)).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/Supprimé par son propriétaire le/)).toBeInTheDocument();
     expect(within(rows[1]).getByText('Effacé dans 29 jours')).toBeInTheDocument();
     expect(within(rows[1]).queryByText('Par la modération')).not.toBeInTheDocument();
   });
