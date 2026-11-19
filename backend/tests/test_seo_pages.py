@@ -92,9 +92,9 @@ def test_robots_txt_forbids_everything_without_a_sitemap():
     assert robots_txt(None) == "User-agent: *\nDisallow: /\n"
 
 
-def test_robots_txt_only_forbids_the_api_and_gives_the_sitemap():
+def test_robots_txt_lets_crawlers_read_everything_the_pages_render_from():
     assert robots_txt("https://tierlist.example.com/sitemap.xml") == (
-        "User-agent: *\nDisallow: /api/\n\nSitemap: https://tierlist.example.com/sitemap.xml\n"
+        "User-agent: *\nAllow: /\n\nSitemap: https://tierlist.example.com/sitemap.xml\n"
     )
 
 
