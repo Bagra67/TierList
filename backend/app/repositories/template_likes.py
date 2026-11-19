@@ -34,3 +34,23 @@ def has_liked(session: Session, template_id: uuid.UUID, user_id: uuid.UUID) -> b
         exists().where(TemplateLike.template_id == template_id, TemplateLike.user_id == user_id)
     )
     return bool(session.scalar(statement))
+
+
+def count_likes_of_templates(
+    session: Session, template_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, int]:
+    statement: Select[uuid.UUID, int] = (
+        select(TemplateLike.template_id, func.count())
+        .where(TemplateLike.template_id.in_(template_ids))
+        .group_by(TemplateLike.template_id)
+    )
+    return {template_id: count for template_id, count in session.execute(statement)}
+
+
+def list_liked_template_ids(
+    session: Session, user_id: uuid.UUID, template_ids: list[uuid.UUID]
+) -> set[uuid.UUID]:
+    statement: Select[uuid.UUID] = select(TemplateLike.template_id).where(
+        TemplateLike.user_id == user_id, TemplateLike.template_id.in_(template_ids)
+    )
+    return set(session.scalars(statement))

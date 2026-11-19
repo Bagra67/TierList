@@ -150,6 +150,15 @@ def get_listed_template_name_and_owner(
     return None if row is None else (row[0], row[1])
 
 
+def list_listed_template_owner_ids(
+    session: Session, template_ids: list[uuid.UUID], now: datetime
+) -> dict[uuid.UUID, uuid.UUID]:
+    statement: Select[uuid.UUID, uuid.UUID] = select(Template.id, Template.owner_id).where(
+        Template.id.in_(template_ids), listed_templates_condition(now)
+    )
+    return {template_id: owner_id for template_id, owner_id in session.execute(statement)}
+
+
 def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
     statement: Select[Template] = (
         select(Template)

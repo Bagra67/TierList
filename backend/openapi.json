@@ -2278,6 +2278,80 @@
         }
       }
     },
+    "/marketplace/likes": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "List Like States",
+        "description": "The account's like state of several public templates at once (one page of cards). The\ntemplates that are not listed are left out.",
+        "operationId": "list_like_states_marketplace_likes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 24,
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LikeStatesResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/marketplace/templates/{template_id}/like": {
       "get": {
         "tags": [
@@ -7802,6 +7876,23 @@
         "title": "LikeStateResponse",
         "description": "Whether the account likes the public template, its number of likes, and whether the account\nmay like it (false for its owner)."
       },
+      "LikeStatesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateLikeStateResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "LikeStatesResponse",
+        "description": "The like states of the requested templates that are listed, in the requested order; the\nothers are left out."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -9191,6 +9282,36 @@
         ],
         "title": "SuperAdminResponse",
         "description": "A super admin, to filter the log by author."
+      },
+      "TemplateLikeStateResponse": {
+        "properties": {
+          "liked": {
+            "type": "boolean",
+            "title": "Liked"
+          },
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count"
+          },
+          "can_like": {
+            "type": "boolean",
+            "title": "Can Like"
+          },
+          "template_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Template Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "liked",
+          "like_count",
+          "can_like",
+          "template_id"
+        ],
+        "title": "TemplateLikeStateResponse",
+        "description": "The like state of one public template, for the marketplace cards."
       },
       "TemplateListResponse": {
         "properties": {

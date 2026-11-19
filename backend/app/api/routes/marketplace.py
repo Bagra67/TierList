@@ -28,11 +28,18 @@ from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import CannotLikeOwnTemplateError, TemplateNotFoundError
 from app.schemas.marketplace import (
     LikeStateResponse,
+    LikeStatesResponse,
     MarketplaceTagsResponse,
     MarketplaceTemplateListResponse,
     PublicTemplateResponse,
+    TemplateLikeStateResponse,
 )
-from app.services.marketplace import LikeState, MarketplacePage, PublicTemplate
+from app.services.marketplace import (
+    LikeState,
+    MarketplacePage,
+    PublicTemplate,
+    TemplateLikeState,
+)
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
@@ -104,6 +111,23 @@ def get_public_template(
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     return public_template_response(public_template, storage)
+
+
+@router.get("/likes", responses=UNAUTHORIZED_RESPONSE)
+def list_like_states(
+    template_ids: Annotated[
+        list[uuid.UUID],
+        Query(alias="template_id", min_length=1, max_length=MARKETPLACE_PAGE_SIZE),
+    ],
+    user: CurrentUserDep,
+    service: MarketplaceServiceDep,
+) -> LikeStatesResponse:
+    """The account's like state of several public templates at once (one page of cards). The
+    templates that are not listed are left out."""
+    states: list[TemplateLikeState] = service.like_states(user, template_ids)
+    return LikeStatesResponse(
+        items=[TemplateLikeStateResponse.model_validate(state) for state in states]
+    )
 
 
 @router.get("/templates/{template_id}/like", responses=LIKE_RESPONSES)
