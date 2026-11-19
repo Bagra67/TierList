@@ -1,15 +1,15 @@
-import { type RefObject, useRef, useState } from 'react';
+import { type RefObject, useRef } from 'react';
 import { cn } from 'cn';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
 import {
   type Account,
-  type TemplateModerationAction,
+  isDestructiveTemplateAction,
+  type LiveTemplateAction,
   useAccount,
   useHideAllImages,
   useLiftBan,
-  useModerateTemplate,
 } from '../api/moderation';
 import type { TemplateSummary } from '../api/templates';
 import { BanAccountDialog } from '../components/BanAccountDialog';
@@ -17,9 +17,13 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ModerationLogTable } from '../components/ModerationLogTable';
-import { ReportQueue } from '../components/ReportQueue';
 import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
+import { ReportQueue } from '../components/ReportQueue';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
+import {
+  type TemplateModerationDialog,
+  useTemplateModerationDialog,
+} from '../components/TemplateModerationDialog';
 import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
 import { panelVariants } from '../components/ui/panel';
@@ -213,38 +217,9 @@ function PastBans({ pastBans }: { pastBans: Account['past_bans'] }) {
   );
 }
 
-type LiveTemplateAction = Exclude<TemplateModerationAction, 'restore' | 'purge'>;
-
-interface PendingTemplateAction {
-  template: TemplateSummary;
-  action: LiveTemplateAction;
-}
-
 function AccountTemplates({ account }: { account: Account }) {
   const { t } = useTranslation();
-  const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
-  const [pending, setPending] = useState<PendingTemplateAction | null>(null);
-  const moderateMutation = useModerateTemplate();
-  const action: LiveTemplateAction = pending?.action ?? 'hide';
-
-  function openDialog(template: TemplateSummary, templateAction: LiveTemplateAction) {
-    setPending({ template, action: templateAction });
-    dialogRef.current?.showModal();
-  }
-
-  async function moderate(reason: string): Promise<boolean> {
-    if (pending === null) return false;
-    try {
-      await moderateMutation.mutateAsync({
-        templateId: pending.template.id,
-        action: pending.action,
-        reason,
-      });
-    } catch {
-      return false;
-    }
-    return true;
-  }
+  const moderation: TemplateModerationDialog = useTemplateModerationDialog();
 
   return (
     <section className="flex w-full flex-col items-start gap-3">
@@ -274,11 +249,13 @@ function AccountTemplates({ account }: { account: Account }) {
                       key={templateAction}
                       type="button"
                       size="sm"
-                      variant={templateAction === 'delete' ? 'destructive' : 'secondary'}
+                      variant={
+                        isDestructiveTemplateAction(templateAction) ? 'destructive' : 'secondary'
+                      }
                       aria-label={t(`moderation.account.templateActionLabel.${templateAction}`, {
                         name: template.name,
                       })}
-                      onClick={() => openDialog(template, templateAction)}
+                      onClick={() => moderation.open(template.id, template.name, templateAction)}
                     >
                       {t(`moderation.actions.${templateAction}`)}
                     </Button>
@@ -289,25 +266,7 @@ function AccountTemplates({ account }: { account: Account }) {
           })}
         </ul>
       )}
-      <ModerationReasonDialog
-        dialogRef={dialogRef}
-        title={t(`moderation.templateDialog.${action}.title`, {
-          name: pending?.template.name ?? '',
-        })}
-        description={t(`moderation.templateDialog.${action}.description`)}
-        submitLabel={t(`moderation.templateDialog.${action}.submit`)}
-        submittingLabel={t(`moderation.templateDialog.${action}.submitting`)}
-        destructive={action === 'delete'}
-        isPending={moderateMutation.isPending}
-        translatedFailureMessage={
-          moderateMutation.isError ? translateError(t, moderateMutation.error) : null
-        }
-        onSubmit={moderate}
-        onClose={() => {
-          moderateMutation.reset();
-          setPending(null);
-        }}
-      />
+      {moderation.dialog}
     </section>
   );
 }

@@ -1,12 +1,11 @@
-import { type RefObject, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, type NavigateFunction, useNavigate, useParams } from 'react-router';
 
 import {
   type ReviewedTemplate,
   type ReviewedTile,
+  isDestructiveTemplateAction,
   type TemplateModerationAction,
-  useModerateTemplate,
   useReviewedTemplate,
 } from '../api/moderation';
 import { DeletionDetails } from '../components/DeletionDetails';
@@ -14,8 +13,11 @@ import { EmptyState } from '../components/EmptyState';
 import { eraseCountdown, isEraseUrgent } from '../components/eraseCountdown';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
 import { TemplateHiddenBadge } from '../components/TemplateHiddenBadge';
+import {
+  type TemplateModerationDialog,
+  useTemplateModerationDialog,
+} from '../components/TemplateModerationDialog';
 import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
 import { Button } from '../components/ui/button';
@@ -43,9 +45,6 @@ export function ModerationTemplatePage() {
 function TemplateContent({ template }: { template: ReviewedTemplate }) {
   const { t } = useTranslation();
   const navigate: NavigateFunction = useNavigate();
-  const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
-  const [action, setAction] = useState<TemplateModerationAction>('hide');
-  const moderateMutation = useModerateTemplate();
   const isHidden: boolean = template.moderation === 'hidden';
   const isDeleted: boolean = template.deleted_at !== null;
   const actions: TemplateModerationAction[] = isDeleted
@@ -55,21 +54,12 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
       : ['hide', 'delete'];
   const accountPath: string = moderationAccountPath(template.owner_id);
 
-  function openDialog(chosenAction: TemplateModerationAction) {
-    setAction(chosenAction);
-    dialogRef.current?.showModal();
-  }
-
-  async function moderate(reason: string): Promise<boolean> {
-    try {
-      await moderateMutation.mutateAsync({ templateId: template.id, action, reason });
-    } catch {
-      return false;
-    }
-    if (action === 'delete') void navigate(accountPath);
-    if (action === 'purge') void navigate(ROUTES.MODERATION_DELETED_TEMPLATES);
-    return true;
-  }
+  const moderation: TemplateModerationDialog = useTemplateModerationDialog(
+    (action: TemplateModerationAction) => {
+      if (action === 'delete') void navigate(accountPath);
+      if (action === 'purge') void navigate(ROUTES.MODERATION_DELETED_TEMPLATES);
+    },
+  );
 
   return (
     <>
@@ -121,12 +111,8 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
             key={templateAction}
             type="button"
             size="sm"
-            variant={
-              templateAction === 'delete' || templateAction === 'purge'
-                ? 'destructive'
-                : 'secondary'
-            }
-            onClick={() => openDialog(templateAction)}
+            variant={isDestructiveTemplateAction(templateAction) ? 'destructive' : 'secondary'}
+            onClick={() => moderation.open(template.id, template.name, templateAction)}
           >
             {t(`moderation.actions.${templateAction}`)}
           </Button>
@@ -153,20 +139,7 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
         )}
       </section>
 
-      <ModerationReasonDialog
-        dialogRef={dialogRef}
-        title={t(`moderation.templateDialog.${action}.title`, { name: template.name })}
-        description={t(`moderation.templateDialog.${action}.description`)}
-        submitLabel={t(`moderation.templateDialog.${action}.submit`)}
-        submittingLabel={t(`moderation.templateDialog.${action}.submitting`)}
-        destructive={action === 'delete' || action === 'purge'}
-        isPending={moderateMutation.isPending}
-        translatedFailureMessage={
-          moderateMutation.isError ? translateError(t, moderateMutation.error) : null
-        }
-        onSubmit={moderate}
-        onClose={() => moderateMutation.reset()}
-      />
+      {moderation.dialog}
     </>
   );
 }

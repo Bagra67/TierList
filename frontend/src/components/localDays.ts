@@ -14,3 +14,26 @@ export function today(): string {
   const date: string = String(now.getDate()).padStart(2, '0');
   return `${now.getFullYear()}-${month}-${date}`;
 }
+
+export interface DayRange {
+  fromDay: string;
+  toDay: string;
+}
+
+export const EMPTY_DAY_RANGE: DayRange = { fromDay: '', toDay: '' };
+
+export interface DayRangeBounds {
+  after: string | undefined;
+  before: string | undefined;
+}
+
+export function dayRangeBounds({ fromDay, toDay }: DayRange): DayRangeBounds {
+  return {
+    after: fromDay === '' ? undefined : startOfDay(fromDay),
+    before: toDay === '' ? undefined : exclusiveEndOfDay(toDay),
+  };
+}
+
+export function isDayRangeSet({ fromDay, toDay }: DayRange): boolean {
+  return fromDay !== '' || toDay !== '';
+}

@@ -36,7 +36,13 @@ export type ListedImageStatus = NonNullable<
   NonNullable<paths['/moderation/images']['get']['parameters']['query']>['status']
 >;
 export type ImageModerationAction = 'hide' | 'unhide' | 'delete';
-export type TemplateModerationAction = ImageModerationAction | 'restore' | 'purge';
+export type LiveTemplateAction = ImageModerationAction;
+export type DeletedTemplateAction = 'restore' | 'purge';
+export type TemplateModerationAction = LiveTemplateAction | DeletedTemplateAction;
+
+export function isDestructiveTemplateAction(action: TemplateModerationAction): boolean {
+  return action === 'delete' || action === 'purge';
+}
 export type DeletedTemplate = components['schemas']['DeletedTemplateResponse'];
 type DeletedTemplatesPage = components['schemas']['DeletedTemplatesResponse'];
 export type AccountSearchPage = components['schemas']['AccountSearchResponse'];
