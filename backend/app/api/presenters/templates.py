@@ -58,8 +58,8 @@ def reviewed_template_response(
         moderation=template.moderation,
         moderation_reason=template.moderation_reason,
         deleted_at=template.deleted_at,
-        erase_at=reviewed.deletion.erase_at if reviewed.deletion is not None else None,
-        deletion_reason=reviewed.deletion.reason if reviewed.deletion is not None else None,
+        erase_at=reviewed.erase_at,
+        deletion_reason=template.deletion_reason,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_reviewed_tile_response(tile, storage) for tile in template.tiles],
     )
@@ -79,8 +79,6 @@ def _reviewed_tile_response(tile: Tile, storage: ImageStorage) -> ReviewedTileRe
 
 def deleted_template_response(deleted: DeletedTemplate) -> DeletedTemplateResponse:
     template: Template = deleted.template
-    if template.deleted_at is None:
-        raise RuntimeError("A deleted template has a deletion date")
     return DeletedTemplateResponse(
         id=template.id,
         name=template.name,
@@ -88,7 +86,7 @@ def deleted_template_response(deleted: DeletedTemplate) -> DeletedTemplateRespon
         owner_name=deleted.owner_name,
         tile_count=deleted.tile_count,
         moderation=template.moderation,
-        deleted_at=template.deleted_at,
-        erase_at=deleted.deletion.erase_at,
-        deletion_reason=deleted.deletion.reason,
+        deleted_at=deleted.deleted_at,
+        erase_at=deleted.erase_at,
+        deletion_reason=template.deletion_reason,
     )

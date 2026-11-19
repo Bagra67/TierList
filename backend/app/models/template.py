@@ -57,6 +57,7 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         server_default=text("'none'"),
     )
     moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
+    deletion_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
     visibility: Mapped[TemplateVisibility] = mapped_column(
         text_enum(TemplateVisibility, "template_visibility"),
         default=TemplateVisibility.PRIVATE,

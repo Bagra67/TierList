@@ -34,6 +34,19 @@ def _replace_action_kinds(kinds: tuple[str, ...]) -> None:
 def upgrade() -> None:
     """Upgrade schema."""
     _replace_action_kinds(ACTION_KINDS_AFTER)
+    op.add_column("templates", sa.Column("deletion_reason", sa.String(length=500), nullable=True))
+    op.execute(
+        """
+        UPDATE templates SET deletion_reason = deletions.reason
+        FROM (
+            SELECT DISTINCT ON (target_id) target_id, reason
+            FROM moderation_actions
+            WHERE target_type = 'template' AND action = 'delete'
+            ORDER BY target_id, created_at DESC, id DESC
+        ) AS deletions
+        WHERE deletions.target_id = templates.id AND templates.deleted_at IS NOT NULL
+        """
+    )
     op.create_index(
         "ix_templates_deleted",
         "templates",
@@ -46,5 +59,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index("ix_templates_deleted", table_name="templates")
+    op.drop_column("templates", "deletion_reason")
     op.execute("DELETE FROM moderation_actions WHERE action IN ('restore', 'purge')")
     _replace_action_kinds(ACTION_KINDS_BEFORE)
