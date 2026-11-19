@@ -111,6 +111,8 @@ uv run python scripts/purge_deleted_templates.py
 
 It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192); the command above runs it by hand.
 
+Until then, super admins see the deleted templates and can restore them or erase them earlier ([moderation guide](moderation.md#212-deleted-templates), #104).
+
 ### 2.4 Snapshots (template versions)
 
 Decided and built in #82. A game is played on a **snapshot**: a frozen copy of the template's tiers and tiles, taken when the game starts ([domain model](../product/milestone-1/domain-model.md), US-1.6, US-1.7, US-3.1).
