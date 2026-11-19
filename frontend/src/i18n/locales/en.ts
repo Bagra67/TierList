@@ -853,6 +853,7 @@ export const en: Translation = {
       label: 'Popular tags',
     },
     card: {
+      like: 'Like “{{name}}” · {{count}}',
       byline_one: 'by {{owner}} · {{count}} item',
       byline_other: 'by {{owner}} · {{count}} items',
     },
