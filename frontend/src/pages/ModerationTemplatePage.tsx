@@ -9,7 +9,9 @@ import {
   useModerateTemplate,
   useReviewedTemplate,
 } from '../api/moderation';
+import { DeletionDetails } from '../components/DeletionDetails';
 import { EmptyState } from '../components/EmptyState';
+import { eraseCountdown, isEraseUrgent } from '../components/eraseCountdown';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { ModerationReasonDialog } from '../components/ModerationReasonDialog';
@@ -18,7 +20,8 @@ import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
-import { moderationAccountPath } from '../constants/routes';
+import { cn } from 'cn';
+import { moderationAccountPath, ROUTES } from '../constants/routes';
 import { translateError } from '../errors/apiError';
 import { useDocumentTitle } from '../components/useDocumentTitle';
 
@@ -44,7 +47,12 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
   const [action, setAction] = useState<TemplateModerationAction>('hide');
   const moderateMutation = useModerateTemplate();
   const isHidden: boolean = template.moderation === 'hidden';
-  const actions: TemplateModerationAction[] = isHidden ? ['unhide', 'delete'] : ['hide', 'delete'];
+  const isDeleted: boolean = template.deleted_at !== null;
+  const actions: TemplateModerationAction[] = isDeleted
+    ? ['restore', 'purge']
+    : isHidden
+      ? ['unhide', 'delete']
+      : ['hide', 'delete'];
   const accountPath: string = moderationAccountPath(template.owner_id);
 
   function openDialog(chosenAction: TemplateModerationAction) {
@@ -59,11 +67,17 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
       return false;
     }
     if (action === 'delete') void navigate(accountPath);
+    if (action === 'purge') void navigate(ROUTES.MODERATION_DELETED_TEMPLATES);
     return true;
   }
 
   return (
     <>
+      {isDeleted && (
+        <Link to={ROUTES.MODERATION_DELETED_TEMPLATES} className={textLinkClassName}>
+          {t('moderation.deletedTemplates.back')}
+        </Link>
+      )}
       <div className="flex w-full flex-col gap-2">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold break-words">{template.name}</h1>
@@ -81,13 +95,37 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
         )}
       </div>
 
+      {template.deleted_at !== null && template.erase_at !== null && (
+        <section
+          role="note"
+          className={cn(
+            'flex w-full flex-col gap-1 rounded-lg border border-l-4 border-warning p-4 text-sm',
+            isEraseUrgent(template.erase_at) && 'bg-warning/10',
+          )}
+        >
+          <DeletionDetails
+            deletedAt={template.deleted_at}
+            deletionReason={template.deletion_reason}
+          />
+          <p className="font-medium">
+            {t('moderation.deletedTemplates.eraseAt', { date: new Date(template.erase_at) })}
+            {' · '}
+            {eraseCountdown(t, template.erase_at)}
+          </p>
+        </section>
+      )}
+
       <div className="flex gap-2">
         {actions.map((templateAction: TemplateModerationAction) => (
           <Button
             key={templateAction}
             type="button"
             size="sm"
-            variant={templateAction === 'delete' ? 'destructive' : 'secondary'}
+            variant={
+              templateAction === 'delete' || templateAction === 'purge'
+                ? 'destructive'
+                : 'secondary'
+            }
             onClick={() => openDialog(templateAction)}
           >
             {t(`moderation.actions.${templateAction}`)}
@@ -121,7 +159,7 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
         description={t(`moderation.templateDialog.${action}.description`)}
         submitLabel={t(`moderation.templateDialog.${action}.submit`)}
         submittingLabel={t(`moderation.templateDialog.${action}.submitting`)}
-        destructive={action === 'delete'}
+        destructive={action === 'delete' || action === 'purge'}
         isPending={moderateMutation.isPending}
         translatedFailureMessage={
           moderateMutation.isError ? translateError(t, moderateMutation.error) : null

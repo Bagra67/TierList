@@ -13,6 +13,7 @@ import {
 import {
   ACCOUNT_QUERY_KEY,
   ACCOUNT_SEARCH_QUERY_KEY,
+  DELETED_TEMPLATES_QUERY_KEY,
   HIDDEN_GAMES_QUERY_KEY,
   MODERATION_LOG_QUERY_KEY,
   OPEN_REPORT_COUNT_QUERY_KEY,
@@ -35,7 +36,9 @@ export type ListedImageStatus = NonNullable<
   NonNullable<paths['/moderation/images']['get']['parameters']['query']>['status']
 >;
 export type ImageModerationAction = 'hide' | 'unhide' | 'delete';
-export type TemplateModerationAction = ImageModerationAction;
+export type TemplateModerationAction = ImageModerationAction | 'restore' | 'purge';
+export type DeletedTemplate = components['schemas']['DeletedTemplateResponse'];
+type DeletedTemplatesPage = components['schemas']['DeletedTemplatesResponse'];
 export type AccountSearchPage = components['schemas']['AccountSearchResponse'];
 export type AccountSummary = components['schemas']['AccountSummaryResponse'];
 export type Account = components['schemas']['AccountResponse'];
@@ -373,7 +376,53 @@ async function moderateTemplate({ templateId, action, reason }: TemplateModerati
     case 'delete':
       throwIfError(await apiClient.POST('/moderation/templates/{template_id}/delete', options));
       return;
+    case 'restore':
+      throwIfError(await apiClient.POST('/moderation/templates/{template_id}/restore', options));
+      return;
+    case 'purge':
+      throwIfError(await apiClient.POST('/moderation/templates/{template_id}/purge', options));
+      return;
   }
+}
+
+export interface DeletedTemplatesFilters {
+  owner?: string;
+  name?: string;
+  deletedAfter?: string;
+  deletedBefore?: string;
+}
+
+async function getDeletedTemplates(
+  filters: DeletedTemplatesFilters,
+  offset: number,
+  signal: AbortSignal,
+): Promise<DeletedTemplatesPage> {
+  return dataOrThrow(
+    await apiClient.GET('/moderation/templates/deleted', {
+      params: {
+        query: {
+          offset,
+          owner: filters.owner,
+          name: filters.name,
+          deleted_after: filters.deletedAfter,
+          deleted_before: filters.deletedBefore,
+        },
+      },
+      signal,
+    }),
+  );
+}
+
+export function useDeletedTemplates(
+  filters: DeletedTemplatesFilters,
+): UseInfiniteQueryResult<InfiniteData<DeletedTemplatesPage, number>> {
+  return useInfiniteQuery({
+    queryKey: [...DELETED_TEMPLATES_QUERY_KEY, filters],
+    queryFn: ({ pageParam, signal }) => getDeletedTemplates(filters, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: nextOffset((page: DeletedTemplatesPage) => page.templates),
+    retry: retryUnlessClientError,
+  });
 }
 
 export function useReviewedTemplate(templateId: string): UseQueryResult<ReviewedTemplate> {
@@ -395,11 +444,12 @@ export function useModerateTemplate(): UseMutationResult<void, Error, TemplateMo
   return useMutation({
     mutationFn: moderateTemplate,
     onSuccess: async (_nothing: void, { templateId, action }: TemplateModeration) => {
-      if (action === 'delete') {
+      if (action === 'delete' || action === 'purge') {
         queryClient.removeQueries({ queryKey: [...REVIEWED_TEMPLATE_QUERY_KEY, templateId] });
       }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: REVIEWED_TEMPLATE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: DELETED_TEMPLATES_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: MODERATION_LOG_QUERY_KEY }),
         invalidateReports(queryClient),

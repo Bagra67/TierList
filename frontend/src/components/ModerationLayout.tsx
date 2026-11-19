@@ -30,6 +30,11 @@ export function ModerationLayout() {
             </NavLink>
           </li>
           <li>
+            <NavLink to={ROUTES.MODERATION_DELETED_TEMPLATES} className={linkClassName}>
+              {t('moderation.nav.deletedTemplates')}
+            </NavLink>
+          </li>
+          <li>
             <NavLink to={ROUTES.MODERATION_ACCOUNTS} className={linkClassName}>
               {t('moderation.nav.accounts')}
             </NavLink>

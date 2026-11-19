@@ -213,9 +213,11 @@ function PastBans({ pastBans }: { pastBans: Account['past_bans'] }) {
   );
 }
 
+type LiveTemplateAction = Exclude<TemplateModerationAction, 'restore' | 'purge'>;
+
 interface PendingTemplateAction {
   template: TemplateSummary;
-  action: TemplateModerationAction;
+  action: LiveTemplateAction;
 }
 
 function AccountTemplates({ account }: { account: Account }) {
@@ -223,9 +225,9 @@ function AccountTemplates({ account }: { account: Account }) {
   const dialogRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement>(null);
   const [pending, setPending] = useState<PendingTemplateAction | null>(null);
   const moderateMutation = useModerateTemplate();
-  const action: TemplateModerationAction = pending?.action ?? 'hide';
+  const action: LiveTemplateAction = pending?.action ?? 'hide';
 
-  function openDialog(template: TemplateSummary, templateAction: TemplateModerationAction) {
+  function openDialog(template: TemplateSummary, templateAction: LiveTemplateAction) {
     setPending({ template, action: templateAction });
     dialogRef.current?.showModal();
   }
@@ -252,7 +254,7 @@ function AccountTemplates({ account }: { account: Account }) {
       ) : (
         <ul className={panelVariants({ variant: 'list', className: 'w-full' })}>
           {account.templates.map((template: TemplateSummary) => {
-            const actions: TemplateModerationAction[] =
+            const actions: LiveTemplateAction[] =
               template.moderation === 'hidden' ? ['unhide', 'delete'] : ['hide', 'delete'];
             return (
               <li key={template.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -267,7 +269,7 @@ function AccountTemplates({ account }: { account: Account }) {
                 </span>
                 {template.moderation === 'hidden' && <TemplateHiddenBadge />}
                 <div className="ml-auto flex gap-2">
-                  {actions.map((templateAction: TemplateModerationAction) => (
+                  {actions.map((templateAction: LiveTemplateAction) => (
                     <Button
                       key={templateAction}
                       type="button"

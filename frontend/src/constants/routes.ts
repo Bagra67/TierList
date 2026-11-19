@@ -18,6 +18,7 @@ export const ROUTES = {
   MODERATION_ACCOUNTS: '/moderation/accounts',
   MODERATION_ACCOUNT: '/moderation/accounts/:accountId',
   MODERATION_TEMPLATE: '/moderation/templates/:templateId',
+  MODERATION_DELETED_TEMPLATES: '/moderation/deleted-templates',
   MODERATION_LOG: '/moderation/log',
   ROOM: '/r/:code',
   RESULTS: '/results/:token',
