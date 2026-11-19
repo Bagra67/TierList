@@ -5,6 +5,16 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.2.1] - 2026-11-19
+
+### Bug fixes
+
+- backend: let crawlers read the api the pages render from (#486)
+
+### Documentation
+
+- explain why robots.txt no longer blocks the api (#487)
+
 ## [1.2.0] - 2026-11-18
 
 ### Features
