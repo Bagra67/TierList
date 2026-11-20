@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Waits for the deployed version to answer (docs/technical/deployment.md): /api/health must report
-# the expected release (not the previous one, still running until the pod restarts), then
+# the expected release (not the previous one, still serving until the switch or the restart), then
 # /api/health/db must answer 200. Fails after the last attempt.
 #
 # Usage: wait_healthy.sh <base url> <expected release> [attempts] [seconds between attempts]

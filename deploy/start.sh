@@ -100,10 +100,12 @@ serve() {
     fi
     # Le Python de l'environnement directement, sans uv run : le superviseur arrête ce processus,
     # qui doit être uvicorn lui-même pour recevoir le signal
-    exec "$UV_PROJECT_ENVIRONMENT/bin/python" -m uvicorn app.main:app "$@"         --workers 1         --no-proxy-headers         --timeout-graceful-shutdown "$GRACEFUL_SHUTDOWN_SECONDS"
+    exec "$UV_PROJECT_ENVIRONMENT/bin/python" -m uvicorn app.main:app "$@" \
+        --workers 1 \
+        --no-proxy-headers \
+        --timeout-graceful-shutdown "$GRACEFUL_SHUTDOWN_SECONDS"
 }
 
-# Délai laissé aux requêtes en cours quand le superviseur arrête cette version
 GRACEFUL_SHUTDOWN_SECONDS=5
 
 case "${1:-all}" in

@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -18,7 +19,10 @@ FAKE_START_SH = """#!/usr/bin/env bash
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 case "$1" in
-    prepare) [ ! -f "$here/fail-prepare" ] ;;
+    prepare)
+        [ ! -f "$here/slow-prepare" ] || sleep 3
+        [ ! -f "$here/fail-prepare" ]
+        ;;
     serve)
         [ ! -f "$here/fail-serve" ] || exit 1
         exec python3 "$FAKE_UVICORN" "$TIERLIST_LISTEN_FD" "$(basename "$here")"
@@ -72,10 +76,11 @@ def load_supervisor_module():
 class PodSupervisorTest(unittest.TestCase):
     def setUp(self) -> None:
         self.home = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.home, ignore_errors=True)
         self.port = free_port()
         self.fake_uvicorn = self.home / "fake_uvicorn.py"
         self.fake_uvicorn.write_text(FAKE_UVICORN)
-        self.supervisor: subprocess.Popen[str] | None = None
+        self.supervisor: subprocess.Popen[bytes] | None = None
 
     def tearDown(self) -> None:
         if self.supervisor is not None and self.supervisor.poll() is None:
@@ -102,7 +107,7 @@ class PodSupervisorTest(unittest.TestCase):
             "FAKE_UVICORN": str(self.fake_uvicorn),
         }
         self.supervisor = subprocess.Popen(
-            [sys.executable, str(SUPERVISOR)], env=env, stdout=subprocess.PIPE, text=True
+            [sys.executable, str(SUPERVISOR)], env=env, stdout=subprocess.DEVNULL
         )
 
     def served_release(self) -> str:
@@ -174,6 +179,33 @@ class PodSupervisorTest(unittest.TestCase):
 
         self.wait_for(lambda: self.served_pid() != first_pid)
         self.assertEqual(self.served_release(), "v1")
+
+    def test_the_status_says_a_version_is_being_prepared_until_it_serves(self) -> None:
+        self.add_release("v1")
+        self.add_release("v2", "slow-prepare")
+        self.set_current("v1")
+        self.start_supervisor()
+        self.wait_for(lambda: self.served_release() == "v1")
+
+        self.set_current("v2")
+
+        self.wait_for(lambda: self.status().startswith("preparing v2"))
+        self.assertEqual(self.served_release(), "v1")
+        self.wait_for(lambda: self.status().startswith("ok v2"))
+
+    def test_stopping_the_pod_during_a_preparation_ends_it_without_a_failed_status(self) -> None:
+        self.add_release("v1")
+        self.add_release("v2", "slow-prepare")
+        self.set_current("v1")
+        self.start_supervisor()
+        self.wait_for(lambda: self.served_release() == "v1")
+        self.set_current("v2")
+        self.wait_for(lambda: self.status().startswith("preparing v2"))
+
+        self.supervisor.send_signal(signal.SIGTERM)
+
+        self.assertEqual(self.supervisor.wait(30), 0)
+        self.assertTrue(self.status().startswith("preparing v2"))
 
     def test_a_version_that_fails_to_prepare_leaves_the_previous_one_serving(self) -> None:
         self.add_release("v1")

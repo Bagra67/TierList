@@ -57,6 +57,9 @@ class Supervisor:
     def _listen(self) -> socket.socket:
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # uvicorn --fd enveloppe le socket en AF_UNIX : asyncio ne règle donc pas TCP_NODELAY sur
+        # les connexions acceptées. Réglé sur le socket d'écoute, Linux le donne à chacune
+        listener.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         listener.bind(("0.0.0.0", self.port))
         listener.listen(LISTEN_BACKLOG)
         listener.set_inheritable(True)
@@ -99,20 +102,27 @@ class Supervisor:
             try:
                 self._prepare(version)
             except ReleaseError as error:
+                if self.stop_requested.is_set():
+                    return False
                 log(f"Version {version} non préparée : {error}")
                 self._write_status("failed", version, str(error))
                 continue
             if self._start(version):
                 self._served(version)
                 return True
+            if self.stop_requested.is_set():
+                return False
             self._write_status("failed", version, "uvicorn ne répond pas")
         return False
 
     def _switch_to(self, version: str) -> None:
         log(f"Nouvelle version demandée : {version}")
+        self._write_status("preparing", version, "préparation en cours")
         try:
             self._prepare(version)
         except ReleaseError as error:
+            if self.stop_requested.is_set():
+                return
             log(f"Version {version} non préparée, {self.version} reste en ligne : {error}")
             self._write_status("failed", version, str(error))
             return
@@ -120,6 +130,8 @@ class Supervisor:
         self._stop()
         if self._start(version):
             self._served(version)
+            return
+        if self.stop_requested.is_set():
             return
         log(f"Version {version} ne répond pas : retour à {previous}")
         self._write_status("failed", version, "uvicorn ne répond pas")
@@ -138,11 +150,19 @@ class Supervisor:
         if not (release_dir / "start.sh").is_file():
             self._extract(version, release_dir)
         log(f"Préparation de {version}")
-        result = subprocess.run(
-            ["bash", str(release_dir / "start.sh"), "prepare"], env=self._child_env(), check=False
-        )
-        if result.returncode != 0:
-            raise ReleaseError(f"start.sh prepare a échoué (code {result.returncode})")
+        try:
+            preparation = subprocess.Popen(
+                ["bash", str(release_dir / "start.sh"), "prepare"], env=self._child_env()
+            )
+        except OSError as error:
+            raise ReleaseError(f"start.sh prepare impossible : {error}") from error
+        while preparation.poll() is None:
+            if self.stop_requested.wait(0.5):
+                preparation.terminate()
+                preparation.wait()
+                raise ReleaseError("arrêt demandé pendant la préparation")
+        if preparation.returncode != 0:
+            raise ReleaseError(f"start.sh prepare a échoué (code {preparation.returncode})")
 
     def _extract(self, version: str, release_dir: Path) -> None:
         archive: Path = self.releases_dir / f"tierlist-{version}.tar.gz"
@@ -152,8 +172,8 @@ class Supervisor:
         staging_dir: Path = self.releases_dir / f".extract-{version}"
         shutil.rmtree(staging_dir, ignore_errors=True)
         shutil.rmtree(release_dir, ignore_errors=True)
-        staging_dir.mkdir(parents=True)
         try:
+            staging_dir.mkdir(parents=True)
             with tarfile.open(archive) as bundle:
                 bundle.extractall(staging_dir, filter="data")
             (staging_dir / f"tierlist-{version}").rename(release_dir)
@@ -202,11 +222,15 @@ class Supervisor:
         self.process = None
 
     def _prune(self, version: str) -> None:
-        archives: list[Path] = sorted(
-            self.releases_dir.glob("tierlist-*.tar.gz"),
-            key=lambda archive: archive.stat().st_mtime,
-            reverse=True,
-        )
+        try:
+            archives: list[Path] = sorted(
+                self.releases_dir.glob("tierlist-*.tar.gz"),
+                key=lambda archive: archive.stat().st_mtime,
+                reverse=True,
+            )
+        except OSError as error:
+            log(f"Anciennes versions non supprimées : {error}")
+            return
         kept: int = 1
         for archive in archives:
             old_version: str = archive.name.removeprefix("tierlist-").removesuffix(".tar.gz")
@@ -251,8 +275,11 @@ class Supervisor:
     @staticmethod
     def _write_atomically(path: Path, text: str) -> None:
         temporary: Path = path.with_name(f".{path.name}.tmp")
-        temporary.write_text(text, encoding="utf-8")
-        temporary.replace(path)
+        try:
+            temporary.write_text(text, encoding="utf-8")
+            temporary.replace(path)
+        except OSError as error:
+            log(f"{path.name} non écrit : {error}")
 
 
 def main() -> int:
