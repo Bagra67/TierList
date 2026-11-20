@@ -100,7 +100,7 @@ Rules the model always respects, whatever the screen or the action:
 
 1. Only a **super admin** can take a moderation action; the role is never granted by the app.
 2. A template is **listed** in the marketplace if and only if it is **public**, **not hidden** by moderation, **not deleted**, and its owner is **not banned**.
-3. A template can be made public only by its **owner**, whose email is **confirmed**, and only if it is not hidden by moderation. An official template is published by a **super admin** instead, only if it has tiles and is not hidden; only a published official template can be featured.
+3. A template can be made public only by its **owner**, whose email is **confirmed**, and only if it is not hidden by moderation. An official template is published by a **super admin** instead, only if it has tiles and is not hidden; only a published official template that is not hidden can be featured.
 4. A template has **at most 5 tags** (20 for an official template) of **30 characters at most**, without duplicates (ignoring case and accents).
 5. A user has **at most one like** and **at most one favorite** per template, and never likes their own template.
 6. Likes and favorites are **shown** only while their template is listed; they are kept otherwise.
