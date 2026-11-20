@@ -191,6 +191,8 @@ Its tests use `unittest` (standard library, nothing to install) and run first in
 
 `.github/scripts/restart_pod.sh` restarts the pod in the Deploy workflow, through the MineStrator panel API ([deployment guide](deployment.md#6-deploying)). Its tests (same `unittest` run) start a local HTTP server standing for the panel, which answers the given statuses and keeps the requests; the retry delay is set to 0 s.
 
+`deploy/supervisor.py` runs the versions in the pod and switches between them without closing the port ([deployment guide](deployment.md#24-bundle-and-pod-layout)). Its tests (`.github/scripts/test_pod_supervisor.py`, same `unittest` run) run it on a temporary pod folder with fake releases: their `start.sh` prepares or fails on demand, and serves a small Python HTTP server on the socket the supervisor passes, standing for uvicorn. The polling and health delays are shortened through `TIERLIST_POLL_SECONDS` and `TIERLIST_HEALTH_TIMEOUT_SECONDS`. They need a POSIX system (a socket handed to a child process) and are skipped on Windows: run them in a Linux container there, e.g. `docker run --rm -v "$PWD":/repo -w /repo python:3.12 python3 -m unittest discover -s .github/scripts`.
+
 ---
 
 ## 6. End-to-end tests (Playwright)
