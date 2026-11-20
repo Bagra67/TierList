@@ -20,7 +20,6 @@ from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import rooms as room_repository
-from app.services.moderation_log import ModerationLogService
 from app.services.rooms import RoomService
 from app.services.templates import TemplateService
 from tests.integration.conftest import RecordingRoomEventPublisher
@@ -45,9 +44,7 @@ def committed_room(migrated_engine: Engine) -> Iterator[CommittedRoom]:
         bob: User = User(email=f"bob-{uuid.uuid4()}@example.com", display_name="Bob")
         session.add_all([admin, bob])
         session.flush()
-        template: Template = TemplateService(
-            session, get_settings(), ModerationLogService(session, get_settings())
-        ).create(admin, "Locked")
+        template: Template = TemplateService(session, get_settings()).create(admin, "Locked")
         template.tiles.append(Tile(text="Tile", position=0))
         session.commit()
         room: Room = room_service(session).create(admin, template.id)

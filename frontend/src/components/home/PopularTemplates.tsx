@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 
 import {
   type MarketplaceTemplate,
+  uniqueById,
   useCardLikeStates,
   useFeaturedTemplates,
   usePopularTemplates,
@@ -24,7 +25,7 @@ export function PopularTemplates() {
   const templates: MarketplaceTemplate[] | undefined =
     featured === undefined || popular === undefined
       ? undefined
-      : picksFirst(featured, popular).slice(0, HOME_POPULAR_COUNT);
+      : uniqueById([...featured, ...popular]).slice(0, HOME_POPULAR_COUNT);
   useCardLikeStates(templates === undefined ? [] : [templates]);
 
   if (templates === undefined || templates.length === 0) return null;
@@ -43,12 +44,4 @@ export function PopularTemplates() {
       </Button>
     </section>
   );
-}
-
-function picksFirst(
-  featured: MarketplaceTemplate[],
-  popular: MarketplaceTemplate[],
-): MarketplaceTemplate[] {
-  const featuredIds: Set<string> = new Set(featured.map((template) => template.id));
-  return [...featured, ...popular.filter((template) => !featuredIds.has(template.id))];
 }

@@ -16,7 +16,6 @@ from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import templates as template_repository
-from app.services.moderation_log import ModerationLogService
 from app.services.templates import TemplateService
 
 pytestmark = pytest.mark.integration
@@ -30,9 +29,7 @@ def committed_template(migrated_engine: Engine) -> Iterator[tuple[uuid.UUID, uui
         owner: User = User(email=f"lock-{uuid.uuid4()}@example.com", display_name="Lock")
         session.add(owner)
         session.flush()
-        template: Template = TemplateService(
-            session, get_settings(), ModerationLogService(session, get_settings())
-        ).create(owner, "Locked")
+        template: Template = TemplateService(session, get_settings()).create(owner, "Locked")
         for extra_tier in template.tiers[2:]:
             session.delete(extra_tier)
         for position in range(FREE_PLAN_MAX_TILES - 1):
@@ -69,11 +66,9 @@ def test_two_simultaneous_deletions_keep_the_last_tier(
                 owner: User | None = second_request.get(User, owner_id)
                 assert owner is not None
                 try:
-                    TemplateService(
-                        second_request,
-                        get_settings(),
-                        ModerationLogService(second_request, get_settings()),
-                    ).delete_tier(owner, template_id, second_tier_id)
+                    TemplateService(second_request, get_settings()).delete_tier(
+                        owner, template_id, second_tier_id
+                    )
                 except LastTierError as error:
                     errors.append(error)
 
@@ -111,11 +106,9 @@ def test_two_simultaneous_additions_stay_within_the_tile_limit(
                 owner: User | None = second_request.get(User, owner_id)
                 assert owner is not None
                 try:
-                    TemplateService(
-                        second_request,
-                        get_settings(),
-                        ModerationLogService(second_request, get_settings()),
-                    ).add_tile(owner, template_id, "One too many", None)
+                    TemplateService(second_request, get_settings()).add_tile(
+                        owner, template_id, "One too many", None
+                    )
                 except TileLimitReachedError as error:
                     errors.append(error)
 
@@ -154,9 +147,7 @@ def test_a_snapshot_waits_for_a_change_in_progress(
                 owner: User | None = second_request.get(User, owner_id)
                 assert owner is not None
                 snapshot: TemplateSnapshot = TemplateService(
-                    second_request,
-                    get_settings(),
-                    ModerationLogService(second_request, get_settings()),
+                    second_request, get_settings()
                 ).take_snapshot(owner, template_id)
                 snapshot_ids.append(snapshot.id)
                 second_request.commit()

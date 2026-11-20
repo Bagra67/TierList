@@ -9,7 +9,6 @@ import {
   useReviewedTemplate,
 } from '../api/moderation';
 import { DeletionDetails } from '../components/DeletionDetails';
-import { EmptyState } from '../components/EmptyState';
 import { eraseCountdown, isEraseUrgent } from '../components/eraseCountdown';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -18,7 +17,7 @@ import {
   type TemplateModerationDialog,
   useTemplateModerationDialog,
 } from '../components/TemplateModerationDialog';
-import { TemplateTierChips } from '../components/TemplateTierChips';
+import { TemplateContentReadOnly } from '../components/TemplateContentReadOnly';
 import { TemplateTileCard } from '../components/TemplateTileCard';
 import { Button } from '../components/ui/button';
 import { textLinkClassName } from '../components/ui/text-link';
@@ -119,25 +118,11 @@ function TemplateContent({ template }: { template: ReviewedTemplate }) {
         ))}
       </div>
 
-      <section className="flex w-full flex-col items-start gap-3">
-        <h2 className="text-lg font-semibold">{t('moderation.template.tiers')}</h2>
-        <TemplateTierChips tiers={template.tiers} />
-      </section>
-
-      <section className="flex w-full flex-col items-start gap-3">
-        <h2 className="text-lg font-semibold">
-          {t('moderation.template.tiles', { count: template.tiles.length })}
-        </h2>
-        {template.tiles.length === 0 ? (
-          <EmptyState message={t('moderation.template.noTiles')} />
-        ) : (
-          <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {template.tiles.map((tile: ReviewedTile, index: number) => (
-              <TileCard key={tile.id} tile={tile} number={index + 1} />
-            ))}
-          </ul>
-        )}
-      </section>
+      <TemplateContentReadOnly tiers={template.tiers} tileCount={template.tiles.length}>
+        {template.tiles.map((tile: ReviewedTile, index: number) => (
+          <TileCard key={tile.id} tile={tile} number={index + 1} />
+        ))}
+      </TemplateContentReadOnly>
 
       {moderation.dialog}
     </>

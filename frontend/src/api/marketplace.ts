@@ -173,6 +173,15 @@ async function listFeaturedTemplates(signal: AbortSignal): Promise<MarketplaceTe
   return dataOrThrow(await apiClient.GET('/marketplace/featured', { signal })).items;
 }
 
+export function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
+  const seen: Set<string> = new Set();
+  return items.filter((item: Item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export function useFeaturedTemplates(): UseQueryResult<MarketplaceTemplate[]> {
   return useQuery({
     queryKey: [...MARKETPLACE_LIST_QUERY_KEY, 'featured'],

@@ -9,13 +9,12 @@ from app.api.errors import (
     template_has_no_tiles,
     template_hidden,
     template_not_found,
+    template_not_published,
 )
 from app.api.presenters.templates import official_template_summary_response, template_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
-from app.constants.error_codes import ErrorCode
 from app.core.errors import ErrorResponse
-from app.exceptions.http import AppHTTPException
 from app.exceptions.templates import (
     TemplateHasNoTilesError,
     TemplateHiddenError,
@@ -26,6 +25,7 @@ from app.models.template import Template
 from app.models.user import User
 from app.schemas.templates import (
     CreateTemplateRequest,
+    OfficialTemplateLeaseResponse,
     OfficialTemplateListResponse,
     TemplateResponse,
 )
@@ -50,14 +50,6 @@ EDITORIAL_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 
-def _template_not_published() -> AppHTTPException:
-    return AppHTTPException(
-        status_code=409,
-        code=ErrorCode.TEMPLATE_NOT_PUBLISHED,
-        detail=messages.TEMPLATE_NOT_PUBLISHED,
-    )
-
-
 @router.get("", responses=SUPER_ADMIN_RESPONSES)
 def list_official_templates(
     super_admin: SuperAdminDep, service: OfficialTemplateServiceDep
@@ -65,7 +57,10 @@ def list_official_templates(
     """The official templates, drafts and published ones, most recently changed first, with the
     super admin holding the edit lease of each."""
     return OfficialTemplateListResponse(
-        items=[official_template_summary_response(summary) for summary in service.list()]
+        items=[
+            official_template_summary_response(template, tile_count)
+            for template, tile_count in service.list()
+        ]
     )
 
 
@@ -87,8 +82,7 @@ def lock_official_template(
     template_id: uuid.UUID,
     super_admin: SuperAdminDep,
     service: OfficialTemplateServiceDep,
-    storage: ImageStorageDep,
-) -> TemplateResponse:
+) -> OfficialTemplateLeaseResponse:
     """Takes or renews the edit lease of an official template, for a few minutes: the editor
     renews it while the page is open. Refused (409, with the `editor` display name) while another
     super admin holds it. The template's content is changed through the /templates routes."""
@@ -96,7 +90,11 @@ def lock_official_template(
         template: Template = service.lock(super_admin, template_id)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
-    return template_response(template, storage)
+    if template.editing_until is None:
+        raise RuntimeError("A locked official template has an edit lease")
+    return OfficialTemplateLeaseResponse(
+        editing_by_name=super_admin.display_name, editing_until=template.editing_until
+    )
 
 
 @router.delete(
@@ -130,7 +128,7 @@ def _editorial_change(
     except TemplateHiddenError as exc:
         raise template_hidden() from exc
     except TemplateNotPublishedError as exc:
-        raise _template_not_published() from exc
+        raise template_not_published() from exc
     return template_response(template, storage)
 
 
