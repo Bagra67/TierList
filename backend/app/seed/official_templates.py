@@ -44,6 +44,8 @@ def create_official_templates(
 ) -> int:
     """Creates `count` official templates: the first one published and featured, the last one a
     draft, the others published. Returns the number of log entries written."""
+    if count > len(OFFICIAL_THEMES):
+        raise ValueError(f"The seed has {len(OFFICIAL_THEMES)} official templates at most")
     official_account: User | None = session.get(User, OFFICIAL_ACCOUNT_ID)
     if official_account is None:
         raise RuntimeError("The official account is created by the migration 7b2e4c9d1a03")

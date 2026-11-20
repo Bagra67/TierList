@@ -404,7 +404,7 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `account_not_found`            | 404             | Moderation: unknown account                                                                                                        |
 | `account_banned`               | 403             | Sign-in of an account banned for good; `params.reason`                                                                             |
 | `account_banned_until`         | 403             | Sign-in of an account banned until a date; `params.reason`, `params.ends_at`                                                       |
-| `cannot_ban_super_admin`       | 409             | A super admin cannot be banned                                                                                                     |
+| `cannot_ban_super_admin`       | 409             | A super admin or the official account cannot be banned                                                                             |
 | `account_not_banned`           | 409             | Lifting a ban on an account that has none                                                                                          |
 | `ban_end_in_past`              | 422             | End of a ban not in the future                                                                                                     |
 | `template_has_no_tiles`        | 409             | Room created, game started, or template made public, with a template without tiles                                                 |
@@ -414,6 +414,9 @@ Error codes (`ErrorCode`, `app/constants/error_codes.py`):
 | `last_tier`                    | 409             | Deleting the last tier of a template                                                                                               |
 | `tile_not_found`               | 404             | Unknown tile of the template                                                                                                       |
 | `tile_limit_reached`           | 409             | Template already at its tile limit; `params.max_tiles`                                                                             |
+| `tag_limit_reached`            | 409             | Template already at its tag limit; `params.max_tags`                                                                               |
+| `official_template_locked`     | 409             | Another super admin holds the edit lease of the official template (`params.editor`), or the caller does not hold it                |
+| `template_not_published`       | 409             | Featuring an official template that is a draft                                                                                     |
 | `room_not_found`               | 404 / WS `4404` | Unknown or closed room code                                                                                                        |
 | `room_not_joined`              | 403             | Reading a room without a seat in it                                                                                                |
 | `room_admin_required`          | 403             | Action reserved to the room admin                                                                                                  |
