@@ -15,6 +15,7 @@ SITEMAP_PATH = "/sitemap.xml"
 SITEMAP_MAX_URLS = 50_000
 SITEMAP_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
 SITEMAP_MEDIA_TYPE = "application/xml"
+CRAWLER_FILES_CACHE_CONTROL = "public, max-age=300"
 
 X_ROBOTS_TAG_HEADER = "X-Robots-Tag"
 NOINDEX = "noindex"
