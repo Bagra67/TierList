@@ -63,7 +63,7 @@ The public address is `FRONTEND_BASE_URL` (`https://<domain>`): base of the link
 The pod port is public (`<pod IP>:<port>` answers without Cloudflare), and the host offers no firewall on it: the app closes it itself. When `TRUSTED_PROXY_IPS` is set (comma-separated IP addresses or CIDR networks), `TrustedProxyMiddleware` (`app/core/proxy.py`), the outermost layer of the root app, looks at the address of the TCP connection, not at a header:
 
 - the tunnel addresses are served, and only they may set `X-Forwarded-For` and `X-Forwarded-Proto` (uvicorn's `ProxyHeadersMiddleware`, applied inside);
-- the loopback (`127.0.0.1`, `::1`) is served, without reading its proxy headers: the readiness loop of `start.sh` calls it from inside the pod;
+- the loopback (`127.0.0.1`, `::1`) is served, without reading its proxy headers: the supervisor (§2.4) checks `/api/health` through it from inside the pod;
 - any other HTTP request gets `403` with the API error format (`code: http_error`); a WebSocket handshake gets `403` too.
 
 uvicorn therefore runs with `--no-proxy-headers`: its own proxy-header handling would replace the connection address by the forwarded client before the app sees it. **Never `*`**: the settings refuse it, like any value that is not an address or a network, and `start.sh` refuses to start without the variable. Without it (development, tests), everything is served, as before.
@@ -94,7 +94,7 @@ There is no cron on the pods. The lifespan starts a small scheduler next to the 
 ├── CURRENT        name of the version to run, written last by the deployment
 ├── .env           settings, written by the deployment
 ├── .last-good     last version that served, written by the supervisor
-├── deploy-status  result of the last switch (ok or failed, the version, why), written by the supervisor
+├── deploy-status  where the last switch stands (preparing, ok or failed, the version, why), written by the supervisor
 ├── releases/      tierlist-<version>.tar.gz and their extracted folders, each with its .venv (the last 3)
 ├── bin/uv         installed by start.sh
 └── .cache/uv/     shared package cache
@@ -104,11 +104,11 @@ SFTP can neither extract an archive nor run a command: hence `CURRENT`, the laun
 
 1. opens `SERVER_PORT` once and keeps it open for its whole life. It passes the socket to uvicorn (`--fd`), so that while one version stops and the next starts, new connections **wait in the kernel queue** instead of being refused: Cloudflare waits up to 100 s, a visitor only sees a request a few seconds slower;
 2. at start, prepares and starts the version of `CURRENT`, then prints **once** the exact line `change this part`: the MineStrator panel ("python generic" Pterodactyl egg) considers the pod started when its console shows that line;
-3. checks `CURRENT` every 2 s. When the deployment rewrites it, it **prepares** that version while the running one keeps serving, then **switches**: it stops the running uvicorn (`SIGTERM`, 5 s for the requests in progress, `--timeout-graceful-shutdown`) and starts the new one on the same socket. Two uvicorn never run at once: one real-time registry, no timer fired twice; the rounds in progress are rescheduled at startup (`app/main.py`). The WebSockets close and reconnect;
+3. checks `CURRENT` every 2 s. When the deployment rewrites it, it writes `preparing <version>` in `deploy-status`, **prepares** that version while the running one keeps serving, then **switches**: it stops the running uvicorn (`SIGTERM`, 5 s for the requests in progress, `--timeout-graceful-shutdown`) and starts the new one on the same socket. Two uvicorn never run at once: one real-time registry, no timer fired twice; the rounds in progress are rescheduled at startup (`app/main.py`). The WebSockets close and reconnect;
 4. a version that fails to prepare, or whose `/api/health` does not answer within 2 minutes, **leaves the previous version serving** (started again when it was already stopped); `deploy-status` says what failed. When the pod restarts on a `CURRENT` that does not start, it serves the version of `.last-good`;
 5. rewriting `CURRENT` with the running version restarts uvicorn the same way, without a cut: a new `.env` is read then;
-6. restarts uvicorn if it stops on its own; forwards the panel's stop (`SIGTERM`, `SIGINT`) to uvicorn, then exits;
-7. after a switch, deletes the versions older than the last 3 (archive, folder and its environment).
+6. restarts uvicorn if it stops on its own; on the panel's stop (`SIGTERM`, `SIGINT`), ends a preparation in progress (an interrupted migration is rolled back by PostgreSQL, the next preparation starts it again), stops uvicorn, then exits. A file error (full disk...) fails the preparation and leaves the running version serving;
+7. once a version is online (at start or after a switch), deletes the versions older than the last 3 (archive, folder and its environment).
 
 The shared `/home/container/.venv/` of the former launcher is no longer used: it can be deleted over SFTP.
 
@@ -157,7 +157,7 @@ Created by hand in the repository settings (Settings → Environments). Nothing 
 | `production`                          | **required reviewer**            | same as `staging`                                                                                                                                                                                                                                        | same as `staging`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `backup-staging`, `backup-production` | none (a nightly run cannot wait) | `BACKUP_POSTGRES_PASSWORD`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`                                                                                                                                                                     | `BACKUP_POSTGRES_HOST`, `BACKUP_POSTGRES_PORT`, `BACKUP_POSTGRES_DB`, `BACKUP_POSTGRES_USER`, `BACKUP_S3_ENDPOINT_URL`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_RETENTION_DAYS` (`14` production, `3` staging)                                                                                                                                                                                                                                                                              |
 
-\* Optional. `SFTP_KNOWN_HOSTS`: the line(s) of `ssh-keyscan -p <port> <host>`, checked against the fingerprint shown by the panel; the deployment refuses any other host key. `PANEL_SERVER_ID` / `PANEL_API_KEY`: the pod identifier and an API key of the MineStrator panel, to restart the pod when the launcher changed or no supervisor answers (§6); `PANEL_URL` defaults to `https://mine.sttr.io`. Without the identifier or the key, the pod is restarted by hand.
+\* Optional. `SFTP_KNOWN_HOSTS`: the line(s) of `ssh-keyscan -p <port> <host>`, checked against the fingerprint shown by the panel; the deployment refuses any other host key. `PANEL_SERVER_ID` / `PANEL_API_KEY`: the pod identifier and an API key of the MineStrator panel, to restart the pod when the launcher or the supervisor changed, or when no supervisor answered (§6); `PANEL_URL` defaults to `https://mine.sttr.io`. Without the identifier or the key, the pod is restarted by hand.
 
 Repository level (Settings → Secrets and variables → Actions), read by the `Bundle` workflow to upload the frontend sourcemaps to Sentry ([monitoring guide](monitoring.md#4-sourcemaps)), all optional: the secret `SENTRY_AUTH_TOKEN` and the variables `SENTRY_ORG` and `SENTRY_PROJECT`. Without the token, no sourcemap is built or uploaded.
 
@@ -292,9 +292,13 @@ Steps of `deploy.yml`:
 
 1. **Plan**: environment, commit and version.
 2. **Bundle** (`bundle.yml`): ShellCheck on the scripts, `pnpm build`, `deploy/build_bundle.sh`, artifact `tierlist-bundle`.
-3. **Upload** over SFTP (`pod_sftp.sh`: password through `sshpass`, pinned host key). It first reads the pod's `start.sh` and `supervisor.py` and compares them with the version's. Then it uploads `releases/tierlist-<version>.tar.gz`, the launcher as `start.sh`, `supervisor.py`, `.env`, deletes `deploy-status`, and writes `CURRENT` last. A failed upload leaves the running version in place.
+3. **Upload** over SFTP (`pod_sftp.sh`, taken from the workflow's commit so that a rollback to an older version has it too: password through `sshpass`, pinned host key). It first reads the pod's `start.sh` and `supervisor.py` and compares them with the version's. Then it uploads `releases/tierlist-<version>.tar.gz`, the launcher as `start.sh`, `supervisor.py`, `.env`, deletes `deploy-status`, and writes `CURRENT` last. A failed upload leaves the running version in place.
 4. **Switch**, when the launcher and the supervisor did not change: the supervisor sees the new `CURRENT` and switches without a restart (§2.4). `wait_healthy.sh` waits up to 4 minutes for `/api/health` to report the new version and `/api/health/db` to answer `200`.
-5. When the switch did not happen in time, the job reads `deploy-status`: if the supervisor failed to prepare or start this version, the job fails with the reason, without a restart (the previous version still serves). Otherwise no supervisor is running (a pod still on the former launcher), and the job goes on with the restart.
+5. When the switch did not happen in time, the job reads `deploy-status` (only a well-formed first line is printed in the job log, since the file comes from the pod):
+   - `preparing <version>`: the preparation is still running (new dependencies, a long migration); the job waits up to 6 more minutes, then fails without a restart;
+   - `failed <version>`: the supervisor could not prepare or start it and kept the previous version; the job fails with the reason, without a restart;
+   - `ok <version>`: the version runs but its health or database check does not answer; the job fails without a restart;
+   - nothing, or another version: no supervisor answered (a pod still on the former launcher); the job goes on with the restart.
 6. **Restart** (`restart_pod.sh`), when the launcher or the supervisor changed (the running supervisor is the old one, it would not pick up its own update), or after step 5: through the MineStrator panel API (its own, not the Pterodactyl client API) when `PANEL_SERVER_ID` and `PANEL_API_KEY` are set: `PUT $PANEL_URL/server/<id>/poweraction` with `Authorization: Bearer <key>` and `{"poweraction":"restart"}` (`PANEL_URL` defaults to `https://mine.sttr.io`). `200` means the restart is requested; `400` (wrong pod identifier), `401` (wrong key) or any other answer fails the step with the reason in the job summary; `429` (too many requests) is tried again once after 30 s. Without the identifier or the key, the job summary asks to restart the pod in the panel. **A restart cuts the site** until the version has started, as before the supervisor.
 7. **Health** after a restart (`wait_healthy.sh`): 30 tries 5 s apart (120 when the restart is manual). Otherwise the job fails.
 
@@ -330,7 +334,7 @@ docker run --rm -i -e PGPASSWORD postgres:17-alpine \
 
 - Creating the pods, the tunnel, the DNS records and the Scaleway resources (#159, #163).
 - The GitHub environments, secrets and variables (§4), and the `production` reviewer.
-- The pod restart, needed only when the launcher or the supervisor changed or no supervisor answers (§6), as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it (set up on staging: the restart is automatic there).
+- The pod restart, needed only when the launcher or the supervisor changed, or when no supervisor answered (§6), as long as `PANEL_SERVER_ID` and `PANEL_API_KEY` are not set, or when the panel refuses it (set up on staging: the restart is automatic there).
 - Redeploying after a change of a secret or a variable (§5.8).
 - Approving each production deployment.
 - Declaring the production site in Google Search Console and Bing Webmaster Tools and submitting its sitemap ([search engines guide](seo.md#6-after-a-release)).
