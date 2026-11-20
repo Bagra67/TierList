@@ -5,6 +5,25 @@
 Tous les changements notables du projet sont consignés dans ce fichier.
 Les versions suivent le [Semantic Versioning](https://semver.org/lang/fr/) : voir [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.3.0] - 2026-11-20
+
+### Fonctionnalités
+
+- backend : lecture des « j'aime » d'une page de cartes du marketplace (#481)
+- frontend : « j'aime » sur les modèles publics depuis les cartes du marketplace (#482)
+- backend : liste, restauration et suppression définitive des modèles supprimés (#494)
+- frontend : consultation, restauration et suppression définitive des modèles supprimés (#495)
+
+### Corrections
+
+- backend : robots.txt et le sitemap ne restent que cinq minutes en cache (#502)
+
+### Documentation
+
+- « j'aime » depuis les cartes du marketplace et aperçu sur l'accueil connecté (#483)
+- agents : une maquette challengée avant tout changement d'interface (#493)
+- modèles supprimés de l'espace de modération (#496)
+
 ## [1.2.1] - 2026-11-19
 
 ### Corrections
