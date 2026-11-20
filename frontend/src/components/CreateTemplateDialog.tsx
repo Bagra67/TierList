@@ -1,3 +1,4 @@
+import type { UseMutationResult } from '@tanstack/react-query';
 import { useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -12,16 +13,45 @@ import { TextField } from './TextField';
 import { DialogActions, ModalDialog } from './ModalDialog';
 import { Button } from './ui/button';
 
-interface CreateTemplateDialogProps {
-  official?: boolean;
+export function CreateTemplateDialog() {
+  const { t } = useTranslation();
+  return (
+    <CreateTemplateDialogView
+      createMutation={useCreateTemplate()}
+      editorPath={templateEditorPath}
+      openLabel={t('templates.create.open')}
+      title={t('templates.create.title')}
+    />
+  );
 }
 
-export function CreateTemplateDialog({ official = false }: CreateTemplateDialogProps) {
+export function CreateOfficialTemplateDialog() {
+  const { t } = useTranslation();
+  return (
+    <CreateTemplateDialogView
+      createMutation={useCreateOfficialTemplate()}
+      editorPath={officialTemplateEditorPath}
+      openLabel={t('officialTemplates.create.open')}
+      title={t('officialTemplates.create.title')}
+    />
+  );
+}
+
+interface CreateTemplateDialogViewProps {
+  createMutation: UseMutationResult<Template, Error, { name: string }>;
+  editorPath: (templateId: string) => string;
+  openLabel: string;
+  title: string;
+}
+
+function CreateTemplateDialogView({
+  createMutation,
+  editorPath,
+  openLabel,
+  title,
+}: CreateTemplateDialogViewProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const playerMutation = useCreateTemplate();
-  const officialMutation = useCreateOfficialTemplate();
-  const createMutation = official ? officialMutation : playerMutation;
   const navigate = useNavigate();
   const { t } = useTranslation();
   const fieldErrors = getFieldErrors(createMutation.error);
@@ -36,29 +66,21 @@ export function CreateTemplateDialog({ official = false }: CreateTemplateDialogP
     const name = String(new FormData(event.currentTarget).get('name'));
     let template: Template;
     try {
-      template = official
-        ? await officialMutation.mutateAsync(name)
-        : await playerMutation.mutateAsync({ name });
+      template = await createMutation.mutateAsync({ name });
     } catch {
       return;
     }
     if (dialogRef.current?.open !== true) return;
     dialogRef.current.close();
-    await navigate(
-      official ? officialTemplateEditorPath(template.id) : templateEditorPath(template.id),
-    );
+    await navigate(editorPath(template.id));
   }
 
   return (
     <>
       <Button type="button" onClick={() => dialogRef.current?.showModal()}>
-        {official ? t('officialTemplates.create.open') : t('templates.create.open')}
+        {openLabel}
       </Button>
-      <ModalDialog
-        dialogRef={dialogRef}
-        title={official ? t('officialTemplates.create.title') : t('templates.create.title')}
-        onClose={handleClose}
-      >
+      <ModalDialog dialogRef={dialogRef} title={title} onClose={handleClose}>
         <form ref={formRef} onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
           <TextField
             label={t('templates.create.name')}

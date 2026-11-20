@@ -2279,7 +2279,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TemplateResponse"
+                  "$ref": "#/components/schemas/OfficialTemplateLeaseResponse"
                 }
               }
             }
@@ -9547,6 +9547,26 @@
         ],
         "title": "ModerationTargetType",
         "description": "Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le\ncompte."
+      },
+      "OfficialTemplateLeaseResponse": {
+        "properties": {
+          "editing_by_name": {
+            "type": "string",
+            "title": "Editing By Name"
+          },
+          "editing_until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Editing Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "editing_by_name",
+          "editing_until"
+        ],
+        "title": "OfficialTemplateLeaseResponse",
+        "description": "The edit lease of an official template, held by the caller until `editing_until`."
       },
       "OfficialTemplateListResponse": {
         "properties": {

@@ -165,6 +165,13 @@ class OfficialTemplateSummaryResponse(BaseModel):
     editing_by_name: str | None
 
 
+class OfficialTemplateLeaseResponse(BaseModel):
+    """The edit lease of an official template, held by the caller until `editing_until`."""
+
+    editing_by_name: str
+    editing_until: datetime
+
+
 class OfficialTemplateListResponse(BaseModel):
     """The official templates, most recently changed first."""
 

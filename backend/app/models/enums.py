@@ -65,6 +65,18 @@ class ModerationActionKind(StrEnum):
     UNFEATURE = "unfeature"
 
 
+EDITORIAL_ACTION_KINDS: frozenset[ModerationActionKind] = frozenset(
+    {
+        ModerationActionKind.CREATE,
+        ModerationActionKind.EDIT,
+        ModerationActionKind.PUBLISH,
+        ModerationActionKind.UNPUBLISH,
+        ModerationActionKind.FEATURE,
+        ModerationActionKind.UNFEATURE,
+    }
+)
+
+
 class ModerationTargetType(StrEnum):
     """Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le
     compte."""

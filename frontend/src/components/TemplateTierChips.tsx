@@ -1,6 +1,6 @@
 import { tierColorStyle } from './boardStyles';
 
-interface TierChip {
+export interface TierChip {
   id: string;
   name: string;
   color: string;

@@ -3,12 +3,12 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.core.config import Settings
 from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateVisibility
 from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories import users as user_repository
 from app.services.moderation_log import ModerationLogService
 from app.services.templates import TemplateService
 
@@ -46,9 +46,7 @@ def create_official_templates(
     draft, the others published. Returns the number of log entries written."""
     if count > len(OFFICIAL_THEMES):
         raise ValueError(f"The seed has {len(OFFICIAL_THEMES)} official templates at most")
-    official_account: User | None = session.get(User, OFFICIAL_ACCOUNT_ID)
-    if official_account is None:
-        raise RuntimeError("The official account is created by the migration 7b2e4c9d1a03")
+    official_account: User = user_repository.get_official_account(session)
     moderation_log: ModerationLogService = ModerationLogService(session, settings)
     templates: TemplateService = TemplateService(session, settings, moderation_log)
     now: datetime = datetime.now(UTC)

@@ -21,7 +21,7 @@ import type { Template } from './templates';
 
 export type OfficialTemplateSummary = components['schemas']['OfficialTemplateSummaryResponse'];
 type OfficialTemplateList = components['schemas']['OfficialTemplateListResponse'];
-export type OfficialTemplateChange = 'publish' | 'unpublish' | 'feature' | 'unfeature';
+type OfficialTemplateLease = components['schemas']['OfficialTemplateLeaseResponse'];
 
 const OFFICIAL_TEMPLATE_LOCKED: string = 'official_template_locked';
 
@@ -32,11 +32,11 @@ async function listOfficialTemplates(signal?: AbortSignal): Promise<OfficialTemp
   return data.items;
 }
 
-async function createOfficialTemplate(name: string): Promise<Template> {
-  return dataOrThrow(await apiClient.POST('/moderation/official-templates', { body: { name } }));
+async function createOfficialTemplate(body: { name: string }): Promise<Template> {
+  return dataOrThrow(await apiClient.POST('/moderation/official-templates', { body }));
 }
 
-async function lockOfficialTemplate(templateId: string): Promise<Template> {
+async function lockOfficialTemplate(templateId: string): Promise<OfficialTemplateLease> {
   return dataOrThrow(
     await apiClient.POST('/moderation/official-templates/{template_id}/lock', {
       params: { path: { template_id: templateId } },
@@ -53,29 +53,24 @@ async function unlockOfficialTemplate(templateId: string): Promise<void> {
   );
 }
 
+const CHANGE_PATHS = {
+  publish: '/moderation/official-templates/{template_id}/publish',
+  unpublish: '/moderation/official-templates/{template_id}/unpublish',
+  feature: '/moderation/official-templates/{template_id}/feature',
+  unfeature: '/moderation/official-templates/{template_id}/unfeature',
+} as const;
+
+export type OfficialTemplateChange = keyof typeof CHANGE_PATHS;
+
 async function changeOfficialTemplate(
   templateId: string,
   change: OfficialTemplateChange,
 ): Promise<Template> {
-  const params = { params: { path: { template_id: templateId } } };
-  switch (change) {
-    case 'publish':
-      return dataOrThrow(
-        await apiClient.POST('/moderation/official-templates/{template_id}/publish', params),
-      );
-    case 'unpublish':
-      return dataOrThrow(
-        await apiClient.POST('/moderation/official-templates/{template_id}/unpublish', params),
-      );
-    case 'feature':
-      return dataOrThrow(
-        await apiClient.POST('/moderation/official-templates/{template_id}/feature', params),
-      );
-    case 'unfeature':
-      return dataOrThrow(
-        await apiClient.POST('/moderation/official-templates/{template_id}/unfeature', params),
-      );
-  }
+  return dataOrThrow(
+    await apiClient.POST(CHANGE_PATHS[change], {
+      params: { path: { template_id: templateId } },
+    }),
+  );
 }
 
 async function deleteOfficialTemplate(templateId: string): Promise<void> {
@@ -99,7 +94,7 @@ function storeOfficialTemplate(queryClient: QueryClient, template: Template): Pr
   return queryClient.invalidateQueries({ queryKey: OFFICIAL_TEMPLATES_QUERY_KEY });
 }
 
-export function useCreateOfficialTemplate(): UseMutationResult<Template, Error, string> {
+export function useCreateOfficialTemplate(): UseMutationResult<Template, Error, { name: string }> {
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: createOfficialTemplate,
@@ -128,15 +123,14 @@ export function useDeleteOfficialTemplate(templateId: string): UseMutationResult
   });
 }
 
-export type OfficialTemplateLock =
-  { status: 'pending' } | { status: 'held' } | { status: 'taken'; editorName: string | null };
+export type OfficialTemplateLockStatus = 'pending' | 'held' | 'taken';
 
 export function useOfficialTemplateLock(
   templateId: string,
   enabled: boolean,
-): OfficialTemplateLock {
+): OfficialTemplateLockStatus {
   const queryClient: QueryClient = useQueryClient();
-  const [lock, setLock] = useState<OfficialTemplateLock>({ status: 'pending' });
+  const [status, setStatus] = useState<OfficialTemplateLockStatus>('pending');
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -144,24 +138,17 @@ export function useOfficialTemplateLock(
 
     async function takeLease() {
       try {
-        const template: Template = await lockOfficialTemplate(templateId);
+        const lease: OfficialTemplateLease = await lockOfficialTemplate(templateId);
         if (!active) return;
         queryClient.setQueryData<Template>(templateQueryKey(templateId), (current) =>
-          current === undefined
-            ? template
-            : {
-                ...current,
-                editing_by_name: template.editing_by_name,
-                editing_until: template.editing_until,
-              },
+          current === undefined ? current : { ...current, ...lease },
         );
-        setLock({ status: 'held' });
+        setStatus('held');
       } catch (error) {
         if (!active || !(error instanceof ApiError) || error.code !== OFFICIAL_TEMPLATE_LOCKED) {
           return;
         }
-        const editor: unknown = error.params?.editor;
-        setLock({ status: 'taken', editorName: typeof editor === 'string' ? editor : null });
+        setStatus('taken');
         await queryClient.invalidateQueries({ queryKey: templateQueryKey(templateId) });
       }
     }
@@ -187,5 +174,5 @@ export function useOfficialTemplateLock(
     };
   }, [enabled, queryClient, templateId]);
 
-  return lock;
+  return status;
 }
