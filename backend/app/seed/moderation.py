@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.enums import EDITORIAL_ACTION_KINDS, ModerationActionKind, ModerationTargetType
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
@@ -40,17 +40,7 @@ IMAGE_REASONS: tuple[str, ...] = (
 )  # fmt: skip
 
 MODERATION_ACTION_KINDS: list[ModerationActionKind] = [
-    kind
-    for kind in ModerationActionKind
-    if kind
-    not in {
-        ModerationActionKind.CREATE,
-        ModerationActionKind.EDIT,
-        ModerationActionKind.PUBLISH,
-        ModerationActionKind.UNPUBLISH,
-        ModerationActionKind.FEATURE,
-        ModerationActionKind.UNFEATURE,
-    }
+    kind for kind in ModerationActionKind if kind not in EDITORIAL_ACTION_KINDS
 ]
 
 
