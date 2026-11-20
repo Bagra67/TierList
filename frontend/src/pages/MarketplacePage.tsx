@@ -6,6 +6,7 @@ import {
   type MarketplaceFilters,
   type MarketplaceSort,
   type MarketplaceTemplate,
+  uniqueById,
   useCardLikeStates,
   useFeaturedTemplates,
   useMarketplaceTags,
@@ -31,15 +32,6 @@ import { cn } from 'cn';
 
 const DEFAULT_SORT: MarketplaceSort = 'popular';
 const SORTS: readonly MarketplaceSort[] = ['popular', 'newest'];
-
-function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
-  const seen: Set<string> = new Set();
-  return items.filter((item: Item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
-}
 
 function filtersOf(searchParams: URLSearchParams): MarketplaceFilters {
   const sort: string | null = searchParams.get(MARKETPLACE_SORT_PARAM);
@@ -69,7 +61,8 @@ export function MarketplacePage() {
   const query = useMarketplaceTemplates(filters);
   const { data: featured = [] } = useFeaturedTemplates();
   const pages: MarketplaceTemplate[][] = query.data?.pages.map((page) => page.items) ?? [];
-  useCardLikeStates([featured, ...pages]);
+  const [firstPage = [], ...nextPages]: MarketplaceTemplate[][] = pages;
+  useCardLikeStates([uniqueById([...featured, ...firstPage]), ...nextPages]);
   const templates: MarketplaceTemplate[] = uniqueById(pages.flat());
   const hasFilter: boolean = filters.search !== undefined || filters.tag !== undefined;
 
