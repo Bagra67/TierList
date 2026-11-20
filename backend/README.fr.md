@@ -404,7 +404,7 @@ Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 | `account_not_found`            | 404             | Modération : compte inconnu                                                                                                                          |
 | `account_banned`               | 403             | Connexion d'un compte banni définitivement ; `params.reason`                                                                                         |
 | `account_banned_until`         | 403             | Connexion d'un compte banni jusqu'à une date ; `params.reason`, `params.ends_at`                                                                     |
-| `cannot_ban_super_admin`       | 409             | Un super admin ne peut pas être banni                                                                                                                |
+| `cannot_ban_super_admin`       | 409             | Un super admin ou le compte officiel ne peut pas être banni                                                                                          |
 | `account_not_banned`           | 409             | Lever le bannissement d'un compte qui n'en a pas                                                                                                     |
 | `ban_end_in_past`              | 422             | Fin d'un bannissement qui n'est pas dans le futur                                                                                                    |
 | `template_has_no_tiles`        | 409             | Salle créée, partie lancée ou modèle rendu public, avec un modèle sans tuile                                                                         |
@@ -414,6 +414,9 @@ Codes d'erreur (`ErrorCode`, `app/constants/error_codes.py`) :
 | `last_tier`                    | 409             | Supprimer le dernier tier d'un modèle                                                                                                                |
 | `tile_not_found`               | 404             | Tuile inconnue du modèle                                                                                                                             |
 | `tile_limit_reached`           | 409             | Modèle déjà à sa limite de tuiles ; `params.max_tiles`                                                                                               |
+| `tag_limit_reached`            | 409             | Modèle déjà à sa limite d'étiquettes ; `params.max_tags`                                                                                             |
+| `official_template_locked`     | 409             | Un autre super admin a la main sur le modèle officiel (`params.editor`), ou l'appelant ne l'a pas                                                    |
+| `template_not_published`       | 409             | Mise en avant d'un modèle officiel encore en brouillon                                                                                               |
 | `room_not_found`               | 404 / WS `4404` | Code de salle inconnu ou salle fermée                                                                                                                |
 | `room_not_joined`              | 403             | Lire une salle sans y avoir de place                                                                                                                 |
 | `room_admin_required`          | 403             | Action réservée au room admin                                                                                                                        |
