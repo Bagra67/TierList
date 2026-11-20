@@ -122,6 +122,12 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.ref }}
 
+      # The SFTP helper of this workflow's commit: an older version being rolled back to has none
+      - uses: actions/checkout@v7
+        with:
+          path: workflow
+          sparse-checkout: .github/scripts
+
       - uses: actions/download-artifact@v8
         with:
           name: tierlist-bundle
@@ -181,7 +187,7 @@ jobs:
           -get start.sh $RUNNER_TEMP/pod-launcher.sh
           -get supervisor.py $RUNNER_TEMP/pod-supervisor.py
           EOF
-          bash .github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-get"
+          bash workflow/.github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-get"
           if cmp -s deploy/launcher.sh "$RUNNER_TEMP/pod-launcher.sh" \
             && cmp -s deploy/supervisor.py "$RUNNER_TEMP/pod-supervisor.py"; then
             echo "launcher_changed=false" >> "$GITHUB_OUTPUT"
@@ -202,7 +208,7 @@ jobs:
           -rm deploy-status
           put $RUNNER_TEMP/CURRENT CURRENT
           EOF
-          bash .github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-batch"
+          bash workflow/.github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-batch"
           rm -f "$RUNNER_TEMP/pod.env"
 
       # Preparing a version (dependencies, migrations) takes up to a few minutes
@@ -214,8 +220,11 @@ jobs:
           BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
         run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 48 5
 
-      # The supervisor writes why it kept the previous version: a restart would not help then
+      # The supervisor writes where the switch stands. A restart only helps when no supervisor
+      # answered: it would interrupt a preparation, and not fix a version that fails. The status
+      # comes from the pod: only a well-formed first line is printed.
       - name: Read why the version did not switch
+        id: status
         if: steps.switch.outcome == 'failure'
         env:
           SFTP_HOST: ${{ secrets.SFTP_HOST }}
@@ -225,20 +234,36 @@ jobs:
           SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
         run: |
           printf -- '-get deploy-status %s\n' "$RUNNER_TEMP/deploy-status" > "$RUNNER_TEMP/sftp-status"
-          bash .github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-status"
-          status="$(cat "$RUNNER_TEMP/deploy-status" 2>/dev/null || true)"
-          echo "Pod deploy status: ${status:-none}"
-          case "$status" in
-            "failed $VERSION "*)
-              echo "::error::The pod kept the previous version: $status. See the pod console."
+          bash workflow/.github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-status"
+          status="$(head -n 1 "$RUNNER_TEMP/deploy-status" 2>/dev/null || true)"
+          state="$(printf '%s' "$status" | grep -oE '^(ok|failed|preparing) [A-Za-z0-9._-]+' || true)"
+          echo "Pod deploy status: ${state:-none}"
+          case "$state" in
+            "preparing $VERSION")
+              echo "action=wait" >> "$GITHUB_OUTPUT"
+              ;;
+            "failed $VERSION")
+              echo "::error::The pod could not prepare or start $VERSION and kept the previous version. See the pod console."
               exit 1
+              ;;
+            "ok $VERSION")
+              echo "::error::The pod runs $VERSION, but its health or database check does not answer."
+              exit 1
+              ;;
+            *)
+              echo "action=restart" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
-      # A new launcher, or a pod without a running supervisor
+      - name: Wait for the preparation to end
+        if: steps.status.outputs.action == 'wait'
+        env:
+          BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
+        run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 72 5
+
       - name: Restart the pod
         id: restart
-        if: steps.upload.outputs.launcher_changed == 'true' || steps.switch.outcome == 'failure'
+        if: steps.upload.outputs.launcher_changed == 'true' || steps.status.outputs.action == 'restart'
         env:
           DEPLOY_ENVIRONMENT: ${{ needs.plan.outputs.environment }}
           PANEL_URL: ${{ vars.PANEL_URL }}
