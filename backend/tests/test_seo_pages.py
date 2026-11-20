@@ -10,7 +10,7 @@ from httpx2 import Response
 from app.api.dependencies import get_seo_service
 from app.api.routes import seo
 from app.constants.i18n import Language
-from app.constants.seo import SITEMAP_NAMESPACE
+from app.constants.seo import CRAWLER_FILES_CACHE_CONTROL, SITEMAP_NAMESPACE
 from app.seo.crawler_files import SitemapEntry, robots_txt, sitemap_xml
 from app.seo.head import PageHead, render_page
 from app.seo.language import language_from_accept_language
@@ -160,3 +160,13 @@ def test_the_sitemap_is_served_as_xml_when_indexing_is_enabled():
 
 def test_there_is_no_sitemap_when_indexing_is_disabled():
     assert crawler_client(indexing_enabled=False).get("/sitemap.xml").status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("path", "indexing_enabled"),
+    [("/robots.txt", False), ("/sitemap.xml", True), ("/sitemap.xml", False)],
+)
+def test_crawler_files_are_cached_for_a_few_minutes_only(path: str, indexing_enabled: bool):
+    response: Response = crawler_client(indexing_enabled).get(path)
+
+    assert response.headers["cache-control"] == CRAWLER_FILES_CACHE_CONTROL

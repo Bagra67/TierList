@@ -46,6 +46,7 @@ The texts are in `seo/texts.py`, in both languages. As for emails, this is a cas
 
 - Both files are routes of the root app (`api/routes/seo.py`), outside `/api` and outside the OpenAPI schema.
 - The sitemap lists `/`, `/marketplace`, `/privacy`, `/terms`, `/legal`, then the listed templates, newest first, with `lastmod` = the day of their `updated_at` (`MarketplaceService.list_template_updates`, same listing rule), up to 50,000 URLs (`SITEMAP_MAX_URLS`, the limit of one sitemap file).
+- Both files, and the sitemap's 404, send `Cache-Control: public, max-age=300` (`CRAWLER_FILES_CACHE_CONTROL`). Without it, Cloudflare caches them as static `.txt` / `.xml` files for 4 hours, so a change of `robots.txt` or a newly listed template reached crawlers hours after a deployment (#491). Google still keeps its own copy of `robots.txt` for up to 24 hours; Search Console can ask for a new crawl (Settings → robots.txt).
 - Pages that are not indexable are not blocked in `robots.txt` on purpose: a crawler has to read a page to see its `noindex`.
 - `/api/` is not blocked either: the pages are rendered by JavaScript from it, and Googlebot respects `robots.txt` for the calls a page makes while rendering. Blocked, every page rendered as an error, which Search Console reported as a soft 404 (#485). Every `/api/` answer carries `X-Robots-Tag: noindex` instead (`NoindexMiddleware`, `app/core/noindex.py`), so the JSON answers stay out of the results.
 
