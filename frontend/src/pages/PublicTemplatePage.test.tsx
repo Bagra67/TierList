@@ -102,6 +102,17 @@ describe('PublicTemplatePage', () => {
     );
   });
 
+  it('shows an official template in the picks signed by TierList with its badge', async () => {
+    stubBackend({
+      [templateRoute]: () => Response.json({ ...chips, owner_name: 'TierList', featured: true }),
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('par TierList')).toBeInTheDocument();
+    expect(screen.getByText('Sélection TierList')).toBeInTheDocument();
+  });
+
   it('says that a template without items has none', async () => {
     stubBackend({ [templateRoute]: () => Response.json({ ...chips, tiles: [] }) });
 

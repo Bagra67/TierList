@@ -80,6 +80,35 @@ describe('MarketplacePage', () => {
     expect(document.title).toBe('Modèles publics · TierList');
   });
 
+  it('shows the TierList picks in their own row above the list, without a search', async () => {
+    const pick: MarketplaceTemplate = card('pick-id', 'Jeux de société', {
+      owner_name: 'TierList',
+      featured: true,
+    });
+    stubMarketplace(() => ({ items: [pick, chips], next_cursor: null }), undefined, {
+      'GET /marketplace/featured': () => Response.json({ items: [pick] }),
+    });
+
+    renderPage();
+
+    const picks: HTMLElement = await screen.findByRole('region', { name: 'Sélection TierList' });
+    expect(within(picks).getByRole('link', { name: 'Jeux de société' })).toBeInTheDocument();
+    expect(within(picks).queryByText('Sélection TierList', { selector: 'span' })).toBeNull();
+    expect(screen.getAllByText('Sélection TierList', { selector: 'span' })).toHaveLength(1);
+  });
+
+  it('hides the TierList picks during a search', async () => {
+    const pick: MarketplaceTemplate = card('pick-id', 'Jeux de société', { featured: true });
+    stubMarketplace(() => ({ items: [chips], next_cursor: null }), undefined, {
+      'GET /marketplace/featured': () => Response.json({ items: [pick] }),
+    });
+
+    renderPage('/marketplace?q=chips');
+
+    await screen.findByRole('link', { name: 'Chips' });
+    expect(screen.queryByRole('region', { name: 'Sélection TierList' })).not.toBeInTheDocument();
+  });
+
   it('searches with the typed keywords', async () => {
     const { searches } = stubMarketplace(() => ({ items: [chips], next_cursor: null }));
     renderPage();

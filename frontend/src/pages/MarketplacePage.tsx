@@ -6,7 +6,9 @@ import {
   type MarketplaceFilters,
   type MarketplaceSort,
   type MarketplaceTemplate,
+  uniqueById,
   useCardLikeStates,
+  useFeaturedTemplates,
   useMarketplaceTags,
   useMarketplaceTemplates,
 } from '../api/marketplace';
@@ -30,15 +32,6 @@ import { cn } from 'cn';
 
 const DEFAULT_SORT: MarketplaceSort = 'popular';
 const SORTS: readonly MarketplaceSort[] = ['popular', 'newest'];
-
-function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
-  const seen: Set<string> = new Set();
-  return items.filter((item: Item) => {
-    if (seen.has(item.id)) return false;
-    seen.add(item.id);
-    return true;
-  });
-}
 
 function filtersOf(searchParams: URLSearchParams): MarketplaceFilters {
   const sort: string | null = searchParams.get(MARKETPLACE_SORT_PARAM);
@@ -66,8 +59,10 @@ export function MarketplacePage() {
   const [searchParams, setSearchParams]: [URLSearchParams, SetURLSearchParams] = useSearchParams();
   const filters: MarketplaceFilters = filtersOf(searchParams);
   const query = useMarketplaceTemplates(filters);
+  const { data: featured = [] } = useFeaturedTemplates();
   const pages: MarketplaceTemplate[][] = query.data?.pages.map((page) => page.items) ?? [];
-  useCardLikeStates(pages);
+  const [firstPage = [], ...nextPages]: MarketplaceTemplate[][] = pages;
+  useCardLikeStates([uniqueById([...featured, ...firstPage]), ...nextPages]);
   const templates: MarketplaceTemplate[] = uniqueById(pages.flat());
   const hasFilter: boolean = filters.search !== undefined || filters.tag !== undefined;
 
@@ -84,6 +79,7 @@ export function MarketplacePage() {
           setSearchParams(withParam(searchParams, name, value))
         }
       />
+      {!hasFilter && featured.length > 0 && <TierListPicks templates={featured} />}
       <PagedList
         query={query}
         itemCount={templates.length}
@@ -108,6 +104,29 @@ export function MarketplacePage() {
         </ul>
       </PagedList>
     </PageContainer>
+  );
+}
+
+function TierListPicks({ templates }: { templates: MarketplaceTemplate[] }) {
+  const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
+  const headingId: string = useId();
+  return (
+    <section
+      aria-labelledby={headingId}
+      className="flex w-full flex-col gap-4 rounded-panel bg-muted p-4 sm:p-5"
+    >
+      <div className="flex flex-col gap-1">
+        <h2 id={headingId} className="text-lg font-semibold">
+          {t('marketplace.picks.title')}
+        </h2>
+        <p className="text-sm text-muted-foreground">{t('marketplace.picks.intro')}</p>
+      </div>
+      <ul className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {templates.map((template: MarketplaceTemplate) => (
+          <MarketplaceCard key={template.id} template={template} showFeaturedBadge={false} />
+        ))}
+      </ul>
+    </section>
   );
 }
 

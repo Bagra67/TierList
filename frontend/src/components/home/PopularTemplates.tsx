@@ -4,7 +4,9 @@ import { Link } from 'react-router';
 
 import {
   type MarketplaceTemplate,
+  uniqueById,
   useCardLikeStates,
+  useFeaturedTemplates,
   usePopularTemplates,
 } from '../../api/marketplace';
 import { HOME_POPULAR_COUNT } from '../../constants/home';
@@ -15,7 +17,15 @@ import { Button } from '../ui/button';
 export function PopularTemplates() {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
-  const { data: templates } = usePopularTemplates(HOME_POPULAR_COUNT);
+  const featuredQuery = useFeaturedTemplates();
+  const featured: MarketplaceTemplate[] | undefined = featuredQuery.isPending
+    ? undefined
+    : (featuredQuery.data ?? []);
+  const { data: popular } = usePopularTemplates(HOME_POPULAR_COUNT);
+  const templates: MarketplaceTemplate[] | undefined =
+    featured === undefined || popular === undefined
+      ? undefined
+      : uniqueById([...featured, ...popular]).slice(0, HOME_POPULAR_COUNT);
   useCardLikeStates(templates === undefined ? [] : [templates]);
 
   if (templates === undefined || templates.length === 0) return null;

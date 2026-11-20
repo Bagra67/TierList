@@ -169,6 +169,27 @@ export function useMarketplaceTemplates(
   });
 }
 
+async function listFeaturedTemplates(signal: AbortSignal): Promise<MarketplaceTemplate[]> {
+  return dataOrThrow(await apiClient.GET('/marketplace/featured', { signal })).items;
+}
+
+export function uniqueById<Item extends { id: string }>(items: Item[]): Item[] {
+  const seen: Set<string> = new Set();
+  return items.filter((item: Item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+export function useFeaturedTemplates(): UseQueryResult<MarketplaceTemplate[]> {
+  return useQuery({
+    queryKey: [...MARKETPLACE_LIST_QUERY_KEY, 'featured'],
+    queryFn: ({ signal }) => listFeaturedTemplates(signal),
+    retry: retryUnlessClientError,
+  });
+}
+
 export function usePopularTemplates(count: number): UseQueryResult<MarketplaceTemplate[]> {
   return useQuery({
     queryKey: [...MARKETPLACE_LIST_QUERY_KEY, 'popular', count],

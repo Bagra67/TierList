@@ -5,6 +5,7 @@ import type { MarketplaceTemplate } from '../api/marketplace';
 import { publicTemplatePath } from '../constants/routes';
 import { CardLikeButton } from './LikeButton';
 import { RemovedImage } from './RemovedImage';
+import { TemplateFeaturedBadge } from './TemplateFeaturedBadge';
 import { TemplateTagList } from './TemplateTagList';
 
 const TIER_BAR_WIDTH_STEP_PERCENT = 12;
@@ -34,7 +35,12 @@ function CardPreview({ template }: { template: MarketplaceTemplate }) {
   );
 }
 
-export function MarketplaceCard({ template }: { template: MarketplaceTemplate }) {
+interface MarketplaceCardProps {
+  template: MarketplaceTemplate;
+  showFeaturedBadge?: boolean;
+}
+
+export function MarketplaceCard({ template, showFeaturedBadge = true }: MarketplaceCardProps) {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   return (
     <li className="relative flex flex-col overflow-hidden rounded-panel border bg-card focus-within:ring-3 focus-within:ring-ring">
@@ -50,6 +56,11 @@ export function MarketplaceCard({ template }: { template: MarketplaceTemplate })
             {template.name}
           </Link>
         </h3>
+        {template.featured && showFeaturedBadge && (
+          <div>
+            <TemplateFeaturedBadge />
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
           {t('marketplace.card.byline', {
             owner: template.owner_name,
