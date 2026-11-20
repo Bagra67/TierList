@@ -315,6 +315,7 @@ export const en: Translation = {
   },
   moderation: {
     nav: {
+      officialTemplates: 'Official templates',
       label: 'Moderation area',
       reports: 'Reports',
       uploads: 'Recent uploads',
@@ -885,6 +886,51 @@ export const en: Translation = {
         dropped: '{{item}} dropped at position {{position}} of {{count}}.',
         cancelled: 'Moving {{item}} cancelled.',
       },
+    },
+  },
+  officialTemplates: {
+    title: 'Official templates',
+    intro:
+      'The site’s templates, signed “TierList”. Every super admin can edit them, one at a time. A draft is only visible in this area.',
+    empty: 'No official template yet.',
+    tileCount_one: '{{count}} item',
+    tileCount_other: '{{count}} items',
+    updatedAt: 'changed on {{date, datetime(dateStyle: medium)}}',
+    editing: '{{editor}} is editing this template',
+    featuredBadge: 'TierList pick',
+    state: {
+      draft: 'Draft',
+      published: 'Published',
+    },
+    create: {
+      open: 'New official template',
+      title: 'New official template',
+    },
+    editor: {
+      back: 'Official templates',
+      lockedBy: '{{editor}} is editing this template right now.',
+      lockedByAnother: 'Another super admin is editing this template right now.',
+      readOnly: 'You see it read-only; the page unlocks by itself once the editor is free.',
+    },
+    status: {
+      title: 'Publishing',
+      draftDescription: 'Visible to the super admins only.',
+      publishedDescription: 'Visible to everyone in the public templates.',
+      publish: 'Publish',
+      unpublish: 'Back to draft',
+      feature: 'Feature in the TierList picks',
+      featureHelp:
+        'It comes first on the home page and in the TierList picks row of the public templates.',
+      featureNeedsPublishing: 'Publish the template first.',
+    },
+    delete: {
+      open: 'Delete the template',
+      title: 'Delete “{{name}}”?',
+      warning:
+        'It leaves the public templates. It stays in Deleted templates until it is erased, and a super admin can restore it.',
+      cancel: 'Cancel',
+      submit: 'Delete',
+      submitting: 'Deleting…',
     },
   },
   marketplace: {

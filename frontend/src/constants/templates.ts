@@ -2,7 +2,6 @@ export const TEMPLATE_NAME_MAX_LENGTH: number = 100;
 export const TIER_NAME_MAX_LENGTH: number = 50;
 export const TILE_TEXT_MAX_LENGTH: number = 200;
 export const TAG_MAX_LENGTH: number = 30;
-export const TEMPLATE_MAX_TAGS: number = 5;
 
 export const TIER_COLOR_PRESETS: readonly string[] = [
   '#FF3B6B',
@@ -27,6 +26,12 @@ export function isTemplateId(value: string): boolean {
 }
 
 export const TEMPLATE_LIST_QUERY_KEY: readonly ['templates', 'list'] = ['templates', 'list'];
+
+export const OFFICIAL_TEMPLATES_QUERY_KEY: readonly ['templates', 'official'] = [
+  'templates',
+  'official',
+];
+export const OFFICIAL_TEMPLATE_LOCK_RENEW_MS: number = 30_000;
 
 export const REMOVED_TEMPLATES_QUERY_KEY: readonly ['templates', 'removed'] = [
   'templates',
