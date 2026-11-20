@@ -37,7 +37,7 @@ The script logs each of its 6 steps with its duration, and its progress inside t
 - **Never in production.** The script refuses any database that is not `tierlist` (local) or `…_staging`, and the workflow is bound to the `staging` environment only.
 - **No known password on a public site.** On a `…_staging` database, `SEED_PASSWORD` is required: the local password is written in the repository and would give anyone a super admin account.
 - **Open rooms do not last.** A room nobody is connected to is closed after `ROOM_INACTIVITY_HOURS` (24 h). Run the seed again to get the rooms back; the closed games stay.
-- **Deleted templates** are deleted at seed time: the nightly purge erases them 30 days later.
+- **Deleted templates** are deleted at seed time: the nightly purge erases them 30 days later. The first one is backdated to be erased the next day (`SEED_DELETED_TEMPLATE_ERASED_IN`), so that the urgent countdown of the moderation's deleted templates shows.
 - **Banned accounts cannot sign in**: the sign-in shows the reason of their ban. `seed-player-1`, used by the tests and the documentation, is never banned. `seed-player-24` had a ban lifted: they sign in, and their account page shows a past ban. The temporary ban ends 14 days after the run: run the seed again to get it back.
 
 ## 4. How it is built

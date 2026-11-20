@@ -560,6 +560,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/marketplace/likes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Like States
+         * @description The account's like state of several public templates at once (one page of cards). The
+         *     templates that are not listed are left out.
+         */
+        get: operations["list_like_states_marketplace_likes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/marketplace/templates/{template_id}/like": {
         parameters: {
             query?: never;
@@ -1205,6 +1226,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/moderation/templates/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Deleted Templates
+         * @description The deleted templates not yet erased, the closest to the automatic purge first, with their
+         *     owner and the reason of a deletion by the moderation. Filters: `owner` (name or email,
+         *     case-insensitive), `name`, `deleted_after` and `deleted_before`. Paginated by `limit` and
+         *     `offset`.
+         */
+        get: operations["list_deleted_templates_moderation_templates_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/moderation/templates/{template_id}": {
         parameters: {
             query?: never;
@@ -1214,7 +1258,9 @@ export interface paths {
         };
         /**
          * Get Template For Review
-         * @description Reads the content of a non-deleted template, even a private one (US-1.8). Read-only.
+         * @description Reads the content of a template, even a private or a deleted one (US-1.8). Read-only. A
+         *     deleted template carries `deleted_at`, the date of its automatic purge (`erase_at`) and the
+         *     reason of a deletion by the moderation (`deletion_reason`).
          */
         get: operations["get_template_for_review_moderation_templates__template_id__get"];
         put?: never;
@@ -1282,6 +1328,48 @@ export interface paths {
          *     reason until the purge. Written to the log.
          */
         post: operations["delete_template_moderation_templates__template_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/templates/{template_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Template
+         * @description Restores a deleted template, deleted by its owner or by the moderation: it comes back to its
+         *     owner, hidden or not and public or private as before. Written to the log.
+         */
+        post: operations["restore_template_moderation_templates__template_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/templates/{template_id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Purge Template
+         * @description Erases a deleted template before the automatic purge, as the purge does: its tiers, tiles,
+         *     tags and likes go, the rooms and the results of played games stay. Written to the log first.
+         */
+        post: operations["purge_template_moderation_templates__template_id__purge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1693,6 +1781,52 @@ export interface components {
             password?: string | null;
         };
         /**
+         * DeletedTemplateResponse
+         * @description A deleted template, until the automatic purge erases it at `erase_at`. `deletion_reason` is
+         *     the reason of a deletion by the moderation, null for a deletion by its owner.
+         */
+        DeletedTemplateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Owner Name */
+            owner_name: string;
+            /** Tile Count */
+            tile_count: number;
+            moderation: components["schemas"]["TemplateModeration"];
+            /**
+             * Deleted At
+             * Format: date-time
+             */
+            deleted_at: string;
+            /**
+             * Erase At
+             * Format: date-time
+             */
+            erase_at: string;
+            /** Deletion Reason */
+            deletion_reason: string | null;
+        };
+        /**
+         * DeletedTemplatesResponse
+         * @description A page of deleted templates, the closest to being erased first.
+         */
+        DeletedTemplatesResponse: {
+            /** Templates */
+            templates: components["schemas"]["DeletedTemplateResponse"][];
+            /** Has More */
+            has_more: boolean;
+        };
+        /**
          * DismissReportsRequest
          * @description Dismiss the open reports of a content (US-1.3).
          */
@@ -1986,6 +2120,15 @@ export interface components {
             can_like: boolean;
         };
         /**
+         * LikeStatesResponse
+         * @description The like states of the requested templates that are listed, in the requested order; the
+         *     others are left out.
+         */
+        LikeStatesResponse: {
+            /** Items */
+            items: components["schemas"]["TemplateLikeStateResponse"][];
+        };
+        /**
          * LoginRequest
          * @description Sign-in with an email and a password.
          */
@@ -2056,7 +2199,7 @@ export interface components {
          * @description Action d'un super admin, écrite au journal de modération (US-1.9).
          * @enum {string}
          */
-        ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban";
+        ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban" | "restore" | "purge";
         /**
          * ModerationActionResponse
          * @description An entry of the moderation log (US-1.9).
@@ -2493,6 +2636,12 @@ export interface components {
             moderation: components["schemas"]["TemplateModeration"];
             /** Moderation Reason */
             moderation_reason: string | null;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Erase At */
+            erase_at: string | null;
+            /** Deletion Reason */
+            deletion_reason: string | null;
             /** Tiers */
             tiers: components["schemas"]["TierResponse"][];
             /** Tiles */
@@ -2630,6 +2779,23 @@ export interface components {
             id: string;
             /** Display Name */
             display_name: string;
+        };
+        /**
+         * TemplateLikeStateResponse
+         * @description The like state of one public template, for the marketplace cards.
+         */
+        TemplateLikeStateResponse: {
+            /** Liked */
+            liked: boolean;
+            /** Like Count */
+            like_count: number;
+            /** Can Like */
+            can_like: boolean;
+            /**
+             * Template Id
+             * Format: uuid
+             */
+            template_id: string;
         };
         /**
          * TemplateListResponse
@@ -4753,6 +4919,55 @@ export interface operations {
             };
             /** @description Template not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_like_states_marketplace_likes_get: {
+        parameters: {
+            query: {
+                template_id: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LikeStatesResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7017,6 +7232,69 @@ export interface operations {
             };
         };
     };
+    list_deleted_templates_moderation_templates_deleted_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                owner?: string | null;
+                name?: string | null;
+                deleted_after?: string | null;
+                deleted_before?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedTemplatesResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     get_template_for_review_moderation_templates__template_id__get: {
         parameters: {
             query?: never;
@@ -7241,6 +7519,162 @@ export interface operations {
         };
     };
     delete_template_moderation_templates__template_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template already hidden, not hidden, or deleted */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    restore_template_moderation_templates__template_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerationReasonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template already hidden, not hidden, or deleted */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    purge_template_moderation_templates__template_id__purge_post: {
         parameters: {
             query?: never;
             header?: never;

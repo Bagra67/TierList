@@ -143,8 +143,33 @@ class ReviewedTemplateResponse(BaseModel):
     owner_name: str | None
     moderation: TemplateModeration
     moderation_reason: str | None
+    deleted_at: datetime | None
+    erase_at: datetime | None
+    deletion_reason: str | None
     tiers: list[TierResponse]
     tiles: list[ReviewedTileResponse]
+
+
+class DeletedTemplateResponse(BaseModel):
+    """A deleted template, until the automatic purge erases it at `erase_at`. `deletion_reason` is
+    the reason of a deletion by the moderation, null for a deletion by its owner."""
+
+    id: uuid.UUID
+    name: str
+    owner_id: uuid.UUID
+    owner_name: str
+    tile_count: int
+    moderation: TemplateModeration
+    deleted_at: datetime
+    erase_at: datetime
+    deletion_reason: str | None
+
+
+class DeletedTemplatesResponse(BaseModel):
+    """A page of deleted templates, the closest to being erased first."""
+
+    templates: list[DeletedTemplateResponse]
+    has_more: bool
 
 
 class RecentUploadResponse(BaseModel):

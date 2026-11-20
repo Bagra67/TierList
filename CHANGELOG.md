@@ -5,6 +5,25 @@ English | [Français](CHANGELOG.fr.md)
 All notable changes to this project are documented in this file.
 Versions follow [Semantic Versioning](https://semver.org/): see [docs/technical/releasing.md](docs/technical/releasing.md).
 
+## [1.3.0] - 2026-11-20
+
+### Features
+
+- backend: read the like states of a page of marketplace cards (#481)
+- frontend: like public templates from the marketplace cards (#482)
+- backend: list, restore and permanently delete deleted templates (#494)
+- frontend: review, restore and permanently delete deleted templates (#495)
+
+### Bug fixes
+
+- backend: cache robots.txt and the sitemap for five minutes only (#502)
+
+### Documentation
+
+- document liking from the marketplace cards and the signed-in home preview (#483)
+- agents: mock up every interface change and challenge it before coding (#493)
+- document the deleted templates of the moderation area (#496)
+
 ## [1.2.1] - 2026-11-19
 
 ### Bug fixes

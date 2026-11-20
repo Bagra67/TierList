@@ -1,9 +1,9 @@
-import { Heart } from 'lucide-react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import type { MarketplaceTemplate } from '../api/marketplace';
 import { publicTemplatePath } from '../constants/routes';
+import { CardLikeButton } from './LikeButton';
 import { RemovedImage } from './RemovedImage';
 import { TemplateTagList } from './TemplateTagList';
 
@@ -57,10 +57,13 @@ export function MarketplaceCard({ template }: { template: MarketplaceTemplate })
           })}
         </p>
         <TemplateTagList tags={template.tags} />
-        <p className="mt-auto flex items-center justify-end gap-1.5 text-sm font-medium text-primary tabular-nums">
-          <Heart aria-hidden="true" className="size-4" />
-          {t('publicTemplate.like.count', { count: template.like_count })}
-        </p>
+        <div className="mt-auto flex justify-end">
+          <CardLikeButton
+            templateId={template.id}
+            templateName={template.name}
+            likeCount={template.like_count}
+          />
+        </div>
       </div>
     </li>
   );

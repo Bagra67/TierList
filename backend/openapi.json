@@ -3,7 +3,7 @@
   "info": {
     "title": "TierList API",
     "description": "FastAPI backend of the TierList application",
-    "version": "1.2.1"
+    "version": "1.3.0"
   },
   "paths": {
     "/auth/register": {
@@ -2257,6 +2257,80 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/likes": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "List Like States",
+        "description": "The account's like state of several public templates at once (one page of cards). The\ntemplates that are not listed are left out.",
+        "operationId": "list_like_states_marketplace_likes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "minItems": 1,
+              "maxItems": 24,
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LikeStatesResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
             "content": {
               "application/json": {
                 "schema": {
@@ -5492,13 +5566,173 @@
         }
       }
     },
+    "/moderation/templates/deleted": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "List Deleted Templates",
+        "description": "The deleted templates not yet erased, the closest to the automatic purge first, with their\nowner and the reason of a deletion by the moderation. Filters: `owner` (name or email,\ncase-insensitive), `name`, `deleted_after` and `deleted_before`. Paginated by `limit` and\n`offset`.",
+        "operationId": "list_deleted_templates_moderation_templates_deleted_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 96,
+              "minimum": 1,
+              "default": 24,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 320
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "name": "deleted_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Deleted After"
+            }
+          },
+          {
+            "name": "deleted_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Deleted Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedTemplatesResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/moderation/templates/{template_id}": {
       "get": {
         "tags": [
           "moderation"
         ],
         "summary": "Get Template For Review",
-        "description": "Reads the content of a non-deleted template, even a private one (US-1.8). Read-only.",
+        "description": "Reads the content of a template, even a private or a deleted one (US-1.8). Read-only. A\ndeleted template carries `deleted_at`, the date of its automatic purge (`erase_at`) and the\nreason of a deletion by the moderation (`deletion_reason`).",
         "operationId": "get_template_for_review_moderation_templates__template_id__get",
         "security": [
           {
@@ -5793,6 +6027,210 @@
         "summary": "Delete Template",
         "description": "Deletes a template, visible or hidden, like a deletion by its owner; the owner sees the\nreason until the purge. Written to the log.",
         "operationId": "delete_template_moderation_templates__template_id__delete_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Template already hidden, not hidden, or deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/templates/{template_id}/restore": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Restore Template",
+        "description": "Restores a deleted template, deleted by its owner or by the moderation: it comes back to its\nowner, hidden or not and public or private as before. Written to the log.",
+        "operationId": "restore_template_moderation_templates__template_id__restore_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Template already hidden, not hidden, or deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/templates/{template_id}/purge": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Purge Template",
+        "description": "Erases a deleted template before the automatic purge, as the purge does: its tiers, tiles,\ntags and likes go, the rooms and the results of played games stay. Written to the log first.",
+        "operationId": "purge_template_moderation_templates__template_id__purge_post",
         "security": [
           {
             "HTTPBearer": []
@@ -7134,6 +7572,92 @@
         "title": "DeleteAccountRequest",
         "description": "Confirmation of the account deletion: the password, required for an account that has one,\nabsent for an account without a password."
       },
+      "DeletedTemplateResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "owner_name": {
+            "type": "string",
+            "title": "Owner Name"
+          },
+          "tile_count": {
+            "type": "integer",
+            "title": "Tile Count"
+          },
+          "moderation": {
+            "$ref": "#/components/schemas/TemplateModeration"
+          },
+          "deleted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Deleted At"
+          },
+          "erase_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Erase At"
+          },
+          "deletion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "owner_id",
+          "owner_name",
+          "tile_count",
+          "moderation",
+          "deleted_at",
+          "erase_at",
+          "deletion_reason"
+        ],
+        "title": "DeletedTemplateResponse",
+        "description": "A deleted template, until the automatic purge erases it at `erase_at`. `deletion_reason` is\nthe reason of a deletion by the moderation, null for a deletion by its owner."
+      },
+      "DeletedTemplatesResponse": {
+        "properties": {
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/DeletedTemplateResponse"
+            },
+            "type": "array",
+            "title": "Templates"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "templates",
+          "has_more"
+        ],
+        "title": "DeletedTemplatesResponse",
+        "description": "A page of deleted templates, the closest to being erased first."
+      },
       "DismissReportsRequest": {
         "properties": {
           "reason": {
@@ -7802,6 +8326,23 @@
         "title": "LikeStateResponse",
         "description": "Whether the account likes the public template, its number of likes, and whether the account\nmay like it (false for its owner)."
       },
+      "LikeStatesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateLikeStateResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "LikeStatesResponse",
+        "description": "The like states of the requested templates that are listed, in the requested order; the\nothers are left out."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -7954,7 +8495,9 @@
           "unhide",
           "delete",
           "ban",
-          "lift_ban"
+          "lift_ban",
+          "restore",
+          "purge"
         ],
         "title": "ModerationActionKind",
         "description": "Action d'un super admin, écrite au journal de modération (US-1.9)."
@@ -8873,6 +9416,41 @@
             ],
             "title": "Moderation Reason"
           },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "erase_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Erase At"
+          },
+          "deletion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deletion Reason"
+          },
           "tiers": {
             "items": {
               "$ref": "#/components/schemas/TierResponse"
@@ -8897,6 +9475,9 @@
           "owner_name",
           "moderation",
           "moderation_reason",
+          "deleted_at",
+          "erase_at",
+          "deletion_reason",
           "tiers",
           "tiles"
         ],
@@ -9191,6 +9772,36 @@
         ],
         "title": "SuperAdminResponse",
         "description": "A super admin, to filter the log by author."
+      },
+      "TemplateLikeStateResponse": {
+        "properties": {
+          "liked": {
+            "type": "boolean",
+            "title": "Liked"
+          },
+          "like_count": {
+            "type": "integer",
+            "title": "Like Count"
+          },
+          "can_like": {
+            "type": "boolean",
+            "title": "Can Like"
+          },
+          "template_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Template Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "liked",
+          "like_count",
+          "can_like",
+          "template_id"
+        ],
+        "title": "TemplateLikeStateResponse",
+        "description": "The like state of one public template, for the marketplace cards."
       },
       "TemplateListResponse": {
         "properties": {

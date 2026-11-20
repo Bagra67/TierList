@@ -176,6 +176,7 @@ As a **user**, I want to like a public template, so that good templates rise in 
 
 - _Given_ a public template that is not mine, _when_ I like it, _then_ its number of likes goes up by one; _when_ I like it again, _then_ my like is removed.
 - _Given_ my own template, _then_ I cannot like it.
+- _Given_ a card of the marketplace or of the home preview, _then_ I see whether I like the template, and I can like it or remove my like from the card.
 - _Given_ I am a visitor, _when_ I try, _then_ I am asked to sign in.
 
 ### US-3.5 Favorites — Should

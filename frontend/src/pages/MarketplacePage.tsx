@@ -6,6 +6,7 @@ import {
   type MarketplaceFilters,
   type MarketplaceSort,
   type MarketplaceTemplate,
+  useCardLikeStates,
   useMarketplaceTags,
   useMarketplaceTemplates,
 } from '../api/marketplace';
@@ -65,9 +66,9 @@ export function MarketplacePage() {
   const [searchParams, setSearchParams]: [URLSearchParams, SetURLSearchParams] = useSearchParams();
   const filters: MarketplaceFilters = filtersOf(searchParams);
   const query = useMarketplaceTemplates(filters);
-  const templates: MarketplaceTemplate[] = uniqueById(
-    query.data?.pages.flatMap((page) => page.items) ?? [],
-  );
+  const pages: MarketplaceTemplate[][] = query.data?.pages.map((page) => page.items) ?? [];
+  useCardLikeStates(pages);
+  const templates: MarketplaceTemplate[] = uniqueById(pages.flat());
   const hasFilter: boolean = filters.search !== undefined || filters.tag !== undefined;
 
   return (

@@ -2,11 +2,17 @@ import { type FormEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ListedImageStatus, type RecentUploadsFilters } from '../api/moderation';
-import { startOfDay, exclusiveEndOfDay } from '../components/localDays';
+import { DayRangeFields } from '../components/DayRangeFields';
+import {
+  type DayRange,
+  type DayRangeBounds,
+  dayRangeBounds,
+  EMPTY_DAY_RANGE,
+  isDayRangeSet,
+} from '../components/localDays';
 import { TextField } from '../components/TextField';
 import { UploadGrid } from '../components/UploadGrid';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { NativeSelect } from '../components/ui/native-select';
 import { useDocumentTitle } from '../components/useDocumentTitle';
@@ -14,22 +20,19 @@ import { useDocumentTitle } from '../components/useDocumentTitle';
 export function RecentUploadsPage() {
   const { t } = useTranslation();
   useDocumentTitle(t('moderation.uploads.title'));
-  const fromId: string = useId();
-  const toId: string = useId();
   const statusId: string = useId();
   const [authorDraft, setAuthorDraft] = useState<string>('');
   const [author, setAuthor] = useState<string | undefined>(undefined);
-  const [fromDay, setFromDay] = useState<string>('');
-  const [toDay, setToDay] = useState<string>('');
+  const [days, setDays] = useState<DayRange>(EMPTY_DAY_RANGE);
   const [status, setStatus] = useState<ListedImageStatus | ''>('');
+  const bounds: DayRangeBounds = dayRangeBounds(days);
   const filters: RecentUploadsFilters = {
     author,
-    createdAfter: fromDay === '' ? undefined : startOfDay(fromDay),
-    createdBefore: toDay === '' ? undefined : exclusiveEndOfDay(toDay),
+    createdAfter: bounds.after,
+    createdBefore: bounds.before,
     status: status === '' ? undefined : status,
   };
-  const isFiltered: boolean =
-    author !== undefined || fromDay !== '' || toDay !== '' || status !== '';
+  const isFiltered: boolean = author !== undefined || isDayRangeSet(days) || status !== '';
   function applyAuthor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const searched: string = authorDraft.trim();
@@ -56,26 +59,12 @@ export function RecentUploadsPage() {
             {t('moderation.uploads.search')}
           </Button>
         </form>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={fromId}>{t('moderation.uploads.from')}</Label>
-          <Input
-            id={fromId}
-            type="date"
-            value={fromDay}
-            max={toDay === '' ? undefined : toDay}
-            onChange={(event) => setFromDay(event.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={toId}>{t('moderation.uploads.to')}</Label>
-          <Input
-            id={toId}
-            type="date"
-            value={toDay}
-            min={fromDay === '' ? undefined : fromDay}
-            onChange={(event) => setToDay(event.target.value)}
-          />
-        </div>
+        <DayRangeFields
+          range={days}
+          onChange={setDays}
+          fromLabel={t('moderation.uploads.from')}
+          toLabel={t('moderation.uploads.to')}
+        />
         <div className="flex flex-col gap-2">
           <Label htmlFor={statusId}>{t('moderation.uploads.status')}</Label>
           <NativeSelect

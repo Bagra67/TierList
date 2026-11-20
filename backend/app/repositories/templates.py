@@ -31,6 +31,7 @@ from app.models.template_tag import TemplateTag
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories.account_bans import is_active
+from app.repositories.users import user_matches
 
 
 class RowLock(StrEnum):
@@ -150,10 +151,19 @@ def get_listed_template_name_and_owner(
     return None if row is None else (row[0], row[1])
 
 
+def list_listed_template_owner_ids(
+    session: Session, template_ids: list[uuid.UUID], now: datetime
+) -> dict[uuid.UUID, uuid.UUID]:
+    statement: Select[uuid.UUID, uuid.UUID] = select(Template.id, Template.owner_id).where(
+        Template.id.in_(template_ids), listed_templates_condition(now)
+    )
+    return {template_id: owner_id for template_id, owner_id in session.execute(statement)}
+
+
 def get_template_for_review(session: Session, template_id: uuid.UUID) -> Template | None:
     statement: Select[Template] = (
         select(Template)
-        .where(Template.id == template_id, Template.deleted_at.is_(None))
+        .where(Template.id == template_id)
         .options(selectinload(Template.tiers), selectinload(Template.tiles))
     )
     return session.scalars(statement).one_or_none()
@@ -180,12 +190,72 @@ def set_template_moderation(
     )
 
 
-def mark_template_deleted(session: Session, template_id: uuid.UUID, deleted_at: datetime) -> None:
+def mark_template_deleted(
+    session: Session, template_id: uuid.UUID, deleted_at: datetime, deletion_reason: str
+) -> None:
     session.execute(
         update(Template)
         .where(Template.id == template_id)
-        .values(deleted_at=deleted_at, updated_at=Template.updated_at)
+        .values(
+            deleted_at=deleted_at, deletion_reason=deletion_reason, updated_at=Template.updated_at
+        )
     )
+
+
+def mark_template_restored(session: Session, template_id: uuid.UUID) -> None:
+    session.execute(
+        update(Template)
+        .where(Template.id == template_id)
+        .values(deleted_at=None, deletion_reason=None, updated_at=Template.updated_at)
+    )
+
+
+def delete_template_permanently(session: Session, template_id: uuid.UUID) -> None:
+    session.execute(delete(Template).where(Template.id == template_id))
+
+
+def list_templates_deleted_by_moderation(session: Session, owner_id: uuid.UUID) -> list[Template]:
+    statement: Select[Template] = (
+        select(Template)
+        .where(
+            Template.owner_id == owner_id,
+            Template.deleted_at.is_not(None),
+            Template.deletion_reason.is_not(None),
+        )
+        .order_by(Template.deleted_at.desc(), Template.id)
+    )
+    return list(session.scalars(statement).all())
+
+
+def list_deleted_templates(
+    session: Session,
+    owner_query: str | None,
+    name_query: str | None,
+    deleted_after: datetime | None,
+    deleted_before: datetime | None,
+    limit: int,
+    offset: int,
+) -> list[tuple[Template, str, int]]:
+    tile_count: ColumnElement[int] = (
+        select(func.count()).where(Tile.template_id == Template.id).scalar_subquery()
+    )
+    statement: Select[Template, str, int] = (
+        select(Template, User.display_name, tile_count)
+        .join(User, User.id == Template.owner_id)
+        .where(Template.deleted_at.is_not(None))
+    )
+    if owner_query:
+        statement = statement.where(user_matches(owner_query))
+    if name_query:
+        statement = statement.where(Template.name.icontains(name_query, autoescape=True))
+    if deleted_after is not None:
+        statement = statement.where(Template.deleted_at >= deleted_after)
+    if deleted_before is not None:
+        statement = statement.where(Template.deleted_at < deleted_before)
+    statement = statement.order_by(Template.deleted_at, Template.id).limit(limit).offset(offset)
+    return [
+        (template, owner_name, count) for template, owner_name, count in session.execute(statement)
+    ]
 
 
 def list_owned_templates_with_tile_count(

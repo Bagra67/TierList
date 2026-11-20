@@ -115,8 +115,9 @@ def get_report_queue_service(
 def get_template_moderation_service(
     session: Annotated[Session, Depends(get_db_session)],
     moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> TemplateModerationService:
-    return TemplateModerationService(session, moderation_log)
+    return TemplateModerationService(session, moderation_log, settings)
 
 
 def get_recent_uploads_service(

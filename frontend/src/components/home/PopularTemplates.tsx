@@ -2,7 +2,11 @@ import { useId } from 'react';
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { type MarketplaceTemplate, usePopularTemplates } from '../../api/marketplace';
+import {
+  type MarketplaceTemplate,
+  useCardLikeStates,
+  usePopularTemplates,
+} from '../../api/marketplace';
 import { HOME_POPULAR_COUNT } from '../../constants/home';
 import { ROUTES } from '../../constants/routes';
 import { MarketplaceCard } from '../MarketplaceCard';
@@ -12,6 +16,7 @@ export function PopularTemplates() {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   const headingId: string = useId();
   const { data: templates } = usePopularTemplates(HOME_POPULAR_COUNT);
+  useCardLikeStates(templates === undefined ? [] : [templates]);
 
   if (templates === undefined || templates.length === 0) return null;
   return (

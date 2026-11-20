@@ -39,6 +39,12 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
             text("id DESC"),
             postgresql_where=LISTED_CANDIDATES,
         ),
+        Index(
+            "ix_templates_deleted",
+            "deleted_at",
+            "id",
+            postgresql_where=text("deleted_at IS NOT NULL"),
+        ),
     )
 
     owner_id: Mapped[uuid.UUID] = mapped_column(
@@ -51,6 +57,7 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
         server_default=text("'none'"),
     )
     moderation_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
+    deletion_reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
     visibility: Mapped[TemplateVisibility] = mapped_column(
         text_enum(TemplateVisibility, "template_visibility"),
         default=TemplateVisibility.PRIVATE,

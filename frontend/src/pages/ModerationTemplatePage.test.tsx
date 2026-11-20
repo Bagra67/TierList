@@ -15,6 +15,9 @@ const template: ReviewedTemplate = {
   owner_name: 'Max',
   moderation: 'none',
   moderation_reason: null,
+  deleted_at: null,
+  erase_at: null,
+  deletion_reason: null,
   tiers: [
     { id: 'tier-s', name: 'S', color: '#FF7F7F', position: 0 },
     { id: 'tier-a', name: 'A', color: '#FFBF7F', position: 1 },
@@ -44,6 +47,7 @@ function renderPage(routes: Parameters<typeof stubBackend>[0]): BackendMock {
       <Routes>
         <Route path="/moderation/templates/:templateId" element={<ModerationTemplatePage />} />
         <Route path="/moderation/accounts/:accountId" element={<h1>Page du compte</h1>} />
+        <Route path="/moderation/deleted-templates" element={<h1>Liste des supprimés</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -150,5 +154,53 @@ describe('ModerationTemplatePage', () => {
     expect(
       calledRoutes(fetchMock).filter((route) => route === 'GET /moderation/templates/food-id'),
     ).toHaveLength(1);
+  });
+
+  it('shows a deleted template with its deletion, and offers to restore or erase it', async () => {
+    renderPage({
+      'GET /moderation/templates/food-id': () =>
+        Response.json({
+          ...template,
+          deleted_at: '2026-10-21T10:00:00Z',
+          erase_at: '2026-11-20T10:00:00Z',
+          deletion_reason: 'Contenu haineux',
+        }),
+    });
+
+    const note: HTMLElement = await screen.findByRole('note');
+    expect(within(note).getByText('Par la modération')).toBeInTheDocument();
+    expect(within(note).getByText('« Contenu haineux »')).toBeInTheDocument();
+    expect(
+      within(note).getByText(/Effacé automatiquement le 20 novembre 2026/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Modèles supprimés' })).toHaveAttribute(
+      'href',
+      '/moderation/deleted-templates',
+    );
+    expect(screen.getByRole('button', { name: 'Restaurer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Masquer' })).not.toBeInTheDocument();
+  });
+
+  it('erases a deleted template with a reason, then goes back to the deleted templates', async () => {
+    const fetchMock: BackendMock = renderPage({
+      'GET /moderation/templates/food-id': () =>
+        Response.json({
+          ...template,
+          deleted_at: '2026-11-18T10:00:00Z',
+          erase_at: '2026-12-18T10:00:00Z',
+          deletion_reason: null,
+        }),
+      'POST /moderation/templates/food-id/purge': () => new Response(null, { status: 204 }),
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Supprimer définitivement' }));
+    const dialog: HTMLElement = screen.getByRole('dialog', {
+      name: 'Supprimer définitivement « Food » ?',
+    });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Doublon' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Supprimer définitivement' }));
+
+    expect(await screen.findByRole('heading', { name: 'Liste des supprimés' })).toBeInTheDocument();
+    expect(calledRoutes(fetchMock)).toContain('POST /moderation/templates/food-id/purge');
   });
 });

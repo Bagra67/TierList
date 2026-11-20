@@ -42,6 +42,26 @@ function signedInWith(templates: object[], games: object[]): Record<string, Stub
   };
 }
 
+function popularTemplatesRoute(name: string): StubbedRoute {
+  return () =>
+    Response.json({
+      items: [
+        {
+          id: 'template-popular',
+          name,
+          owner_name: 'Camille',
+          tags: [],
+          tile_count: 6,
+          like_count: 12,
+          preview_image_url: null,
+          preview_image_removed: false,
+          tier_colors: ['#FF3B6B'],
+        },
+      ],
+      next_cursor: null,
+    });
+}
+
 describe('HomePage', () => {
   afterEach(() => {
     setAccessToken(null);
@@ -72,23 +92,7 @@ describe('HomePage', () => {
   it('shows the visitor the most liked public templates and a way to all of them', async () => {
     const backend = stubBackend({
       'POST /auth/refresh': unauthorized,
-      'GET /marketplace/templates': () =>
-        Response.json({
-          items: [
-            {
-              id: 'template-popular',
-              name: 'Fromages',
-              owner_name: 'Camille',
-              tags: [],
-              tile_count: 6,
-              like_count: 12,
-              preview_image_url: null,
-              preview_image_removed: false,
-              tier_colors: ['#FF3B6B'],
-            },
-          ],
-          next_cursor: null,
-        }),
+      'GET /marketplace/templates': popularTemplatesRoute('Fromages'),
     });
 
     renderHomePage();
@@ -170,6 +174,23 @@ describe('HomePage', () => {
       within(games).getByRole('link', { name: 'Voir les résultats de la partie Épices' }),
     ).toHaveAttribute('href', '/results/token-0');
     expect(screen.queryByRole('link', { name: 'Créer un compte' })).not.toBeInTheDocument();
+  });
+
+  it('shows the signed-in player the most liked public templates too', async () => {
+    stubBackend({
+      ...signedInWith(fourTemplates, fourGames),
+      'GET /marketplace/templates': popularTemplatesRoute('Fromages du monde'),
+    });
+
+    renderHomePage();
+
+    const section: HTMLElement = await screen.findByRole('region', {
+      name: 'Modèles publics populaires',
+    });
+    expect(within(section).getByRole('link', { name: 'Fromages du monde' })).toBeInTheDocument();
+    expect(
+      within(section).getByRole('link', { name: 'Voir tous les modèles publics' }),
+    ).toHaveAttribute('href', '/marketplace');
   });
 
   it('leads a new player to prepare a template, with no game yet', async () => {

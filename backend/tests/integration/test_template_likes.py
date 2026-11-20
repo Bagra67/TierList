@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.constants.marketplace import MARKETPLACE_PAGE_SIZE
 from app.models.template_like import TemplateLike
 from tests.integration.helpers import (
     PASSWORD,
@@ -230,3 +231,71 @@ def test_deleting_an_account_removes_its_likes(
 
     assert response.status_code == 204
     assert public_like_count(auth_client, template_id) == 0
+
+
+def like_states(client: TestClient, template_ids: list[str], headers: dict[str, str]) -> Response:
+    return client.get("/marketplace/likes", params={"template_id": template_ids}, headers=headers)
+
+
+def test_a_user_reads_the_like_states_of_a_page_of_cards(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    template_id: str,
+):
+    other_template_id: str = create_public_template(auth_client, db_session, alice, ALICE_EMAIL)
+    like(auth_client, template_id, bob)
+
+    response: Response = like_states(auth_client, [other_template_id, template_id], bob)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "items": [
+            {"template_id": other_template_id, "liked": False, "like_count": 0, "can_like": True},
+            {"template_id": template_id, "liked": True, "like_count": 1, "can_like": True},
+        ]
+    }
+
+
+def test_the_owner_reads_on_the_cards_that_they_cannot_like_their_template(
+    auth_client: TestClient, alice: dict[str, str], bob: dict[str, str], template_id: str
+):
+    like(auth_client, template_id, bob)
+
+    response: Response = like_states(auth_client, [template_id, template_id], alice)
+
+    assert response.json() == {
+        "items": [{"template_id": template_id, "liked": False, "like_count": 1, "can_like": False}]
+    }
+
+
+def test_the_like_states_leave_out_the_templates_that_are_not_listed(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    template_id: str,
+):
+    private_template_id: str = create_template(auth_client, db_session, alice)
+
+    response: Response = like_states(auth_client, [private_template_id, template_id], bob)
+
+    assert [item["template_id"] for item in response.json()["items"]] == [template_id]
+
+
+def test_reading_the_like_states_requires_an_account(auth_client: TestClient, template_id: str):
+    response: Response = auth_client.get(
+        "/marketplace/likes", params={"template_id": [template_id]}
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize("id_count", [0, MARKETPLACE_PAGE_SIZE + 1])
+def test_the_like_states_take_between_one_id_and_one_page_of_ids(
+    auth_client: TestClient, bob: dict[str, str], template_id: str, id_count: int
+):
+    response: Response = like_states(auth_client, [template_id] * id_count, bob)
+
+    assert response.status_code == 422

@@ -65,6 +65,11 @@ class LikeState:
     can_like: bool
 
 
+@dataclass(frozen=True)
+class TemplateLikeState(LikeState):
+    template_id: uuid.UUID
+
+
 class MarketplaceService:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -101,6 +106,30 @@ class MarketplaceService:
         like_repository.remove_like(self._session, template_id, user.id)
         self._session.commit()
         return self._like_state(user, template_id, owner_id, liked=False)
+
+    def like_states(self, user: User, template_ids: list[uuid.UUID]) -> list[TemplateLikeState]:
+        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
+        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
+            self._session, unique_ids, datetime.now(UTC)
+        )
+        listed_ids: list[uuid.UUID] = [
+            template_id for template_id in unique_ids if template_id in owner_ids
+        ]
+        like_counts: dict[uuid.UUID, int] = like_repository.count_likes_of_templates(
+            self._session, listed_ids
+        )
+        liked_ids: set[uuid.UUID] = like_repository.list_liked_template_ids(
+            self._session, user.id, listed_ids
+        )
+        return [
+            TemplateLikeState(
+                liked=template_id in liked_ids,
+                like_count=like_counts.get(template_id, 0),
+                can_like=_can_like(user, owner_ids[template_id]),
+                template_id=template_id,
+            )
+            for template_id in listed_ids
+        ]
 
     def list_templates(
         self,
@@ -168,8 +197,12 @@ class MarketplaceService:
         return LikeState(
             liked=liked,
             like_count=like_repository.count_likes(self._session, template_id),
-            can_like=owner_id != user.id,
+            can_like=_can_like(user, owner_id),
         )
+
+
+def _can_like(user: User, owner_id: uuid.UUID) -> bool:
+    return owner_id != user.id
 
 
 def _after(cursor: str, sort: MarketplaceSort) -> template_repository.MarketplaceAfter:

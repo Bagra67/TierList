@@ -126,19 +126,19 @@ def test_a_hidden_template_comes_with_its_reason(
     assert (body["moderation"], body["moderation_reason"]) == ("hidden", "Illicite")
 
 
-def test_an_unknown_or_deleted_template_is_not_found(
+def test_an_unknown_template_is_not_found(auth_client: TestClient, nina: dict[str, str]):
+    response: Response = review(auth_client, nina, uuid.uuid4())
+
+    assert response.status_code == 404
+    assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
+
+
+def test_a_template_that_is_not_deleted_has_no_deletion(
     auth_client: TestClient, nina: dict[str, str], template_id: str
 ):
-    delete: Response = auth_client.post(
-        f"/moderation/templates/{template_id}/delete", json={"reason": "Illicite"}, headers=nina
-    )
-    assert delete.status_code == 204
+    body = review(auth_client, nina, template_id).json()
 
-    for unknown_id in (uuid.uuid4(), template_id):
-        response: Response = review(auth_client, nina, unknown_id)
-
-        assert response.status_code == 404
-        assert response.json()["code"] == ErrorCode.TEMPLATE_NOT_FOUND
+    assert (body["deleted_at"], body["erase_at"], body["deletion_reason"]) == (None, None, None)
 
 
 def test_reading_a_template_writes_nothing_to_the_log(
