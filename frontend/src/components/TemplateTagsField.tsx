@@ -5,7 +5,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { cn } from 'cn';
 
 import { type Template, type TemplateChange, useSetTemplateTags } from '../api/templates';
-import { TAG_MAX_LENGTH, TEMPLATE_MAX_TAGS } from '../constants/templates';
+import { TAG_MAX_LENGTH } from '../constants/templates';
 import {
   type FieldError,
   getFieldErrors,
@@ -43,7 +43,7 @@ export function TemplateTagsField({ template }: TemplateTagsFieldProps) {
   const errorId: string = useId();
 
   const tags: string[] = template.tags;
-  const isFull: boolean = tags.length >= TEMPLATE_MAX_TAGS;
+  const isFull: boolean = tags.length >= template.max_tags;
   const fieldError: FieldError | undefined = tagsFieldError(tagsMutation.error);
   const errorMessage: string | undefined = tagsMutation.isError
     ? (translateFieldError(t, fieldError) ?? translateError(t, tagsMutation.error))
@@ -96,7 +96,7 @@ export function TemplateTagsField({ template }: TemplateTagsFieldProps) {
       <legend className="mb-1 flex w-full items-baseline justify-between gap-2 text-sm leading-none font-medium">
         <span>{t('templates.tags.legend')}</span>
         <span className="font-normal text-muted-foreground tabular-nums">
-          {t('templates.tags.count', { count: tags.length, max: TEMPLATE_MAX_TAGS })}
+          {t('templates.tags.count', { count: tags.length, max: template.max_tags })}
         </span>
       </legend>
       <div
@@ -165,7 +165,7 @@ export function TemplateTagsField({ template }: TemplateTagsFieldProps) {
       </div>
       {isFull && (
         <p className="text-sm text-muted-foreground">
-          {t('templates.tags.limitReached', { max: TEMPLATE_MAX_TAGS })}
+          {t('templates.tags.limitReached', { max: template.max_tags })}
         </p>
       )}
       <p id={hintId} className="text-sm text-muted-foreground">

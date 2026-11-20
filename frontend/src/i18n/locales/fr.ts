@@ -322,6 +322,7 @@ export const fr = {
   },
   moderation: {
     nav: {
+      officialTemplates: 'Modèles officiels',
       label: 'Espace de modération',
       reports: 'Signalements',
       uploads: 'Derniers envois',
@@ -898,6 +899,52 @@ export const fr = {
         dropped: '{{item}} déposé en position {{position}} sur {{count}}.',
         cancelled: 'Déplacement de {{item}} annulé.',
       },
+    },
+  },
+  officialTemplates: {
+    title: 'Modèles officiels',
+    intro:
+      "Les modèles du site, signés « TierList ». Tous les super admins peuvent les modifier, un à la fois. Un brouillon n'est visible que dans cet espace.",
+    empty: 'Aucun modèle officiel pour l’instant.',
+    tileCount_one: '{{count}} élément',
+    tileCount_other: '{{count}} éléments',
+    updatedAt: 'modifié le {{date, datetime(dateStyle: medium)}}',
+    editing: '{{editor}} modifie ce modèle',
+    featuredBadge: 'Sélection TierList',
+    state: {
+      draft: 'Brouillon',
+      published: 'Publié',
+    },
+    create: {
+      open: 'Nouveau modèle officiel',
+      title: 'Nouveau modèle officiel',
+    },
+    editor: {
+      back: 'Modèles officiels',
+      lockedBy: '{{editor}} modifie ce modèle en ce moment.',
+      lockedByAnother: 'Un autre super admin modifie ce modèle en ce moment.',
+      readOnly:
+        "Vous le voyez en lecture seule ; la page se débloque d'elle-même quand l'éditeur se libère, au plus tard 2 minutes après.",
+    },
+    status: {
+      title: 'Publication',
+      draftDescription: 'Visible des super admins seulement.',
+      publishedDescription: 'Visible de tous dans les modèles publics.',
+      publish: 'Publier',
+      unpublish: 'Repasser en brouillon',
+      feature: 'Mettre en avant dans la Sélection TierList',
+      featureHelp:
+        "Il passe en tête de l'accueil et dans la rangée Sélection TierList des modèles publics.",
+      featureNeedsPublishing: "Publiez d'abord le modèle.",
+    },
+    delete: {
+      open: 'Supprimer le modèle',
+      title: 'Supprimer « {{name}} » ?',
+      warning:
+        'Il quitte les modèles publics. Il reste 30 jours dans Modèles supprimés, où un super admin peut le restaurer.',
+      cancel: 'Annuler',
+      submit: 'Supprimer',
+      submitting: 'Suppression…',
     },
   },
   marketplace: {

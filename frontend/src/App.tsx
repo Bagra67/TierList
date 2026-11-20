@@ -16,6 +16,7 @@ import { ModerationAccountsPage } from './pages/ModerationAccountsPage';
 import { ModerationLogPage } from './pages/ModerationLogPage';
 import { ModerationReportsPage } from './pages/ModerationReportsPage';
 import { ModerationDeletedTemplatesPage } from './pages/ModerationDeletedTemplatesPage';
+import { ModerationOfficialTemplatesPage } from './pages/ModerationOfficialTemplatesPage';
 import { ModerationTemplatePage } from './pages/ModerationTemplatePage';
 import { RecentUploadsPage } from './pages/RecentUploadsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -62,8 +63,13 @@ export default function App() {
                 path={ROUTES.MODERATION_DELETED_TEMPLATES}
                 element={<ModerationDeletedTemplatesPage />}
               />
+              <Route
+                path={ROUTES.MODERATION_OFFICIAL_TEMPLATES}
+                element={<ModerationOfficialTemplatesPage />}
+              />
               <Route path={ROUTES.MODERATION_LOG} element={<ModerationLogPage />} />
             </Route>
+            <Route path={ROUTES.MODERATION_OFFICIAL_TEMPLATE} element={<TemplateEditorPage />} />
           </Route>
         </Route>
         <Route path={ROUTES.MARKETPLACE} element={<MarketplacePage />} />

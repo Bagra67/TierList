@@ -19,6 +19,8 @@ export const ROUTES = {
   MODERATION_ACCOUNT: '/moderation/accounts/:accountId',
   MODERATION_TEMPLATE: '/moderation/templates/:templateId',
   MODERATION_DELETED_TEMPLATES: '/moderation/deleted-templates',
+  MODERATION_OFFICIAL_TEMPLATES: '/moderation/official-templates',
+  MODERATION_OFFICIAL_TEMPLATE: '/moderation/official-templates/:templateId',
   MODERATION_LOG: '/moderation/log',
   ROOM: '/r/:code',
   RESULTS: '/results/:token',
@@ -73,6 +75,10 @@ export const CONFIRM_PARAM = 'confirm';
 
 export function moderationTemplatePath(templateId: string): string {
   return generatePath(ROUTES.MODERATION_TEMPLATE, { templateId });
+}
+
+export function officialTemplateEditorPath(templateId: string): string {
+  return generatePath(ROUTES.MODERATION_OFFICIAL_TEMPLATE, { templateId });
 }
 
 export function moderationAccountPath(accountId: string): string {

@@ -4,8 +4,11 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link, type Params, useParams } from 'react-router';
 import { cn } from 'cn';
 
+import { type OfficialTemplateLock, useOfficialTemplateLock } from '../api/officialTemplates';
 import { type Template, useTemplate } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
+import { OfficialTemplateReadOnly } from '../components/OfficialTemplateReadOnly';
+import { OfficialTemplateStatusField } from '../components/OfficialTemplateStatusField';
 import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
@@ -36,6 +39,10 @@ export function TemplateEditorPage() {
   }: UseQueryResult<Template> = useTemplate(templateId);
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   useDocumentTitle(template?.name);
+  const official: boolean = template?.official ?? false;
+  const lock: OfficialTemplateLock = useOfficialTemplateLock(templateId, official);
+  const playable: boolean =
+    template?.moderation !== 'hidden' && (!official || template?.visibility === 'public');
 
   useEffect(() => {
     function ignoreFileDropOutsideDropZones(event: DragEvent) {
@@ -62,18 +69,23 @@ export function TemplateEditorPage() {
         FILL_HEIGHT_UNDER_HEADER_ON_LARGE_SCREEN_CLASS,
       )}
     >
-      <Link to={ROUTES.TEMPLATES} className={cn(textLinkClassName, 'text-sm')}>
-        {t('templates.editor.back')}
+      <Link
+        to={official ? ROUTES.MODERATION_OFFICIAL_TEMPLATES : ROUTES.TEMPLATES}
+        className={cn(textLinkClassName, 'text-sm')}
+      >
+        {official ? t('officialTemplates.editor.back') : t('templates.editor.back')}
       </Link>
       {isPending && <LoadingSkeleton shape="board" />}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {template && (
+      {template && official && lock.status === 'pending' && <LoadingSkeleton shape="board" />}
+      {template && official && lock.status === 'taken' && (
+        <OfficialTemplateReadOnly template={template} editorName={lock.editorName} />
+      )}
+      {template && (!official || lock.status === 'held') && (
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-semibold">{template.name}</h1>
-            {template.moderation !== 'hidden' && (
-              <CreateRoomButton templateId={template.id} templateName={template.name} />
-            )}
+            {playable && <CreateRoomButton templateId={template.id} templateName={template.name} />}
           </div>
           {template.moderation === 'hidden' && (
             <TemplateHiddenNotice reason={template.moderation_reason} />
@@ -83,7 +95,11 @@ export function TemplateEditorPage() {
               <TemplateNameField template={template} />
               <TemplateTagsField template={template} />
             </div>
-            <TemplateVisibilityField template={template} />
+            {official ? (
+              <OfficialTemplateStatusField template={template} />
+            ) : (
+              <TemplateVisibilityField template={template} />
+            )}
           </div>
           <div
             className={cn(
