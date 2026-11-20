@@ -47,10 +47,6 @@ install_uv() {
     fi
 }
 
-if [ ! -x "$UV" ] || ! "$UV" --version | grep -q " $UV_VERSION"; then
-    install_uv
-fi
-
 if [ -f "$TIERLIST_ENV_FILE" ]; then
     log "Variables d'environnement lues depuis $TIERLIST_ENV_FILE"
     set -a
@@ -84,6 +80,9 @@ export UV_PYTHON_DOWNLOADS=never
 cd "$RELEASE_DIR/backend"
 
 prepare() {
+    if [ ! -x "$UV" ] || ! "$UV" --version | grep -q " $UV_VERSION"; then
+        install_uv
+    fi
     log "Installation des dépendances"
     "$UV" sync --frozen --no-dev --python python3
     log "Migrations de la base de données"

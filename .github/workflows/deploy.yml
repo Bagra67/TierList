@@ -122,7 +122,7 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.ref }}
 
-      # The SFTP helper of this workflow's commit: an older version being rolled back to has none
+      # The scripts of this workflow's commit: an older version being rolled back to lacks some
       - uses: actions/checkout@v7
         with:
           path: workflow
@@ -170,9 +170,9 @@ jobs:
           printf '%s\n' "$VERSION" > "$RUNNER_TEMP/CURRENT"
 
       # The supervisor running in the pod switches to the version of CURRENT without a restart.
-      # Only a new launcher or supervisor needs one, since the running supervisor is the old one;
-      # they are compared with the pod's copies before the upload. CURRENT is written last: a failed
-      # upload leaves the running version in place.
+      # Only a new launcher or supervisor needs one, since the running supervisor is the old one:
+      # the pod's copies are read first, in the same session, to compare. CURRENT is written last:
+      # a failed upload leaves the running version in place.
       - name: Upload over SFTP
         id: upload
         env:
@@ -183,18 +183,9 @@ jobs:
           SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
         run: |
           sudo apt-get install -y --no-install-recommends sshpass > /dev/null
-          cat > "$RUNNER_TEMP/sftp-get" <<EOF
+          cat > "$RUNNER_TEMP/sftp-batch" <<EOF
           -get start.sh $RUNNER_TEMP/pod-launcher.sh
           -get supervisor.py $RUNNER_TEMP/pod-supervisor.py
-          EOF
-          bash workflow/.github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-get"
-          if cmp -s deploy/launcher.sh "$RUNNER_TEMP/pod-launcher.sh" \
-            && cmp -s deploy/supervisor.py "$RUNNER_TEMP/pod-supervisor.py"; then
-            echo "launcher_changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "launcher_changed=true" >> "$GITHUB_OUTPUT"
-          fi
-          cat > "$RUNNER_TEMP/sftp-batch" <<EOF
           -mkdir releases
           put bundle/tierlist-$VERSION.tar.gz releases/tierlist-$VERSION.tar.gz
           put deploy/launcher.sh start.sh
@@ -210,6 +201,12 @@ jobs:
           EOF
           bash workflow/.github/scripts/pod_sftp.sh "$RUNNER_TEMP/sftp-batch"
           rm -f "$RUNNER_TEMP/pod.env"
+          if cmp -s deploy/launcher.sh "$RUNNER_TEMP/pod-launcher.sh" \
+            && cmp -s deploy/supervisor.py "$RUNNER_TEMP/pod-supervisor.py"; then
+            echo "launcher_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "launcher_changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # Preparing a version (dependencies, migrations) takes up to a few minutes
       - name: Wait for the supervisor to switch versions
@@ -218,7 +215,7 @@ jobs:
         continue-on-error: true
         env:
           BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
-        run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 48 5
+        run: bash workflow/.github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 48 5
 
       # The supervisor writes where the switch stands. A restart only helps when no supervisor
       # answered: it would interrupt a preparation, and not fix a version that fails. The status
@@ -259,7 +256,7 @@ jobs:
         if: steps.status.outputs.action == 'wait'
         env:
           BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
-        run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 72 5
+        run: bash workflow/.github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" 72 5
 
       - name: Restart the pod
         id: restart
@@ -277,4 +274,4 @@ jobs:
         env:
           BASE_URL: ${{ vars.FRONTEND_BASE_URL }}
           ATTEMPTS: ${{ steps.restart.outputs.restarted == 'true' && '30' || '120' }}
-        run: bash .github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" "$ATTEMPTS" 5
+        run: bash workflow/.github/scripts/wait_healthy.sh "$BASE_URL" "$VERSION" "$ATTEMPTS" 5

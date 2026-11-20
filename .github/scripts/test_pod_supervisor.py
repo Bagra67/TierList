@@ -20,7 +20,9 @@ set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 case "$1" in
     prepare)
-        [ ! -f "$here/slow-prepare" ] || sleep 3
+        if [ -f "$here/slow-prepare" ]; then
+            while [ ! -f "$here/go" ]; do sleep 0.05; done
+        fi
         [ ! -f "$here/fail-prepare" ]
         ;;
     serve)
@@ -34,7 +36,7 @@ FAKE_UVICORN = """import json, os, signal, socket, sys, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 fd, release = int(sys.argv[1]), sys.argv[2]
-time.sleep(0.5)
+time.sleep(0.2)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -110,16 +112,16 @@ class PodSupervisorTest(unittest.TestCase):
             [sys.executable, str(SUPERVISOR)], env=env, stdout=subprocess.DEVNULL
         )
 
-    def served_release(self) -> str:
-        with urllib.request.urlopen(
-            f"http://127.0.0.1:{self.port}/api/health", timeout=30
-        ) as response:
-            return json.load(response)["release"]
-
-    def served_pid(self) -> int:
+    def health(self) -> dict:
         url = f"http://127.0.0.1:{self.port}/api/health"
         with urllib.request.urlopen(url, timeout=30) as response:
-            return json.load(response)["pid"]
+            return json.load(response)
+
+    def served_release(self) -> str:
+        return self.health()["release"]
+
+    def served_pid(self) -> int:
+        return self.health()["pid"]
 
     def wait_for(self, condition, timeout: float = 30) -> None:
         deadline = time.monotonic() + timeout
@@ -191,6 +193,7 @@ class PodSupervisorTest(unittest.TestCase):
 
         self.wait_for(lambda: self.status().startswith("preparing v2"))
         self.assertEqual(self.served_release(), "v1")
+        (self.home / "releases" / "v2" / "go").touch()
         self.wait_for(lambda: self.status().startswith("ok v2"))
 
     def test_stopping_the_pod_during_a_preparation_ends_it_without_a_failed_status(self) -> None:
@@ -261,11 +264,7 @@ class PodSupervisorTest(unittest.TestCase):
             archive = releases_dir / f"tierlist-{version}.tar.gz"
             archive.touch()
             os.utime(archive, (1000 - age, 1000 - age))
-        module = load_supervisor_module()
-        supervisor = object.__new__(module.Supervisor)
-        supervisor.releases_dir = releases_dir
-
-        supervisor._prune("v4")
+        load_supervisor_module().prune_releases(releases_dir, "v4")
 
         self.assertEqual(
             sorted(path.name for path in releases_dir.iterdir() if path.is_dir()),
