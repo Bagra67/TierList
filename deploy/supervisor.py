@@ -68,8 +68,8 @@ class Supervisor:
     def run(self) -> int:
         signal.signal(signal.SIGTERM, self._request_stop)
         signal.signal(signal.SIGINT, self._request_stop)
-        seen: tuple[str | None, int] = self._current_signature()
-        if not self._serve_first(seen[0]):
+        seen: int = self._current_mtime()
+        if not self._serve_first():
             log("Aucune version ne démarre")
             return 1
         print(READY_LINE, flush=True)
@@ -79,11 +79,11 @@ class Supervisor:
                 self.process = None
             if self.process is None and self.version is not None:
                 self._start(self.version)
-            signature: tuple[str | None, int] = self._current_signature()
-            if signature == seen:
+            modified: int = self._current_mtime()
+            if modified == seen:
                 continue
-            seen = signature
-            wanted: str | None = signature[0]
+            seen = modified
+            wanted: str | None = self._read_version(self.current_file)
             if wanted is not None:
                 self._switch_to(wanted)
         self._stop()
@@ -93,56 +93,51 @@ class Supervisor:
     def _request_stop(self, signum: int, frame: object) -> None:
         self.stop_requested.set()
 
-    def _serve_first(self, current: str | None) -> bool:
+    def _serve_first(self) -> bool:
+        current: str | None = self._read_version(self.current_file)
         candidates: list[str] = [current] if current is not None else []
         last_good: str | None = self._read_version(self.last_good_file)
         if last_good is not None and last_good != current:
             candidates.append(last_good)
         for version in candidates:
-            try:
-                self._prepare(version)
-            except ReleaseError as error:
-                if self.stop_requested.is_set():
-                    return False
-                log(f"Version {version} non préparée : {error}")
-                self._write_status("failed", version, str(error))
-                continue
-            if self._start(version):
-                self._served(version)
-                return True
             if self.stop_requested.is_set():
                 return False
-            self._write_status("failed", version, "uvicorn ne répond pas")
+            if self._activate(version):
+                return True
         return False
 
     def _switch_to(self, version: str) -> None:
         log(f"Nouvelle version demandée : {version}")
         self._write_status("preparing", version, "préparation en cours")
+        previous: str | None = self.version
+        if self._activate(version):
+            return
+        if self.process is None and previous is not None and not self.stop_requested.is_set():
+            log(f"Retour à {previous}")
+            self._start(previous)
+
+    def _activate(self, version: str) -> bool:
         try:
             self._prepare(version)
         except ReleaseError as error:
-            if self.stop_requested.is_set():
-                return
-            log(f"Version {version} non préparée, {self.version} reste en ligne : {error}")
-            self._write_status("failed", version, str(error))
-            return
-        previous: str | None = self.version
+            if not self.stop_requested.is_set():
+                log(f"Version {version} non préparée : {error}")
+                self._write_status("failed", version, str(error))
+            return False
         self._stop()
         if self._start(version):
             self._served(version)
-            return
-        if self.stop_requested.is_set():
-            return
-        log(f"Version {version} ne répond pas : retour à {previous}")
-        self._write_status("failed", version, "uvicorn ne répond pas")
-        if previous is not None and self._start(previous):
-            self.version = previous
+            return True
+        if not self.stop_requested.is_set():
+            log(f"Version {version} ne répond pas")
+            self._write_status("failed", version, "uvicorn ne répond pas")
+        return False
 
     def _served(self, version: str) -> None:
         self.version = version
         self._write_atomically(self.last_good_file, f"{version}\n")
         self._write_status("ok", version, "en ligne")
-        self._prune(version)
+        prune_releases(self.releases_dir, version)
         log(f"Version {version} en ligne")
 
     def _prepare(self, version: str) -> None:
@@ -221,42 +216,18 @@ class Supervisor:
                 self.process.wait()
         self.process = None
 
-    def _prune(self, version: str) -> None:
-        try:
-            archives: list[Path] = sorted(
-                self.releases_dir.glob("tierlist-*.tar.gz"),
-                key=lambda archive: archive.stat().st_mtime,
-                reverse=True,
-            )
-        except OSError as error:
-            log(f"Anciennes versions non supprimées : {error}")
-            return
-        kept: int = 1
-        for archive in archives:
-            old_version: str = archive.name.removeprefix("tierlist-").removesuffix(".tar.gz")
-            if old_version == version:
-                continue
-            if kept < KEEP_RELEASES:
-                kept += 1
-                continue
-            log(f"Suppression de l'ancienne version {old_version}")
-            archive.unlink(missing_ok=True)
-            shutil.rmtree(self.releases_dir / old_version, ignore_errors=True)
-
     def _child_env(self) -> dict[str, str]:
         return {
             **os.environ,
             "TIERLIST_HOME": str(self.home),
-            "TIERLIST_ENV_FILE": str(self.home / ".env"),
             "TIERLIST_LISTEN_FD": str(self.listener.fileno()),
         }
 
-    def _current_signature(self) -> tuple[str | None, int]:
+    def _current_mtime(self) -> int:
         try:
-            modified_ns: int = self.current_file.stat().st_mtime_ns
+            return self.current_file.stat().st_mtime_ns
         except OSError:
-            return None, 0
-        return self._read_version(self.current_file), modified_ns
+            return 0
 
     @staticmethod
     def _read_version(path: Path) -> str | None:
@@ -280,6 +251,29 @@ class Supervisor:
             temporary.replace(path)
         except OSError as error:
             log(f"{path.name} non écrit : {error}")
+
+
+def prune_releases(releases_dir: Path, version: str) -> None:
+    try:
+        archives: list[Path] = sorted(
+            releases_dir.glob("tierlist-*.tar.gz"),
+            key=lambda archive: archive.stat().st_mtime,
+            reverse=True,
+        )
+    except OSError as error:
+        log(f"Anciennes versions non supprimées : {error}")
+        return
+    kept: int = 1
+    for archive in archives:
+        old_version: str = archive.name.removeprefix("tierlist-").removesuffix(".tar.gz")
+        if old_version == version:
+            continue
+        if kept < KEEP_RELEASES:
+            kept += 1
+            continue
+        log(f"Suppression de l'ancienne version {old_version}")
+        archive.unlink(missing_ok=True)
+        shutil.rmtree(releases_dir / old_version, ignore_errors=True)
 
 
 def main() -> int:
