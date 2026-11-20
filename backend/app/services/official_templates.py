@@ -8,10 +8,16 @@ from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.core.config import Settings
 from app.exceptions.templates import (
     OfficialTemplateLockedError,
+    TemplateHiddenError,
     TemplateNotFoundError,
     TemplateNotPublishedError,
 )
-from app.models.enums import ModerationActionKind, ModerationTargetType, TemplateVisibility
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    TemplateModeration,
+    TemplateVisibility,
+)
 from app.models.template import Template
 from app.models.user import User
 from app.repositories import templates as template_repository
@@ -90,6 +96,8 @@ class OfficialTemplateService:
             return template
         if template.visibility != TemplateVisibility.PUBLIC:
             raise TemplateNotPublishedError
+        if template.moderation == TemplateModeration.HIDDEN:
+            raise TemplateHiddenError
         template.featured_at = datetime.now(UTC)
         return self._commit_editorial_change(super_admin, ModerationActionKind.FEATURE, template)
 
