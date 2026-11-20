@@ -29,6 +29,7 @@ from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import (
     InvalidTagError,
     LastTierError,
+    TagLimitReachedError,
     TemplateHasNoTilesError,
     TemplateHiddenError,
     TemplateNotFoundError,
@@ -60,12 +61,21 @@ TEMPLATE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_NOT_FOUND_DESCRIPTION},
 }
+OFFICIAL_TEMPLATE_LOCKED_RESPONSE: dict[int | str, dict[str, Any]] = {
+    409: {"model": ErrorResponse, "description": messages.OFFICIAL_TEMPLATE_LOCKED_DESCRIPTION},
+}
+TEMPLATE_CHANGE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **TEMPLATE_NOT_FOUND_RESPONSES,
+    **OFFICIAL_TEMPLATE_LOCKED_RESPONSE,
+}
 TIER_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
+    **OFFICIAL_TEMPLATE_LOCKED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_OR_TIER_NOT_FOUND_DESCRIPTION},
 }
 TILE_NOT_FOUND_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
+    **OFFICIAL_TEMPLATE_LOCKED_RESPONSE,
     404: {"model": ErrorResponse, "description": messages.TEMPLATE_OR_TILE_NOT_FOUND_DESCRIPTION},
 }
 SET_VISIBILITY_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -78,6 +88,10 @@ SET_VISIBILITY_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 SET_TAGS_RESPONSES: dict[int | str, dict[str, Any]] = {
     **TEMPLATE_NOT_FOUND_RESPONSES,
+    409: {
+        "model": ErrorResponse,
+        "description": messages.TAG_LIMIT_REACHED_OR_OFFICIAL_TEMPLATE_LOCKED_DESCRIPTION,
+    },
     422: {"model": ErrorResponse, "description": messages.INVALID_TAG_DESCRIPTION},
 }
 TILE_EMPTY_RESPONSE: dict[int | str, dict[str, Any]] = {
@@ -174,8 +188,8 @@ def get_template(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted
-    template or one of another account."""
+    """A template of the account, or an official template for a super admin, with its tiers and its
+    tiles sorted by position. 404 for a deleted template or one of another account."""
     try:
         template: Template = service.get(user, template_id)
     except TemplateNotFoundError as exc:
@@ -183,7 +197,7 @@ def get_template(
     return template_response(template, storage)
 
 
-@router.patch("/{template_id}", responses=TEMPLATE_NOT_FOUND_RESPONSES)
+@router.patch("/{template_id}", responses=TEMPLATE_CHANGE_RESPONSES)
 def rename_template(
     template_id: uuid.UUID,
     payload: RenameTemplateRequest,
@@ -231,15 +245,22 @@ def set_template_tags(
     service: TemplateServiceDep,
     storage: ImageStorageDep,
 ) -> TemplateResponse:
-    """Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at
-    least one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is
-    dropped; the first one is kept. Its last modification date is updated."""
+    """Replaces the tags of a template: `max_tags` at most (409 past it), 30 characters at most
+    each, with at least one Latin letter or digit. A tag equal to an earlier one ignoring case and
+    accents is dropped; the first one is kept. Its last modification date is updated."""
     try:
         template: Template = service.set_tags(user, template_id, payload.tags)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     except InvalidTagError as exc:
         raise _invalid_tag() from exc
+    except TagLimitReachedError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.TAG_LIMIT_REACHED,
+            detail=messages.TAG_LIMIT_REACHED.format(max_tags=exc.max_tags),
+            params={"max_tags": exc.max_tags},
+        ) from exc
     return template_response(template, storage)
 
 
@@ -255,7 +276,7 @@ def delete_template(
         raise template_not_found() from exc
 
 
-@router.post("/{template_id}/tiers", status_code=201, responses=TEMPLATE_NOT_FOUND_RESPONSES)
+@router.post("/{template_id}/tiers", status_code=201, responses=TEMPLATE_CHANGE_RESPONSES)
 def add_tier(
     template_id: uuid.UUID,
     user: CurrentUserDep,

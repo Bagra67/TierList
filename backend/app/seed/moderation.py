@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
-from app.models.enums import ModerationActionKind, ModerationTargetType
+from app.models.enums import EDITORIAL_ACTION_KINDS, ModerationActionKind, ModerationTargetType
 from app.models.image import Image
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
@@ -39,6 +39,10 @@ IMAGE_REASONS: tuple[str, ...] = (
     "Données personnelles visibles", "Image sans rapport avec le modèle",
 )  # fmt: skip
 
+MODERATION_ACTION_KINDS: list[ModerationActionKind] = [
+    kind for kind in ModerationActionKind if kind not in EDITORIAL_ACTION_KINDS
+]
+
 
 def create_moderation_log(
     session: Session,
@@ -60,7 +64,7 @@ def create_moderation_log(
                 - timedelta(days=days_ago, minutes=rng.randint(0, 600)),
                 actor_id=actor.id,
                 actor_name=actor.display_name,
-                action=rng.choice(list(ModerationActionKind)),
+                action=rng.choice(MODERATION_ACTION_KINDS),
                 target_type=target_type,
                 target_id=target_id,
                 target_label=target_label,

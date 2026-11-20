@@ -3,12 +3,20 @@ import uuid
 from sqlalchemy import ColumnElement, Select, or_, select
 from sqlalchemy.orm import Session
 
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.models.enums import UserRole
 from app.models.user import User
 
 
 def get_user_by_id(session: Session, user_id: uuid.UUID) -> User | None:
     return session.get(User, user_id)
+
+
+def get_official_account(session: Session) -> User:
+    official_account: User | None = session.get(User, OFFICIAL_ACCOUNT_ID)
+    if official_account is None:
+        raise RuntimeError("The official account is created by the migration 7b2e4c9d1a03")
+    return official_account
 
 
 def get_user_for_update(session: Session, user_id: uuid.UUID) -> User | None:
@@ -44,7 +52,7 @@ def user_matches(query: str) -> ColumnElement[bool]:
 
 
 def search_users(session: Session, query: str | None, limit: int, offset: int) -> list[User]:
-    statement: Select[User] = select(User)
+    statement: Select[User] = select(User).where(User.id != OFFICIAL_ACCOUNT_ID)
     if query:
         statement = statement.where(user_matches(query))
     statement = statement.order_by(User.display_name, User.id).limit(limit).offset(offset)

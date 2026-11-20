@@ -114,7 +114,7 @@ export const en: Translation = {
         'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
       bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
       moderation:
-        'Moderation log: for each moderation decision, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason and the date.',
+        'Moderation log: for each moderation decision, and each action on the site’s official templates, the super admin who took it, the content or account concerned (with its name at the time of the decision), the reason if there is one and the date.',
       technical:
         'Technical data: the cookies and local storage described below, technical logs (internal identifiers, never your passwords) and, when an error occurs, an error report (the page, the browser, the TierList version and the technical details of the error, without your IP address, your cookies or what you typed).',
     },
@@ -341,6 +341,7 @@ export const en: Translation = {
       },
       at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
       targetCell: '{{type}} "{{label}}"',
+      noReason: '—',
       more: 'See more',
     },
     actions: {
@@ -352,6 +353,12 @@ export const en: Translation = {
       lift_ban: 'Lift the ban',
       restore: 'Restore',
       purge: 'Delete permanently',
+      create: 'Create',
+      edit: 'Edit',
+      publish: 'Publish',
+      unpublish: 'Back to draft',
+      feature: 'Feature',
+      unfeature: 'Remove from the picks',
     },
     targets: {
       template: 'Template',
@@ -1256,6 +1263,10 @@ export const en: Translation = {
       last_tier: 'A template keeps at least one tier.',
       tile_not_found: 'This tile could not be found.',
       tile_limit_reached: 'A template has at most {{max_tiles}} tiles.',
+      tag_limit_reached: 'A template has at most {{max_tags}} tags.',
+      official_template_locked:
+        'Another super admin is editing this template, or your editing access expired. Reload the page.',
+      template_not_published: 'Publish the template before featuring it.',
       tile_empty: 'A tile needs a text or an image.',
       invalid_tag: 'A tag needs at least one letter or digit (Latin alphabet).',
       cannot_like_own_template: 'You cannot like your own template.',

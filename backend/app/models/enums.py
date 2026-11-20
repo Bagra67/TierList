@@ -57,6 +57,24 @@ class ModerationActionKind(StrEnum):
     LIFT_BAN = "lift_ban"
     RESTORE = "restore"
     PURGE = "purge"
+    CREATE = "create"
+    EDIT = "edit"
+    PUBLISH = "publish"
+    UNPUBLISH = "unpublish"
+    FEATURE = "feature"
+    UNFEATURE = "unfeature"
+
+
+EDITORIAL_ACTION_KINDS: frozenset[ModerationActionKind] = frozenset(
+    {
+        ModerationActionKind.CREATE,
+        ModerationActionKind.EDIT,
+        ModerationActionKind.PUBLISH,
+        ModerationActionKind.UNPUBLISH,
+        ModerationActionKind.FEATURE,
+        ModerationActionKind.UNFEATURE,
+    }
+)
 
 
 class ModerationTargetType(StrEnum):

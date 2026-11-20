@@ -6,7 +6,7 @@ from datetime import timedelta
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
@@ -39,7 +39,7 @@ from app.seed.run import SeedSummary, run_seed
 from app.seed.sizes import SMALL_SIZE
 from app.services.image_storage import quarantine_key
 from tests.integration.conftest import FakeImageStorage
-from tests.integration.helpers import JsonObject, counted_queries
+from tests.integration.helpers import JsonObject, counted_queries, select_accounts
 
 pytestmark = pytest.mark.integration
 
@@ -76,6 +76,10 @@ def count(db_session: Session, model: type) -> int:
     return db_session.scalar(select(func.count()).select_from(model)) or 0
 
 
+def count_accounts(db_session: Session) -> int:
+    return db_session.scalar(select(func.count()).select_from(select_accounts().subquery())) or 0
+
+
 def sign_in(client: TestClient, email: str) -> dict[str, str]:
     response: Response = client.post(
         "/auth/login", json={"email": email, "password": SEED_PASSWORD}
@@ -93,7 +97,7 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         + SMALL_SIZE.unverified_accounts
         + SMALL_SIZE.google_accounts
     )
-    assert count(db_session, User) == accounts == summary.accounts
+    assert count_accounts(db_session) == accounts == summary.accounts
     assert (
         db_session.scalar(
             select(func.count()).select_from(User).where(User.role == UserRole.SUPER_ADMIN)
@@ -101,7 +105,9 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         == SMALL_SIZE.super_admins
     )
     assert db_session.scalar(
-        select(func.count()).select_from(User).where(User.email_verified_at.is_(None))
+        select(func.count())
+        .select_from(select_accounts().subquery())
+        .where(text("email_verified_at IS NULL"))
     ) == (SMALL_SIZE.unverified_accounts)
     assert count(db_session, Template) == summary.templates
     pizzas: Template = db_session.scalars(select(Template).where(Template.name == "Pizzas")).one()
@@ -297,7 +303,7 @@ def test_running_the_seed_again_replaces_its_data_only(
         + SMALL_SIZE.unverified_accounts
         + SMALL_SIZE.google_accounts
     )
-    assert count(db_session, User) == accounts + 1
+    assert count_accounts(db_session) == accounts + 1
     assert count(db_session, Game) == SMALL_SIZE.closed_games
     assert count(db_session, TemplateSnapshot) == first_snapshots
     assert count(db_session, ModerationAction) == MODERATION_ACTIONS

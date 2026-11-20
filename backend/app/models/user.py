@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants.auth import DISPLAY_NAME_MAX_LENGTH, EMAIL_MAX_LENGTH, PASSWORD_HASH_MAX_LENGTH
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
@@ -35,3 +36,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     @property
     def is_super_admin(self) -> bool:
         return self.role == UserRole.SUPER_ADMIN
+
+    @property
+    def is_official_account(self) -> bool:
+        return self.id == OFFICIAL_ACCOUNT_ID

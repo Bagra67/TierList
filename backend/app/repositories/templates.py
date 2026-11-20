@@ -21,8 +21,9 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
 from app.constants.marketplace import MarketplaceSort
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.models.account_ban import AccountBan
-from app.models.enums import TemplateModeration, TemplateVisibility
+from app.models.enums import TemplateModeration, TemplateVisibility, UserRole
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_like import TemplateLike
@@ -55,6 +56,26 @@ def get_owned_template(
         and_(
             Template.id == template_id,
             Template.owner_id == owner_id,
+            Template.deleted_at.is_(None),
+        ),
+        RowLock.UPDATE if for_update else None,
+    )
+
+
+def get_editable_template(
+    session: Session, template_id: uuid.UUID, user_id: uuid.UUID, for_update: bool = False
+) -> Template | None:
+    user_is_super_admin: ColumnElement[bool] = exists().where(
+        User.id == user_id, User.role == UserRole.SUPER_ADMIN
+    )
+    return _get_template_with_content(
+        session,
+        and_(
+            Template.id == template_id,
+            or_(
+                Template.owner_id == user_id,
+                and_(Template.owner_id == OFFICIAL_ACCOUNT_ID, user_is_super_admin),
+            ),
             Template.deleted_at.is_(None),
         ),
         RowLock.UPDATE if for_update else None,
@@ -186,6 +207,7 @@ def set_template_moderation(
             moderation=moderation,
             moderation_reason=moderation_reason,
             updated_at=Template.updated_at,
+            **({"featured_at": None} if moderation == TemplateModeration.HIDDEN else {}),
         )
     )
 
@@ -197,7 +219,10 @@ def mark_template_deleted(
         update(Template)
         .where(Template.id == template_id)
         .values(
-            deleted_at=deleted_at, deletion_reason=deletion_reason, updated_at=Template.updated_at
+            deleted_at=deleted_at,
+            deletion_reason=deletion_reason,
+            featured_at=None,
+            updated_at=Template.updated_at,
         )
     )
 
@@ -271,6 +296,7 @@ def list_owned_templates_with_tile_count(
         .group_by(Template.id)
         .order_by(Template.updated_at.desc(), Template.id.desc())
         .limit(limit)
+        .options(selectinload(Template.editing_by))
     )
     if after is not None:
         statement = statement.where(tuple_(Template.updated_at, Template.id) < tuple_(*after))
@@ -362,6 +388,27 @@ def list_marketplace_templates(
                 tuple_(Template.first_made_public_at, Template.id)
                 < tuple_(after.first_made_public_at, after.id)
             )
+    return [
+        (template, owner_name, count) for template, owner_name, count in session.execute(statement)
+    ]
+
+
+def list_featured_templates(
+    session: Session, now: datetime, limit: int
+) -> list[tuple[Template, str, int]]:
+    like_count: ColumnElement[int] = (
+        select(func.count())
+        .where(TemplateLike.template_id == Template.id)
+        .correlate(Template)
+        .scalar_subquery()
+    )
+    statement: Select[Template, str, int] = (
+        _listed_templates_with_owner_name(now)
+        .add_columns(like_count)
+        .where(Template.featured_at.is_not(None))
+        .order_by(Template.featured_at.desc(), Template.id.desc())
+        .limit(limit)
+    )
     return [
         (template, owner_name, count) for template, owner_name, count in session.execute(statement)
     ]

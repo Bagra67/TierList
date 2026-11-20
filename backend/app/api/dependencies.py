@@ -31,6 +31,7 @@ from app.services.image_storage import ImageStorage, create_image_storage
 from app.services.images import ImageService
 from app.services.marketplace import MarketplaceService
 from app.services.moderation_log import ModerationLogService
+from app.services.official_templates import OfficialTemplateService
 from app.services.recent_uploads import RecentUploadsService
 from app.services.report_queue import ReportQueueService
 from app.services.reports import ReportService
@@ -120,6 +121,15 @@ def get_template_moderation_service(
     return TemplateModerationService(session, moderation_log, settings)
 
 
+def get_official_template_service(
+    session: Annotated[Session, Depends(get_db_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    templates: Annotated[TemplateService, Depends(get_template_service)],
+    moderation_log: Annotated[ModerationLogService, Depends(get_moderation_log_service)],
+) -> OfficialTemplateService:
+    return OfficialTemplateService(session, settings, templates, moderation_log)
+
+
 def get_recent_uploads_service(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> RecentUploadsService:
@@ -150,7 +160,13 @@ def build_game_service(
     scheduler: RoundScheduler,
 ) -> GameService:
     rooms: RoomService = RoomService(session, settings, publisher)
-    return GameService(session, publisher, rooms, TemplateService(session, settings), scheduler)
+    return GameService(
+        session,
+        publisher,
+        rooms,
+        TemplateService(session, settings),
+        scheduler,
+    )
 
 
 def get_game_service(
@@ -307,6 +323,9 @@ ReportServiceDep = Annotated[ReportService, Depends(get_report_service)]
 ReportQueueServiceDep = Annotated[ReportQueueService, Depends(get_report_queue_service)]
 ModerationLogServiceDep = Annotated[ModerationLogService, Depends(get_moderation_log_service)]
 ImageServiceDep = Annotated[ImageService, Depends(get_image_service)]
+OfficialTemplateServiceDep = Annotated[
+    OfficialTemplateService, Depends(get_official_template_service)
+]
 TemplateModerationServiceDep = Annotated[
     TemplateModerationService, Depends(get_template_moderation_service)
 ]

@@ -30,6 +30,7 @@ from tests.integration.helpers import (
     create_template,
     play_and_close,
     register,
+    select_accounts,
     send_report,
     start_game,
     stored_template,
@@ -501,7 +502,7 @@ def test_a_report_survives_the_deletion_of_the_accounts(
 ):
     assert send_report(auth_client, "game", closed_results["game_id"], bob).status_code == 201
 
-    for user in db_session.scalars(select(User)).all():
+    for user in db_session.scalars(select_accounts()).all():
         db_session.delete(user)
     db_session.flush()
     db_session.expire_all()

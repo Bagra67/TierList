@@ -5,7 +5,6 @@ from datetime import timedelta
 import jwt
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.constants import messages
@@ -14,7 +13,7 @@ from app.core.config import get_settings
 from app.core.security import create_access_token, create_email_verification_token
 from app.models.user import User
 from app.services.email import Email
-from tests.integration.helpers import link_token
+from tests.integration.helpers import link_token, select_accounts
 
 pytestmark = pytest.mark.integration
 
@@ -124,7 +123,7 @@ def test_invalid_links_are_refused(
     auth_client: TestClient, db_session: Session, make_token: Callable[[User], str]
 ):
     access_token = register(auth_client)
-    user = db_session.scalars(select(User)).one()
+    user = db_session.scalars(select_accounts()).one()
 
     response = auth_client.post("/auth/email/verify", json={"token": make_token(user)})
 

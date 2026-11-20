@@ -17,11 +17,13 @@ class PublicTileResponse(BaseModel):
 
 class PublicTemplateResponse(BaseModel):
     """A public template as everyone sees it: its name, its owner's display name, its tags, its
-    number of likes, its tiers and its tiles in their order."""
+    number of likes, its tiers and its tiles in their order. `featured` is true for an official
+    template in the TierList picks."""
 
     id: uuid.UUID
     name: str
     owner_name: str
+    featured: bool
     tags: list[str]
     like_count: int
     tiers: list[TierResponse]
@@ -55,11 +57,13 @@ class LikeStatesResponse(BaseModel):
 class MarketplaceTemplateResponse(BaseModel):
     """A card of the marketplace. The preview is the image of the first tile:
     `preview_image_removed` is true when moderation removed it, and both are empty when the first
-    tile has no image. `tier_colors` are the colors of the tiers, top to bottom."""
+    tile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true
+    for an official template in the TierList picks."""
 
     id: uuid.UUID
     name: str
     owner_name: str
+    featured: bool
     tags: list[str]
     tile_count: int
     like_count: int
@@ -74,6 +78,13 @@ class MarketplaceTemplateListResponse(BaseModel):
 
     items: list[MarketplaceTemplateResponse]
     next_cursor: str | None
+
+
+class FeaturedTemplatesResponse(BaseModel):
+    """The TierList picks: the featured official templates that are listed, most recently featured
+    first."""
+
+    items: list[MarketplaceTemplateResponse]
 
 
 class MarketplaceTagsResponse(BaseModel):
