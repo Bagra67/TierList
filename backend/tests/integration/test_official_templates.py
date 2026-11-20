@@ -18,6 +18,7 @@ from app.models.moderation_action import ModerationAction
 from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
+from app.services.email import Email
 from tests.integration.helpers import (
     JsonObject,
     ban_account,
@@ -400,3 +401,28 @@ def test_the_official_account_cannot_be_banned_nor_found(
     assert ban.status_code == 409
     assert ban.json()["code"] == ErrorCode.CANNOT_BAN_SUPER_ADMIN
     assert search["accounts"] == []
+
+
+def test_hiding_a_featured_official_template_takes_it_out_of_the_picks(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str]
+):
+    template_id: str = published_official(auth_client, db_session, nina)
+    auth_client.post(f"/moderation/official-templates/{template_id}/feature", headers=nina)
+
+    response: Response = auth_client.post(
+        f"/moderation/templates/{template_id}/hide", json={"reason": "Spam"}, headers=nina
+    )
+
+    assert response.status_code == 204
+    assert stored_template(db_session, template_id).featured_at is None
+
+
+def test_no_password_reset_can_be_asked_for_the_official_account(
+    auth_client: TestClient, sent_emails: list[Email]
+):
+    response: Response = auth_client.post(
+        "/auth/password/forgot", json={"email": "official@tierlist.invalid"}
+    )
+
+    assert response.status_code == 422
+    assert sent_emails == []
