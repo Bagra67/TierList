@@ -171,6 +171,24 @@ def test_the_super_admin_holding_the_lease_edits_the_template_and_the_edit_is_lo
     ]
 
 
+def test_a_request_that_changes_nothing_is_not_logged_as_an_edit(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str]
+):
+    template_id: str = create_official(auth_client, nina)
+    expire_lease(db_session, template_id)
+    auth_client.post(f"/moderation/official-templates/{template_id}/lock", headers=nina)
+    tier_id: str = auth_client.get(f"/templates/{template_id}", headers=nina).json()["tiers"][0][
+        "id"
+    ]
+
+    response: Response = auth_client.patch(
+        f"/templates/{template_id}/tiers/{tier_id}", json={}, headers=nina
+    )
+
+    assert response.status_code == 200
+    assert logged_actions(db_session, template_id) == [ModerationActionKind.CREATE]
+
+
 def test_another_super_admin_cannot_edit_or_lock_while_the_lease_is_held(
     auth_client: TestClient, nina: dict[str, str], omar: dict[str, str]
 ):
@@ -415,6 +433,11 @@ def test_hiding_a_featured_official_template_takes_it_out_of_the_picks(
 
     assert response.status_code == 204
     assert stored_template(db_session, template_id).featured_at is None
+    feature: Response = auth_client.post(
+        f"/moderation/official-templates/{template_id}/feature", headers=nina
+    )
+    assert feature.status_code == 409
+    assert feature.json()["code"] == ErrorCode.TEMPLATE_HIDDEN
 
 
 def test_no_password_reset_can_be_asked_for_the_official_account(

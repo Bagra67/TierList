@@ -602,7 +602,7 @@ export interface paths {
         /**
          * Feature Official Template
          * @description Puts a published official template in the TierList picks, first on the home page and on
-         *     the public templates. Refused for a draft. Written to the log.
+         *     the public templates. Refused for a draft or while hidden. Written to the log.
          */
         post: operations["feature_official_template_moderation_official_templates__template_id__feature_post"];
         delete?: never;
