@@ -275,11 +275,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
-      # Root, to reach the Docker socket that starts SeaweedFS; Firefox refuses to run as root
-      # with the HOME of another user.
+      # Root (the default), to reach the Docker socket that starts SeaweedFS.
       options: --ipc=host
-      env:
-        HOME: /root
     strategy:
       fail-fast: false
       matrix:
@@ -384,6 +381,9 @@ jobs:
           exit "$(cat "$RUNNER_TEMP/services.status" 2>/dev/null || echo 1)"
 
       - name: End-to-end tests (Playwright)
+        # GitHub sets HOME to /github/home, owned by another user: Firefox refuses to run as root.
+        env:
+          HOME: /root
         run: pnpm test:e2e --project=${{ matrix.browser }}
 
       # Runs even when tests fail, so the summary shows which ones and why.
