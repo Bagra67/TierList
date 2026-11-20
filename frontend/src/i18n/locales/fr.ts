@@ -114,7 +114,7 @@ export const fr = {
         "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
       moderation:
-        "Journal de modération : pour chaque décision de modération, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif et la date.",
+        "Journal de modération : pour chaque décision de modération, et chaque action sur les modèles officiels du site, le super admin qui l'a prise, le contenu ou le compte visé (avec son nom au moment de la décision), le motif s'il y en a un et la date.",
       technical:
         "Données techniques : les cookies et le stockage local décrits plus bas, des journaux techniques (identifiants internes, jamais vos mots de passe) et, quand une erreur survient, un rapport d'erreur (la page, le navigateur, la version de TierList et le détail technique de l'erreur, sans votre adresse IP, vos cookies ni ce que vous avez saisi).",
     },
@@ -1284,7 +1284,7 @@ export const fr = {
       tile_limit_reached: 'Un modèle a au plus {{max_tiles}} tuiles.',
       tag_limit_reached: 'Un modèle a au plus {{max_tags}} étiquettes.',
       official_template_locked:
-        'Un autre super admin modifie ce modèle, ou votre main sur lui a expiré. Rechargez la page.',
+        'Un autre super admin modifie ce modèle, ou votre accès en modification a expiré. Rechargez la page.',
       template_not_published: 'Publiez le modèle avant de le mettre en avant.',
       tile_empty: "Une tuile a besoin d'un texte ou d'une image.",
       invalid_tag: 'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',

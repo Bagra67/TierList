@@ -24,10 +24,6 @@ FREE_PLAN_MAX_TILES = 32
 OFFICIAL_TEMPLATE_MAX_TILES = 256
 FEATURED_TEMPLATES_MAX = 6
 
-# The account that owns the official templates, created by the migration 7b2e4c9d1a03: no password,
-# no linked Google account and an address that cannot receive mail, so nobody can sign in to it.
 OFFICIAL_ACCOUNT_ID = uuid.UUID("00000000-0000-4000-8000-0000000000ff")
-OFFICIAL_ACCOUNT_EMAIL = "official@tierlist.invalid"
-OFFICIAL_ACCOUNT_NAME = "TierList"
 TEMPLATES_PAGE_SIZE = 24
 CURSOR_MAX_LENGTH = 500
