@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { cn } from 'cn';
 
 import { type OfficialTemplateSummary, useOfficialTemplates } from '../api/officialTemplates';
-import { CreateTemplateDialog } from '../components/CreateTemplateDialog';
+import { CreateOfficialTemplateDialog } from '../components/CreateTemplateDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -27,7 +27,7 @@ export function ModerationOfficialTemplatesPage() {
           <h1 className="text-2xl font-semibold">{t('officialTemplates.title')}</h1>
           <p className="max-w-prose text-muted-foreground">{t('officialTemplates.intro')}</p>
         </div>
-        <CreateTemplateDialog official />
+        <CreateOfficialTemplateDialog />
       </div>
 
       {query.isPending && <LoadingSkeleton shape="list" />}

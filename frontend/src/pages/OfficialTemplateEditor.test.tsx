@@ -42,6 +42,8 @@ const cheeses: Template = {
   editing_until: '2026-11-20T12:02:00Z',
 };
 
+const lease = { editing_by_name: 'alice', editing_until: '2026-11-20T12:02:00Z' };
+
 function renderOfficialEditor() {
   return renderWithQueryClient(
     <MemoryRouter initialEntries={[`/moderation/official-templates/${templateId}`]}>
@@ -62,7 +64,7 @@ describe('TemplateEditorPage for an official template', () => {
   it('takes the lease, shows the publishing panel and the official limits', async () => {
     const fetchMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(cheeses),
-      [`POST ${lockUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(lease),
     });
 
     renderOfficialEditor();
@@ -83,7 +85,7 @@ describe('TemplateEditorPage for an official template', () => {
   it('publishes the draft, then lets it be featured', async () => {
     const fetchMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(cheeses),
-      [`POST ${lockUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(lease),
       [`POST /moderation/official-templates/${templateId}/publish`]: () =>
         Response.json({ ...cheeses, visibility: 'public' }),
     });
@@ -119,7 +121,7 @@ describe('TemplateEditorPage for an official template', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const fetchMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(cheeses),
-      [`POST ${lockUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(lease),
     });
     const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
 
@@ -135,7 +137,7 @@ describe('TemplateEditorPage for an official template', () => {
   it('gives the lease back when leaving the page', async () => {
     const fetchMock = stubBackend({
       [`GET ${templateUrl}`]: () => Response.json(cheeses),
-      [`POST ${lockUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(lease),
       [`DELETE ${lockUrl}`]: () => new Response(null, { status: 204 }),
     });
 
