@@ -1,6 +1,6 @@
 # Marketplace
 
-How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**, and **built**: the tags and the search text in #272 ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)), the likes in #276, the marketplace in #277 and the pages of _My templates_ in #105 ([templates guide](templates.md#26-endpoints)). §3 lists where each piece lives.
+How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**, and **built**: the tags and the search text in #272 ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)), the likes in #276, the marketplace in #277, the pages of _My templates_ in #105 ([templates guide](templates.md#26-endpoints)) and the TierList picks in #492. §3 lists where each piece lives.
 
 ## 1. Functional overview
 
@@ -10,7 +10,8 @@ How the marketplace lists, searches, sorts and pages the public templates. **Dec
 - **Keywords** search the name and the tags, ignoring case and accents (US-3.2). A keyword matches the **start of a word**: `poke` finds _Pokémon_, `kemon` does not. Several keywords must **all** match (AND); `|` separates alternatives (OR): `mario film | zelda` finds the templates matching both `mario` and `film`, or `zelda`.
 - A **tag** filter keeps the templates with that tag; it combines with the keywords.
 - Two sorts: **popularity** (number of likes, the default) and **newest** (date the template was first made public).
-- **Tags**: 5 at most per template, 30 characters at most each, duplicates ignoring case and accents merged (US-2.2, invariant 4).
+- **TierList picks**: the official templates featured by the super admins come first, above the list and on the home page (§2.11).
+- **Tags**: 5 at most per template (20 for an official template), 30 characters at most each, duplicates ignoring case and accents merged (US-2.2, invariant 4).
 - **Volumes**: a few hundred to a few thousand public templates expected in the first year. 24 templates per page.
 - No new service: everything runs in the PostgreSQL the app already uses (PostgreSQL 17 in production, 18 locally and on CI).
 
@@ -68,7 +69,7 @@ A table `template_tags`, owned by the template (composition: no shared tag catal
 
 - Primary key `(template_id, normalized_label)`: a duplicate is refused by the database too. Adding a tag whose normalized form already exists keeps the first label (merge, US-2.2).
 - A tag whose normalized form is empty (only punctuation or a non-Latin script) is refused.
-- At most 5 tags: checked by the request schema (`SetTemplateTagsRequest`, `422` `validation_error`); the service changes the tags on the template row locked with `SELECT … FOR UPDATE`, like every template change.
+- At most 5 tags, 20 for an official template: `Template.max_tags`, checked by the service (`409` `tag_limit_reached`), the request schema refusing more than 20 (`422` `validation_error`); the service changes the tags on the template row locked with `SELECT … FOR UPDATE`, like every template change.
 - Index on `normalized_label` for the tag filter (`EXISTS (… WHERE normalized_label = :tag)`).
 - A fork copies the tags (US-3.7).
 
@@ -140,13 +141,15 @@ Open to visitors (no user dependency, like the public template page):
 | ------------------------------------------------------------------------ | --------------------------------------- | ----------------------------- |
 | `GET /marketplace/templates?q=&tag=&sort=popular\|newest&cursor=&limit=` | `200` `MarketplaceTemplateListResponse` | `400` `invalid_cursor`, `422` |
 | `GET /marketplace/tags`                                                  | `200` `MarketplaceTagsResponse`         | —                             |
+| `GET /marketplace/featured`                                              | `200` `FeaturedTemplatesResponse`       | —                             |
 
 - `MarketplaceTemplateListResponse` is `{items, next_cursor}`. Each item (`MarketplaceTemplateResponse`) carries what a card shows (US-3.1):
-  - `id`, `name`, `owner_name`, `tags` (labels), `tile_count`, `like_count`;
+  - `id`, `name`, `owner_name`, `featured` (§2.11), `tags` (labels), `tile_count`, `like_count`;
   - `preview_image_url` / `preview_image_removed`: the first tile's image, with `optional_image_url` and `is_image_removed`, so a removed image is never served ([images guide](images.md#29-moderation)); both are empty when the first tile has no image;
   - `tier_colors`: the colors of the tiers, top to bottom, for the preview of a template without a first image.
 - `q` takes at most 100 characters (`SEARCH_QUERY_MAX_LENGTH`) and 8 words (`SEARCH_QUERY_MAX_WORDS`, counted after normalization by an `AfterValidator`); `tag` at most 30 characters, normalized like the stored tags; `limit` from 1 to 24 (the visitor home asks for 3).
 - `GET /marketplace/tags` gives the 12 tags (`MARKETPLACE_POPULAR_TAG_COUNT`) used by the most listed templates, one per `normalized_label`, the alphabetically first label standing for its spellings.
+- `GET /marketplace/featured` gives the TierList picks as `{items}`, the same cards (§2.11).
 
 ### 2.10 Likes
 
@@ -163,7 +166,17 @@ Open to visitors (no user dependency, like the public template page):
 - The routes need an account; liking needs a **confirmed email address** too (`403` `email_not_verified`), like making a template public, so throwaway accounts cannot rank a template. They act on a **listed** template only (`get_listed_template_name_and_owner`), otherwise `404` `template_not_found`. `PUT` is idempotent (`INSERT … ON CONFLICT DO NOTHING`), `DELETE` too.
 - The likes of a template that stops being listed are kept, and come back with it (invariant 6). `PublicTemplateResponse` carries `like_count`.
 
-### 2.11 Known limitations
+### 2.11 TierList picks
+
+The super admins feature some official templates ([templates guide](templates.md#211-official-templates), #492); the players see them first.
+
+- **Route**: `GET /marketplace/featured`, open to visitors, without cursor nor parameter. `list_featured_templates` (`repositories/templates.py`) reads the **listed** templates (§2.2) whose `featured_at` is set, most recently featured first (`featured_at DESC, id DESC`), at most 6 (`FEATURED_TEMPLATES_MAX`), with their like counts in the same query; `MarketplaceService.list_featured` adds the tile counts and first tiles like a page of the list (`_cards`).
+- **Only official templates**: only `OfficialTemplateService.feature` sets `featured_at`, on a published official template; unpublishing or deleting it clears the column. A featured template that stops being listed (hidden) leaves the picks without a change of the column.
+- **`featured`**: `MarketplaceTemplateResponse` and `PublicTemplateResponse` carry it (`featured_at IS NOT NULL`), so a pick also has its badge in the list, in a search and on its public page.
+- **Order**: the most recently featured first; there is no manual ordering.
+- A pick is also listed in `GET /marketplace/templates` under the usual sorts: the row does not remove it from the list.
+
+### 2.12 Known limitations
 
 - **Likes moving between pages**: with the `popular` sort, a like given while someone pages can move a template across the cursor, so it is shown twice or skipped. The frontend drops a template already shown (same `id`) when it appends a page; a skipped one comes back on the next search.
 - **No relevance, no typo tolerance**: the next step would be `pg_trgm` (similarity), which needs the extension in production.
@@ -181,6 +194,7 @@ What each issue built:
 | #276  | **Built**: table `template_likes` (`models/template_like.py`, migration `a9b8f14a856a`), `repositories/template_likes.py`, `MarketplaceService.like` / `unlike` / `like_state`, the like routes (§2.10), `like_count` on the public page, the like button (`components/LikeButton.tsx`) and the privacy policy (`privacy.data.likes`).                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | #277  | **Built**: `build_search_query` (`app/core/search_query.py`), `list_marketplace_templates` and `list_popular_listed_tags` (`repositories/templates.py`), the tile counts and first tiles of a page's templates in two small queries (`count_tiles_of_templates`, `list_first_tiles_of_templates`, rather than loading every tile), `MarketplaceService.list_templates` with one cursor position per sort (`PopularPosition`, `NewestPosition`), constants in `app/constants/marketplace.py`, index `ix_templates_listed_newest` (migration `3cc4d74966c1`), the routes (§2.9), `/marketplace` in the sitemap ([search engines guide](seo.md#2-pages)). Frontend: `MarketplacePage`, `MarketplaceCard`, `PopularTemplates` on the visitor home, the nav link (§4). |
 | #480  | **Built**: `MarketplaceService.like_states` and `GET /marketplace/likes` (§2.10); frontend `useCardLikeStates` and `CardLikeButton` on the cards, `PopularTemplates` on the signed-in home too (§4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| #492  | **Built**: `featured_at` (migration `7b2e4c9d1a03`), `list_featured_templates` (`repositories/templates.py`), `MarketplaceService.list_featured`, `GET /marketplace/featured` and `FeaturedTemplatesResponse` (§2.11), `featured` on the cards and the public page. Frontend: `useFeaturedTemplates`, the « Sélection TierList » row of `MarketplacePage`, the picks first in `PopularTemplates`, `TemplateFeaturedBadge` (§4).                                                                                                                                                                                                                                                                                                                                   |
 | #105  | **Built**: `encode_cursor` / `decode_cursor` (`app/core/cursor.py`, `InvalidCursorError`), `TemplateService.page_for_owner`, `next_cursor` in `TemplateListResponse`; frontend `useTemplates` as an infinite query ([templates guide](templates.md#26-endpoints)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## 4. Frontend
@@ -188,8 +202,9 @@ What each issue built:
 - **Page** `MarketplacePage`, at `/marketplace` (`ROUTES.MARKETPLACE`), open to visitors:
   - a search form (`role="search"`, sent on submit, as the other search fields of the app), a "Trier par" select, the popular tags as toggle pills (`aria-pressed`, one at a time);
   - the filters live in the address (`?q=&tag=&sort=`, `sort` left out for the default), so a search can be shared and goes back with the browser; they are part of the query key (`['marketplace', 'list', filters]`);
-  - the cards in the shared `PagedList` with "Voir plus"; a template already shown is dropped when a page is appended (`uniqueById`, §2.11);
-  - empty state, or "nothing matches" with "Effacer la recherche".
-- **Card** `MarketplaceCard`: the preview is the first tile's image, the "image removed" visual, or the template's tier colors as bars of decreasing width, like the logo; then the name (a link that covers the card), "par … · n éléments", the tags and the number of likes. For a signed-in reader who may like the template, the number is a like toggle (`CardLikeButton`, `aria-pressed`, named "J'aime « Chips » · 3", above the covering link); the page and the home preview ask the like states once per page of cards (`useCardLikeStates`), which fills the per-template like state cache shared with the public page.
-- **Home**: `PopularTemplates` shows the 3 most liked templates, with "Voir tous les modèles publics": after the three steps for a visitor, below _Derniers modèles_ / _Dernières parties_ for a signed-in user (#480); hidden when there is none. The signed-in nav has a "Modèles publics" link (`MainNav`); the empty state of _Vos modèles_ offers "Ou partez d'un modèle public".
-- **Public template page**: a "← Modèles publics" link (a visitor who comes from a search engine has no nav), tags linking to `/marketplace?tag=…` (`TemplateTagList linkToMarketplace`), and the like button ([templates guide](templates.md#210-public-template-page)).
+  - the cards in the shared `PagedList` with "Voir plus"; a template already shown is dropped when a page is appended (`uniqueById`, §2.12);
+  - empty state, or "nothing matches" with "Effacer la recherche";
+  - the **« Sélection TierList »** row (`TierListPicks`), between the filters and the list, only without keywords nor tag and when there is at least one pick: a heading, a short sentence and the cards of `GET /marketplace/featured` (`useFeaturedTemplates`, key `['marketplace', 'list', 'featured']`), without the badge, since the heading already says it. The like states of the row are asked with the pages of the list (`useCardLikeStates`).
+- **Card** `MarketplaceCard`: the preview is the first tile's image, the "image removed" visual, or the template's tier colors as bars of decreasing width, like the logo; then the name (a link that covers the card), "par … · n éléments", the « Sélection TierList » badge for a pick (`TemplateFeaturedBadge`, a written label; `showFeaturedBadge={false}` in the row), the tags and the number of likes. For a signed-in reader who may like the template, the number is a like toggle (`CardLikeButton`, `aria-pressed`, named "J'aime « Chips » · 3", above the covering link); the page and the home preview ask the like states once per page of cards (`useCardLikeStates`), which fills the per-template like state cache shared with the public page.
+- **Home**: `PopularTemplates` shows 3 templates, the picks first (most recently featured first) then the most liked ones not already shown, with "Voir tous les modèles publics": after the three steps for a visitor, below _Derniers modèles_ / _Dernières parties_ for a signed-in user (#480); hidden when there is none. The signed-in nav has a "Modèles publics" link (`MainNav`); the empty state of _Vos modèles_ offers "Ou partez d'un modèle public".
+- **Public template page**: a "← Modèles publics" link (a visitor who comes from a search engine has no nav), tags linking to `/marketplace?tag=…` (`TemplateTagList linkToMarketplace`), the « Sélection TierList » badge of a pick, and the like button ([templates guide](templates.md#210-public-template-page)).
