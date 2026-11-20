@@ -36,6 +36,7 @@ from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
 from app.seed.accounts import seed_email
+from app.seed.official_templates import create_official_templates
 from app.seed.run import SeedSummary, run_seed
 from app.seed.sizes import SMALL_SIZE
 from app.services.image_storage import quarantine_key
@@ -308,6 +309,22 @@ def test_the_seed_creates_official_templates_one_draft_and_one_featured(
     ]
     assert [template.featured_at is not None for template in official] == [True, False, False]
     assert all(template.tiles for template in official)
+
+
+def test_a_single_official_template_is_a_draft_and_not_featured(db_session: Session):
+    super_admin: User = User(
+        email="nina@example.com", display_name="Nina", role=UserRole.SUPER_ADMIN
+    )
+    db_session.add(super_admin)
+    db_session.flush()
+
+    create_official_templates(db_session, get_settings(), [super_admin], count=1)
+
+    official: Template = db_session.scalars(
+        select(Template).where(Template.owner_id == OFFICIAL_ACCOUNT_ID)
+    ).one()
+    assert official.visibility == TemplateVisibility.PRIVATE
+    assert official.featured_at is None
 
 
 def test_running_the_seed_again_replaces_its_data_only(

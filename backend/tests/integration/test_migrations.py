@@ -87,5 +87,11 @@ def test_the_migration_copies_the_latest_moderation_deletion_reason_to_deleted_t
                 connection.execute(text("SELECT name, deletion_reason FROM templates")).all()
             )
     finally:
+        with engine.begin() as connection:
+            connection.execute(
+                text("DELETE FROM moderation_actions WHERE target_id IN (:deleted, :live)"),
+                {"deleted": deleted_id, "live": live_id},
+            )
+            connection.execute(text("DELETE FROM users WHERE id = :id"), {"id": owner_id})
         engine.dispose()
     assert reasons == {"Deleted": "Latest reason", "Live": None}
