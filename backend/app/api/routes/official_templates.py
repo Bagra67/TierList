@@ -164,7 +164,7 @@ def feature_official_template(
     storage: ImageStorageDep,
 ) -> TemplateResponse:
     """Puts a published official template in the TierList picks, first on the home page and on
-    the public templates. Refused for a draft. Written to the log."""
+    the public templates. Refused for a draft or while hidden. Written to the log."""
     return _editorial_change(service.feature, super_admin, template_id, storage)
 
 
