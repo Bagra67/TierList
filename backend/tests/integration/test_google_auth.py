@@ -24,7 +24,7 @@ from app.repositories import users as user_repository
 from app.services.email import Email
 from app.services.google_oauth import GoogleIdentity, GoogleLoginAttempt
 from app.services.google_oauth import GoogleOAuthClient as RealGoogleOAuthClient
-from tests.integration.helpers import link_token, miss_first_lookup
+from tests.integration.helpers import link_token, miss_first_lookup, select_accounts
 
 pytestmark = pytest.mark.integration
 
@@ -141,7 +141,7 @@ def test_next_google_sign_in_reuses_the_same_account(
     response = sign_in_with_google(google_client)
 
     assert response.headers["location"] == "/"
-    assert len(db_session.scalars(select(User)).all()) == 1
+    assert len(db_session.scalars(select_accounts()).all()) == 1
     assert current_user(google_client)["email"] == "alice@gmail.com"
 
 
@@ -162,7 +162,7 @@ def test_google_identity_is_linked_to_an_existing_verified_account(
     assert user["has_password"] is True
     assert (
         db_session.scalars(select(OAuthAccount)).one().user_id
-        == db_session.scalars(select(User)).one().id
+        == db_session.scalars(select_accounts()).one().id
     )
 
 
@@ -178,7 +178,7 @@ def test_simultaneous_first_google_sign_ins_create_a_single_account(
 
     assert response.headers["location"] == "/"
     assert current_user(google_client)["email"] == "alice@gmail.com"
-    assert len(db_session.scalars(select(User)).all()) == 1
+    assert len(db_session.scalars(select_accounts()).all()) == 1
     assert len(db_session.scalars(select(OAuthAccount)).all()) == 1
 
 
@@ -221,7 +221,7 @@ def test_google_takes_over_an_unverified_account_and_drops_its_password(
     squatter_bearer = {"Authorization": f"Bearer {squatter.json()['access_token']}"}
     assert google_client.get("/auth/me", headers=squatter_bearer).status_code == 401
     assert db_session.scalars(select(OAuthAccount)).one().user_id == (
-        db_session.scalars(select(User)).one().id
+        db_session.scalars(select_accounts()).one().id
     )
 
 
@@ -438,7 +438,7 @@ def test_password_sign_in_is_refused_for_a_google_only_account(google_client: Te
 
 
 def google_only_access_token(db_session: Session, signed_in_ago: timedelta) -> str:
-    user = db_session.scalars(select(User)).one()
+    user = db_session.scalars(select_accounts()).one()
     return create_access_token(
         user_id=user.id,
         auth_time=datetime.now(UTC) - signed_in_ago,
@@ -459,7 +459,7 @@ def test_google_only_account_is_deleted_after_a_recent_sign_in(
     )
 
     assert response.status_code == 204
-    assert db_session.scalars(select(User)).all() == []
+    assert db_session.scalars(select_accounts()).all() == []
     assert db_session.scalars(select(OAuthAccount)).all() == []
 
 
@@ -478,7 +478,7 @@ def test_google_only_account_deletion_requires_a_recent_sign_in(
         "detail": messages.REAUTHENTICATION_REQUIRED,
         "code": ErrorCode.REAUTHENTICATION_REQUIRED,
     }
-    assert db_session.scalars(select(User)).one().email == "alice@gmail.com"
+    assert db_session.scalars(select_accounts()).one().email == "alice@gmail.com"
 
 
 def test_recent_sign_in_delay_follows_the_settings(

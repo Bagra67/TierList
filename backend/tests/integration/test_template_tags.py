@@ -81,8 +81,9 @@ def test_more_than_five_tags_are_refused(
 ) -> None:
     response: Response = set_tags(auth_client, alice, template_id, ["a", "b", "c", "d", "e", "f"])
 
-    assert response.status_code == 422
-    assert [error["field"] for error in response.json()["errors"]] == ["body.tags"]
+    assert response.status_code == 409
+    assert response.json()["code"] == "tag_limit_reached"
+    assert response.json()["params"] == {"max_tags": 5}
 
 
 def test_a_tag_longer_than_thirty_characters_is_refused(

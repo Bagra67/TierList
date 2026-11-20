@@ -33,4 +33,4 @@ class ModerationAction(UUIDPrimaryKeyMixin, Base):
     )
     target_id: Mapped[uuid.UUID | None]
     target_label: Mapped[str] = mapped_column(String(MODERATION_TARGET_LABEL_MAX_LENGTH))
-    reason: Mapped[str] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))
+    reason: Mapped[str | None] = mapped_column(String(MODERATION_REASON_MAX_LENGTH))

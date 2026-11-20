@@ -39,6 +39,20 @@ IMAGE_REASONS: tuple[str, ...] = (
     "Données personnelles visibles", "Image sans rapport avec le modèle",
 )  # fmt: skip
 
+MODERATION_ACTION_KINDS: list[ModerationActionKind] = [
+    kind
+    for kind in ModerationActionKind
+    if kind
+    not in {
+        ModerationActionKind.CREATE,
+        ModerationActionKind.EDIT,
+        ModerationActionKind.PUBLISH,
+        ModerationActionKind.UNPUBLISH,
+        ModerationActionKind.FEATURE,
+        ModerationActionKind.UNFEATURE,
+    }
+]
+
 
 def create_moderation_log(
     session: Session,
@@ -60,7 +74,7 @@ def create_moderation_log(
                 - timedelta(days=days_ago, minutes=rng.randint(0, 600)),
                 actor_id=actor.id,
                 actor_name=actor.display_name,
-                action=rng.choice(list(ModerationActionKind)),
+                action=rng.choice(MODERATION_ACTION_KINDS),
                 target_type=target_type,
                 target_id=target_id,
                 target_label=target_label,

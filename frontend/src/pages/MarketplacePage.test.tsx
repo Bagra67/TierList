@@ -12,6 +12,7 @@ function card(id: string, name: string, overrides: Partial<MarketplaceTemplate> 
     id,
     name,
     owner_name: 'Camille',
+    featured: false,
     tags: ['Apéro'],
     tile_count: 8,
     like_count: 3,

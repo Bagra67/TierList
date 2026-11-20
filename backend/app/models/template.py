@@ -2,11 +2,18 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, func, text
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, false, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.constants.moderation import MODERATION_REASON_MAX_LENGTH
-from app.constants.templates import FREE_PLAN_MAX_TILES, TEMPLATE_NAME_MAX_LENGTH
+from app.constants.templates import (
+    FREE_PLAN_MAX_TILES,
+    OFFICIAL_ACCOUNT_ID,
+    OFFICIAL_TEMPLATE_MAX_TAGS,
+    OFFICIAL_TEMPLATE_MAX_TILES,
+    TEMPLATE_MAX_TAGS,
+    TEMPLATE_NAME_MAX_LENGTH,
+)
 from app.db.base import Base
 from app.db.mixins import SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 from app.db.types import text_enum
@@ -16,6 +23,7 @@ if TYPE_CHECKING:
     from app.models.template_tag import TemplateTag
     from app.models.tier import Tier
     from app.models.tile import Tile
+    from app.models.user import User
 
 
 LISTED_CANDIDATES = text(
@@ -65,6 +73,14 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
     first_made_public_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     search_text: Mapped[str] = mapped_column(Text, default="", server_default=text("''"))
+    featured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    editing_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    editing_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    edit_logged: Mapped[bool] = mapped_column(default=False, server_default=false())
+
+    editing_by: Mapped[User | None] = relationship(foreign_keys=[editing_by_id])
 
     tiers: Mapped[list[Tier]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="Tier.position"
@@ -77,5 +93,18 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
 
     @property
+    def is_official(self) -> bool:
+        return self.owner_id == OFFICIAL_ACCOUNT_ID
+
+    @property
     def max_tiles(self) -> int:
-        return FREE_PLAN_MAX_TILES
+        return OFFICIAL_TEMPLATE_MAX_TILES if self.is_official else FREE_PLAN_MAX_TILES
+
+    @property
+    def max_tags(self) -> int:
+        return OFFICIAL_TEMPLATE_MAX_TAGS if self.is_official else TEMPLATE_MAX_TAGS
+
+    def active_editor(self, now: datetime) -> User | None:
+        if self.editing_until is None or self.editing_until <= now:
+            return None
+        return self.editing_by

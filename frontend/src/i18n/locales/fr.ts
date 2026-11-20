@@ -349,6 +349,7 @@ export const fr = {
       },
       at: '{{date, datetime(dateStyle: medium; timeStyle: short)}}',
       targetCell: '{{type}} « {{label}} »',
+      noReason: '—',
       more: 'Voir plus',
     },
     actions: {
@@ -360,6 +361,12 @@ export const fr = {
       lift_ban: 'Lever le bannissement',
       restore: 'Restaurer',
       purge: 'Supprimer définitivement',
+      create: 'Créer',
+      edit: 'Modifier',
+      publish: 'Publier',
+      unpublish: 'Repasser en brouillon',
+      feature: 'Mettre en avant',
+      unfeature: 'Retirer de la sélection',
     },
     targets: {
       template: 'Modèle',
@@ -1275,6 +1282,10 @@ export const fr = {
       last_tier: 'Un modèle garde au moins un tier.',
       tile_not_found: 'Cette tuile est introuvable.',
       tile_limit_reached: 'Un modèle a au plus {{max_tiles}} tuiles.',
+      tag_limit_reached: 'Un modèle a au plus {{max_tags}} étiquettes.',
+      official_template_locked:
+        'Un autre super admin modifie ce modèle, ou votre main sur lui a expiré. Rechargez la page.',
+      template_not_published: 'Publiez le modèle avant de le mettre en avant.',
       tile_empty: "Une tuile a besoin d'un texte ou d'une image.",
       invalid_tag: 'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
       cannot_like_own_template: 'Vous ne pouvez pas aimer votre propre modèle.',

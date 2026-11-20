@@ -1,6 +1,10 @@
+from fastapi import Request, Response
+
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
+from app.core.errors import handle_http_exception
 from app.exceptions.http import AppHTTPException
+from app.exceptions.templates import OfficialTemplateLockedError
 
 
 def template_not_found() -> AppHTTPException:
@@ -49,3 +53,23 @@ def invalid_cursor() -> AppHTTPException:
         code=ErrorCode.INVALID_CURSOR,
         detail=messages.INVALID_CURSOR,
     )
+
+
+def official_template_locked(editor_name: str | None) -> AppHTTPException:
+    if editor_name is None:
+        return AppHTTPException(
+            status_code=409,
+            code=ErrorCode.OFFICIAL_TEMPLATE_LOCKED,
+            detail=messages.OFFICIAL_TEMPLATE_LEASE_REQUIRED,
+        )
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.OFFICIAL_TEMPLATE_LOCKED,
+        detail=messages.OFFICIAL_TEMPLATE_LOCKED,
+        params={"editor": editor_name},
+    )
+
+
+async def handle_official_template_locked(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, OfficialTemplateLockedError)
+    return await handle_http_exception(request, official_template_locked(exc.editor_name))

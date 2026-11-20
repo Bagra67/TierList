@@ -15,7 +15,9 @@ MaintenanceSessionFactory = Callable[[], AbstractContextManager[Session]]
 
 def purge_deleted_templates(session_factory: MaintenanceSessionFactory, settings: Settings) -> int:
     with session_factory() as session:
-        return TemplateService(session, settings).purge_deleted()
+        return TemplateService(
+            session, settings, ModerationLogService(session, settings)
+        ).purge_deleted()
 
 
 def purge_unused_images(

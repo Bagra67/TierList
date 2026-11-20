@@ -33,7 +33,7 @@ class ModerationLogService:
         target_type: ModerationTargetType,
         target_id: uuid.UUID | None,
         target_label: str,
-        reason: str,
+        reason: str | None,
     ) -> ModerationAction:
         moderation_action: ModerationAction = ModerationAction(
             actor_id=actor.id,

@@ -11,8 +11,8 @@ from pydantic import (
 )
 
 from app.constants.templates import (
+    OFFICIAL_TEMPLATE_MAX_TAGS,
     TAG_MAX_LENGTH,
-    TEMPLATE_MAX_TAGS,
     TEMPLATE_NAME_MAX_LENGTH,
     TIER_NAME_MAX_LENGTH,
     TILE_TEXT_MAX_LENGTH,
@@ -55,7 +55,7 @@ class SetTemplateTagsRequest(BaseModel):
     Surrounding spaces are removed, and a tag equal to an earlier one ignoring case and accents is
     dropped."""
 
-    tags: Annotated[list[TagLabel], Field(max_length=TEMPLATE_MAX_TAGS)]
+    tags: Annotated[list[TagLabel], Field(max_length=OFFICIAL_TEMPLATE_MAX_TAGS)]
 
 
 TierName = Annotated[
@@ -127,8 +127,11 @@ class TileResponse(BaseModel):
 
 class TemplateResponse(BaseModel):
     """A template with its tiers and its tiles sorted by position, and its tags in their order.
-    `max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template
-    goes back to private."""
+    `max_tiles` and `max_tags` are the maximum numbers of tiles and tags; `first_made_public_at` is
+    kept when the template goes back to private. `official` is true for a template owned by the
+    site, edited by the super admins: `featured` is then true when it is in the TierList picks, and
+    `editing_by_name` and `editing_until` name the super admin holding its edit lease, until when
+    (both null when nobody holds it)."""
 
     id: uuid.UUID
     name: str
@@ -138,10 +141,34 @@ class TemplateResponse(BaseModel):
     tiers: list[TierResponse]
     tiles: list[TileResponse]
     max_tiles: int
+    max_tags: int
     moderation: TemplateModeration
     moderation_reason: str | None
     visibility: TemplateVisibility
     first_made_public_at: datetime | None
+    official: bool
+    featured: bool
+    editing_by_name: str | None
+    editing_until: datetime | None
+
+
+class OfficialTemplateSummaryResponse(BaseModel):
+    """An official template in the list of the moderation area: draft (`private`) or published
+    (`public`), in the TierList picks or not, and the super admin editing it, if any."""
+
+    id: uuid.UUID
+    name: str
+    tile_count: int
+    updated_at: datetime
+    visibility: TemplateVisibility
+    featured: bool
+    editing_by_name: str | None
+
+
+class OfficialTemplateListResponse(BaseModel):
+    """The official templates, most recently changed first."""
+
+    items: list[OfficialTemplateSummaryResponse]
 
 
 class RemovedImageResponse(BaseModel):

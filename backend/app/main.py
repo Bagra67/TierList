@@ -21,6 +21,7 @@ from app.api.dependencies import (
     get_page_head,
     get_short_lived_session_factory,
 )
+from app.api.errors import handle_official_template_locked
 from app.api.routes import (
     auth,
     client_config,
@@ -28,6 +29,7 @@ from app.api.routes import (
     images,
     marketplace,
     moderation,
+    official_templates,
     reports,
     results,
     room_channel,
@@ -48,6 +50,7 @@ from app.core.proxy import TrustedProxyMiddleware
 from app.core.upload_size import ImageUploadSizeMiddleware
 from app.db.session import get_db_session, ping_database
 from app.exceptions.http import AppHTTPException
+from app.exceptions.templates import OfficialTemplateLockedError
 from app.schemas.room_events import RoomClientMessage, RoomServerMessage
 from app.services.client_config import build_client_config
 from app.services.games import GameService
@@ -188,6 +191,7 @@ api_app = FastAPI(
     responses={500: {"model": ErrorResponse, "description": messages.INTERNAL_ERROR}},
 )
 register_error_handlers(api_app)
+api_app.add_exception_handler(OfficialTemplateLockedError, handle_official_template_locked)
 api_app.add_middleware(
     ImageUploadSizeMiddleware, max_image_bytes=get_settings().image_upload_max_bytes
 )
@@ -195,6 +199,7 @@ api_app.add_middleware(NoindexMiddleware)
 api_app.include_router(auth.router)
 api_app.include_router(client_config.router)
 api_app.include_router(templates.router)
+api_app.include_router(official_templates.router)
 api_app.include_router(marketplace.router)
 api_app.include_router(images.router)
 api_app.include_router(rooms.router)

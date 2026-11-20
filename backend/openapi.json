@@ -1068,7 +1068,7 @@
           "templates"
         ],
         "summary": "Get Template",
-        "description": "A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted\ntemplate or one of another account.",
+        "description": "A template of the account, or an official template for a super admin, with its tiers and its\ntiles sorted by position. 404 for a deleted template or one of another account.",
         "operationId": "get_template_templates__template_id__get",
         "security": [
           {
@@ -1207,6 +1207,16 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
             "content": {
               "application/json": {
                 "schema": {
@@ -1413,7 +1423,7 @@
           "templates"
         ],
         "summary": "Set Template Tags",
-        "description": "Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at\nleast one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is\ndropped; the first one is kept. Its last modification date is updated.",
+        "description": "Replaces the tags of a template: `max_tags` at most (409 past it), 30 characters at most\neach, with at least one Latin letter or digit. A tag equal to an earlier one ignoring case and\naccents is dropped; the first one is kept. Its last modification date is updated.",
         "operationId": "set_template_tags_templates__template_id__tags_put",
         "security": [
           {
@@ -1475,6 +1485,16 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Maximum number of tags reached, or official template edited by another super admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -1554,6 +1574,16 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
             "content": {
               "application/json": {
                 "schema": {
@@ -1651,6 +1681,16 @@
               }
             }
           },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Template or tier not found",
             "content": {
@@ -1738,8 +1778,8 @@
               }
             }
           },
-          "404": {
-            "description": "Template or tier not found",
+          "409": {
+            "description": "The last tier of a template cannot be deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -1748,8 +1788,8 @@
               }
             }
           },
-          "409": {
-            "description": "The last tier of a template cannot be deleted",
+          "404": {
+            "description": "Template or tier not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1946,6 +1986,16 @@
               }
             }
           },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Template, tile or image not found",
             "content": {
@@ -2033,8 +2083,817 @@
               }
             }
           },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Template or tile not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates": {
+      "get": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "List Official Templates",
+        "description": "The official templates, drafts and published ones, most recently changed first, with the\nsuper admin holding the edit lease of each.",
+        "operationId": "list_official_templates_moderation_official_templates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficialTemplateListResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Create Official Template",
+        "description": "Creates an official template, owned by the site, as a draft with the default tiers. The\nsuper admin who creates it holds its edit lease. Written to the log.",
+        "operationId": "create_official_template_moderation_official_templates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/moderation/official-templates/{template_id}/lock": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Lock Official Template",
+        "description": "Takes or renews the edit lease of an official template, for a few minutes: the editor\nrenews it while the page is open. Refused (409, with the `editor` display name) while another\nsuper admin holds it. The template's content is changed through the /templates routes.",
+        "operationId": "lock_official_template_moderation_official_templates__template_id__lock_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Unlock Official Template",
+        "description": "Gives back the edit lease of an official template, when the editor leaves the page. Does\nnothing when another super admin holds it.",
+        "operationId": "unlock_official_template_moderation_official_templates__template_id__lock_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates/{template_id}/publish": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Publish Official Template",
+        "description": "Publishes a draft official template: it is listed, playable and liked like any public\ntemplate, signed by TierList. Refused without tiles or while hidden. Written to the log.",
+        "operationId": "publish_official_template_moderation_official_templates__template_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, without tiles, hidden or not published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates/{template_id}/unpublish": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Unpublish Official Template",
+        "description": "Turns a published official template back into a draft, seen by the super admins only; it\nleaves the TierList picks. Games already started go on. Written to the log.",
+        "operationId": "unpublish_official_template_moderation_official_templates__template_id__unpublish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, without tiles, hidden or not published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates/{template_id}/feature": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Feature Official Template",
+        "description": "Puts a published official template in the TierList picks, first on the home page and on\nthe public templates. Refused for a draft. Written to the log.",
+        "operationId": "feature_official_template_moderation_official_templates__template_id__feature_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, without tiles, hidden or not published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates/{template_id}/unfeature": {
+      "post": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Unfeature Official Template",
+        "description": "Takes an official template out of the TierList picks. Written to the log.",
+        "operationId": "unfeature_official_template_moderation_official_templates__template_id__unfeature_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, without tiles, hidden or not published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moderation/official-templates/{template_id}": {
+      "delete": {
+        "tags": [
+          "moderation"
+        ],
+        "summary": "Delete Official Template",
+        "description": "Deletes an official template like any template: the super admins can restore or erase it\nfrom the deleted templates until the purge. Written to the log.",
+        "operationId": "delete_official_template_moderation_official_templates__template_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a super admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, without tiles, hidden or not published",
             "content": {
               "application/json": {
                 "schema": {
@@ -2175,6 +3034,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/featured": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "List Featured Templates",
+        "description": "The TierList picks, without an account: the featured official templates that are listed,\nmost recently featured first, at most six.",
+        "operationId": "list_featured_templates_marketplace_featured_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeaturedTemplatesResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -6712,7 +7603,7 @@
             }
           },
           "409": {
-            "description": "Super admin",
+            "description": "Super admin or official account",
             "content": {
               "application/json": {
                 "schema": {
@@ -7756,6 +8647,23 @@
         ],
         "title": "ErrorResponse"
       },
+      "FeaturedTemplatesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceTemplateResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "FeaturedTemplatesResponse",
+        "description": "The TierList picks: the featured official templates that are listed, most recently featured\nfirst."
+      },
       "FieldError": {
         "properties": {
           "field": {
@@ -8434,6 +9342,10 @@
             "type": "string",
             "title": "Owner Name"
           },
+          "featured": {
+            "type": "boolean",
+            "title": "Featured"
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -8477,6 +9389,7 @@
           "id",
           "name",
           "owner_name",
+          "featured",
           "tags",
           "tile_count",
           "like_count",
@@ -8485,7 +9398,7 @@
           "tier_colors"
         ],
         "title": "MarketplaceTemplateResponse",
-        "description": "A card of the marketplace. The preview is the image of the first tile:\n`preview_image_removed` is true when moderation removed it, and both are empty when the first\ntile has no image. `tier_colors` are the colors of the tiers, top to bottom."
+        "description": "A card of the marketplace. The preview is the image of the first tile:\n`preview_image_removed` is true when moderation removed it, and both are empty when the first\ntile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true\nfor an official template in the TierList picks."
       },
       "ModerationActionKind": {
         "type": "string",
@@ -8497,7 +9410,13 @@
           "ban",
           "lift_ban",
           "restore",
-          "purge"
+          "purge",
+          "create",
+          "edit",
+          "publish",
+          "unpublish",
+          "feature",
+          "unfeature"
         ],
         "title": "ModerationActionKind",
         "description": "Action d'un super admin, écrite au journal de modération (US-1.9)."
@@ -8553,7 +9472,14 @@
             "title": "Target Label"
           },
           "reason": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Reason"
           }
         },
@@ -8570,7 +9496,7 @@
           "reason"
         ],
         "title": "ModerationActionResponse",
-        "description": "An entry of the moderation log (US-1.9)."
+        "description": "An entry of the moderation log (US-1.9). `reason` is null for the editorial actions on the\nofficial templates."
       },
       "ModerationLogResponse": {
         "properties": {
@@ -8621,6 +9547,75 @@
         ],
         "title": "ModerationTargetType",
         "description": "Ce sur quoi porte une action de modération : les contenus signalables (US-1.2) et le\ncompte."
+      },
+      "OfficialTemplateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OfficialTemplateSummaryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "OfficialTemplateListResponse",
+        "description": "The official templates, most recently changed first."
+      },
+      "OfficialTemplateSummaryResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tile_count": {
+            "type": "integer",
+            "title": "Tile Count"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/TemplateVisibility"
+          },
+          "featured": {
+            "type": "boolean",
+            "title": "Featured"
+          },
+          "editing_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Editing By Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "tile_count",
+          "updated_at",
+          "visibility",
+          "featured",
+          "editing_by_name"
+        ],
+        "title": "OfficialTemplateSummaryResponse",
+        "description": "An official template in the list of the moderation area: draft (`private`) or published\n(`public`), in the TierList picks or not, and the super admin editing it, if any."
       },
       "OpenReportCountResponse": {
         "properties": {
@@ -8803,6 +9798,10 @@
             "type": "string",
             "title": "Owner Name"
           },
+          "featured": {
+            "type": "boolean",
+            "title": "Featured"
+          },
           "tags": {
             "items": {
               "type": "string"
@@ -8834,13 +9833,14 @@
           "id",
           "name",
           "owner_name",
+          "featured",
           "tags",
           "like_count",
           "tiers",
           "tiles"
         ],
         "title": "PublicTemplateResponse",
-        "description": "A public template as everyone sees it: its name, its owner's display name, its tags, its\nnumber of likes, its tiers and its tiles in their order."
+        "description": "A public template as everyone sees it: its name, its owner's display name, its tags, its\nnumber of likes, its tiers and its tiles in their order. `featured` is true for an official\ntemplate in the TierList picks."
       },
       "PublicTileResponse": {
         "properties": {
@@ -9729,7 +10729,7 @@
               "minLength": 1
             },
             "type": "array",
-            "maxItems": 5,
+            "maxItems": 20,
             "title": "Tags"
           }
         },
@@ -9887,6 +10887,10 @@
             "type": "integer",
             "title": "Max Tiles"
           },
+          "max_tags": {
+            "type": "integer",
+            "title": "Max Tags"
+          },
           "moderation": {
             "$ref": "#/components/schemas/TemplateModeration"
           },
@@ -9915,6 +10919,37 @@
               }
             ],
             "title": "First Made Public At"
+          },
+          "official": {
+            "type": "boolean",
+            "title": "Official"
+          },
+          "featured": {
+            "type": "boolean",
+            "title": "Featured"
+          },
+          "editing_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Editing By Name"
+          },
+          "editing_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Editing Until"
           }
         },
         "type": "object",
@@ -9927,13 +10962,18 @@
           "tiers",
           "tiles",
           "max_tiles",
+          "max_tags",
           "moderation",
           "moderation_reason",
           "visibility",
-          "first_made_public_at"
+          "first_made_public_at",
+          "official",
+          "featured",
+          "editing_by_name",
+          "editing_until"
         ],
         "title": "TemplateResponse",
-        "description": "A template with its tiers and its tiles sorted by position, and its tags in their order.\n`max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template\ngoes back to private."
+        "description": "A template with its tiers and its tiles sorted by position, and its tags in their order.\n`max_tiles` and `max_tags` are the maximum numbers of tiles and tags; `first_made_public_at` is\nkept when the template goes back to private. `official` is true for a template owned by the\nsite, edited by the super admins: `featured` is then true when it is in the TierList picks, and\n`editing_by_name` and `editing_until` name the super admin holding its edit lease, until when\n(both null when nobody holds it)."
       },
       "TemplateSummaryResponse": {
         "properties": {

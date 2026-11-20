@@ -21,8 +21,9 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.sql.dml import ReturningDelete
 
 from app.constants.marketplace import MarketplaceSort
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.models.account_ban import AccountBan
-from app.models.enums import TemplateModeration, TemplateVisibility
+from app.models.enums import TemplateModeration, TemplateVisibility, UserRole
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.template_like import TemplateLike
@@ -55,6 +56,40 @@ def get_owned_template(
         and_(
             Template.id == template_id,
             Template.owner_id == owner_id,
+            Template.deleted_at.is_(None),
+        ),
+        RowLock.UPDATE if for_update else None,
+    )
+
+
+def get_editable_template(
+    session: Session, template_id: uuid.UUID, user_id: uuid.UUID, for_update: bool = False
+) -> Template | None:
+    user_is_super_admin: ColumnElement[bool] = exists().where(
+        User.id == user_id, User.role == UserRole.SUPER_ADMIN
+    )
+    return _get_template_with_content(
+        session,
+        and_(
+            Template.id == template_id,
+            or_(
+                Template.owner_id == user_id,
+                and_(Template.owner_id == OFFICIAL_ACCOUNT_ID, user_is_super_admin),
+            ),
+            Template.deleted_at.is_(None),
+        ),
+        RowLock.UPDATE if for_update else None,
+    )
+
+
+def get_official_template(
+    session: Session, template_id: uuid.UUID, for_update: bool = False
+) -> Template | None:
+    return _get_template_with_content(
+        session,
+        and_(
+            Template.id == template_id,
+            Template.owner_id == OFFICIAL_ACCOUNT_ID,
             Template.deleted_at.is_(None),
         ),
         RowLock.UPDATE if for_update else None,
@@ -365,6 +400,42 @@ def list_marketplace_templates(
     return [
         (template, owner_name, count) for template, owner_name, count in session.execute(statement)
     ]
+
+
+def list_featured_templates(
+    session: Session, now: datetime, limit: int
+) -> list[tuple[Template, str, int]]:
+    like_counts = (
+        select(TemplateLike.template_id, func.count().label("like_count"))
+        .group_by(TemplateLike.template_id)
+        .subquery()
+    )
+    statement: Select[Template, str, int] = (
+        _listed_templates_with_owner_name(now)
+        .add_columns(func.coalesce(like_counts.c.like_count, 0))
+        .outerjoin(like_counts, like_counts.c.template_id == Template.id)
+        .where(Template.featured_at.is_not(None))
+        .order_by(Template.featured_at.desc(), Template.id.desc())
+        .limit(limit)
+    )
+    return [
+        (template, owner_name, count) for template, owner_name, count in session.execute(statement)
+    ]
+
+
+def list_official_templates_with_tile_count(session: Session) -> list[tuple[Template, int]]:
+    tile_count: ColumnElement[int] = (
+        select(func.count(Tile.id))
+        .where(Tile.template_id == Template.id)
+        .correlate(Template)
+        .scalar_subquery()
+    )
+    statement: Select[Template, int] = (
+        select(Template, tile_count)
+        .where(Template.owner_id == OFFICIAL_ACCOUNT_ID, Template.deleted_at.is_(None))
+        .order_by(Template.updated_at.desc(), Template.id.desc())
+    )
+    return [(template, count) for template, count in session.execute(statement)]
 
 
 def list_popular_listed_tags(session: Session, now: datetime, limit: int) -> list[str]:

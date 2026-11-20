@@ -108,6 +108,7 @@ def test_a_visitor_sees_the_cards_of_the_public_templates(
                 "id": template_id,
                 "name": "Pokémon",
                 "owner_name": "alice",
+                "featured": False,
                 "tags": ["Anime", "Jeux"],
                 "tile_count": 3,
                 "like_count": 0,

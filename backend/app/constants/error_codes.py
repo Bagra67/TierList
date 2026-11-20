@@ -35,6 +35,9 @@ class ErrorCode(StrEnum):
     TILE_LIMIT_REACHED = "tile_limit_reached"
     TILE_EMPTY = "tile_empty"
     INVALID_TAG = "invalid_tag"
+    TAG_LIMIT_REACHED = "tag_limit_reached"
+    OFFICIAL_TEMPLATE_LOCKED = "official_template_locked"
+    TEMPLATE_NOT_PUBLISHED = "template_not_published"
     CANNOT_LIKE_OWN_TEMPLATE = "cannot_like_own_template"
     INVALID_CURSOR = "invalid_cursor"
 

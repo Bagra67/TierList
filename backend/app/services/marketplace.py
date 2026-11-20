@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.constants.marketplace import MARKETPLACE_POPULAR_TAG_COUNT, MarketplaceSort
+from app.constants.templates import FEATURED_TEMPLATES_MAX
 from app.core.cursor import decode_cursor, encode_cursor, split_page
 from app.core.search_query import build_search_query
 from app.core.search_text import normalize_search_text
@@ -149,14 +150,27 @@ class MarketplaceService:
             limit=limit + 1,
         )
         page_rows, last_row = split_page(rows, limit)
-        template_ids: list[uuid.UUID] = [template.id for template, _, _ in page_rows]
+        next_cursor: str | None = (
+            None if last_row is None else _cursor_after(last_row[0], last_row[2], sort)
+        )
+        return MarketplacePage(items=self._cards(page_rows), next_cursor=next_cursor)
+
+    def list_featured(self) -> list[MarketplaceTemplate]:
+        return self._cards(
+            template_repository.list_featured_templates(
+                self._session, datetime.now(UTC), FEATURED_TEMPLATES_MAX
+            )
+        )
+
+    def _cards(self, rows: list[tuple[Template, str, int]]) -> list[MarketplaceTemplate]:
+        template_ids: list[uuid.UUID] = [template.id for template, _, _ in rows]
         tile_counts: dict[uuid.UUID, int] = template_repository.count_tiles_of_templates(
             self._session, template_ids
         )
         first_tiles: dict[uuid.UUID, Tile] = template_repository.list_first_tiles_of_templates(
             self._session, template_ids
         )
-        items: list[MarketplaceTemplate] = [
+        return [
             MarketplaceTemplate(
                 template,
                 owner_name,
@@ -164,12 +178,8 @@ class MarketplaceService:
                 tile_counts.get(template.id, 0),
                 first_tiles.get(template.id),
             )
-            for template, owner_name, like_count in page_rows
+            for template, owner_name, like_count in rows
         ]
-        next_cursor: str | None = (
-            None if last_row is None else _cursor_after(last_row[0], last_row[2], sort)
-        )
-        return MarketplacePage(items=items, next_cursor=next_cursor)
 
     def list_popular_tags(self) -> list[str]:
         return template_repository.list_popular_listed_tags(

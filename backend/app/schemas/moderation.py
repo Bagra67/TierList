@@ -22,7 +22,8 @@ ModerationReason = Annotated[
 
 
 class ModerationActionResponse(BaseModel):
-    """An entry of the moderation log (US-1.9)."""
+    """An entry of the moderation log (US-1.9). `reason` is null for the editorial actions on the
+    official templates."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -34,7 +35,7 @@ class ModerationActionResponse(BaseModel):
     target_type: ModerationTargetType
     target_id: uuid.UUID | None
     target_label: str
-    reason: str
+    reason: str | None
 
 
 class ModerationLogResponse(BaseModel):

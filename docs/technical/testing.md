@@ -62,7 +62,7 @@ Integration tests need PostgreSQL, and SeaweedFS for the image storage tests, to
 
 These tests check what fakes cannot: the real connection, the real SQL, the Alembic migrations and the S3 image storage. They are marked `integration`.
 
-Shared setup steps (register an account, ban it, create a template or a public template, make it private or delete it, add a tile with an image, send a report, play a game…) are functions of `tests/integration/helpers.py`: reuse them rather than redefining them in a test file.
+Shared setup steps (register an account, ban it, create a template or a public template, make it private or delete it, add a tile with an image, send a report, play a game…) are functions of `tests/integration/helpers.py`: reuse them rather than redefining them in a test file. The migrations create the official account (`OFFICIAL_ACCOUNT_ID`), present in every test database: `select_accounts()` selects the accounts without it, for a test that counts or reads the accounts.
 
 The fixtures in `tests/integration/conftest.py` prepare the database in steps. Each step uses the previous one:
 

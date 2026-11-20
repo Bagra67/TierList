@@ -22,6 +22,7 @@ from app.models.user import User
 from app.seed.sizes import SeedSize
 from app.services.image_storage import ImageStorage
 from app.services.images import ImageService
+from app.services.moderation_log import ModerationLogService
 from app.services.templates import TemplateService
 
 logger = logging.getLogger(__name__)
@@ -194,7 +195,9 @@ def create_templates(
     owners: list[User],
     rng: random.Random,
 ) -> SeedTemplates:
-    templates: TemplateService = TemplateService(session, settings)
+    templates: TemplateService = TemplateService(
+        session, settings, ModerationLogService(session, settings)
+    )
     images: ImageService = ImageService(session, settings, storage)
     owner_turns: Iterator[User] = cycle(owners)
 
@@ -276,7 +279,9 @@ def create_templates(
 
 
 def publish_templates(session: Session, settings: Settings, template_ids: list[uuid.UUID]) -> None:
-    templates: TemplateService = TemplateService(session, settings)
+    templates: TemplateService = TemplateService(
+        session, settings, ModerationLogService(session, settings)
+    )
     owners_query: Select[uuid.UUID, str, User] = (
         select(Template.id, Template.name, User)
         .join(User, User.id == Template.owner_id)

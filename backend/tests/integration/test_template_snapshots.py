@@ -12,6 +12,7 @@ from app.models.image import Image
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
+from app.services.moderation_log import ModerationLogService
 from app.services.templates import TemplateService
 
 pytestmark = pytest.mark.integration
@@ -27,7 +28,9 @@ def alice(db_session: Session) -> User:
 
 @pytest.fixture
 def service(db_session: Session) -> TemplateService:
-    return TemplateService(db_session, get_settings())
+    return TemplateService(
+        db_session, get_settings(), ModerationLogService(db_session, get_settings())
+    )
 
 
 def create_image(db_session: Session, owner: User) -> Image:
@@ -176,7 +179,9 @@ def test_the_snapshot_outlives_the_purge_of_its_template(
         update={"deleted_template_retention_days": 30}
     )
 
-    purged_count: int = TemplateService(db_session, purge_settings).purge_deleted()
+    purged_count: int = TemplateService(
+        db_session, purge_settings, ModerationLogService(db_session, purge_settings)
+    ).purge_deleted()
     db_session.refresh(snapshot)
 
     assert purged_count == 1

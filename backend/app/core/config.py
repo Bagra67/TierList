@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     auth_cookie_path: str = f"{API_PREFIX}/auth"
 
     deleted_template_retention_days: int = Field(default=30, gt=0)
+    official_template_lock_seconds: int = Field(default=120, gt=0)
 
     moderation_log_retention_days: int = Field(default=3 * 365, gt=0)
 
@@ -116,6 +117,10 @@ class Settings(BaseSettings):
     @property
     def deleted_template_retention(self) -> timedelta:
         return timedelta(days=self.deleted_template_retention_days)
+
+    @property
+    def official_template_lock(self) -> timedelta:
+        return timedelta(seconds=self.official_template_lock_seconds)
 
     @property
     def app_origin(self) -> str:

@@ -11,9 +11,10 @@ import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from httpx2 import Response
-from sqlalchemy import URL, Connection, event, select
+from sqlalchemy import URL, Connection, Select, event, select
 from sqlalchemy.orm import Session
 
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.models.account_ban import AccountBan
 from app.models.enums import RoomStatus, TemplateModeration, UserRole
 from app.models.image import Image
@@ -26,6 +27,10 @@ from app.services.email import Email
 BACKEND_DIR = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "alembic.ini").is_file()
 )
+
+
+def select_accounts() -> Select[User]:
+    return select(User).where(User.id != OFFICIAL_ACCOUNT_ID)
 
 
 def alembic_config(database_url: URL) -> Config:

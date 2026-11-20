@@ -22,6 +22,8 @@ from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
     InvalidTagError,
     LastTierError,
+    OfficialTemplateLockedError,
+    TagLimitReachedError,
     TemplateHasNoTilesError,
     TemplateHiddenError,
     TemplateNotFoundError,
@@ -30,7 +32,12 @@ from app.exceptions.templates import (
     TileLimitReachedError,
     TileNotFoundError,
 )
-from app.models.enums import TemplateModeration, TemplateVisibility
+from app.models.enums import (
+    ModerationActionKind,
+    ModerationTargetType,
+    TemplateModeration,
+    TemplateVisibility,
+)
 from app.models.image import Image, ImageStatus
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
@@ -42,6 +49,7 @@ from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import images as image_repository
 from app.repositories import templates as template_repository
+from app.services.moderation_log import ModerationLogService
 
 logger = logging.getLogger(__name__)
 
@@ -122,11 +130,20 @@ class TileChanges(TypedDict, total=False):
 
 
 class TemplateService:
-    def __init__(self, session: Session, settings: Settings) -> None:
+    def __init__(
+        self, session: Session, settings: Settings, moderation_log: ModerationLogService
+    ) -> None:
         self._session = session
         self._settings = settings
+        self._moderation_log = moderation_log
 
     def create(self, owner: User, name: str) -> Template:
+        template: Template = self.add_new(owner, name)
+        self._session.commit()
+        logger.info("Template créé : template_id=%s owner_id=%s", template.id, owner.id)
+        return template
+
+    def add_new(self, owner: User, name: str) -> Template:
         template: Template = Template(
             owner_id=owner.id,
             name=name,
@@ -137,8 +154,7 @@ class TemplateService:
         )
         _refresh_search_text(template)
         template_repository.add_template(self._session, template)
-        self._session.commit()
-        logger.info("Template créé : template_id=%s owner_id=%s", template.id, owner.id)
+        self._session.flush()
         return template
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
@@ -235,9 +251,17 @@ class TemplateService:
             )
         return removed_templates
 
-    def get(self, owner: User, template_id: uuid.UUID) -> Template:
+    def get(self, user: User, template_id: uuid.UUID) -> Template:
+        template: Template | None = template_repository.get_editable_template(
+            self._session, template_id, user.id
+        )
+        if template is None:
+            raise TemplateNotFoundError
+        return template
+
+    def _get_owned(self, owner: User, template_id: uuid.UUID, for_update: bool) -> Template:
         template: Template | None = template_repository.get_owned_template(
-            self._session, template_id, owner.id
+            self._session, template_id, owner.id, for_update=for_update
         )
         if template is None:
             raise TemplateNotFoundError
@@ -260,6 +284,8 @@ class TemplateService:
                 raise InvalidTagError
             if normalized_label in new_tags:
                 continue
+            if len(new_tags) == template.max_tags:
+                raise TagLimitReachedError(template.max_tags)
             tag: TemplateTag = current_tags.get(normalized_label) or TemplateTag(
                 normalized_label=normalized_label
             )
@@ -279,7 +305,7 @@ class TemplateService:
     def set_visibility(
         self, owner: User, template_id: uuid.UUID, visibility: TemplateVisibility
     ) -> Template:
-        template: Template = self._get_for_change(owner, template_id)
+        template: Template = self._get_owned(owner, template_id, for_update=True)
         if template.visibility == visibility:
             return template
         if visibility == TemplateVisibility.PUBLIC:
@@ -421,13 +447,35 @@ class TemplateService:
         logger.info("Snapshot prise : snapshot_id=%s template_id=%s", snapshot.id, template.id)
         return snapshot
 
-    def _get_for_change(self, owner: User, template_id: uuid.UUID) -> Template:
-        template: Template | None = template_repository.get_owned_template(
-            self._session, template_id, owner.id, for_update=True
+    def _get_for_change(self, user: User, template_id: uuid.UUID) -> Template:
+        template: Template | None = template_repository.get_editable_template(
+            self._session, template_id, user.id, for_update=True
         )
         if template is None:
             raise TemplateNotFoundError
+        if template.is_official:
+            self._check_holds_lease(user, template)
+            self._log_first_edit_of_lease(user, template)
         return template
+
+    @staticmethod
+    def _check_holds_lease(user: User, template: Template) -> None:
+        editor: User | None = template.active_editor(datetime.now(UTC))
+        if editor is None or editor.id != user.id:
+            raise OfficialTemplateLockedError(None if editor is None else editor.display_name)
+
+    def _log_first_edit_of_lease(self, user: User, template: Template) -> None:
+        if template.edit_logged:
+            return
+        self._moderation_log.record(
+            user,
+            ModerationActionKind.EDIT,
+            ModerationTargetType.TEMPLATE,
+            template.id,
+            template.name,
+            reason=None,
+        )
+        template.edit_logged = True
 
     def _save_change(self, template: Template) -> None:
         template.updated_at = func.clock_timestamp()
@@ -453,7 +501,7 @@ class TemplateService:
         raise TierNotFoundError
 
     def delete(self, owner: User, template_id: uuid.UUID) -> None:
-        template: Template = self.get(owner, template_id)
+        template: Template = self._get_owned(owner, template_id, for_update=False)
         template.deleted_at = datetime.now(UTC)
         self._session.commit()
         logger.info("Template supprimé : template_id=%s owner_id=%s", template.id, owner.id)

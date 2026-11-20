@@ -61,7 +61,7 @@ export function ModerationLogTable({ filters, emptyMessage }: ModerationLogTable
                   <td className="px-3 py-2">
                     <LogTarget entry={entry} />
                   </td>
-                  <td className="px-3 py-2">{entry.reason}</td>
+                  <td className="px-3 py-2">{entry.reason ?? t('moderation.log.noReason')}</td>
                 </tr>
               ))}
             </tbody>

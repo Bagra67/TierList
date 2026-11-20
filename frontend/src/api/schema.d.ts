@@ -339,8 +339,8 @@ export interface paths {
         };
         /**
          * Get Template
-         * @description A template of the account, with its tiers and its tiles sorted by position. 404 for a deleted
-         *     template or one of another account.
+         * @description A template of the account, or an official template for a super admin, with its tiers and its
+         *     tiles sorted by position. 404 for a deleted template or one of another account.
          */
         get: operations["get_template_templates__template_id__get"];
         put?: never;
@@ -392,9 +392,9 @@ export interface paths {
         get?: never;
         /**
          * Set Template Tags
-         * @description Replaces the tags of a template, by its owner: 5 at most, 30 characters at most each, with at
-         *     least one Latin letter or digit. A tag equal to an earlier one ignoring case and accents is
-         *     dropped; the first one is kept. Its last modification date is updated.
+         * @description Replaces the tags of a template: `max_tags` at most (409 past it), 30 characters at most
+         *     each, with at least one Latin letter or digit. A tag equal to an earlier one ignoring case and
+         *     accents is dropped; the first one is kept. Its last modification date is updated.
          */
         put: operations["set_template_tags_templates__template_id__tags_put"];
         post?: never;
@@ -495,6 +495,163 @@ export interface paths {
         patch: operations["update_tile_templates__template_id__tiles__tile_id__patch"];
         trace?: never;
     };
+    "/moderation/official-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Official Templates
+         * @description The official templates, drafts and published ones, most recently changed first, with the
+         *     super admin holding the edit lease of each.
+         */
+        get: operations["list_official_templates_moderation_official_templates_get"];
+        put?: never;
+        /**
+         * Create Official Template
+         * @description Creates an official template, owned by the site, as a draft with the default tiers. The
+         *     super admin who creates it holds its edit lease. Written to the log.
+         */
+        post: operations["create_official_template_moderation_official_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock Official Template
+         * @description Takes or renews the edit lease of an official template, for a few minutes: the editor
+         *     renews it while the page is open. Refused (409, with the `editor` display name) while another
+         *     super admin holds it. The template's content is changed through the /templates routes.
+         */
+        post: operations["lock_official_template_moderation_official_templates__template_id__lock_post"];
+        /**
+         * Unlock Official Template
+         * @description Gives back the edit lease of an official template, when the editor leaves the page. Does
+         *     nothing when another super admin holds it.
+         */
+        delete: operations["unlock_official_template_moderation_official_templates__template_id__lock_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Official Template
+         * @description Publishes a draft official template: it is listed, playable and liked like any public
+         *     template, signed by TierList. Refused without tiles or while hidden. Written to the log.
+         */
+        post: operations["publish_official_template_moderation_official_templates__template_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unpublish Official Template
+         * @description Turns a published official template back into a draft, seen by the super admins only; it
+         *     leaves the TierList picks. Games already started go on. Written to the log.
+         */
+        post: operations["unpublish_official_template_moderation_official_templates__template_id__unpublish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}/feature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Feature Official Template
+         * @description Puts a published official template in the TierList picks, first on the home page and on
+         *     the public templates. Refused for a draft. Written to the log.
+         */
+        post: operations["feature_official_template_moderation_official_templates__template_id__feature_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}/unfeature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unfeature Official Template
+         * @description Takes an official template out of the TierList picks. Written to the log.
+         */
+        post: operations["unfeature_official_template_moderation_official_templates__template_id__unfeature_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moderation/official-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Official Template
+         * @description Deletes an official template like any template: the super admins can restore or erase it
+         *     from the deleted templates until the purge. Written to the log.
+         */
+        delete: operations["delete_official_template_moderation_official_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/marketplace/templates": {
         parameters: {
             query?: never;
@@ -511,6 +668,27 @@ export interface paths {
          *     `q`, `tag` and `sort`.
          */
         get: operations["list_marketplace_templates_marketplace_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marketplace/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Featured Templates
+         * @description The TierList picks, without an account: the featured official templates that are listed,
+         *     most recently featured first, at most six.
+         */
+        get: operations["list_featured_templates_marketplace_featured_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1865,6 +2043,15 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["FieldError"][] | null;
         };
+        /**
+         * FeaturedTemplatesResponse
+         * @description The TierList picks: the featured official templates that are listed, most recently featured
+         *     first.
+         */
+        FeaturedTemplatesResponse: {
+            /** Items */
+            items: components["schemas"]["MarketplaceTemplateResponse"][];
+        };
         /** FieldError */
         FieldError: {
             /** Field */
@@ -2169,7 +2356,8 @@ export interface components {
          * MarketplaceTemplateResponse
          * @description A card of the marketplace. The preview is the image of the first tile:
          *     `preview_image_removed` is true when moderation removed it, and both are empty when the first
-         *     tile has no image. `tier_colors` are the colors of the tiers, top to bottom.
+         *     tile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true
+         *     for an official template in the TierList picks.
          */
         MarketplaceTemplateResponse: {
             /**
@@ -2181,6 +2369,8 @@ export interface components {
             name: string;
             /** Owner Name */
             owner_name: string;
+            /** Featured */
+            featured: boolean;
             /** Tags */
             tags: string[];
             /** Tile Count */
@@ -2199,10 +2389,11 @@ export interface components {
          * @description Action d'un super admin, écrite au journal de modération (US-1.9).
          * @enum {string}
          */
-        ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban" | "restore" | "purge";
+        ModerationActionKind: "dismiss" | "hide" | "unhide" | "delete" | "ban" | "lift_ban" | "restore" | "purge" | "create" | "edit" | "publish" | "unpublish" | "feature" | "unfeature";
         /**
          * ModerationActionResponse
-         * @description An entry of the moderation log (US-1.9).
+         * @description An entry of the moderation log (US-1.9). `reason` is null for the editorial actions on the
+         *     official templates.
          */
         ModerationActionResponse: {
             /**
@@ -2226,7 +2417,7 @@ export interface components {
             /** Target Label */
             target_label: string;
             /** Reason */
-            reason: string;
+            reason: string | null;
         };
         /**
          * ModerationLogResponse
@@ -2253,6 +2444,40 @@ export interface components {
          * @enum {string}
          */
         ModerationTargetType: "template" | "image" | "account" | "nickname" | "game";
+        /**
+         * OfficialTemplateListResponse
+         * @description The official templates, most recently changed first.
+         */
+        OfficialTemplateListResponse: {
+            /** Items */
+            items: components["schemas"]["OfficialTemplateSummaryResponse"][];
+        };
+        /**
+         * OfficialTemplateSummaryResponse
+         * @description An official template in the list of the moderation area: draft (`private`) or published
+         *     (`public`), in the TierList picks or not, and the super admin editing it, if any.
+         */
+        OfficialTemplateSummaryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Tile Count */
+            tile_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            visibility: components["schemas"]["TemplateVisibility"];
+            /** Featured */
+            featured: boolean;
+            /** Editing By Name */
+            editing_by_name: string | null;
+        };
         /**
          * OpenReportCountResponse
          * @description The number of contents that have at least one open report.
@@ -2350,7 +2575,8 @@ export interface components {
         /**
          * PublicTemplateResponse
          * @description A public template as everyone sees it: its name, its owner's display name, its tags, its
-         *     number of likes, its tiers and its tiles in their order.
+         *     number of likes, its tiers and its tiles in their order. `featured` is true for an official
+         *     template in the TierList picks.
          */
         PublicTemplateResponse: {
             /**
@@ -2362,6 +2588,8 @@ export interface components {
             name: string;
             /** Owner Name */
             owner_name: string;
+            /** Featured */
+            featured: boolean;
             /** Tags */
             tags: string[];
             /** Like Count */
@@ -2817,8 +3045,11 @@ export interface components {
         /**
          * TemplateResponse
          * @description A template with its tiers and its tiles sorted by position, and its tags in their order.
-         *     `max_tiles` is the maximum number of tiles; `first_made_public_at` is kept when the template
-         *     goes back to private.
+         *     `max_tiles` and `max_tags` are the maximum numbers of tiles and tags; `first_made_public_at` is
+         *     kept when the template goes back to private. `official` is true for a template owned by the
+         *     site, edited by the super admins: `featured` is then true when it is in the TierList picks, and
+         *     `editing_by_name` and `editing_until` name the super admin holding its edit lease, until when
+         *     (both null when nobody holds it).
          */
         TemplateResponse: {
             /**
@@ -2846,12 +3077,22 @@ export interface components {
             tiles: components["schemas"]["TileResponse"][];
             /** Max Tiles */
             max_tiles: number;
+            /** Max Tags */
+            max_tags: number;
             moderation: components["schemas"]["TemplateModeration"];
             /** Moderation Reason */
             moderation_reason: string | null;
             visibility: components["schemas"]["TemplateVisibility"];
             /** First Made Public At */
             first_made_public_at: string | null;
+            /** Official */
+            official: boolean;
+            /** Featured */
+            featured: boolean;
+            /** Editing By Name */
+            editing_by_name: string | null;
+            /** Editing Until */
+            editing_until: string | null;
         };
         /**
          * TemplateSummaryResponse
@@ -4271,6 +4512,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4413,6 +4663,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Maximum number of tags reached, or official template edited by another super admin */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Tag without a Latin letter or digit, or invalid request */
             422: {
                 headers: {
@@ -4464,6 +4723,15 @@ export interface operations {
             };
             /** @description Template not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4602,6 +4870,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4732,6 +5009,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -4795,6 +5081,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Tile without text nor image, or invalid request */
             422: {
                 headers: {
@@ -4802,6 +5097,632 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_official_templates_moderation_official_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialTemplateListResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_official_template_moderation_official_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    lock_official_template_moderation_official_templates__template_id__lock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unlock_official_template_moderation_official_templates__template_id__lock_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publish_official_template_moderation_official_templates__template_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, without tiles, hidden or not published */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unpublish_official_template_moderation_official_templates__template_id__unpublish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, without tiles, hidden or not published */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    feature_official_template_moderation_official_templates__template_id__feature_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, without tiles, hidden or not published */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unfeature_official_template_moderation_official_templates__template_id__unfeature_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, without tiles, hidden or not published */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    delete_official_template_moderation_official_templates__template_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a super admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, without tiles, hidden or not published */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
             /** @description Internal server error */
@@ -4855,6 +5776,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_featured_templates_marketplace_featured_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturedTemplatesResponse"];
                 };
             };
             /** @description Internal server error */
@@ -8008,7 +8958,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Super admin */
+            /** @description Super admin or official account */
             409: {
                 headers: {
                     [name: string]: unknown;

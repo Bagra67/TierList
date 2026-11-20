@@ -27,6 +27,7 @@ from app.exceptions.http import AppHTTPException
 from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import CannotLikeOwnTemplateError, TemplateNotFoundError
 from app.schemas.marketplace import (
+    FeaturedTemplatesResponse,
     LikeStateResponse,
     LikeStatesResponse,
     MarketplaceTagsResponse,
@@ -89,6 +90,17 @@ def list_marketplace_templates(
     return MarketplaceTemplateListResponse(
         items=[marketplace_template_response(item, storage) for item in page.items],
         next_cursor=page.next_cursor,
+    )
+
+
+@router.get("/featured")
+def list_featured_templates(
+    service: MarketplaceServiceDep, storage: ImageStorageDep
+) -> FeaturedTemplatesResponse:
+    """The TierList picks, without an account: the featured official templates that are listed,
+    most recently featured first, at most six."""
+    return FeaturedTemplatesResponse(
+        items=[marketplace_template_response(item, storage) for item in service.list_featured()]
     )
 
 

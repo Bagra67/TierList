@@ -46,7 +46,7 @@ class AccountBanService:
     ) -> AccountBan:
         now: datetime = datetime.now(UTC)
         user: User = self._get_user_for_update(user_id)
-        if user.is_super_admin:
+        if user.is_super_admin or user.is_official_account:
             raise CannotBanSuperAdminError
         if ends_at is not None and ends_at <= now:
             raise BanEndInPastError

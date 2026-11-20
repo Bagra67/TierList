@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import ColumnElement, Select, or_, select
 from sqlalchemy.orm import Session
 
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.models.enums import UserRole
 from app.models.user import User
 
@@ -44,7 +45,7 @@ def user_matches(query: str) -> ColumnElement[bool]:
 
 
 def search_users(session: Session, query: str | None, limit: int, offset: int) -> list[User]:
-    statement: Select[User] = select(User)
+    statement: Select[User] = select(User).where(User.id != OFFICIAL_ACCOUNT_ID)
     if query:
         statement = statement.where(user_matches(query))
     statement = statement.order_by(User.display_name, User.id).limit(limit).offset(offset)

@@ -57,6 +57,12 @@ class ModerationActionKind(StrEnum):
     LIFT_BAN = "lift_ban"
     RESTORE = "restore"
     PURGE = "purge"
+    CREATE = "create"
+    EDIT = "edit"
+    PUBLISH = "publish"
+    UNPUBLISH = "unpublish"
+    FEATURE = "feature"
+    UNFEATURE = "unfeature"
 
 
 class ModerationTargetType(StrEnum):

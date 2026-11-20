@@ -24,6 +24,7 @@ const chips: PublicTemplate = {
   id: templateId,
   name: 'Chips',
   owner_name: 'Camille',
+  featured: false,
   tags: ['apéro', 'snacks'],
   like_count: 12,
   tiers: [

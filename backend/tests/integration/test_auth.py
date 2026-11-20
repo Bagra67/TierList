@@ -21,7 +21,7 @@ from app.models.user import User
 from app.repositories import refresh_tokens as refresh_token_repository
 from app.repositories import users as user_repository
 from app.services.auth import AuthService, Registration
-from tests.integration.helpers import miss_first_lookup
+from tests.integration.helpers import miss_first_lookup, select_accounts
 
 pytestmark = pytest.mark.integration
 
@@ -50,7 +50,7 @@ def test_register_creates_the_account_and_returns_tokens(
     assert body["expires_in"] == 15 * 60
     assert "refresh_token" in response.cookies
 
-    user = db_session.scalars(select(User)).one()
+    user = db_session.scalars(select_accounts()).one()
     assert user.email == "alice@example.com"
     assert user.password_hash != PASSWORD
     stored = db_session.scalars(select(RefreshToken)).one()
@@ -200,7 +200,7 @@ def test_simultaneous_registrations_with_the_same_email_conflict(
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.EMAIL_ALREADY_REGISTERED
-    assert len(db_session.scalars(select(User)).all()) == 1
+    assert len(db_session.scalars(select_accounts()).all()) == 1
 
 
 def test_two_simultaneous_refreshes_of_a_token_are_handled_one_after_the_other(
@@ -387,7 +387,7 @@ def test_delete_account_removes_the_user_and_its_sessions(
 
     assert response.status_code == 204
     assert "refresh_token" not in auth_client.cookies
-    assert db_session.scalars(select(User)).all() == []
+    assert db_session.scalars(select_accounts()).all() == []
     assert db_session.scalars(select(RefreshToken)).all() == []
     assert auth_client.get("/auth/me", headers=bearer(access_token)).status_code == 401
     auth_client.cookies.set("refresh_token", refresh_token, path="/api/auth")
@@ -408,7 +408,7 @@ def test_delete_account_requires_the_right_password(auth_client: TestClient, db_
         "detail": messages.INCORRECT_PASSWORD,
         "code": ErrorCode.INCORRECT_PASSWORD,
     }
-    assert db_session.scalars(select(User)).one().email == "alice@example.com"
+    assert db_session.scalars(select_accounts()).one().email == "alice@example.com"
 
 
 def test_delete_account_requires_an_access_token(auth_client: TestClient):

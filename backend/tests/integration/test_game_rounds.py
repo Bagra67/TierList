@@ -16,6 +16,7 @@ from app.models.game import Game
 from app.models.participant import Participant
 from app.schemas.room_events import CooldownStartedEvent, RoundStartedEvent
 from app.services.games import GameService
+from app.services.moderation_log import ModerationLogService
 from app.services.rooms import RoomService
 from app.services.templates import TemplateService
 from tests.integration.conftest import RecordingRoomEventPublisher, RecordingRoundScheduler
@@ -121,7 +122,13 @@ def game_service(
 ) -> GameService:
     rooms: RoomService = RoomService(db_session, get_settings(), publisher)
     return GameService(
-        db_session, publisher, rooms, TemplateService(db_session, get_settings()), scheduler
+        db_session,
+        publisher,
+        rooms,
+        TemplateService(
+            db_session, get_settings(), ModerationLogService(db_session, get_settings())
+        ),
+        scheduler,
     )
 
 

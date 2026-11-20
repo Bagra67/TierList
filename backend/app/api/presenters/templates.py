@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from app.api.presenters.images import (
     image_url_for_super_admin,
     is_image_removed,
@@ -6,17 +8,25 @@ from app.api.presenters.images import (
 from app.models.image import ImageStatus
 from app.models.template import Template
 from app.models.tile import Tile
+from app.models.user import User
 from app.schemas.moderation import (
     DeletedTemplateResponse,
     ReviewedTemplateResponse,
     ReviewedTileResponse,
 )
-from app.schemas.templates import TemplateResponse, TierResponse, TileResponse
+from app.schemas.templates import (
+    OfficialTemplateSummaryResponse,
+    TemplateResponse,
+    TierResponse,
+    TileResponse,
+)
 from app.services.image_storage import ImageStorage
+from app.services.official_templates import OfficialTemplateSummary
 from app.services.template_moderation import DeletedTemplate, ReviewedTemplate
 
 
 def template_response(template: Template, storage: ImageStorage) -> TemplateResponse:
+    editor: User | None = template.active_editor(datetime.now(UTC))
     return TemplateResponse(
         id=template.id,
         name=template.name,
@@ -26,10 +36,30 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_tile_response(tile, storage) for tile in template.tiles],
         max_tiles=template.max_tiles,
+        max_tags=template.max_tags,
         moderation=template.moderation,
         moderation_reason=template.moderation_reason,
         visibility=template.visibility,
         first_made_public_at=template.first_made_public_at,
+        official=template.is_official,
+        featured=template.featured_at is not None,
+        editing_by_name=None if editor is None else editor.display_name,
+        editing_until=None if editor is None else template.editing_until,
+    )
+
+
+def official_template_summary_response(
+    summary: OfficialTemplateSummary,
+) -> OfficialTemplateSummaryResponse:
+    template: Template = summary.template
+    return OfficialTemplateSummaryResponse(
+        id=template.id,
+        name=template.name,
+        tile_count=summary.tile_count,
+        updated_at=template.updated_at,
+        visibility=template.visibility,
+        featured=template.featured_at is not None,
+        editing_by_name=summary.editor_name,
     )
 
 

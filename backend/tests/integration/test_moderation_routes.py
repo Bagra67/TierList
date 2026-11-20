@@ -19,6 +19,7 @@ MODERATION_ROUTES: tuple[str, ...] = (
     "/moderation/log",
     "/moderation/super-admins",
     "/moderation/templates/deleted",
+    "/moderation/official-templates",
 )
 
 
