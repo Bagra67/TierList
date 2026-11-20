@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from sqlalchemy import delete, exists, or_, select
 from sqlalchemy.orm import Session
 
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
+from app.models.enums import ModerationActionKind, ModerationTargetType
 from app.models.game import Game
 from app.models.game_player import GamePlayer
 from app.models.image import Image, ImageStatus
@@ -40,6 +42,16 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
         return SeedCleanup(accounts=0, games=0, images=0)
     logger.info("Suppression des données seed : %d comptes", len(seed_user_ids))
 
+    seed_official_template_ids = select(ModerationAction.target_id).where(
+        ModerationAction.actor_id.in_(seed_user_ids),
+        ModerationAction.action == ModerationActionKind.CREATE,
+        ModerationAction.target_type == ModerationTargetType.TEMPLATE,
+    )
+    session.execute(
+        delete(Template).where(
+            Template.owner_id == OFFICIAL_ACCOUNT_ID, Template.id.in_(seed_official_template_ids)
+        )
+    )
     session.execute(delete(ModerationAction).where(ModerationAction.actor_id.in_(seed_user_ids)))
     session.execute(
         delete(Report).where(

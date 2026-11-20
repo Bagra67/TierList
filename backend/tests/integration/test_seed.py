@@ -10,6 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
+from app.constants.templates import OFFICIAL_ACCOUNT_ID
 from app.core.config import get_settings
 from app.models.account_ban import AccountBan
 from app.models.enums import (
@@ -44,7 +45,7 @@ from tests.integration.helpers import JsonObject, counted_queries, select_accoun
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 580
+SMALL_SEED_MAX_QUERIES = 610
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -55,6 +56,7 @@ MODERATION_ACTIONS = (
     + SMALL_SIZE.permanently_banned_accounts
     + 2 * SMALL_SIZE.accounts_with_a_lifted_ban
     + 2
+    + 2 * SMALL_SIZE.official_templates
 )
 REPORTED_CONTENTS = (
     SMALL_SIZE.reported_images
@@ -188,7 +190,10 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
     assert len(hidden_template_ids) == SMALL_SIZE.hidden_templates
     public_templates: list[Template] = list(
         db_session.scalars(
-            select(Template).where(Template.visibility == TemplateVisibility.PUBLIC)
+            select(Template).where(
+                Template.visibility == TemplateVisibility.PUBLIC,
+                Template.owner_id != OFFICIAL_ACCOUNT_ID,
+            )
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
@@ -283,6 +288,28 @@ def test_the_seed_creates_reports_from_accounts_and_browsers(
     }
 
 
+def test_the_seed_creates_official_templates_one_draft_and_one_featured(
+    db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+
+    official: list[Template] = list(
+        db_session.scalars(
+            select(Template)
+            .where(Template.owner_id == OFFICIAL_ACCOUNT_ID)
+            .order_by(Template.created_at)
+        ).all()
+    )
+    assert len(official) == SMALL_SIZE.official_templates
+    assert [template.visibility for template in official] == [
+        TemplateVisibility.PUBLIC,
+        TemplateVisibility.PUBLIC,
+        TemplateVisibility.PRIVATE,
+    ]
+    assert [template.featured_at is not None for template in official] == [True, False, False]
+    assert all(template.tiles for template in official)
+
+
 def test_running_the_seed_again_replaces_its_data_only(
     db_session: Session, stored_images: dict[str, bytes]
 ):
@@ -308,6 +335,14 @@ def test_running_the_seed_again_replaces_its_data_only(
     assert count(db_session, TemplateSnapshot) == first_snapshots
     assert count(db_session, ModerationAction) == MODERATION_ACTIONS
     assert count(db_session, Report) == REPORTS
+    assert (
+        db_session.scalar(
+            select(func.count())
+            .select_from(Template)
+            .where(Template.owner_id == OFFICIAL_ACCOUNT_ID)
+        )
+        == SMALL_SIZE.official_templates
+    )
     assert db_session.scalars(
         select(Template.name).where(Template.owner_id == real_user.id)
     ).all() == ["Mine"]
