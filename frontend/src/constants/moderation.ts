@@ -8,5 +8,7 @@ export const REPORT_QUEUE_QUERY_KEY = ['moderation', 'reports'] as const;
 export const OPEN_REPORT_COUNT_QUERY_KEY = ['moderation', 'reports-count'] as const;
 export const HIDDEN_GAMES_QUERY_KEY = ['moderation', 'hidden-games'] as const;
 export const REVIEWED_TEMPLATE_QUERY_KEY = ['moderation', 'templates'] as const;
+export const DELETED_TEMPLATES_QUERY_KEY = ['moderation', 'deleted-templates'] as const;
+export const DELETED_TEMPLATE_URGENT_DAYS: number = 3;
 export const ACCOUNT_SEARCH_QUERY_KEY = ['moderation', 'accounts', 'search'] as const;
 export const ACCOUNT_QUERY_KEY = ['moderation', 'accounts', 'detail'] as const;

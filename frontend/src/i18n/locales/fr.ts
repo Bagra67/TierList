@@ -139,7 +139,7 @@ export const fr = {
       guests:
         "Lien personnel d'un invité : 30 jours. Une salle inactive est fermée après 24 heures.",
       deleted:
-        'Modèles supprimés : effacés définitivement après 30 jours. Images qui ne sont plus utilisées : effacées après 7 jours.',
+        'Modèles supprimés : effacés définitivement après 30 jours au plus. Images qui ne sont plus utilisées : effacées après 7 jours.',
       moderatedImages:
         "Images retirées par la modération : une image masquée est gardée hors ligne tant qu'elle est masquée ; une image supprimée est effacée aussitôt, et seule son empreinte est gardée, sans limite de durée, pour refuser qu'elle soit renvoyée. Le motif de la décision est gardé avec l'image pour que son propriétaire puisse le lire, jusqu'à la suppression de son compte.",
       backups: 'Sauvegardes de la base de données : 14 jours.',
@@ -157,7 +157,7 @@ export const fr = {
       publicTemplates:
         "Un modèle que vous rendez public peut être consulté par tout le monde, même sans compte : son nom, ses étiquettes, ses tiers, ses éléments (textes et images), votre pseudo et son nombre de j'aime. Toute personne connectée peut aussi créer une salle avec : les parties jouées en gardent une copie (nom, tiers, éléments), visible dans l'historique de leurs joueurs et sur leur lien de résultats, même si le modèle redevient privé ou est supprimé. Il peut aussi apparaître dans les moteurs de recherche et dans les aperçus de lien ; s'il redevient privé ou est supprimé, il peut y rester quelque temps, le temps que ces services mettent leur copie à jour.",
       moderation:
-        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
+        "Seuls les super admins (les fondateurs de TierList) voient le journal de modération et, pour les modérer, les images envoyées avec le nom de leur auteur, ainsi que les comptes : le pseudo, l'adresse e-mail, la date de création, si l'adresse est confirmée et les modèles, même privés, avec leurs tuiles. Ils voient aussi les modèles supprimés jusqu'à leur effacement, et peuvent en restaurer un ou l'effacer plus tôt. Le propriétaire d'un modèle ou d'une image que la modération a masqué ou supprimé voit la décision et son motif, dans ses modèles, et une personne bannie voit le motif de son bannissement quand elle tente de se connecter. Seuls les super admins voient les signalements : la personne signalée ne sait jamais qui l'a signalée. Après un signalement, un super admin peut masquer une partie et son lien de résultats, masquer ou supprimer un modèle public, ou remplacer un pseudo par un code neutre.",
       deletedAccount:
         "Après la suppression de votre compte, les parties terminées gardent votre pseudo et une copie du modèle joué, pour que les résultats des autres joueurs restent complets. Le journal de modération garde aussi votre nom tel qu'il était au moment d'une décision, jusqu'à la fin de sa durée de conservation. Vous pouvez demander l'effacement de votre pseudo par e-mail.",
     },
@@ -325,6 +325,7 @@ export const fr = {
       label: 'Espace de modération',
       reports: 'Signalements',
       uploads: 'Derniers envois',
+      deletedTemplates: 'Modèles supprimés',
       accounts: 'Comptes',
       log: 'Journal',
     },
@@ -566,6 +567,46 @@ export const fr = {
         submit: 'Supprimer',
         submitting: 'Suppression…',
       },
+      restore: {
+        title: 'Restaurer « {{name}} » ?',
+        description:
+          'Le modèle revient chez son propriétaire, masqué ou non et public ou privé comme avant sa suppression.',
+        submit: 'Restaurer',
+        submitting: 'Restauration…',
+      },
+      purge: {
+        title: 'Supprimer définitivement « {{name}} » ?',
+        description:
+          "Ses tiers, éléments et j'aime sont effacés. Les parties déjà jouées gardent leurs résultats. Cette action est définitive.",
+        submit: 'Supprimer définitivement',
+        submitting: 'Suppression…',
+      },
+    },
+    deletedTemplates: {
+      title: 'Modèles supprimés',
+      intro:
+        "Les modèles supprimés, avant leur effacement automatique. Les plus proches de l'effacement sont en haut.",
+      owner: 'Propriétaire',
+      ownerPlaceholder: 'Nom ou e-mail',
+      name: 'Nom du modèle',
+      namePlaceholder: 'Nom',
+      search: 'Rechercher',
+      from: 'Du',
+      to: 'Au',
+      tileCount_one: '{{count}} élément',
+      tileCount_other: '{{count}} éléments',
+      deletedByOwner: 'Supprimé par son propriétaire le {{date, datetime(dateStyle: medium)}}',
+      deletedOn: 'Supprimé le {{date, datetime(dateStyle: medium)}}',
+      byModeration: 'Par la modération',
+      reason: '« {{reason}} »',
+      eraseTonight: 'Effacé cette nuit',
+      eraseIn_one: 'Effacé dans {{count}} jour',
+      eraseIn_other: 'Effacé dans {{count}} jours',
+      eraseAt: 'Effacé automatiquement le {{date, datetime(dateStyle: long)}}',
+      empty: 'Aucun modèle supprimé.',
+      emptyFiltered: 'Aucun modèle supprimé ne correspond à ces filtres.',
+      more: 'Voir plus',
+      back: '← Modèles supprimés',
     },
     ban: {
       section: 'Bannissement',
