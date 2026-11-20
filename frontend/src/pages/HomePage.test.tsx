@@ -193,6 +193,42 @@ describe('HomePage', () => {
     ).toHaveAttribute('href', '/marketplace');
   });
 
+  it('puts the TierList picks first in the public templates preview', async () => {
+    stubBackend({
+      ...signedInWith(fourTemplates, fourGames),
+      'GET /marketplace/templates': popularTemplatesRoute('Fromages du monde'),
+      'GET /marketplace/featured': () =>
+        Response.json({
+          items: [
+            {
+              id: 'template-pick',
+              name: 'Jeux de société',
+              owner_name: 'TierList',
+              featured: true,
+              tags: [],
+              tile_count: 12,
+              like_count: 3,
+              preview_image_url: null,
+              preview_image_removed: false,
+              tier_colors: ['#FF3B6B'],
+            },
+          ],
+        }),
+    });
+
+    renderHomePage();
+
+    const section: HTMLElement = await screen.findByRole('region', {
+      name: 'Modèles publics populaires',
+    });
+    const names: string[] = within(section)
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent ?? '');
+    expect(names).toEqual(['Jeux de société', 'Fromages du monde']);
+    expect(within(section).getByText('Sélection TierList')).toBeInTheDocument();
+    expect(within(section).getByText(/par TierList/)).toBeInTheDocument();
+  });
+
   it('leads a new player to prepare a template, with no game yet', async () => {
     stubBackend(signedInWith([], []));
 

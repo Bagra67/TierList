@@ -169,6 +169,18 @@ export function useMarketplaceTemplates(
   });
 }
 
+async function listFeaturedTemplates(signal: AbortSignal): Promise<MarketplaceTemplate[]> {
+  return dataOrThrow(await apiClient.GET('/marketplace/featured', { signal })).items;
+}
+
+export function useFeaturedTemplates(): UseQueryResult<MarketplaceTemplate[]> {
+  return useQuery({
+    queryKey: [...MARKETPLACE_LIST_QUERY_KEY, 'featured'],
+    queryFn: ({ signal }) => listFeaturedTemplates(signal),
+    retry: retryUnlessClientError,
+  });
+}
+
 export function usePopularTemplates(count: number): UseQueryResult<MarketplaceTemplate[]> {
   return useQuery({
     queryKey: [...MARKETPLACE_LIST_QUERY_KEY, 'popular', count],

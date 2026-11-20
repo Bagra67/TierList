@@ -935,6 +935,10 @@ export const en: Translation = {
     },
   },
   marketplace: {
+    picks: {
+      title: 'TierList picks',
+      intro: "Ready-to-play templates, made by the site's team.",
+    },
     title: 'Public templates',
     intro: 'Find a tier list to play with your friends, or an idea to make your own.',
     search: {

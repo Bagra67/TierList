@@ -948,6 +948,10 @@ export const fr = {
     },
   },
   marketplace: {
+    picks: {
+      title: 'Sélection TierList',
+      intro: "Des modèles prêts à jouer, préparés par l'équipe du site.",
+    },
     title: 'Modèles publics',
     intro: 'Trouvez une tier list à jouer entre amis, ou une idée pour créer la vôtre.',
     search: {
