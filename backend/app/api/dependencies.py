@@ -56,7 +56,7 @@ def get_template_service(
     session: Annotated[Session, Depends(get_db_session)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> TemplateService:
-    return TemplateService(session, settings, ModerationLogService(session, settings))
+    return TemplateService(session, settings)
 
 
 def get_marketplace_service(
@@ -164,7 +164,7 @@ def build_game_service(
         session,
         publisher,
         rooms,
-        TemplateService(session, settings, ModerationLogService(session, settings)),
+        TemplateService(session, settings),
         scheduler,
     )
 

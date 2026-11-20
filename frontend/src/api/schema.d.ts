@@ -2445,6 +2445,19 @@ export interface components {
          */
         ModerationTargetType: "template" | "image" | "account" | "nickname" | "game";
         /**
+         * OfficialTemplateLeaseResponse
+         * @description The edit lease of an official template, held by the caller until `editing_until`.
+         */
+        OfficialTemplateLeaseResponse: {
+            /** Editing By Name */
+            editing_by_name: string;
+            /**
+             * Editing Until
+             * Format: date-time
+             */
+            editing_until: string;
+        };
+        /**
          * OfficialTemplateListResponse
          * @description The official templates, most recently changed first.
          */
@@ -5234,7 +5247,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TemplateResponse"];
+                    "application/json": components["schemas"]["OfficialTemplateLeaseResponse"];
                 };
             };
             /** @description Not authenticated */

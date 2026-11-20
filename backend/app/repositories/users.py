@@ -12,6 +12,13 @@ def get_user_by_id(session: Session, user_id: uuid.UUID) -> User | None:
     return session.get(User, user_id)
 
 
+def get_official_account(session: Session) -> User:
+    official_account: User | None = session.get(User, OFFICIAL_ACCOUNT_ID)
+    if official_account is None:
+        raise RuntimeError("The official account is created by the migration 7b2e4c9d1a03")
+    return official_account
+
+
 def get_user_for_update(session: Session, user_id: uuid.UUID) -> User | None:
     return session.get(User, user_id, with_for_update=True)
 
