@@ -171,7 +171,7 @@ Open to visitors (no user dependency, like the public template page):
 The super admins feature some official templates ([templates guide](templates.md#211-official-templates), #492); the players see them first.
 
 - **Route**: `GET /marketplace/featured`, open to visitors, without cursor nor parameter. `list_featured_templates` (`repositories/templates.py`) reads the **listed** templates (§2.2) whose `featured_at` is set, most recently featured first (`featured_at DESC, id DESC`), at most 6 (`FEATURED_TEMPLATES_MAX`), with their like counts in the same query; `MarketplaceService.list_featured` adds the tile counts and first tiles like a page of the list (`_cards`).
-- **Only official templates**: only `OfficialTemplateService.feature` sets `featured_at`, on a published official template; unpublishing or deleting it clears the column. A featured template that stops being listed (hidden) leaves the picks without a change of the column.
+- **Only official templates**: only `OfficialTemplateService.feature` sets `featured_at`, on a published official template; unpublishing or deleting it clears the column. Hiding or deleting it through the moderation also clears `featured_at` (`unfeature_template`).
 - **`featured`**: `MarketplaceTemplateResponse` and `PublicTemplateResponse` carry it (`featured_at IS NOT NULL`), so a pick also has its badge in the list, in a search and on its public page.
 - **Order**: the most recently featured first; there is no manual ordering.
 - A pick is also listed in `GET /marketplace/templates` under the usual sorts: the row does not remove it from the list.

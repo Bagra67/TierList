@@ -303,7 +303,6 @@ The site publishes its own templates, signed « TierList » (#492). The super ad
 ### 2.12 Known limitations
 
 - No pagination of the list yet (#105).
-- No super admin view of deleted templates yet (#104).
 
 ## 3. In the code
 
