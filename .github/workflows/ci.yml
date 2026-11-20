@@ -267,7 +267,7 @@ jobs:
         run: echo "version=$(jq -r '.devDependencies["@playwright/test"]' frontend/package.json)" >> "$GITHUB_OUTPUT"
 
   # Runs in the Playwright image, which has the browsers and their system libraries: installing
-  # them with apt on the runner took up to 10 minutes when the Ubuntu mirror was slow.
+  # them with apt on the runner depends on the Ubuntu mirror and can take up to 10 minutes.
   e2e:
     name: E2E (${{ matrix.browser }})
     needs: [changes, playwright-version]
