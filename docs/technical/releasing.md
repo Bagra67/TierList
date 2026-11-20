@@ -42,7 +42,7 @@ The highest change since the last release wins: one `feat` and three `fix` give 
 
    The workflow is triggered by `workflow_run`, so GitHub runs the version of `release.yml` found on the **default branch**, `develop`: a change to this file applies as soon as it is merged into `develop`, before the next release.
 
-4. **Deployment**: once the tag exists, the `Deploy` workflow deploys the release to production after the approval of the `production` environment ([deployment guide](deployment.md)). To roll back, run Deploy by hand with the previous tag. Migrations must therefore stay compatible with the previous version: add a column (nullable or with a default) in one release, and remove the old one in a later release, so that a rollback never needs a downgrade.
+4. **Deployment**: once the tag exists, the `Deploy` workflow deploys the release to production after the approval of the `production` environment ([deployment guide](deployment.md)). To roll back, run Deploy by hand with the previous tag. Migrations must stay compatible with the previous version, for two reasons: they run while the previous version still serves (the pod switches versions without a cut, [deployment guide](deployment.md#24-bundle-and-pod-layout)), and a rollback never runs a downgrade. Add a column (nullable or with a default) in one release, and remove the old one in a later release.
 
 ## How the version is computed
 
