@@ -170,15 +170,18 @@ export function useOfficialTemplateLock(
       void unlockOfficialTemplate(templateId).catch(() => undefined);
     }
 
+    function renewWhileVisible() {
+      if (document.visibilityState === 'visible') void takeLease();
+    }
+
     void takeLease();
-    const timer: number = window.setInterval(
-      () => void takeLease(),
-      OFFICIAL_TEMPLATE_LOCK_RENEW_MS,
-    );
+    const timer: number = window.setInterval(renewWhileVisible, OFFICIAL_TEMPLATE_LOCK_RENEW_MS);
+    document.addEventListener('visibilitychange', renewWhileVisible);
     window.addEventListener('pagehide', giveBackLease);
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', renewWhileVisible);
       window.removeEventListener('pagehide', giveBackLease);
       giveBackLease();
     };
