@@ -910,8 +910,7 @@ export const en: Translation = {
       back: 'Official templates',
       lockedBy: '{{editor}} is editing this template right now.',
       lockedByAnother: 'Another super admin is editing this template right now.',
-      readOnly:
-        'You see it read-only; the page unlocks by itself once the editor is free, at most 2 minutes later.',
+      readOnly: 'You see it read-only; the page unlocks by itself once the editor is free.',
     },
     status: {
       title: 'Publishing',
@@ -928,7 +927,7 @@ export const en: Translation = {
       open: 'Delete the template',
       title: 'Delete “{{name}}”?',
       warning:
-        'It leaves the public templates. It stays 30 days in Deleted templates, where a super admin can restore it.',
+        'It leaves the public templates. It stays in Deleted templates until it is erased, and a super admin can restore it.',
       cancel: 'Cancel',
       submit: 'Delete',
       submitting: 'Deleting…',

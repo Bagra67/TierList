@@ -924,7 +924,7 @@ export const fr = {
       lockedBy: '{{editor}} modifie ce modèle en ce moment.',
       lockedByAnother: 'Un autre super admin modifie ce modèle en ce moment.',
       readOnly:
-        "Vous le voyez en lecture seule ; la page se débloque d'elle-même quand l'éditeur se libère, au plus tard 2 minutes après.",
+        "Vous le voyez en lecture seule ; la page se débloque d'elle-même quand l'éditeur se libère.",
     },
     status: {
       title: 'Publication',
@@ -941,7 +941,7 @@ export const fr = {
       open: 'Supprimer le modèle',
       title: 'Supprimer « {{name}} » ?',
       warning:
-        'Il quitte les modèles publics. Il reste 30 jours dans Modèles supprimés, où un super admin peut le restaurer.',
+        "Il quitte les modèles publics. Il reste dans Modèles supprimés jusqu'à son effacement, et un super admin peut le restaurer.",
       cancel: 'Annuler',
       submit: 'Supprimer',
       submitting: 'Suppression…',
