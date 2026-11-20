@@ -42,8 +42,6 @@ OFFICIAL_THEMES: tuple[tuple[str, tuple[str, ...]], ...] = (
 def create_official_templates(
     session: Session, settings: Settings, super_admins: list[User], count: int
 ) -> int:
-    """Creates `count` official templates: the first one published and featured, the last one a
-    draft, the others published. Returns the number of log entries written."""
     if count > len(OFFICIAL_THEMES):
         raise ValueError(f"The seed has {len(OFFICIAL_THEMES)} official templates at most")
     official_account: User = user_repository.get_official_account(session)
@@ -56,11 +54,12 @@ def create_official_templates(
         template: Template = templates.add_new(official_account, name)
         template.tiles = [Tile(text=text, position=position) for position, text in enumerate(items)]
         actions: list[ModerationActionKind] = [ModerationActionKind.CREATE]
-        if index < count - 1:
+        is_last_kept_as_draft: bool = index == count - 1
+        if not is_last_kept_as_draft:
             template.visibility = TemplateVisibility.PUBLIC
             template.first_made_public_at = now
             actions.append(ModerationActionKind.PUBLISH)
-        if index == 0:
+        if index == 0 and not is_last_kept_as_draft:
             template.featured_at = now
             actions.append(ModerationActionKind.FEATURE)
         for action in actions:
@@ -69,5 +68,5 @@ def create_official_templates(
             )
         log_entries += len(actions)
     session.commit()
-    logger.info("Modèles officiels : %d, dont un brouillon et un mis en avant", count)
+    logger.info("Modèles officiels : %d", count)
     return log_entries

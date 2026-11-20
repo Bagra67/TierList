@@ -296,6 +296,7 @@ def list_owned_templates_with_tile_count(
         .group_by(Template.id)
         .order_by(Template.updated_at.desc(), Template.id.desc())
         .limit(limit)
+        .options(selectinload(Template.editing_by))
     )
     if after is not None:
         statement = statement.where(tuple_(Template.updated_at, Template.id) < tuple_(*after))

@@ -287,7 +287,7 @@ class TemplateService:
         template: Template = self._get_for_change(owner, template_id)
         template.name = name
         _refresh_search_text(template)
-        self._session.commit()
+        self._commit_change(owner, template)
         return template
 
     def set_tags(self, owner: User, template_id: uuid.UUID, labels: list[str]) -> Template:
@@ -310,7 +310,7 @@ class TemplateService:
             new_tags[normalized_label] = tag
         template.tags = list(new_tags.values())
         _refresh_search_text(template)
-        self._save_change(template)
+        self._save_change(owner, template)
         logger.info(
             "Étiquettes du modèle changées : template_id=%s tag_count=%s",
             template_id,
@@ -342,7 +342,7 @@ class TemplateService:
             name=NEW_TIER_NAME, color=NEW_TIER_COLOR, position=len(template.tiers)
         )
         template.tiers.append(new_tier)
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def update_tier(
@@ -362,7 +362,7 @@ class TemplateService:
                 setattr(tier, field_name, value)
         if "position" in changes:
             _move(template.tiers, tier, changes["position"])
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def delete_tier(self, owner: User, template_id: uuid.UUID, tier_id: uuid.UUID) -> Template:
@@ -372,7 +372,7 @@ class TemplateService:
             raise LastTierError
         template.tiers.remove(tier)
         _renumber(template.tiers)
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def add_tile(
@@ -391,7 +391,7 @@ class TemplateService:
             self._check_owned_image(owner, image_id)
         new_tile: Tile = Tile(text=text, image_id=image_id, position=len(template.tiles))
         template.tiles.append(new_tile)
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def update_tile(
@@ -417,7 +417,7 @@ class TemplateService:
                 setattr(tile, field_name, value)
         if "position" in changes:
             _move(template.tiles, tile, changes["position"])
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def delete_tile(self, owner: User, template_id: uuid.UUID, tile_id: uuid.UUID) -> Template:
@@ -425,7 +425,7 @@ class TemplateService:
         tile: Tile = self._get_tile(template, tile_id)
         template.tiles.remove(tile)
         _renumber(template.tiles)
-        self._save_change(template)
+        self._save_change(owner, template)
         return template
 
     def take_snapshot(self, user: User, template_id: uuid.UUID) -> TemplateSnapshot:
@@ -463,7 +463,6 @@ class TemplateService:
             raise TemplateNotFoundError
         if template.is_official:
             self._check_holds_lease(user, template)
-            self._log_first_edit_of_lease(user, template)
         return template
 
     @staticmethod
@@ -473,7 +472,7 @@ class TemplateService:
             raise OfficialTemplateLockedError(None if editor is None else editor.display_name)
 
     def _log_first_edit_of_lease(self, user: User, template: Template) -> None:
-        if template.edit_logged:
+        if not template.is_official or template.edit_logged:
             return
         self._moderation_log.record(
             user,
@@ -485,8 +484,12 @@ class TemplateService:
         )
         template.edit_logged = True
 
-    def _save_change(self, template: Template) -> None:
+    def _save_change(self, user: User, template: Template) -> None:
         template.updated_at = func.clock_timestamp()
+        self._commit_change(user, template)
+
+    def _commit_change(self, user: User, template: Template) -> None:
+        self._log_first_edit_of_lease(user, template)
         self._session.commit()
 
     def _check_owned_image(self, owner: User, image_id: uuid.UUID) -> None:
