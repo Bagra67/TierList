@@ -208,6 +208,14 @@ def get_template_for_update(session: Session, template_id: uuid.UUID) -> Templat
     return session.get(Template, template_id, with_for_update=True)
 
 
+def unfeature_template(session: Session, template_id: uuid.UUID) -> None:
+    session.execute(
+        update(Template)
+        .where(Template.id == template_id)
+        .values(featured_at=None, updated_at=Template.updated_at)
+    )
+
+
 def set_template_moderation(
     session: Session,
     template_id: uuid.UUID,
