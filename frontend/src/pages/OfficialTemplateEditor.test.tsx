@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { Template } from '../api/templates';
+import { OFFICIAL_TEMPLATE_LOCK_RENEW_MS } from '../constants/templates';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { alice, calledRoutes, errorResponse, stubBackend } from '../test/stubBackend';
 import { TemplateEditorPage } from './TemplateEditorPage';
@@ -112,6 +113,23 @@ describe('TemplateEditorPage for an official template', () => {
     expect(screen.getByText('Comté')).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Nom du modèle' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Publication' })).not.toBeInTheDocument();
+  });
+
+  it('stops renewing the lease while the tab is hidden', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const fetchMock = stubBackend({
+      [`GET ${templateUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(cheeses),
+    });
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+
+    renderOfficialEditor();
+    await screen.findByRole('heading', { name: 'Publication' });
+    await vi.advanceTimersByTimeAsync(OFFICIAL_TEMPLATE_LOCK_RENEW_MS * 2);
+
+    expect(calledRoutes(fetchMock).filter((route) => route === `POST ${lockUrl}`)).toHaveLength(1);
+    visibility.mockRestore();
+    vi.useRealTimers();
   });
 
   it('gives the lease back when leaving the page', async () => {

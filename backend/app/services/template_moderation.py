@@ -106,6 +106,7 @@ class TemplateModerationService:
         template_repository.set_template_moderation(
             self._session, template.id, TemplateModeration.HIDDEN, reason
         )
+        template_repository.unfeature_template(self._session, template.id)
         self._record(super_admin, ModerationActionKind.HIDE, template, reason)
         self._session.commit()
         logger.info(
@@ -132,6 +133,7 @@ class TemplateModerationService:
         template_repository.mark_template_deleted(
             self._session, template.id, datetime.now(UTC), reason
         )
+        template_repository.unfeature_template(self._session, template.id)
         self._record(super_admin, ModerationActionKind.DELETE, template, reason)
         self._session.commit()
         logger.info(
