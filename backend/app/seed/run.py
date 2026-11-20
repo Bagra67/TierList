@@ -25,6 +25,7 @@ from app.seed.moderation import (
     moderate_templates,
 )
 from app.seed.no_op import NoOpRoomEventPublisher
+from app.seed.official_templates import create_official_templates
 from app.seed.reports import SeedReports, create_reports
 from app.seed.rooms import (
     SeedRooms,
@@ -119,6 +120,9 @@ def run_seed(
             templates_to_hide, templates, size.public_templates
         )
         publish_templates(session, settings, published)
+        official_log_entries: int = create_official_templates(
+            session, settings, accounts.super_admins, size.official_templates
+        )
         like_public_templates(
             session,
             player_ids,
@@ -162,7 +166,10 @@ def run_seed(
         + len(accounts.players)
         + len(accounts.unverified)
         + len(accounts.google),
-        templates=len(templates.playable) + len(templates.empty) + len(templates.deleted),
+        templates=len(templates.playable)
+        + len(templates.empty)
+        + len(templates.deleted)
+        + size.official_templates,
         images=size.image_templates * size.image_tiles_per_template,
         closed_games=len(played.closed),
         open_rooms=len(played.open_rooms_with_past_games)
@@ -173,7 +180,8 @@ def run_seed(
         + moderated_images
         + moderated_templates
         + banned_accounts
-        + reports.moderation_actions,
+        + reports.moderation_actions
+        + official_log_entries,
         reports=reports.reports,
     )
 

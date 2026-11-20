@@ -25,6 +25,7 @@ class SeedSize:
     hidden_images: int
     deleted_images: int
     public_templates: int
+    official_templates: int
     hidden_templates: int
     templates_deleted_by_moderation: int
     temporarily_banned_accounts: int
@@ -60,6 +61,7 @@ FULL_SIZE: SeedSize = SeedSize(
     hidden_images=3,
     deleted_images=1,
     public_templates=6,
+    official_templates=3,
     hidden_templates=2,
     templates_deleted_by_moderation=2,
     temporarily_banned_accounts=1,
@@ -95,6 +97,7 @@ SMALL_SIZE: SeedSize = SeedSize(
     hidden_images=1,
     deleted_images=1,
     public_templates=2,
+    official_templates=3,
     hidden_templates=1,
     templates_deleted_by_moderation=1,
     temporarily_banned_accounts=1,
