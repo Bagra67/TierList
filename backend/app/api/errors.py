@@ -55,6 +55,14 @@ def invalid_cursor() -> AppHTTPException:
     )
 
 
+def template_not_published() -> AppHTTPException:
+    return AppHTTPException(
+        status_code=409,
+        code=ErrorCode.TEMPLATE_NOT_PUBLISHED,
+        detail=messages.TEMPLATE_NOT_PUBLISHED,
+    )
+
+
 def official_template_locked(editor_name: str | None) -> AppHTTPException:
     if editor_name is None:
         return AppHTTPException(

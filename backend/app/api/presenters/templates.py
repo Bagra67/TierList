@@ -21,7 +21,6 @@ from app.schemas.templates import (
     TileResponse,
 )
 from app.services.image_storage import ImageStorage
-from app.services.official_templates import OfficialTemplateSummary
 from app.services.template_moderation import DeletedTemplate, ReviewedTemplate
 
 
@@ -49,17 +48,17 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
 
 
 def official_template_summary_response(
-    summary: OfficialTemplateSummary,
+    template: Template, tile_count: int
 ) -> OfficialTemplateSummaryResponse:
-    template: Template = summary.template
+    editor: User | None = template.active_editor(datetime.now(UTC))
     return OfficialTemplateSummaryResponse(
         id=template.id,
         name=template.name,
-        tile_count=summary.tile_count,
+        tile_count=tile_count,
         updated_at=template.updated_at,
         visibility=template.visibility,
         featured=template.featured_at is not None,
-        editing_by_name=summary.editor_name,
+        editing_by_name=None if editor is None else editor.display_name,
     )
 
 

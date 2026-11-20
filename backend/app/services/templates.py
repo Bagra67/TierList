@@ -73,6 +73,19 @@ def _refresh_search_text(template: Template) -> None:
     ).strip()
 
 
+def check_publishable(template: Template) -> None:
+    if template.moderation == TemplateModeration.HIDDEN:
+        raise TemplateHiddenError
+    if not template.tiles:
+        raise TemplateHasNoTilesError
+
+
+def mark_made_public(template: Template) -> None:
+    template.visibility = TemplateVisibility.PUBLIC
+    if template.first_made_public_at is None:
+        template.first_made_public_at = func.clock_timestamp()
+
+
 @dataclass(frozen=True)
 class RemovedImage:
     tile_id: uuid.UUID
@@ -131,11 +144,14 @@ class TileChanges(TypedDict, total=False):
 
 class TemplateService:
     def __init__(
-        self, session: Session, settings: Settings, moderation_log: ModerationLogService
+        self,
+        session: Session,
+        settings: Settings,
+        moderation_log: ModerationLogService | None = None,
     ) -> None:
         self._session = session
         self._settings = settings
-        self._moderation_log = moderation_log
+        self._moderation_log = moderation_log or ModerationLogService(session, settings)
 
     def create(self, owner: User, name: str) -> Template:
         template: Template = self.add_new(owner, name)
@@ -309,24 +325,16 @@ class TemplateService:
         if template.visibility == visibility:
             return template
         if visibility == TemplateVisibility.PUBLIC:
-            self._check_can_be_made_public(owner, template)
-            if template.first_made_public_at is None:
-                template.first_made_public_at = func.clock_timestamp()
+            if not owner.email_verified:
+                raise EmailNotVerifiedError
+            check_publishable(template)
+            mark_made_public(template)
         template.visibility = visibility
         self._session.commit()
         logger.info(
             "Visibilité du modèle changée : template_id=%s visibility=%s", template.id, visibility
         )
         return template
-
-    @staticmethod
-    def _check_can_be_made_public(owner: User, template: Template) -> None:
-        if not owner.email_verified:
-            raise EmailNotVerifiedError
-        if template.moderation == TemplateModeration.HIDDEN:
-            raise TemplateHiddenError
-        if not template.tiles:
-            raise TemplateHasNoTilesError
 
     def add_tier(self, owner: User, template_id: uuid.UUID) -> Template:
         template: Template = self._get_for_change(owner, template_id)
