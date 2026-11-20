@@ -19,7 +19,7 @@ from app.api.dependencies import (
 from app.api.errors import image_not_found, template_not_found
 from app.api.presenters.images import recent_upload_response
 from app.api.presenters.reports import reported_content_response
-from app.api.presenters.templates import reviewed_template_response
+from app.api.presenters.templates import deleted_template_response, reviewed_template_response
 from app.api.responses import SUPER_ADMIN_RESPONSES
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -27,6 +27,9 @@ from app.constants.moderation import (
     ACCOUNT_SEARCH_PAGE_SIZE_DEFAULT,
     ACCOUNT_SEARCH_PAGE_SIZE_MAX,
     ACCOUNT_SEARCH_QUERY_MAX_LENGTH,
+    DELETED_TEMPLATES_OWNER_FILTER_MAX_LENGTH,
+    DELETED_TEMPLATES_PAGE_SIZE_DEFAULT,
+    DELETED_TEMPLATES_PAGE_SIZE_MAX,
     MODERATION_LOG_PAGE_SIZE_DEFAULT,
     MODERATION_LOG_PAGE_SIZE_MAX,
     MODERATION_TARGET_LABEL_MAX_LENGTH,
@@ -36,6 +39,7 @@ from app.constants.moderation import (
     REPORT_QUEUE_PAGE_SIZE_DEFAULT,
     REPORT_QUEUE_PAGE_SIZE_MAX,
 )
+from app.constants.templates import TEMPLATE_NAME_MAX_LENGTH
 from app.core.errors import ErrorResponse
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.http import AppHTTPException
@@ -62,6 +66,7 @@ from app.schemas.moderation import (
     AccountSearchResponse,
     AccountSummaryResponse,
     BanAccountRequest,
+    DeletedTemplatesResponse,
     DismissReportsRequest,
     HiddenGameResponse,
     HiddenGamesResponse,
@@ -81,7 +86,7 @@ from app.services.account_review import AccountDetails, AccountSearchPage, Hidde
 from app.services.moderation_log import ModerationLogPage
 from app.services.recent_uploads import RecentUploadsPage
 from app.services.report_queue import HiddenGamesPage, ReportQueuePage
-from app.services.template_moderation import ReviewedTemplate
+from app.services.template_moderation import DeletedTemplatesPage, ReviewedTemplate
 
 router = APIRouter(prefix="/moderation", tags=["moderation"])
 
@@ -404,6 +409,34 @@ def list_recent_uploads(
     )
 
 
+@router.get("/templates/deleted", responses=SUPER_ADMIN_RESPONSES)
+def list_deleted_templates(
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+    limit: Annotated[
+        int, Query(ge=1, le=DELETED_TEMPLATES_PAGE_SIZE_MAX)
+    ] = DELETED_TEMPLATES_PAGE_SIZE_DEFAULT,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    owner: Annotated[
+        str | None, Query(max_length=DELETED_TEMPLATES_OWNER_FILTER_MAX_LENGTH)
+    ] = None,
+    name: Annotated[str | None, Query(max_length=TEMPLATE_NAME_MAX_LENGTH)] = None,
+    deleted_after: AwareDatetime | None = None,
+    deleted_before: AwareDatetime | None = None,
+) -> DeletedTemplatesResponse:
+    """The deleted templates not yet erased, the closest to the automatic purge first, with their
+    owner and the reason of a deletion by the moderation. Filters: `owner` (name or email,
+    case-insensitive), `name`, `deleted_after` and `deleted_before`. Paginated by `limit` and
+    `offset`."""
+    page: DeletedTemplatesPage = service.list_deleted(
+        limit, offset, owner, name, deleted_after, deleted_before
+    )
+    return DeletedTemplatesResponse(
+        templates=[deleted_template_response(deleted) for deleted in page.templates],
+        has_more=page.has_more,
+    )
+
+
 @router.get(
     "/templates/{template_id}",
     responses={
@@ -417,7 +450,9 @@ def get_template_for_review(
     service: TemplateModerationServiceDep,
     storage: ImageStorageDep,
 ) -> ReviewedTemplateResponse:
-    """Reads the content of a non-deleted template, even a private one (US-1.8). Read-only."""
+    """Reads the content of a template, even a private or a deleted one (US-1.8). Read-only. A
+    deleted template carries `deleted_at`, the date of its automatic purge (`erase_at`) and the
+    reason of a deletion by the moderation (`deletion_reason`)."""
     try:
         reviewed: ReviewedTemplate = service.review(template_id)
     except TemplateNotFoundError as exc:
@@ -476,6 +511,44 @@ def delete_template(
     reason until the purge. Written to the log."""
     try:
         service.delete(super_admin, template_id, body.reason)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except TemplateModerationConflictError as exc:
+        raise _template_moderation_conflict() from exc
+
+
+@router.post(
+    "/templates/{template_id}/restore", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
+)
+def restore_template(
+    template_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+) -> None:
+    """Restores a deleted template, deleted by its owner or by the moderation: it comes back to its
+    owner, hidden or not and public or private as before. Written to the log."""
+    try:
+        service.restore(super_admin, template_id, body.reason)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except TemplateModerationConflictError as exc:
+        raise _template_moderation_conflict() from exc
+
+
+@router.post(
+    "/templates/{template_id}/purge", status_code=204, responses=TEMPLATE_MODERATION_RESPONSES
+)
+def purge_template(
+    template_id: uuid.UUID,
+    body: ModerationReasonRequest,
+    super_admin: SuperAdminDep,
+    service: TemplateModerationServiceDep,
+) -> None:
+    """Erases a deleted template before the automatic purge, as the purge does: its tiers, tiles,
+    tags and likes go, the rooms and the results of played games stay. Written to the log first."""
+    try:
+        service.purge(super_admin, template_id, body.reason)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     except TemplateModerationConflictError as exc:

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Select, or_, select
+from sqlalchemy import ColumnElement, Select, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.enums import UserRole
@@ -36,15 +36,17 @@ def list_super_admins(session: Session) -> list[User]:
     )
 
 
+def user_matches(query: str) -> ColumnElement[bool]:
+    return or_(
+        User.display_name.icontains(query, autoescape=True),
+        User.email.icontains(query, autoescape=True),
+    )
+
+
 def search_users(session: Session, query: str | None, limit: int, offset: int) -> list[User]:
     statement: Select[User] = select(User)
     if query:
-        statement = statement.where(
-            or_(
-                User.display_name.icontains(query, autoescape=True),
-                User.email.icontains(query, autoescape=True),
-            )
-        )
+        statement = statement.where(user_matches(query))
     statement = statement.order_by(User.display_name, User.id).limit(limit).offset(offset)
     return list(session.scalars(statement).all())
 

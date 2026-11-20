@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import cast
 
-from sqlalchemy import Select, delete, exists, func, or_, select, update
+from sqlalchemy import Select, delete, exists, func, select, update
 from sqlalchemy.orm import Mapped, Session
 from sqlalchemy.sql.dml import ReturningDelete
 from sqlalchemy.sql.expression import Exists
@@ -13,6 +13,7 @@ from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories.users import user_matches
 
 
 def add_image(session: Session, image: Image) -> None:
@@ -90,12 +91,7 @@ def list_recent_images(
     if owner_id is not None:
         statement = statement.where(Image.owner_id == owner_id)
     if author:
-        statement = statement.where(
-            or_(
-                User.display_name.icontains(author, autoescape=True),
-                User.email.icontains(author, autoescape=True),
-            )
-        )
+        statement = statement.where(user_matches(author))
     if created_after is not None:
         statement = statement.where(Image.created_at >= created_after)
     if created_before is not None:

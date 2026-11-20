@@ -1,7 +1,7 @@
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict
@@ -32,7 +32,6 @@ from app.exceptions.templates import (
 )
 from app.models.enums import TemplateModeration, TemplateVisibility
 from app.models.image import Image, ImageStatus
-from app.models.moderation_action import ModerationAction
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
@@ -42,7 +41,6 @@ from app.models.tier import Tier
 from app.models.tile import Tile
 from app.models.user import User
 from app.repositories import images as image_repository
-from app.repositories import moderation_actions as moderation_action_repository
 from app.repositories import templates as template_repository
 
 logger = logging.getLogger(__name__)
@@ -220,21 +218,21 @@ class TemplateService:
         return removed_images
 
     def list_removed_by_moderation(self, owner: User) -> list[RemovedTemplate]:
-        deletions: list[tuple[Template, ModerationAction]] = (
-            moderation_action_repository.list_templates_deleted_by_moderation(
-                self._session, owner.id
-            )
+        deleted_templates: list[Template] = (
+            template_repository.list_templates_deleted_by_moderation(self._session, owner.id)
         )
-
         removed_templates: list[RemovedTemplate] = []
-        for template, moderation_action in deletions:
-            removed_template: RemovedTemplate = RemovedTemplate(
-                id=template.id,
-                name=template.name,
-                removed_at=moderation_action.created_at,
-                reason=moderation_action.reason,
+        for template in deleted_templates:
+            if template.deleted_at is None or template.deletion_reason is None:
+                raise RuntimeError("A template deleted by the moderation has a date and a reason")
+            removed_templates.append(
+                RemovedTemplate(
+                    id=template.id,
+                    name=template.name,
+                    removed_at=template.deleted_at,
+                    reason=template.deletion_reason,
+                )
             )
-            removed_templates.append(removed_template)
         return removed_templates
 
     def get(self, owner: User, template_id: uuid.UUID) -> Template:
@@ -461,9 +459,7 @@ class TemplateService:
         logger.info("Template supprimé : template_id=%s owner_id=%s", template.id, owner.id)
 
     def purge_deleted(self) -> int:
-        limit: datetime = datetime.now(UTC) - timedelta(
-            days=self._settings.deleted_template_retention_days
-        )
+        limit: datetime = datetime.now(UTC) - self._settings.deleted_template_retention
         purged: int = template_repository.delete_templates_deleted_before(self._session, limit)
         self._session.commit()
         logger.info("Templates purgés : %d (supprimés avant %s)", purged, limit.isoformat())

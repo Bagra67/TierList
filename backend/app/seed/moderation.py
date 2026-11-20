@@ -126,7 +126,7 @@ def moderate_templates(
     rng: random.Random,
 ) -> int:
     service: TemplateModerationService = TemplateModerationService(
-        session, ModerationLogService(session, settings)
+        session, ModerationLogService(session, settings), settings
     )
     for template_id in template_ids_to_hide:
         service.hide(rng.choice(super_admins), template_id, rng.choice(TEMPLATE_REASONS))

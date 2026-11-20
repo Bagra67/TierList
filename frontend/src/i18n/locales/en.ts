@@ -349,6 +349,8 @@ export const en: Translation = {
       delete: 'Delete',
       ban: 'Ban',
       lift_ban: 'Lift the ban',
+      restore: 'Restore',
+      purge: 'Delete permanently',
     },
     targets: {
       template: 'Template',

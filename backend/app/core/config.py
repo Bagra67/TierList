@@ -1,3 +1,4 @@
+from datetime import timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
@@ -111,6 +112,10 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [address.strip() for address in value.split(",") if address.strip()]
         return value
+
+    @property
+    def deleted_template_retention(self) -> timedelta:
+        return timedelta(days=self.deleted_template_retention_days)
 
     @property
     def app_origin(self) -> str:

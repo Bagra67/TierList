@@ -15,6 +15,9 @@ const template: ReviewedTemplate = {
   owner_name: 'Max',
   moderation: 'none',
   moderation_reason: null,
+  deleted_at: null,
+  erase_at: null,
+  deletion_reason: null,
   tiers: [
     { id: 'tier-s', name: 'S', color: '#FF7F7F', position: 0 },
     { id: 'tier-a', name: 'A', color: '#FFBF7F', position: 1 },
