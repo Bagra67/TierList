@@ -4,7 +4,7 @@ import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link, type Params, useParams } from 'react-router';
 import { cn } from 'cn';
 
-import { type OfficialTemplateLockStatus, useOfficialTemplateLock } from '../api/officialTemplates';
+import { type OfficialTemplateLock, useOfficialTemplateLock } from '../api/officialTemplates';
 import { type Template, useTemplate } from '../api/templates';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { OfficialTemplateReadOnly } from '../components/OfficialTemplateReadOnly';
@@ -40,7 +40,7 @@ export function TemplateEditorPage() {
   const { t }: UseTranslationResponse<'translation', undefined> = useTranslation();
   useDocumentTitle(template?.name);
   const official: boolean = template?.official ?? false;
-  const lock: OfficialTemplateLockStatus = useOfficialTemplateLock(templateId, official);
+  const lock: OfficialTemplateLock = useOfficialTemplateLock(templateId, official);
   const playable: boolean =
     template?.moderation !== 'hidden' && (!official || template?.visibility === 'public');
 
@@ -77,9 +77,14 @@ export function TemplateEditorPage() {
       </Link>
       {isPending && <LoadingSkeleton shape="board" />}
       {isError && <ErrorMessage>{translateError(t, error)}</ErrorMessage>}
-      {template && official && lock === 'pending' && <LoadingSkeleton shape="board" />}
-      {template && official && lock === 'taken' && <OfficialTemplateReadOnly template={template} />}
-      {template && (!official || lock === 'held') && (
+      {template && official && lock.status === 'pending' && <LoadingSkeleton shape="board" />}
+      {template && official && lock.status === 'error' && (
+        <ErrorMessage>{translateError(t, lock.error)}</ErrorMessage>
+      )}
+      {template && official && lock.status === 'taken' && (
+        <OfficialTemplateReadOnly template={template} />
+      )}
+      {template && (!official || lock.status === 'held') && (
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
             <h1 className="text-2xl font-semibold">{template.name}</h1>

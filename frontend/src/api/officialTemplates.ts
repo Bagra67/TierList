@@ -123,18 +123,26 @@ export function useDeleteOfficialTemplate(templateId: string): UseMutationResult
   });
 }
 
-export type OfficialTemplateLockStatus = 'pending' | 'held' | 'taken';
+export type OfficialTemplateLock =
+  | { status: 'pending' }
+  | { status: 'held' }
+  | { status: 'taken' }
+  | { status: 'error'; error: unknown };
+
+const pendingLeaseReleases: Map<string, number> = new Map();
 
 export function useOfficialTemplateLock(
   templateId: string,
   enabled: boolean,
-): OfficialTemplateLockStatus {
+): OfficialTemplateLock {
   const queryClient: QueryClient = useQueryClient();
-  const [status, setStatus] = useState<OfficialTemplateLockStatus>('pending');
+  const [lock, setLock] = useState<OfficialTemplateLock>({ status: 'pending' });
 
   useEffect(() => {
     if (!enabled) return undefined;
     let active: boolean = true;
+    window.clearTimeout(pendingLeaseReleases.get(templateId));
+    pendingLeaseReleases.delete(templateId);
 
     async function takeLease() {
       try {
@@ -143,12 +151,14 @@ export function useOfficialTemplateLock(
         queryClient.setQueryData<Template>(templateQueryKey(templateId), (current) =>
           current === undefined ? current : { ...current, ...lease },
         );
-        setStatus('held');
+        setLock({ status: 'held' });
       } catch (error) {
-        if (!active || !(error instanceof ApiError) || error.code !== OFFICIAL_TEMPLATE_LOCKED) {
+        if (!active) return;
+        if (!(error instanceof ApiError) || error.code !== OFFICIAL_TEMPLATE_LOCKED) {
+          setLock((current) => (current.status === 'held' ? current : { status: 'error', error }));
           return;
         }
-        setStatus('taken');
+        setLock({ status: 'taken' });
         await queryClient.invalidateQueries({ queryKey: templateQueryKey(templateId) });
       }
     }
@@ -170,9 +180,15 @@ export function useOfficialTemplateLock(
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', renewWhileVisible);
       window.removeEventListener('pagehide', giveBackLease);
-      giveBackLease();
+      pendingLeaseReleases.set(
+        templateId,
+        window.setTimeout(() => {
+          pendingLeaseReleases.delete(templateId);
+          giveBackLease();
+        }),
+      );
     };
   }, [enabled, queryClient, templateId]);
 
-  return status;
+  return lock;
 }

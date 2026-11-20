@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -44,16 +45,33 @@ const cheeses: Template = {
 
 const lease = { editing_by_name: 'alice', editing_until: '2026-11-20T12:02:00Z' };
 
-function renderOfficialEditor() {
-  return renderWithQueryClient(
-    <MemoryRouter initialEntries={[`/moderation/official-templates/${templateId}`]}>
+function officialEditor(key: string) {
+  return (
+    <MemoryRouter key={key} initialEntries={[`/moderation/official-templates/${templateId}`]}>
       <Routes>
         <Route path="/moderation/official-templates/:templateId" element={<TemplateEditorPage />} />
         <Route path="/moderation/official-templates" element={<h1>Liste</h1>} />
       </Routes>
-    </MemoryRouter>,
-    { currentUser: { ...alice, role: 'super_admin' } },
+    </MemoryRouter>
   );
+}
+
+function RemountableEditor() {
+  const [mounts, setMounts] = useState<number>(0);
+  return (
+    <>
+      <button type="button" onClick={() => setMounts((count) => count + 1)}>
+        Remount
+      </button>
+      {officialEditor(String(mounts))}
+    </>
+  );
+}
+
+function renderOfficialEditor() {
+  return renderWithQueryClient(<RemountableEditor />, {
+    currentUser: { ...alice, role: 'super_admin' },
+  });
 }
 
 describe('TemplateEditorPage for an official template', () => {
@@ -132,6 +150,34 @@ describe('TemplateEditorPage for an official template', () => {
     expect(calledRoutes(fetchMock).filter((route) => route === `POST ${lockUrl}`)).toHaveLength(1);
     visibility.mockRestore();
     vi.useRealTimers();
+  });
+
+  it('keeps the lease when the editor is mounted again right away', async () => {
+    const fetchMock = stubBackend({
+      [`GET ${templateUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => Response.json(lease),
+      [`DELETE ${lockUrl}`]: () => new Response(null, { status: 204 }),
+    });
+
+    renderOfficialEditor();
+    await screen.findByRole('heading', { name: 'Publication' });
+    fireEvent.click(screen.getByRole('button', { name: 'Remount' }));
+    await screen.findByRole('heading', { name: 'Publication' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(calledRoutes(fetchMock)).not.toContain(`DELETE ${lockUrl}`);
+  });
+
+  it('shows the error when the lease cannot be taken', async () => {
+    stubBackend({
+      [`GET ${templateUrl}`]: () => Response.json(cheeses),
+      [`POST ${lockUrl}`]: () => errorResponse(404, 'template_not_found'),
+    });
+
+    renderOfficialEditor();
+
+    expect(await screen.findByText('Ce modèle est introuvable.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Publication' })).not.toBeInTheDocument();
   });
 
   it('gives the lease back when leaving the page', async () => {
