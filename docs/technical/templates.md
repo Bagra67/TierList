@@ -39,7 +39,7 @@ On the frontend, the _My templates_ page lists, creates and deletes templates; t
 - **Last modification** (`updated_at`): changes when the template changes, and must also change when one of its tiers or tiles changes: the service updates it explicitly (§2.2). It is the date shown to the user and the order of the list.
 - **Privacy**: a template of another user answers `404`, exactly like an unknown or deleted one: the API never reveals that it exists.
 - **Account deletion** erases the user's templates, deleted ones included. The snapshots of the games played with them stay (§2.4).
-- **Moderation**: a super admin can hide, unhide or delete a template, with a reason (#268). A hidden template stays its owner's, who still reads and edits it and sees the reason, but no new room nor new game can start with it (`409` `template_hidden`); games in progress finish. Details: §2.7.
+- **Moderation**: a super admin can hide, unhide or delete a template, with a reason (#268), and restore or erase a deleted one (§2.3). A hidden template stays its owner's, who still reads and edits it and sees the reason, but no new room nor new game can start with it (`409` `template_hidden`); games in progress finish. Details: §2.7.
 - **Visibility**: the owner makes a template public or private. Making it public needs a confirmed email, a template not hidden by the moderation and at least one tile; the date of the first publication is kept. Details: §2.8.
 - **Tags**: at most 5 per template, 30 characters each, in the owner's order; a tag equal to an earlier one ignoring case and accents is dropped, and a tag needs at least one Latin letter or digit (`422` `invalid_tag`). Details: §2.9.
 
@@ -75,12 +75,12 @@ users ──< templates ──< tiers
               └──────< template_tags
 ```
 
-| Table           | Columns                                                                                                                                                                          | Notes                                                                                                                                                                                       |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `templates`     | `id`, `owner_id` → `users`, `name` (100), `created_at`, `updated_at`, `deleted_at`, `moderation`, `moderation_reason` (500), `visibility`, `first_made_public_at`, `search_text` | `ON DELETE CASCADE` towards `users`; index on `owner_id`. `moderation` and `moderation_reason`: §2.7; `visibility` and `first_made_public_at`: §2.8; `search_text` and its GIN index: §2.9. |
-| `tiers`         | `id`, `template_id` → `templates`, `name` (50), `color` (`#RRGGBB`), `position`, dates                                                                                           | `ON DELETE CASCADE` towards `templates`; `position` 0 = top.                                                                                                                                |
-| `tiles`         | `id`, `template_id` → `templates`, `text` (200, empty for an image-only tile), `image_id` → `images` (empty for a text-only tile), `position`, dates                             | `ON DELETE CASCADE` towards `templates`; no `ON DELETE` towards `images` (only the garbage collection erases an image); `position` 0 = first.                                               |
-| `template_tags` | `template_id` → `templates`, `normalized_label`, `label` (30), `position`                                                                                                        | Primary key `(template_id, normalized_label)`; index on `normalized_label`; `ON DELETE CASCADE` towards `templates`; §2.9.                                                                  |
+| Table           | Columns                                                                                                                                                                                                   | Notes                                                                                                                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `templates`     | `id`, `owner_id` → `users`, `name` (100), `created_at`, `updated_at`, `deleted_at`, `moderation`, `moderation_reason` (500), `deletion_reason` (500), `visibility`, `first_made_public_at`, `search_text` | `ON DELETE CASCADE` towards `users`; index on `owner_id`. `moderation` and `moderation_reason`: §2.7; `visibility` and `first_made_public_at`: §2.8; `search_text` and its GIN index: §2.9. |
+| `tiers`         | `id`, `template_id` → `templates`, `name` (50), `color` (`#RRGGBB`), `position`, dates                                                                                                                    | `ON DELETE CASCADE` towards `templates`; `position` 0 = top.                                                                                                                                |
+| `tiles`         | `id`, `template_id` → `templates`, `text` (200, empty for an image-only tile), `image_id` → `images` (empty for a text-only tile), `position`, dates                                                      | `ON DELETE CASCADE` towards `templates`; no `ON DELETE` towards `images` (only the garbage collection erases an image); `position` 0 = first.                                               |
+| `template_tags` | `template_id` → `templates`, `normalized_label`, `label` (30), `position`                                                                                                                                 | Primary key `(template_id, normalized_label)`; index on `normalized_label`; `ON DELETE CASCADE` towards `templates`; §2.9.                                                                  |
 
 `position` has **no unique constraint**: reordering would break it while the other rows are being shifted. The service keeps positions continuous.
 
@@ -110,6 +110,8 @@ uv run python scripts/purge_deleted_templates.py
 ```
 
 It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192); the command above runs it by hand.
+
+Until then, super admins see the deleted templates and can restore them or erase them earlier ([moderation guide](moderation.md#212-deleted-templates), #104).
 
 ### 2.4 Snapshots (template versions)
 
