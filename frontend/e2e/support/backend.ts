@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { E2E_APP_URL, E2E_DATABASE } from './app.ts';
+import { E2E_APP_URL, E2E_DATABASE, MAILPIT_HOST } from './app.ts';
 
 const FRONTEND_DIR: string = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const BACKEND_DIR: string = resolve(FRONTEND_DIR, '..', 'backend');
@@ -16,7 +16,7 @@ export const appEnvironment: NodeJS.ProcessEnv = {
   FRONTEND_DIST: FRONTEND_BUILD_DIR,
   FRONTEND_BASE_URL: E2E_APP_URL,
   AUTH_COOKIE_SECURE: 'false',
-  SMTP_HOST: '127.0.0.1',
+  SMTP_HOST: MAILPIT_HOST,
   SMTP_PORT: '1025',
   SMTP_STARTTLS: 'false',
   MAINTENANCE_ENABLED: 'false',

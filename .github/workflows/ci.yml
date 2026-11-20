@@ -251,11 +251,35 @@ jobs:
         run: pnpm build
 
   # docs/technical/testing.md §6
+  playwright-version:
+    name: Playwright version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: frontend/package.json
+          sparse-checkout-cone-mode: false
+
+      - name: Read the pinned version of @playwright/test
+        id: version
+        run: echo "version=$(jq -r '.devDependencies["@playwright/test"]' frontend/package.json)" >> "$GITHUB_OUTPUT"
+
+  # Runs in the Playwright image, which has the browsers and their system libraries: installing
+  # them with apt on the runner took up to 10 minutes when the Ubuntu mirror was slow.
   e2e:
     name: E2E (${{ matrix.browser }})
-    needs: changes
-    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true') }}
+    needs: [changes, playwright-version]
+    if: ${{ !cancelled() && needs.playwright-version.result == 'success' && (needs.changes.result != 'success' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true') }}
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
+      # Root, to reach the Docker socket that starts SeaweedFS; Firefox refuses to run as root
+      # with the HOME of another user.
+      options: --ipc=host
+      env:
+        HOME: /root
     strategy:
       fail-fast: false
       matrix:
@@ -271,34 +295,58 @@ jobs:
           POSTGRES_USER: tierlist
           POSTGRES_PASSWORD: tierlist-ci
           POSTGRES_DB: tierlist
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U tierlist -d tierlist"
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
+      mailpit:
+        image: axllent/mailpit:v1
     env:
       POSTGRES_USER: tierlist
       POSTGRES_PASSWORD: tierlist-ci
       POSTGRES_DB: tierlist
-      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       # CI-only throwaway signing key, not a secret: it only signs tokens of the test database.
       JWT_SECRET_KEY: ci-only-jwt-signing-key-not-a-secret
       # SeaweedFS started below; its development keys (seaweedfs/s3.json), not secrets.
-      IMAGE_S3_ENDPOINT_URL: http://127.0.0.1:8333
+      IMAGE_S3_ENDPOINT_URL: http://seaweedfs:8333
+      IMAGE_PUBLIC_BASE_URL: http://seaweedfs:8333/tierlist-images
       IMAGE_S3_ACCESS_KEY_ID: tierlist-dev
       IMAGE_S3_SECRET_ACCESS_KEY: tierlist-dev-not-a-secret
+      E2E_MAILPIT_HOST: mailpit
+      DOCKER_CLI_VERSION: 29.10.0
     steps:
       - uses: actions/checkout@v7
 
-      # Same reason as in the Backend job: started in the background while the rest installs.
-      - name: Start the S3 image storage (SeaweedFS) and Mailpit in the background
+      # A service cannot mount s3.json (it starts before the checkout), so SeaweedFS is created on
+      # the job network through the runner's Docker socket, with the command of compose.yaml.
+      # Started in the background while the rest installs.
+      - name: Start the S3 image storage (SeaweedFS) in the background
         working-directory: .
+        env:
+          JOB_NETWORK: ${{ job.container.network }}
         run: |
-          (docker compose up -d --wait seaweedfs mailpit; echo $? > "$RUNNER_TEMP/services.status") \
-            > "$RUNNER_TEMP/services.log" 2>&1 &
+          {
+            (
+              set -e
+              curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_CLI_VERSION.tgz" \
+                | tar -xz -C /usr/local/bin --strip-components=1 docker/docker
+              docker create --name seaweedfs --network "$JOB_NETWORK" --network-alias seaweedfs \
+                chrislusf/seaweedfs:4.53 mini -master.telemetry=false -webdav=false \
+                -bucket=tierlist-images -s3.config=/etc/seaweedfs/s3.json
+              docker cp seaweedfs/. seaweedfs:/etc/seaweedfs
+              docker start seaweedfs
+              for _ in $(seq 60); do
+                curl -fs -o /dev/null http://seaweedfs:8888/buckets/tierlist-images/ && exit 0
+                sleep 2
+              done
+              docker logs seaweedfs
+              exit 1
+            ) > "$RUNNER_TEMP/services.log" 2>&1
+            echo $? > "$RUNNER_TEMP/services.status"
+          } &
 
       - uses: astral-sh/setup-uv@v10.3.3
         with:
@@ -323,20 +371,10 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      # The browser binaries depend on the Playwright version, pinned in the lockfile.
-      - name: Cache the Playwright browser
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-
-      - name: Install the Playwright browser and its system libraries
-        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
-
       - name: Build the frontend
         run: pnpm build
 
-      - name: Wait for the S3 image storage and Mailpit
+      - name: Wait for the S3 image storage
         run: |
           for _ in $(seq 120); do
             [ -f "$RUNNER_TEMP/services.status" ] && break
@@ -351,7 +389,7 @@ jobs:
       # Runs even when tests fail, so the summary shows which ones and why.
       - name: Test report
         if: ${{ !cancelled() }}
-        run: python3 ../.github/scripts/junit_summary.py "E2E (${{ matrix.browser }})" reports/e2e-junit.xml >> "$GITHUB_STEP_SUMMARY"
+        run: uv run --no-project python ../.github/scripts/junit_summary.py "E2E (${{ matrix.browser }})" reports/e2e-junit.xml >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the Playwright report
         if: ${{ failure() }}
