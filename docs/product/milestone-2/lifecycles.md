@@ -36,6 +36,35 @@ stateDiagram-v2
 | Hidden → previous | A super admin unhides it.          | US-1.5         |
 | → Deleted         | The owner, or a super admin.       | US-2.3, US-1.5 |
 
+## Official template
+
+An official template is owned by the site and managed by the super admins (US-1.11). Its **draft** is the private state and its **published** state the public one; moderation can still hide it as above.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft : super admin creates it
+    Draft --> Published : super admin publishes it (it has tiles)
+    Published --> Featured : super admin features it
+    Featured --> Published : super admin takes it out of the picks
+    Published --> Draft : super admin unpublishes it
+    Featured --> Draft : super admin unpublishes it
+    Draft --> Deleted : super admin deletes it
+    Published --> Deleted : super admin deletes it
+    Featured --> Deleted : super admin deletes it
+    Deleted --> Draft : super admin restores it (was a draft)
+    Deleted --> Published : super admin restores it (was published)
+    Deleted --> [*]
+```
+
+| State         | Meaning                                                                                                                               | Listed in the marketplace |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| **Draft**     | Seen and edited by the super admins only; no game can start with it.                                                                  | No                        |
+| **Published** | Signed « TierList », everyone can open it, play it and like it, like any public template.                                             | Yes                       |
+| **Featured**  | Published and in the **TierList picks**: first on the home page and in a row above the public templates.                              | Yes, in the picks too     |
+| **Deleted**   | In the deleted templates until the purge, where a super admin restores or erases it. A restored template comes back out of the picks. | No                        |
+
+Every transition is written to the moderation log, without a reason. Editing the content keeps the state; only one super admin edits at a time.
+
 ## Image
 
 ```mermaid

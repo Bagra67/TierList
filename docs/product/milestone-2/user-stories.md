@@ -95,7 +95,8 @@ As a **super admin**, I want a page per account and sanctions, so that I can sto
 
 As a **super admin**, I want every decision recorded, so that we know who did what and why.
 
-- _Given_ any moderation action (dismiss, hide, unhide, delete, ban, lift a ban), _then_ the log records **who**, **when**, **what** (the action and its target) and **why** (the reason).
+- _Given_ any moderation action (dismiss, hide, unhide, delete, restore, erase permanently, ban, lift a ban), _then_ the log records **who**, **when**, **what** (the action and its target) and **why** (the reason).
+- _Given_ an editorial action on an official template (create, edit, publish, unpublish, feature, take out of the picks, delete; US-1.11), _then_ the log records who, when and what, without a reason.
 - _Given_ the moderation area, _when_ I open the log, _then_ I see the actions, newest first, and can filter them by target or by super admin.
 - _Given_ the log, _then_ nobody can edit or delete an entry.
 
@@ -104,6 +105,18 @@ As a **super admin**, I want every decision recorded, so that we know who did wh
 As a **template owner**, I want to know when moderation acted on my content, so that I understand why it is no longer shown.
 
 - _Given_ my template or image was hidden or deleted, _when_ I open my templates, _then_ I see which one, the decision and its reason.
+
+### US-1.11 Official templates — Should
+
+As a **super admin**, I want to publish templates in the name of the site, so that players find good templates ready to play.
+
+- _Given_ the moderation area, _when_ I create an official template, _then_ it is a **draft** signed « TierList », with the default tiers, seen by the super admins only.
+- _Given_ an official template, _when_ I open it, _then_ I edit it like my own templates, with up to 256 items and 20 tags; _given_ another super admin is editing it, _then_ I see it read only, with their name, until they leave.
+- _Given_ a draft with items, _when_ I **publish** it, _then_ it is listed in the marketplace, signed « TierList », and anyone can play and like it; _when_ I put it back as a draft, _then_ it leaves the marketplace and games in progress finish.
+- _Given_ a published official template, _when_ I **feature** it, _then_ it appears in the **TierList picks**: first on the home page, in a row above the public templates (without search nor tag), and with a « Sélection TierList » badge; a draft cannot be featured.
+- _Given_ an official template, _when_ I **delete** it, _then_ it goes to the deleted templates, where a super admin can restore or erase it.
+- _Given_ any of these actions, _then_ it is written to the moderation log (US-1.9).
+- _Later_: ordering the picks by hand, taking over another super admin's edit. What a fork of an official template above the player limits keeps is decided with US-3.7.
 
 ## E2 — Public templates
 
