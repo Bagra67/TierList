@@ -6,12 +6,14 @@ import { useCurrentUser } from '../api/auth';
 import {
   type PublicTemplate,
   type PublicTile,
+  useFavoriteState,
   useLikeState,
   usePublicTemplate,
 } from '../api/marketplace';
 import { signInRedirectState } from '../auth/signInRedirect';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { EmptyState } from '../components/EmptyState';
+import { FavoriteButton } from '../components/FavoriteButton';
 import { LikeButton } from '../components/LikeButton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -41,6 +43,7 @@ export function PublicTemplatePage() {
   const { data: template, error } = usePublicTemplate(templateId);
   const { data: user } = useCurrentUser();
   useLikeState(templateId, isTemplateId(templateId) && Boolean(user));
+  useFavoriteState(templateId, isTemplateId(templateId) && Boolean(user));
   useDocumentTitle(template?.name);
 
   if (!isTemplateId(templateId) || (error !== null && isUnavailable(error))) {
@@ -85,6 +88,7 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
         <div className="flex flex-wrap items-start gap-2">
           <PlayAction template={template} />
           <LikeButton templateId={template.id} likeCount={template.like_count} />
+          <FavoriteButton templateId={template.id} />
           <ReportButton targetKind="template" targetId={template.id} contentName={template.name} />
         </div>
       </div>

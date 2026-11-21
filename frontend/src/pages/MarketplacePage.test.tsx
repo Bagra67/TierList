@@ -3,28 +3,13 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MarketplaceTemplate } from '../api/marketplace';
+import { marketplaceCard } from '../test/fixtures/marketplace';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import { calledRoutes, type StubbedRoute, signedInSession, stubBackend } from '../test/stubBackend';
 import { MarketplacePage } from './MarketplacePage';
 
-function card(id: string, name: string, overrides: Partial<MarketplaceTemplate> = {}) {
-  return {
-    id,
-    name,
-    owner_name: 'Camille',
-    featured: false,
-    tags: ['Apéro'],
-    tile_count: 8,
-    like_count: 3,
-    preview_image_url: null,
-    preview_image_removed: false,
-    tier_colors: ['#FF3B6B', '#FF8A2A'],
-    ...overrides,
-  } satisfies MarketplaceTemplate;
-}
-
-const chips = card('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', 'Chips');
-const sodas = card('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02', 'Sodas', { like_count: 1 });
+const chips = marketplaceCard('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', 'Chips');
+const sodas = marketplaceCard('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02', 'Sodas', { like_count: 1 });
 
 interface StubbedList {
   searches: URLSearchParams[];
@@ -81,7 +66,7 @@ describe('MarketplacePage', () => {
   });
 
   it('shows the TierList picks in their own row above the list, without a search', async () => {
-    const pick: MarketplaceTemplate = card('pick-id', 'Jeux de société', {
+    const pick: MarketplaceTemplate = marketplaceCard('pick-id', 'Jeux de société', {
       owner_name: 'TierList',
       featured: true,
     });
@@ -98,7 +83,9 @@ describe('MarketplacePage', () => {
   });
 
   it('hides the TierList picks during a search', async () => {
-    const pick: MarketplaceTemplate = card('pick-id', 'Jeux de société', { featured: true });
+    const pick: MarketplaceTemplate = marketplaceCard('pick-id', 'Jeux de société', {
+      featured: true,
+    });
     stubMarketplace(() => ({ items: [chips], next_cursor: null }), undefined, {
       'GET /marketplace/featured': () => Response.json({ items: [pick] }),
     });
@@ -187,7 +174,11 @@ describe('MarketplacePage', () => {
 
   it('shows the image of the first item as the preview', async () => {
     stubMarketplace(() => ({
-      items: [card(chips.id, 'Photos', { preview_image_url: 'https://images.example.com/a.webp' })],
+      items: [
+        marketplaceCard(chips.id, 'Photos', {
+          preview_image_url: 'https://images.example.com/a.webp',
+        }),
+      ],
       next_cursor: null,
     }));
     renderPage();
@@ -250,5 +241,44 @@ describe('MarketplacePage', () => {
     expect(await screen.findByText("3 j'aime")).toBeInTheDocument();
     expect(calledRoutes(backend)).not.toContain('GET /marketplace/likes');
     expect(screen.queryByRole('button', { name: /J'aime/ })).not.toBeInTheDocument();
+  });
+
+  it('shows on the cards which templates are in the favorites, and adds one from a card', async () => {
+    const favorited: string[] = [];
+    stubMarketplace(() => ({ items: [chips, sodas], next_cursor: null }), [], {
+      ...signedInSession,
+      'GET /marketplace/favorite-states': () =>
+        Response.json({
+          items: [
+            { template_id: chips.id, favorited: true, can_favorite: true },
+            { template_id: sodas.id, favorited: false, can_favorite: true },
+          ],
+        }),
+      [`PUT /marketplace/templates/${sodas.id}/favorite`]: () => {
+        favorited.push(sodas.id);
+        return Response.json({ favorited: true, can_favorite: true });
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Favori « Chips »', pressed: true }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Favori « Sodas »', pressed: false }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Favori « Sodas »', pressed: true }),
+    ).toBeInTheDocument();
+    expect(favorited).toEqual([sodas.id]);
+  });
+
+  it('asks no favorite state for a visitor, who sees no favorite button', async () => {
+    stubMarketplace(() => ({ items: [chips], next_cursor: null }));
+    const backend = vi.mocked(fetch);
+    renderPage();
+
+    expect(await screen.findByText("3 j'aime")).toBeInTheDocument();
+    expect(calledRoutes(backend)).not.toContain('GET /marketplace/favorite-states');
+    expect(screen.queryByRole('button', { name: /Favori/ })).not.toBeInTheDocument();
   });
 });

@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import type { MarketplaceTemplate } from '../api/marketplace';
 import { publicTemplatePath } from '../constants/routes';
+import { CardFavoriteButton } from './FavoriteButton';
 import { CardLikeButton } from './LikeButton';
 import { RemovedImage } from './RemovedImage';
 import { TemplateFeaturedBadge } from './TemplateFeaturedBadge';
@@ -68,7 +69,8 @@ export function MarketplaceCard({ template, showFeaturedBadge = true }: Marketpl
           })}
         </p>
         <TemplateTagList tags={template.tags} />
-        <div className="mt-auto flex justify-end">
+        <div className="mt-auto flex items-start justify-end gap-1">
+          <CardFavoriteButton templateId={template.id} templateName={template.name} />
           <CardLikeButton
             templateId={template.id}
             templateName={template.name}

@@ -11,6 +11,7 @@ export const ROUTES = {
   TEMPLATE_EDITOR: '/templates/:templateId',
   MARKETPLACE: '/marketplace',
   PUBLIC_TEMPLATE: '/marketplace/templates/:templateId',
+  FAVORITES: '/favorites',
   HISTORY: '/history',
   MODERATION: '/moderation',
   MODERATION_REPORTS: '/moderation/reports',

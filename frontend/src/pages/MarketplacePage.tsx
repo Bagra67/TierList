@@ -7,7 +7,7 @@ import {
   type MarketplaceSort,
   type MarketplaceTemplate,
   uniqueById,
-  useCardLikeStates,
+  useCardStates,
   useFeaturedTemplates,
   useMarketplaceTags,
   useMarketplaceTemplates,
@@ -62,7 +62,7 @@ export function MarketplacePage() {
   const { data: featured = [] } = useFeaturedTemplates();
   const pages: MarketplaceTemplate[][] = query.data?.pages.map((page) => page.items) ?? [];
   const [firstPage = [], ...nextPages]: MarketplaceTemplate[][] = pages;
-  useCardLikeStates([uniqueById([...featured, ...firstPage]), ...nextPages]);
+  useCardStates([uniqueById([...featured, ...firstPage]), ...nextPages]);
   const templates: MarketplaceTemplate[] = uniqueById(pages.flat());
   const hasFilter: boolean = filters.search !== undefined || filters.tag !== undefined;
 

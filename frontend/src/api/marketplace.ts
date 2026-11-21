@@ -12,8 +12,10 @@ import {
 } from '@tanstack/react-query';
 
 import {
-  CARD_LIKE_STATES_STALE_MS,
+  CARD_STATES_STALE_MS,
+  FAVORITE_TEMPLATES_QUERY_KEY,
   isTemplateId,
+  MARKETPLACE_FAVORITE_STATES_QUERY_KEY,
   MARKETPLACE_LIKE_STATES_QUERY_KEY,
   MARKETPLACE_LIST_QUERY_KEY,
   MARKETPLACE_TAGS_QUERY_KEY,
@@ -94,7 +96,67 @@ export function useSetLiked(templateId: string): UseMutationResult<LikeState, Er
   });
 }
 
+export type FavoriteState = components['schemas']['FavoriteStateResponse'];
+
+function favoriteStateQueryKey(templateId: string): readonly string[] {
+  return [...publicTemplateQueryKey(templateId), 'favorite'];
+}
+
+async function getFavoriteState(templateId: string, signal: AbortSignal): Promise<FavoriteState> {
+  return dataOrThrow(
+    await apiClient.GET('/marketplace/templates/{template_id}/favorite', {
+      params: { path: { template_id: templateId } },
+      signal,
+    }),
+  );
+}
+
+export function useFavoriteState(
+  templateId: string,
+  enabled: boolean,
+): UseQueryResult<FavoriteState> {
+  return useQuery({
+    queryKey: favoriteStateQueryKey(templateId),
+    queryFn: ({ signal }) => getFavoriteState(templateId, signal),
+    enabled,
+    retry: retryUnlessClientError,
+  });
+}
+
+async function setFavorited(templateId: string, favorited: boolean): Promise<FavoriteState> {
+  const params = { params: { path: { template_id: templateId } } };
+  return dataOrThrow(
+    favorited
+      ? await apiClient.PUT('/marketplace/templates/{template_id}/favorite', params)
+      : await apiClient.DELETE('/marketplace/templates/{template_id}/favorite', params),
+  );
+}
+
+export function useSetFavorited(
+  templateId: string,
+): UseMutationResult<FavoriteState, Error, boolean> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (favorited: boolean) => setFavorited(templateId, favorited),
+    onSuccess: (state: FavoriteState) => {
+      queryClient.setQueryData(favoriteStateQueryKey(templateId), state);
+      if (!state.favorited) {
+        queryClient.setQueryData(
+          FAVORITE_TEMPLATES_QUERY_KEY,
+          (favorites: FavoriteTemplatePages | undefined) =>
+            favorites === undefined ? undefined : withoutTemplate(favorites, templateId),
+        );
+      }
+      void queryClient.invalidateQueries({
+        queryKey: FAVORITE_TEMPLATES_QUERY_KEY,
+        refetchType: 'none',
+      });
+    },
+  });
+}
+
 type TemplateLikeState = components['schemas']['TemplateLikeStateResponse'];
+type TemplateFavoriteState = components['schemas']['TemplateFavoriteStateResponse'];
 
 async function listLikeStates(
   templateIds: string[],
@@ -108,27 +170,65 @@ async function listLikeStates(
   ).items;
 }
 
-export function useCardLikeStates(pages: MarketplaceTemplate[][]): void {
+async function listFavoriteStates(
+  templateIds: string[],
+  signal: AbortSignal,
+): Promise<TemplateFavoriteState[]> {
+  return dataOrThrow(
+    await apiClient.GET('/marketplace/favorite-states', {
+      params: { query: { template_id: templateIds } },
+      signal,
+    }),
+  ).items;
+}
+
+interface CardStateSource<State extends { template_id: string }> {
+  queryKey: readonly string[];
+  list: (templateIds: string[], signal: AbortSignal) => Promise<State[]>;
+  stateQueryKey: (templateId: string) => readonly string[];
+}
+
+function useCardStatesOf<State extends { template_id: string }>(
+  pages: MarketplaceTemplate[][],
+  source: CardStateSource<State>,
+): void {
   const queryClient: QueryClient = useQueryClient();
   const { data: user } = useCurrentUser();
   useQueries({
     queries: pages.map((templates: MarketplaceTemplate[]) => {
       const templateIds: string[] = templates.map((template: MarketplaceTemplate) => template.id);
       return {
-        queryKey: [...MARKETPLACE_LIKE_STATES_QUERY_KEY, templateIds],
+        queryKey: [...source.queryKey, templateIds],
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
-          const states: TemplateLikeState[] = await listLikeStates(templateIds, signal);
+          const states: State[] = await source.list(templateIds, signal);
           for (const { template_id: templateId, ...state } of states) {
-            queryClient.setQueryData(likeStateQueryKey(templateId), state);
+            queryClient.setQueryData(source.stateQueryKey(templateId), state);
           }
           return templateIds;
         },
         enabled: Boolean(user) && templateIds.length > 0,
-        staleTime: CARD_LIKE_STATES_STALE_MS,
+        staleTime: CARD_STATES_STALE_MS,
         refetchOnWindowFocus: false,
         retry: retryUnlessClientError,
       };
     }),
+  });
+}
+
+export function useCardLikeStates(pages: MarketplaceTemplate[][]): void {
+  useCardStatesOf(pages, {
+    queryKey: MARKETPLACE_LIKE_STATES_QUERY_KEY,
+    list: listLikeStates,
+    stateQueryKey: likeStateQueryKey,
+  });
+}
+
+export function useCardStates(pages: MarketplaceTemplate[][]): void {
+  useCardLikeStates(pages);
+  useCardStatesOf(pages, {
+    queryKey: MARKETPLACE_FAVORITE_STATES_QUERY_KEY,
+    list: listFavoriteStates,
+    stateQueryKey: favoriteStateQueryKey,
   });
 }
 
@@ -204,6 +304,49 @@ export function useMarketplaceTags(): UseQueryResult<string[]> {
     queryKey: MARKETPLACE_TAGS_QUERY_KEY,
     queryFn: async ({ signal }) =>
       dataOrThrow(await apiClient.GET('/marketplace/tags', { signal })).tags,
+    retry: retryUnlessClientError,
+  });
+}
+
+type FavoriteTemplatePages = InfiniteData<MarketplaceTemplateList, string | undefined>;
+
+const FAVORITED_STATE: FavoriteState = { favorited: true, can_favorite: true };
+
+function withoutTemplate(
+  favorites: FavoriteTemplatePages,
+  templateId: string,
+): FavoriteTemplatePages {
+  return {
+    ...favorites,
+    pages: favorites.pages.map((page: MarketplaceTemplateList) => ({
+      ...page,
+      items: page.items.filter((template: MarketplaceTemplate) => template.id !== templateId),
+    })),
+  };
+}
+
+async function listFavoriteTemplates(
+  cursor: string | undefined,
+  signal: AbortSignal,
+): Promise<MarketplaceTemplateList> {
+  return dataOrThrow(
+    await apiClient.GET('/marketplace/favorites', { params: { query: { cursor } }, signal }),
+  );
+}
+
+export function useFavoriteTemplates(): UseInfiniteQueryResult<FavoriteTemplatePages> {
+  const queryClient: QueryClient = useQueryClient();
+  return useInfiniteQuery({
+    queryKey: FAVORITE_TEMPLATES_QUERY_KEY,
+    queryFn: async ({ pageParam, signal }) => {
+      const page: MarketplaceTemplateList = await listFavoriteTemplates(pageParam, signal);
+      for (const template of page.items) {
+        queryClient.setQueryData(favoriteStateQueryKey(template.id), FAVORITED_STATE);
+      }
+      return page;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursor,
     retry: retryUnlessClientError,
   });
 }
