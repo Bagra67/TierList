@@ -788,6 +788,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/marketplace/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Favorite Templates
+         * @description The account's favorites, by pages, most recently added first. Only the templates that are
+         *     listed are returned; the others stay in the favorites and come back once listed again.
+         *     `cursor` is the `next_cursor` of the previous page.
+         */
+        get: operations["list_favorite_templates_marketplace_favorites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marketplace/favorite-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Favorite States
+         * @description The account's favorite state of several public templates at once (one page of cards). The
+         *     templates that are not listed are left out.
+         */
+        get: operations["list_favorite_states_marketplace_favorite_states_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marketplace/templates/{template_id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Favorite
+         * @description Whether this public template is in the account's favorites.
+         */
+        get: operations["get_favorite_marketplace_templates__template_id__favorite_get"];
+        /**
+         * Favorite Template
+         * @description Adds a public template of another account to the account's favorites, with a confirmed
+         *     email address. Adding it again changes nothing.
+         */
+        put: operations["favorite_template_marketplace_templates__template_id__favorite_put"];
+        post?: never;
+        /**
+         * Unfavorite Template
+         * @description Removes a public template from the account's favorites. Without a favorite, changes
+         *     nothing.
+         */
+        delete: operations["unfavorite_template_marketplace_templates__template_id__favorite_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/images": {
         parameters: {
             query?: never;
@@ -2044,6 +2117,26 @@ export interface components {
             errors?: components["schemas"]["FieldError"][] | null;
         };
         /**
+         * FavoriteStateResponse
+         * @description Whether the public template is in the account's favorites, and whether the account may add
+         *     it (false for its owner).
+         */
+        FavoriteStateResponse: {
+            /** Favorited */
+            favorited: boolean;
+            /** Can Favorite */
+            can_favorite: boolean;
+        };
+        /**
+         * FavoriteStatesResponse
+         * @description The favorite states of the requested templates that are listed, in the requested order; the
+         *     others are left out.
+         */
+        FavoriteStatesResponse: {
+            /** Items */
+            items: components["schemas"]["TemplateFavoriteStateResponse"][];
+        };
+        /**
          * FeaturedTemplatesResponse
          * @description The TierList picks: the featured official templates that are listed, most recently featured
          *     first.
@@ -3020,6 +3113,21 @@ export interface components {
             id: string;
             /** Display Name */
             display_name: string;
+        };
+        /**
+         * TemplateFavoriteStateResponse
+         * @description The favorite state of one public template, for the marketplace cards.
+         */
+        TemplateFavoriteStateResponse: {
+            /** Favorited */
+            favorited: boolean;
+            /** Can Favorite */
+            can_favorite: boolean;
+            /**
+             * Template Id
+             * Format: uuid
+             */
+            template_id: string;
         };
         /**
          * TemplateLikeStateResponse
@@ -6110,6 +6218,306 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LikeStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_favorite_templates_marketplace_favorites_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceTemplateListResponse"];
+                };
+            };
+            /** @description Cursor that cannot be read, or made for another list */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_favorite_states_marketplace_favorite_states_get: {
+        parameters: {
+            query: {
+                template_id: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteStatesResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_favorite_marketplace_templates__template_id__favorite_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    favorite_template_marketplace_templates__template_id__favorite_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Email address not confirmed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The account owns the template */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unfavorite_template_marketplace_templates__template_id__favorite_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteStateResponse"];
                 };
             };
             /** @description Not authenticated */

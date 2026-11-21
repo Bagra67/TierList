@@ -26,6 +26,7 @@ from app.models.account_ban import AccountBan
 from app.models.enums import TemplateModeration, TemplateVisibility, UserRole
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
+from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
@@ -393,24 +394,60 @@ def list_marketplace_templates(
     ]
 
 
-def list_featured_templates(
-    session: Session, now: datetime, limit: int
-) -> list[tuple[Template, str, int]]:
-    like_count: ColumnElement[int] = (
+def _like_count_of_each_template() -> ColumnElement[int]:
+    return (
         select(func.count())
         .where(TemplateLike.template_id == Template.id)
         .correlate(Template)
         .scalar_subquery()
     )
+
+
+def list_featured_templates(
+    session: Session, now: datetime, limit: int
+) -> list[tuple[Template, str, int]]:
     statement: Select[Template, str, int] = (
         _listed_templates_with_owner_name(now)
-        .add_columns(like_count)
+        .add_columns(_like_count_of_each_template())
         .where(Template.featured_at.is_not(None))
         .order_by(Template.featured_at.desc(), Template.id.desc())
         .limit(limit)
     )
     return [
         (template, owner_name, count) for template, owner_name, count in session.execute(statement)
+    ]
+
+
+@dataclass(frozen=True)
+class FavoritesAfter:
+    favorited_at: datetime
+    id: uuid.UUID
+
+
+def list_favorite_templates(
+    session: Session,
+    now: datetime,
+    user_id: uuid.UUID,
+    after: FavoritesAfter | None,
+    limit: int,
+) -> list[tuple[Template, str, int, datetime]]:
+    statement: Select[Template, str, int, datetime] = (
+        _listed_templates_with_owner_name(now)
+        .add_columns(_like_count_of_each_template(), TemplateFavorite.created_at)
+        .join(
+            TemplateFavorite,
+            and_(TemplateFavorite.template_id == Template.id, TemplateFavorite.user_id == user_id),
+        )
+        .order_by(TemplateFavorite.created_at.desc(), Template.id.desc())
+        .limit(limit)
+    )
+    if after is not None:
+        statement = statement.where(
+            tuple_(TemplateFavorite.created_at, Template.id) < tuple_(after.favorited_at, after.id)
+        )
+    return [
+        (template, owner_name, like_count, favorited_at)
+        for template, owner_name, like_count, favorited_at in session.execute(statement)
     ]
 
 

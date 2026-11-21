@@ -13,6 +13,7 @@ from app.models.enums import ModerationActionKind, ReportStatus
 from app.models.moderation_action import ModerationAction
 from app.models.report import Report
 from app.models.template import Template
+from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.tile import Tile
 from app.models.user import User
@@ -245,6 +246,7 @@ def test_permanently_deleting_erases_the_template_and_logs_the_action(
     send_report(auth_client, "template", template_id, bob)
     bob_id: uuid.UUID = db_session.scalars(select(User.id).where(User.email == BOB_EMAIL)).one()
     db_session.add(TemplateLike(template_id=uuid.UUID(template_id), user_id=bob_id))
+    db_session.add(TemplateFavorite(template_id=uuid.UUID(template_id), user_id=bob_id))
     db_session.flush()
     delete_template(auth_client, template_id, alice)
 
@@ -253,7 +255,7 @@ def test_permanently_deleting_erases_the_template_and_logs_the_action(
     assert response.status_code == 204
     db_session.expire_all()
     assert db_session.get(Template, uuid.UUID(template_id)) is None
-    for model in (Tile, TemplateLike):
+    for model in (Tile, TemplateLike, TemplateFavorite):
         assert (
             db_session.scalar(
                 select(func.count())

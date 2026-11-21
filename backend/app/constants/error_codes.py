@@ -39,6 +39,7 @@ class ErrorCode(StrEnum):
     OFFICIAL_TEMPLATE_LOCKED = "official_template_locked"
     TEMPLATE_NOT_PUBLISHED = "template_not_published"
     CANNOT_LIKE_OWN_TEMPLATE = "cannot_like_own_template"
+    CANNOT_FAVORITE_OWN_TEMPLATE = "cannot_favorite_own_template"
     INVALID_CURSOR = "invalid_cursor"
 
     ROOM_NOT_FOUND = "room_not_found"
