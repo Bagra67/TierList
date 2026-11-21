@@ -3,37 +3,19 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MarketplaceTemplate } from '../api/marketplace';
+import { marketplaceCard } from '../test/fixtures/marketplace';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
-import { alice, errorResponse, type StubbedRoute, stubBackend } from '../test/stubBackend';
+import {
+  alice,
+  calledRoutes,
+  errorResponse,
+  type StubbedRoute,
+  stubBackend,
+} from '../test/stubBackend';
 import { FavoritesPage } from './FavoritesPage';
 
-function card(id: string, name: string): MarketplaceTemplate {
-  return {
-    id,
-    name,
-    owner_name: 'Camille',
-    featured: false,
-    tags: ['Apéro'],
-    tile_count: 8,
-    like_count: 3,
-    preview_image_url: null,
-    preview_image_removed: false,
-    tier_colors: ['#FF3B6B', '#FF8A2A'],
-  };
-}
-
-const chips: MarketplaceTemplate = card('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', 'Chips');
-const sodas: MarketplaceTemplate = card('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02', 'Sodas');
-
-function favoriteStates(templates: MarketplaceTemplate[]): Response {
-  return Response.json({
-    items: templates.map((template: MarketplaceTemplate) => ({
-      template_id: template.id,
-      favorited: true,
-      can_favorite: true,
-    })),
-  });
-}
+const chips: MarketplaceTemplate = marketplaceCard('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e01', 'Chips');
+const sodas: MarketplaceTemplate = marketplaceCard('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e02', 'Sodas');
 
 function renderPage(routes: Record<string, StubbedRoute>) {
   stubBackend({ 'GET /marketplace/likes': () => Response.json({ items: [] }), ...routes });
@@ -56,7 +38,6 @@ describe('FavoritesPage', () => {
   it('lists the favorites as cards of public templates', async () => {
     renderPage({
       'GET /marketplace/favorites': () => Response.json({ items: [chips], next_cursor: null }),
-      'GET /marketplace/favorite-states': () => favoriteStates([chips]),
     });
 
     expect(await screen.findByRole('link', { name: 'Chips' })).toHaveAttribute(
@@ -68,6 +49,7 @@ describe('FavoritesPage', () => {
     expect(
       await screen.findByRole('button', { name: 'Favori « Chips »', pressed: true }),
     ).toBeInTheDocument();
+    expect(calledRoutes(vi.mocked(fetch))).not.toContain('GET /marketplace/favorite-states');
   });
 
   it('reads the next page of favorites with the cursor', async () => {
@@ -82,7 +64,6 @@ describe('FavoritesPage', () => {
             : { items: [sodas], next_cursor: null },
         );
       },
-      'GET /marketplace/favorite-states': () => favoriteStates([]),
     });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Voir plus' }));
@@ -96,7 +77,6 @@ describe('FavoritesPage', () => {
     let favorites: MarketplaceTemplate[] = [chips, sodas];
     renderPage({
       'GET /marketplace/favorites': () => Response.json({ items: favorites, next_cursor: null }),
-      'GET /marketplace/favorite-states': () => favoriteStates(favorites),
       [`DELETE /marketplace/templates/${chips.id}/favorite`]: () => {
         favorites = [sodas];
         return Response.json({ favorited: false, can_favorite: true });

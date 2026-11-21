@@ -138,9 +138,19 @@ export function useSetFavorited(
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: (favorited: boolean) => setFavorited(templateId, favorited),
-    onSuccess: async (state: FavoriteState) => {
+    onSuccess: (state: FavoriteState) => {
       queryClient.setQueryData(favoriteStateQueryKey(templateId), state);
-      await queryClient.invalidateQueries({ queryKey: FAVORITE_TEMPLATES_QUERY_KEY });
+      if (!state.favorited) {
+        queryClient.setQueryData(
+          FAVORITE_TEMPLATES_QUERY_KEY,
+          (favorites: FavoriteTemplatePages | undefined) =>
+            favorites === undefined ? undefined : withoutTemplate(favorites, templateId),
+        );
+      }
+      void queryClient.invalidateQueries({
+        queryKey: FAVORITE_TEMPLATES_QUERY_KEY,
+        refetchType: 'none',
+      });
     },
   });
 }
@@ -205,12 +215,16 @@ function useCardStatesOf<State extends { template_id: string }>(
   });
 }
 
-export function useCardStates(pages: MarketplaceTemplate[][]): void {
+export function useCardLikeStates(pages: MarketplaceTemplate[][]): void {
   useCardStatesOf(pages, {
     queryKey: MARKETPLACE_LIKE_STATES_QUERY_KEY,
     list: listLikeStates,
     stateQueryKey: likeStateQueryKey,
   });
+}
+
+export function useCardStates(pages: MarketplaceTemplate[][]): void {
+  useCardLikeStates(pages);
   useCardStatesOf(pages, {
     queryKey: MARKETPLACE_FAVORITE_STATES_QUERY_KEY,
     list: listFavoriteStates,
@@ -294,6 +308,23 @@ export function useMarketplaceTags(): UseQueryResult<string[]> {
   });
 }
 
+type FavoriteTemplatePages = InfiniteData<MarketplaceTemplateList, string | undefined>;
+
+const FAVORITED_STATE: FavoriteState = { favorited: true, can_favorite: true };
+
+function withoutTemplate(
+  favorites: FavoriteTemplatePages,
+  templateId: string,
+): FavoriteTemplatePages {
+  return {
+    ...favorites,
+    pages: favorites.pages.map((page: MarketplaceTemplateList) => ({
+      ...page,
+      items: page.items.filter((template: MarketplaceTemplate) => template.id !== templateId),
+    })),
+  };
+}
+
 async function listFavoriteTemplates(
   cursor: string | undefined,
   signal: AbortSignal,
@@ -303,12 +334,17 @@ async function listFavoriteTemplates(
   );
 }
 
-export function useFavoriteTemplates(): UseInfiniteQueryResult<
-  InfiniteData<MarketplaceTemplateList, string | undefined>
-> {
+export function useFavoriteTemplates(): UseInfiniteQueryResult<FavoriteTemplatePages> {
+  const queryClient: QueryClient = useQueryClient();
   return useInfiniteQuery({
     queryKey: FAVORITE_TEMPLATES_QUERY_KEY,
-    queryFn: ({ pageParam, signal }) => listFavoriteTemplates(pageParam, signal),
+    queryFn: async ({ pageParam, signal }) => {
+      const page: MarketplaceTemplateList = await listFavoriteTemplates(pageParam, signal);
+      for (const template of page.items) {
+        queryClient.setQueryData(favoriteStateQueryKey(template.id), FAVORITED_STATE);
+      }
+      return page;
+    },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: nextCursor,
     retry: retryUnlessClientError,

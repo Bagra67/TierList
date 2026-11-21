@@ -1,7 +1,11 @@
 import { type UseTranslationResponse, useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { type MarketplaceTemplate, useCardStates, useFavoriteTemplates } from '../api/marketplace';
+import {
+  type MarketplaceTemplate,
+  useCardLikeStates,
+  useFavoriteTemplates,
+} from '../api/marketplace';
 import { EmptyState } from '../components/EmptyState';
 import { MarketplaceCard } from '../components/MarketplaceCard';
 import { PageContainer } from '../components/PageContainer';
@@ -15,7 +19,7 @@ export function FavoritesPage() {
   useDocumentTitle(t('favorites.title'));
   const query = useFavoriteTemplates();
   const pages: MarketplaceTemplate[][] = query.data?.pages.map((page) => page.items) ?? [];
-  useCardStates(pages);
+  useCardLikeStates(pages);
   const templates: MarketplaceTemplate[] = pages.flat();
 
   return (

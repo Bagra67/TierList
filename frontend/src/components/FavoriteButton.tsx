@@ -9,8 +9,6 @@ import { ROUTES } from '../constants/routes';
 import { ToggleActionButton } from './ToggleActionButton';
 import { Button } from './ui/button';
 
-const FAVORITE_PRESSED_ICON_CLASS = 'fill-current';
-
 interface FavoriteToggleProps {
   templateId: string;
   favorited: boolean;
@@ -34,7 +32,7 @@ function FavoriteToggle({
       pending={setFavorited.isPending}
       error={setFavorited.error}
       icon={Bookmark}
-      pressedIconClassName={FAVORITE_PRESSED_ICON_CLASS}
+      pressedIconClassName="fill-current"
       label={label}
       ariaLabel={ariaLabel}
       compact={compact}
