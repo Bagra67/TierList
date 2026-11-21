@@ -70,6 +70,7 @@ export const fr = {
     home: 'Accueil',
     templates: 'Mes modèles',
     marketplace: 'Modèles publics',
+    favorites: 'Mes favoris',
     history: 'Historique',
     moderation: 'Modération',
     openReports_one: '{{count}} contenu signalé',
@@ -110,6 +111,8 @@ export const fr = {
         'Parties : les salles que vous rejoignez, vos placements et les résultats des parties.',
       likes:
         "J'aime : les modèles publics que vous aimez. Seul le nombre de j'aime d'un modèle est affiché : personne ne voit qui l'a aimé. Ils sont supprimés avec votre compte.",
+      favorites:
+        'Favoris : les modèles publics que vous gardez pour les retrouver. Vous seul les voyez. Ils sont supprimés avec votre compte.',
       reports:
         "Signalements : dans l'application, le compte de la personne qui signale ou, sans compte, l'empreinte de son cookie de signalement, le contenu visé, le motif et les précisions. Par e-mail, son adresse et ce que contient son message.",
       bans: "Bannissements : quand un super admin bannit un compte, la date de fin s'il y en a une, le motif et le super admin qui l'a décidé.",
@@ -968,6 +971,7 @@ export const fr = {
     },
     card: {
       like: "J'aime « {{name}} » · {{count}}",
+      favorite: 'Favori « {{name}} »',
       byline_one: 'par {{owner}} · {{count}} élément',
       byline_other: 'par {{owner}} · {{count}} éléments',
     },
@@ -997,6 +1001,18 @@ export const fr = {
       count_other: "{{count}} j'aime",
       signIn: 'Se connecter pour aimer',
     },
+    favorite: {
+      button: 'Favori',
+      signIn: 'Se connecter pour ajouter aux favoris',
+    },
+  },
+  favorites: {
+    title: 'Mes favoris',
+    intro: 'Les modèles publics que vous gardez, le dernier ajouté en premier.',
+    empty:
+      "Aucun favori pour l'instant. Ajoutez des modèles publics à vos favoris pour les retrouver ici.",
+    emptyAction: 'Parcourir les modèles publics',
+    more: 'Voir plus',
   },
   report: {
     open: 'Signaler',

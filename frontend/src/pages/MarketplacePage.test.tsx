@@ -251,4 +251,43 @@ describe('MarketplacePage', () => {
     expect(calledRoutes(backend)).not.toContain('GET /marketplace/likes');
     expect(screen.queryByRole('button', { name: /J'aime/ })).not.toBeInTheDocument();
   });
+
+  it('shows on the cards which templates are in the favorites, and adds one from a card', async () => {
+    const favorited: string[] = [];
+    stubMarketplace(() => ({ items: [chips, sodas], next_cursor: null }), [], {
+      ...signedInSession,
+      'GET /marketplace/favorite-states': () =>
+        Response.json({
+          items: [
+            { template_id: chips.id, favorited: true, can_favorite: true },
+            { template_id: sodas.id, favorited: false, can_favorite: true },
+          ],
+        }),
+      [`PUT /marketplace/templates/${sodas.id}/favorite`]: () => {
+        favorited.push(sodas.id);
+        return Response.json({ favorited: true, can_favorite: true });
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Favori « Chips »', pressed: true }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Favori « Sodas »', pressed: false }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Favori « Sodas »', pressed: true }),
+    ).toBeInTheDocument();
+    expect(favorited).toEqual([sodas.id]);
+  });
+
+  it('asks no favorite state for a visitor, who sees no favorite button', async () => {
+    stubMarketplace(() => ({ items: [chips], next_cursor: null }));
+    const backend = vi.mocked(fetch);
+    renderPage();
+
+    expect(await screen.findByText("3 j'aime")).toBeInTheDocument();
+    expect(calledRoutes(backend)).not.toContain('GET /marketplace/favorite-states');
+    expect(screen.queryByRole('button', { name: /Favori/ })).not.toBeInTheDocument();
+  });
 });

@@ -130,6 +130,10 @@ describe('App', () => {
       'href',
       '/marketplace',
     );
+    expect(within(nav).getByRole('link', { name: 'Mes favoris' })).toHaveAttribute(
+      'href',
+      '/favorites',
+    );
     fireEvent.click(within(nav).getByRole('link', { name: 'Historique' }));
 
     expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument();

@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import {
   type MarketplaceTemplate,
   uniqueById,
-  useCardLikeStates,
+  useCardStates,
   useFeaturedTemplates,
   usePopularTemplates,
 } from '../../api/marketplace';
@@ -26,7 +26,7 @@ export function PopularTemplates() {
     featured === undefined || popular === undefined
       ? undefined
       : uniqueById([...featured, ...popular]).slice(0, HOME_POPULAR_COUNT);
-  useCardLikeStates(templates === undefined ? [] : [templates]);
+  useCardStates(templates === undefined ? [] : [templates]);
 
   if (templates === undefined || templates.length === 0) return null;
   return (

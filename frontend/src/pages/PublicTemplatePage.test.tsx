@@ -291,4 +291,65 @@ describe('PublicTemplatePage', () => {
       expect(screen.getByText("12 j'aime")).toBeInTheDocument();
     });
   });
+
+  describe('favorites', () => {
+    const favoriteRoute: string = `/marketplace/templates/${templateId}/favorite`;
+
+    function favoriteState(favorited: boolean, canFavorite: boolean = true): Response {
+      return Response.json({ favorited, can_favorite: canFavorite });
+    }
+
+    it('lets a signed-in user add the template to their favorites, then remove it', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${favoriteRoute}`]: () => favoriteState(false),
+        [`PUT ${favoriteRoute}`]: () => favoriteState(true),
+        [`DELETE ${favoriteRoute}`]: () => favoriteState(false),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Favori', pressed: false }));
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Favori', pressed: true }));
+
+      expect(
+        await screen.findByRole('button', { name: 'Favori', pressed: false }),
+      ).toBeInTheDocument();
+    });
+
+    it('says why an account without a confirmed email cannot add a favorite', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${favoriteRoute}`]: () => favoriteState(false),
+        [`PUT ${favoriteRoute}`]: () => errorResponse(403, 'email_not_verified'),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Favori' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/e-mail/i);
+    });
+
+    it('shows no favorite button to the owner', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(chips),
+        [`GET ${favoriteRoute}`]: () => favoriteState(false, false),
+      });
+      renderPage(undefined, alice);
+
+      await screen.findByRole('heading', { level: 1, name: 'Chips' });
+      await waitFor(() =>
+        expect(screen.queryByRole('button', { name: 'Favori' })).not.toBeInTheDocument(),
+      );
+    });
+
+    it('asks a visitor to sign in to add a favorite', async () => {
+      stubBackend({ [templateRoute]: () => Response.json(chips) });
+      renderPage();
+
+      expect(
+        await screen.findByRole('link', { name: 'Se connecter pour ajouter aux favoris' }),
+      ).toHaveAttribute('href', '/login');
+    });
+  });
 });
