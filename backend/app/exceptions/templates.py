@@ -44,6 +44,10 @@ class CannotLikeOwnTemplateError(Exception):
     pass
 
 
+class CannotFavoriteOwnTemplateError(Exception):
+    pass
+
+
 class TagLimitReachedError(Exception):
     def __init__(self, max_tags: int) -> None:
         super().__init__(max_tags)

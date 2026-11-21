@@ -16,6 +16,7 @@ from app.models.template import Template
 from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
+from app.seed.favorites import favorite_public_templates
 from app.seed.games import SeedGames, create_closed_games
 from app.seed.likes import like_public_templates
 from app.seed.moderation import (
@@ -41,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 SEED_RANDOM_SEED = 2026
 LIKES_RANDOM_SEED = 276
+FAVORITES_RANDOM_SEED = 278
 
 
 @contextmanager
@@ -129,6 +131,13 @@ def run_seed(
             published,
             size.max_likes_per_public_template,
             random.Random(LIKES_RANDOM_SEED),
+        )
+        favorite_public_templates(
+            session,
+            player_ids,
+            published,
+            size.max_favorites_per_public_template,
+            random.Random(FAVORITES_RANDOM_SEED),
         )
         rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
             rooms,

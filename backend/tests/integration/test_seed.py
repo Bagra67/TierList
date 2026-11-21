@@ -32,6 +32,7 @@ from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.user import User
@@ -198,16 +199,17 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
-    likes: list[tuple[uuid.UUID, uuid.UUID]] = [
-        (like_owner_id, user_id)
-        for like_owner_id, user_id in db_session.execute(
-            select(Template.owner_id, TemplateLike.user_id).join(
-                Template, Template.id == TemplateLike.template_id
-            )
-        ).all()
-    ]
-    assert likes
-    assert all(owner_id != user_id for owner_id, user_id in likes)
+    for model in (TemplateLike, TemplateFavorite):
+        owner_and_user_ids: list[tuple[uuid.UUID, uuid.UUID]] = [
+            (template_owner_id, user_id)
+            for template_owner_id, user_id in db_session.execute(
+                select(Template.owner_id, model.user_id).join(
+                    Template, Template.id == model.template_id
+                )
+            ).all()
+        ]
+        assert owner_and_user_ids
+        assert all(owner_id != user_id for owner_id, user_id in owner_and_user_ids)
     assert (
         db_session.scalar(
             select(func.count())
