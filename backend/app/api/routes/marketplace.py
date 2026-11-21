@@ -10,7 +10,7 @@ from app.api.presenters.marketplace import (
     marketplace_template_response,
     public_template_response,
 )
-from app.api.responses import UNAUTHORIZED_RESPONSE
+from app.api.responses import INVALID_CURSOR_RESPONSE, UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.marketplace import (
@@ -60,8 +60,10 @@ SIGNED_IN_TEMPLATE_RESPONSES: dict[int | str, dict[str, Any]] = {
     **UNAUTHORIZED_RESPONSE,
     **TEMPLATE_NOT_FOUND_RESPONSE,
 }
-INVALID_CURSOR_RESPONSE: dict[int | str, dict[str, Any]] = {
-    400: {"model": ErrorResponse, "description": messages.INVALID_CURSOR_DESCRIPTION}
+VERIFIED_NON_OWNER_RESPONSES: dict[int | str, dict[str, Any]] = {
+    **SIGNED_IN_TEMPLATE_RESPONSES,
+    403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
+    409: {"model": ErrorResponse, "description": messages.ACCOUNT_OWNS_TEMPLATE_DESCRIPTION},
 }
 
 
@@ -167,11 +169,7 @@ def get_like(
 
 @router.put(
     "/templates/{template_id}/like",
-    responses={
-        **SIGNED_IN_TEMPLATE_RESPONSES,
-        403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
-        409: {"model": ErrorResponse, "description": messages.ACCOUNT_OWNS_TEMPLATE_DESCRIPTION},
-    },
+    responses=VERIFIED_NON_OWNER_RESPONSES,
 )
 def like_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: MarketplaceServiceDep
@@ -261,11 +259,7 @@ def get_favorite(
 
 @router.put(
     "/templates/{template_id}/favorite",
-    responses={
-        **SIGNED_IN_TEMPLATE_RESPONSES,
-        403: {"model": ErrorResponse, "description": messages.EMAIL_NOT_VERIFIED_DESCRIPTION},
-        409: {"model": ErrorResponse, "description": messages.ACCOUNT_OWNS_TEMPLATE_DESCRIPTION},
-    },
+    responses=VERIFIED_NON_OWNER_RESPONSES,
 )
 def favorite_template(
     template_id: uuid.UUID, user: CurrentUserDep, service: MarketplaceServiceDep

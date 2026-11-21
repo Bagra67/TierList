@@ -438,12 +438,13 @@ def list_favorite_templates(
             TemplateFavorite,
             and_(TemplateFavorite.template_id == Template.id, TemplateFavorite.user_id == user_id),
         )
-        .order_by(TemplateFavorite.created_at.desc(), Template.id.desc())
+        .order_by(TemplateFavorite.created_at.desc(), TemplateFavorite.template_id.desc())
         .limit(limit)
     )
     if after is not None:
         statement = statement.where(
-            tuple_(TemplateFavorite.created_at, Template.id) < tuple_(after.favorited_at, after.id)
+            tuple_(TemplateFavorite.created_at, TemplateFavorite.template_id)
+            < tuple_(after.favorited_at, after.id)
         )
     return [
         (template, owner_name, like_count, favorited_at)

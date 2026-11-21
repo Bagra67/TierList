@@ -132,13 +132,8 @@ class MarketplaceService:
         return self._like_state(user, template_id, owner_id, liked=False)
 
     def like_states(self, user: User, template_ids: list[uuid.UUID]) -> list[TemplateLikeState]:
-        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
-        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
-            self._session, unique_ids, datetime.now(UTC)
-        )
-        listed_ids: list[uuid.UUID] = [
-            template_id for template_id in unique_ids if template_id in owner_ids
-        ]
+        owner_ids: dict[uuid.UUID, uuid.UUID] = self._listed_owner_ids_in_order(template_ids)
+        listed_ids: list[uuid.UUID] = list(owner_ids)
         like_counts: dict[uuid.UUID, int] = like_repository.count_likes_of_templates(
             self._session, listed_ids
         )
@@ -179,13 +174,8 @@ class MarketplaceService:
     def favorite_states(
         self, user: User, template_ids: list[uuid.UUID]
     ) -> list[TemplateFavoriteState]:
-        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
-        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
-            self._session, unique_ids, datetime.now(UTC)
-        )
-        listed_ids: list[uuid.UUID] = [
-            template_id for template_id in unique_ids if template_id in owner_ids
-        ]
+        owner_ids: dict[uuid.UUID, uuid.UUID] = self._listed_owner_ids_in_order(template_ids)
+        listed_ids: list[uuid.UUID] = list(owner_ids)
         favorited_ids: set[uuid.UUID] = favorite_repository.list_favorited_template_ids(
             self._session, user.id, listed_ids
         )
@@ -287,6 +277,19 @@ class MarketplaceService:
         if listed is None:
             raise TemplateNotFoundError
         return listed[1]
+
+    def _listed_owner_ids_in_order(
+        self, template_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
+        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
+            self._session, unique_ids, datetime.now(UTC)
+        )
+        return {
+            template_id: owner_ids[template_id]
+            for template_id in unique_ids
+            if template_id in owner_ids
+        }
 
     def _like_state(
         self, user: User, template_id: uuid.UUID, owner_id: uuid.UUID, liked: bool
