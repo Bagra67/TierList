@@ -301,7 +301,7 @@ Super admins see the deleted templates until the nightly purge erases them (#104
 
 ### 2.13 Official templates
 
-The super admins make the site's own templates, owned by the system account « TierList » (#492). The model, the edit lease, the limits and the routes are in the [templates guide](templates.md#211-official-templates); the TierList picks in the [marketplace guide](marketplace.md#211-tierlist-picks).
+The super admins make the site's own templates, owned by the system account « TierList » (#492). The model, the edit lease, the limits and the routes are in the [templates guide](templates.md#211-official-templates); the TierList picks in the [marketplace guide](marketplace.md#212-tierlist-picks).
 
 - **Routes**: `/moderation/official-templates` (`api/routes/official_templates.py`), protected by `SuperAdminDep` and declaring `SUPER_ADMIN_RESPONSES`: list, create, take or give back the edit lease (`/lock`), `/publish`, `/unpublish`, `/feature`, `/unfeature`, delete. No body carries a reason. The content is edited through the `/templates/{id}/…` routes while holding the lease.
 - **Log**: `OfficialTemplateService` records `create`, `publish`, `unpublish`, `feature`, `unfeature` and `delete` (target `template`, the template name as label, `reason` `null`) in the transaction of the action, like §2.2. `TemplateService` records one `edit` for the first content change committed in each lease (a request that changes nothing records none). An action that changes nothing (publishing a published template) writes nothing.
