@@ -12,10 +12,15 @@ from app.core.cursor import decode_cursor, encode_cursor, split_page
 from app.core.search_query import build_search_query
 from app.core.search_text import normalize_search_text
 from app.exceptions.auth import EmailNotVerifiedError
-from app.exceptions.templates import CannotLikeOwnTemplateError, TemplateNotFoundError
+from app.exceptions.templates import (
+    CannotFavoriteOwnTemplateError,
+    CannotLikeOwnTemplateError,
+    TemplateNotFoundError,
+)
 from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
+from app.repositories import template_favorites as favorite_repository
 from app.repositories import template_likes as like_repository
 from app.repositories import templates as template_repository
 
@@ -71,6 +76,24 @@ class TemplateLikeState(LikeState):
     template_id: uuid.UUID
 
 
+class FavoritesPosition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    favorited_at: datetime
+    id: uuid.UUID
+
+
+@dataclass(frozen=True)
+class FavoriteState:
+    favorited: bool
+    can_favorite: bool
+
+
+@dataclass(frozen=True)
+class TemplateFavoriteState(FavoriteState):
+    template_id: uuid.UUID
+
+
 class MarketplaceService:
     def __init__(self, session: Session) -> None:
         self._session = session
@@ -109,13 +132,8 @@ class MarketplaceService:
         return self._like_state(user, template_id, owner_id, liked=False)
 
     def like_states(self, user: User, template_ids: list[uuid.UUID]) -> list[TemplateLikeState]:
-        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
-        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
-            self._session, unique_ids, datetime.now(UTC)
-        )
-        listed_ids: list[uuid.UUID] = [
-            template_id for template_id in unique_ids if template_id in owner_ids
-        ]
+        owner_ids: dict[uuid.UUID, uuid.UUID] = self._listed_owner_ids_in_order(template_ids)
+        listed_ids: list[uuid.UUID] = list(owner_ids)
         like_counts: dict[uuid.UUID, int] = like_repository.count_likes_of_templates(
             self._session, listed_ids
         )
@@ -126,11 +144,70 @@ class MarketplaceService:
             TemplateLikeState(
                 liked=template_id in liked_ids,
                 like_count=like_counts.get(template_id, 0),
-                can_like=_can_like(user, owner_ids[template_id]),
+                can_like=_is_not_owner(user, owner_ids[template_id]),
                 template_id=template_id,
             )
             for template_id in listed_ids
         ]
+
+    def favorite_state(self, user: User, template_id: uuid.UUID) -> FavoriteState:
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
+        favorited: bool = favorite_repository.has_favorited(self._session, template_id, user.id)
+        return FavoriteState(favorited=favorited, can_favorite=_is_not_owner(user, owner_id))
+
+    def favorite(self, user: User, template_id: uuid.UUID) -> FavoriteState:
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
+        if owner_id == user.id:
+            raise CannotFavoriteOwnTemplateError
+        if not user.email_verified:
+            raise EmailNotVerifiedError
+        favorite_repository.add_favorite(self._session, template_id, user.id)
+        self._session.commit()
+        return FavoriteState(favorited=True, can_favorite=True)
+
+    def unfavorite(self, user: User, template_id: uuid.UUID) -> FavoriteState:
+        owner_id: uuid.UUID = self._listed_owner_id(template_id)
+        favorite_repository.remove_favorite(self._session, template_id, user.id)
+        self._session.commit()
+        return FavoriteState(favorited=False, can_favorite=_is_not_owner(user, owner_id))
+
+    def favorite_states(
+        self, user: User, template_ids: list[uuid.UUID]
+    ) -> list[TemplateFavoriteState]:
+        owner_ids: dict[uuid.UUID, uuid.UUID] = self._listed_owner_ids_in_order(template_ids)
+        listed_ids: list[uuid.UUID] = list(owner_ids)
+        favorited_ids: set[uuid.UUID] = favorite_repository.list_favorited_template_ids(
+            self._session, user.id, listed_ids
+        )
+        return [
+            TemplateFavoriteState(
+                favorited=template_id in favorited_ids,
+                can_favorite=_is_not_owner(user, owner_ids[template_id]),
+                template_id=template_id,
+            )
+            for template_id in listed_ids
+        ]
+
+    def list_favorites(self, user: User, cursor: str | None, limit: int) -> MarketplacePage:
+        after: template_repository.FavoritesAfter | None = None
+        if cursor is not None:
+            position: FavoritesPosition = decode_cursor(cursor, FavoritesPosition)
+            after = template_repository.FavoritesAfter(position.favorited_at, position.id)
+        rows: list[tuple[Template, str, int, datetime]] = (
+            template_repository.list_favorite_templates(
+                self._session, datetime.now(UTC), user.id, after, limit + 1
+            )
+        )
+        page_rows, last_row = split_page(rows, limit)
+        next_cursor: str | None = (
+            None
+            if last_row is None
+            else encode_cursor(FavoritesPosition(favorited_at=last_row[3], id=last_row[0].id))
+        )
+        cards: list[MarketplaceTemplate] = self._cards(
+            [(template, owner_name, likes) for template, owner_name, likes, _ in page_rows]
+        )
+        return MarketplacePage(items=cards, next_cursor=next_cursor)
 
     def list_templates(
         self,
@@ -201,17 +278,30 @@ class MarketplaceService:
             raise TemplateNotFoundError
         return listed[1]
 
+    def _listed_owner_ids_in_order(
+        self, template_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        unique_ids: list[uuid.UUID] = list(dict.fromkeys(template_ids))
+        owner_ids: dict[uuid.UUID, uuid.UUID] = template_repository.list_listed_template_owner_ids(
+            self._session, unique_ids, datetime.now(UTC)
+        )
+        return {
+            template_id: owner_ids[template_id]
+            for template_id in unique_ids
+            if template_id in owner_ids
+        }
+
     def _like_state(
         self, user: User, template_id: uuid.UUID, owner_id: uuid.UUID, liked: bool
     ) -> LikeState:
         return LikeState(
             liked=liked,
             like_count=like_repository.count_likes(self._session, template_id),
-            can_like=_can_like(user, owner_id),
+            can_like=_is_not_owner(user, owner_id),
         )
 
 
-def _can_like(user: User, owner_id: uuid.UUID) -> bool:
+def _is_not_owner(user: User, owner_id: uuid.UUID) -> bool:
     return owner_id != user.id
 
 

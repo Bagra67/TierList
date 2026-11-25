@@ -17,7 +17,7 @@ from app.api.errors import (
     template_not_found,
 )
 from app.api.presenters.templates import template_response
-from app.api.responses import UNAUTHORIZED_RESPONSE
+from app.api.responses import INVALID_CURSOR_RESPONSE, UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
 from app.constants.templates import CURSOR_MAX_LENGTH
@@ -145,10 +145,7 @@ def create_template(
 
 @router.get(
     "",
-    responses={
-        **UNAUTHORIZED_RESPONSE,
-        400: {"model": ErrorResponse, "description": messages.INVALID_CURSOR_DESCRIPTION},
-    },
+    responses={**UNAUTHORIZED_RESPONSE, **INVALID_CURSOR_RESPONSE},
 )
 def list_templates(
     user: CurrentUserDep,
