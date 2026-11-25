@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import (
     DEFAULT_TIERS,
+    LINEAGE_MAX_ANCESTORS,
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
     TEMPLATES_PAGE_SIZE,
@@ -72,16 +73,15 @@ def _move[Positioned: (Tier, Tile)](
 
 
 def _ancestors_of_copy(source: Template) -> list[TemplateAncestor]:
+    chain: list[tuple[uuid.UUID | None, str]] = [
+        (source.id, source.name),
+        *((ancestor.ancestor_id, ancestor.ancestor_name) for ancestor in source.ancestors),
+    ]
+    if len(chain) > LINEAGE_MAX_ANCESTORS:
+        chain = [*chain[: LINEAGE_MAX_ANCESTORS - 1], chain[-1]]
     return [
-        TemplateAncestor(depth=1, ancestor_id=source.id, ancestor_name=source.name),
-        *(
-            TemplateAncestor(
-                depth=ancestor.depth + 1,
-                ancestor_id=ancestor.ancestor_id,
-                ancestor_name=ancestor.ancestor_name,
-            )
-            for ancestor in source.ancestors
-        ),
+        TemplateAncestor(depth=depth, ancestor_id=ancestor_id, ancestor_name=ancestor_name)
+        for depth, (ancestor_id, ancestor_name) in enumerate(chain, start=1)
     ]
 
 

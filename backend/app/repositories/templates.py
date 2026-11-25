@@ -123,7 +123,10 @@ def list_lineages(
     session: Session, template_ids: list[uuid.UUID], now: datetime, max_depth: int | None = None
 ) -> dict[uuid.UUID, list[LineageAncestor]]:
     is_listed: ColumnElement[bool] = listed_templates_condition(now)
-    statement: Select[uuid.UUID, str, uuid.UUID, str, str, bool] = (
+    owner_is_banned: ColumnElement[bool] = exists().where(
+        AccountBan.user_id == Template.owner_id, is_active(now)
+    )
+    statement: Select[uuid.UUID, str, uuid.UUID, str, str, bool, bool] = (
         select(
             TemplateAncestor.template_id,
             TemplateAncestor.ancestor_name,
@@ -131,6 +134,7 @@ def list_lineages(
             Template.name,
             User.display_name,
             is_listed,
+            owner_is_banned,
         )
         .select_from(TemplateAncestor)
         .outerjoin(Template, Template.id == TemplateAncestor.ancestor_id)
@@ -141,14 +145,20 @@ def list_lineages(
     if max_depth is not None:
         statement = statement.where(TemplateAncestor.depth <= max_depth)
     lineages: dict[uuid.UUID, list[LineageAncestor]] = {}
-    for template_id, copied_name, ancestor_id, current_name, owner_name, listed in session.execute(
-        statement
-    ):
+    for (
+        template_id,
+        copied_name,
+        ancestor_id,
+        current_name,
+        owner_name,
+        listed,
+        banned,
+    ) in session.execute(statement):
         lineages.setdefault(template_id, []).append(
             LineageAncestor(
                 template_id=ancestor_id if listed else None,
                 name=current_name if listed else copied_name,
-                owner_name=owner_name,
+                owner_name=None if banned else owner_name,
             )
         )
     return lineages
@@ -372,7 +382,12 @@ def list_tiles_with_removed_image_of_templates(
     statement: Select[Tile, Image] = (
         select(Tile, Image)
         .join(Image, Tile.image_id == Image.id)
-        .where(Tile.template_id.in_(template_ids), Image.status != ImageStatus.VISIBLE)
+        .join(Template, Template.id == Tile.template_id)
+        .where(
+            Tile.template_id.in_(template_ids),
+            Image.status != ImageStatus.VISIBLE,
+            Image.owner_id == Template.owner_id,
+        )
         .order_by(Tile.position, Tile.id)
     )
     return [(tile, image) for tile, image in session.execute(statement)]

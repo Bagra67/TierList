@@ -8,8 +8,10 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.constants.error_codes import ErrorCode
-from app.constants.templates import FREE_PLAN_MAX_TILES
+from app.constants.templates import FREE_PLAN_MAX_TILES, LINEAGE_MAX_ANCESTORS
+from app.models.image import ImageStatus
 from app.models.template import Template
+from app.models.template_ancestor import TemplateAncestor
 from app.models.tile import Tile
 from tests.integration.helpers import (
     PASSWORD,
@@ -379,3 +381,74 @@ def test_an_official_template_within_the_limits_becomes_a_template_of_the_player
     assert response.status_code == 201
     assert response.json()["official"] is False
     assert response.json()["max_tiles"] == FREE_PLAN_MAX_TILES
+
+
+def test_a_copy_never_shows_the_moderation_reason_of_an_image_of_another_account(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    template_id: str,
+):
+    _, image = add_tile_with_image(auth_client, db_session, alice, template_id, "Photo")
+    copy_id: str = copied_id(auth_client, template_id, bob)
+    image.status = ImageStatus.HIDDEN
+    image.moderation_reason = "Nudity"
+    db_session.flush()
+
+    tile: JsonObject = auth_client.get(f"/templates/{copy_id}", headers=bob).json()["tiles"][-1]
+    summaries: list[JsonObject] = auth_client.get("/templates", headers=bob).json()["items"]
+
+    assert tile["image_removed"] is True
+    assert (tile["image_status"], tile["image_moderation_reason"]) == (None, None)
+    assert [summary["removed_images"] for summary in summaries] == [[]]
+    owner_tile: JsonObject = auth_client.get(f"/templates/{template_id}", headers=alice).json()[
+        "tiles"
+    ][-1]
+    assert owner_tile["image_moderation_reason"] == "Nudity"
+
+
+def test_the_lineage_hides_the_name_of_a_banned_owner(
+    auth_client: TestClient,
+    db_session: Session,
+    alice: dict[str, str],
+    bob: dict[str, str],
+    template_id: str,
+):
+    bob_copy_id: str = copied_id(auth_client, template_id, bob)
+    publish_with_copies(auth_client, db_session, bob_copy_id, bob, BOB_EMAIL)
+
+    ban_account(db_session, ALICE_EMAIL)
+
+    assert lineage(auth_client, bob_copy_id) == [
+        {"template_id": None, "name": "Food", "owner_name": None}
+    ]
+
+
+def test_a_long_lineage_keeps_the_nearest_ancestors_and_the_original(
+    auth_client: TestClient,
+    db_session: Session,
+    bob: dict[str, str],
+    template_id: str,
+):
+    for depth in range(1, LINEAGE_MAX_ANCESTORS + 1):
+        db_session.add(
+            TemplateAncestor(
+                template_id=uuid.UUID(template_id),
+                depth=depth,
+                ancestor_id=None,
+                ancestor_name=f"Ancestor {depth}",
+            )
+        )
+    db_session.flush()
+    bob_copy_id: str = copied_id(auth_client, template_id, bob)
+    publish_with_copies(auth_client, db_session, bob_copy_id, bob, BOB_EMAIL)
+
+    names: list[str] = [ancestor["name"] for ancestor in lineage(auth_client, bob_copy_id)]
+
+    assert len(names) == LINEAGE_MAX_ANCESTORS
+    assert names[:2] == ["Food", "Ancestor 1"]
+    assert names[-2:] == [
+        f"Ancestor {LINEAGE_MAX_ANCESTORS - 2}",
+        f"Ancestor {LINEAGE_MAX_ANCESTORS}",
+    ]

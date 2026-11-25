@@ -10028,7 +10028,7 @@
           "owner_name"
         ],
         "title": "LineageAncestorResponse",
-        "description": "A template a copy comes from. `template_id` is set only while that template is listed,\nso it can be linked; `name` is its current name then, and the name it had when it was copied\notherwise. `owner_name` is null once the template or its owner's account is gone."
+        "description": "A template a copy comes from. `template_id` is set only while that template is listed,\nso it can be linked; `name` is its current name then, and the name it had when it was copied\notherwise, from its parent up to the original, at most 20 of them (the nearest ones and the\noriginal). `owner_name` is null once the template is erased or its owner's account deleted,\nand while its owner is banned."
       },
       "LoginRequest": {
         "properties": {
