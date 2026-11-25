@@ -22,14 +22,12 @@ export function CopyTemplateButton({ template }: { template: PublicTemplate }) {
   if (!template.copy_allowed || user === undefined) return null;
   if (user === null) {
     return (
-      <div className="flex flex-col items-end gap-1">
-        <Button asChild variant="secondary">
-          <Link to={ROUTES.LOGIN} state={signInRedirectState(location)}>
-            <Copy aria-hidden="true" />
-            {t('publicTemplate.copy.signIn')}
-          </Link>
-        </Button>
-      </div>
+      <Button asChild variant="secondary">
+        <Link to={ROUTES.LOGIN} state={signInRedirectState(location)}>
+          <Copy aria-hidden="true" />
+          {t('publicTemplate.copy.signIn')}
+        </Link>
+      </Button>
     );
   }
   if (state === undefined || !state.can_copy) return null;

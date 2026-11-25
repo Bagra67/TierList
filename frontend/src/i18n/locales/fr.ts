@@ -1020,10 +1020,10 @@ export const fr = {
     },
   },
   lineage: {
-    name: '« {{name}} »',
-    copiedFrom: 'copié depuis',
-    itselfCopiedFrom: ', lui-même copié depuis',
-    byOwner: 'par {{owner}}',
+    copiedFrom: 'copié depuis <name>« {{name}} »</name> par {{owner}}',
+    copiedFromWithoutOwner: 'copié depuis <name>« {{name}} »</name>',
+    itselfCopiedFrom: ', lui-même copié depuis <name>« {{name}} »</name> par {{owner}}',
+    itselfCopiedFromWithoutOwner: ', lui-même copié depuis <name>« {{name}} »</name>',
   },
   favorites: {
     title: 'Mes favoris',

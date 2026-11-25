@@ -1006,10 +1006,10 @@ export const en: Translation = {
     },
   },
   lineage: {
-    name: '“{{name}}”',
-    copiedFrom: 'copied from',
-    itselfCopiedFrom: ', itself copied from',
-    byOwner: 'by {{owner}}',
+    copiedFrom: 'copied from <name>“{{name}}”</name> by {{owner}}',
+    copiedFromWithoutOwner: 'copied from <name>“{{name}}”</name>',
+    itselfCopiedFrom: ', itself copied from <name>“{{name}}”</name> by {{owner}}',
+    itselfCopiedFromWithoutOwner: ', itself copied from <name>“{{name}}”</name>',
   },
   favorites: {
     title: 'My favorites',
