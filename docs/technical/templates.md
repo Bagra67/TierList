@@ -335,11 +335,11 @@ Built in #279 (US-3.6, US-3.7). A fork is called a **copy** in the interface («
 **Frontend**
 
 - **Editor**: `TemplateForksField` (« Autoriser les copies de ce modèle ») under the visibility or the official status, optimistic (`useSetForksAllowed`). Its help text sits outside the label, so the checkbox keeps a short accessible name. A copy shows « Copié depuis « X » » under its title.
-- **Public page**: `TemplateLineage` in the byline (« copié depuis « X » par Noé, lui-même copié depuis « Y » »), and `CopyTemplateButton`.
+- **Public page**: `TemplateLineage` in the byline (« copié depuis « X » par Noé, lui-même copié depuis « Y » »), and `CopyTemplateButton`. Each link of the chain is a whole sentence (`lineage.*`, with or without the owner) rendered with `Trans`, the name being a link only for a listed ancestor, so a language can order its words freely.
   - The button asks `useCopyState`; it is hidden for the owner and when the template cannot be copied.
   - It copies (`useCopyTemplate`) and then opens the editor of the copy.
   - A visitor gets « Se connecter pour copier », only when `copy_allowed`.
-- **Cards**: `CopiedFrom` under the byline, above the link that covers the card.
+- **Cards**: `TemplateLineage` with the parent only, under the byline, above the link that covers the card.
 
 ### 2.13 Known limitations
 
