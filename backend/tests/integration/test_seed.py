@@ -32,6 +32,7 @@ from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_ancestor import TemplateAncestor
 from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
@@ -47,7 +48,7 @@ from tests.integration.helpers import JsonObject, counted_queries, select_accoun
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 610
+SMALL_SEED_MAX_QUERIES = 700
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -114,7 +115,9 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         .where(text("email_verified_at IS NULL"))
     ) == (SMALL_SIZE.unverified_accounts)
     assert count(db_session, Template) == summary.templates
-    pizzas: Template = db_session.scalars(select(Template).where(Template.name == "Pizzas")).one()
+    pizzas: Template = db_session.scalars(
+        select(Template).where(Template.name == "Pizzas", ~Template.ancestors.any())
+    ).one()
     assert [tag.label for tag in pizzas.tags] == ["Cuisine", "italie", "soirée entre amis"]
     assert pizzas.search_text == "pizzas cuisine italie soiree entre amis"
     assert (
@@ -199,6 +202,16 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
+    ancestors: list[tuple[int, TemplateVisibility | None]] = [
+        (depth, visibility)
+        for depth, visibility in db_session.execute(
+            select(TemplateAncestor.depth, Template.visibility).join(
+                Template, Template.id == TemplateAncestor.ancestor_id
+            )
+        ).all()
+    ]
+    assert (1, TemplateVisibility.PRIVATE) in ancestors
+    assert (2, TemplateVisibility.PUBLIC) in ancestors
     for model in (TemplateLike, TemplateFavorite):
         owner_and_user_ids: list[tuple[uuid.UUID, uuid.UUID]] = [
             (template_owner_id, user_id)

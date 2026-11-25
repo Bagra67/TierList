@@ -16,6 +16,7 @@ from app.models.template import Template
 from app.models.user import User
 from app.seed.accounts import SeedAccounts, create_accounts
 from app.seed.cleanup import SeedCleanup, delete_seed_data
+from app.seed.copies import copy_public_templates
 from app.seed.favorites import favorite_public_templates
 from app.seed.games import SeedGames, create_closed_games
 from app.seed.likes import like_public_templates
@@ -139,11 +140,17 @@ def run_seed(
             size.max_favorites_per_public_template,
             random.Random(FAVORITES_RANDOM_SEED),
         )
+        public_templates_not_hidden: list[Template] = _public_templates_not_hidden(
+            templates, published, templates_to_hide
+        )
         rooms_on_public_templates: list[Room] = create_rooms_on_public_templates_of_others(
             rooms,
             accounts.players,
-            _public_templates_not_hidden(templates, published, templates_to_hide),
+            public_templates_not_hidden,
             size.rooms_on_public_templates_of_others,
+        )
+        copies: int = copy_public_templates(
+            session, settings, public_templates_not_hidden, accounts.players
         )
         moderated_templates: int = moderate_templates(
             session,
@@ -178,7 +185,8 @@ def run_seed(
         templates=len(templates.playable)
         + len(templates.empty)
         + len(templates.deleted)
-        + size.official_templates,
+        + size.official_templates
+        + copies,
         images=size.image_templates * size.image_tiles_per_template,
         closed_games=len(played.closed),
         open_rooms=len(played.open_rooms_with_past_games)
