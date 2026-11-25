@@ -20,6 +20,7 @@ from app.db.types import text_enum
 from app.models.enums import TemplateModeration, TemplateVisibility
 
 if TYPE_CHECKING:
+    from app.models.template_ancestor import TemplateAncestor
     from app.models.template_tag import TemplateTag
     from app.models.tier import Tier
     from app.models.tile import Tile
@@ -79,6 +80,7 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
     editing_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     edit_logged: Mapped[bool] = mapped_column(default=False, server_default=false())
+    forks_allowed: Mapped[bool] = mapped_column(default=False, server_default=false())
 
     editing_by: Mapped[User | None] = relationship(foreign_keys=[editing_by_id])
 
@@ -90,6 +92,12 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     )
     tags: Mapped[list[TemplateTag]] = relationship(
         back_populates="template", cascade="all, delete-orphan", order_by="TemplateTag.position"
+    )
+    ancestors: Mapped[list[TemplateAncestor]] = relationship(
+        back_populates="template",
+        cascade="all, delete-orphan",
+        order_by="TemplateAncestor.depth",
+        foreign_keys="TemplateAncestor.template_id",
     )
 
     @property
@@ -103,6 +111,14 @@ class Template(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     @property
     def max_tags(self) -> int:
         return OFFICIAL_TEMPLATE_MAX_TAGS if self.is_official else TEMPLATE_MAX_TAGS
+
+    @property
+    def fits_player_limits(self) -> bool:
+        return len(self.tiles) <= FREE_PLAN_MAX_TILES and len(self.tags) <= TEMPLATE_MAX_TAGS
+
+    @property
+    def copy_allowed(self) -> bool:
+        return self.forks_allowed and self.fits_player_limits
 
     def active_editor(self, now: datetime) -> User | None:
         if self.editing_until is None or self.editing_until <= now:
