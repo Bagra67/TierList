@@ -260,7 +260,7 @@ Anyone, signed in or not, opens the page of a public template before playing it 
 - **Likes** (US-3.4, #276): the page shows the number of likes (`like_count`). A signed-in user who may like it (`can_like`, and a confirmed email address, otherwise the button shows why) gets a toggle button "J'aime · 12" (`aria-pressed`, `components/LikeButton.tsx`); the owner sees the count only; a visitor gets "Se connecter pour aimer" and comes back after signing in ([marketplace guide](marketplace.md#210-likes)).
 - **Back to the marketplace**: a "← Modèles publics" link, and the tags link to `/marketplace?tag=…` ([marketplace guide](marketplace.md#4-frontend)).
 - **Favorites** (US-3.5, #278): a signed-in user who may add it (`can_favorite`, and a confirmed email address, otherwise the button shows why) gets a toggle button "Favori" (`aria-pressed`, Lucide `Bookmark`, `components/FavoriteButton.tsx`); the owner sees no button; a visitor gets "Se connecter pour ajouter aux favoris" ([marketplace guide](marketplace.md#211-favorites)).
-- **Not shown yet**: the lineage of a fork and the copy action (#279) come with their issue, on this page.
+- **Copies** (US-3.6, US-3.7, #279): the lineage of a copy in the byline, and « Copier dans mes modèles » when the owner allows copies (§2.12).
 - **Frontend**: `PublicTemplatePage`, at `/marketplace/templates/:templateId` (`ROUTES.PUBLIC_TEMPLATE`, `publicTemplatePath`), outside `RequireAuth`.
   - The name (`h1`), "par …", the tags (`TemplateTagList`), the tiers as color chips (`TemplateTierChips`), then the items in a grid of 2 to 6 columns (`TemplateTileCard`: the image or the "image removed" visual, then the text); an empty state when no item is left. `ReportButton` sits next to the title, as on the results page.
   - `TemplateTierChips` and `TemplateTileCard` are shared with the moderation template page, which adds its "image hidden" note to the card.
@@ -279,7 +279,7 @@ The site publishes its own templates, signed « TierList » (#492). The super ad
 - **Edit lease**: one super admin at a time edits an official template. `editing_by_id` and `editing_until` hold the lease, for `OFFICIAL_TEMPLATE_LOCK_SECONDS` (2 minutes). `POST …/lock` takes it, or renews it for its holder, and answers `409` `official_template_locked` with `params.editor` (a display name) while another super admin holds a lease that has not expired. The editor renews it every 30 s (`OFFICIAL_TEMPLATE_LOCK_RENEW_MS`) while its tab is visible, so a forgotten background tab frees the template within 2 minutes, and gives it back with `DELETE …/lock` a moment after it leaves the page (an editor mounted again in the meantime, e.g. by React strict mode, cancels the release so that it cannot reach the server after the new lock), or on `pagehide` (`keepalive`); a lease not given back expires on its own. A lock error other than `official_template_locked` is shown instead of the editor until a renewal succeeds. Taking over a lease held by someone else is not possible. Hiding or deleting a template through the moderation takes it out of the picks (`featured_at` cleared); the migration's downgrade deletes the official account and, through the cascade, every official template.
 - **Content changes** go through the `/templates/{id}/…` routes (§2.6). `get_editable_template` (`repositories/templates.py`) gives a super admin the official templates as well as their own. `GET /templates/{id}` reads it without a lease; every change (`_get_for_change`) needs an active lease held by the caller, otherwise `409` `official_template_locked` (with `params.editor` when another super admin holds it). The owner-only routes (visibility, `DELETE /templates/{id}`) keep `get_owned_template`.
 - **Log**: creating, publishing, unpublishing, featuring, unfeaturing and deleting write an entry to the moderation log, without a reason. The first content change committed in each lease writes one `edit` entry (a request that changes nothing writes none) (`edit_logged`, reset when a new lease starts after the previous one expired or was given back); creating counts as the first edit of its lease.
-- **Limits**: 256 tiles (`OFFICIAL_TEMPLATE_MAX_TILES`) and 20 tags (`OFFICIAL_TEMPLATE_MAX_TAGS`), through `Template.max_tiles` and `Template.max_tags`; the players keep 32 and 5. The text lengths do not change. How a fork of an official template above the player limits behaves is decided in #279.
+- **Limits**: 256 tiles (`OFFICIAL_TEMPLATE_MAX_TILES`) and 20 tags (`OFFICIAL_TEMPLATE_MAX_TAGS`), through `Template.max_tiles` and `Template.max_tags`; the players keep 32 and 5. The text lengths do not change. A template above the player limits cannot be copied (§2.12).
 - **Locking**: every route below locks the template row (`SELECT … FOR UPDATE`; the bare row for `lock`, `unlock` and `delete`, the row with its content for the status changes), so two super admins never take the lease or change the status at the same time.
 - **Deletion**: a soft delete (§2.3) that also clears the lease and `featured_at`. The template then appears in the deleted templates, where a super admin restores or erases it ([moderation guide](moderation.md#212-deleted-templates)).
 
@@ -301,7 +301,47 @@ The site publishes its own templates, signed « TierList » (#492). The super ad
 - **Response**: `TemplateResponse` carries `official`, `featured`, `editing_by_name` and `editing_until` (both `null` without an active lease), and `max_tiles` / `max_tags`.
 - **Frontend**: `TemplateEditorPage` in official mode, at `/moderation/official-templates/:templateId` (`ROUTES.MODERATION_OFFICIAL_TEMPLATE`, `officialTemplateEditorPath`). `useOfficialTemplateLock` takes and renews the lease: a skeleton while it is pending; `OfficialTemplateReadOnly` while another super admin holds it (who is editing, the template read only, a new try at each renewal); with the lease, the usual editor, with `OfficialTemplateStatusField` (draft or published badge, publish, unpublish, feature, delete) in place of the visibility. A draft has no "Lancer une partie" button.
 
-### 2.12 Known limitations
+### 2.12 Copies
+
+Built in #279 (US-3.6, US-3.7). A fork is called a **copy** in the interface (« copier dans mes modèles », [i18n guide](i18n.md#vocabulary)).
+
+**Rules**
+
+- **Allowing copies**: `templates.forks_allowed`, false by default. The owner changes it in the editor, and so does the super admin holding the lease of an official template. Stopping it keeps the copies already made.
+- **Copying**: only a **listed** template ([marketplace guide](marketplace.md#22-listing-rule), otherwise `404` `template_not_found`) whose owner allows copies (`409` `copy_not_allowed`), by an account other than its owner (`409` `cannot_copy_own_template`). No confirmed email is needed, since creating a template needs none.
+- **Limits**: a template with more tiles or tags than a player template can have (32 and 5) cannot be copied (`409` `template_too_large_to_copy`, `params {max_tiles, max_tags}`). In practice this concerns large official templates. `Template.fits_player_limits` and `Template.copy_allowed` (allowed and within the limits) sit next to `max_tiles` on the model.
+- **The copy** is a new **private** template of the account: same name, the tiers, the tiles and the tags, copies not allowed, never made public. It is built by `TemplateService.copy`, which reads the source under `FOR SHARE`, like a snapshot (§2.4). The tiles keep the **same images**, as the snapshots do: an image is immutable, the garbage collection keeps an image a tile uses, and a moderation decision on an image applies to every template using it ([images guide](images.md)).
+
+**Lineage**
+
+- Table `template_ancestors` `(template_id, depth, ancestor_id, ancestor_name)`, filled once when the copy is made. Depth 1 is the parent; the parent's own ancestors follow, one depth further.
+- `ancestor_id` is `ON DELETE SET NULL`, so the purge of an ancestor or the deletion of its owner's account keeps the lineage, as the snapshots keep the games.
+- `list_lineages` (`repositories/templates.py`) reads the lineage of a batch of templates in one query:
+  - an ancestor gets a link (`template_id`) and its current name only while it is **listed**;
+  - otherwise it shows the name it had when it was copied, so a template that became private never shows a later name;
+  - its owner's display name is read live while the template exists, and is `null` after its purge or the deletion of its owner's account.
+
+**Endpoints**
+
+| Method | Path                               | Body              | Success                             | Errors                      |
+| ------ | ---------------------------------- | ----------------- | ----------------------------------- | --------------------------- |
+| PUT    | `/templates/{id}/forks-allowed`    | `{forks_allowed}` | `200` `TemplateResponse`            | `401`, `404`, `409` (lease) |
+| POST   | `/marketplace/templates/{id}/copy` | —                 | `201` `TemplateResponse` (the copy) | `401`, `404`, `409`         |
+| GET    | `/marketplace/templates/{id}/copy` | —                 | `200` `{can_copy}`                  | `401`, `404`                |
+
+- `TemplateResponse` carries `forks_allowed` and `copied_from` (the parent's name when copied, `null` for a template that is not a copy).
+- `PublicTemplateResponse` carries `copy_allowed` and `lineage` (the whole chain), and the marketplace cards carry `copied_from` (the parent only, [marketplace guide](marketplace.md#29-api)).
+
+**Frontend**
+
+- **Editor**: `TemplateForksField` (« Autoriser les copies de ce modèle ») under the visibility or the official status, optimistic (`useSetForksAllowed`). Its help text sits outside the label, so the checkbox keeps a short accessible name. A copy shows « Copié depuis « X » » under its title.
+- **Public page**: `TemplateLineage` in the byline (« copié depuis « X » par Noé, lui-même copié depuis « Y » »), and `CopyTemplateButton`.
+  - The button asks `useCopyState`; it is hidden for the owner and when the template cannot be copied.
+  - It copies (`useCopyTemplate`) and then opens the editor of the copy.
+  - A visitor gets « Se connecter pour copier », only when `copy_allowed`.
+- **Cards**: `CopiedFrom` under the byline, above the link that covers the card.
+
+### 2.13 Known limitations
 
 - No pagination of the list yet (#105).
 
@@ -361,4 +401,4 @@ The template caches have separate keys (`constants/templates.ts`): `['templates'
 
 ### Tests
 
-`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility) and `test_template_tags.py` (tags) and `test_public_templates.py` (public page) and `test_official_templates.py` (official templates), against a real PostgreSQL, and `backend/tests/test_search_text.py` (normalization); `frontend/src/pages/TemplatesPage.test.tsx`, `TemplateEditorPage.test.tsx`, `OfficialTemplateEditor.test.tsx` and `PublicTemplatePage.test.tsx` for the screens.
+`backend/tests/integration/test_templates.py` (endpoints), `test_template_purge.py` (purge), `test_template_snapshots.py` (snapshots), `test_template_copies.py` (copies and lineage) `test_template_moderation.py` (moderation) and `test_template_visibility.py` (visibility) and `test_template_tags.py` (tags) and `test_public_templates.py` (public page) and `test_official_templates.py` (official templates), against a real PostgreSQL, and `backend/tests/test_search_text.py` (normalization); `frontend/src/pages/TemplatesPage.test.tsx`, `TemplateEditorPage.test.tsx`, `OfficialTemplateEditor.test.tsx` and `PublicTemplatePage.test.tsx` for the screens.

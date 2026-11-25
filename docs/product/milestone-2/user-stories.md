@@ -116,7 +116,7 @@ As a **super admin**, I want to publish templates in the name of the site, so th
 - _Given_ a published official template, _when_ I **feature** it, _then_ it appears in the **TierList picks**: first on the home page, in a row above the public templates (without search nor tag), and with a « Sélection TierList » badge; a draft cannot be featured.
 - _Given_ an official template, _when_ I **delete** it, _then_ it goes to the deleted templates, where a super admin can restore or erase it.
 - _Given_ any of these actions, _then_ it is written to the moderation log (US-1.9).
-- _Later_: ordering the picks by hand, taking over another super admin's edit. What a fork of an official template above the player limits keeps is decided with US-3.7.
+- _Later_: ordering the picks by hand, taking over another super admin's edit. A fork of an official template above the player limits is not possible (US-3.7).
 
 ## E2 — Public templates
 
@@ -214,3 +214,4 @@ As a **user**, I want to fork a public template, so that I adapt it to my taste.
 - _Given_ a fork, _then_ its page and the marketplace **credit its whole lineage**: the template it was forked from, up to the original, with their owners.
 - _Given_ an ancestor that became private, hidden or deleted, _then_ the lineage still shows its name, without a link.
 - _Given_ the forks are not allowed, or I am a visitor, _then_ I cannot fork (a visitor is asked to sign in).
+- _Given_ a template with more tiles or tags than my templates can have (an official template), _then_ I cannot fork it.
