@@ -40,6 +40,11 @@ export function MainNav() {
           </NavLink>
         </li>
         <li>
+          <NavLink to={ROUTES.FAVORITES} className={linkClassName}>
+            {t('nav.favorites')}
+          </NavLink>
+        </li>
+        <li>
           <NavLink to={ROUTES.HISTORY} className={linkClassName}>
             {t('nav.history')}
           </NavLink>

@@ -6,6 +6,7 @@ import { RequireSuperAdmin } from './auth/RequireSuperAdmin';
 import { Layout } from './components/Layout';
 import { ModerationLayout } from './components/ModerationLayout';
 import { ROUTES } from './constants/routes';
+import { FavoritesPage } from './pages/FavoritesPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { HomePage } from './pages/HomePage';
@@ -47,6 +48,7 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
           <Route path={ROUTES.TEMPLATE_EDITOR} element={<TemplateEditorPage />} />
+          <Route path={ROUTES.FAVORITES} element={<FavoritesPage />} />
           <Route path={ROUTES.HISTORY} element={<HistoryPage />} />
           <Route element={<RequireSuperAdmin />}>
             <Route element={<ModerationLayout />}>

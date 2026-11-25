@@ -71,6 +71,7 @@ export const en: Translation = {
     home: 'Home',
     templates: 'My templates',
     marketplace: 'Public templates',
+    favorites: 'My favorites',
     history: 'History',
     moderation: 'Moderation',
     openReports_one: '{{count}} reported content',
@@ -110,6 +111,8 @@ export const en: Translation = {
       games: 'Games: the rooms you join, your placements and the results of the games.',
       likes:
         'Likes: the public templates you like. Only the number of likes of a template is shown: nobody sees who liked it. They are deleted with your account.',
+      favorites:
+        'Favorites: the public templates you keep to find them again. Only you see them. They are deleted with your account.',
       reports:
         'Reports: in the app, the account of the person who reports or, without an account, the hash of their report cookie, the content, the reason and the details. By email, their address and what their message contains.',
       bans: 'Bans: when a super admin bans an account, the end date if there is one, the reason and the super admin who decided it.',
@@ -954,6 +957,7 @@ export const en: Translation = {
     },
     card: {
       like: 'Like “{{name}}” · {{count}}',
+      favorite: 'Favorite “{{name}}”',
       byline_one: 'by {{owner}} · {{count}} item',
       byline_other: 'by {{owner}} · {{count}} items',
     },
@@ -983,6 +987,17 @@ export const en: Translation = {
       count_other: '{{count}} likes',
       signIn: 'Sign in to like',
     },
+    favorite: {
+      button: 'Favorite',
+      signIn: 'Sign in to add to favorites',
+    },
+  },
+  favorites: {
+    title: 'My favorites',
+    intro: 'The public templates you keep, most recently added first.',
+    empty: 'No favorites yet. Add public templates to your favorites to find them here.',
+    emptyAction: 'Browse public templates',
+    more: 'See more',
   },
   report: {
     open: 'Report',

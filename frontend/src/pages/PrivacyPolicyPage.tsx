@@ -36,6 +36,7 @@ export function PrivacyPolicyPage() {
             t('privacy.data.content'),
             t('privacy.data.games'),
             t('privacy.data.likes'),
+            t('privacy.data.favorites'),
             t('privacy.data.reports'),
             t('privacy.data.bans'),
             t('privacy.data.moderation'),
