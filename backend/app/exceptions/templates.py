@@ -57,10 +57,7 @@ class CopyNotAllowedError(Exception):
 
 
 class TemplateTooLargeToCopyError(Exception):
-    def __init__(self, max_tiles: int, max_tags: int) -> None:
-        super().__init__(max_tiles, max_tags)
-        self.max_tiles = max_tiles
-        self.max_tags = max_tags
+    pass
 
 
 class TagLimitReachedError(Exception):

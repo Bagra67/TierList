@@ -337,9 +337,7 @@ def test_a_page_of_cards_needs_the_same_queries_with_copies(
     assert len(with_copies) == len(without_copies)
 
 
-def published_official(
-    client: TestClient, db_session: Session, tile_count: int
-) -> tuple[str, dict[str, str]]:
+def published_official(client: TestClient, db_session: Session, tile_count: int) -> str:
     nina: dict[str, str] = register_super_admin(client, db_session, "nina@example.com")
     official_id: str = client.post(
         "/moderation/official-templates", json={"name": "Cheeses"}, headers=nina
@@ -355,13 +353,13 @@ def published_official(
         f"/moderation/official-templates/{official_id}/publish", headers=nina
     )
     assert publish.status_code == 200
-    return official_id, nina
+    return official_id
 
 
 def test_a_template_larger_than_a_copy_can_keep_cannot_be_copied(
     auth_client: TestClient, db_session: Session, bob: dict[str, str]
 ):
-    official_id, _ = published_official(auth_client, db_session, FREE_PLAN_MAX_TILES + 1)
+    official_id: str = published_official(auth_client, db_session, FREE_PLAN_MAX_TILES + 1)
 
     response: Response = copy(auth_client, official_id, bob)
 
@@ -374,7 +372,7 @@ def test_a_template_larger_than_a_copy_can_keep_cannot_be_copied(
 def test_an_official_template_within_the_limits_becomes_a_template_of_the_player(
     auth_client: TestClient, db_session: Session, bob: dict[str, str]
 ):
-    official_id, _ = published_official(auth_client, db_session, 3)
+    official_id: str = published_official(auth_client, db_session, 3)
 
     response: Response = copy(auth_client, official_id, bob)
 

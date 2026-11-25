@@ -202,14 +202,13 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
-    ancestors: list[tuple[int, TemplateVisibility | None]] = [
-        (depth, visibility)
-        for depth, visibility in db_session.execute(
+    ancestors: list[tuple[int, TemplateVisibility]] = list(
+        db_session.execute(
             select(TemplateAncestor.depth, Template.visibility).join(
                 Template, Template.id == TemplateAncestor.ancestor_id
             )
         ).all()
-    ]
+    )
     assert (1, TemplateVisibility.PRIVATE) in ancestors
     assert (2, TemplateVisibility.PUBLIC) in ancestors
     for model in (TemplateLike, TemplateFavorite):

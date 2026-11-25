@@ -10,10 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import (
     DEFAULT_TIERS,
-    FREE_PLAN_MAX_TILES,
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
-    TEMPLATE_MAX_TAGS,
     TEMPLATES_PAGE_SIZE,
 )
 from app.core.config import Settings
@@ -71,16 +69,6 @@ def _move[Positioned: (Tier, Tile)](
     items.remove(item)
     items.insert(min(position, len(items)), item)
     _renumber(items)
-
-
-def _copy_refusal(user: User, source: Template) -> Exception | None:
-    if source.owner_id == user.id:
-        return CannotCopyOwnTemplateError()
-    if not source.forks_allowed:
-        return CopyNotAllowedError()
-    if not source.fits_player_limits:
-        return TemplateTooLargeToCopyError(FREE_PLAN_MAX_TILES, TEMPLATE_MAX_TAGS)
-    return None
 
 
 def _ancestors_of_copy(source: Template) -> list[TemplateAncestor]:
@@ -198,10 +186,13 @@ class TemplateService:
                 for position, (tier_name, color) in enumerate(DEFAULT_TIERS)
             ],
         )
+        self._add(template)
+        return template
+
+    def _add(self, template: Template) -> None:
         _refresh_search_text(template)
         template_repository.add_template(self._session, template)
         self._session.flush()
-        return template
 
     def copy(self, user: User, source_id: uuid.UUID) -> Template:
         source: Template | None = template_repository.get_listed_template_with_content(
@@ -209,9 +200,12 @@ class TemplateService:
         )
         if source is None:
             raise TemplateNotFoundError
-        refusal: Exception | None = _copy_refusal(user, source)
-        if refusal is not None:
-            raise refusal
+        if source.owner_id == user.id:
+            raise CannotCopyOwnTemplateError
+        if not source.forks_allowed:
+            raise CopyNotAllowedError
+        if not source.fits_player_limits:
+            raise TemplateTooLargeToCopyError
         copy: Template = Template(
             owner_id=user.id,
             name=source.name,
@@ -231,8 +225,7 @@ class TemplateService:
             ],
             ancestors=_ancestors_of_copy(source),
         )
-        _refresh_search_text(copy)
-        template_repository.add_template(self._session, copy)
+        self._add(copy)
         self._session.commit()
         logger.info(
             "Modèle copié : template_id=%s source_id=%s owner_id=%s", copy.id, source.id, user.id
@@ -245,7 +238,7 @@ class TemplateService:
         )
         if source is None:
             raise TemplateNotFoundError
-        return _copy_refusal(user, source) is None
+        return source.owner_id != user.id and source.copy_allowed
 
     def set_forks_allowed(self, user: User, template_id: uuid.UUID, allowed: bool) -> Template:
         template: Template = self._get_for_change(user, template_id)
