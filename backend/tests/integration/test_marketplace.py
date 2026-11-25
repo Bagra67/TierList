@@ -115,6 +115,7 @@ def test_a_visitor_sees_the_cards_of_the_public_templates(
                 "preview_image_url": None,
                 "preview_image_removed": False,
                 "tier_colors": [color for _, color in DEFAULT_TIERS],
+                "copied_from": None,
             }
         ],
         "next_cursor": None,

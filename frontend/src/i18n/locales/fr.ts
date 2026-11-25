@@ -1357,6 +1357,10 @@ export const fr = {
       invalid_tag: 'Une étiquette contient au moins une lettre ou un chiffre (alphabet latin).',
       cannot_like_own_template: 'Vous ne pouvez pas aimer votre propre modèle.',
       cannot_favorite_own_template: 'Vous ne pouvez pas ajouter votre propre modèle à vos favoris.',
+      cannot_copy_own_template: 'Ce modèle est déjà dans vos modèles.',
+      copy_not_allowed: "Le propriétaire de ce modèle n'autorise pas les copies.",
+      template_too_large_to_copy:
+        'Ce modèle est trop grand pour être copié : une copie garde au plus {{max_tiles}} éléments et {{max_tags}} étiquettes.',
       invalid_cursor: 'Cette page de la liste n’est plus valide. Rechargez la liste.',
       image_unsupported_format: "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
       image_too_large: "L'image est trop lourde : {{max_bytes, megabytes}} au maximum.",

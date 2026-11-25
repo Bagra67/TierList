@@ -23,6 +23,7 @@ from app.models.user import User
 from app.repositories import template_favorites as favorite_repository
 from app.repositories import template_likes as like_repository
 from app.repositories import templates as template_repository
+from app.repositories.templates import LineageAncestor
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,7 @@ class PublicTemplate:
     template: Template
     owner_name: str
     like_count: int
+    lineage: list[LineageAncestor]
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ class MarketplaceTemplate:
     like_count: int
     tile_count: int
     first_tile: Tile | None
+    copied_from: LineageAncestor | None
 
 
 @dataclass(frozen=True)
@@ -108,7 +111,10 @@ class MarketplaceService:
             raise TemplateNotFoundError
         template, owner_name = listed
         like_count: int = like_repository.count_likes(self._session, template.id)
-        return PublicTemplate(template, owner_name, like_count)
+        lineages: dict[uuid.UUID, list[LineageAncestor]] = template_repository.list_lineages(
+            self._session, [template.id], datetime.now(UTC)
+        )
+        return PublicTemplate(template, owner_name, like_count, lineages.get(template.id, []))
 
     def like_state(self, user: User, template_id: uuid.UUID) -> LikeState:
         owner_id: uuid.UUID = self._listed_owner_id(template_id)
@@ -247,6 +253,9 @@ class MarketplaceService:
         first_tiles: dict[uuid.UUID, Tile] = template_repository.list_first_tiles_of_templates(
             self._session, template_ids
         )
+        parents: dict[uuid.UUID, list[LineageAncestor]] = template_repository.list_lineages(
+            self._session, template_ids, datetime.now(UTC), max_depth=1
+        )
         return [
             MarketplaceTemplate(
                 template,
@@ -254,6 +263,7 @@ class MarketplaceService:
                 like_count,
                 tile_counts.get(template.id, 0),
                 first_tiles.get(template.id),
+                next(iter(parents.get(template.id, [])), None),
             )
             for template, owner_name, like_count in rows
         ]

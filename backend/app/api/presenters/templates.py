@@ -44,6 +44,8 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         featured=template.featured_at is not None,
         editing_by_name=None if editor is None else editor.display_name,
         editing_until=None if editor is None else template.editing_until,
+        forks_allowed=template.forks_allowed,
+        copied_from=template.ancestors[0].ancestor_name if template.ancestors else None,
     )
 
 

@@ -4,12 +4,18 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Query
 from pydantic import AfterValidator
 
-from app.api.dependencies import CurrentUserDep, ImageStorageDep, MarketplaceServiceDep
+from app.api.dependencies import (
+    CurrentUserDep,
+    ImageStorageDep,
+    MarketplaceServiceDep,
+    TemplateServiceDep,
+)
 from app.api.errors import email_not_verified, invalid_cursor, template_not_found
 from app.api.presenters.marketplace import (
     marketplace_template_response,
     public_template_response,
 )
+from app.api.presenters.templates import template_response
 from app.api.responses import INVALID_CURSOR_RESPONSE, UNAUTHORIZED_RESPONSE
 from app.constants import messages
 from app.constants.error_codes import ErrorCode
@@ -26,11 +32,16 @@ from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.http import AppHTTPException
 from app.exceptions.pagination import InvalidCursorError
 from app.exceptions.templates import (
+    CannotCopyOwnTemplateError,
     CannotFavoriteOwnTemplateError,
     CannotLikeOwnTemplateError,
+    CopyNotAllowedError,
     TemplateNotFoundError,
+    TemplateTooLargeToCopyError,
 )
+from app.models.template import Template
 from app.schemas.marketplace import (
+    CopyStateResponse,
     FavoriteStateResponse,
     FavoriteStatesResponse,
     FeaturedTemplatesResponse,
@@ -42,6 +53,7 @@ from app.schemas.marketplace import (
     TemplateFavoriteStateResponse,
     TemplateLikeStateResponse,
 )
+from app.schemas.templates import TemplateResponse
 from app.services.marketplace import (
     FavoriteState,
     LikeState,
@@ -292,3 +304,60 @@ def unfavorite_template(
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     return FavoriteStateResponse.model_validate(state)
+
+
+@router.get("/templates/{template_id}/copy", responses=SIGNED_IN_TEMPLATE_RESPONSES)
+def get_copy_state(
+    template_id: uuid.UUID, user: CurrentUserDep, service: TemplateServiceDep
+) -> CopyStateResponse:
+    """Whether the account may copy this public template into its own templates."""
+    try:
+        can_copy: bool = service.can_copy(user, template_id)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    return CopyStateResponse(can_copy=can_copy)
+
+
+@router.post(
+    "/templates/{template_id}/copy",
+    status_code=201,
+    responses={
+        **SIGNED_IN_TEMPLATE_RESPONSES,
+        409: {
+            "model": ErrorResponse,
+            "description": messages.TEMPLATE_CANNOT_BE_COPIED_DESCRIPTION,
+        },
+    },
+)
+def copy_template(
+    template_id: uuid.UUID,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Copies a public template of another account whose owner allows copies into a new private
+    template of the account, with its tiers, tiles and tags. The copy keeps the templates it comes
+    from. A template with more tiles or tags than a template of the account can have cannot be
+    copied."""
+    try:
+        template: Template = service.copy(user, template_id)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    except CannotCopyOwnTemplateError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.CANNOT_COPY_OWN_TEMPLATE,
+            detail=messages.CANNOT_COPY_OWN_TEMPLATE,
+        ) from exc
+    except CopyNotAllowedError as exc:
+        raise AppHTTPException(
+            status_code=409, code=ErrorCode.COPY_NOT_ALLOWED, detail=messages.COPY_NOT_ALLOWED
+        ) from exc
+    except TemplateTooLargeToCopyError as exc:
+        raise AppHTTPException(
+            status_code=409,
+            code=ErrorCode.TEMPLATE_TOO_LARGE_TO_COPY,
+            detail=messages.TEMPLATE_TOO_LARGE_TO_COPY,
+            params={"max_tiles": exc.max_tiles, "max_tags": exc.max_tags},
+        ) from exc
+    return template_response(template, storage)

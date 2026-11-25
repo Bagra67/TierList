@@ -1336,6 +1336,10 @@ export const en: Translation = {
       invalid_tag: 'A tag needs at least one letter or digit (Latin alphabet).',
       cannot_like_own_template: 'You cannot like your own template.',
       cannot_favorite_own_template: 'You cannot add your own template to your favorites.',
+      cannot_copy_own_template: 'This template is already in your templates.',
+      copy_not_allowed: 'The owner of this template does not allow copies.',
+      template_too_large_to_copy:
+        'This template is too large to copy: a copy keeps at most {{max_tiles}} items and {{max_tags}} tags.',
       invalid_cursor: 'This page of the list is no longer valid. Reload the list.',
       image_unsupported_format: 'This file is not a JPEG, PNG or WebP image.',
       image_too_large: 'The image is too heavy: {{max_bytes, megabytes}} at most.',

@@ -38,6 +38,12 @@ class RenameTemplateRequest(BaseModel):
     name: TemplateName
 
 
+class SetForksAllowedRequest(BaseModel):
+    """Whether other accounts may copy the template while it is public."""
+
+    forks_allowed: bool
+
+
 class SetTemplateVisibilityRequest(BaseModel):
     """Visibility chosen for the template."""
 
@@ -131,7 +137,9 @@ class TemplateResponse(BaseModel):
     kept when the template goes back to private. `official` is true for a template owned by the
     site, edited by the super admins: `featured` is then true when it is in the TierList picks, and
     `editing_by_name` and `editing_until` name the super admin holding its edit lease, until when
-    (both null when nobody holds it)."""
+    (both null when nobody holds it). `forks_allowed` is true when other accounts may copy it
+    while it is public. `copied_from` is the name, when copied, of the template it was copied
+    from, null when it is not a copy."""
 
     id: uuid.UUID
     name: str
@@ -150,6 +158,8 @@ class TemplateResponse(BaseModel):
     featured: bool
     editing_by_name: str | None
     editing_until: datetime | None
+    forks_allowed: bool
+    copied_from: str | None
 
 
 class OfficialTemplateSummaryResponse(BaseModel):
