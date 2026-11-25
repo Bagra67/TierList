@@ -11,6 +11,7 @@ import {
   usePublicTemplate,
 } from '../api/marketplace';
 import { signInRedirectState } from '../auth/signInRedirect';
+import { CopyTemplateButton } from '../components/CopyTemplateButton';
 import { CreateRoomButton } from '../components/CreateRoomButton';
 import { EmptyState } from '../components/EmptyState';
 import { FavoriteButton } from '../components/FavoriteButton';
@@ -20,6 +21,7 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { PageContainer } from '../components/PageContainer';
 import { ReportButton } from '../components/ReportButton';
 import { TemplateFeaturedBadge } from '../components/TemplateFeaturedBadge';
+import { TemplateLineage } from '../components/TemplateLineage';
 import { TemplateTagList } from '../components/TemplateTagList';
 import { TemplateTierChips } from '../components/TemplateTierChips';
 import { TemplateTileCard } from '../components/TemplateTileCard';
@@ -80,7 +82,15 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
         <div className="flex min-w-0 flex-col gap-2">
           <h1 className="text-2xl font-semibold break-words">{template.name}</h1>
           <p className="flex flex-wrap items-center gap-2 text-muted-foreground">
-            {t('publicTemplate.byOwner', { owner: template.owner_name })}
+            <span>
+              {t('publicTemplate.byOwner', { owner: template.owner_name })}
+              {template.lineage.length > 0 && (
+                <>
+                  {' · '}
+                  <TemplateLineage lineage={template.lineage} />
+                </>
+              )}
+            </span>
             {template.featured && <TemplateFeaturedBadge />}
           </p>
           <TemplateTagList tags={template.tags} linkToMarketplace />
@@ -89,6 +99,7 @@ function TemplateContent({ template }: { template: PublicTemplate }) {
           <PlayAction template={template} />
           <LikeButton templateId={template.id} likeCount={template.like_count} />
           <FavoriteButton templateId={template.id} />
+          <CopyTemplateButton template={template} />
           <ReportButton targetKind="template" targetId={template.id} contentName={template.name} />
         </div>
       </div>

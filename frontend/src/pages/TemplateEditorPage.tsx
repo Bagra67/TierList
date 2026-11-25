@@ -13,6 +13,7 @@ import { TemplateHiddenNotice } from '../components/TemplateHiddenNotice';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TemplateNameField } from '../components/TemplateNameField';
 import { TemplateTagsField } from '../components/TemplateTagsField';
+import { TemplateForksField } from '../components/TemplateForksField';
 import { TemplateVisibilityField } from '../components/TemplateVisibilityField';
 import { TierEditor } from '../components/TierEditor';
 import { TileEditor } from '../components/TileEditor';
@@ -87,7 +88,14 @@ export function TemplateEditorPage() {
       {template && (!official || lock.status === 'held') && (
         <>
           <div className="flex w-full flex-wrap items-start justify-between gap-4">
-            <h1 className="text-2xl font-semibold">{template.name}</h1>
+            <div className="flex min-w-0 flex-col gap-1">
+              <h1 className="text-2xl font-semibold">{template.name}</h1>
+              {template.copied_from !== null && (
+                <p className="text-sm text-muted-foreground">
+                  {t('templates.copiedFrom', { name: template.copied_from })}
+                </p>
+              )}
+            </div>
             {playable && <CreateRoomButton templateId={template.id} templateName={template.name} />}
           </div>
           {template.moderation === 'hidden' && (
@@ -98,11 +106,14 @@ export function TemplateEditorPage() {
               <TemplateNameField template={template} />
               <TemplateTagsField template={template} />
             </div>
-            {official ? (
-              <OfficialTemplateStatusField template={template} />
-            ) : (
-              <TemplateVisibilityField template={template} />
-            )}
+            <div className="flex min-w-0 flex-col gap-4">
+              {official ? (
+                <OfficialTemplateStatusField template={template} />
+              ) : (
+                <TemplateVisibilityField template={template} />
+              )}
+              <TemplateForksField template={template} />
+            </div>
           </div>
           <div
             className={cn(

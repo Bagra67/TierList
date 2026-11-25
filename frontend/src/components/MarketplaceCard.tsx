@@ -6,6 +6,7 @@ import { publicTemplatePath } from '../constants/routes';
 import { CardFavoriteButton } from './FavoriteButton';
 import { CardLikeButton } from './LikeButton';
 import { RemovedImage } from './RemovedImage';
+import { CopiedFrom } from './TemplateLineage';
 import { TemplateFeaturedBadge } from './TemplateFeaturedBadge';
 import { TemplateTagList } from './TemplateTagList';
 
@@ -68,6 +69,11 @@ export function MarketplaceCard({ template, showFeaturedBadge = true }: Marketpl
             count: template.tile_count,
           })}
         </p>
+        {template.copied_from !== null && (
+          <p className="relative z-10 text-sm text-muted-foreground">
+            <CopiedFrom ancestor={template.copied_from} />
+          </p>
+        )}
         <TemplateTagList tags={template.tags} />
         <div className="mt-auto flex items-start justify-end gap-1">
           <CardFavoriteButton templateId={template.id} templateName={template.name} />

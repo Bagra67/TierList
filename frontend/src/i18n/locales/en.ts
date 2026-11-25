@@ -156,11 +156,11 @@ export const en: Translation = {
       results:
         'The results link of a finished game can be opened by anyone who has it, without an account.',
       publicTemplates:
-        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images), your display name and its number of likes. Anyone signed in can also create a room with it: the games played keep a copy of it (name, tiers, items), shown in the history of their players and on their results link, even if the template becomes private again or is deleted. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy.',
+        'A template you make public can be seen by anyone, even without an account: its name, tags, tiers, items (texts and images), your display name and its number of likes. Anyone signed in can also create a room with it: the games played keep a copy of it (name, tiers, items), shown in the history of their players and on their results link, even if the template becomes private again or is deleted. It can also appear in search engines and in link previews; if it becomes private again or is deleted, it can stay there for a while, until these services update their copy. If you allow copies, each copy shows the name of your template and your display name, even if your template becomes private again, is hidden or deleted.',
       moderation:
         'Only the super admins (the founders of TierList) see the moderation log and, to moderate them, the uploaded images with the name of their author, as well as the accounts: the display name, the email address, the creation date, whether the address is confirmed, and the templates, even private ones, with their tiles. They also see the deleted templates until they are erased, and can restore one or erase it earlier. The owner of a template or an image that the moderation hid or deleted sees the decision and its reason, in their templates, and a banned person sees the reason for the ban when trying to sign in. Only the super admins see the reports: the reported person never knows who reported them. After a report, a super admin can hide a game and its results link, hide or delete a public template, or replace a nickname by a neutral code.',
       deletedAccount:
-        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. You can ask by email for your display name to be erased.",
+        "After your account is deleted, finished games keep your display name and a copy of the template played, so that the other players' results stay complete. The moderation log also keeps your name as it was at the time of a decision, until the end of its retention period. The copies of your templates keep the name of the original template, without your display name. You can ask by email for your display name to be erased.",
     },
     processors: {
       title: 'Service providers',
@@ -241,7 +241,7 @@ export const en: Translation = {
     content: {
       title: 'Your content',
       rights:
-        'You keep your rights on the templates, texts and images you create or upload. You allow TierList to host them and show them to the participants of your rooms and to the people who have the results link, for as long as the service needs.',
+        'You keep your rights on the templates, texts and images you create or upload. You allow TierList to host them and show them to the participants of your rooms and to the people who have the results link, for as long as the service needs. If you allow copies of a public template, you also allow the other users to copy it (texts and images) into their own templates, change it and play with it; these copies stay if you stop allowing copies.',
       forbidden: 'Only publish content you have the right to share. Forbidden:',
       illegal: 'illegal content;',
       hateful: 'hateful, violent or harassing content;',
@@ -763,6 +763,13 @@ export const en: Translation = {
     },
   },
   templates: {
+    copiedFrom: 'Copied from “{{name}}”',
+    forks: {
+      label: 'Allow copies of this template',
+      allowed:
+        'Other players can copy it into their templates while it is public. Each copy credits you.',
+      notAllowed: 'Nobody can copy it. The copies already made stay.',
+    },
     title: 'My templates',
     more: 'See more',
     hidden: {
@@ -991,6 +998,18 @@ export const en: Translation = {
       button: 'Favorite',
       signIn: 'Sign in to add to favorites',
     },
+    copy: {
+      button: 'Copy to my templates',
+      submitting: 'Copying…',
+      hint: 'Your copy is private and shows which template it comes from.',
+      signIn: 'Sign in to copy',
+    },
+  },
+  lineage: {
+    name: '“{{name}}”',
+    copiedFrom: 'copied from',
+    itselfCopiedFrom: ', itself copied from',
+    byOwner: 'by {{owner}}',
   },
   favorites: {
     title: 'My favorites',
