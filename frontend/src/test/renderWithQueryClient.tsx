@@ -15,5 +15,8 @@ export function renderWithQueryClient(ui: ReactElement, { currentUser }: RenderO
   if (currentUser !== undefined) {
     queryClient.setQueryData(CURRENT_USER_QUERY_KEY, currentUser, { updatedAt: 0 });
   }
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return {
+    ...render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>),
+    queryClient,
+  };
 }

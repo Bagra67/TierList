@@ -108,9 +108,13 @@ async function getCopyState(templateId: string, signal: AbortSignal): Promise<Co
   );
 }
 
+export function copyStateQueryKey(templateId: string): readonly string[] {
+  return [...publicTemplateQueryKey(templateId), 'copy'];
+}
+
 export function useCopyState(templateId: string, enabled: boolean): UseQueryResult<CopyState> {
   return useQuery({
-    queryKey: [...publicTemplateQueryKey(templateId), 'copy'],
+    queryKey: copyStateQueryKey(templateId),
     queryFn: ({ signal }) => getCopyState(templateId, signal),
     enabled,
     retry: retryUnlessClientError,
