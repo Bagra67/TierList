@@ -96,6 +96,31 @@ export function useSetLiked(templateId: string): UseMutationResult<LikeState, Er
   });
 }
 
+export type LineageAncestor = components['schemas']['LineageAncestorResponse'];
+type CopyState = components['schemas']['CopyStateResponse'];
+
+async function getCopyState(templateId: string, signal: AbortSignal): Promise<CopyState> {
+  return dataOrThrow(
+    await apiClient.GET('/marketplace/templates/{template_id}/copy', {
+      params: { path: { template_id: templateId } },
+      signal,
+    }),
+  );
+}
+
+export function copyStateQueryKey(templateId: string): readonly string[] {
+  return [...publicTemplateQueryKey(templateId), 'copy'];
+}
+
+export function useCopyState(templateId: string, enabled: boolean): UseQueryResult<CopyState> {
+  return useQuery({
+    queryKey: copyStateQueryKey(templateId),
+    queryFn: ({ signal }) => getCopyState(templateId, signal),
+    enabled,
+    retry: retryUnlessClientError,
+  });
+}
+
 export type FavoriteState = components['schemas']['FavoriteStateResponse'];
 
 function favoriteStateQueryKey(templateId: string): readonly string[] {

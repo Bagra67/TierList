@@ -1758,4 +1758,53 @@ describe('TemplateEditorPage', () => {
       expect(within(picker).getByRole('group', { name: 'Couleurs proposées' })).toBeInTheDocument();
     });
   });
+
+  describe('copies', () => {
+    const forksUrl: string = `${templateUrl}/forks-allowed`;
+
+    it('lets the owner allow the copies of the template', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${forksUrl}`]: () => Response.json({ ...chips, forks_allowed: true }),
+      });
+      renderEditor();
+      const checkbox: HTMLElement = await screen.findByRole('checkbox', {
+        name: 'Autoriser les copies de ce modèle',
+      });
+      expect(checkbox).not.toBeChecked();
+
+      fireEvent.click(checkbox);
+
+      await waitFor(() => expect(checkbox).toBeChecked());
+      expect(await requestBody(fetchMock, 'PUT')).toEqual({ forks_allowed: true });
+      expect(checkbox).toHaveAccessibleDescription(
+        "D'autres joueurs peuvent le copier dans leurs modèles tant qu'il est public. Chaque copie vous cite.",
+      );
+    });
+
+    it('puts the box back when allowing the copies fails', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json(chips),
+        [`PUT ${forksUrl}`]: () => errorResponse(500, 'http_error'),
+      });
+      renderEditor();
+      const checkbox: HTMLElement = await screen.findByRole('checkbox', {
+        name: 'Autoriser les copies de ce modèle',
+      });
+
+      fireEvent.click(checkbox);
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(checkbox).not.toBeChecked();
+    });
+
+    it('names the template a copy comes from', async () => {
+      stubBackend({
+        [`GET ${templateUrl}`]: () => Response.json({ ...chips, copied_from: "Chips de l'apéro" }),
+      });
+      renderEditor();
+
+      expect(await screen.findByText("Copié depuis « Chips de l'apéro »")).toBeInTheDocument();
+    });
+  });
 });

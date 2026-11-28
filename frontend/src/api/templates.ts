@@ -93,6 +93,23 @@ async function setTemplateVisibility(
   );
 }
 
+async function setForksAllowed(templateId: string, forksAllowed: boolean): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.PUT('/templates/{template_id}/forks-allowed', {
+      params: { path: { template_id: templateId } },
+      body: { forks_allowed: forksAllowed },
+    }),
+  );
+}
+
+async function copyTemplate(templateId: string): Promise<Template> {
+  return dataOrThrow(
+    await apiClient.POST('/marketplace/templates/{template_id}/copy', {
+      params: { path: { template_id: templateId } },
+    }),
+  );
+}
+
 async function addTier(templateId: string): Promise<Template> {
   return dataOrThrow(
     await apiClient.POST('/templates/{template_id}/tiers', {
@@ -193,6 +210,14 @@ export function useCreateTemplate(): UseMutationResult<Template, Error, CreateTe
   const queryClient: QueryClient = useQueryClient();
   return useMutation({
     mutationFn: createTemplate,
+    onSuccess: (template: Template) => storeTemplate(queryClient, template),
+  });
+}
+
+export function useCopyTemplate(): UseMutationResult<Template, Error, string> {
+  const queryClient: QueryClient = useQueryClient();
+  return useMutation({
+    mutationFn: copyTemplate,
     onSuccess: (template: Template) => storeTemplate(queryClient, template),
   });
 }
@@ -307,6 +332,17 @@ export function useSetTemplateVisibility(templateId: string): TemplateChange<Tem
     templateId,
     (visibility: TemplateVisibility) => setTemplateVisibility(templateId, visibility),
     (visibility: TemplateVisibility) => (template: Template) => ({ ...template, visibility }),
+  );
+}
+
+export function useSetForksAllowed(templateId: string): TemplateChange<boolean> {
+  return useTemplateChange(
+    templateId,
+    (forksAllowed: boolean) => setForksAllowed(templateId, forksAllowed),
+    (forksAllowed: boolean) => (template: Template) => ({
+      ...template,
+      forks_allowed: forksAllowed,
+    }),
   );
 }
 

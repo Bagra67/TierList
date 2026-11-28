@@ -281,4 +281,18 @@ describe('MarketplacePage', () => {
     expect(calledRoutes(backend)).not.toContain('GET /marketplace/favorite-states');
     expect(screen.queryByRole('button', { name: /Favori/ })).not.toBeInTheDocument();
   });
+
+  it('names on a card the template it was copied from', async () => {
+    const copy = marketplaceCard('5d0c2a8e-1f3b-4c7a-9e21-3a4b5c6d7e03', 'Chips du monde', {
+      copied_from: { template_id: chips.id, name: 'Chips', owner_name: 'Noé' },
+    });
+    stubMarketplace(() => ({ items: [copy], next_cursor: null }));
+    renderPage();
+
+    expect(await screen.findByRole('link', { name: '« Chips »' })).toHaveAttribute(
+      'href',
+      `/marketplace/templates/${chips.id}`,
+    );
+    expect(screen.getByText(/copié depuis/)).toHaveTextContent('copié depuis « Chips » par Noé');
+  });
 });

@@ -1,10 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import type { User } from '../api/auth';
-import type { PublicTemplate } from '../api/marketplace';
+import { copyStateQueryKey, type PublicTemplate } from '../api/marketplace';
 import { aliceRoom } from '../test/fixtures/rooms';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
@@ -46,12 +46,13 @@ const chips: PublicTemplate = {
 };
 
 function renderPage(path: string = `/marketplace/templates/${templateId}`, currentUser?: User) {
-  renderWithQueryClient(
+  return renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/marketplace/templates/:templateId" element={<PublicTemplatePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/r/:code" element={<h1>Lobby</h1>} />
+        <Route path="/templates/:templateId" element={<h1>Éditeur</h1>} />
       </Routes>
     </MemoryRouter>,
     { currentUser },
@@ -352,6 +353,117 @@ describe('PublicTemplatePage', () => {
       expect(
         await screen.findByRole('link', { name: 'Se connecter pour ajouter aux favoris' }),
       ).toHaveAttribute('href', '/login');
+    });
+  });
+
+  describe('copies', () => {
+    const copyRoute: string = `/marketplace/templates/${templateId}/copy`;
+    const copyable: PublicTemplate = { ...chips, copy_allowed: true };
+
+    it('copies the template into the templates of the user, then opens the copy', async () => {
+      const fetchMock: BackendMock = stubBackend({
+        [templateRoute]: () => Response.json(copyable),
+        [`GET ${copyRoute}`]: () => Response.json({ can_copy: true }),
+        [`POST ${copyRoute}`]: () => Response.json({ id: 'copy-id' }, { status: 201 }),
+      });
+      renderPage(undefined, alice);
+
+      expect(
+        await screen.findByText("Votre copie est privée et indique le modèle d'origine."),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Copier dans mes modèles' }));
+
+      expect(await screen.findByRole('heading', { name: 'Éditeur' })).toBeInTheDocument();
+      expect(fetchMock.mock.calls.map(([request]) => request.method)).toContain('POST');
+    });
+
+    it('says why the template cannot be copied', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(copyable),
+        [`GET ${copyRoute}`]: () => Response.json({ can_copy: true }),
+        [`POST ${copyRoute}`]: () => errorResponse(409, 'copy_not_allowed'),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Copier dans mes modèles' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "Le propriétaire de ce modèle n'autorise pas les copies.",
+      );
+    });
+
+    it('shows no copy button to the owner', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(copyable),
+        [`GET ${copyRoute}`]: () => Response.json({ can_copy: false }),
+      });
+      const { queryClient } = renderPage(undefined, alice);
+
+      await waitFor(() =>
+        expect(queryClient.getQueryState(copyStateQueryKey(templateId))?.status).toBe('success'),
+      );
+      await act(() => new Promise((resolve) => setTimeout(resolve)));
+      expect(
+        screen.queryByRole('button', { name: 'Copier dans mes modèles' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still offers the copy when its state cannot be loaded, and lets the copy say why', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(copyable),
+        [`GET ${copyRoute}`]: () => errorResponse(500, 'http_error'),
+        [`POST ${copyRoute}`]: () => errorResponse(409, 'cannot_copy_own_template'),
+      });
+      renderPage(undefined, alice);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Copier dans mes modèles' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Ce modèle est déjà dans vos modèles.',
+      );
+    });
+
+    it('asks a visitor to sign in to copy, only when copies are allowed', async () => {
+      stubBackend({ [templateRoute]: () => Response.json(copyable) });
+      renderPage();
+
+      expect(await screen.findByRole('link', { name: 'Se connecter pour copier' })).toHaveAttribute(
+        'href',
+        '/login',
+      );
+    });
+
+    it('offers no copy when the owner does not allow it', async () => {
+      stubBackend({ [templateRoute]: () => Response.json(chips) });
+      renderPage();
+
+      await screen.findByRole('heading', { level: 1, name: 'Chips' });
+      expect(
+        screen.queryByRole('link', { name: 'Se connecter pour copier' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('credits the lineage, with a link only to the ancestors still listed', async () => {
+      stubBackend({
+        [templateRoute]: () =>
+          Response.json({
+            ...chips,
+            lineage: [
+              { template_id: 'parent-id', name: "Chips de l'apéro", owner_name: 'Noé' },
+              { template_id: null, name: 'Snacks salés', owner_name: null },
+            ],
+          } satisfies PublicTemplate),
+      });
+      renderPage();
+
+      expect(await screen.findByRole('link', { name: "« Chips de l'apéro »" })).toHaveAttribute(
+        'href',
+        '/marketplace/templates/parent-id',
+      );
+      expect(screen.getByText(/copié depuis/)).toHaveTextContent(
+        "copié depuis « Chips de l'apéro » par Noé, lui-même copié depuis « Snacks salés »",
+      );
+      expect(screen.queryByRole('link', { name: '« Snacks salés »' })).not.toBeInTheDocument();
     });
   });
 });
