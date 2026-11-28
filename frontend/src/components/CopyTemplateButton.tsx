@@ -16,7 +16,10 @@ export function CopyTemplateButton({ template }: { template: PublicTemplate }) {
   const location: Location = useLocation();
   const navigate: NavigateFunction = useNavigate();
   const { data: user } = useCurrentUser();
-  const { data: state } = useCopyState(template.id, Boolean(user) && template.copy_allowed);
+  const { data: state, isError: stateUnavailable } = useCopyState(
+    template.id,
+    Boolean(user) && template.copy_allowed,
+  );
   const copyMutation = useCopyTemplate();
 
   if (!template.copy_allowed || user === undefined) return null;
@@ -30,7 +33,7 @@ export function CopyTemplateButton({ template }: { template: PublicTemplate }) {
       </Button>
     );
   }
-  if (state === undefined || !state.can_copy) return null;
+  if (!stateUnavailable && (state === undefined || !state.can_copy)) return null;
 
   async function handleClick() {
     let copy: Template;

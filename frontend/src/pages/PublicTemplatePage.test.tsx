@@ -1,10 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setAccessToken } from '../api/client';
 import type { User } from '../api/auth';
-import type { PublicTemplate } from '../api/marketplace';
+import { copyStateQueryKey, type PublicTemplate } from '../api/marketplace';
 import { aliceRoom } from '../test/fixtures/rooms';
 import { renderWithQueryClient } from '../test/renderWithQueryClient';
 import {
@@ -46,7 +46,7 @@ const chips: PublicTemplate = {
 };
 
 function renderPage(path: string = `/marketplace/templates/${templateId}`, currentUser?: User) {
-  renderWithQueryClient(
+  return renderWithQueryClient(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/marketplace/templates/:templateId" element={<PublicTemplatePage />} />
@@ -397,13 +397,29 @@ describe('PublicTemplatePage', () => {
         [templateRoute]: () => Response.json(copyable),
         [`GET ${copyRoute}`]: () => Response.json({ can_copy: false }),
       });
+      const { queryClient } = renderPage(undefined, alice);
+
+      await waitFor(() =>
+        expect(queryClient.getQueryState(copyStateQueryKey(templateId))?.status).toBe('success'),
+      );
+      await act(() => new Promise((resolve) => setTimeout(resolve)));
+      expect(
+        screen.queryByRole('button', { name: 'Copier dans mes modèles' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('still offers the copy when its state cannot be loaded, and lets the copy say why', async () => {
+      stubBackend({
+        [templateRoute]: () => Response.json(copyable),
+        [`GET ${copyRoute}`]: () => errorResponse(500, 'http_error'),
+        [`POST ${copyRoute}`]: () => errorResponse(409, 'cannot_copy_own_template'),
+      });
       renderPage(undefined, alice);
 
-      await screen.findByRole('heading', { level: 1, name: 'Chips' });
-      await waitFor(() =>
-        expect(
-          screen.queryByRole('button', { name: 'Copier dans mes modèles' }),
-        ).not.toBeInTheDocument(),
+      fireEvent.click(await screen.findByRole('button', { name: 'Copier dans mes modèles' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Ce modèle est déjà dans vos modèles.',
       );
     });
 
