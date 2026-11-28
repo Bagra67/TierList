@@ -28,4 +28,6 @@ class Tile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     @property
     def has_own_image(self) -> bool:
-        return self.image is not None and self.image.owner_id == self.template.owner_id
+        return self.image is not None and (
+            self.template.is_official or self.image.owner_id == self.template.owner_id
+        )
