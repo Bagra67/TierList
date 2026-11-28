@@ -16,12 +16,13 @@ from app.constants.templates import (
 from app.models.enums import ModerationActionKind
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
-from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import (
     JsonObject,
+    add_tiles,
     ban_account,
+    create_official,
     create_room,
     register,
     register_super_admin,
@@ -46,22 +47,6 @@ def omar(auth_client: TestClient, db_session: Session) -> dict[str, str]:
 @pytest.fixture
 def alice(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, "alice@example.com")
-
-
-def create_official(client: TestClient, headers: dict[str, str], name: str = "Cheeses") -> str:
-    response: Response = client.post(
-        "/moderation/official-templates", json={"name": name}, headers=headers
-    )
-    assert response.status_code == 201
-    return response.json()["id"]
-
-
-def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    for position in range(count):
-        db_session.add(
-            Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
-        )
-    db_session.flush()
 
 
 def published_official(client: TestClient, db_session: Session, headers: dict[str, str]) -> str:

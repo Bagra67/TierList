@@ -25,12 +25,7 @@ from app.constants.marketplace import (
     SEARCH_QUERY_MAX_WORDS,
     MarketplaceSort,
 )
-from app.constants.templates import (
-    CURSOR_MAX_LENGTH,
-    FREE_PLAN_MAX_TILES,
-    TAG_MAX_LENGTH,
-    TEMPLATE_MAX_TAGS,
-)
+from app.constants.templates import CURSOR_MAX_LENGTH, TAG_MAX_LENGTH
 from app.core.errors import ErrorResponse
 from app.core.search_query import search_words
 from app.exceptions.auth import EmailNotVerifiedError
@@ -363,6 +358,6 @@ def copy_template(
             status_code=409,
             code=ErrorCode.TEMPLATE_TOO_LARGE_TO_COPY,
             detail=messages.TEMPLATE_TOO_LARGE_TO_COPY,
-            params={"max_tiles": FREE_PLAN_MAX_TILES, "max_tags": TEMPLATE_MAX_TAGS},
+            params={"max_tiles": exc.max_tiles, "max_tags": exc.max_tags},
         ) from exc
     return template_response(template, storage)

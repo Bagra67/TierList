@@ -101,12 +101,24 @@ def create_template(
     response: Response = client.post("/templates", json={"name": "Food"}, headers=headers)
     assert response.status_code == 201
     template_id: str = response.json()["id"]
-    for position in range(tile_count):
+    add_tiles(db_session, template_id, tile_count)
+    return template_id
+
+
+def add_tiles(db_session: Session, template_id: str, count: int) -> None:
+    for position in range(count):
         db_session.add(
             Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
         )
     db_session.flush()
-    return template_id
+
+
+def create_official(client: TestClient, headers: dict[str, str], name: str = "Cheeses") -> str:
+    response: Response = client.post(
+        "/moderation/official-templates", json={"name": name}, headers=headers
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
 
 
 def create_public_template(
