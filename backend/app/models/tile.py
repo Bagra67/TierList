@@ -25,3 +25,9 @@ class Tile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     template: Mapped[Template] = relationship(back_populates="tiles")
     image: Mapped[Image | None] = relationship(lazy="selectin")
+
+    @property
+    def has_own_image(self) -> bool:
+        return self.image is not None and (
+            self.template.is_official or self.image.owner_id == self.template.owner_id
+        )

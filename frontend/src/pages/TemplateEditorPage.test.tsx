@@ -56,6 +56,8 @@ function makeTemplate(tiers: Tier[], name = 'Chips', tiles: Tile[] = []): Templa
     featured: false,
     editing_by_name: null,
     editing_until: null,
+    forks_allowed: false,
+    copied_from: null,
     moderation: 'none',
     moderation_reason: null,
     visibility: 'private',

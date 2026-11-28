@@ -27,6 +27,8 @@ const chips: PublicTemplate = {
   featured: false,
   tags: ['apéro', 'snacks'],
   like_count: 12,
+  copy_allowed: false,
+  lineage: [],
   tiers: [
     { id: 'tier-s', name: 'S', color: '#FF3B6B', position: 0 },
     { id: 'tier-a', name: 'A', color: '#FF8A2A', position: 1 },

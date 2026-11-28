@@ -14,14 +14,16 @@ from app.constants.templates import (
     OFFICIAL_TEMPLATE_MAX_TILES,
 )
 from app.models.enums import ModerationActionKind
+from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.template import Template
-from app.models.tile import Tile
 from app.models.user import User
 from app.services.email import Email
 from tests.integration.helpers import (
     JsonObject,
+    add_tiles,
     ban_account,
+    create_official,
     create_room,
     register,
     register_super_admin,
@@ -46,22 +48,6 @@ def omar(auth_client: TestClient, db_session: Session) -> dict[str, str]:
 @pytest.fixture
 def alice(auth_client: TestClient) -> dict[str, str]:
     return register(auth_client, "alice@example.com")
-
-
-def create_official(client: TestClient, headers: dict[str, str], name: str = "Cheeses") -> str:
-    response: Response = client.post(
-        "/moderation/official-templates", json={"name": name}, headers=headers
-    )
-    assert response.status_code == 201
-    return response.json()["id"]
-
-
-def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    for position in range(count):
-        db_session.add(
-            Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
-        )
-    db_session.flush()
 
 
 def published_official(client: TestClient, db_session: Session, headers: dict[str, str]) -> str:
@@ -316,6 +302,38 @@ def test_a_published_official_template_is_signed_by_tierlist_and_playable(
         ModerationActionKind.CREATE,
         ModerationActionKind.PUBLISH,
     ]
+
+
+def test_the_editor_of_an_official_template_shows_why_its_image_was_hidden(
+    auth_client: TestClient, db_session: Session, nina: dict[str, str]
+):
+    template_id: str = create_official(auth_client, nina)
+    nina_id: uuid.UUID = db_session.scalars(select(User.id).where(User.email == NINA_EMAIL)).one()
+    image: Image = Image(
+        owner_id=nina_id,
+        storage_key=f"{uuid.uuid4()}.webp",
+        width=512,
+        height=512,
+        size_bytes=4,
+        sha256="a" * 64,
+    )
+    db_session.add(image)
+    db_session.flush()
+    added: Response = auth_client.post(
+        f"/templates/{template_id}/tiles",
+        json={"text": "Photo", "image_id": str(image.id)},
+        headers=nina,
+    )
+    assert added.status_code == 201
+    image.status = ImageStatus.HIDDEN
+    image.moderation_reason = "Violence"
+    db_session.flush()
+
+    tile: JsonObject = auth_client.get(f"/templates/{template_id}", headers=nina).json()["tiles"][
+        -1
+    ]
+
+    assert (tile["image_status"], tile["image_moderation_reason"]) == ("hidden", "Violence")
 
 
 def test_publishing_needs_tiles(auth_client: TestClient, nina: dict[str, str]):

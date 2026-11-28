@@ -15,10 +15,26 @@ class PublicTileResponse(BaseModel):
     image_removed: bool
 
 
+class LineageAncestorResponse(BaseModel):
+    """A template a copy comes from. `template_id` is set only while that template is listed,
+    so it can be linked; `name` is its current name then, and the name it had when it was copied
+    otherwise, from its parent up to the original; a long chain keeps only its nearest ancestors
+    and the original. `owner_name` is null once the template is erased or its owner's account
+    deleted, and while its owner is banned."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    template_id: uuid.UUID | None
+    name: str
+    owner_name: str | None
+
+
 class PublicTemplateResponse(BaseModel):
     """A public template as everyone sees it: its name, its owner's display name, its tags, its
     number of likes, its tiers and its tiles in their order. `featured` is true for an official
-    template in the TierList picks."""
+    template in the TierList picks. `copy_allowed` is true when its owner allows copies and it
+    fits the limits of a copy. `lineage` lists the templates it was copied from, from its parent
+    up to the original, empty for a template that is not a copy."""
 
     id: uuid.UUID
     name: str
@@ -28,6 +44,8 @@ class PublicTemplateResponse(BaseModel):
     like_count: int
     tiers: list[TierResponse]
     tiles: list[PublicTileResponse]
+    copy_allowed: bool
+    lineage: list[LineageAncestorResponse]
 
 
 class LikeStateResponse(BaseModel):
@@ -77,11 +95,19 @@ class FavoriteStatesResponse(BaseModel):
     items: list[TemplateFavoriteStateResponse]
 
 
+class CopyStateResponse(BaseModel):
+    """Whether the account may copy the public template: false for its owner, when copies are
+    not allowed, or when it has more tiles or tags than a copy can keep."""
+
+    can_copy: bool
+
+
 class MarketplaceTemplateResponse(BaseModel):
     """A card of the marketplace. The preview is the image of the first tile:
     `preview_image_removed` is true when moderation removed it, and both are empty when the first
     tile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true
-    for an official template in the TierList picks."""
+    for an official template in the TierList picks. `copied_from` is the template it was copied
+    from, null when it is not a copy."""
 
     id: uuid.UUID
     name: str
@@ -93,6 +119,7 @@ class MarketplaceTemplateResponse(BaseModel):
     preview_image_url: str | None
     preview_image_removed: bool
     tier_colors: list[str]
+    copied_from: LineageAncestorResponse | None
 
 
 class MarketplaceTemplateListResponse(BaseModel):

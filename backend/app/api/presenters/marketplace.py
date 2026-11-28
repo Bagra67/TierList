@@ -2,6 +2,7 @@ from app.api.presenters.images import is_image_removed, optional_image_url
 from app.models.template import Template
 from app.models.tile import Tile
 from app.schemas.marketplace import (
+    LineageAncestorResponse,
     MarketplaceTemplateResponse,
     PublicTemplateResponse,
     PublicTileResponse,
@@ -24,6 +25,10 @@ def public_template_response(
         like_count=public_template.like_count,
         tiers=[TierResponse.model_validate(tier) for tier in template.tiers],
         tiles=[_public_tile_response(tile, storage) for tile in template.tiles],
+        copy_allowed=template.copy_allowed,
+        lineage=[
+            LineageAncestorResponse.model_validate(ancestor) for ancestor in public_template.lineage
+        ],
     )
 
 
@@ -54,4 +59,7 @@ def marketplace_template_response(
         else optional_image_url(storage, first_tile.image),
         preview_image_removed=first_tile is not None and is_image_removed(first_tile.image),
         tier_colors=[tier.color for tier in template.tiers],
+        copied_from=None
+        if item.copied_from is None
+        else LineageAncestorResponse.model_validate(item.copied_from),
     )

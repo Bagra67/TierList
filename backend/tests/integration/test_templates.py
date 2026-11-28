@@ -26,7 +26,7 @@ from app.models.tile import Tile
 from app.models.user import User
 from tests.image_files import make_image_file
 from tests.integration.conftest import FAKE_IMAGE_BASE_URL
-from tests.integration.helpers import JsonObject
+from tests.integration.helpers import JsonObject, add_tiles
 
 pytestmark = pytest.mark.integration
 
@@ -58,14 +58,6 @@ def create_template(client: TestClient, headers: dict[str, str], name: str) -> J
     response: Response = client.post("/templates", json={"name": name}, headers=headers)
     assert response.status_code == 201
     return response.json()
-
-
-def add_tiles(db_session: Session, template_id: str, count: int) -> None:
-    for position in range(count):
-        db_session.add(
-            Tile(template_id=uuid.UUID(template_id), text=f"Tile {position}", position=position)
-        )
-    db_session.flush()
 
 
 def test_create_template_with_the_default_tiers(

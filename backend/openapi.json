@@ -1308,6 +1308,105 @@
         }
       }
     },
+    "/templates/{template_id}/forks-allowed": {
+      "put": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "Set Template Forks Allowed",
+        "description": "Allows or stops allowing other accounts to copy the template while it is public, by its\nowner (or the super admin holding the edit lease of an official template). Not allowed by\ndefault; the copies already made stay.",
+        "operationId": "set_template_forks_allowed_templates__template_id__forks_allowed_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetForksAllowedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Official template edited by another super admin, or edit lease not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/templates/{template_id}/visibility": {
       "put": {
         "tags": [
@@ -3900,6 +3999,172 @@
           },
           "404": {
             "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/templates/{template_id}/copy": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Get Copy State",
+        "description": "Whether the account may copy this public template into its own templates.",
+        "operationId": "get_copy_state_marketplace_templates__template_id__copy_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyStateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Copy Template",
+        "description": "Copies a public template of another account whose owner allows copies into a new private\ntemplate of the account, with its tiers, tiles and tags. The copy keeps the templates it comes\nfrom. A template with more tiles or tags than a template of the account can have cannot be\ncopied.",
+        "operationId": "copy_template_marketplace_templates__template_id__copy_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Template not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account owns the template, its owner does not allow copies, or it has more tiles or tags than a copy can keep",
             "content": {
               "application/json": {
                 "schema": {
@@ -8640,6 +8905,20 @@
         "title": "ClientConfigResponse",
         "description": "Public settings read by the frontend at startup.\n\nThe same frontend build serves every environment."
       },
+      "CopyStateResponse": {
+        "properties": {
+          "can_copy": {
+            "type": "boolean",
+            "title": "Can Copy"
+          }
+        },
+        "type": "object",
+        "required": [
+          "can_copy"
+        ],
+        "title": "CopyStateResponse",
+        "description": "Whether the account may copy the public template: false for its owner, when copies are\nnot allowed, or when it has more tiles or tags than a copy can keep."
+      },
       "CreateReportRequest": {
         "properties": {
           "target_kind": {
@@ -9712,6 +9991,45 @@
         "title": "LikeStatesResponse",
         "description": "The like states of the requested templates that are listed, in the requested order; the\nothers are left out."
       },
+      "LineageAncestorResponse": {
+        "properties": {
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "template_id",
+          "name",
+          "owner_name"
+        ],
+        "title": "LineageAncestorResponse",
+        "description": "A template a copy comes from. `template_id` is set only while that template is listed,\nso it can be linked; `name` is its current name then, and the name it had when it was copied\notherwise, from its parent up to the original; a long chain keeps only its nearest ancestors\nand the original. `owner_name` is null once the template is erased or its owner's account\ndeleted, and while its owner is banned."
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -9843,6 +10161,16 @@
             },
             "type": "array",
             "title": "Tier Colors"
+          },
+          "copied_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LineageAncestorResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -9856,10 +10184,11 @@
           "like_count",
           "preview_image_url",
           "preview_image_removed",
-          "tier_colors"
+          "tier_colors",
+          "copied_from"
         ],
         "title": "MarketplaceTemplateResponse",
-        "description": "A card of the marketplace. The preview is the image of the first tile:\n`preview_image_removed` is true when moderation removed it, and both are empty when the first\ntile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true\nfor an official template in the TierList picks."
+        "description": "A card of the marketplace. The preview is the image of the first tile:\n`preview_image_removed` is true when moderation removed it, and both are empty when the first\ntile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true\nfor an official template in the TierList picks. `copied_from` is the template it was copied\nfrom, null when it is not a copy."
       },
       "ModerationActionKind": {
         "type": "string",
@@ -10307,6 +10636,17 @@
             },
             "type": "array",
             "title": "Tiles"
+          },
+          "copy_allowed": {
+            "type": "boolean",
+            "title": "Copy Allowed"
+          },
+          "lineage": {
+            "items": {
+              "$ref": "#/components/schemas/LineageAncestorResponse"
+            },
+            "type": "array",
+            "title": "Lineage"
           }
         },
         "type": "object",
@@ -10318,10 +10658,12 @@
           "tags",
           "like_count",
           "tiers",
-          "tiles"
+          "tiles",
+          "copy_allowed",
+          "lineage"
         ],
         "title": "PublicTemplateResponse",
-        "description": "A public template as everyone sees it: its name, its owner's display name, its tags, its\nnumber of likes, its tiers and its tiles in their order. `featured` is true for an official\ntemplate in the TierList picks."
+        "description": "A public template as everyone sees it: its name, its owner's display name, its tags, its\nnumber of likes, its tiers and its tiles in their order. `featured` is true for an official\ntemplate in the TierList picks. `copy_allowed` is true when its owner allows copies and it\nfits the limits of a copy. `lineage` lists the templates it was copied from, from its parent\nup to the original, empty for a template that is not a copy."
       },
       "PublicTileResponse": {
         "properties": {
@@ -11201,6 +11543,20 @@
         "title": "RoomTemplateResponse",
         "description": "Template of the room; `hidden` is true when moderation hid it and the room admin owns it: no\nnew game can start then. For a template of another account, the reason is never given."
       },
+      "SetForksAllowedRequest": {
+        "properties": {
+          "forks_allowed": {
+            "type": "boolean",
+            "title": "Forks Allowed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "forks_allowed"
+        ],
+        "title": "SetForksAllowedRequest",
+        "description": "Whether other accounts may copy the template while it is public."
+      },
       "SetTemplateTagsRequest": {
         "properties": {
           "tags": {
@@ -11456,6 +11812,21 @@
               }
             ],
             "title": "Editing Until"
+          },
+          "forks_allowed": {
+            "type": "boolean",
+            "title": "Forks Allowed"
+          },
+          "copied_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Copied From"
           }
         },
         "type": "object",
@@ -11476,10 +11847,12 @@
           "official",
           "featured",
           "editing_by_name",
-          "editing_until"
+          "editing_until",
+          "forks_allowed",
+          "copied_from"
         ],
         "title": "TemplateResponse",
-        "description": "A template with its tiers and its tiles sorted by position, and its tags in their order.\n`max_tiles` and `max_tags` are the maximum numbers of tiles and tags; `first_made_public_at` is\nkept when the template goes back to private. `official` is true for a template owned by the\nsite, edited by the super admins: `featured` is then true when it is in the TierList picks, and\n`editing_by_name` and `editing_until` name the super admin holding its edit lease, until when\n(both null when nobody holds it)."
+        "description": "A template with its tiers and its tiles sorted by position, and its tags in their order.\n`max_tiles` and `max_tags` are the maximum numbers of tiles and tags; `first_made_public_at` is\nkept when the template goes back to private. `official` is true for a template owned by the\nsite, edited by the super admins: `featured` is then true when it is in the TierList picks, and\n`editing_by_name` and `editing_until` name the super admin holding its edit lease, until when\n(both null when nobody holds it). `forks_allowed` is true when other accounts may copy it\nwhile it is public. `copied_from` is the name, when copied, of the template it was copied\nfrom, null when it is not a copy."
       },
       "TemplateSummaryResponse": {
         "properties": {
@@ -11694,7 +12067,7 @@
           "position"
         ],
         "title": "TileResponse",
-        "description": "A tile of the template, in the template's order. `image_removed` is true when moderation hid\nor deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are\nonly shown to the owner."
+        "description": "A tile of the template, in the template's order. `image_removed` is true when moderation hid\nor deleted the image: `image_url` is then null. `image_status` is only shown to the owner, and\n`image_moderation_reason` only when the image is theirs, not one a copy took from another\naccount."
       },
       "TokenResponse": {
         "properties": {

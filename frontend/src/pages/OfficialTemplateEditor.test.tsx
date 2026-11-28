@@ -41,6 +41,8 @@ const cheeses: Template = {
   featured: false,
   editing_by_name: 'alice',
   editing_until: '2026-11-20T12:02:00Z',
+  forks_allowed: false,
+  copied_from: null,
 };
 
 const lease = { editing_by_name: 'alice', editing_until: '2026-11-20T12:02:00Z' };

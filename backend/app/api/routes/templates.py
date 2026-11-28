@@ -45,6 +45,7 @@ from app.schemas.templates import (
     RemovedTemplateListResponse,
     RemovedTemplateResponse,
     RenameTemplateRequest,
+    SetForksAllowedRequest,
     SetTemplateTagsRequest,
     SetTemplateVisibilityRequest,
     TemplateListResponse,
@@ -205,6 +206,24 @@ def rename_template(
     """Renames a template; its last modification date is updated."""
     try:
         template: Template = service.rename(user, template_id, payload.name)
+    except TemplateNotFoundError as exc:
+        raise template_not_found() from exc
+    return template_response(template, storage)
+
+
+@router.put("/{template_id}/forks-allowed", responses=TEMPLATE_CHANGE_RESPONSES)
+def set_template_forks_allowed(
+    template_id: uuid.UUID,
+    payload: SetForksAllowedRequest,
+    user: CurrentUserDep,
+    service: TemplateServiceDep,
+    storage: ImageStorageDep,
+) -> TemplateResponse:
+    """Allows or stops allowing other accounts to copy the template while it is public, by its
+    owner (or the super admin holding the edit lease of an official template). Not allowed by
+    default; the copies already made stay."""
+    try:
+        template: Template = service.set_forks_allowed(user, template_id, payload.forks_allowed)
     except TemplateNotFoundError as exc:
         raise template_not_found() from exc
     return template_response(template, storage)

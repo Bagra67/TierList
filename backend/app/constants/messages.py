@@ -36,6 +36,9 @@ TILE_EMPTY = "A tile needs a text or an image"
 INVALID_TAG = "A tag needs at least one Latin letter or digit"
 CANNOT_LIKE_OWN_TEMPLATE = "The owner of a template cannot like it"
 CANNOT_FAVORITE_OWN_TEMPLATE = "The owner of a template cannot add it to their favorites"
+CANNOT_COPY_OWN_TEMPLATE = "The owner of a template cannot copy it"
+COPY_NOT_ALLOWED = "The owner of the template does not allow copies"
+TEMPLATE_TOO_LARGE_TO_COPY = "The template has more tiles or tags than a copy can keep"
 INVALID_CURSOR = "The cursor of the page is invalid"
 
 TEMPLATE_HAS_NO_TILES = "The template has no tiles"
@@ -127,6 +130,10 @@ IMAGES_HIDING_IN_PROGRESS_DESCRIPTION = "The images of this account are already 
 TILE_EMPTY_DESCRIPTION = "Tile without text nor image, or invalid request"
 INVALID_TAG_DESCRIPTION = "Tag without a Latin letter or digit, or invalid request"
 ACCOUNT_OWNS_TEMPLATE_DESCRIPTION = "The account owns the template"
+TEMPLATE_CANNOT_BE_COPIED_DESCRIPTION = (
+    "The account owns the template, its owner does not allow copies, or it has more tiles or "
+    "tags than a copy can keep"
+)
 INVALID_CURSOR_DESCRIPTION = "Cursor that cannot be read, or made for another list"
 TEMPLATE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template or image not found"
 TEMPLATE_TILE_OR_IMAGE_NOT_FOUND_DESCRIPTION = "Template, tile or image not found"

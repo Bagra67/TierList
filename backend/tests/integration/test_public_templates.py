@@ -94,6 +94,8 @@ def test_a_public_template_shows_nothing_reserved_to_its_owner(
         "like_count",
         "tiers",
         "tiles",
+        "copy_allowed",
+        "lineage",
     }
     assert set(template["tiles"][0]) == {"id", "text", "image_url", "image_removed"}
 

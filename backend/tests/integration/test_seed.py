@@ -1,7 +1,7 @@
 import logging
 import uuid
 from collections import Counter
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -32,22 +32,30 @@ from app.models.report import Report
 from app.models.room import Room
 from app.models.room_ban import RoomBan
 from app.models.template import Template
+from app.models.template_ancestor import TemplateAncestor
 from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.tile import Tile
 from app.models.user import User
+from app.repositories.templates import (
+    LineageAncestor,
+    list_lineages,
+    listed_templates_condition,
+)
 from app.seed.accounts import seed_email
 from app.seed.official_templates import create_official_templates
 from app.seed.run import SeedSummary, run_seed
 from app.seed.sizes import SMALL_SIZE
 from app.services.image_storage import quarantine_key
+from app.services.templates import TemplateService
 from tests.integration.conftest import FakeImageStorage
 from tests.integration.helpers import JsonObject, counted_queries, select_accounts
 
 pytestmark = pytest.mark.integration
 
 SEED_PASSWORD = "seed-test-password"
-SMALL_SEED_MAX_QUERIES = 610
+SMALL_SEED_MAX_QUERIES = 700
 MODERATION_ACTIONS = (
     SMALL_SIZE.moderation_actions
     + SMALL_SIZE.hidden_images
@@ -114,7 +122,9 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         .where(text("email_verified_at IS NULL"))
     ) == (SMALL_SIZE.unverified_accounts)
     assert count(db_session, Template) == summary.templates
-    pizzas: Template = db_session.scalars(select(Template).where(Template.name == "Pizzas")).one()
+    pizzas: Template = db_session.scalars(
+        select(Template).where(Template.name == "Pizzas", ~Template.ancestors.any())
+    ).one()
     assert [tag.label for tag in pizzas.tags] == ["Cuisine", "italie", "soirée entre amis"]
     assert pizzas.search_text == "pizzas cuisine italie soiree entre amis"
     assert (
@@ -199,6 +209,24 @@ def test_the_seed_creates_every_kind_of_data(db_session: Session, stored_images:
         ).all()
     )
     assert len(public_templates) == SMALL_SIZE.public_templates
+    ancestors: list[tuple[int, TemplateVisibility]] = list(
+        db_session.execute(
+            select(TemplateAncestor.depth, Template.visibility).join(
+                Template, Template.id == TemplateAncestor.ancestor_id
+            )
+        ).all()
+    )
+    assert (1, TemplateVisibility.PRIVATE) in ancestors
+    assert (2, TemplateVisibility.PUBLIC) in ancestors
+    last_copy_id, original_id = db_session.execute(
+        select(TemplateAncestor.template_id, TemplateAncestor.ancestor_id).where(
+            TemplateAncestor.depth == SMALL_SIZE.chained_copies
+        )
+    ).one()
+    lineage: list[LineageAncestor] = list_lineages(db_session, [last_copy_id], datetime.now(UTC))[
+        last_copy_id
+    ]
+    assert [ancestor.template_id for ancestor in lineage] == [None, original_id]
     for model in (TemplateLike, TemplateFavorite):
         owner_and_user_ids: list[tuple[uuid.UUID, uuid.UUID]] = [
             (template_owner_id, user_id)
@@ -367,6 +395,48 @@ def test_running_the_seed_again_replaces_its_data_only(
     ).all() == ["Mine"]
     assert count(db_session, Image) == len(stored_images) + SMALL_SIZE.deleted_images
     assert first_keys.isdisjoint(stored_images)
+
+
+def test_running_the_seed_again_keeps_the_images_a_real_copy_still_uses(
+    db_session: Session, stored_images: dict[str, bytes]
+):
+    seed(db_session, stored_images)
+    real_user: User = User(email="real@example.com", display_name="Real")
+    db_session.add(real_user)
+    source: Template = db_session.scalars(
+        select(Template)
+        .where(Template.tiles.any(Tile.image.has(Image.status == ImageStatus.VISIBLE)))
+        .order_by(Template.name)
+        .limit(1)
+    ).one()
+    source.visibility = TemplateVisibility.PUBLIC
+    source.forks_allowed = True
+    db_session.flush()
+    assert db_session.scalar(
+        select(Template.id).where(
+            Template.id == source.id, listed_templates_condition(datetime.now(UTC))
+        )
+    )
+    copy_id: uuid.UUID = TemplateService(db_session, get_settings()).copy(real_user, source.id).id
+    kept_keys: set[str] = {
+        image.storage_key
+        for image in db_session.scalars(
+            select(Image).join(Tile, Tile.image_id == Image.id).where(Tile.template_id == copy_id)
+        )
+    }
+
+    seed(db_session, stored_images)
+
+    copy_images: list[Image] = list(
+        db_session.scalars(
+            select(Image).join(Tile, Tile.image_id == Image.id).where(Tile.template_id == copy_id)
+        ).all()
+    )
+    assert {image.storage_key for image in copy_images} == kept_keys
+    assert all(image.owner_id is None for image in copy_images)
+    assert {key for key in kept_keys if key in stored_images} == {
+        image.storage_key for image in copy_images if image.status == ImageStatus.VISIBLE
+    }
 
 
 def test_the_seeded_games_keep_the_closure_rules(

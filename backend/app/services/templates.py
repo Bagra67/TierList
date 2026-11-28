@@ -10,8 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import (
     DEFAULT_TIERS,
+    FREE_PLAN_MAX_TILES,
+    LINEAGE_MAX_ANCESTORS,
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
+    TEMPLATE_MAX_TAGS,
     TEMPLATES_PAGE_SIZE,
 )
 from app.core.config import Settings
@@ -20,6 +23,8 @@ from app.core.search_text import normalize_search_text
 from app.exceptions.auth import EmailNotVerifiedError
 from app.exceptions.images import ImageNotFoundError
 from app.exceptions.templates import (
+    CannotCopyOwnTemplateError,
+    CopyNotAllowedError,
     InvalidTagError,
     LastTierError,
     OfficialTemplateLockedError,
@@ -27,6 +32,7 @@ from app.exceptions.templates import (
     TemplateHasNoTilesError,
     TemplateHiddenError,
     TemplateNotFoundError,
+    TemplateTooLargeToCopyError,
     TierNotFoundError,
     TileEmptyError,
     TileLimitReachedError,
@@ -42,6 +48,7 @@ from app.models.image import Image, ImageStatus
 from app.models.snapshot_tier import SnapshotTier
 from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
+from app.models.template_ancestor import TemplateAncestor
 from app.models.template_snapshot import TemplateSnapshot
 from app.models.template_tag import TemplateTag
 from app.models.tier import Tier
@@ -65,6 +72,31 @@ def _move[Positioned: (Tier, Tile)](
     items.remove(item)
     items.insert(min(position, len(items)), item)
     _renumber(items)
+
+
+def _ancestors_of_copy(source: Template) -> list[TemplateAncestor]:
+    chain: list[tuple[uuid.UUID | None, str]] = [
+        (source.id, source.name),
+        *((ancestor.ancestor_id, ancestor.ancestor_name) for ancestor in source.ancestors),
+    ]
+    if len(chain) > LINEAGE_MAX_ANCESTORS:
+        chain = [*chain[: LINEAGE_MAX_ANCESTORS - 1], chain[-1]]
+    return [
+        TemplateAncestor(depth=depth, ancestor_id=ancestor_id, ancestor_name=ancestor_name)
+        for depth, (ancestor_id, ancestor_name) in enumerate(chain, start=1)
+    ]
+
+
+def _copy_refusal(user: User, source: Template) -> Exception | None:
+    if source.owner_id == user.id:
+        return CannotCopyOwnTemplateError()
+    if not source.forks_allowed:
+        return CopyNotAllowedError()
+    if not source.fits_player_limits:
+        return TemplateTooLargeToCopyError(
+            max_tiles=FREE_PLAN_MAX_TILES, max_tags=TEMPLATE_MAX_TAGS
+        )
+    return None
 
 
 def _refresh_search_text(template: Template) -> None:
@@ -168,9 +200,64 @@ class TemplateService:
                 for position, (tier_name, color) in enumerate(DEFAULT_TIERS)
             ],
         )
+        self._add(template)
+        return template
+
+    def _add(self, template: Template) -> None:
         _refresh_search_text(template)
         template_repository.add_template(self._session, template)
         self._session.flush()
+
+    def copy(self, user: User, source_id: uuid.UUID) -> Template:
+        source: Template | None = template_repository.get_listed_template_with_content(
+            self._session, source_id, datetime.now(UTC), for_share=True
+        )
+        if source is None:
+            raise TemplateNotFoundError
+        refusal: Exception | None = _copy_refusal(user, source)
+        if refusal is not None:
+            raise refusal
+        copy: Template = Template(
+            owner_id=user.id,
+            name=source.name,
+            tiers=[
+                Tier(name=tier.name, color=tier.color, position=tier.position)
+                for tier in source.tiers
+            ],
+            tiles=[
+                Tile(text=tile.text, image_id=tile.image_id, position=tile.position)
+                for tile in source.tiles
+            ],
+            tags=[
+                TemplateTag(
+                    normalized_label=tag.normalized_label, label=tag.label, position=tag.position
+                )
+                for tag in source.tags
+            ],
+            ancestors=_ancestors_of_copy(source),
+        )
+        self._add(copy)
+        self._session.commit()
+        logger.info(
+            "Modèle copié : template_id=%s source_id=%s owner_id=%s", copy.id, source.id, user.id
+        )
+        return copy
+
+    def can_copy(self, user: User, source_id: uuid.UUID) -> bool:
+        source: Template | None = template_repository.get_listed_template_with_content(
+            self._session, source_id, datetime.now(UTC)
+        )
+        if source is None:
+            raise TemplateNotFoundError
+        return _copy_refusal(user, source) is None
+
+    def set_forks_allowed(self, user: User, template_id: uuid.UUID, allowed: bool) -> Template:
+        template: Template = self._get_for_change(user, template_id)
+        template.forks_allowed = allowed
+        self._commit_change(user, template)
+        logger.info(
+            "Copies du modèle autorisées : template_id=%s forks_allowed=%s", template.id, allowed
+        )
         return template
 
     def list_for_owner(self, owner: User) -> list[TemplateSummary]:
@@ -239,6 +326,8 @@ class TemplateService:
 
         removed_images: dict[uuid.UUID, list[RemovedImage]] = {}
         for tile, image in tiles_with_image:
+            if not tile.has_own_image:
+                continue
             removed_image: RemovedImage = RemovedImage(
                 tile_id=tile.id,
                 tile_text=tile.text,

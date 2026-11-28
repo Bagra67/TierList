@@ -360,6 +360,28 @@ export interface paths {
         patch: operations["rename_template_templates__template_id__patch"];
         trace?: never;
     };
+    "/templates/{template_id}/forks-allowed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Template Forks Allowed
+         * @description Allows or stops allowing other accounts to copy the template while it is public, by its
+         *     owner (or the super admin holding the edit lease of an official template). Not allowed by
+         *     default; the copies already made stay.
+         */
+        put: operations["set_template_forks_allowed_templates__template_id__forks_allowed_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/templates/{template_id}/visibility": {
         parameters: {
             query?: never;
@@ -856,6 +878,33 @@ export interface paths {
          *     nothing.
          */
         delete: operations["unfavorite_template_marketplace_templates__template_id__favorite_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/marketplace/templates/{template_id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Copy State
+         * @description Whether the account may copy this public template into its own templates.
+         */
+        get: operations["get_copy_state_marketplace_templates__template_id__copy_get"];
+        put?: never;
+        /**
+         * Copy Template
+         * @description Copies a public template of another account whose owner allows copies into a new private
+         *     template of the account, with its tiers, tiles and tags. The copy keeps the templates it comes
+         *     from. A template with more tiles or tags than a template of the account can have cannot be
+         *     copied.
+         */
+        post: operations["copy_template_marketplace_templates__template_id__copy_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1934,6 +1983,15 @@ export interface components {
             release: string;
         };
         /**
+         * CopyStateResponse
+         * @description Whether the account may copy the public template: false for its owner, when copies are
+         *     not allowed, or when it has more tiles or tags than a copy can keep.
+         */
+        CopyStateResponse: {
+            /** Can Copy */
+            can_copy: boolean;
+        };
+        /**
          * CreateReportRequest
          * @description A report (US-1.2). target_id designates, depending on target_kind: an item of a game, a
          *     participant of a room, a player of the results, a closed game or a public template.
@@ -2409,6 +2467,22 @@ export interface components {
             items: components["schemas"]["TemplateLikeStateResponse"][];
         };
         /**
+         * LineageAncestorResponse
+         * @description A template a copy comes from. `template_id` is set only while that template is listed,
+         *     so it can be linked; `name` is its current name then, and the name it had when it was copied
+         *     otherwise, from its parent up to the original; a long chain keeps only its nearest ancestors
+         *     and the original. `owner_name` is null once the template is erased or its owner's account
+         *     deleted, and while its owner is banned.
+         */
+        LineageAncestorResponse: {
+            /** Template Id */
+            template_id: string | null;
+            /** Name */
+            name: string;
+            /** Owner Name */
+            owner_name: string | null;
+        };
+        /**
          * LoginRequest
          * @description Sign-in with an email and a password.
          */
@@ -2450,7 +2524,8 @@ export interface components {
          * @description A card of the marketplace. The preview is the image of the first tile:
          *     `preview_image_removed` is true when moderation removed it, and both are empty when the first
          *     tile has no image. `tier_colors` are the colors of the tiers, top to bottom. `featured` is true
-         *     for an official template in the TierList picks.
+         *     for an official template in the TierList picks. `copied_from` is the template it was copied
+         *     from, null when it is not a copy.
          */
         MarketplaceTemplateResponse: {
             /**
@@ -2476,6 +2551,7 @@ export interface components {
             preview_image_removed: boolean;
             /** Tier Colors */
             tier_colors: string[];
+            copied_from: components["schemas"]["LineageAncestorResponse"] | null;
         };
         /**
          * ModerationActionKind
@@ -2682,7 +2758,9 @@ export interface components {
          * PublicTemplateResponse
          * @description A public template as everyone sees it: its name, its owner's display name, its tags, its
          *     number of likes, its tiers and its tiles in their order. `featured` is true for an official
-         *     template in the TierList picks.
+         *     template in the TierList picks. `copy_allowed` is true when its owner allows copies and it
+         *     fits the limits of a copy. `lineage` lists the templates it was copied from, from its parent
+         *     up to the original, empty for a template that is not a copy.
          */
         PublicTemplateResponse: {
             /**
@@ -2704,6 +2782,10 @@ export interface components {
             tiers: components["schemas"]["TierResponse"][];
             /** Tiles */
             tiles: components["schemas"]["PublicTileResponse"][];
+            /** Copy Allowed */
+            copy_allowed: boolean;
+            /** Lineage */
+            lineage: components["schemas"]["LineageAncestorResponse"][];
         };
         /**
          * PublicTileResponse
@@ -3085,6 +3167,14 @@ export interface components {
             hidden: boolean;
         };
         /**
+         * SetForksAllowedRequest
+         * @description Whether other accounts may copy the template while it is public.
+         */
+        SetForksAllowedRequest: {
+            /** Forks Allowed */
+            forks_allowed: boolean;
+        };
+        /**
          * SetTemplateTagsRequest
          * @description Every tag of the template, in the order to show them; they replace the current ones.
          *     Surrounding spaces are removed, and a tag equal to an earlier one ignoring case and accents is
@@ -3170,7 +3260,9 @@ export interface components {
          *     kept when the template goes back to private. `official` is true for a template owned by the
          *     site, edited by the super admins: `featured` is then true when it is in the TierList picks, and
          *     `editing_by_name` and `editing_until` name the super admin holding its edit lease, until when
-         *     (both null when nobody holds it).
+         *     (both null when nobody holds it). `forks_allowed` is true when other accounts may copy it
+         *     while it is public. `copied_from` is the name, when copied, of the template it was copied
+         *     from, null when it is not a copy.
          */
         TemplateResponse: {
             /**
@@ -3214,6 +3306,10 @@ export interface components {
             editing_by_name: string | null;
             /** Editing Until */
             editing_until: string | null;
+            /** Forks Allowed */
+            forks_allowed: boolean;
+            /** Copied From */
+            copied_from: string | null;
         };
         /**
          * TemplateSummaryResponse
@@ -3285,8 +3381,9 @@ export interface components {
         /**
          * TileResponse
          * @description A tile of the template, in the template's order. `image_removed` is true when moderation hid
-         *     or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
-         *     only shown to the owner.
+         *     or deleted the image: `image_url` is then null. `image_status` is only shown to the owner, and
+         *     `image_moderation_reason` only when the image is theirs, not one a copy took from another
+         *     account.
          */
         TileResponse: {
             /**
@@ -4603,6 +4700,77 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Official template edited by another super admin, or edit lease not held */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    set_template_forks_allowed_templates__template_id__forks_allowed_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetForksAllowedRequest"];
             };
         };
         responses: {
@@ -6531,6 +6699,131 @@ export interface operations {
             };
             /** @description Template not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_copy_state_marketplace_templates__template_id__copy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyStateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    copy_template_marketplace_templates__template_id__copy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateResponse"];
+                };
+            };
+            /** @description Not authenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Template not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The account owns the template, its owner does not allow copies, or it has more tiles or tags than a copy can keep */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

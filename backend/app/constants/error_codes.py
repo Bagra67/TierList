@@ -40,6 +40,9 @@ class ErrorCode(StrEnum):
     TEMPLATE_NOT_PUBLISHED = "template_not_published"
     CANNOT_LIKE_OWN_TEMPLATE = "cannot_like_own_template"
     CANNOT_FAVORITE_OWN_TEMPLATE = "cannot_favorite_own_template"
+    CANNOT_COPY_OWN_TEMPLATE = "cannot_copy_own_template"
+    COPY_NOT_ALLOWED = "copy_not_allowed"
+    TEMPLATE_TOO_LARGE_TO_COPY = "template_too_large_to_copy"
     INVALID_CURSOR = "invalid_cursor"
 
     ROOM_NOT_FOUND = "room_not_found"

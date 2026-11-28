@@ -5,7 +5,7 @@ from app.api.presenters.images import (
     is_image_removed,
     optional_image_url,
 )
-from app.models.image import ImageStatus
+from app.models.image import Image, ImageStatus
 from app.models.template import Template
 from app.models.tile import Tile
 from app.models.user import User
@@ -44,6 +44,8 @@ def template_response(template: Template, storage: ImageStorage) -> TemplateResp
         featured=template.featured_at is not None,
         editing_by_name=None if editor is None else editor.display_name,
         editing_until=None if editor is None else template.editing_until,
+        forks_allowed=template.forks_allowed,
+        copied_from=template.ancestors[0].ancestor_name if template.ancestors else None,
     )
 
 
@@ -63,13 +65,14 @@ def official_template_summary_response(
 
 
 def _tile_response(tile: Tile, storage: ImageStorage) -> TileResponse:
+    own_image: Image | None = tile.image if tile.has_own_image else None
     return TileResponse(
         id=tile.id,
         text=tile.text,
         image_url=optional_image_url(storage, tile.image),
         image_removed=is_image_removed(tile.image),
         image_status=tile.image.status if tile.image is not None else None,
-        image_moderation_reason=tile.image.moderation_reason if tile.image is not None else None,
+        image_moderation_reason=own_image.moderation_reason if own_image is not None else None,
         position=tile.position,
     )
 

@@ -26,6 +26,7 @@ from app.models.account_ban import AccountBan
 from app.models.enums import TemplateModeration, TemplateVisibility, UserRole
 from app.models.image import Image, ImageStatus
 from app.models.template import Template
+from app.models.template_ancestor import TemplateAncestor
 from app.models.template_favorite import TemplateFavorite
 from app.models.template_like import TemplateLike
 from app.models.template_snapshot import TemplateSnapshot
@@ -101,6 +102,66 @@ def get_playable_template(
     )
 
 
+def get_listed_template_with_content(
+    session: Session, template_id: uuid.UUID, now: datetime, for_share: bool = False
+) -> Template | None:
+    return _get_template_with_content(
+        session,
+        and_(Template.id == template_id, listed_templates_condition(now)),
+        RowLock.SHARE if for_share else None,
+    )
+
+
+@dataclass(frozen=True)
+class LineageAncestor:
+    template_id: uuid.UUID | None
+    name: str
+    owner_name: str | None
+
+
+def list_lineages(
+    session: Session, template_ids: list[uuid.UUID], now: datetime, max_depth: int | None = None
+) -> dict[uuid.UUID, list[LineageAncestor]]:
+    owner_is_banned: ColumnElement[bool] = _owner_is_banned(now)
+    is_listed: ColumnElement[bool] = _listed_condition(owner_is_banned)
+    statement: Select[uuid.UUID, str, uuid.UUID, str, str, bool, bool] = (
+        select(
+            TemplateAncestor.template_id,
+            TemplateAncestor.ancestor_name,
+            Template.id,
+            Template.name,
+            User.display_name,
+            is_listed,
+            owner_is_banned,
+        )
+        .select_from(TemplateAncestor)
+        .outerjoin(Template, Template.id == TemplateAncestor.ancestor_id)
+        .outerjoin(User, User.id == Template.owner_id)
+        .where(TemplateAncestor.template_id.in_(template_ids))
+        .order_by(TemplateAncestor.template_id, TemplateAncestor.depth)
+    )
+    if max_depth is not None:
+        statement = statement.where(TemplateAncestor.depth <= max_depth)
+    lineages: dict[uuid.UUID, list[LineageAncestor]] = {}
+    for (
+        template_id,
+        copied_name,
+        ancestor_id,
+        current_name,
+        owner_name,
+        listed,
+        banned,
+    ) in session.execute(statement):
+        lineages.setdefault(template_id, []).append(
+            LineageAncestor(
+                template_id=ancestor_id if listed else None,
+                name=current_name if listed else copied_name,
+                owner_name=None if banned else owner_name,
+            )
+        )
+    return lineages
+
+
 def _get_template_with_content(
     session: Session, condition: ColumnElement[bool], lock: RowLock | None
 ) -> Template | None:
@@ -118,16 +179,21 @@ def _get_template_with_content(
     return session.scalars(statement).one_or_none()
 
 
-def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
-    owner_is_banned: ColumnElement[bool] = exists().where(
-        AccountBan.user_id == Template.owner_id, is_active(now)
-    )
+def _owner_is_banned(now: datetime) -> ColumnElement[bool]:
+    return exists().where(AccountBan.user_id == Template.owner_id, is_active(now))
+
+
+def _listed_condition(owner_is_banned: ColumnElement[bool]) -> ColumnElement[bool]:
     return and_(
         Template.visibility == TemplateVisibility.PUBLIC,
         Template.moderation == TemplateModeration.NONE,
         Template.deleted_at.is_(None),
         ~owner_is_banned,
     )
+
+
+def listed_templates_condition(now: datetime) -> ColumnElement[bool]:
+    return _listed_condition(_owner_is_banned(now))
 
 
 def _listed_templates_with_owner_name(now: datetime) -> Select[Template, str]:

@@ -16,6 +16,7 @@ export function marketplaceCard(
     preview_image_url: null,
     preview_image_removed: false,
     tier_colors: ['#FF3B6B', '#FF8A2A'],
+    copied_from: null,
     ...overrides,
   };
 }

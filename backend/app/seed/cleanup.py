@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import uuid
 from dataclasses import dataclass
@@ -12,8 +13,10 @@ from app.models.game_player import GamePlayer
 from app.models.image import Image, ImageStatus
 from app.models.moderation_action import ModerationAction
 from app.models.report import Report
+from app.models.snapshot_tile import SnapshotTile
 from app.models.template import Template
 from app.models.template_snapshot import TemplateSnapshot
+from app.models.tile import Tile
 from app.models.user import User
 from app.seed.accounts import SEED_EMAIL_DOMAIN, SEED_EMAIL_PREFIX
 from app.services.image_storage import ImageStorage, quarantine_key
@@ -76,20 +79,44 @@ def delete_seed_data(session: Session, storage: ImageStorage) -> SeedCleanup:
     session.execute(
         delete(TemplateSnapshot).where(TemplateSnapshot.template_id.in_(seed_template_ids))
     )
+    seed_image_ids: list[uuid.UUID] = list(
+        session.scalars(select(Image.id).where(Image.owner_id.in_(seed_user_ids))).all()
+    )
+    session.execute(delete(User).where(User.id.in_(seed_user_ids)))
     images: list[tuple[uuid.UUID, str | None]] = [
         (image_id, _file_key(storage_key, status))
         for image_id, storage_key, status in session.execute(
             select(Image.id, Image.storage_key, Image.status).where(
-                Image.owner_id.in_(seed_user_ids)
+                Image.id.in_(seed_image_ids),
+                ~exists().where(Tile.image_id == Image.id),
+                ~exists().where(SnapshotTile.image_id == Image.id),
             )
         ).all()
     ]
-    session.execute(delete(User).where(User.id.in_(seed_user_ids)))
-    session.execute(delete(Image).where(Image.id.in_([image_id for image_id, _ in images])))
+    deleted_image_ids: set[uuid.UUID] = {image_id for image_id, _ in images}
+    session.execute(delete(Image).where(Image.id.in_(deleted_image_ids)))
+    kept_image_ids: list[uuid.UUID] = [
+        image_id for image_id in seed_image_ids if image_id not in deleted_image_ids
+    ]
+    _unban_fingerprints_the_seed_uploads_again(session, kept_image_ids)
     session.commit()
+    if kept_image_ids:
+        logger.info(
+            "Images seed gardées, utilisées par des copies d'autres comptes : %d",
+            len(kept_image_ids),
+        )
     logger.info("Données seed supprimées en base : %d parties, %d images", games, len(images))
     _delete_image_files_after_commit(storage, images)
     return SeedCleanup(accounts=len(seed_user_ids), games=games, images=len(images))
+
+
+def _unban_fingerprints_the_seed_uploads_again(
+    session: Session, kept_image_ids: list[uuid.UUID]
+) -> None:
+    for image in session.scalars(
+        select(Image).where(Image.id.in_(kept_image_ids), Image.status == ImageStatus.DELETED)
+    ):
+        image.sha256 = hashlib.sha256(image.id.bytes).hexdigest()
 
 
 def _delete_image_files_after_commit(
