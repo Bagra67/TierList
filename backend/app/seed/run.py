@@ -150,7 +150,7 @@ def run_seed(
             size.rooms_on_public_templates_of_others,
         )
         copies: int = copy_public_templates(
-            session, settings, public_templates_not_hidden, accounts.players
+            session, settings, public_templates_not_hidden, accounts.players, size.chained_copies
         )
         moderated_templates: int = moderate_templates(
             session,
