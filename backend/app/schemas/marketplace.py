@@ -18,9 +18,9 @@ class PublicTileResponse(BaseModel):
 class LineageAncestorResponse(BaseModel):
     """A template a copy comes from. `template_id` is set only while that template is listed,
     so it can be linked; `name` is its current name then, and the name it had when it was copied
-    otherwise, from its parent up to the original, at most 20 of them (the nearest ones and the
-    original). `owner_name` is null once the template is erased or its owner's account deleted,
-    and while its owner is banned."""
+    otherwise, from its parent up to the original; a long chain keeps only its nearest ancestors
+    and the original. `owner_name` is null once the template is erased or its owner's account
+    deleted, and while its owner is banned."""
 
     model_config = ConfigDict(from_attributes=True)
 

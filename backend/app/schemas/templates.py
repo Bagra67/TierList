@@ -119,8 +119,9 @@ class TierResponse(BaseModel):
 
 class TileResponse(BaseModel):
     """A tile of the template, in the template's order. `image_removed` is true when moderation hid
-    or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
-    only shown to the owner."""
+    or deleted the image: `image_url` is then null. `image_status` is only shown to the owner, and
+    `image_moderation_reason` only when the image is theirs, not one a copy took from another
+    account."""
 
     id: uuid.UUID
     text: str | None

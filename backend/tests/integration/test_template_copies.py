@@ -97,7 +97,7 @@ def lineage(client: TestClient, template_id: str) -> list[JsonObject]:
     return page["lineage"]
 
 
-def copy_count(db_session: Session) -> int:
+def template_count(db_session: Session) -> int:
     return db_session.scalar(select(func.count()).select_from(Template)) or 0
 
 
@@ -147,13 +147,13 @@ def test_a_user_copies_a_public_template_into_a_private_template_of_their_own(
 def test_a_user_cannot_copy_their_own_template(
     auth_client: TestClient, db_session: Session, alice: dict[str, str], template_id: str
 ):
-    before: int = copy_count(db_session)
+    before: int = template_count(db_session)
 
     response: Response = copy(auth_client, template_id, alice)
 
     assert response.status_code == 409
     assert response.json()["code"] == ErrorCode.CANNOT_COPY_OWN_TEMPLATE
-    assert copy_count(db_session) == before
+    assert template_count(db_session) == before
     assert can_copy(auth_client, template_id, alice).json() == {"can_copy": False}
 
 
@@ -270,8 +270,11 @@ def test_a_listed_ancestor_shows_its_current_name(
 ):
     bob_copy_id: str = copied_id(auth_client, template_id, bob)
     publish_with_copies(auth_client, db_session, bob_copy_id, bob, BOB_EMAIL)
-    auth_client.patch(f"/templates/{template_id}", json={"name": "Snacks"}, headers=alice)
+    rename: Response = auth_client.patch(
+        f"/templates/{template_id}", json={"name": "Snacks"}, headers=alice
+    )
 
+    assert rename.status_code == 200
     assert lineage(auth_client, bob_copy_id)[0]["name"] == "Snacks"
 
 
@@ -387,7 +390,7 @@ def test_a_copy_never_shows_the_moderation_reason_of_an_image_of_another_account
 ):
     _, image = add_tile_with_image(auth_client, db_session, alice, template_id, "Photo")
     copy_id: str = copied_id(auth_client, template_id, bob)
-    image.status = ImageStatus.HIDDEN
+    image.status = ImageStatus.DELETED
     image.moderation_reason = "Nudity"
     db_session.flush()
 
@@ -395,7 +398,7 @@ def test_a_copy_never_shows_the_moderation_reason_of_an_image_of_another_account
     summaries: list[JsonObject] = auth_client.get("/templates", headers=bob).json()["items"]
 
     assert tile["image_removed"] is True
-    assert (tile["image_status"], tile["image_moderation_reason"]) == (None, None)
+    assert (tile["image_status"], tile["image_moderation_reason"]) == ("deleted", None)
     assert [summary["removed_images"] for summary in summaries] == [[]]
     owner_tile: JsonObject = auth_client.get(f"/templates/{template_id}", headers=alice).json()[
         "tiles"

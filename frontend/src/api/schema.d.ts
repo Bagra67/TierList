@@ -2470,9 +2470,9 @@ export interface components {
          * LineageAncestorResponse
          * @description A template a copy comes from. `template_id` is set only while that template is listed,
          *     so it can be linked; `name` is its current name then, and the name it had when it was copied
-         *     otherwise, from its parent up to the original, at most 20 of them (the nearest ones and the
-         *     original). `owner_name` is null once the template is erased or its owner's account deleted,
-         *     and while its owner is banned.
+         *     otherwise, from its parent up to the original; a long chain keeps only its nearest ancestors
+         *     and the original. `owner_name` is null once the template is erased or its owner's account
+         *     deleted, and while its owner is banned.
          */
         LineageAncestorResponse: {
             /** Template Id */
@@ -3381,8 +3381,9 @@ export interface components {
         /**
          * TileResponse
          * @description A tile of the template, in the template's order. `image_removed` is true when moderation hid
-         *     or deleted the image: `image_url` is then null. `image_status` and `image_moderation_reason` are
-         *     only shown to the owner.
+         *     or deleted the image: `image_url` is then null. `image_status` is only shown to the owner, and
+         *     `image_moderation_reason` only when the image is theirs, not one a copy took from another
+         *     account.
          */
         TileResponse: {
             /**
