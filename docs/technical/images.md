@@ -134,7 +134,7 @@ SeaweedFS in development:
 
 ### 2.8 Cleanup
 
-No file is deleted when a tile changes, since a snapshot may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference and that were created longer ago than a grace delay: the delay counts from the upload, not from the last use. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192), and can also be run from the command line, like `scripts/purge_deleted_templates.py`:
+No file is deleted when a tile changes, since a snapshot, or a copy of the template that shares its images ([templates guide](templates.md#212-copies)), may still use it. A periodic **garbage collection** erases the images that no tile and no snapshot reference and that were created longer ago than a grace delay: the delay counts from the upload, not from the last use. It covers the abandoned uploads (uploaded but never attached to a tile), the purge of deleted templates and the deletion of accounts, which only remove database rows (`ON DELETE CASCADE` on templates and tiles; the image rows stay, without author). It runs every night in the app process, with the other purges ([deployment guide](deployment.md#23-nightly-tasks), #192), and can also be run from the command line, like `scripts/purge_deleted_templates.py`:
 
 ```bash
 cd backend
