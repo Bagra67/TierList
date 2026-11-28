@@ -65,11 +65,7 @@ def official_template_summary_response(
 
 
 def _tile_response(tile: Tile, storage: ImageStorage) -> TileResponse:
-    own_image: Image | None = (
-        tile.image
-        if tile.image is not None and tile.image.owner_id == tile.template.owner_id
-        else None
-    )
+    own_image: Image | None = tile.image if tile.has_own_image else None
     return TileResponse(
         id=tile.id,
         text=tile.text,

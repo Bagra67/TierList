@@ -12,14 +12,15 @@ from app.constants.templates import FREE_PLAN_MAX_TILES, LINEAGE_MAX_ANCESTORS
 from app.models.image import ImageStatus
 from app.models.template import Template
 from app.models.template_ancestor import TemplateAncestor
-from app.models.tile import Tile
 from tests.integration.helpers import (
     PASSWORD,
     JsonObject,
     add_tile_with_image,
+    add_tiles,
     ban_account,
     confirm_email,
     counted_queries,
+    create_official,
     create_public_template,
     delete_template,
     make_private,
@@ -341,14 +342,8 @@ def test_a_page_of_cards_needs_the_same_queries_with_copies(
 
 def published_official(client: TestClient, db_session: Session, tile_count: int) -> str:
     nina: dict[str, str] = register_super_admin(client, db_session, "nina@example.com")
-    official_id: str = client.post(
-        "/moderation/official-templates", json={"name": "Cheeses"}, headers=nina
-    ).json()["id"]
-    for position in range(tile_count):
-        db_session.add(
-            Tile(template_id=uuid.UUID(official_id), text=f"Tile {position}", position=position)
-        )
-    db_session.flush()
+    official_id: str = create_official(client, nina)
+    add_tiles(db_session, official_id, tile_count)
     client.post(f"/moderation/official-templates/{official_id}/lock", headers=nina)
     assert allow_copies(client, official_id, nina).status_code == 200
     publish: Response = client.post(
