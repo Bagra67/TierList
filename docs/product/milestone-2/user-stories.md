@@ -211,7 +211,7 @@ As a **template owner**, I want to choose whether my public template can be fork
 As a **user**, I want to fork a public template, so that I adapt it to my taste.
 
 - _Given_ a public template whose owner allows forks, _when_ I fork it, _then_ I get a new **private** template of mine, with a copy of its tiers, tiles and tags, which I can edit like any of my templates.
-- _Given_ a fork, _then_ its page **credits its whole lineage** (the template it was forked from, up to the original, with their owners), and its card in the marketplace the template it was forked from. A lineage keeps the 20 nearest ancestors at most, the original always included.
+- _Given_ a fork, _then_ its page **credits its whole lineage** (the template it was forked from, up to the original, with their owners), and its card in the marketplace the template it was forked from. A lineage keeps at most 20 ancestors: the nearest ones and the original.
 - _Given_ an ancestor that became private, hidden or deleted, _then_ the lineage still shows its name, without a link.
 - _Given_ the forks are not allowed, or I am a visitor, _then_ I cannot fork (a visitor is asked to sign in).
 - _Given_ a template with more tiles or tags than my templates can have (an official template), _then_ I cannot fork it.

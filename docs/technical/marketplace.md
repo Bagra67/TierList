@@ -1,6 +1,6 @@
 # Marketplace
 
-How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**, and **built**: the tags and the search text in #272 ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)), the likes in #276, the favorites in #278, the marketplace in #277, the pages of _My templates_ in #105 ([templates guide](templates.md#26-endpoints)) and the TierList picks in #492. §3 lists where each piece lives.
+How the marketplace lists, searches, sorts and pages the public templates. **Decided in spike #274**, and **built**: the tags and the search text in #272 ([templates guide](templates.md#29-tags)), the listing rule in #275 ([templates guide](templates.md#210-public-template-page)), the likes in #276, the favorites in #278, the marketplace in #277, the pages of _My templates_ in #105 ([templates guide](templates.md#26-endpoints)), the TierList picks in #492 and the copies in #279 ([templates guide](templates.md#212-copies)). §3 lists where each piece lives.
 
 ## 1. Functional overview
 
