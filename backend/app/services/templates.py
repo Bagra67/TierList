@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.constants.templates import (
     DEFAULT_TIERS,
+    FREE_PLAN_MAX_TILES,
     LINEAGE_MAX_ANCESTORS,
     NEW_TIER_COLOR,
     NEW_TIER_NAME,
+    TEMPLATE_MAX_TAGS,
     TEMPLATES_PAGE_SIZE,
 )
 from app.core.config import Settings
@@ -83,6 +85,18 @@ def _ancestors_of_copy(source: Template) -> list[TemplateAncestor]:
         TemplateAncestor(depth=depth, ancestor_id=ancestor_id, ancestor_name=ancestor_name)
         for depth, (ancestor_id, ancestor_name) in enumerate(chain, start=1)
     ]
+
+
+def _copy_refusal(user: User, source: Template) -> Exception | None:
+    if source.owner_id == user.id:
+        return CannotCopyOwnTemplateError()
+    if not source.forks_allowed:
+        return CopyNotAllowedError()
+    if not source.fits_player_limits:
+        return TemplateTooLargeToCopyError(
+            max_tiles=FREE_PLAN_MAX_TILES, max_tags=TEMPLATE_MAX_TAGS
+        )
+    return None
 
 
 def _refresh_search_text(template: Template) -> None:
@@ -200,12 +214,9 @@ class TemplateService:
         )
         if source is None:
             raise TemplateNotFoundError
-        if source.owner_id == user.id:
-            raise CannotCopyOwnTemplateError
-        if not source.forks_allowed:
-            raise CopyNotAllowedError
-        if not source.fits_player_limits:
-            raise TemplateTooLargeToCopyError
+        refusal: Exception | None = _copy_refusal(user, source)
+        if refusal is not None:
+            raise refusal
         copy: Template = Template(
             owner_id=user.id,
             name=source.name,
@@ -238,7 +249,7 @@ class TemplateService:
         )
         if source is None:
             raise TemplateNotFoundError
-        return source.owner_id != user.id and source.copy_allowed
+        return _copy_refusal(user, source) is None
 
     def set_forks_allowed(self, user: User, template_id: uuid.UUID, allowed: bool) -> Template:
         template: Template = self._get_for_change(user, template_id)
@@ -315,6 +326,8 @@ class TemplateService:
 
         removed_images: dict[uuid.UUID, list[RemovedImage]] = {}
         for tile, image in tiles_with_image:
+            if not tile.has_own_image:
+                continue
             removed_image: RemovedImage = RemovedImage(
                 tile_id=tile.id,
                 tile_text=tile.text,
